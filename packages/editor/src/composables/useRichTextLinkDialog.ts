@@ -21,6 +21,7 @@ export interface UseRichTextLinkDialogReturn {
 export function useRichTextLinkDialog(
   editor: ShallowRef<Editor | null>,
   syntax: SyntaxPreset = SYNTAX_PRESETS.liquid,
+  canEdit: () => boolean = () => true,
 ): UseRichTextLinkDialogReturn {
   const showLinkDialog = ref(false);
   const linkUrl = ref("");
@@ -29,6 +30,7 @@ export function useRichTextLinkDialog(
   useFocusTrap(linkDialogRef, showLinkDialog);
 
   function openLinkDialog(): void {
+    if (!canEdit()) return;
     const attrs = editor.value?.getAttributes("link") ?? {};
     linkUrl.value = attrs.href || "";
     linkColor.value = attrs.color || "";
@@ -36,6 +38,7 @@ export function useRichTextLinkDialog(
   }
 
   function insertLink(): void {
+    if (!canEdit()) return;
     if (linkUrl.value) {
       const url = normalizeLinkUrl(linkUrl.value);
       if (url !== null) {
@@ -113,6 +116,7 @@ export function useRichTextLinkDialog(
   }
 
   function removeLink(): void {
+    if (!canEdit()) return;
     editor.value?.chain().focus().extendMarkRange("link").unsetLink().run();
     closeLinkDialog();
   }

@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+} from "node:fs";
 import { join } from "node:path";
 import {
   createCustomBlock,
@@ -591,3 +597,38 @@ it.each([
     expect(result.errors.join("\n")).toContain("de");
   },
 );
+
+describe("built-in list element structure", () => {
+  const folder = join(
+    import.meta.dirname,
+    "../../types/tests/fixtures/operations",
+  );
+  it.each(
+    readdirSync(folder).filter((name) =>
+      /locale-structural-.*-(id|replacement)\.json$/.test(name),
+    ),
+  )("refuses %s in stored templates", (name) => {
+    const fixture = JSON.parse(readFileSync(join(folder, name), "utf8"));
+    const source = fixture.content.blocks[0];
+    if (source.type === "menu")
+      source.items = source.items.map((item: object) => ({
+        openInNewTab: false,
+        bold: false,
+        underline: false,
+        ...item,
+      }));
+    const block =
+      source.type === "menu"
+        ? createMenuBlock(source)
+        : source.type === "table"
+          ? createTableBlock(source)
+          : createSocialIconsBlock(source);
+    block.l10n = { de: { set: fixture.ops[0].set } };
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ["de"];
+    content.blocks = [block];
+    const result = validateTemplate(content);
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("cannot override structure");
+  });
+});

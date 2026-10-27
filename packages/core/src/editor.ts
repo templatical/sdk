@@ -31,6 +31,7 @@ import {
   SdkError,
 } from "@templatical/types";
 import {
+  changedLayer,
   deriveLayer,
   deriveSettingsLayer,
   reconcileStructure,
@@ -325,13 +326,21 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       activeLocale.value,
       defaultLocaleOf(state.content),
     );
+    const before = deriveLayer(block, view, previous, definitions);
     const restoredAncestors =
       method === "resetLocaleFields" && Array.isArray(value)
         ? resetLocalizedFields(block, view, value)
         : undefined;
     const layer =
       method === "resetLocaleFields"
-        ? deriveLayer(block, view, previous, definitions, restoredAncestors)
+        ? changedLayer(
+            previous,
+            before,
+            deriveLayer(block, view, previous, definitions, restoredAncestors),
+            block,
+            view,
+            Array.isArray(value) ? value : [],
+          )
         : safeClone(previous ?? {});
     if (method === "setBlockHidden") {
       if (value) layer.hidden = true;
@@ -575,7 +584,13 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       Object.assign(block, pruned);
       writeLayer(
         block,
-        deriveLayer(block, next, block.l10n?.[locale], definitions),
+        changedLayer(
+          block.l10n?.[locale],
+          deriveLayer(block, view, block.l10n?.[locale], definitions),
+          deriveLayer(block, next, block.l10n?.[locale], definitions),
+          block,
+          next,
+        ),
       );
     }
     touch();
@@ -613,10 +628,14 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     else {
       const settings = state.content.settings;
       const view = resolveLocale(state.content, locale).settings;
-      const layer = deriveSettingsLayer(
+      const next = { ...view, locale: settings.locale, ...updates };
+      const previous = settings.l10n?.[locale];
+      const layer = changedLayer(
+        previous,
+        deriveSettingsLayer(settings, view, previous),
+        deriveSettingsLayer(settings, next, previous),
         settings,
-        { ...view, locale: settings.locale, ...updates },
-        settings.l10n?.[locale],
+        next,
       );
       if (Object.keys(layer).length)
         settings.l10n = { ...settings.l10n, [locale]: layer };

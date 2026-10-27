@@ -114,5 +114,11 @@ export interface UpdateSettingsLocaleOperation {
 }
 
 export declare function pruneLocaleOrphans(block: Block): Block;
-export declare function pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings;
-export declare function isStructuralLocalePath(block: Block, path: string): boolean;
+export declare function pruneSettingsLocaleOrphans(
+  settings: TemplateSettings,
+): TemplateSettings;
+export declare function isStructuralLocalePath(
+  block: Block,
+  path: string,
+  value?: unknown,
+): boolean;

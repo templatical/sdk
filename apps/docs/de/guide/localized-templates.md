@@ -1,6 +1,6 @@
 ---
 title: Lokalisierte Templates
-description: Sprachversionen einer E-Mail in einem Template speichern — mit Text, Überschreibungen und ausgeblendeten Blöcken pro Sprache, Rendering pro Locale und Prüfungen auf fehlende oder veraltete Übersetzungen.
+description: Sprachversionen mit settings.locales und l10n speichern, mit resolveLocale projizieren und mit --locale validieren oder rendern.
 ---
 
 # Lokalisierte Templates
@@ -131,7 +131,7 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 - Text in wiederholbaren Elementen eines benutzerdefinierten Blocks lässt sich nicht feldweise übersetzen: Überschreiben Sie stattdessen das gesamte `fieldValues.<key>`.
 - Die eigenen Blöcke eines Layouts (`init({ layout })`) sind nicht lokalisierbar. Der Inhalt wird lokalisiert, bevor das Layout ihn umschließt.
 - Menüeinträge, Tabellenzeilen und Zellen, deren ID `.` enthält, sind nicht lokalisierbar. Vom SDK erzeugte IDs enthalten nie `.`.
-- Sprach-Tags bestehen aus einem Sprachcode mit 2–3 Buchstaben und optionalen Subtags. Private-Use-Tags (`x-…`) und historische Tags (`i-…`) werden nicht akzeptiert.
+- Sprach-Tags müssen `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$` entsprechen: 2–3 ASCII-Buchstaben, gefolgt von beliebig vielen mit Bindestrich getrennten Subtags aus 2–8 ASCII-Buchstaben oder Ziffern. Formen mit `x-…` oder `i-…` am Anfang werden abgelehnt, weil ihr Sprachsegment nur einen Buchstaben hat; historische Formen wie `no-bok` und `zh-min-nan` entsprechen dem Muster und werden akzeptiert.
 
 **Übersetzen**
 

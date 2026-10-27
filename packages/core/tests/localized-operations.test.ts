@@ -573,12 +573,19 @@ describe("mapLocalizedOperations", () => {
           op: "updateBlockLocale",
           blockId: "p1",
           locale: "de",
-          set: { "styles.padding": { top: 10, right: 30, bottom: 6, left: 7 } },
+          set: {
+            "styles.padding.right": 30,
+            "styles.padding.bottom": 6,
+            "styles.padding.left": 7,
+          },
+          unset: ["styles.padding"],
         },
       ],
     );
     expect(result.blocks[0].l10n?.de.set).toEqual({
-      "styles.padding": { top: 10, right: 30, bottom: 6, left: 7 },
+      "styles.padding.right": 30,
+      "styles.padding.bottom": 6,
+      "styles.padding.left": 7,
       "styles.linkColor": "#ff0000",
     });
   });
@@ -962,5 +969,56 @@ describe("mapLocalizedOperations", () => {
       bottom: 6,
       left: 7,
     });
+  });
+});
+
+it("preserves a sibling edit combined with an inherited reset in mapped operations", () => {
+  const block = paragraph();
+  block.styles.padding = { top: 10, right: 5, bottom: 6, left: 7 };
+  block.l10n = {
+    de: {
+      set: {
+        "styles.padding": { top: 20, right: 30, bottom: 6, left: 7 },
+      },
+    },
+  };
+  const base = content([block]);
+  const mapped = mapLocalizedOperations(base, "de", [
+    {
+      op: "updateBlock",
+      blockId: "p1",
+      set: {
+        styles: {
+          ...block.styles,
+          padding: { top: 10, right: 40, bottom: 6, left: 7 },
+        },
+      },
+    },
+  ]);
+  const updated = applyOperations(base, mapped);
+
+  expect(resolveLocale(updated, "de").blocks[0].styles.padding).toEqual({
+    top: 10,
+    right: 40,
+    bottom: 6,
+    left: 7,
+  });
+  const changedDefault = applyOperations(updated, [
+    {
+      op: "updateBlock",
+      blockId: "p1",
+      set: {
+        styles: {
+          ...updated.blocks[0].styles,
+          padding: { top: 42, right: 5, bottom: 6, left: 7 },
+        },
+      },
+    },
+  ]);
+  expect(resolveLocale(changedDefault, "de").blocks[0].styles.padding).toEqual({
+    top: 42,
+    right: 40,
+    bottom: 6,
+    left: 7,
   });
 });

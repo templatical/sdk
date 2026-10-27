@@ -1139,7 +1139,12 @@ function assertLocalePaths(
     if (
       !isSafePath(path) ||
       immutable.has(segments[0]) ||
-      (!settings && isStructuralLocalePath(target as unknown as Block, path)) ||
+      (!settings &&
+        isStructuralLocalePath(
+          target as unknown as Block,
+          path,
+          changes.set[path],
+        )) ||
       (readPath(target, path) === undefined && !isRecord(parent))
     ) {
       fail(

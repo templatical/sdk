@@ -98,7 +98,7 @@ Answer with every batch after `revision`, in order. When you no longer have them
 
 `BlockLock.locale?: string | null` distinguishes language locks; absence means `null`, the default language and structure. The signatures are `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` and `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Forward locale to the backend and through `onLock` / `onUnlock(blockId, sessionId, locale?)`.
 
-`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. Every other block operation conflicts with every other session's lock on X. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#upgrading).
+`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. Every other block operation conflicts with every other session's lock on X. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#compatibility).
 
 ### Refusals
 

@@ -237,7 +237,10 @@ function validateLocalization(
           if (immutable.includes(path.split(".")[0])) {
             errors.push(`${field} cannot override ${path.split(".")[0]}`);
           }
-          if (kind === "set" && isStructuralLocalePath(target as Block, path)) {
+          if (
+            kind === "set" &&
+            isStructuralLocalePath(target as Block, path, entries[path])
+          ) {
             errors.push(`${field} cannot override structure`);
           }
           if (kind === "text" && !textPaths.includes(path)) {

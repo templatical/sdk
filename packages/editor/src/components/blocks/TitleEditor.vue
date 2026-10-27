@@ -48,6 +48,7 @@ const {
   editor,
   EditorContent,
   isLoading,
+  isEditable,
   initError,
   retry,
   showLinkDialog,
@@ -153,92 +154,98 @@ const {
           transform: 'translateY(-100%)',
         }"
       >
-        <template v-if="!isLoading && editor">
-          <!-- Bold -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('bold'),
-            }"
-            :aria-label="t.titleEditor.bold"
-            :title="t.titleEditor.bold"
-            @click="editor?.chain().focus().toggleBold().run()"
-          >
-            <Bold :size="16" :stroke-width="2.5" />
-          </button>
-          <!-- Italic -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('italic'),
-            }"
-            :aria-label="t.titleEditor.italic"
-            :title="t.titleEditor.italic"
-            @click="editor?.chain().focus().toggleItalic().run()"
-          >
-            <Italic :size="16" :stroke-width="2" />
-          </button>
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Link -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('link'),
-            }"
-            :aria-label="t.titleEditor.addLink"
-            :title="t.titleEditor.addLink"
-            @click="openLinkDialog"
-          >
-            <Link :size="16" :stroke-width="2" />
-          </button>
-          <!-- Add Merge Tag -->
-          <span
-            v-if="canRequestMergeTag"
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-          ></span>
-          <button
-            v-if="canRequestMergeTag"
-            type="button"
-            class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
-            :aria-label="t.mergeTag.insert"
-            :title="t.mergeTag.insert"
-            @click="handleAddMergeTag"
-          >
-            <ScanLine :size="16" :stroke-width="2" />
-            {{ t.mergeTag.insertShort }}
-          </button>
-          <!-- Insert Logic -->
-          <span
-            v-if="canInsertLogicTag"
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-          ></span>
-          <button
-            v-if="canInsertLogicTag"
-            type="button"
-            class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
-            :aria-label="t.logicTag.insert"
-            :title="t.logicTag.insert"
-            data-testid="insert-logic-button"
-            @click="handleAddLogicTag"
-          >
-            <Braces :size="16" :stroke-width="2" />
-            {{ t.logicTag.insertShort }}
-          </button>
-        </template>
-        <template v-else>
-          <div
-            class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
-          >
-            <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
-            {{ t.errors.editorLoading }}
-          </div>
-        </template>
+        <fieldset
+          :disabled="!isEditable"
+          :inert="!isEditable"
+          class="tpl:contents"
+        >
+          <template v-if="!isLoading && editor">
+            <!-- Bold -->
+            <button
+              type="button"
+              class="tpl-text-toolbar-btn"
+              :class="{
+                'tpl-text-toolbar-btn--active': editor?.isActive('bold'),
+              }"
+              :aria-label="t.titleEditor.bold"
+              :title="t.titleEditor.bold"
+              @click="editor?.chain().focus().toggleBold().run()"
+            >
+              <Bold :size="16" :stroke-width="2.5" />
+            </button>
+            <!-- Italic -->
+            <button
+              type="button"
+              class="tpl-text-toolbar-btn"
+              :class="{
+                'tpl-text-toolbar-btn--active': editor?.isActive('italic'),
+              }"
+              :aria-label="t.titleEditor.italic"
+              :title="t.titleEditor.italic"
+              @click="editor?.chain().focus().toggleItalic().run()"
+            >
+              <Italic :size="16" :stroke-width="2" />
+            </button>
+            <span
+              class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+              aria-hidden="true"
+            ></span>
+            <!-- Link -->
+            <button
+              type="button"
+              class="tpl-text-toolbar-btn"
+              :class="{
+                'tpl-text-toolbar-btn--active': editor?.isActive('link'),
+              }"
+              :aria-label="t.titleEditor.addLink"
+              :title="t.titleEditor.addLink"
+              @click="openLinkDialog"
+            >
+              <Link :size="16" :stroke-width="2" />
+            </button>
+            <!-- Add Merge Tag -->
+            <span
+              v-if="canRequestMergeTag"
+              class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            ></span>
+            <button
+              v-if="canRequestMergeTag"
+              type="button"
+              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
+              :aria-label="t.mergeTag.insert"
+              :title="t.mergeTag.insert"
+              @click="handleAddMergeTag"
+            >
+              <ScanLine :size="16" :stroke-width="2" />
+              {{ t.mergeTag.insertShort }}
+            </button>
+            <!-- Insert Logic -->
+            <span
+              v-if="canInsertLogicTag"
+              class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            ></span>
+            <button
+              v-if="canInsertLogicTag"
+              type="button"
+              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
+              :aria-label="t.logicTag.insert"
+              :title="t.logicTag.insert"
+              data-testid="insert-logic-button"
+              @click="handleAddLogicTag"
+            >
+              <Braces :size="16" :stroke-width="2" />
+              {{ t.logicTag.insertShort }}
+            </button>
+          </template>
+          <template v-else>
+            <div
+              class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+            >
+              <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
+              {{ t.errors.editorLoading }}
+            </div>
+          </template>
+        </fieldset>
       </div>
     </Teleport>
 

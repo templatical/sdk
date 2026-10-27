@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { ref } from "@vue/reactivity";
 import {
   applyOperations,
+  applyLocaleStrings,
+  localeStrings,
+  SYNTAX_PRESETS,
   createDefaultTemplateContent,
   createTitleBlock,
   createImageBlock,
@@ -258,7 +261,7 @@ describe("editor language routing", () => {
     editor.resetLocaleFields("im1", ["visibility.mobile"]);
 
     const block = editor.content.value.blocks[1];
-    expect(block.l10n?.de.set).toEqual({ visibility: { mobile: false } });
+    expect(block.l10n?.de.set).toEqual({ "visibility.desktop": null });
     expect(localizeBlock(block, "de", "en").visibility).toEqual({
       mobile: false,
     });
@@ -1053,4 +1056,169 @@ describe("update preflight preserves history", () => {
       history.destroy();
     },
   );
+});
+
+describe("translations equal to the default survive unrelated edits", () => {
+  it.each(["block padding", "settings width", "sibling reset"] as const)(
+    "%s preserves translated coverage and the extraction hash",
+    (edit) => {
+      const content = createDefaultTemplateContent();
+      content.settings.locale = "en";
+      content.settings.locales = ["de"];
+      content.settings.preheaderText = "Templatical";
+      content.blocks = [
+        createTitleBlock({ id: "brand", content: "Templatical" }),
+      ];
+      const extracted = localeStrings(content, "de", {
+        syntax: SYNTAX_PRESETS.liquid,
+        only: "gaps",
+      });
+      const translated = applyLocaleStrings(
+        content,
+        "de",
+        extracted.strings.map((field) => ({
+          id: field.id,
+          text: field.source,
+          sourceHash: field.sourceHash,
+        })),
+        { syntax: SYNTAX_PRESETS.liquid, tokens: extracted.tokens },
+      );
+      const operations = [...translated.operations];
+      if (edit === "sibling reset")
+        operations.push({
+          op: "updateBlockLocale",
+          blockId: "brand",
+          locale: "de",
+          set: { color: "#123456" },
+        });
+      const editor = useEditor({
+        content: applyOperations(content, operations),
+      });
+      editor.setActiveLocale("de");
+      const blockText = JSON.stringify(
+        editor.content.value.blocks[0].l10n?.de.text,
+      );
+      const settingsText = JSON.stringify(
+        editor.content.value.settings.l10n?.de.text,
+      );
+      if (edit === "block padding") {
+        const block = editor.content.value.blocks[0];
+        editor.updateBlock("brand", {
+          styles: {
+            ...block.styles,
+            padding: { top: 23, right: 0, bottom: 0, left: 0 },
+          },
+        } as Partial<Block>);
+      } else if (edit === "settings width") {
+        editor.updateSettings({ width: 500 });
+      } else {
+        editor.resetLocaleFields("brand", ["color"]);
+        expect(editor.content.value.blocks[0].l10n?.de.set).toBeUndefined();
+      }
+      expect(JSON.stringify(editor.content.value.blocks[0].l10n?.de.text)).toBe(
+        blockText,
+      );
+      expect(JSON.stringify(editor.content.value.settings.l10n?.de.text)).toBe(
+        settingsText,
+      );
+      expect(localeCoverage(editor.content.value, "de")).toEqual({
+        translated: ["brand/content", "settings/preheaderText"],
+        missing: [],
+        stale: [],
+      });
+      editor.resetLocaleFields("brand", ["content"]);
+      expect(editor.content.value.blocks[0].l10n?.de.text).toBeUndefined();
+    },
+  );
+});
+
+describe("reset leaves inherit beneath covering overrides", () => {
+  it.each(["reset", "typing the default"] as const)(
+    "%s leaves padding top inherited while preserving sibling overrides",
+    (method) => {
+      const { editor } = german();
+      editor.setActiveLocale(null);
+      editor.updateBlock("t1", {
+        styles: {
+          ...editor.content.value.blocks[0].styles,
+          padding: { top: 10, right: 5, bottom: 6, left: 7 },
+        },
+      } as Partial<Block>);
+      const seeded = safeClone(editor.content.value);
+      seeded.blocks[0].l10n = {
+        de: {
+          set: {
+            "styles.padding": { top: 20, right: 30, bottom: 6, left: 7 },
+          },
+        },
+      };
+      editor.setContent(seeded);
+      editor.setActiveLocale("de");
+      if (method === "reset")
+        editor.resetLocaleFields("t1", ["styles.padding.top"]);
+      else
+        editor.updateBlock("t1", {
+          styles: {
+            ...seeded.blocks[0].styles,
+            padding: { top: 10, right: 30, bottom: 6, left: 7 },
+          },
+        } as Partial<Block>);
+      expect(
+        localizeBlock(editor.content.value.blocks[0], "de", "en").styles
+          .padding,
+      ).toEqual({ top: 10, right: 30, bottom: 6, left: 7 });
+      editor.setActiveLocale(null);
+      editor.updateBlock("t1", {
+        styles: {
+          ...editor.content.value.blocks[0].styles,
+          padding: { top: 42, right: 5, bottom: 6, left: 7 },
+        },
+      } as Partial<Block>);
+      expect(
+        localizeBlock(editor.content.value.blocks[0], "de", "en").styles
+          .padding,
+      ).toEqual({ top: 42, right: 30, bottom: 6, left: 7 });
+    },
+  );
+});
+
+it("preserves a sibling edit combined with an inherited reset in editor routing", () => {
+  const content = createDefaultTemplateContent();
+  content.settings.locale = "en";
+  content.settings.locales = ["de"];
+  const block = createTitleBlock({
+    id: "mixed",
+    l10n: {
+      de: {
+        set: {
+          "styles.padding": { top: 20, right: 30, bottom: 6, left: 7 },
+        },
+      },
+    },
+  });
+  block.styles.padding = { top: 10, right: 5, bottom: 6, left: 7 };
+  content.blocks = [block];
+  const editor = useEditor({ content });
+  editor.setActiveLocale("de");
+
+  editor.updateBlock("mixed", {
+    styles: {
+      ...block.styles,
+      padding: { top: 10, right: 40, bottom: 6, left: 7 },
+    },
+  } as Partial<Block>);
+
+  expect(
+    localizeBlock(editor.content.value.blocks[0], "de", "en").styles.padding,
+  ).toEqual({ top: 10, right: 40, bottom: 6, left: 7 });
+  editor.setActiveLocale(null);
+  editor.updateBlock("mixed", {
+    styles: {
+      ...editor.content.value.blocks[0].styles,
+      padding: { top: 42, right: 5, bottom: 6, left: 7 },
+    },
+  } as Partial<Block>);
+  expect(
+    localizeBlock(editor.content.value.blocks[0], "de", "en").styles.padding,
+  ).toEqual({ top: 42, right: 40, bottom: 6, left: 7 });
 });

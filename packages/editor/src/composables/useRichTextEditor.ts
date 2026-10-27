@@ -1,3 +1,4 @@
+import { useLocaleEditable } from "./useLocaleEditable";
 import { useLocalizedDisplay } from "./useLocalizedDisplay";
 import type {
   Editor,
@@ -55,6 +56,7 @@ export interface UseRichTextEditorReturn {
   editor: ShallowRef<Editor | null>;
   EditorContent: ShallowRef<typeof EditorContentComponent | null>;
   isLoading: Ref<boolean>;
+  isEditable: Ref<boolean>;
   initError: Ref<string | null>;
   retry: () => void;
   showLinkDialog: Ref<boolean>;
@@ -80,6 +82,7 @@ export function useRichTextEditor(
   options: UseRichTextEditorOptions,
 ): UseRichTextEditorReturn {
   const emailEditor = inject(EDITOR_KEY, null);
+  const isEditable = useLocaleEditable();
 
   const {
     mergeTags,
@@ -129,7 +132,20 @@ export function useRichTextEditor(
     removeLink,
     closeLinkDialog,
     handleLinkKeydown,
-  } = useRichTextLinkDialog(editor, syntax);
+  } = useRichTextLinkDialog(editor, syntax, () => isEditable.value);
+
+  watch(isEditable, (editable) => {
+    // A locale switch changes editability, not the document. Suppress TipTap’s
+    // update event so the previous projection cannot be written into the new locale.
+    editor.value?.setEditable(editable, false);
+    if (!editable) {
+      closeLinkDialog();
+      // Re-evaluate suggestion plugins even when both locale projections have
+      // identical HTML. No document change means no content update or undo step.
+      const instance = editor.value;
+      if (instance) instance.view.dispatch(instance.state.tr);
+    }
+  });
 
   const { start: startFocusTimeout, stop: stopFocusTimeout } = useTimeoutFn(
     () => editor.value?.commands.focus("end"),
@@ -180,14 +196,14 @@ export function useRichTextEditor(
       const instance = new TiptapEditor({
         extensions: uniqueExtensions,
         content: options.blockContent(),
-        editable: true,
+        editable: isEditable.value,
         editorProps: {
           attributes: {
             dir: contentDirection(),
           },
         },
         onUpdate: ({ editor: e }) => {
-          if (destroyed) return;
+          if (destroyed || !isEditable.value) return;
           if (emailEditor) {
             lastSyncedContent = e.getHTML();
             emailEditor.updateBlock(options.blockId(), {
@@ -300,8 +316,9 @@ export function useRichTextEditor(
   });
 
   async function handleAddMergeTag(): Promise<void> {
+    if (!isEditable.value) return;
     const mergeTag = await requestMergeTag();
-    if (destroyed) return;
+    if (destroyed || !isEditable.value) return;
     if (mergeTag && editor.value) {
       editor.value
         .chain()
@@ -317,8 +334,9 @@ export function useRichTextEditor(
   }
 
   async function handleAddLogicTag(): Promise<void> {
+    if (!isEditable.value) return;
     const item = await requestLogicTag();
-    if (destroyed) return;
+    if (destroyed || !isEditable.value) return;
     if (item && editor.value) {
       insertLogicTagSelection(editor.value, item, syntax);
     } else {
@@ -330,6 +348,7 @@ export function useRichTextEditor(
     editor,
     EditorContent,
     isLoading,
+    isEditable,
     initError,
     retry,
     showLinkDialog,

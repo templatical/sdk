@@ -52,7 +52,7 @@ describe("field overrides", () => {
       true,
     );
     expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
-      visibility: { mobile: false },
+      "visibility.desktop": null,
     });
     history.undo();
     await nextTick();

@@ -1,5 +1,6 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
+import { exportedParagraphAlignment } from "../helpers/exported-paragraph";
 import { SELECTORS } from "../helpers/selectors";
 import { EditorPage } from "../pages/editor.page";
 import { ScenePage } from "../pages/scene.page";
@@ -167,6 +168,25 @@ test.describe("language versions", () => {
     await selectLanguage(page, "ar");
     await expect(page.locator(SELECTORS.canvas)).toHaveAttribute("dir", "rtl");
     await expect(page.locator(SELECTORS.canvas)).toHaveAttribute("lang", "ar");
+    await page.locator('[data-block-id="languages-copy"] p').dblclick();
+    await editorPage.focusTextEditableAtEnd("paragraph");
+    await page.keyboard.type(" مرحبا.");
+    await editorPage.deselectBlock();
+    const mjml = await page.evaluate(() =>
+      (
+        window as {
+          __tplPlaygroundGetMjml?: (options?: {
+            locale?: string;
+          }) => Promise<string>;
+        }
+      ).__tplPlaygroundGetMjml!({ locale: "ar" }),
+    );
+    const paragraph = [...mjml.matchAll(/<mj-text\b[^>]*>[\s\S]*?<\/mj-text>/g)]
+      .map((match) => match[0])
+      .find((element) => element.includes("مرحبا."));
+    expect(paragraph).toBeDefined();
+    expect(paragraph!.split(">")[0]).not.toContain('align="left"');
+    expect(exportedParagraphAlignment(mjml, "مرحبا.")).not.toBe("left");
   });
 
   test("exports German MJML through the editor with an explicit locale", async ({

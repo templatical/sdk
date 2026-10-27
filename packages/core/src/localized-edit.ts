@@ -4,6 +4,7 @@ import {
   deepEqual,
   type TemplateSettings,
   type SettingsLocaleLayer,
+  isStructuralLocalePath,
   isTranslatablePath,
   isSafePath,
   readPath,
@@ -264,5 +265,130 @@ export function deriveSettingsLayer(
           : { value, source: sourceHash(String(readPath(base, path) ?? "")) };
     } else (layer.set ??= {})[path] = value === undefined ? null : value;
   }
+  return layer;
+}
+
+/** Merge net changed leaves, updating covering overrides without losing siblings. */
+export function changedLayer(
+  previous: BlockLocaleLayer | undefined,
+  before: BlockLocaleLayer,
+  after: BlockLocaleLayer,
+  base: unknown,
+  view: unknown,
+  resetPaths: readonly string[] = [],
+): BlockLocaleLayer {
+  const layer = safeClone(previous ?? {});
+  const paths = [
+    ...new Set([
+      ...resetPaths,
+      ...[
+        ...new Set([
+          ...Object.keys(before.text ?? {}),
+          ...Object.keys(before.set ?? {}),
+          ...Object.keys(after.text ?? {}),
+          ...Object.keys(after.set ?? {}),
+        ]),
+      ].filter(
+        (path) =>
+          !deepEqual(before.text?.[path], after.text?.[path]) ||
+          !deepEqual(before.set?.[path], after.set?.[path]),
+      ),
+    ]),
+  ];
+  const covering = Object.keys(previous?.set ?? {}).filter((ancestor) =>
+    paths.some((path) => path.startsWith(`${ancestor}.`)),
+  );
+  for (const ancestor of covering) {
+    const value = readPath(view, ancestor);
+    const resets = paths.filter(
+      (path) =>
+        path.startsWith(`${ancestor}.`) &&
+        deepEqual(readPath(base, path), readPath(view, path)),
+    );
+    if (deepEqual(value, readPath(base, ancestor))) delete layer.set![ancestor];
+    else if (
+      resets.length &&
+      isRecord(readPath(base, ancestor)) &&
+      isRecord(value)
+    ) {
+      // A copied default inside a whole-object override would stop inheriting.
+      // Split the covering object, keeping every untouched sibling explicit.
+      delete layer.set![ancestor];
+      const split = (
+        path: string,
+        previousValue: unknown,
+        nextValue: unknown,
+      ): void => {
+        if (
+          resets.some((reset) => path === reset || path.startsWith(`${reset}.`))
+        )
+          return;
+        if (isRecord(previousValue) && isRecord(nextValue)) {
+          for (const key of new Set([
+            ...Object.keys(previousValue),
+            ...Object.keys(nextValue),
+          ]))
+            split(`${path}.${key}`, previousValue[key], nextValue[key]);
+          return;
+        }
+        if (
+          isRecord(base) &&
+          base.type !== "custom" &&
+          isIdList(previousValue) &&
+          isIdList(nextValue)
+        ) {
+          for (const item of nextValue)
+            split(
+              `${path}.${item.id}`,
+              previousValue.find((old) => old.id === item.id),
+              item,
+            );
+          return;
+        }
+        if (
+          isRecord(base) &&
+          typeof base.type === "string" &&
+          isStructuralLocalePath(base as unknown as Block, path, nextValue)
+        )
+          return;
+        // Existing text entries keep their extraction hash and representation.
+        if (layer.text?.[path] && layer.text[path].value === nextValue) return;
+        (layer.set ??= {})[path] =
+          nextValue === undefined ? null : safeClone(nextValue);
+      };
+      split(ancestor, readPath(base, ancestor), value);
+    } else layer.set![ancestor] = value === undefined ? null : safeClone(value);
+    for (const kind of ["text", "set"] as const)
+      for (const stored of Object.keys(layer[kind] ?? {})) {
+        if (!stored.startsWith(`${ancestor}.`)) continue;
+        const storedValue =
+          kind === "text"
+            ? layer.text![stored].value
+            : (layer.set![stored] ?? undefined);
+        if (!deepEqual(storedValue, readPath(view, stored)))
+          delete layer[kind]![stored];
+      }
+  }
+  for (const path of paths) {
+    if (covering.includes(path)) continue;
+    for (const kind of ["text", "set"] as const)
+      for (const stored of Object.keys(layer[kind] ?? {}))
+        if (stored === path || stored.startsWith(`${path}.`))
+          delete layer[kind]![stored];
+    if (after.text && Object.hasOwn(after.text, path))
+      (layer.text ??= {})[path] = after.text[path];
+    if (
+      after.set &&
+      Object.hasOwn(after.set, path) &&
+      !covering.some(
+        (ancestor) =>
+          Object.hasOwn(layer.set ?? {}, ancestor) &&
+          path.startsWith(`${ancestor}.`),
+      )
+    )
+      (layer.set ??= {})[path] = after.set[path];
+  }
+  if (layer.text && !Object.keys(layer.text).length) delete layer.text;
+  if (layer.set && !Object.keys(layer.set).length) delete layer.set;
   return layer;
 }

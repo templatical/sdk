@@ -2571,13 +2571,19 @@ export interface UpdateSettingsLocaleOperation {
 }
 
 export declare function pruneLocaleOrphans(block: Block): Block;
-export declare function pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings;
-export declare function isStructuralLocalePath(block: Block, path: string): boolean;
+export declare function pruneSettingsLocaleOrphans(
+  settings: TemplateSettings,
+): TemplateSettings;
+export declare function isStructuralLocalePath(
+  block: Block,
+  path: string,
+  value?: unknown,
+): boolean;
 ```
 
 `readPath` resolves array elements by id and returns `undefined` for an unresolved path. `writePath` clones the value, treats `null` as property deletion and returns `false` when the parent cannot resolve. `isSafePath` rejects empty and prototype-key segments. `isLocaleTag` accepts a 2–3 letter language followed by optional 2–8 character alphanumeric subtags. `defaultLocaleOf` returns `settings.locale`, falling back to `en`.
 
-`pruneLocaleOrphans(block: Block): Block` recursively removes text paths that no longer resolve and set paths whose parent no longer resolves. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` applies the same rule to settings. Both are pure and omit empty localization members. `isStructuralLocalePath(block: Block, path: string): boolean` identifies section columns and whole built-in lists that locale overrides must not replace.
+`pruneLocaleOrphans(block: Block): Block` recursively removes text paths that no longer resolve and set paths whose parent no longer resolves. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` applies the same rule to settings. Both are pure and omit empty localization members. `isStructuralLocalePath(block: Block, path: string, value?: unknown): boolean` identifies section columns, whole built-in lists and element ids that locale overrides must not replace. Pass the proposed `set` value to check a whole-element replacement: its id must stay unchanged, and a table row must retain its cell ids in the same order. Custom `fieldValues.*` overrides are exempt.
 
 `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale` projects a complete template, drops hidden blocks recursively, strips localization fields and throws `unknown_locale` for a version the template lacks. Both are pure.
 
@@ -4049,7 +4055,7 @@ Answer with every batch after `revision`, in order. When you no longer have them
 
 `BlockLock.locale?: string | null` distinguishes language locks; absence means `null`, the default language and structure. The signatures are `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` and `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Forward locale to the backend and through `onLock` / `onUnlock(blockId, sessionId, locale?)`.
 
-`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. Every other block operation conflicts with every other session's lock on X. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#upgrading).
+`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. Every other block operation conflicts with every other session's lock on X. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#compatibility).
 
 ### Refusals
 
@@ -11994,7 +12000,7 @@ For independent block trees or layouts in each language, keep separate templates
 - Text in a custom block's repeatable items can't be translated per field: override the whole `fieldValues.<key>` instead.
 - A layout's own blocks (`init({ layout })`) aren't localizable. Content is localized before the layout wraps it.
 - Menu items, table rows and cells whose id contains `.` can't be localized. Ids the SDK creates never contain `.`.
-- Language tags are a 2–3 letter language plus subtags. Private-use (`x-…`) and grandfathered (`i-…`) tags aren't accepted.
+- Language tags must match `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`: 2–3 ASCII letters, followed by zero or more hyphen-separated subtags of 2–8 ASCII letters or digits. Forms beginning with `x-…` or `i-…` are rejected because their language segment has one letter; grandfathered forms such as `no-bok` and `zh-min-nan` match and are accepted.
 
 **Translate**
 

@@ -59,7 +59,7 @@ describe("ParagraphToolbar alignment controls", () => {
 
 describe("ParagraphEditor TextAlign wiring", () => {
   it("registers TextAlign for the paragraph type", () => {
-    expect(EDITOR_SRC).toContain("TextAlign.configure");
+    expect(EDITOR_SRC).toContain("TextAlign.extend");
     expect(EDITOR_SRC).toContain('types: ["paragraph"]');
   });
 

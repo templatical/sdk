@@ -17,6 +17,7 @@ import SpacerToolbar from "./toolbar/SpacerToolbar.vue";
 import TableToolbar from "./toolbar/TableToolbar.vue";
 import TitleToolbar from "./toolbar/TitleToolbar.vue";
 import VideoToolbar from "./toolbar/VideoToolbar.vue";
+import { useLocaleEditable } from "../composables/useLocaleEditable";
 import { useI18n } from "../composables/useI18n";
 import type {
   Block,
@@ -58,6 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const isEditable = useLocaleEditable();
 
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "Toolbar");
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
@@ -96,7 +98,7 @@ const fontFamilies = computed(() =>
 );
 
 function handleUpdate(updates: Partial<Block>): void {
-  emit("update", updates);
+  if (isEditable.value) emit("update", updates);
 }
 </script>
 
@@ -106,146 +108,148 @@ function handleUpdate(updates: Partial<Block>): void {
     :aria-label="t.landmarks.blockToolbar"
     class="tpl:flex tpl:w-full tpl:flex-1 tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)]"
   >
-    <div
-      class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3.5"
-    >
+    <fieldset :disabled="!isEditable" :inert="!isEditable" class="tpl:contents">
       <div
-        class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-[var(--tpl-primary)]"
+        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3.5"
       >
-        <component
-          :is="blockTypeIcons[blockType]"
-          v-if="blockTypeIcons[blockType]"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Code v-else-if="isCustom" :size="16" :stroke-width="1.5" />
-        <h3
-          class="tpl:m-0 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+        <div
+          class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-[var(--tpl-primary)]"
         >
-          {{ blockTypeLabel }}
-        </h3>
+          <component
+            :is="blockTypeIcons[blockType]"
+            v-if="blockTypeIcons[blockType]"
+            :size="16"
+            :stroke-width="1.5"
+          />
+          <Code v-else-if="isCustom" :size="16" :stroke-width="1.5" />
+          <h3
+            class="tpl:m-0 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+          >
+            {{ blockTypeLabel }}
+          </h3>
+        </div>
+        <div class="tpl:flex tpl:gap-1">
+          <button
+            class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)] tpl:hover:text-[var(--tpl-text)]"
+            :title="t.toolbar.duplicate"
+            @click="emit('duplicate')"
+          >
+            <Copy :size="14" :stroke-width="2" />
+          </button>
+          <button
+            class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:hover:border-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:text-[var(--tpl-danger)]"
+            :title="t.toolbar.delete"
+            @click="emit('delete')"
+          >
+            <Trash2 :size="14" :stroke-width="2" />
+          </button>
+        </div>
       </div>
-      <div class="tpl:flex tpl:gap-1">
-        <button
-          class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)] tpl:hover:text-[var(--tpl-text)]"
-          :title="t.toolbar.duplicate"
-          @click="emit('duplicate')"
-        >
-          <Copy :size="14" :stroke-width="2" />
-        </button>
-        <button
-          class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:hover:border-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:text-[var(--tpl-danger)]"
-          :title="t.toolbar.delete"
-          @click="emit('delete')"
-        >
-          <Trash2 :size="14" :stroke-width="2" />
-        </button>
-      </div>
-    </div>
 
-    <div class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
-      <template v-if="isCustom">
-        <CustomBlockToolbar
-          :block="block as CustomBlock"
-          @update-field-values="emit('update', { fieldValues: $event })"
-          @update-data-source-fetched="
-            emit('update', { dataSourceFetched: $event })
-          "
+      <div class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
+        <template v-if="isCustom">
+          <CustomBlockToolbar
+            :block="block as CustomBlock"
+            @update-field-values="emit('update', { fieldValues: $event })"
+            @update-data-source-fetched="
+              emit('update', { dataSourceFetched: $event })
+            "
+          />
+        </template>
+
+        <SectionToolbar
+          v-else-if="blockType === 'section'"
+          :block="block as SectionBlock"
+          @update="handleUpdate"
         />
-      </template>
 
-      <SectionToolbar
-        v-else-if="blockType === 'section'"
-        :block="block as SectionBlock"
-        @update="handleUpdate"
-      />
+        <TitleToolbar
+          v-else-if="blockType === 'title'"
+          :block="block as TitleBlock"
+          :font-families="fontFamilies"
+          @update="handleUpdate"
+        />
 
-      <TitleToolbar
-        v-else-if="blockType === 'title'"
-        :block="block as TitleBlock"
-        :font-families="fontFamilies"
-        @update="handleUpdate"
-      />
-
-      <!-- Inline formatting lives in the TipTap toolbar; this carries only
+        <!-- Inline formatting lives in the TipTap toolbar; this carries only
            what applies to the block as a whole. -->
-      <ParagraphToolbar
-        v-else-if="blockType === 'paragraph'"
-        :block="block as ParagraphBlock"
-        @update="handleUpdate"
-      />
+        <ParagraphToolbar
+          v-else-if="blockType === 'paragraph'"
+          :block="block as ParagraphBlock"
+          @update="handleUpdate"
+        />
 
-      <ImageToolbar
-        v-else-if="blockType === 'image'"
-        :block="block as ImageBlock"
-        @update="handleUpdate"
-      />
+        <ImageToolbar
+          v-else-if="blockType === 'image'"
+          :block="block as ImageBlock"
+          @update="handleUpdate"
+        />
 
-      <VideoToolbar
-        v-else-if="blockType === 'video'"
-        :block="block as VideoBlock"
-        @update="handleUpdate"
-      />
+        <VideoToolbar
+          v-else-if="blockType === 'video'"
+          :block="block as VideoBlock"
+          @update="handleUpdate"
+        />
 
-      <ButtonToolbar
-        v-else-if="blockType === 'button'"
-        :block="block as ButtonBlock"
-        :font-families="fontFamilies"
-        @update="handleUpdate"
-      />
+        <ButtonToolbar
+          v-else-if="blockType === 'button'"
+          :block="block as ButtonBlock"
+          :font-families="fontFamilies"
+          @update="handleUpdate"
+        />
 
-      <DividerToolbar
-        v-else-if="blockType === 'divider'"
-        :block="block as DividerBlock"
-        @update="handleUpdate"
-      />
+        <DividerToolbar
+          v-else-if="blockType === 'divider'"
+          :block="block as DividerBlock"
+          @update="handleUpdate"
+        />
 
-      <SocialToolbar
-        v-else-if="blockType === 'social'"
-        :block="block as SocialIconsBlock"
-        @update="handleUpdate"
-      />
+        <SocialToolbar
+          v-else-if="blockType === 'social'"
+          :block="block as SocialIconsBlock"
+          @update="handleUpdate"
+        />
 
-      <MenuToolbar
-        v-else-if="blockType === 'menu'"
-        :block="block as MenuBlock"
-        :font-families="fontFamilies"
-        @update="handleUpdate"
-      />
+        <MenuToolbar
+          v-else-if="blockType === 'menu'"
+          :block="block as MenuBlock"
+          :font-families="fontFamilies"
+          @update="handleUpdate"
+        />
 
-      <TableToolbar
-        v-else-if="blockType === 'table'"
-        :block="block as TableBlock"
-        :font-families="fontFamilies"
-        @update="handleUpdate"
-      />
+        <TableToolbar
+          v-else-if="blockType === 'table'"
+          :block="block as TableBlock"
+          :font-families="fontFamilies"
+          @update="handleUpdate"
+        />
 
-      <SpacerToolbar
-        v-else-if="blockType === 'spacer'"
-        :block="block as SpacerBlock"
-        @update="handleUpdate"
-      />
+        <SpacerToolbar
+          v-else-if="blockType === 'spacer'"
+          :block="block as SpacerBlock"
+          @update="handleUpdate"
+        />
 
-      <HtmlToolbar
-        v-else-if="blockType === 'html'"
-        :block="block as HtmlBlock"
-        @update="handleUpdate"
-      />
+        <HtmlToolbar
+          v-else-if="blockType === 'html'"
+          :block="block as HtmlBlock"
+          @update="handleUpdate"
+        />
 
-      <CountdownToolbar
-        v-else-if="blockType === 'countdown'"
-        :block="block as CountdownBlock"
-        :font-families="fontFamilies"
-        @update="handleUpdate"
-      />
+        <CountdownToolbar
+          v-else-if="blockType === 'countdown'"
+          :block="block as CountdownBlock"
+          :font-families="fontFamilies"
+          @update="handleUpdate"
+        />
 
-      <!-- Common block settings -->
-      <CommonBlockSettings
-        :block="block"
-        :is-first-section="blockType === 'paragraph'"
-        @update="handleUpdate"
-      />
-    </div>
+        <!-- Common block settings -->
+        <CommonBlockSettings
+          :block="block"
+          :is-first-section="blockType === 'paragraph'"
+          @update="handleUpdate"
+        />
+      </div>
+    </fieldset>
   </aside>
 </template>
 

@@ -116,6 +116,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
         range: { from: number; to: number };
         props: MergeTag;
       }) => {
+        if (!editor.isEditable) return;
         // Use insertContentAt for atomic replace (matches the canonical
         // @tiptap/suggestion + Mention pattern). Avoids edge cases where
         // chained deleteRange + insertMergeTag fails to insert when the

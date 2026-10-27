@@ -319,3 +319,53 @@ describe("public translation declarations", () => {
     }
   });
 });
+
+describe("public localization declarations", () => {
+  it("localization-contract.ts retains every function's exact parameters and result", () => {
+    const signatures = (text: string) => {
+      const file = ts.createSourceFile(
+        "contract.ts",
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      return new Map(
+        file.statements.flatMap((node) =>
+          ts.isFunctionDeclaration(node) &&
+          node.name &&
+          node.modifiers?.some(
+            (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+          )
+            ? [
+                [
+                  node.name.text,
+                  {
+                    parameters: node.parameters.map((parameter) => ({
+                      name: parameter.name.getText(file),
+                      optional: !!(
+                        parameter.questionToken || parameter.initializer
+                      ),
+                      type: parameter.type
+                        ?.getText(file)
+                        .replace(/\s/g, "")
+                        .replace(/\bJson\b/g, "Record<string,unknown>"),
+                    })),
+                    result: node.type?.getText(file).replace(/\s/g, ""),
+                  },
+                ],
+              ]
+            : [],
+        ),
+      );
+    };
+    const source = signatures(readTypes("localization.ts"));
+    const snippet = signatures(readDocs("snippets/localization-contract.ts"));
+    expect([...snippet.keys()].sort()).toEqual([...source.keys()].sort());
+    for (const [name, signature] of source)
+      expect.soft(snippet.get(name), name).toEqual(signature);
+    for (const page of ["api/types.md", "de/api/types.md"])
+      expect(readDocs(page)).toContain(
+        "<<< @/snippets/localization-contract.ts",
+      );
+  });
+});

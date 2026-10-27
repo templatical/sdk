@@ -98,7 +98,7 @@ Antworten Sie mit jedem Batch nach `revision`, der Reihe nach. Haben Sie nicht m
 
 `BlockLock.locale?: string | null` unterscheidet Sprachsperren; fehlend bedeutet `null`, Standardsprache und Struktur. Die Signaturen sind `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` und `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Leiten Sie die Locale an das Backend und über `onLock` / `onUnlock(blockId, sessionId, locale?)` weiter.
 
-`updateBlockLocale` an (X, de) kollidiert mit (X, de) oder (X, null) einer anderen Sitzung; (X, fr) kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Übergeben Sie `locale` in `OperationLock` an `applyOperations`; ein Backend ohne Locale-Auswertung serialisiert pro Block. Aktualisieren Sie das Backend vor dem Aktivieren von [Sprachversionen](/de/guide/localized-templates#upgrading).
+`updateBlockLocale` an (X, de) kollidiert mit (X, de) oder (X, null) einer anderen Sitzung; (X, fr) kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Übergeben Sie `locale` in `OperationLock` an `applyOperations`; ein Backend ohne Locale-Auswertung serialisiert pro Block. Aktualisieren Sie das Backend vor dem Aktivieren von [Sprachversionen](/de/guide/localized-templates#compatibility).
 
 ### Ablehnungen
 

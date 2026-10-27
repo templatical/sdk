@@ -1,7 +1,6 @@
 import {
   OperationError,
   applyOperations,
-  deepEqual,
   localizeBlock,
   defaultLocaleOf,
   pruneLocaleOrphans,
@@ -17,6 +16,7 @@ import {
 } from "@templatical/types";
 import { diffContent } from "./diff-content";
 import {
+  changedLayer,
   deriveLayer,
   deriveSettingsLayer,
   reconcileStructure,
@@ -85,65 +85,6 @@ function sharedAfter(
     ? siblings.findIndex((block) => block.id === visible.id)
     : siblings.length;
   return siblings[index - 1]?.id ?? null;
-}
-
-/** Merge net changed leaves, updating covering overrides without losing siblings. */
-function changedLayer(
-  previous: BlockLocaleLayer | undefined,
-  before: BlockLocaleLayer,
-  after: BlockLocaleLayer,
-  base: unknown,
-  view: unknown,
-): BlockLocaleLayer {
-  const layer = safeClone(previous ?? {});
-  const paths = [
-    ...new Set([
-      ...Object.keys(before.text ?? {}),
-      ...Object.keys(before.set ?? {}),
-      ...Object.keys(after.text ?? {}),
-      ...Object.keys(after.set ?? {}),
-    ]),
-  ].filter(
-    (path) =>
-      !deepEqual(before.text?.[path], after.text?.[path]) ||
-      !deepEqual(before.set?.[path], after.set?.[path]),
-  );
-  const covering = Object.keys(previous?.set ?? {}).filter((ancestor) =>
-    paths.some((path) => path.startsWith(`${ancestor}.`)),
-  );
-  for (const ancestor of covering) {
-    const value = readPath(view, ancestor);
-    if (deepEqual(value, readPath(base, ancestor))) delete layer.set![ancestor];
-    else layer.set![ancestor] = value === undefined ? null : safeClone(value);
-    for (const kind of ["text", "set"] as const)
-      for (const stored of Object.keys(layer[kind] ?? {})) {
-        if (!stored.startsWith(`${ancestor}.`)) continue;
-        const storedValue =
-          kind === "text"
-            ? layer.text![stored].value
-            : (layer.set![stored] ?? undefined);
-        if (!deepEqual(storedValue, readPath(view, stored)))
-          delete layer[kind]![stored];
-      }
-  }
-  for (const path of paths) {
-    if (covering.includes(path)) continue;
-    for (const kind of ["text", "set"] as const)
-      for (const stored of Object.keys(layer[kind] ?? {}))
-        if (stored === path || stored.startsWith(`${path}.`))
-          delete layer[kind]![stored];
-    if (after.text && Object.hasOwn(after.text, path))
-      (layer.text ??= {})[path] = after.text[path];
-    if (
-      after.set &&
-      Object.hasOwn(after.set, path) &&
-      !covering.some((ancestor) => path.startsWith(`${ancestor}.`))
-    )
-      (layer.set ??= {})[path] = after.set[path];
-  }
-  if (layer.text && !Object.keys(layer.text).length) delete layer.text;
-  if (layer.set && !Object.keys(layer.set).length) delete layer.set;
-  return layer;
 }
 
 function writeLayer(

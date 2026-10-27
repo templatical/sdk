@@ -139,15 +139,50 @@ export function pruneLocaleOrphans(block: Block): Block {
     : result;
 }
 
-/** Paths whose override would replace shared built-in list or section structure. */
-export function isStructuralLocalePath(block: Block, path: string): boolean {
-  return (
-    (block.type === "section" && path === "columns") ||
-    (block.type === "menu" && path === "items") ||
-    (block.type === "social" && path === "icons") ||
-    (block.type === "table" &&
-      (path === "rows" || /^rows\.[^.]+\.cells$/.test(path)))
-  );
+/** Paths or replacement values that change shared built-in list or section structure. */
+export function isStructuralLocalePath(
+  block: Block,
+  path: string,
+  value?: unknown,
+): boolean {
+  if (block.type === "custom") return false;
+  if (block.type === "section") return path === "columns";
+  const list =
+    block.type === "menu"
+      ? "items"
+      : block.type === "social"
+        ? "icons"
+        : block.type === "table"
+          ? "rows"
+          : null;
+  if (!list) return false;
+  const segments = path.split(".");
+  if (segments[0] !== list) return false;
+  if (segments.length === 1) return true;
+  const elementPath =
+    block.type === "table" && segments[2] === "cells"
+      ? segments.slice(0, 4).join(".")
+      : segments.slice(0, 2).join(".");
+  if (
+    block.type === "table" &&
+    segments[2] === "cells" &&
+    segments.length === 3
+  )
+    return true;
+  const depth = elementPath.split(".").length;
+  if (segments[depth] === "id") return true;
+  if (segments.length !== depth) return false;
+  const before = readPath(block, elementPath);
+  if (!isRecord(before) || !isRecord(value) || before.id !== value.id)
+    return true;
+  if (block.type === "table" && depth === 2) {
+    const ids = (cells: unknown) =>
+      Array.isArray(cells)
+        ? cells.map((cell) => (isRecord(cell) ? cell.id : undefined))
+        : null;
+    return !deepEqual(ids(before.cells), ids(value.cells));
+  }
+  return false;
 }
 
 /** Remove unresolved settings layer paths and empty localization members. Pure. */

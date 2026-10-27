@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
+import { ref, nextTick } from 'vue';
 import ColorPicker from '../src/components/ColorPicker.vue';
 import { mountEditor } from './helpers/mount';
-import { COLORS_KEY } from '../src/keys';
+import { COLORS_KEY, EDITOR_KEY, LOCALIZATION_KEY, POPOVER_ROOT_KEY } from '../src/keys';
 
 describe('ColorPicker', () => {
   it('renders the swatch with modelValue as background color', () => {
@@ -709,3 +710,45 @@ function dispatchArrow(el: HTMLElement, key: string): KeyboardEvent {
   el.dispatchEvent(event);
   return event;
 }
+
+describe("ColorPicker locale editability", () => {
+  it("closes a teleported popup and guards stale wheel callbacks until re-enabled", async () => {
+    const activeLocale = ref<string | null>("ar");
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: "#123456" },
+      provides: {
+        [EDITOR_KEY]: { activeLocale },
+        [LOCALIZATION_KEY]: { locales: ["ar"] },
+        [POPOVER_ROOT_KEY]: ref(root),
+      },
+    });
+    try {
+      await wrapper.get("button").trigger("click");
+      const wheel = root.querySelector("hex-color-picker")!;
+      expect(wheel).not.toBeNull();
+      activeLocale.value = "fr";
+      // Model a queued wheel event before Vue removes the old teleported DOM.
+      wheel.dispatchEvent(
+        new CustomEvent("color-changed", { detail: { value: "#654321" } }),
+      );
+      await nextTick();
+      expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+      expect(root.querySelector(".tpl-color-popover")).toBeNull();
+      expect(wrapper.get("button").attributes("disabled")).toBeDefined();
+      activeLocale.value = "ar";
+      await nextTick();
+      await wrapper.get("button").trigger("click");
+      root
+        .querySelector("hex-color-picker")!
+        .dispatchEvent(
+          new CustomEvent("color-changed", { detail: { value: "#654321" } }),
+        );
+      expect(wrapper.emitted("update:modelValue")).toEqual([["#654321"]]);
+    } finally {
+      wrapper.unmount();
+      root.remove();
+    }
+  });
+});
