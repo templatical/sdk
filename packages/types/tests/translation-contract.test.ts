@@ -2,6 +2,8 @@ import { expect, it } from "vitest";
 import ts from "typescript";
 import { resolve } from "node:path";
 
+// Compiling the fixture took 6.5 s on a CI runner with coverage on, past
+// Vitest's default 5 s test timeout.
 it("type-checks the public translation contract and nullable AI locale fields", () => {
   const file = resolve(import.meta.dirname, "translation-contract.fixture.ts");
   const source = `
@@ -48,4 +50,4 @@ it("type-checks the public translation contract and nullable AI locale fields", 
       .getPreEmitDiagnostics(program)
       .map((d) => ts.flattenDiagnosticMessageText(d.messageText, "\n")),
   ).toEqual([]);
-});
+}, 120_000);
