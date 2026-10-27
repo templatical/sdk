@@ -7,7 +7,7 @@ import {
   aiJsonResponse,
 } from "../src/server";
 import type { TranslationRequest } from "@templatical/types";
-import { scriptedModel } from "./helpers/scripted-model";
+import { rejectingStream, scriptedModel } from "./helpers/scripted-model";
 
 const request: TranslationRequest = {
   templateId: null,
@@ -185,10 +185,7 @@ describe("HTTP translation", () => {
 it("keeps a plain model error inside the translation error contract over HTTP", async () => {
   const { createReferenceHandler } = await import("./helpers/reference-server");
   const handle = createReferenceHandler({
-    async *stream() {
-      throw new Error("Model unavailable");
-      yield { type: "text", text: "" };
-    },
+    stream: () => rejectingStream(new Error("Model unavailable")),
   });
   const provider = create({
     url: "https://api.test",

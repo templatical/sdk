@@ -11900,7 +11900,8 @@ const { operations, rejected } = applyLocaleStrings(
 if (rejected.length) throw new Error(JSON.stringify(rejected));
 const content = applyOperations(base, operations);
 const german = resolveLocale(content, "de");
-console.log(JSON.stringify(content));
+// Save `content`: it keeps every language. `german` is the German version.
+console.log(JSON.stringify(content), JSON.stringify(german));
 ```
 
 For DeepL, group fields by format, send `tag_handling=html` for `html` and `tag_handling=xml` for `text`, then map results back to field ids. DeepL documents [HTML handling](https://developers.deepl.com/docs/xml-and-html-handling/html) and [XML handling](https://developers.deepl.com/docs/xml-and-html-handling/xml) (checked 2026-10-26). Its XML examples retain placeholder ids and empty elements; HTML handling preserves markup with lenient parsing. These settings do not replace the editor's exact placeholder check. Check your backend with `runTranslationConformance`; the [translation contract](/backend/translation#check-it) gives the runnable check.

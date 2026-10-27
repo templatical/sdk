@@ -11,7 +11,11 @@ import type {
 export function scriptedModel(steps: AiModelPart[][]): AiModelAdapter & {
   calls: { system: string; messages: AiModelMessage[]; tools: string[] }[];
 } {
-  const calls: { system: string; messages: AiModelMessage[]; tools: string[] }[] = [];
+  const calls: {
+    system: string;
+    messages: AiModelMessage[];
+    tools: string[];
+  }[] = [];
   return {
     calls,
     async *stream({ system, messages, tools, signal }) {
@@ -26,5 +30,12 @@ export function scriptedModel(steps: AiModelPart[][]): AiModelAdapter & {
         yield part;
       }
     },
+  };
+}
+
+/** A model stream that rejects with `error` on its first read. */
+export function rejectingStream(error: unknown): AsyncIterable<AiModelPart> {
+  return {
+    [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(error) }),
   };
 }

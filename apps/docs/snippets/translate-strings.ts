@@ -42,4 +42,5 @@ const { operations, rejected } = applyLocaleStrings(
 if (rejected.length) throw new Error(JSON.stringify(rejected));
 const content = applyOperations(base, operations);
 const german = resolveLocale(content, "de");
-console.log(JSON.stringify(content));
+// Save `content`: it keeps every language. `german` is the German version.
+console.log(JSON.stringify(content), JSON.stringify(german));

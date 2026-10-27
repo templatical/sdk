@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { translateFields, SdkError } from "../src/server";
 import type { TranslationRequest, TranslationResult } from "@templatical/types";
 import type { AiModelAdapter } from "../src/server";
-import { scriptedModel } from "./helpers/scripted-model";
+import { rejectingStream, scriptedModel } from "./helpers/scripted-model";
 
 const request: TranslationRequest = {
   templateId: null,
@@ -125,10 +125,7 @@ describe("translateFields", () => {
   it("propagates AbortError unchanged without repair", async () => {
     const error = new DOMException("Stopped", "AbortError");
     const model: AiModelAdapter = {
-      async *stream() {
-        throw error;
-        yield { type: "text", text: "" };
-      },
+      stream: () => rejectingStream(error),
     };
     await expect(translateFields({ request, model })).rejects.toBe(error);
   });
@@ -174,10 +171,9 @@ it.each(["ai_provider_error", "ai_output_invalid"])(
   async (code) => {
     let calls = 0;
     const model: AiModelAdapter = {
-      async *stream() {
+      stream() {
         calls++;
-        throw new SdkError("Unusable response", 502, code);
-        yield { type: "text", text: "" };
+        return rejectingStream(new SdkError("Unusable response", 502, code));
       },
     };
     await expect(translateFields({ request, model })).rejects.toMatchObject({
@@ -190,10 +186,7 @@ it.each(["ai_provider_error", "ai_output_invalid"])(
 
 it("normalizes a plain model error and preserves recognized translation errors", async () => {
   const rejectingModel = (error: unknown): AiModelAdapter => ({
-    async *stream() {
-      throw error;
-      yield { type: "text", text: "" };
-    },
+    stream: () => rejectingStream(error),
   });
   await expect(
     translateFields({
