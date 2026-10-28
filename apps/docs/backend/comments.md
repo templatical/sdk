@@ -89,6 +89,7 @@ Collaboration presence needs the same value. A copy inside the comments provider
 interface Comment {
   id: string;
   body: string;
+  locale?: string | null;
   author: { id: string; name: string };
   createdAt: string;
   updatedAt?: string;
@@ -101,6 +102,7 @@ interface Comment {
 
 interface CommentInput {
   body: string;
+  locale?: string;
   blockId?: string;   // omitted for a template-level comment
   parentId?: string;  // omitted for a thread root
 }
@@ -128,6 +130,14 @@ One level. A thread root carries `replies`; a reply never does. Flatten deeper t
 ### `updatedAt`
 
 Present means edited — the panel shows an *(edited)* marker. Set it on edit, **not on creation**: a store that stamps it alongside `createdAt` marks every comment edited.
+
+### `locale`
+
+The editor sends `CommentInput.locale` on every new comment and reply: the active view's language tag, including the default language (for example, `"en"` or `"de"`). A reply uses its own view's language even when its parent was written in another language.
+
+Your comments backend must store the tag and return it as `Comment.locale` from `create`, `list` and `subscribe`, including on replies. An absent or `null` tag means the comment predates this feature and counts as the template's current default language. Explicit tags keep their meaning when the default changes. The Cloud comments provider omits `locale` from requests; Cloud does not store comment languages yet.
+
+To check your backend, create a comment and a reply in each language view, then re-read the list: both must retain the tag sent on creation. Comments received through `subscribe` must retain their tags too.
 
 ### `setResolved`
 
@@ -244,7 +254,7 @@ await comments.load();
 comments.comments.value;                    // Comment[] — thread roots with replies
 comments.unresolvedCount.value;             // number
 comments.commentCountByBlock.value;         // Map<string, number>
-await comments.create({ body: 'Looks good' });
+await comments.create({ body: 'Looks good', locale: 'en' });
 await comments.setResolved('c_1', true);
 ```
 

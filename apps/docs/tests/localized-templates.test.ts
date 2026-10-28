@@ -98,13 +98,19 @@ describe("localized template guide", () => {
             "die erste Spalte rechts",
             "wiederholbaren Elementen",
             "Text als Standardinhalt",
-            "nicht pro Sprache",
+            "Kommentar-Threads werden zwischen den Sprachen geteilt",
+            "den Sprach-Tag der Ansicht",
+            "Cloud speichert ihn noch nicht",
+            "Der Versionsverlauf gilt weiterhin pro Template",
           ]
         : [
             "the first column on the right",
             "repeatable items",
             "their text as default content",
-            "not per language",
+            "Comment threads are shared across languages",
+            "its view’s language tag",
+            "Cloud does not store it yet",
+            "Version history remains per template",
           ];
       expect(limits).not.toMatch(/glossary|Glossar/);
       for (const phrase of phrases)

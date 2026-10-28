@@ -148,7 +148,7 @@ For independent block trees or layouts in each language, keep separate templates
 
 **Comments, history, CLI and Cloud**
 
-- Comments and version history are per block and per template, not per language.
+- Comment threads are shared across languages. Each new comment and reply stores its view’s language tag through a BYO [comments provider](/backend/comments#locale); Cloud does not store it yet. Version history remains per template.
 - The CLI has no custom-block definitions flag, so validating custom text translations and rendering localized custom blocks goes through the library (`validateTemplate(content, definitions)`, `renderCustomBlock`).
 - The Cloud editor doesn't support language versions or translation yet: `initCloud()` ignores `localization` and `translation` and logs a warning.
 

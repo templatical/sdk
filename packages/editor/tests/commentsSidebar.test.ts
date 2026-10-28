@@ -64,13 +64,14 @@ async function mountSidebar(
   };
 
   const editor = {
+    activeLocale: ref<string | null>(null),
     state: reactive({
       template: { id: "tpl-1" },
       selectedBlockId: null as string | null,
     }),
     content: ref({
       blocks: (opts.canvasBlockIds ?? []).map((id) => ({ id, type: "title" })),
-      settings: {},
+      settings: { locale: "en" },
     }),
     selectBlock: vi.fn(),
   };
@@ -93,6 +94,7 @@ async function mountSidebar(
     props: { visible: true, feature },
     provides: {
       [EDITOR_KEY]: {
+        activeLocale: editor.activeLocale,
         state: editor.state,
         content: editor.content,
         selectBlock: editor.selectBlock,
@@ -293,6 +295,7 @@ describe("CommentsSidebar", () => {
       expect(provider.create).toHaveBeenCalledWith("tpl-1", {
         body: "a new note",
         blockId: undefined,
+        locale: "en",
       });
     });
 
@@ -391,6 +394,7 @@ describe("CommentsSidebar mutations", () => {
       body: "a reply",
       blockId: "blk-1",
       parentId: "c-1",
+      locale: "en",
     });
   });
 
@@ -533,6 +537,7 @@ describe("CommentsSidebar mutations", () => {
     expect(provider.create).toHaveBeenCalledWith("tpl-1", {
       body: "on this",
       blockId: "blk-1",
+      locale: "en",
     });
   });
 });

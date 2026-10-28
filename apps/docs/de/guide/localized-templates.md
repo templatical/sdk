@@ -148,7 +148,7 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 
 **Kommentare, Verlauf, CLI und Cloud**
 
-- Kommentare und Versionsverlauf gelten pro Block bzw. pro Template, nicht pro Sprache.
+- Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über einen eigenen [Kommentar-Provider](/de/backend/comments#locale) den Sprach-Tag der Ansicht; Cloud speichert ihn noch nicht. Der Versionsverlauf gilt weiterhin pro Template.
 - Die CLI hat kein Flag für benutzerdefinierte Blockdefinitionen. Benutzerdefinierte Textübersetzungen werden daher über die Bibliothek validiert und lokalisierte benutzerdefinierte Blöcke darüber gerendert (`validateTemplate(content, definitions)`, `renderCustomBlock`).
 - Der Cloud-Editor unterstützt noch keine Sprachversionen oder Übersetzung: `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
 

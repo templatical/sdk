@@ -200,7 +200,12 @@ async function handleAddComment(): Promise<void> {
   const blockId =
     filterMode.value === "block" ? filterBlockId.value : undefined;
   try {
-    await comments.value.create({ body, blockId: blockId ?? undefined });
+    await comments.value.create({
+      body,
+      blockId: blockId ?? undefined,
+      locale:
+        editor.activeLocale?.value ?? editor.content.value.settings.locale,
+    });
     newCommentBody.value = "";
   } catch {
     /* reported through onError */
@@ -219,6 +224,8 @@ async function handleReply(parentId: string): Promise<void> {
       body,
       blockId: parent?.blockId ?? undefined,
       parentId,
+      locale:
+        editor.activeLocale?.value ?? editor.content.value.settings.locale,
     });
     replyingTo.value = null;
     replyBody.value = "";
