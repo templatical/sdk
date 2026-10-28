@@ -77,12 +77,18 @@ export async function buildRenderPayload(
   options?: { locale?: string },
 ): Promise<RenderPayload> {
   const raw = safeClone(source.getContent());
+  const locale = options?.locale ?? defaultLocaleOf(raw);
   const localized =
     options?.locale !== undefined || raw.settings?.locales?.length
-      ? resolveLocale(raw, options?.locale ?? defaultLocaleOf(raw))
+      ? resolveLocale(raw, locale)
       : raw;
   const layout = source.getLayout?.();
-  const content = layout ? applyLayout(layout, localized) : localized;
+  const content = layout
+    ? applyLayout(
+        resolveLocale(layout, locale, { missing: "default" }),
+        localized,
+      )
+    : localized;
   if (!layout) {
     assertNoSlotInContent(content);
     assertNoWrapperInContent(content);

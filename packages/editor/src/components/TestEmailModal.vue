@@ -87,11 +87,14 @@ const previewResolution = usePreviewResolution({
   getContent: () => {
     const raw = editor?.content.value ?? { blocks: [], settings: {} as never };
     if (!props.visible) return raw;
-    const localized = resolveLocale(
-      raw,
-      editor?.activeLocale?.value ?? raw.settings.locale ?? "en",
-    );
-    return layout ? applyLayout(layout, localized) : localized;
+    const locale = editor?.activeLocale?.value ?? raw.settings.locale ?? "en";
+    const localized = resolveLocale(raw, locale);
+    return layout
+      ? applyLayout(
+          resolveLocale(layout, locale, { missing: "default" }),
+          localized,
+        )
+      : localized;
   },
   isActive: () => props.visible,
   getLocale: () =>

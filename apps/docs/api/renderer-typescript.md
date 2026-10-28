@@ -53,6 +53,7 @@ const mjml = await renderToMjml(templateContent);
 ```ts
 interface RenderOptions {
   locale?: string;
+  layout?: TemplateContent;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
@@ -66,6 +67,7 @@ interface RenderOptions {
 | Option | Default | Description |
 |--------|---------|-------------|
 | `locale` | `settings.locale` | Selects the template version; an unknown version rejects with `unknown_locale`. |
+| `layout` | -- | Embedder-owned shell with exactly one slot. May carry its own `settings.locales`, block `l10n` and `settings.l10n`, including wrapper children. It is projected for the requested language with `missing: "default"` before composition; a language the layout lacks uses its default. See [Layout](/guide/layout). |
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |

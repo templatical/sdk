@@ -150,12 +150,13 @@ export async function renderToMjml(
   content: TemplateContent,
   options?: RenderOptions,
 ): Promise<string> {
-  const localized = resolveLocale(
-    content,
-    options?.locale ?? defaultLocaleOf(content),
-  );
+  const locale = options?.locale ?? defaultLocaleOf(content);
+  const localized = resolveLocale(content, locale);
   const toRender = options?.layout
-    ? applyLayout(options.layout, localized)
+    ? applyLayout(
+        resolveLocale(options.layout, locale, { missing: "default" }),
+        localized,
+      )
     : (assertNoSlotInContent(localized),
       assertNoWrapperInContent(localized),
       localized);

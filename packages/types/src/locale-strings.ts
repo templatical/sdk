@@ -234,6 +234,7 @@ function eligibleFields(
         );
       if (block.type === "section")
         for (const column of block.children) walk(column);
+      else if (block.type === "wrapper") walk(block.children);
     }
   };
   walk(content.blocks);
@@ -318,6 +319,7 @@ export function applyLocaleStrings(
       blocks.set(block.id, block);
       if (block.type === "section")
         for (const column of block.children) walk(column);
+      else if (block.type === "wrapper") walk(block.children);
     }
   };
   walk(content.blocks);

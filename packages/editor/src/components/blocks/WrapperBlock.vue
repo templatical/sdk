@@ -79,7 +79,12 @@ const childBoxes = computed(() =>
       child,
       imageUrlResolver,
       syntax,
-      matchImageBoxWidth(child, editor?.content.value, layout),
+      matchImageBoxWidth(
+        child,
+        editor?.content.value,
+        layout,
+        editor?.activeLocale?.value ?? undefined,
+      ),
     ),
   })),
 );

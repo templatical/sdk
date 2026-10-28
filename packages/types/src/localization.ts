@@ -128,6 +128,12 @@ function pruneLayers<T extends { l10n?: Record<string, BlockLocaleLayer> }>(
 /** Remove unresolved layer paths and empty localization members, recursively. Pure. */
 export function pruneLocaleOrphans(block: Block): Block {
   const result = pruneLayers(block);
+  if (result.type === "wrapper") {
+    const children = result.children.map(pruneLocaleOrphans);
+    return children.some((child, i) => child !== result.children[i])
+      ? { ...result, children }
+      : result;
+  }
   if (result.type !== "section") return result;
   const children = result.children.map((column) =>
     column.map(pruneLocaleOrphans),
@@ -372,15 +378,18 @@ export function defaultLocaleOf(content: TemplateContent): string {
 export function resolveLocale(
   content: TemplateContent,
   locale: string,
+  options?: { missing?: "throw" | "default" },
 ): TemplateContent {
   const fallback = defaultLocaleOf(content);
   const locales = content.settings?.locales ?? [];
   if (locale !== fallback && !locales.includes(locale)) {
-    throw new SdkError(
-      `This template has no "${locale}" version.`,
-      undefined,
-      "unknown_locale",
-    );
+    if (options?.missing === "default") locale = fallback;
+    else
+      throw new SdkError(
+        `This template has no "${locale}" version.`,
+        undefined,
+        "unknown_locale",
+      );
   }
   const project = (blocks: Block[]): Block[] =>
     blocks.flatMap((block) => {
@@ -390,6 +399,8 @@ export function resolveLocale(
         view.children = (view.children as Block[][]).map((column) =>
           project(column),
         );
+      } else if (view.type === "wrapper" && Array.isArray(view.children)) {
+        view.children = project(view.children as Block[]);
       }
       return [view as unknown as Block];
     });
@@ -461,6 +472,8 @@ export function localeCoverage(
       const children = (block as unknown as Json).children;
       if (block.type === "section" && Array.isArray(children)) {
         for (const column of children as Block[][]) walk(column);
+      } else if (block.type === "wrapper" && Array.isArray(children)) {
+        walk(children as Block[]);
       }
     }
   };

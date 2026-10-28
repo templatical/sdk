@@ -104,6 +104,8 @@ function flattenBlocks(
       block.children.forEach((column: unknown, ci: number) => {
         flattenBlocks(column, `${path}.children[${ci}]`, out);
       });
+    } else if (block?.type === "wrapper") {
+      flattenBlocks(block.children, `${path}.children`, out);
     }
   });
 }

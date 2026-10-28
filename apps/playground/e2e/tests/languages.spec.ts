@@ -30,6 +30,31 @@ test.describe("language versions", () => {
     );
   });
 
+  test("previews and exports the German layout footer", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await scenePage.goto("languages");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await selectLanguage(page, "de");
+    await editorPage.togglePreview();
+    await expect(
+      page.locator(SELECTORS.canvas).getByText("Abmelden", { exact: true }),
+    ).toBeVisible();
+    await editorPage.openExport();
+    await expect(page.locator(SELECTORS.exportPreviewFrame)).toHaveAttribute(
+      "srcdoc",
+      /Abmelden/,
+    );
+    await expect(
+      page
+        .frameLocator(SELECTORS.exportPreviewFrame)
+        .getByText("Abmelden", { exact: true }),
+    ).toBeVisible();
+  });
+
   test("switches text, hero and hidden ghost to German with coverage", async ({
     page,
     scenePage,

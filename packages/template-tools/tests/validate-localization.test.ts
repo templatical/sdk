@@ -15,6 +15,8 @@ import {
   createSectionBlock,
   createTableBlock,
   createSocialIconsBlock,
+  createSlotBlock,
+  createWrapperBlock,
   type CustomBlockDefinition,
 } from "@templatical/types";
 import { validateTemplate } from "../src/validate";
@@ -23,6 +25,23 @@ import { setJsonMode } from "../src/cli/output";
 import { runValidate } from "../src/cli/commands/validate";
 
 const translated = { value: "Hallo", sourceHash: "00000000" };
+
+it("validates localized layout descendants and reports unresolved layer paths", () => {
+  const layout = createDefaultTemplateContent();
+  layout.settings.locales = ["de"];
+  const footer = createParagraphBlock({
+    content: "Unsubscribe",
+    l10n: { de: { text: { content: translated } } },
+  });
+  layout.blocks = [
+    createWrapperBlock({ children: [createSlotBlock(), footer] }),
+  ];
+  expect(validateTemplate(layout)).toEqual({ valid: true, errors: [] });
+  footer.l10n!.de.text!.missing = translated;
+  expect(validateTemplate(layout).errors).toContain(
+    'blocks[0].children[1].l10n["de"].text["missing"] does not resolve in its base',
+  );
+});
 function localized(): any {
   const content: any = createDefaultTemplateContent();
   const paragraph: any = createParagraphBlock();

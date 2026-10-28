@@ -45,6 +45,7 @@ export declare function localizeBlock(
 export declare function resolveLocale(
   content: TemplateContent,
   locale: string,
+  options?: { missing?: "throw" | "default" },
 ): TemplateContent;
 export interface LocaleCoverage {
   translated: string[];

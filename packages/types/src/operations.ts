@@ -1017,7 +1017,14 @@ function addLocale(content: TemplateContent, op: Json, index: number): void {
 function blocksIn(blocks: readonly unknown[]): Json[] {
   return blocks.flatMap((block) =>
     isRecord(block)
-      ? [block, ...(isSection(block) ? columnsOf(block).flatMap(blocksIn) : [])]
+      ? [
+          block,
+          ...(isSection(block)
+            ? columnsOf(block).flatMap(blocksIn)
+            : block.type === "wrapper" && Array.isArray(block.children)
+              ? blocksIn(block.children)
+              : []),
+        ]
       : [],
   );
 }
@@ -1257,18 +1264,20 @@ function updateBlockLocale(
   const locale = requireLocale(content, op, index);
   const blockId = readBlockId(op, index);
   const changes = readLocaleChanges(op, index, false);
-  const location = locate(content, blockId);
-  if (!location)
+  const block = blocksIn(topLevelOf(content)).find(
+    (block) => block.id === blockId,
+  );
+  if (!block)
     fail("block_missing", index, `No block with id "${blockId}".`, blockId);
-  assertLocalePaths(location.block, changes, index, false);
+  assertLocalePaths(block, changes, index, false);
   assertUnlockedLocale(engine, blockId, locale, index);
   assertLocaleExpected(
-    localeLayer(location.block, locale),
+    localeLayer(block, locale),
     changes.expect,
     index,
     blockId,
   );
-  changeLocale(location.block, locale, changes);
+  changeLocale(block, locale, changes);
 }
 
 function updateSettingsLocale(

@@ -149,7 +149,9 @@ function restoreRemovedLayer(
 function blocksIn(blocks: Block[]): Block[] {
   return blocks.flatMap((block) => [
     block,
-    ...columnsOf(block).flatMap(blocksIn),
+    ...(block.type === "wrapper"
+      ? blocksIn(block.children)
+      : columnsOf(block).flatMap(blocksIn)),
   ]);
 }
 
@@ -309,8 +311,12 @@ function invertOne(
         ]),
       ];
       if (op.op === "updateBlockLocale") {
-        const previous = requirePosition(state, op.blockId, index).block;
-        const after = requirePosition(next, op.blockId, index).block;
+        const previous = blocksIn(state.blocks).find(
+          (block) => block.id === op.blockId,
+        )!;
+        const after = blocksIn(next.blocks).find(
+          (block) => block.id === op.blockId,
+        )!;
         return {
           op: "updateBlockLocale",
           blockId: op.blockId,

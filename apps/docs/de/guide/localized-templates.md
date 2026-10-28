@@ -92,6 +92,8 @@ Mit installiertem `@templatical/types` und `@templatical/renderer` erstellt dies
 
 Die Vorschau lokalisiert die aktive Sprache, setzt das Layout zusammen und ruft dann `resolvePreview` auf. Das zurückgegebene einfache Template wird direkt gerendert. Ein Sprachwechsel verwirft den Cache und Antworten für die vorherige Sprache.
 
+Ein Layout besitzt eigene `settings.locales`, Block-`l10n` und `settings.l10n`, unabhängig von den Sprachen des Inhalts. Auch Wrapper-Kinder neben dem Slot können übersetzt werden. Vorschau, Export und Test-E-Mail-Vorschau projizieren das Layout vor dem Zusammensetzen mit `resolveLocale(layout, locale, { missing: "default" })` für die angefragte Sprache. Fehlt diese dem Layout, gilt dessen Standardsprache. Der Editor bearbeitet das Layout nicht. Eine Layout-Datei lässt sich mit `template-tools validate --locale de` prüfen.
+
 **Benutzerdefinierte Blöcke:** Jeder `text`- oder `set`-Eintrag in der Ebene der angeforderten Sprache entfernt das Standardsprach-`renderedHtml` aus der Projektion. `renderedStylesheet` bleibt erhalten. Übergeben Sie `renderCustomBlock`, um die lokalisierten Felder zu rendern; ohne Callback wird der Block ausgelassen, statt den Standardsprach-Pre-Render anzuzeigen. Blöcke ohne Ebene für diese Sprache behalten ihr zwischengespeichertes HTML. Der Editor-Export lokalisiert vor dem Pre-Rendering und erzeugt übersetztes benutzerdefiniertes HTML. Siehe [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript).
 
 ## Operationen und Zusammenarbeit
@@ -129,7 +131,6 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 **Felder und Layouts**
 
 - Text in wiederholbaren Elementen eines benutzerdefinierten Blocks lässt sich nicht feldweise übersetzen: Überschreiben Sie stattdessen das gesamte `fieldValues.<key>`.
-- Die eigenen Blöcke eines Layouts (`init({ layout })`) sind nicht lokalisierbar. Der Inhalt wird lokalisiert, bevor das Layout ihn umschließt.
 - Sprach-Tags müssen `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$` entsprechen: 2–3 ASCII-Buchstaben, gefolgt von beliebig vielen mit Bindestrich getrennten Subtags aus 2–8 ASCII-Buchstaben oder Ziffern. Formen mit `x-…` oder `i-…` am Anfang werden abgelehnt, weil ihr Sprachsegment nur einen Buchstaben hat; historische Formen wie `no-bok` und `zh-min-nan` entsprechen dem Muster und werden akzeptiert.
 
 **Übersetzen**

@@ -67,6 +67,8 @@ Headless `lintTemplate(content, { contentLocale: "de", locale: "en" })` checks G
 
 ## Rendering and collaboration
 
+A layout carries its own `settings.locales`, block `l10n` and `settings.l10n`, including wrapper children beside the slot. Rendering projects it for the requested language with `resolveLocale(layout, locale, { missing: "default" })` before composition, falling back to the layout's default when it lacks that language. The editor never edits the layout. Check a layout file with `template-tools validate --locale de`; fetch `api/renderer-typescript` and `api/types` through [docs.md](docs.md) for the contract.
+
 `renderToMjml(content, { locale: "de" })`, `editor.toMjml({ locale: "de" })` and `editor.toHtml({ locale: "de" })` select a version. Omission renders the default regardless of active view. `resolveLocale(content, "de")` is a pure projection: text and overrides applied, hidden blocks removed recursively, localization fields stripped, `settings.locale` set to `de`. The editor's HTML method still needs `render.toHtml` or `render.compileMjml`; local MJML needs the renderer peer.
 
 Locks carry `locale?: string | null`, absent meaning null (default language and structure). Forward the optional locale through provider `acquireLock`, `renewLock`, `releaseLock` and `onUnlock`. A localized edit on (X, de) conflicts with another session's (X, de) or (X, null) lock, while (X, fr) can coexist. Other block operations conflict with every other session's lock on X. `onRemoteChange.locale` reports the first locale operation's language in the batch, otherwise null. A backend ignoring locale serializes per block; check the lock matrix against the contracts in `backend/collaboration` and the shared operation fixtures documented in `api/operations`.
@@ -87,7 +89,6 @@ Any `text` or `set` entry in a custom block's requested locale layer discards it
 **Fields and layouts**
 
 - Text in a custom block's repeatable items can't be translated per field: override the whole `fieldValues.<key>` instead.
-- A layout's own blocks (`init({ layout })`) aren't localizable. Content is localized before the layout wraps it.
 - Language tags must match `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`: 2–3 ASCII letters, followed by zero or more hyphen-separated subtags of 2–8 ASCII letters or digits. Forms beginning with `x-…` or `i-…` are rejected because their language segment has one letter; grandfathered forms such as `no-bok` and `zh-min-nan` match and are accepted.
 
 **Translate**

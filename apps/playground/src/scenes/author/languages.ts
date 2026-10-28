@@ -7,6 +7,8 @@ import {
   createDefaultTemplateContent,
   createImageBlock,
   createParagraphBlock,
+  createSlotBlock,
+  createWrapperBlock,
   createTitleBlock,
   sourceHash,
   type TranslationProvider,
@@ -143,13 +145,41 @@ function languagesCanvas(ctx: SceneContext) {
   return content;
 }
 
+function languagesLayout() {
+  const layout = createDefaultTemplateContent(undefined, { locale: "en" });
+  layout.settings.locales = ["de"];
+  layout.blocks = [
+    createWrapperBlock({
+      id: "languages-layout",
+      children: [
+        { ...createSlotBlock(), id: "languages-slot" },
+        createParagraphBlock({
+          id: "languages-footer",
+          content: "<p>Unsubscribe</p>",
+          l10n: {
+            de: {
+              text: {
+                content: {
+                  value: "<p>Abmelden</p>",
+                  sourceHash: sourceHash("<p>Unsubscribe</p>"),
+                },
+              },
+            },
+          },
+        }),
+      ],
+    }),
+  ];
+  return layout;
+}
+
 export const languages: Scene = {
   id: "languages",
   title: "Languages",
   job: "Language versions of one template",
   initKey: "localization",
   summary:
-    "init({ templates, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and use Translate from English to fill the gaps, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.",
+    "init({ templates, layout, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and use Translate from English to fill the gaps, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The layout footer follows the selected language and falls back to English when the layout lacks it. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.",
   catalog: "oss",
   group: "configure",
   docs: "/guide/localized-templates",
@@ -160,6 +190,7 @@ export const languages: Scene = {
   },
   content: languagesCanvas,
   config(ctx) {
+    const layout = languagesLayout();
     const localization = { locales: ["de", "fr", "ar"] };
     const translation = translationFor(ctx);
     const ai = createMockAiProvider({
@@ -181,6 +212,7 @@ export const languages: Scene = {
       return {
         templates: shared.templates,
         collaboration: shared.collaboration,
+        layout,
         localization,
         translation,
         ai,
@@ -189,6 +221,7 @@ export const languages: Scene = {
     }
     return {
       templates: templatesProviderFor("languages"),
+      layout,
       localization,
       translation,
       ai,
@@ -216,6 +249,7 @@ const editor = await init({
     create: false,
     save: async (id, patch) => (template = { ...template, ...patch, id }),
   },
+  layout: ${JSON.stringify(languagesLayout(), null, 2)},
   localization: { locales: ["de", "fr", "ar"] },
   translation: createMockTranslationProvider({ translations }),
   ai: createMockAiProvider({

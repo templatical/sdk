@@ -92,6 +92,8 @@ With `@templatical/types` and `@templatical/renderer` installed, this complete T
 
 Preview localizes the active language, composes the layout, then calls `resolvePreview`. The returned plain template renders directly. Changing language invalidates the cached result and discards responses for the previous language.
 
+A layout has its own `settings.locales`, block `l10n` and `settings.l10n`, independent of the content's languages. Wrapper children beside the slot can be translated too. Preview, export and test-email preview project the layout for the requested language with `resolveLocale(layout, locale, { missing: "default" })` before composition. A language the layout lacks uses the layout's default. The editor does not edit the layout. Check a layout file with `template-tools validate --locale de`.
+
 **Custom blocks:** any `text` or `set` entry in the requested locale’s layer removes the default-language `renderedHtml` from the projection. `renderedStylesheet` stays. Supply `renderCustomBlock` to render the localized fields; without it the block is omitted instead of showing the default-language pre-render. Blocks without a layer for that locale keep their cached HTML. The editor export path localizes before pre-rendering and produces translated custom HTML. See [Custom block rendering](/api/renderer-typescript#custom-blocks).
 
 ## Operations and collaboration
@@ -129,7 +131,6 @@ For independent block trees or layouts in each language, keep separate templates
 **Fields and layouts**
 
 - Text in a custom block's repeatable items can't be translated per field: override the whole `fieldValues.<key>` instead.
-- A layout's own blocks (`init({ layout })`) aren't localizable. Content is localized before the layout wraps it.
 - Language tags must match `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`: 2–3 ASCII letters, followed by zero or more hyphen-separated subtags of 2–8 ASCII letters or digits. Forms beginning with `x-…` or `i-…` are rejected because their language segment has one letter; grandfathered forms such as `no-bok` and `zh-min-nan` match and are accepted.
 
 **Translate**

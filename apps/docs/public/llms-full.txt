@@ -950,7 +950,7 @@ unmount();
 | `container`          | `string \| HTMLElement`                                           | Yes      | CSS selector or DOM element to mount the editor into. In default (shadow DOM) mode, must be an element that can host a Shadow DOM — `<div>` is recommended. See [Container element requirements](#container-element-requirements) below                                                                                                                                                                                                                                                                                        |
 | `shadowDom`          | `boolean`                                                         | No       | Mount inside a Shadow DOM for CSS isolation from the host page. Defaults to `true`. Set to `false` to mount in light DOM instead (e.g. for `document.querySelector` access to editor internals or Firefox <101 / Safari <16.4 support). See [Shadow DOM](/guide/shadow-dom) for trade-offs                                                                                                                                                                                                                                     |
 | `content`            | `TemplateContent`                                                 | No       | Initial template content. Defaults to empty template. The editor works on a copy, so edits never change the object you pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `layout`             | `TemplateContent`                                                 | No       | Embedder-owned shell applied at preview and `toMjml()` / `toHtml()`. Never written into `getContent()`, save, history, or the editing canvas. A `TemplateContent` with exactly one `slot`. Throws if the slot sits in a wrapper and the template emits `mj-wrapper`. See [Layout](/guide/layout)                                                                                                                                                                                                                               |
+| `layout`             | `TemplateContent`                                                 | No       | Embedder-owned shell applied at preview and `toMjml()` / `toHtml()`. Never written into `getContent()`, save, history, or the editing canvas. A `TemplateContent` with exactly one `slot`. May carry its own `settings.locales`, block `l10n` and `settings.l10n`, including wrapper children; projected for the requested language with `missing: "default"`, falling back to the layout’s default. Throws if the slot sits in a wrapper and the template emits `mj-wrapper`. See [Layout](/guide/layout)                                                                                                                                                                                                                               |
 | `sectionWrapper`     | `boolean`                                                         | No       | Whether the section toolbar offers Add wrapper. Omitted / `true` is on. `false` hides the control, including where a wrapper is legal. Already-on wrappers stay reachable. Presentation only: hiding never strips `section.wrapper`. Independent of `layout`. See [Layout](/guide/layout)                                                                                                                                                                                                                                     |
 | `onChange`           | `(content: TemplateContent) => void`                              | No       | Called when template content changes (debounced)                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `onError`            | `(error: Error) => void`                                          | No       | Called when an error occurs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -1879,6 +1879,7 @@ const mjml = await renderToMjml(templateContent);
 ```ts
 interface RenderOptions {
   locale?: string;
+  layout?: TemplateContent;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
@@ -1892,6 +1893,7 @@ interface RenderOptions {
 | Option | Default | Description |
 |--------|---------|-------------|
 | `locale` | `settings.locale` | Selects the template version; an unknown version rejects with `unknown_locale`. |
+| `layout` | -- | Embedder-owned shell with exactly one slot. May carry its own `settings.locales`, block `l10n` and `settings.l10n`, including wrapper children. It is projected for the requested language with `missing: "default"` before composition; a language the layout lacks uses its default. See [Layout](/guide/layout). |
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
@@ -2502,6 +2504,7 @@ export declare function localizeBlock(
 export declare function resolveLocale(
   content: TemplateContent,
   locale: string,
+  options?: { missing?: "throw" | "default" },
 ): TemplateContent;
 export interface LocaleCoverage {
   translated: string[];
@@ -2587,7 +2590,7 @@ export declare function isStructuralLocalePath(
 
 `elementIdIssues(content: TemplateContent): { path: string; id: string }[]` reports menu item, social icon, table row and table cell ids containing `.` or `/`, depth first, including section columns and layout wrappers. It is pure; paths use array indices, for example `blocks[2].items[0].id`. `validateTemplate` reports each issue as `<path>: Element id "<id>" must not contain "." or "/".`; `addBlock`, `updateBlock` and `setContent` refuse one with `invalid_operation` and the carrying block's `blockId`.
 
-`sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale` projects a complete template, drops hidden blocks recursively, strips localization fields and throws `unknown_locale` for a version the template lacks. Both are pure.
+`sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale(content, locale, options?: { missing?: "throw" | "default" })` projects a complete template or layout, including wrapper children, drops hidden blocks recursively and strips localization fields. Omitted `missing` or `missing: "throw"` throws `unknown_locale` for a version the document lacks. With `missing: "default"`, an unknown version projects the document's default and keeps its default `settings.locale`. Known versions are unaffected. Both helpers are pure.
 
 `localeCoverage` returns field ids (`<blockId>/<path>` or `settings/<path>`) in document order, settings last. Missing nonempty defaults go in `missing`; text with a changed `sourceHash` goes in `stale`; current text goes in `translated`. Hidden blocks and their descendants are excluded. Pass custom definitions to discover `text` and `textarea` fields. Use coverage for a non-default version; it does not project or validate a locale for you.
 
@@ -11964,6 +11967,8 @@ console.log(german.settings.locale, mjml);
 
 Preview localizes the active language, composes the layout, then calls `resolvePreview`. The returned plain template renders directly. Changing language invalidates the cached result and discards responses for the previous language.
 
+A layout has its own `settings.locales`, block `l10n` and `settings.l10n`, independent of the content's languages. Wrapper children beside the slot can be translated too. Preview, export and test-email preview project the layout for the requested language with `resolveLocale(layout, locale, { missing: "default" })` before composition. A language the layout lacks uses the layout's default. The editor does not edit the layout. Check a layout file with `template-tools validate --locale de`.
+
 **Custom blocks:** any `text` or `set` entry in the requested locale’s layer removes the default-language `renderedHtml` from the projection. `renderedStylesheet` stays. Supply `renderCustomBlock` to render the localized fields; without it the block is omitted instead of showing the default-language pre-render. Blocks without a layer for that locale keep their cached HTML. The editor export path localizes before pre-rendering and produces translated custom HTML. See [Custom block rendering](/api/renderer-typescript#custom-blocks).
 
 ## Operations and collaboration
@@ -12001,7 +12006,6 @@ For independent block trees or layouts in each language, keep separate templates
 **Fields and layouts**
 
 - Text in a custom block's repeatable items can't be translated per field: override the whole `fieldValues.<key>` instead.
-- A layout's own blocks (`init({ layout })`) aren't localizable. Content is localized before the layout wraps it.
 - Language tags must match `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`: 2–3 ASCII letters, followed by zero or more hyphen-separated subtags of 2–8 ASCII letters or digits. Forms beginning with `x-…` or `i-…` are rejected because their language segment has one letter; grandfathered forms such as `no-bok` and `zh-min-nan` match and are accepted.
 
 **Translate**

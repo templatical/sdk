@@ -2,6 +2,7 @@ declare module "@templatical/renderer" {
   import type { CustomBlock, TemplateContent } from "@templatical/types";
 
   export interface RenderOptions {
+    locale?: string;
     customFonts?: Array<{ name: string; url: string; fallback?: string }>;
     defaultFallbackFont?: string;
     allowHtmlBlocks?: boolean;

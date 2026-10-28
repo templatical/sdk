@@ -770,11 +770,14 @@ export function useEditorCore(
     getContent: () => {
       const raw = editor.content.value;
       if (!editor.state.previewMode) return raw;
-      const localized = resolveLocale(
-        raw,
-        editor.activeLocale?.value ?? raw.settings.locale ?? "en",
-      );
-      return config.layout ? applyLayout(config.layout, localized) : localized;
+      const locale = editor.activeLocale?.value ?? raw.settings.locale ?? "en";
+      const localized = resolveLocale(raw, locale);
+      return config.layout
+        ? applyLayout(
+            resolveLocale(config.layout, locale, { missing: "default" }),
+            localized,
+          )
+        : localized;
     },
     isActive: () => editor.state.previewMode,
     getLocale: () =>
