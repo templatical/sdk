@@ -162,7 +162,11 @@ function isValidInvocation(
       customBlockSubcommands.has(invocation.next)
     );
   }
-  // Only `live` takes a subcommand-shaped second token; every other command's
+  if (invocation.command === "strings") {
+    return invocation.next === "export" || invocation.next === "import";
+  }
+  // After the cases above, only `live` takes a subcommand-shaped second token;
+  // every other command's
   // next token is a file path or placeholder, which this function has no
   // opinion on — that's the CLI's own argument parsing to reject at runtime,
   // not something SKILL.md-command-validity can check statically.
@@ -182,7 +186,7 @@ describe("documented commands across the skill", () => {
     // (e.g. bin.ts's switch changes shape), every check below would pass
     // vacuously rather than catching the drift.
     expect([...commands].sort()).toEqual(
-      ["custom-block", "edit", "help", "import", "list", "live", "render", "schema", "validate"].sort(),
+      ["custom-block", "edit", "help", "import", "list", "live", "render", "schema", "strings", "validate"].sort(),
     );
     expect([...liveSubcommands].sort()).toEqual(["reload", "stop"]);
     expect([...customBlockSubcommands].sort()).toEqual([
@@ -250,5 +254,12 @@ describe("documented commands across the skill", () => {
     expect(
       isValidInvocation({ command: "frobnicate" }, commands, liveSubcommands, customBlockSubcommands),
     ).toBe(false);
+  });
+
+  it("rejects a bad or missing strings subcommand", () => {
+    expect(isValidInvocation({ command: "strings", next: "frobnicate" }, commands, liveSubcommands, customBlockSubcommands)).toBe(false);
+    expect(isValidInvocation({ command: "strings" }, commands, liveSubcommands, customBlockSubcommands)).toBe(false);
+    expect(isValidInvocation({ command: "strings", next: "export" }, commands, liveSubcommands, customBlockSubcommands)).toBe(true);
+    expect(isValidInvocation({ command: "strings", next: "import" }, commands, liveSubcommands, customBlockSubcommands)).toBe(true);
   });
 });

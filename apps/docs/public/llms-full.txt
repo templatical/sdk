@@ -2116,7 +2116,7 @@ See [How Rendering Works](/getting-started/how-rendering-works) for more on the 
 
 Source: https://docs.templatical.com/api/template-tools
 
-`@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, or preview it live in the real Templatical editor. It also checks, renders and previews [custom block](/guide/custom-blocks) definitions. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
+`@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, exchange its language strings, or preview it live in the real Templatical editor. It also checks, renders and previews [custom block](/guide/custom-blocks) definitions. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
 
 The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the commands documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job. Install the skill with `npx skills add templatical/sdk`.
 
@@ -2141,6 +2141,8 @@ Add `--json` for machine-readable result output on stdout when a command produce
 | `render <file> [--format mjml\|html] [-o <file>]` | Render to MJML, or to sending-ready HTML |
 | `edit <file> --op '<json>'` \| `--ops <file>` | Apply one operation, or a batch, and write the result |
 | `import <file> [--format <fmt>]` \| `--list-formats` | Convert a design from another tool into Templatical JSON |
+| `strings export <file> --locale <tag>` | Export language strings as JSON |
+| `strings import <file> <strings.json>` | Apply accepted translations and report rejections |
 | `live` \| `live reload` \| `live stop` | Preview and hand-edit the template in the real editor |
 | `live --custom-block <file> [--host <file>] [--fetch [--values '<json>']]` | Preview a custom block definition in the real editor |
 | `custom-block validate <file>` | Check a custom block definition: schema, Liquid, email-client safety, MJML |
@@ -2156,7 +2158,7 @@ Add `--json` for machine-readable result output on stdout when a command produce
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). See [Localized templates](/guide/localized-templates#check-your-work).
+Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). Pass `--definitions <file>` for custom `text` and `textarea` translations; the same definitions feed validation, quality lint and `--html` rendering. See [Localized templates](/guide/localized-templates#check-your-work).
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -2174,7 +2176,37 @@ npx -y @templatical/template-tools render emails/welcome.json --format html -o w
 
 Defaults to `--format mjml`. `--format html` compiles that MJML further and needs the optional `mjml` package — see "Optional dependencies" below. The template is validated structurally before rendering starts, so an invalid template fails with the same error list `validate` would give you, not a renderer crash. Without `--out`/`-o`, the result prints to stdout.
 
-`--locale de` renders German; omit it to render the default. Unknown locales exit `1` with `unknown_locale` on stderr and no result document, including with `--json`. Missing/empty `--locale` values exit `2`. The renderer resolves text, overrides, hidden blocks and settings before emitting MJML.
+`--locale de` renders German; omit it to render the default. Unknown locales exit `1` with `unknown_locale` on stderr and no result document, including with `--json`. Missing/empty `--locale` values exit `2`. The renderer resolves text, overrides, hidden blocks and settings before emitting MJML. With `--definitions <file>`, it renders each custom type from its definition’s Liquid template and includes its stylesheet.
+
+### Strings
+
+`strings export <template.json> --locale <tag>` exports missing and stale strings by default. For a saved template with a German version:
+
+```bash
+npx -y @templatical/template-tools strings export template.json --locale de --out strings.de.json --json
+npx -y @templatical/template-tools strings import template.json strings.de.json --json
+```
+
+Between export and import, set each entry’s `text` to its translation. Keep `id`, `sourceHash` and every placeholder unchanged. Entries without `text` are skipped; an empty `text` is applied. The strings file is `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`, with `strings` containing [`LocaleString`](/api/types#translation) entries (`id`, `format`, masked `source`, `sourceHash`, optional masked `text`). Tokens are regenerated from the current defaults on import; they are not in the file. HTML blocks, empty defaults, `set` overrides and hidden blocks are excluded from export.
+
+| Flag | Contract |
+|---|---|
+| `--only gaps\|all` | Export selection; default `gaps` includes missing and stale fields. `all` includes current translations too. |
+| `--block <id>` | Export fields from one block. |
+| `--syntax <preset>` | Merge-tag syntax on export and import: `liquid` (default), `handlebars`, `mailchimp`, `ampscript`. |
+| `--definitions <file>` | JSON array of custom block definitions, on both commands. |
+| `--do-not-translate <file>` | JSON array of protected terms, on both commands. At most 500 terms, each 1–100 characters after trimming. Matching is case-sensitive, longest first, non-overlapping, in text and HTML attribute values. Word boundaries are characters other than Unicode letters, numbers or `_`. |
+| `--out <file>` | Export destination; default stdout. Import destination; default overwrite the input template. Creates parent directories. |
+
+Use the same syntax, definitions and protected terms on both commands. The masking and exact placeholder check are the [translation contract](/backend/translation#provider-contract): `<x id="n"/>` in text and `__xn__` in HTML attributes, sharing one id sequence per field. Import checks placeholders, restores the original bytes, then rejects unsafe restored HTML. Allowed tags are `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (including merge/logic chips). Any `on*` attribute or `href`/`src` value starting with `javascript:` after trimming and lower-casing is refused.
+
+Import rejection reasons are `stale` (the current default’s hash changed), `tags_changed` (placeholders or restored tags/terms differ), `unknown_field`, `not_translatable` and `unsafe_html`. Accepted strings are validated and written even when others are rejected. Rejections leave those fields’ stored values intact. Import exits `0` when nothing is rejected, `1` otherwise. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr. Missing arguments, unreadable/invalid strings files or invalid definitions/term files exit `2`.
+
+Without `--out`, export prints the strings file itself, including with `--json`. With `--out <file> --json`, its result is `{ file, sourceLocale, targetLocale, count }`. Import’s `--json` result is `{ applied, rejected: [{ id, reason }], file }`, where `applied` counts fields. Check the exit code and each rejection, then run `validate template.json --locale de --json` to check remaining missing/stale values.
+
+### Definitions
+
+`validate`, `render` and `strings` accept `--definitions <file>`, a JSON array of [`CustomBlockDefinition`](/guide/custom-blocks#customblockdefinition). Every entry is checked with `validateCustomBlockDefinition`; invalid input exits `2`. Custom translations cover `text` and `textarea` fields. Liquid is bundled as a hard dependency; HTML compilation still needs the optional `mjml` package. Definitions supply both custom rendering and each type’s CSS for `render` and `validate --html`.
 
 ### `edit <file> --op '<json>'` or `--ops <file>`
 
@@ -2244,7 +2276,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | Code | Meaning |
 |---|---|
 | `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
-| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
+| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `strings import`, any rejected string (accepted strings are written). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
 | `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, an exception inside quality lint, or an unexpected internal error. |
 | `3` | A missing optional dependency. The error message names the exact install command. |
 
@@ -2308,7 +2340,7 @@ This reports exactly what's resolvable from your current working directory right
 
 Install either kind of optional dependency in whatever project the CLI is invoked from — both are resolved starting from your current working directory (or `--cwd`, if you passed it).
 
-The CLI has no flag for custom-block definitions: both `validate` and `render` call validation without them, so custom `text` paths are refused. Use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`. Render with `renderCustomBlock` to produce localized custom HTML; a custom block with any localized text/property entry loses its default-language `renderedHtml` and is omitted without a resolver. `renderedStylesheet` stays; blocks without a layer for that locale retain cached HTML. See the [complete library example](/guide/localized-templates#check-your-work) and [Custom block rendering](/api/renderer-typescript#custom-blocks).
+For localized custom blocks, pass `--definitions` as described under [Definitions](#definitions). Without definitions, custom `text` paths are refused. The library route remains `validateTemplate(content, definitions)` and `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`; rendering uses `renderCustomBlock` and `getCustomBlockStylesheet`. See the [complete library example](/guide/localized-templates#check-your-work) and [Custom block rendering](/api/renderer-typescript#custom-blocks).
 
 ## Library use
 
@@ -2742,7 +2774,7 @@ export declare function applyLocaleStrings(
 
 Pass the same `doNotTranslate?: readonly string[]` to `maskTags`, `localeStrings` and `applyLocaleStrings` to protect configured terms in text and HTML attribute values. Terms are trimmed, case-sensitive whole words (Unicode letters, numbers and `_` are word characters), matched longest first without overlaps; tags and chips take precedence. Terms share the tags’ id sequence, and the exact check restores each occurrence byte for byte or rejects it as `tags_changed`. The option defaults to no terms. See [translation masking](/backend/translation#provider-contract) for limits and the editor configuration.
 
-`localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides and hidden blocks. `blockId` limits selection to that block. Existing translations are masked with source ids; changed tags skip the field. It returns extraction-time `sourceHash` values from unmasked defaults.
+`localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides and hidden blocks. `blockId` limits selection to that block. Existing translations are masked with source ids. Coverage alone selects gaps (missing and stale) or all fields (also current). If stored tags or protected terms cannot be masked with the current source's tokens, the field still includes its masked current default and `sourceHash`, with `text` omitted; translation starts from that current default. It returns extraction-time `sourceHash` values from unmasked defaults.
 
 `applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
 
@@ -6093,11 +6125,11 @@ export declare function applyLocaleStrings(
 
 Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides and hidden blocks are excluded too.
 
-The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids; a changed tag makes the field ineligible. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
+The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids. If their tags no longer match, the old translation is not sent and the field is translated from the current default. `localeStrings` retains its masked current source and `sourceHash`, omitting `text`; coverage alone selects gaps or all fields. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
 
 `localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. Named references outside HTML 4.01, `&apos;` and the uppercase aliases (`&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;`, `&REG;`) are compared as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. `TranslationRequest` is unchanged.
 
-For headless flows, pass the same `doNotTranslate?: readonly string[]` to `localeStrings` and `applyLocaleStrings`; `maskTags(text, syntax, format, { doNotTranslate })` also accepts it. The helpers trim terms when matching; the size limits are validated by `init()`. Existing translations reuse the source's ids, so a stored translation with a missing or changed protected term makes the field ineligible. Check a configured term by translating a field containing it: the provider receives a placeholder and the saved translation contains the original term.
+For headless flows, pass the same `doNotTranslate?: readonly string[]` to `localeStrings` and `applyLocaleStrings`; `maskTags(text, syntax, format, { doNotTranslate })` also accepts it. The helpers trim terms when matching; the size limits are validated by `init()`. Existing translations reuse the source's ids. If a stored translation lacks or changes a protected term, a selected field remains eligible: the old translation is not sent, and translation starts from the current default. Check a configured term by translating a field containing it: the provider receives a placeholder and the saved translation contains the original term.
 
 Calls run sequentially. On `content_too_large` the editor halves the batch and retries down to one field; a single field over the cap cannot be sent. Successful fields received before Cancel or a provider failure apply together as one undo step. A run that changes nothing records nothing. With collaboration it is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped and reported.
 
@@ -11917,11 +11949,11 @@ Use `localization.doNotTranslate: ["Sable"]` to preserve brand names during Tran
 
 Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides and hidden blocks. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
 
-The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids; changed tags make a field ineligible.
+The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids. When the stored translation's tags no longer match, its old text is omitted and the field is translated from the current default. `localeStrings` still includes the masked current source and `sourceHash`, without `text`; coverage alone selects gaps or all fields.
 
 A status line reports progress and offers **Cancel**; the editor stays editable. Successful fields returned before Cancel or failure apply together as one undo step. With collaboration this is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped. A run that changes nothing records nothing; a second simultaneous run rejects with `translation_running`. The dismissible result notice reports translated fields, old text kept because tags changed, omitted fields, blocks skipped because they are being edited and the provider's error message.
 
-For a translation service or a JSON file workflow, use `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts gaps, simulates a translator's JSON edit and applies locale operations. Keep ids, tokens and each extraction-time `sourceHash` unchanged; a default edited during translation makes the result stale. The pure helpers do not sanitize returned HTML; sanitize it while preserving placeholders before applying external translations.
+For command-line JSON exchange, use [`strings export` and `strings import`](/api/template-tools#strings). For a translation service or a library JSON file workflow, use `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts gaps, simulates a translator's JSON edit and applies locale operations. Keep ids, tokens and each extraction-time `sourceHash` unchanged; a default edited during translation makes the result stale. The pure helpers do not sanitize returned HTML; sanitize it while preserving placeholders before applying external translations.
 
 ```ts
 import {
@@ -12074,7 +12106,7 @@ For independent block trees or layouts in each language, keep separate templates
 **Translate**
 
 - HTML blocks are left out of Translate. They can still be translated by hand.
-- The strings round trip is JSON through `localeStrings`/`applyLocaleStrings`. There's no strings CLI command and no XLIFF or CSV support.
+- XLIFF and CSV are not supported.
 
 **AI in a language view**
 
@@ -12085,12 +12117,11 @@ For independent block trees or layouts in each language, keep separate templates
 **Comments, history, CLI and Cloud**
 
 - Comment threads are shared across languages. Each new comment and reply stores its view’s language tag through a BYO [comments provider](/backend/comments#locale); Cloud does not store it yet. Version history remains per template.
-- The CLI has no custom-block definitions flag, so validating custom text translations and rendering localized custom blocks goes through the library (`validateTemplate(content, definitions)`, `renderCustomBlock`).
 - The Cloud editor doesn't support language versions or translation yet: `initCloud()` ignores `localization` and `translation` and logs a warning.
 
 ## Check your work
 
-For a saved `template.json` without custom `text` paths, run the CLI with the language selected:
+For a saved `template.json`, run the CLI with the language selected:
 
 ```bash
 npx -y @templatical/template-tools validate template.json --locale de --json
@@ -12101,7 +12132,7 @@ npx -y @templatical/template-tools render template.json --locale de --format mjm
 
 `validate --locale de` checks structure and the projected content, including `localization.untranslated`, `localization.stale` and `localization.merge-tags-differ`. Exit `0` means success, `1` means invalid structure, error-severity lint, a merge-tag mismatch or an unknown locale, `2` means misuse/tool failure (including a missing or empty `--locale` value), and `3` means a missing optional dependency. An unknown locale exits `1`, writes `unknown_locale` to stderr without a result document, including with `--json`. A missing or empty `--locale` value exits `2`. `valid: true` alone does not mean exit `0`. See [Template tools](/api/template-tools).
 
-For custom translations, the CLI cannot supply definitions and cannot render localized custom blocks with its own resolver. Use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`, and supply `renderCustomBlock` for rendering. This complete TypeScript example requires `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` and `liquidjs`:
+For custom translations, pass `--definitions definitions.json` to both `validate` and `render`. The file is a JSON array of `CustomBlockDefinition`; rendering uses each type’s Liquid template and CSS. See [Strings and definitions](/api/template-tools#strings) for `strings export` / `strings import`, `--do-not-translate`, partial imports and exit codes. For the library route, use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`, and supply `renderCustomBlock` for rendering. This complete TypeScript example requires `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` and `liquidjs`:
 
 ```ts
 import {

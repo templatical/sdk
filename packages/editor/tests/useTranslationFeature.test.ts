@@ -7,6 +7,7 @@ import {
   createTitleBlock,
   applyOperationsInPlace,
   localeCoverage,
+  sourceHash,
   SdkError,
   SYNTAX_PRESETS,
   type TranslationErrorCode,
@@ -135,6 +136,44 @@ async function collaborative(provider: TranslationProvider) {
 }
 
 describe("translation runs", () => {
+  it.each([undefined, "t0"])(
+    "counts and re-translates a changed-tag gap with block scope %s",
+    async (blockId) => {
+      const seed = content(1);
+      seed.blocks = [
+        createTitleBlock({
+          id: "t0",
+          content: "Hello {{first_name}}",
+          l10n: {
+            de: {
+              text: {
+                content: {
+                  value: "Hallo {{name}}",
+                  sourceHash: sourceHash("Hello {{name}}"),
+                },
+              },
+            },
+          },
+        }),
+      ];
+      const translate = vi.fn(async (request: TranslationRequest) =>
+        answer(request),
+      );
+      const { feature, editor } = open({ translate }, seed);
+      expect(feature.counts.value).toEqual({ gaps: 1, all: 1 });
+      const result = await feature.translate({ only: "gaps", blockId });
+      expect(translate.mock.calls[0][0].fields).toEqual([
+        { id: "t0/content", format: "html", text: 'Hello <x id="1"/>' },
+      ]);
+      expect(result.translated).toBe(1);
+      expect(result.tagsChanged).toEqual([]);
+      expect(editor.content.value.blocks[0].l10n?.de.text?.content).toEqual({
+        value: "Hallo {{first_name}}",
+        sourceHash: sourceHash("Hello {{first_name}}"),
+      });
+      expect(feature.counts.value).toEqual({ gaps: 0, all: 1 });
+    },
+  );
   it("masks Sable before the provider and preserves it when the provider tries to translate it", async () => {
     const seed = content(1);
     (seed.blocks[0] as any).content = "<p>Hello Sable</p>";

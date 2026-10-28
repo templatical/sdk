@@ -175,14 +175,19 @@ describe("translation entry points", () => {
       seed.blocks[0].l10n!.de.text!.content.sourceHash = sourceHash("Hello");
       seed.blocks[1].l10n = {
         de: {
-          text: { alt: { value: "Produkt", sourceHash: sourceHash("Product") } },
+          text: {
+            alt: { value: "Produkt", sourceHash: sourceHash("Product") },
+          },
         },
       };
       seed.settings.preheaderText = "Preview";
       seed.settings.l10n = {
         de: {
           text: {
-            preheaderText: { value: "Vorschau", sourceHash: sourceHash("Preview") },
+            preheaderText: {
+              value: "Vorschau",
+              sourceHash: sourceHash("Preview"),
+            },
           },
         },
       };
@@ -238,7 +243,7 @@ describe("translation entry points", () => {
   );
 
   it.each(["raw HTML", "liquid tags", "mailchimp tags"])(
-    "hides translation actions for ineligible %s gaps",
+    "keeps raw HTML ineligible and offers re-translation for changed %s gaps",
     async (kind) => {
       const seed = languageContent();
       if (kind === "raw HTML")
@@ -256,7 +261,9 @@ describe("translation entry points", () => {
           createTitleBlock({
             id: "ineligible",
             content: source,
-            l10n: { de: { text: { content: { value: old, sourceHash: "old" } } } },
+            l10n: {
+              de: { text: { content: { value: old, sourceHash: "old" } } },
+            },
           }),
         ];
       }
@@ -287,7 +294,7 @@ describe("translation entry points", () => {
       ).toBe(true);
       expect(ineligible.find(button("locale-translate")).exists()).toBe(false);
       expect(ineligible.find(button("locale-retranslate")).exists()).toBe(
-        false,
+        kind !== "raw HTML",
       );
     },
   );

@@ -6,6 +6,23 @@ const ROOT = join(import.meta.dirname, "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
 describe("localization agent path", () => {
+  it("routes translation file exchange through the existing strings CLI in its eval", () => {
+    const data = JSON.parse(read("evals/evals.json"));
+    const entry = data.evals.find((entry: { id: number }) => entry.id === 30);
+    expect(entry.expected_output).toContain("template-tools strings export");
+    expect(entry.expected_output).toContain("template-tools strings import");
+    expect(entry.expected_output).toContain("placeholders unchanged");
+    expect(entry.expected_output).toContain("rejected");
+    expect(entry.expected_output).not.toContain("invent a strings CLI");
+  });
+  it("keeps protected-term fields eligible in the brand-protection eval", () => {
+    const data = JSON.parse(read("evals/evals.json"));
+    const entry = data.evals.find((entry: { id: number }) => entry.id === 31);
+    expect(entry.expected_output).not.toContain(
+      "stored translations missing a protected term are excluded",
+    );
+    expect(entry.expected_output).toContain("current default");
+  });
   it("describes only the rendered result notice fields", () => {
     const source = read("reference/localize.md");
     const notice = source.match(

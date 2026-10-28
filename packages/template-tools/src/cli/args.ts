@@ -1,6 +1,16 @@
 // Argv parsing for the CLI. Deliberately hand-rolled: the package has no
 // runtime dependency for this, and the surface is a dozen flags.
 
+const LOCALIZATION_VALUE_FLAGS = new Set([
+  "locale",
+  "only",
+  "block",
+  "syntax",
+  "definitions",
+  "do-not-translate",
+  "default-locale",
+]);
+
 /** Flags that consume the next argv entry as their value. */
 const VALUE_FLAGS = new Set([
   "format",
@@ -15,7 +25,7 @@ const VALUE_FLAGS = new Set([
   "values",
   "custom-block",
   "host",
-  "locale",
+  ...LOCALIZATION_VALUE_FLAGS,
 ]);
 
 export interface ParsedArgs {
@@ -53,7 +63,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     flags[bare] =
       VALUE_FLAGS.has(bare) &&
       i + 1 < argv.length &&
-      !(bare === "locale" && argv[i + 1].startsWith("-"))
+      !(LOCALIZATION_VALUE_FLAGS.has(bare) && argv[i + 1].startsWith("-"))
         ? argv[++i]
         : true;
   }

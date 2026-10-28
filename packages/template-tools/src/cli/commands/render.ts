@@ -13,6 +13,7 @@ import {
 } from "../io";
 import { requireMjml } from "../mjml";
 import { validateTemplate } from "../../index";
+import { customBlockRenderOptions, readDefinitions } from "../definitions";
 
 const FORMATS = new Set(["mjml", "html"]);
 
@@ -30,12 +31,13 @@ export async function runRender(args: ParsedArgs): Promise<number> {
   }
 
   const cwd = flagValue(args, "cwd") ?? process.cwd();
+  const definitions = readDefinitions(args, cwd);
   const data = readTemplateFile(file, cwd);
 
   // A structurally invalid template must fail with the error list (exit 1),
   // not surface as a renderer-internals crash (exit 2) — edit.ts validates
   // for the same reason before it writes.
-  const { valid, errors } = validateTemplate(data);
+  const { valid, errors } = validateTemplate(data, definitions);
   if (!valid) {
     throw new InvalidTemplateError(
       `${file} is not structurally valid (${errors.length} error(s)).`,
@@ -44,7 +46,10 @@ export async function runRender(args: ParsedArgs): Promise<number> {
   }
 
   const content = data as TemplateContent;
-  const mjml = await renderToMjml(content, { locale });
+  const mjml = await renderToMjml(content, {
+    locale,
+    ...customBlockRenderOptions(definitions),
+  });
 
   let output = mjml;
   if (format === "html") {

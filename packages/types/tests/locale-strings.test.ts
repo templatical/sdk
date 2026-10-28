@@ -231,7 +231,9 @@ describe("localeStrings", () => {
       createParagraphBlock({
         id: "empty",
         content: "",
-        l10n: { de: { text: { content: { value: "Alt", sourceHash: "old" } } } },
+        l10n: {
+          de: { text: { content: { value: "Alt", sourceHash: "old" } } },
+        },
       }),
       createImageBlock({
         id: "set",
@@ -343,16 +345,34 @@ describe("localeStrings", () => {
     });
   });
 
-  it("skips a stored translation whose tags no longer match the source", () => {
-    const content = fixture();
-    content.blocks[0].l10n = {
-      de: { text: { content: { value: "Hallo {{other}}", sourceHash: "old" } } },
-    };
-    expect(extract(content).strings.map((s) => s.id)).not.toContain(
-      "p/content",
-    );
-    expect(extract(content).tokens).not.toHaveProperty("p/content");
-  });
+  it.each(["gaps", "all"] as const)(
+    "exports the current source without incompatible translated text under %s",
+    (only) => {
+      const content = fixture();
+      content.blocks[0] = createParagraphBlock({
+        id: "p",
+        content: "Hello {{first_name}}",
+        l10n: {
+          de: {
+            text: {
+              content: {
+                value: "Hallo {{name}}",
+                sourceHash: sourceHash("Hello {{name}}"),
+              },
+            },
+          },
+        },
+      });
+      const extracted = extract(content, only);
+      expect(extracted.strings[0]).toEqual({
+        id: "p/content",
+        format: "html",
+        source: 'Hello <x id="1"/>',
+        sourceHash: sourceHash("Hello {{first_name}}"),
+      });
+      expect(extracted.tokens["p/content"]).toEqual(["{{first_name}}"]);
+    },
+  );
 });
 
 describe("applyLocaleStrings", () => {
@@ -482,10 +502,16 @@ describe("applyLocaleStrings", () => {
     ]);
     const applied = applyOperations(content, result.operations);
     expect(applied.blocks[0].l10n?.de.text).toEqual({
-      content: { value: "<p>Hallo</p>", sourceHash: sourceHash("<p>Hello</p>") },
+      content: {
+        value: "<p>Hallo</p>",
+        sourceHash: sourceHash("<p>Hello</p>"),
+      },
     });
     expect(applied.settings.l10n?.de.text).toEqual({
-      preheaderText: { value: "Jetzt sparen", sourceHash: sourceHash("Save now") },
+      preheaderText: {
+        value: "Jetzt sparen",
+        sourceHash: sourceHash("Save now"),
+      },
     });
     expect(localeCoverage(applied, "de")).toEqual({
       translated: ["settings/content", "settings/preheaderText"],

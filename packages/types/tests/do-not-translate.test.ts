@@ -109,6 +109,20 @@ describe("do-not-translate masking", () => {
 });
 
 describe("do-not-translate strings round trip", () => {
+  it("exports a selected field without old text that lost a protected term", () => {
+    const content = fixture();
+    content.blocks[0].l10n = {
+      de: { text: { content: { value: "Zobel", sourceHash: "old" } } },
+    };
+    const extracted = localeStrings(content, "de", options);
+    expect(extracted.strings[0]).toEqual({
+      id: "p/content",
+      format: "html",
+      source: '<p>Try <x id="1"/> today</p>',
+      sourceHash: sourceHash("<p>Try Sable today</p>"),
+    });
+    expect(extracted.tokens["p/content"]).toEqual(["Sable"]);
+  });
   it("masks terms and restores their original bytes in text and attributes", () => {
     const content = fixture();
     content.blocks = [

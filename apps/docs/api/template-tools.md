@@ -1,11 +1,11 @@
 ---
 title: Template Tools
-description: API reference for @templatical/template-tools — the CLI and library for validating, rendering, editing, importing and previewing Templatical templates and custom blocks outside the editor.
+description: API reference for @templatical/template-tools — the CLI and library for validating, rendering, editing, importing, exchanging language strings and previewing Templatical templates and custom blocks outside the editor.
 ---
 
 # Template Tools
 
-`@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, or preview it live in the real Templatical editor. It also checks, renders and previews [custom block](/guide/custom-blocks) definitions. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
+`@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, exchange its language strings, or preview it live in the real Templatical editor. It also checks, renders and previews [custom block](/guide/custom-blocks) definitions. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
 
 The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the commands documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job. Install the skill with `npx skills add templatical/sdk`.
 
@@ -30,6 +30,8 @@ Add `--json` for machine-readable result output on stdout when a command produce
 | `render <file> [--format mjml\|html] [-o <file>]` | Render to MJML, or to sending-ready HTML |
 | `edit <file> --op '<json>'` \| `--ops <file>` | Apply one operation, or a batch, and write the result |
 | `import <file> [--format <fmt>]` \| `--list-formats` | Convert a design from another tool into Templatical JSON |
+| `strings export <file> --locale <tag>` | Export language strings as JSON |
+| `strings import <file> <strings.json>` | Apply accepted translations and report rejections |
 | `live` \| `live reload` \| `live stop` | Preview and hand-edit the template in the real editor |
 | `live --custom-block <file> [--host <file>] [--fetch [--values '<json>']]` | Preview a custom block definition in the real editor |
 | `custom-block validate <file>` | Check a custom block definition: schema, Liquid, email-client safety, MJML |
@@ -45,7 +47,7 @@ Add `--json` for machine-readable result output on stdout when a command produce
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). See [Localized templates](/guide/localized-templates#check-your-work).
+Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). Pass `--definitions <file>` for custom `text` and `textarea` translations; the same definitions feed validation, quality lint and `--html` rendering. See [Localized templates](/guide/localized-templates#check-your-work).
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -63,7 +65,37 @@ npx -y @templatical/template-tools render emails/welcome.json --format html -o w
 
 Defaults to `--format mjml`. `--format html` compiles that MJML further and needs the optional `mjml` package — see "Optional dependencies" below. The template is validated structurally before rendering starts, so an invalid template fails with the same error list `validate` would give you, not a renderer crash. Without `--out`/`-o`, the result prints to stdout.
 
-`--locale de` renders German; omit it to render the default. Unknown locales exit `1` with `unknown_locale` on stderr and no result document, including with `--json`. Missing/empty `--locale` values exit `2`. The renderer resolves text, overrides, hidden blocks and settings before emitting MJML.
+`--locale de` renders German; omit it to render the default. Unknown locales exit `1` with `unknown_locale` on stderr and no result document, including with `--json`. Missing/empty `--locale` values exit `2`. The renderer resolves text, overrides, hidden blocks and settings before emitting MJML. With `--definitions <file>`, it renders each custom type from its definition’s Liquid template and includes its stylesheet.
+
+### Strings
+
+`strings export <template.json> --locale <tag>` exports missing and stale strings by default. For a saved template with a German version:
+
+```bash
+npx -y @templatical/template-tools strings export template.json --locale de --out strings.de.json --json
+npx -y @templatical/template-tools strings import template.json strings.de.json --json
+```
+
+Between export and import, set each entry’s `text` to its translation. Keep `id`, `sourceHash` and every placeholder unchanged. Entries without `text` are skipped; an empty `text` is applied. The strings file is `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`, with `strings` containing [`LocaleString`](/api/types#translation) entries (`id`, `format`, masked `source`, `sourceHash`, optional masked `text`). Tokens are regenerated from the current defaults on import; they are not in the file. HTML blocks, empty defaults, `set` overrides and hidden blocks are excluded from export.
+
+| Flag | Contract |
+|---|---|
+| `--only gaps\|all` | Export selection; default `gaps` includes missing and stale fields. `all` includes current translations too. |
+| `--block <id>` | Export fields from one block. |
+| `--syntax <preset>` | Merge-tag syntax on export and import: `liquid` (default), `handlebars`, `mailchimp`, `ampscript`. |
+| `--definitions <file>` | JSON array of custom block definitions, on both commands. |
+| `--do-not-translate <file>` | JSON array of protected terms, on both commands. At most 500 terms, each 1–100 characters after trimming. Matching is case-sensitive, longest first, non-overlapping, in text and HTML attribute values. Word boundaries are characters other than Unicode letters, numbers or `_`. |
+| `--out <file>` | Export destination; default stdout. Import destination; default overwrite the input template. Creates parent directories. |
+
+Use the same syntax, definitions and protected terms on both commands. The masking and exact placeholder check are the [translation contract](/backend/translation#provider-contract): `<x id="n"/>` in text and `__xn__` in HTML attributes, sharing one id sequence per field. Import checks placeholders, restores the original bytes, then rejects unsafe restored HTML. Allowed tags are `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (including merge/logic chips). Any `on*` attribute or `href`/`src` value starting with `javascript:` after trimming and lower-casing is refused.
+
+Import rejection reasons are `stale` (the current default’s hash changed), `tags_changed` (placeholders or restored tags/terms differ), `unknown_field`, `not_translatable` and `unsafe_html`. Accepted strings are validated and written even when others are rejected. Rejections leave those fields’ stored values intact. Import exits `0` when nothing is rejected, `1` otherwise. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr. Missing arguments, unreadable/invalid strings files or invalid definitions/term files exit `2`.
+
+Without `--out`, export prints the strings file itself, including with `--json`. With `--out <file> --json`, its result is `{ file, sourceLocale, targetLocale, count }`. Import’s `--json` result is `{ applied, rejected: [{ id, reason }], file }`, where `applied` counts fields. Check the exit code and each rejection, then run `validate template.json --locale de --json` to check remaining missing/stale values.
+
+### Definitions
+
+`validate`, `render` and `strings` accept `--definitions <file>`, a JSON array of [`CustomBlockDefinition`](/guide/custom-blocks#customblockdefinition). Every entry is checked with `validateCustomBlockDefinition`; invalid input exits `2`. Custom translations cover `text` and `textarea` fields. Liquid is bundled as a hard dependency; HTML compilation still needs the optional `mjml` package. Definitions supply both custom rendering and each type’s CSS for `render` and `validate --html`.
 
 ### `edit <file> --op '<json>'` or `--ops <file>`
 
@@ -133,7 +165,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | Code | Meaning |
 |---|---|
 | `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
-| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
+| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `strings import`, any rejected string (accepted strings are written). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
 | `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, an exception inside quality lint, or an unexpected internal error. |
 | `3` | A missing optional dependency. The error message names the exact install command. |
 
@@ -197,7 +229,7 @@ This reports exactly what's resolvable from your current working directory right
 
 Install either kind of optional dependency in whatever project the CLI is invoked from — both are resolved starting from your current working directory (or `--cwd`, if you passed it).
 
-The CLI has no flag for custom-block definitions: both `validate` and `render` call validation without them, so custom `text` paths are refused. Use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`. Render with `renderCustomBlock` to produce localized custom HTML; a custom block with any localized text/property entry loses its default-language `renderedHtml` and is omitted without a resolver. `renderedStylesheet` stays; blocks without a layer for that locale retain cached HTML. See the [complete library example](/guide/localized-templates#check-your-work) and [Custom block rendering](/api/renderer-typescript#custom-blocks).
+For localized custom blocks, pass `--definitions` as described under [Definitions](#definitions). Without definitions, custom `text` paths are refused. The library route remains `validateTemplate(content, definitions)` and `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`; rendering uses `renderCustomBlock` and `getCustomBlockStylesheet`. See the [complete library example](/guide/localized-templates#check-your-work) and [Custom block rendering](/api/renderer-typescript#custom-blocks).
 
 ## Library use
 

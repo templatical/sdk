@@ -66,11 +66,11 @@ Use `localization.doNotTranslate: ["Sable"]` to preserve brand names during Tran
 
 Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides and hidden blocks. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
 
-The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids; changed tags make a field ineligible.
+The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids. When the stored translation's tags no longer match, its old text is omitted and the field is translated from the current default. `localeStrings` still includes the masked current source and `sourceHash`, without `text`; coverage alone selects gaps or all fields.
 
 A status line reports progress and offers **Cancel**; the editor stays editable. Successful fields returned before Cancel or failure apply together as one undo step. With collaboration this is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped. A run that changes nothing records nothing; a second simultaneous run rejects with `translation_running`. The dismissible result notice reports translated fields, old text kept because tags changed, omitted fields, blocks skipped because they are being edited and the provider's error message.
 
-For a translation service or a JSON file workflow, use `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts gaps, simulates a translator's JSON edit and applies locale operations. Keep ids, tokens and each extraction-time `sourceHash` unchanged; a default edited during translation makes the result stale. The pure helpers do not sanitize returned HTML; sanitize it while preserving placeholders before applying external translations.
+For command-line JSON exchange, use [`strings export` and `strings import`](/api/template-tools#strings). For a translation service or a library JSON file workflow, use `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts gaps, simulates a translator's JSON edit and applies locale operations. Keep ids, tokens and each extraction-time `sourceHash` unchanged; a default edited during translation makes the result stale. The pure helpers do not sanitize returned HTML; sanitize it while preserving placeholders before applying external translations.
 
 <<< @/snippets/translate-strings.ts
 
@@ -138,7 +138,7 @@ For independent block trees or layouts in each language, keep separate templates
 **Translate**
 
 - HTML blocks are left out of Translate. They can still be translated by hand.
-- The strings round trip is JSON through `localeStrings`/`applyLocaleStrings`. There's no strings CLI command and no XLIFF or CSV support.
+- XLIFF and CSV are not supported.
 
 **AI in a language view**
 
@@ -149,12 +149,11 @@ For independent block trees or layouts in each language, keep separate templates
 **Comments, history, CLI and Cloud**
 
 - Comment threads are shared across languages. Each new comment and reply stores its view’s language tag through a BYO [comments provider](/backend/comments#locale); Cloud does not store it yet. Version history remains per template.
-- The CLI has no custom-block definitions flag, so validating custom text translations and rendering localized custom blocks goes through the library (`validateTemplate(content, definitions)`, `renderCustomBlock`).
 - The Cloud editor doesn't support language versions or translation yet: `initCloud()` ignores `localization` and `translation` and logs a warning.
 
 ## Check your work
 
-For a saved `template.json` without custom `text` paths, run the CLI with the language selected:
+For a saved `template.json`, run the CLI with the language selected:
 
 ```bash
 npx -y @templatical/template-tools validate template.json --locale de --json
@@ -165,7 +164,7 @@ npx -y @templatical/template-tools render template.json --locale de --format mjm
 
 `validate --locale de` checks structure and the projected content, including `localization.untranslated`, `localization.stale` and `localization.merge-tags-differ`. Exit `0` means success, `1` means invalid structure, error-severity lint, a merge-tag mismatch or an unknown locale, `2` means misuse/tool failure (including a missing or empty `--locale` value), and `3` means a missing optional dependency. An unknown locale exits `1`, writes `unknown_locale` to stderr without a result document, including with `--json`. A missing or empty `--locale` value exits `2`. `valid: true` alone does not mean exit `0`. See [Template tools](/api/template-tools).
 
-For custom translations, the CLI cannot supply definitions and cannot render localized custom blocks with its own resolver. Use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`, and supply `renderCustomBlock` for rendering. This complete TypeScript example requires `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` and `liquidjs`:
+For custom translations, pass `--definitions definitions.json` to both `validate` and `render`. The file is a JSON array of `CustomBlockDefinition`; rendering uses each type’s Liquid template and CSS. See [Strings and definitions](/api/template-tools#strings) for `strings export` / `strings import`, `--do-not-translate`, partial imports and exit codes. For the library route, use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`, and supply `renderCustomBlock` for rendering. This complete TypeScript example requires `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` and `liquidjs`:
 
 <<< @/snippets/localize-custom-block.ts
 

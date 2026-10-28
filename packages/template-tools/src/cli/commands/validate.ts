@@ -6,6 +6,7 @@ import { renderToMjml } from "@templatical/renderer";
 import { lintCompiledHtml } from "@templatical/quality";
 import type { TemplateContent } from "@templatical/types";
 import { requireMjml } from "../mjml";
+import { customBlockRenderOptions, readDefinitions } from "../definitions";
 
 export async function runValidate(args: ParsedArgs): Promise<number> {
   const file = args.positional[0];
@@ -15,13 +16,14 @@ export async function runValidate(args: ParsedArgs): Promise<number> {
     throw new UsageError("--locale needs a language tag.");
   }
   const cwd = flagValue(args, "cwd") ?? process.cwd();
+  const definitions = readDefinitions(args, cwd);
   const compile =
     args.flags.html === true
       ? await requireMjml(cwd, "Validating HTML size")
       : null;
 
   const data = readTemplateFile(file, cwd);
-  const { valid, errors } = validateTemplate(data);
+  const { valid, errors } = validateTemplate(data, definitions);
 
   if (!valid) {
     emit({ valid: false, errors, issues: [] }, () =>
@@ -34,7 +36,10 @@ export async function runValidate(args: ParsedArgs): Promise<number> {
   }
 
   // The linter assumes a structurally-valid template, so it runs only here.
-  const quality = runQualityLint(data, { contentLocale: locale });
+  const quality = runQualityLint(data, {
+    contentLocale: locale,
+    customBlocks: definitions,
+  });
   if (quality.error !== undefined) {
     note(`Quality lint could not run: ${quality.error}`);
     return EXIT.usage;
@@ -43,7 +48,10 @@ export async function runValidate(args: ParsedArgs): Promise<number> {
   const issues = [...quality.issues];
   let htmlBytes: number | undefined;
   if (compile) {
-    const mjml = await renderToMjml(data as TemplateContent, { locale });
+    const mjml = await renderToMjml(data as TemplateContent, {
+      locale,
+      ...customBlockRenderOptions(definitions),
+    });
     const html = (await compile(mjml, { validationLevel: "soft" })).html;
     htmlBytes = new TextEncoder().encode(html).byteLength;
     issues.push(...lintCompiledHtml(html));

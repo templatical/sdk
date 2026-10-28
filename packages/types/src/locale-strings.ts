@@ -403,13 +403,12 @@ export function localeStrings(
           options,
         )
       : undefined;
-    if (text === null) continue;
     strings.push({
       id,
       format: field.format,
       source: masked.text,
       sourceHash: sourceHash(field.source),
-      ...(text === undefined ? {} : { text }),
+      ...(text === undefined || text === null ? {} : { text }),
     });
     tokens[id] = masked.tokens;
   }

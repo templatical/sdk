@@ -66,11 +66,11 @@ Verwenden Sie `localization.doNotTranslate: ["Sable"]`, um Markennamen beim Übe
 
 Übersetzen lässt HTML-Blöcke (von Hand bearbeiten), leere Standardwerte, `set`-Überschreibungen und ausgeblendete Blöcke aus. `content` von Titel und Absatz ist `html`, jedes andere Feld `text`. Aufrufe laufen nacheinander mit höchstens 50 Feldern und 20.000 UTF-16-Einheiten maskierten Texts. `content_too_large` halbiert den Batch bis auf ein Feld.
 
-Der Editor maskiert ganze Merge-/Logik-Chips in HTML sowie rohe, durch die aktive Syntax erkannte Tags in beiden Formaten. Text verwendet `<x id="n"/>`, HTML-Attributwerte `__xn__`. Beide teilen eine ID-Folge ab 1 pro Feld in Quellreihenfolge. Zurückgegebene Felder müssen genau diese IDs jeweils einmal enthalten; Platzhalter dürfen ihre Position ändern. Bei fehlgeschlagener Prüfung bleibt der alte Wert. HTML wird mit Rewrites `sanitizeRichTextHtml` bereinigt; Tokens werden dabei geschützt und die ursprünglichen Tags anschließend bytegetreu wiederhergestellt. Vorhandene Übersetzungen verwenden die Quell-Token-IDs; geänderte Tags schließen ein Feld aus.
+Der Editor maskiert ganze Merge-/Logik-Chips in HTML sowie rohe, durch die aktive Syntax erkannte Tags in beiden Formaten. Text verwendet `<x id="n"/>`, HTML-Attributwerte `__xn__`. Beide teilen eine ID-Folge ab 1 pro Feld in Quellreihenfolge. Zurückgegebene Felder müssen genau diese IDs jeweils einmal enthalten; Platzhalter dürfen ihre Position ändern. Bei fehlgeschlagener Prüfung bleibt der alte Wert. HTML wird mit Rewrites `sanitizeRichTextHtml` bereinigt; Tokens werden dabei geschützt und die ursprünglichen Tags anschließend bytegetreu wiederhergestellt. Vorhandene Übersetzungen verwenden die Quell-Token-IDs. Stimmen die Tags der gespeicherten Übersetzung nicht mehr überein, wird ihr alter Text nicht gesendet und das Feld aus dem aktuellen Standard übersetzt. `localeStrings` enthält weiterhin die maskierte aktuelle Quelle und `sourceHash`, jedoch kein `text`; allein die Abdeckung bestimmt die Auswahl von Lücken oder allen Feldern.
 
 Eine Statuszeile zeigt den Fortschritt und bietet **Abbrechen**; der Editor bleibt bearbeitbar. Vor Abbruch oder Fehler erhaltene gültige Felder werden gemeinsam als ein Rückgängig-Schritt angewendet. Mit Zusammenarbeit ist dies eine gewöhnliche Bearbeitung; durch andere Sitzungen in der erfassten Zielsprache oder strukturell gesperrte Blöcke werden ausgelassen. Ein Durchlauf ohne Änderung zeichnet nichts auf; ein zweiter paralleler Durchlauf lehnt mit `translation_running` ab. Die schließbare Ergebnismeldung nennt übersetzte Felder, wegen geänderter Tags erhaltenen Text, ausgelassene Felder, wegen laufender Bearbeitung übersprungene Blöcke und die Fehlermeldung des Providers.
 
-Für einen Übersetzungsdienst oder JSON-Dateien verwenden Sie `localeStrings` → JSON → `applyLocaleStrings` aus `@templatical/types`. Dieses vollständige TypeScript-Beispiel extrahiert Lücken, simuliert eine JSON-Bearbeitung durch einen Übersetzer und wendet Locale-Operationen an. IDs, Tokens und der `sourceHash` zum Extraktionszeitpunkt bleiben unverändert; ein währenddessen bearbeiteter Standardwert macht das Ergebnis veraltet. Die reinen Helfer bereinigen HTML nicht; bereinigen Sie externe Übersetzungen unter Erhaltung der Platzhalter vor dem Anwenden.
+Für JSON-Austausch über die Befehlszeile verwenden Sie [`strings export` und `strings import`](/de/api/template-tools#strings). Für einen Übersetzungsdienst oder JSON-Dateien über die Bibliothek verwenden Sie `localeStrings` → JSON → `applyLocaleStrings` aus `@templatical/types`. Dieses vollständige TypeScript-Beispiel extrahiert Lücken, simuliert eine JSON-Bearbeitung durch einen Übersetzer und wendet Locale-Operationen an. IDs, Tokens und der `sourceHash` zum Extraktionszeitpunkt bleiben unverändert; ein währenddessen bearbeiteter Standardwert macht das Ergebnis veraltet. Die reinen Helfer bereinigen HTML nicht; bereinigen Sie externe Übersetzungen unter Erhaltung der Platzhalter vor dem Anwenden.
 
 <<< @/snippets/translate-strings.ts
 
@@ -138,7 +138,7 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 **Übersetzen**
 
 - HTML-Blöcke werden beim Übersetzen ausgelassen. Sie lassen sich weiterhin von Hand übersetzen.
-- Der Austausch von Zeichenketten erfolgt als JSON über `localeStrings`/`applyLocaleStrings`. Es gibt keinen CLI-Befehl dafür und keine XLIFF- oder CSV-Unterstützung.
+- XLIFF und CSV werden nicht unterstützt.
 
 **KI in einer Sprachansicht**
 
@@ -149,12 +149,11 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 **Kommentare, Verlauf, CLI und Cloud**
 
 - Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über einen eigenen [Kommentar-Provider](/de/backend/comments#locale) den Sprach-Tag der Ansicht; Cloud speichert ihn noch nicht. Der Versionsverlauf gilt weiterhin pro Template.
-- Die CLI hat kein Flag für benutzerdefinierte Blockdefinitionen. Benutzerdefinierte Textübersetzungen werden daher über die Bibliothek validiert und lokalisierte benutzerdefinierte Blöcke darüber gerendert (`validateTemplate(content, definitions)`, `renderCustomBlock`).
 - Der Cloud-Editor unterstützt noch keine Sprachversionen oder Übersetzung: `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
 
 ## Ergebnis prüfen
 
-Für eine gespeicherte `template.json` ohne benutzerdefinierte `text`-Pfade wählen Sie die Sprache in der CLI:
+Für eine gespeicherte `template.json` wählen Sie die Sprache in der CLI:
 
 ```bash
 npx -y @templatical/template-tools validate template.json --locale de --json
@@ -165,7 +164,7 @@ npx -y @templatical/template-tools render template.json --locale de --format mjm
 
 `validate --locale de` prüft Struktur und projizierten Inhalt, einschließlich `localization.untranslated`, `localization.stale` und `localization.merge-tags-differ`. Exit `0` bedeutet Erfolg, `1` ungültige Struktur, Fehler-Lint, abweichende Merge-Tags oder eine unbekannte Locale, `2` Fehlbedienung/Toolfehler (einschließlich fehlendem oder leerem `--locale`-Wert) und `3` eine fehlende optionale Abhängigkeit. Eine unbekannte Locale ergibt Exit `1`, schreibt `unknown_locale` auf stderr ohne Ergebnisdokument, auch mit `--json`. Ein fehlender oder leerer `--locale`-Wert ergibt Exit `2`. `valid: true` allein bedeutet nicht Exit `0`. Siehe [Template-Tools](/de/api/template-tools).
 
-Für benutzerdefinierte Übersetzungen kann die CLI weder Definitionen übergeben noch einen eigenen Resolver zum Rendern lokalisierter benutzerdefinierter Blöcke nutzen. Verwenden Sie `validateTemplate(content, definitions)`, danach `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })` und `renderCustomBlock` zum Rendern. Dieses vollständige TypeScript-Beispiel benötigt `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` und `liquidjs`:
+Übergeben Sie für benutzerdefinierte Übersetzungen `--definitions definitions.json` an `validate` und `render`. Die Datei ist ein JSON-Array von `CustomBlockDefinition`; Rendering verwendet das Liquid-Template und CSS jedes Typs. Siehe [Strings und Definitionen](/de/api/template-tools#strings) für `strings export` / `strings import`, `--do-not-translate`, Teilimporte und Exit-Codes. Für den Bibliotheksweg verwenden Sie `validateTemplate(content, definitions)`, danach `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })` und `renderCustomBlock` zum Rendern. Dieses vollständige TypeScript-Beispiel benötigt `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` und `liquidjs`:
 
 <<< @/snippets/localize-custom-block.ts
 

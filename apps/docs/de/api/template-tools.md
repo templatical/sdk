@@ -1,11 +1,11 @@
 ---
 title: Template Tools
-description: API-Referenz für @templatical/template-tools — die CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren und Live-Vorschauen von Templatical-Templates und Custom Blocks außerhalb des Editors.
+description: API-Referenz für @templatical/template-tools — die CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren, Austauschen von Sprachtexten und Live-Vorschauen von Templatical-Templates und Custom Blocks außerhalb des Editors.
 ---
 
 # Template Tools
 
-`@templatical/template-tools` ist die CLI und Bibliothek hinter jeder mechanischen Operation auf einem Templatical-Template: sein JSON validieren, es zu MJML oder HTML rendern, eine gezielte Änderung anwenden, es aus dem Exportformat eines anderen Editors importieren, oder es live im echten Templatical-Editor anzeigen. Außerdem prüft, rendert und zeigt sie Definitionen von [Custom Blocks](/de/guide/custom-blocks) an. MIT-lizenziert, auf npm veröffentlicht, und läuft über `npx`, ohne dass irgendetwas in Ihr Projekt installiert wird und ohne Templatical-Konto.
+`@templatical/template-tools` ist die CLI und Bibliothek hinter jeder mechanischen Operation auf einem Templatical-Template: sein JSON validieren, es zu MJML oder HTML rendern, eine gezielte Änderung anwenden, es aus dem Exportformat eines anderen Editors importieren, seine Sprachtexte austauschen oder es live im echten Templatical-Editor anzeigen. Außerdem prüft, rendert und zeigt sie Definitionen von [Custom Blocks](/de/guide/custom-blocks) an. MIT-lizenziert, auf npm veröffentlicht, und läuft über `npx`, ohne dass irgendetwas in Ihr Projekt installiert wird und ohne Templatical-Konto.
 
 Der mitgelieferte [Agent Skill](/de/guide/agent-skill) steuert diese CLI intern — jeder Befehl, den ein KI-Coding-Agent beim Bauen oder Bearbeiten eines Templates mit dem Skill ausführt, ist einer der unten dokumentierten Befehle. Die CLI selbst braucht keinen Agenten: Alles hier funktioniert genauso aus einer Shell, einem Skript oder einem CI-Job. Den Skill installieren Sie mit `npx skills add templatical/sdk`.
 
@@ -30,6 +30,8 @@ Mit `--json` erscheint ein maschinenlesbares Ergebnis auf stdout, wenn ein Befeh
 | `render <file> [--format mjml\|html] [-o <file>]` | Rendert zu MJML oder zu versandfertigem HTML |
 | `edit <file> --op '<json>'` \| `--ops <file>` | Wendet eine Operation oder einen Batch an und schreibt das Ergebnis |
 | `import <file> [--format <fmt>]` \| `--list-formats` | Konvertiert ein Design aus einem anderen Tool in Templatical-JSON |
+| `strings export <file> --locale <tag>` | Exportiert Sprachtexte als JSON |
+| `strings import <file> <strings.json>` | Wendet akzeptierte Übersetzungen an und meldet Ablehnungen |
 | `live` \| `live reload` \| `live stop` | Zeigt das Template live im echten Editor an, inklusive Handbearbeitung |
 | `live --custom-block <file> [--host <file>] [--fetch [--values '<json>']]` | Zeigt eine Custom-Block-Definition live im echten Editor an |
 | `custom-block validate <file>` | Prüft eine Custom-Block-Definition: Schema, Liquid, E-Mail-Client-Sicherheit, MJML |
@@ -45,7 +47,7 @@ Mit `--json` erscheint ein maschinenlesbares Ergebnis auf stdout, wenn ein Befeh
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Strukturelle Validierung gegen das generierte JSON-Schema, danach `lintTemplate` für Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität und Lokalisierung. `--locale de` wählt die geprüfte Version (Standard ist `settings.locale`), nicht die Meldungssprache. `--html` kompiliert die gewählte Version zur Prüfung der HTML-Größe und benötigt `mjml`. Fehlende/veraltete Übersetzungen sind Warnungen; `localization.merge-tags-differ` ist eine Warnung, die trotzdem Exit `1` auslöst, auch bei `valid: true`. Eine unbekannte Locale ergibt Exit `1`, schreibt `unknown_locale` auf stderr und liefert kein Ergebnisdokument (auch mit `--json`); ein leerer oder fehlender `--locale`-Wert ist Fehlbedienung (Exit `2`). Siehe [Lokalisierte Templates](/de/guide/localized-templates#ergebnis-prufen).
+Strukturelle Validierung gegen das generierte JSON-Schema, danach `lintTemplate` für Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität und Lokalisierung. `--locale de` wählt die geprüfte Version (Standard ist `settings.locale`), nicht die Meldungssprache. `--html` kompiliert die gewählte Version zur Prüfung der HTML-Größe und benötigt `mjml`. Fehlende/veraltete Übersetzungen sind Warnungen; `localization.merge-tags-differ` ist eine Warnung, die trotzdem Exit `1` auslöst, auch bei `valid: true`. Eine unbekannte Locale ergibt Exit `1`, schreibt `unknown_locale` auf stderr und liefert kein Ergebnisdokument (auch mit `--json`); ein leerer oder fehlender `--locale`-Wert ist Fehlbedienung (Exit `2`). Übergeben Sie `--definitions <file>` für benutzerdefinierte `text`- und `textarea`-Übersetzungen; dieselben Definitionen erreichen Validierung, Qualitäts-Lint und `--html`-Rendering. Siehe [Lokalisierte Templates](/de/guide/localized-templates#ergebnis-prufen).
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -63,7 +65,37 @@ npx -y @templatical/template-tools render emails/welcome.json --format html -o w
 
 Standardmäßig `--format mjml`. `--format html` kompiliert dieses MJML weiter und benötigt das optionale Paket `mjml` — siehe „Optionale Abhängigkeiten" unten. Das Template wird vor dem Rendern strukturell validiert, sodass ein ungültiges Template mit derselben Fehlerliste scheitert, die auch `validate` liefern würde, statt mit einem Renderer-Absturz. Ohne `--out`/`-o` erscheint das Ergebnis auf stdout.
 
-`--locale de` rendert Deutsch; ohne Angabe wird der Standard gerendert. Unbekannte Locales ergeben Exit `1` mit `unknown_locale` auf stderr und ohne Ergebnisdokument, auch mit `--json`. Fehlende/leere `--locale`-Werte ergeben Exit `2`. Der Renderer löst Text, Überschreibungen, ausgeblendete Blöcke und Einstellungen vor der MJML-Ausgabe auf.
+`--locale de` rendert Deutsch; ohne Angabe wird der Standard gerendert. Unbekannte Locales ergeben Exit `1` mit `unknown_locale` auf stderr und ohne Ergebnisdokument, auch mit `--json`. Fehlende/leere `--locale`-Werte ergeben Exit `2`. Der Renderer löst Text, Überschreibungen, ausgeblendete Blöcke und Einstellungen vor der MJML-Ausgabe auf. Mit `--definitions <file>` rendert er jeden benutzerdefinierten Typ aus dem Liquid-Template seiner Definition und bindet dessen Stylesheet ein.
+
+### Strings
+
+`strings export <template.json> --locale <tag>` exportiert standardmäßig fehlende und veraltete Zeichenketten. Für ein gespeichertes Template mit deutscher Version:
+
+```bash
+npx -y @templatical/template-tools strings export template.json --locale de --out strings.de.json --json
+npx -y @templatical/template-tools strings import template.json strings.de.json --json
+```
+
+Setzen Sie zwischen Export und Import `text` jedes Eintrags auf seine Übersetzung. `id`, `sourceHash` und jeder Platzhalter bleiben unverändert. Einträge ohne `text` werden übersprungen; ein leerer `text` wird angewendet. Die Datei ist `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`; `strings` enthält [`LocaleString`](/de/api/types)-Einträge (`id`, `format`, maskiertes `source`, `sourceHash`, optionales maskiertes `text`). Tokens werden beim Import aus den aktuellen Standardwerten neu erzeugt und stehen nicht in der Datei. HTML-Blöcke, leere Standardwerte, `set`-Überschreibungen und ausgeblendete Blöcke sind vom Export ausgeschlossen.
+
+| Flag | Vertrag |
+|---|---|
+| `--only gaps\|all` | Exportauswahl; Standard `gaps` enthält fehlende und veraltete Felder. `all` enthält auch aktuelle Übersetzungen. |
+| `--block <id>` | Exportiert Felder eines Blocks. |
+| `--syntax <preset>` | Merge-Tag-Syntax beim Export und Import: `liquid` (Standard), `handlebars`, `mailchimp`, `ampscript`. |
+| `--definitions <file>` | JSON-Array benutzerdefinierter Blockdefinitionen, für beide Befehle. |
+| `--do-not-translate <file>` | JSON-Array geschützter Begriffe, für beide Befehle. Höchstens 500 Begriffe mit je 1–100 Zeichen nach dem Trimmen. Abgleich mit Groß-/Kleinschreibung, längste zuerst, ohne Überlappungen, in Text und HTML-Attributwerten. Wortgrenzen sind Zeichen außer Unicode-Buchstaben, Zahlen oder `_`. |
+| `--out <file>` | Exportziel; Standard stdout. Importziel; Standard überschreibt das Eingabe-Template. Erstellt übergeordnete Verzeichnisse. |
+
+Verwenden Sie dieselbe Syntax, Definitionen und geschützten Begriffe bei beiden Befehlen. Maskierung und exakte Platzhalterprüfung folgen dem [Übersetzungsvertrag](/de/backend/translation#provider-vertrag): `<x id="n"/>` im Text und `__xn__` in HTML-Attributen, mit einer gemeinsamen ID-Folge pro Feld. Der Import prüft Platzhalter, stellt die Originalbytes wieder her und lehnt danach unsicheres HTML ab. Erlaubte Tags: `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (einschließlich Merge-/Logik-Chips). Jedes `on*`-Attribut und jeder `href`-/`src`-Wert, der nach Trimmen und Kleinschreibung mit `javascript:` beginnt, wird abgelehnt.
+
+Ablehnungsgründe beim Import sind `stale` (Hash des aktuellen Standardwerts geändert), `tags_changed` (Platzhalter oder wiederhergestellte Tags/Begriffe weichen ab), `unknown_field`, `not_translatable` und `unsafe_html`. Akzeptierte Zeichenketten werden validiert und geschrieben, auch wenn andere abgelehnt werden. Ablehnungen erhalten die gespeicherten Werte dieser Felder. Import endet mit `0`, wenn nichts abgelehnt wird, sonst mit `1`. Export endet mit `0`; eine unbekannte Locale ergibt Exit `1` mit `unknown_locale` auf stderr. Fehlende Argumente, unlesbare/ungültige Strings-Dateien oder ungültige Definitions-/Begriffsdateien ergeben Exit `2`.
+
+Ohne `--out` gibt Export die Strings-Datei selbst aus, auch mit `--json`. Mit `--out <file> --json` lautet das Ergebnis `{ file, sourceLocale, targetLocale, count }`. Imports `--json`-Ergebnis ist `{ applied, rejected: [{ id, reason }], file }`; `applied` zählt Felder. Prüfen Sie Exit-Code und jede Ablehnung und führen Sie anschließend `validate template.json --locale de --json` aus, um verbleibende fehlende/veraltete Werte zu prüfen.
+
+### Definitionen
+
+`validate`, `render` und `strings` akzeptieren `--definitions <file>`, ein JSON-Array von [`CustomBlockDefinition`](/de/guide/custom-blocks#customblockdefinition). Jeder Eintrag wird mit `validateCustomBlockDefinition` geprüft; ungültige Eingaben ergeben Exit `2`. Benutzerdefinierte Übersetzungen umfassen `text`- und `textarea`-Felder. Liquid ist eine feste Abhängigkeit; die HTML-Kompilierung benötigt weiterhin das optionale Paket `mjml`. Definitionen liefern sowohl benutzerdefiniertes Rendering als auch CSS jedes Typs für `render` und `validate --html`.
 
 ### `edit <file> --op '<json>'` oder `--ops <file>`
 
@@ -133,7 +165,7 @@ Listet jedes Arbeits-Template unter `.templatical/` (oder dem `.templatical/` vo
 | Code | Bedeutung |
 |---|---|
 | `0` | Gültig, ohne Lint-Probleme mit Schweregrad `error` bei `validate`; Erfolg bei anderen Befehlen. |
-| `1` | Ungültige Struktur oder mindestens ein Lint-Problem mit `severity: "error"`, oder `localization.merge-tags-differ` (die Ausgabe kann weiterhin `valid: true` enthalten). Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
+| `1` | Ungültige Struktur oder mindestens ein Lint-Problem mit `severity: "error"`, oder `localization.merge-tags-differ` (die Ausgabe kann weiterhin `valid: true` enthalten). Bei `strings import` jede abgelehnte Zeichenkette (akzeptierte Zeichenketten werden geschrieben). Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
 | `2` | Fehlbedienung oder ein defektes Tool — falsche Flags, ein fehlendes Argument, unlesbare oder nicht parsbare Eingaben eine Ausnahme im Qualitäts-Linter oder ein unerwarteter interner Fehler. |
 | `3` | Eine optionale Abhängigkeit fehlt. Die Fehlermeldung nennt den genauen Installationsbefehl. |
 
@@ -197,7 +229,7 @@ Das meldet exakt, was gerade aus Ihrem aktuellen Arbeitsverzeichnis auflösbar i
 
 Installieren Sie jede Art optionaler Abhängigkeit in dem Projekt, aus dem heraus die CLI aufgerufen wird — beide werden ausgehend von Ihrem aktuellen Arbeitsverzeichnis aufgelöst (oder `--cwd`, falls angegeben).
 
-Die CLI hat kein Flag für Definitionen benutzerdefinierter Blöcke: `validate` und `render` validieren ohne Definitionen und lehnen deshalb benutzerdefinierte `text`-Pfade ab. Verwenden Sie `validateTemplate(content, definitions)`, dann `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`. Rendern Sie mit `renderCustomBlock`, um lokalisiertes benutzerdefiniertes HTML zu erzeugen; ein benutzerdefinierter Block mit lokalisierten Text-/Eigenschaftseinträgen verliert sein Standardsprach-`renderedHtml` und wird ohne Resolver ausgelassen. `renderedStylesheet` bleibt erhalten; Blöcke ohne Ebene für diese Sprache behalten zwischengespeichertes HTML. Siehe das [vollständige Bibliotheksbeispiel](/de/guide/localized-templates#ergebnis-prufen) und [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript).
+Übergeben Sie für lokalisierte benutzerdefinierte Blöcke `--definitions` wie unter [Definitionen](#definitionen) beschrieben. Ohne Definitionen werden benutzerdefinierte `text`-Pfade abgelehnt. Der Bibliotheksweg bleibt `validateTemplate(content, definitions)` und `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`; Rendering verwendet `renderCustomBlock` und `getCustomBlockStylesheet`. Siehe das [vollständige Bibliotheksbeispiel](/de/guide/localized-templates#ergebnis-prufen) und [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript).
 
 ## Nutzung als Bibliothek
 
