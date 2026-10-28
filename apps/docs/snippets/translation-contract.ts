@@ -58,6 +58,7 @@ export declare function maskTags(
   text: string,
   syntax: SyntaxPreset,
   format: "html" | "text",
+  options?: { doNotTranslate?: readonly string[] },
 ): { text: string; tokens: string[] };
 
 export declare function unmaskTags(
@@ -73,6 +74,7 @@ export declare function localeStrings(
     syntax: SyntaxPreset;
     only: "gaps" | "all";
     blockId?: string;
+    doNotTranslate?: readonly string[];
   },
 ): { strings: LocaleString[]; tokens: Record<string, string[]> };
 
@@ -84,6 +86,7 @@ export declare function applyLocaleStrings(
     definitions?: readonly CustomBlockDefinition[];
     syntax: SyntaxPreset;
     tokens: Record<string, string[]>;
+    doNotTranslate?: readonly string[];
   },
 ): {
   operations: Operation[];

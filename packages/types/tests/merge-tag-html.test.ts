@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { convertMergeTagsToValues, replaceMergeTagSpans } from "../src";
+import {
+  convertMergeTagsToValues,
+  getTagAttrValue,
+  replaceMergeTagSpans,
+} from "../src";
 
 describe("merge-tag HTML scanning", () => {
   it("replaces nested chip labels completely while preserving surrounding markup", () => {
@@ -25,6 +29,16 @@ describe("merge-tag HTML scanning", () => {
         (value) => value,
       ),
     ).toBe("[[a&lt;b]]");
+  });
+
+  it("decodes apos in a chip attribute for existing consumers", () => {
+    const attrs = 'data-merge-tag="[[Rock &apos;n&apos; Roll]]"';
+    const html = `<span ${attrs}>Music</span>`;
+    expect(getTagAttrValue(attrs, "data-merge-tag")).toBe("[[Rock 'n' Roll]]");
+    expect(convertMergeTagsToValues(html)).toBe("[[Rock 'n' Roll]]");
+    expect(replaceMergeTagSpans(html, (value) => value)).toBe(
+      "[[Rock 'n' Roll]]",
+    );
   });
 
   it("does not scan replacement markup again", () => {
@@ -61,5 +75,32 @@ describe("merge-tag HTML scanning", () => {
     expect(replaceMergeTagSpans(html, (value) => value)).toBe("{{name}}");
     const unclosed = '<span data-merge-tag="{{name}}">Name';
     expect(convertMergeTagsToValues(unclosed)).toBe(unclosed);
+  });
+});
+
+describe("uppercase entity aliases in chip attributes", () => {
+  it.each([
+    ["&LT;% $email %&GT;", "<% $email %>"],
+    ["[[AT&AMP;T]]", "[[AT&T]]"],
+    ["[[&QUOT;email&QUOT;]]", '[["email"]]'],
+    ["[[&COPY;]]", "[[©]]"],
+    ["[[&REG;]]", "[[®]]"],
+  ])("extracts %s for existing consumers", (encoded, token) => {
+    expect(
+      getTagAttrValue(`data-merge-tag="${encoded}"`, "data-merge-tag"),
+    ).toBe(token);
+    expect(
+      getTagAttrValue('data-merge-tag="[[AT&aMp;T]]"', "data-merge-tag"),
+    ).toBe("[[AT&aMp;T]]");
+    expect(
+      convertMergeTagsToValues(
+        `<span data-merge-tag="${encoded}">Email</span>`,
+      ),
+    ).toBe(token);
+    expect(
+      convertMergeTagsToValues(
+        '<span data-merge-tag="[[AT&aMp;T]]">Email</span>',
+      ),
+    ).toBe("[[AT&aMp;T]]");
   });
 });

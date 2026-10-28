@@ -97,17 +97,16 @@ describe("localized template guide", () => {
         ? [
             "die erste Spalte rechts",
             "wiederholbaren Elementen",
-            "Glossar",
             "Text als Standardinhalt",
             "nicht pro Sprache",
           ]
         : [
             "the first column on the right",
             "repeatable items",
-            "glossary",
             "their text as default content",
             "not per language",
           ];
+      expect(limits).not.toMatch(/glossary|Glossar/);
       for (const phrase of phrases)
         expect.soft(limits, phrase).toContain(phrase);
       if (pages.includes(page))

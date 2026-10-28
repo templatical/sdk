@@ -120,7 +120,9 @@ The four locale operations join `Operation`. `position` defaults to the end; rem
 
 `TRANSLATION_MAX_FIELDS = 50` and `TRANSLATION_MAX_CHARS = 20_000` cap each call. `TRANSLATABLE_HTML_FIELDS` is `{ title: ["content"], paragraph: ["content"] }`; every other eligible field is `text`. HTML blocks remain manually translatable and are excluded from `localeStrings`.
 
-`maskTags(text, syntax, format)` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
+`maskTags(text, syntax, format, options?: { doNotTranslate?: readonly string[] })` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
+
+Pass the same `doNotTranslate?: readonly string[]` to `maskTags`, `localeStrings` and `applyLocaleStrings` to protect configured terms in text and HTML attribute values. Terms are trimmed, case-sensitive whole words (Unicode letters, numbers and `_` are word characters), matched longest first without overlaps; tags and chips take precedence. Terms share the tags’ id sequence, and the exact check restores each occurrence byte for byte or rejects it as `tags_changed`. The option defaults to no terms. See [translation masking](/backend/translation#provider-contract) for limits and the editor configuration.
 
 `localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides and hidden blocks. `blockId` limits selection to that block. Existing translations are masked with source ids; changed tags skip the field. It returns extraction-time `sourceHash` values from unmasked defaults.
 

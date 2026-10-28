@@ -62,6 +62,8 @@ Jedes `LocalizedText.sourceHash` speichert beim Schreiben `sourceHash(defaultVal
 
 Übergeben Sie `init({ translation })` einen [TranslationProvider](/de/backend/translation), zusammen mit `localization`. In einer aktivierten Nicht-Standardsprachansicht sendet **Aus {language} übersetzen** nur fehlende und veraltete Felder (gaps). Aktuelle Übersetzungen und manuelle Bearbeitungen bleiben erhalten. **Alles erneut übersetzen…** wählt nach einer Bestätigung mit dem Sprachnamen alle geeigneten Felder. Beide Menüaktionen zeigen die Feldzahl und sind bei null deaktiviert. Blockmarkierungen bieten **Übersetzen** bei fehlendem Text und **Erneut übersetzen** bei veraltetem Text. Ohne Provider fehlt die Übersetzungsoberfläche.
 
+Verwenden Sie `localization.doNotTranslate: ["Sable"]`, um Markennamen beim Übersetzen zu bewahren. Der [Übersetzungsvertrag](/de/backend/translation#provider-vertrag) definiert Abgleich, Limits und die exakte Platzhalterprüfung; Headless-Abläufe übergeben dieselbe Liste an `localeStrings` und `applyLocaleStrings`.
+
 Übersetzen lässt HTML-Blöcke (von Hand bearbeiten), leere Standardwerte, `set`-Überschreibungen und ausgeblendete Blöcke aus. `content` von Titel und Absatz ist `html`, jedes andere Feld `text`. Aufrufe laufen nacheinander mit höchstens 50 Feldern und 20.000 UTF-16-Einheiten maskierten Texts. `content_too_large` halbiert den Batch bis auf ein Feld.
 
 Der Editor maskiert ganze Merge-/Logik-Chips in HTML sowie rohe, durch die aktive Syntax erkannte Tags in beiden Formaten. Text verwendet `<x id="n"/>`, HTML-Attributwerte `__xn__`. Beide teilen eine ID-Folge ab 1 pro Feld in Quellreihenfolge. Zurückgegebene Felder müssen genau diese IDs jeweils einmal enthalten; Platzhalter dürfen ihre Position ändern. Bei fehlgeschlagener Prüfung bleibt der alte Wert. HTML wird mit Rewrites `sanitizeRichTextHtml` bereinigt; Tokens werden dabei geschützt und die ursprünglichen Tags anschließend bytegetreu wiederhergestellt. Vorhandene Übersetzungen verwenden die Quell-Token-IDs; geänderte Tags schließen ein Feld aus.
@@ -136,7 +138,6 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 **Übersetzen**
 
 - HTML-Blöcke werden beim Übersetzen ausgelassen. Sie lassen sich weiterhin von Hand übersetzen.
-- Es gibt keine Nicht-übersetzen-Liste und kein Glossar. Nur Merge- und Logik-Tags werden geschützt.
 - Der Austausch von Zeichenketten erfolgt als JSON über `localeStrings`/`applyLocaleStrings`. Es gibt keinen CLI-Befehl dafür und keine XLIFF- oder CSV-Unterstützung.
 
 **KI in einer Sprachansicht**

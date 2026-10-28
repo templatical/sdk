@@ -45,6 +45,7 @@ const eligibleGaps = computed(() =>
     ? localeStrings(editor.content.value, locale.value, {
         syntax,
         definitions,
+        doNotTranslate: config?.doNotTranslate,
         blockId: props.block.id,
         only: "gaps",
       }).strings.length > 0

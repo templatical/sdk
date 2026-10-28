@@ -53,6 +53,7 @@ function open(
   provider: TranslationProvider,
   seed = content(),
   enabled = ["de"],
+  doNotTranslate?: string[],
 ) {
   const scope = effectScope();
   const value = scope.run(() => {
@@ -73,7 +74,7 @@ function open(
     const feature = useTranslationFeature({
       provider,
       editor,
-      localization: { locales: enabled },
+      localization: { locales: enabled, doNotTranslate },
       history: () => history,
       syntax: () => SYNTAX_PRESETS.liquid,
       definitions: () => [],
@@ -134,6 +135,46 @@ async function collaborative(provider: TranslationProvider) {
 }
 
 describe("translation runs", () => {
+  it("masks Sable before the provider and preserves it when the provider tries to translate it", async () => {
+    const seed = content(1);
+    (seed.blocks[0] as any).content = "<p>Hello Sable</p>";
+    const translate = vi.fn(async (request: TranslationRequest) => ({
+      fields: request.fields.map(({ id, text }) => ({
+        id,
+        text: text.replace("Hello", "Hallo").replaceAll("Sable", "Zobel"),
+      })),
+    }));
+    const { feature, editor } = open({ translate }, seed, ["de"], ["Sable"]);
+    const result = await feature.translate({ only: "gaps" });
+    expect(translate.mock.calls[0][0].fields).toEqual([
+      { id: "t0/content", text: '<p>Hello <x id="1"/></p>', format: "html" },
+    ]);
+    expect(result.translated).toBe(1);
+    expect(result.tagsChanged).toEqual([]);
+    expect(editor.content.value.blocks[0].l10n?.de.text?.content.value).toBe(
+      "<p>Hallo Sable</p>",
+    );
+  });
+
+  it("keeps the previous value when a provider drops a protected term", async () => {
+    const seed = content(1);
+    (seed.blocks[0] as any).content = "<p>Hello Sable</p>";
+    const { feature, editor } = open(
+      {
+        translate: async () => ({
+          fields: [{ id: "t0/content", text: "<p>Hallo Zobel</p>" }],
+        }),
+      },
+      seed,
+      ["de"],
+      ["Sable"],
+    );
+    const result = await feature.translate({ only: "gaps" });
+    expect(result.translated).toBe(0);
+    expect(result.tagsChanged).toEqual(["t0/content"]);
+    expect(editor.content.value.blocks[0].l10n).toBeUndefined();
+  });
+
   it("sends 120 consecutive fields in three sequential calls and undoes the batch once", async () => {
     const translate = vi.fn(async (request: TranslationRequest) =>
       answer(request),

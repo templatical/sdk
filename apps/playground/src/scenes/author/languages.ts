@@ -22,7 +22,8 @@ const TRANSLATIONS = {
     "languages-title/content": "<p>Willkommen zur Herbstkollektion</p>",
     "languages-hero/alt": "Ein tragbarer Lautsprecher",
     "languages-copy/content": "<p>Entdecken Sie unsere neue Kollektion.</p>",
-    "languages-stale/content": "<p>Das Angebot endet am Freitag.</p>",
+    "languages-stale/content":
+      '<p>Das Angebot von <x id="1"/> endet am Freitag.</p>',
     "languages-us-only/content": "<p>Kostenloser Versand in den USA.</p>",
     "languages-tagged/content": '<p>Hallo <x id="1"/>.</p>',
   },
@@ -30,7 +31,8 @@ const TRANSLATIONS = {
     "languages-title/content": "<p>Bienvenue dans la collection d’automne</p>",
     "languages-hero/alt": "Une enceinte portable",
     "languages-copy/content": "<p>Découvrez notre nouvelle collection.</p>",
-    "languages-stale/content": "<p>L’offre se termine vendredi.</p>",
+    "languages-stale/content":
+      '<p>L’offre de <x id="1"/> se termine vendredi.</p>',
     "languages-us-only/content": "<p>Livraison gratuite aux États-Unis.</p>",
     "languages-tagged/content": '<p>Bonjour <x id="1"/>.</p>',
   },
@@ -117,13 +119,15 @@ function languagesCanvas(ctx: SceneContext) {
     }),
     createParagraphBlock({
       id: "languages-stale",
-      content: "<p>The offer ends on Friday.</p>",
+      content: "<p>The Sable offer ends on Friday.</p>",
       l10n: {
         de: {
           text: {
             content: {
-              value: "<p>Das Angebot endet am Donnerstag.</p>",
-              sourceHash: sourceHash("<p>The offer ends on Thursday.</p>"),
+              value: "<p>Das Angebot von Sable endet am Donnerstag.</p>",
+              sourceHash: sourceHash(
+                "<p>The Sable offer ends on Thursday.</p>",
+              ),
             },
           },
         },
@@ -179,7 +183,7 @@ export const languages: Scene = {
   job: "Language versions of one template",
   initKey: "localization",
   summary:
-    "init({ templates, layout, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and use Translate from English to fill the gaps, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The layout footer follows the selected language and falls back to English when the layout lacks it. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.",
+    "init({ templates, layout, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and use Translate from English to fill the gaps, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The do-not-translate list protects Sable during translation. The layout footer follows the selected language and falls back to English when the layout lacks it. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.",
   catalog: "oss",
   group: "configure",
   docs: "/guide/localized-templates",
@@ -191,7 +195,10 @@ export const languages: Scene = {
   content: languagesCanvas,
   config(ctx) {
     const layout = languagesLayout();
-    const localization = { locales: ["de", "fr", "ar"] };
+    const localization = {
+      locales: ["de", "fr", "ar"],
+      doNotTranslate: ["Sable"],
+    };
     const translation = translationFor(ctx);
     const ai = createMockAiProvider({
       ...AI_RECORDINGS,
@@ -250,7 +257,7 @@ const editor = await init({
     save: async (id, patch) => (template = { ...template, ...patch, id }),
   },
   layout: ${JSON.stringify(languagesLayout(), null, 2)},
-  localization: { locales: ["de", "fr", "ar"] },
+  localization: { locales: ["de", "fr", "ar"], doNotTranslate: ["Sable"] },
   translation: createMockTranslationProvider({ translations }),
   ai: createMockAiProvider({
     ...AI_RECORDINGS,

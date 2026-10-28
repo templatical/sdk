@@ -5,6 +5,7 @@ import type {
   TemplateSettings,
 } from "@templatical/types";
 
+// doNotTranslate is editor/strings-helper config, not stored localization data.
 export interface LocalizedText {
   value: string;
   /** `sourceHash(defaultValue)` when the value was written or kept. */

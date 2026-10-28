@@ -98,7 +98,7 @@ import editorStylesInline, { ownedStyleRoots } from "virtual:editor-css";
 
 export interface TemplaticalEditorConfig {
   /** Enabled template languages. Versions are added by the author. */
-  localization?: { locales: string[] };
+  localization?: { locales: string[]; doNotTranslate?: string[] };
   /** Translation backend for enabled language versions. */
   translation?: TranslationProvider;
   onLocaleChange?: (locale: string) => void;
@@ -1190,6 +1190,21 @@ export async function init(
     if (!isLocaleTag(locale))
       throw new SdkError(`Invalid localization locale "${locale}".`);
   }
+  const terms = prepared.localization?.doNotTranslate;
+  if (
+    terms !== undefined &&
+    (!Array.isArray(terms) ||
+      terms.length > 500 ||
+      terms.some(
+        (term) =>
+          typeof term !== "string" ||
+          term.trim().length < 1 ||
+          term.trim().length > 100,
+      ))
+  )
+    throw new SdkError(
+      "localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.",
+    );
   prepareLayoutAndContent(prepared);
   return mountEditor(prepared, claimContainer(prepared.container));
 }

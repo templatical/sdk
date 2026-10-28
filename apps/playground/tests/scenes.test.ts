@@ -391,7 +391,10 @@ describe("Languages scene", () => {
       createMockTranslationProvider,
       { getElementById: () => ({}) },
     );
-    expect(config.localization).toEqual({ locales: ["de", "fr", "ar"] });
+    expect(config.localization).toEqual({
+      locales: ["de", "fr", "ar"],
+      doNotTranslate: ["Sable"],
+    });
     expect(config.translation.translate).toBeTypeOf("function");
     expect(config.ai.rewrite).toBeTypeOf("function");
     const template = await config.templates.load("languages");

@@ -123,7 +123,9 @@ test.describe("language versions", () => {
     );
     await stale.getByTestId("locale-keep").click();
     await expect(stale.getByTestId("locale-marker-stale")).toHaveCount(0);
-    await expect(stale).toContainText("Das Angebot endet am Donnerstag.");
+    await expect(stale).toContainText(
+      "Das Angebot von Sable endet am Donnerstag.",
+    );
     await expect(page.getByTestId("language-menu")).toContainText("3/4");
   });
 
@@ -327,6 +329,23 @@ test.describe("language versions", () => {
     ).not.toContainText("Von Ada.");
   });
 
+  test("keeps Sable in the German translation through the mock provider", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await scenePage.goto("languages");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await selectLanguage(page, "de");
+    const stale = page.locator('[data-block-id="languages-stale"]');
+    await stale.getByTestId("locale-retranslate").click();
+    await expect(stale).toContainText(
+      "Das Angebot von Sable endet am Freitag.",
+    );
+    await expect(stale.getByTestId("locale-marker-stale")).toHaveCount(0);
+  });
+
   test("translates the German gaps and reports the translated field count", async ({
     page,
     scenePage,
@@ -353,7 +372,7 @@ test.describe("language versions", () => {
     ).toHaveAttribute("alt", "Ein tragbarer Lautsprecher");
     await expect(
       page.locator('[data-block-id="languages-stale"]'),
-    ).toContainText("Das Angebot endet am Freitag.");
+    ).toContainText("Das Angebot von Sable endet am Freitag.");
     await page.getByTestId("language-menu").click();
     await expect(page.getByTestId("language-option-de")).toContainText(
       "0 not translated",
@@ -365,7 +384,7 @@ test.describe("language versions", () => {
     await page.getByTestId("language-option-en").click();
     await expect(
       page.locator('[data-block-id="languages-stale"]'),
-    ).toContainText("The offer ends on Friday.");
+    ).toContainText("The Sable offer ends on Friday.");
     await page.getByTestId("translation-dismiss").click();
     await expect(page.getByTestId("translation-status")).toHaveCount(0);
   });
@@ -447,7 +466,9 @@ test.describe("language versions", () => {
       "Translated 1 fields",
     );
     await expect(stale.getByTestId("locale-marker-stale")).toHaveCount(0);
-    await expect(stale).toContainText("Das Angebot endet am Freitag.");
+    await expect(stale).toContainText(
+      "Das Angebot von Sable endet am Freitag.",
+    );
     await expect(page.getByTestId("language-menu")).toContainText("3/4");
   });
 
@@ -511,7 +532,9 @@ test.describe("language versions", () => {
     await expect(ada.page.getByTestId("translation-result")).toHaveText(
       "Translated 1 fields · 1 skipped: being edited in Deutsch",
     );
-    await expect(remote).toContainText("Das Angebot endet am Donnerstag.");
+    await expect(remote).toContainText(
+      "Das Angebot von Sable endet am Donnerstag.",
+    );
     await expect(remote.getByTestId("locale-marker-stale")).toBeVisible();
     for (const tab of [ada, grace]) {
       await expect(

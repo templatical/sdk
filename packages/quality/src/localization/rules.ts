@@ -6,6 +6,7 @@ import {
   resolveSyntax,
   SETTINGS_TRANSLATABLE_FIELDS,
   translatableFields,
+  TRANSLATABLE_HTML_FIELDS,
   type Block,
   type SyntaxPreset,
   type TemplateContent,
@@ -18,6 +19,7 @@ interface TextField {
   blockId: string | null;
   field: string;
   target: Block | TemplateSettings;
+  format: "html" | "text";
 }
 
 function textFields(
@@ -31,6 +33,11 @@ function textFields(
         blockId: block.id,
         field,
         target: block,
+        format:
+          block.type === "html" ||
+          TRANSLATABLE_HTML_FIELDS[block.type]?.includes(field)
+            ? "html"
+            : "text",
       });
     }
   });
@@ -39,6 +46,7 @@ function textFields(
       blockId: null,
       field,
       target: content.settings,
+      format: "text",
     });
   }
   return fields;
@@ -56,17 +64,24 @@ function coverage(content: TemplateContent, opts: ResolvedOptions) {
 }
 
 /**
- * Span tokens stay opaque. Raw syntax matches include remaining attributes
- * and decode once; copying regexes preserves the consumer's regex state.
+ * HTML span tokens stay opaque and raw matches decode once. Plain text stays
+ * literal; copying regexes preserves the consumer's regex state.
  */
-function tokens(value: string, syntax: SyntaxPreset): string[] {
+function tokens(
+  value: string,
+  syntax: SyntaxPreset,
+  format: TextField["format"],
+): string[] {
   const spanTokens: string[] = [];
   let marker = "\u0000MT";
   while (value.includes(marker)) marker += "_";
-  const remaining = replaceMergeTagSpans(value, (token) => {
-    const index = spanTokens.push(token) - 1;
-    return `${marker}${index}\u0000`;
-  });
+  const remaining =
+    format === "html"
+      ? replaceMergeTagSpans(value, (token) => {
+          const index = spanTokens.push(token) - 1;
+          return `${marker}${index}\u0000`;
+        })
+      : value;
   const placeholders = Array.from(
     remaining.matchAll(new RegExp(`${marker}\\d+\u0000`, "g")),
     (match) => ({ start: match.index, end: match.index + match[0].length }),
@@ -88,7 +103,11 @@ function tokens(value: string, syntax: SyntaxPreset): string[] {
         continue;
       if (matches.some((other) => start < other.end && end > other.start))
         continue;
-      matches.push({ start, end, value: decodeHtmlEntities(match[0]) });
+      matches.push({
+        start,
+        end,
+        value: format === "html" ? decodeHtmlEntities(match[0]) : match[0],
+      });
     }
   }
   return [...spanTokens, ...matches.map((match) => match.value)].sort();
@@ -135,13 +154,13 @@ const mergeTagsDiffer: Rule = {
     const syntax = resolveSyntax(opts.mergeTagSyntax);
     return [...covered.translated, ...covered.stale].flatMap((id) => {
       const entry = fields.get(id)!;
-      const { target, field } = entry;
+      const { target, field, format } = entry;
       const base = readPath(target, field);
       const translated =
         target?.l10n?.[opts.contentLocale!]?.text?.[field]?.value;
       if (typeof base !== "string" || translated === undefined) return [];
-      return JSON.stringify(tokens(base, syntax)) ===
-        JSON.stringify(tokens(translated, syntax))
+      return JSON.stringify(tokens(base, syntax, format)) ===
+        JSON.stringify(tokens(translated, syntax, format))
         ? []
         : [fieldHit(entry)];
     });

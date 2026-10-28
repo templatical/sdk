@@ -25,11 +25,13 @@ describe.each(["", "collaboration=1&user=Ada"])(
         const ctx = context(branch);
         const config = languages.config(ctx);
         expect(config.translation?.translate).toBeTypeOf("function");
+        expect(config.localization?.doNotTranslate).toEqual(["Sable"]);
         const content = languages.content!(ctx);
         if (locale === "fr") content.settings.locales!.push("fr");
         const extraction = localeStrings(content, locale, {
           syntax,
           only: "gaps",
+          doNotTranslate: config.localization?.doNotTranslate,
         });
         const result = await config.translation!.translate(
           {
@@ -52,8 +54,8 @@ describe.each(["", "collaboration=1&user=Ada"])(
           id: "languages-stale/content",
           text:
             locale === "de"
-              ? "<p>Das Angebot endet am Freitag.</p>"
-              : "<p>L’offre se termine vendredi.</p>",
+              ? '<p>Das Angebot von <x id="1"/> endet am Freitag.</p>'
+              : '<p>L’offre de <x id="1"/> se termine vendredi.</p>',
         });
         const applied = applyLocaleStrings(
           content,
@@ -63,12 +65,21 @@ describe.each(["", "collaboration=1&user=Ada"])(
             sourceHash: extraction.strings.find(({ id }) => id === field.id)!
               .sourceHash,
           })),
-          { syntax, tokens: extraction.tokens },
+          {
+            syntax,
+            tokens: extraction.tokens,
+            doNotTranslate: config.localization?.doNotTranslate,
+          },
         );
         expect(applied.rejected).toEqual([]);
         const translated = applyOperations(content, applied.operations);
         expect(localeCoverage(translated, locale).missing).toEqual([]);
         expect(localeCoverage(translated, locale).stale).toEqual([]);
+        expect(
+          translated.blocks.find(({ id }) => id === "languages-stale")?.l10n?.[
+            locale
+          ].text?.content.value,
+        ).toContain("Sable");
         expect(resolveLocale(translated, "en")).toEqual(
           resolveLocale(content, "en"),
         );
@@ -119,8 +130,13 @@ describe.each(["", "collaboration=1&user=Ada"])(
         query: { translation: "tags-changed" },
       });
       const ctx = context(`${branch}&translation=tags-changed`);
+      const config = languages.config(ctx);
       const content = languages.content!(ctx);
-      const extraction = localeStrings(content, "de", { syntax, only: "gaps" });
+      const extraction = localeStrings(content, "de", {
+        syntax,
+        only: "gaps",
+        doNotTranslate: config.localization?.doNotTranslate,
+      });
       expect(extraction.tokens["languages-tagged/content"]).toEqual([
         "{{first_name}}",
       ]);
@@ -145,7 +161,11 @@ describe.each(["", "collaboration=1&user=Ada"])(
           sourceHash: extraction.strings.find(({ id }) => id === field.id)!
             .sourceHash,
         })),
-        { syntax, tokens: extraction.tokens },
+        {
+          syntax,
+          tokens: extraction.tokens,
+          doNotTranslate: config.localization?.doNotTranslate,
+        },
       );
       expect(applied.rejected).toEqual([
         { id: "languages-tagged/content", reason: "tags_changed" },
@@ -169,7 +189,11 @@ describe.each(["", "collaboration=1&user=Ada"])(
       const config = languages.config(ctx);
       const content = languages.content!(ctx);
       content.settings.locales!.push("fr");
-      const extraction = localeStrings(content, "fr", { syntax, only: "gaps" });
+      const extraction = localeStrings(content, "fr", {
+        syntax,
+        only: "gaps",
+        doNotTranslate: config.localization?.doNotTranslate,
+      });
       const request = {
         templateId: "languages",
         sourceLocale: "en",

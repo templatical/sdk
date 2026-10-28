@@ -60,7 +60,7 @@ interface UseTranslationFeatureOptions {
     UseEditorReturn,
     "content" | "activeLocale" | "loadVersion" | "state" | "markDirty"
   >;
-  localization?: { locales: string[] };
+  localization?: { locales: string[]; doNotTranslate?: string[] };
   definitions: () => readonly CustomBlockDefinition[];
   syntax: () => SyntaxPreset;
   history: () => Pick<UseHistoryReturn, "record">;
@@ -149,6 +149,7 @@ export function useTranslationFeature(
       localeStrings(editor.content.value, editor.activeLocale.value!, {
         definitions: options.definitions(),
         syntax: options.syntax(),
+        doNotTranslate: options.localization?.doNotTranslate,
         only,
       }).strings.length;
     return { gaps: extract("gaps"), all: extract("all") };
@@ -195,10 +196,12 @@ export function useTranslationFeature(
     const sourceLocale = defaultLocaleOf(editor.content.value);
     const definitions = safeClone(toRaw([...options.definitions()]));
     const syntax = options.syntax();
+    const doNotTranslate = options.localization?.doNotTranslate?.slice();
     const extraction = localeStrings(editor.content.value, locale, {
       ...scope,
       definitions,
       syntax,
+      doNotTranslate,
     });
     const result: TranslationRunResult = {
       translated: 0,
@@ -307,6 +310,7 @@ export function useTranslationFeature(
           {
             definitions,
             syntax,
+            doNotTranslate,
             tokens: extraction.tokens,
           },
         );

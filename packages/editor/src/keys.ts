@@ -42,8 +42,9 @@ import type { OnRequestMedia } from "./index";
 export const TRANSLATIONS_KEY: InjectionKey<Translations> =
   Symbol("translations");
 
-export const LOCALIZATION_KEY: InjectionKey<{ locales: string[] } | undefined> =
-  Symbol("localization");
+export const LOCALIZATION_KEY: InjectionKey<
+  { locales: string[]; doNotTranslate?: string[] } | undefined
+> = Symbol("localization");
 
 export const EDITOR_KEY: InjectionKey<BaseEditorReturn> = Symbol("editor");
 

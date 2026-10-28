@@ -62,6 +62,8 @@ Each `LocalizedText.sourceHash` stores `sourceHash(defaultValue)` when written. 
 
 Pass `init({ translation })` a [TranslationProvider](/backend/translation), alongside `localization`. In an enabled non-default view, **Translate from {language}** sends missing and out-of-date fields (gaps) only. Current translations and manual edits survive. **Translate everything again…** selects all eligible fields after confirmation naming the language. Both menu actions show counts and are disabled at zero. Block markers offer **Translate** for missing text and **Re-translate** for stale text. Without the provider there is no Translate UI.
 
+Use `localization.doNotTranslate: ["Sable"]` to preserve brand names during Translate. The [translation contract](/backend/translation#provider-contract) defines matching, limits and the exact placeholder check; headless flows pass the same list to `localeStrings` and `applyLocaleStrings`.
+
 Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides and hidden blocks. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
 
 The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids; changed tags make a field ineligible.
@@ -136,7 +138,6 @@ For independent block trees or layouts in each language, keep separate templates
 **Translate**
 
 - HTML blocks are left out of Translate. They can still be translated by hand.
-- There's no do-not-translate list or glossary. Only merge and logic tags are protected.
 - The strings round trip is JSON through `localeStrings`/`applyLocaleStrings`. There's no strings CLI command and no XLIFF or CSV support.
 
 **AI in a language view**

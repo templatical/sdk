@@ -18,7 +18,7 @@ import { createHttpTranslationProvider } from "@templatical/ai-kit/client";
 
 const editor = await init({
   container: "#editor",
-  localization: { locales: ["en", "de"] },
+  localization: { locales: ["en", "de"], doNotTranslate: ["Sable"] },
   translation: createHttpTranslationProvider({ url: "/api" }),
 });
 ```
@@ -36,6 +36,10 @@ Under **Languages**, add German and select it. Translate appears only with `tran
 Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides and hidden blocks are excluded too.
 
 The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids; a changed tag makes the field ineligible. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
+
+`localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. Named references outside HTML 4.01, `&apos;` and the uppercase aliases (`&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;`, `&REG;`) are compared as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. `TranslationRequest` is unchanged.
+
+For headless flows, pass the same `doNotTranslate?: readonly string[]` to `localeStrings` and `applyLocaleStrings`; `maskTags(text, syntax, format, { doNotTranslate })` also accepts it. The helpers trim terms when matching; the size limits are validated by `init()`. Existing translations reuse the source's ids, so a stored translation with a missing or changed protected term makes the field ineligible. Check a configured term by translating a field containing it: the provider receives a placeholder and the saved translation contains the original term.
 
 Calls run sequentially. On `content_too_large` the editor halves the batch and retries down to one field; a single field over the cap cannot be sent. Successful fields received before Cancel or a provider failure apply together as one undo step. A run that changes nothing records nothing. With collaboration it is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped and reported.
 

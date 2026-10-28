@@ -984,7 +984,7 @@ unmount();
 | `templateSettings`   | `TemplateSettingsConfig`                                          | No       | Which template settings the Settings panel exposes. `fields` is an allowlist over `Exclude<keyof TemplateSettings, "locales" \| "l10n">`, or `false` for none (which removes the tab). Omit for every setting. See [Restricting the settings panel](#restricting-the-settings-panel)                                                                                                                                                                                                                                                                |
 | `theme`              | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `uiTheme`            | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `localization` | `{ locales: string[] }` | No | Enables template language versions. Omitted: no language UI; existing layers survive. Upgrade renderer, validator and collaboration backend first. `initCloud()` ignores it and logs a warning. See [Localized templates](/guide/localized-templates). |
+| `localization` | `{ locales: string[]; doNotTranslate?: string[] }` | No | Enables template language versions. Omitted: no language UI; existing layers survive. Upgrade renderer, validator and collaboration backend first. `initCloud()` ignores it and logs a warning. See [Localized templates](/guide/localized-templates). `doNotTranslate` accepts at most 500 terms, each 1–100 characters after trimming; matching terms survive Translate byte for byte. Invalid lists reject with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` See [masking](/backend/translation#provider-contract). |
 | `translation` | `TranslationProvider` | No | Translates eligible fields in an enabled non-default language view; requires `localization`. Omitted: no Translate UI. Independent of `ai`; `initCloud()` ignores it with a warning. See [Translation](/backend/translation). |
 | `onLocaleChange` | `(locale: string) => void` | No | Called when the active template language changes, including fallback to the default. Active language is view state and is not saved. |
 | `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -2464,6 +2464,7 @@ import type {
   TemplateSettings,
 } from "@templatical/types";
 
+// doNotTranslate is editor/strings-helper config, not stored localization data.
 export interface LocalizedText {
   value: string;
   /** `sourceHash(defaultValue)` when the value was written or kept. */
@@ -2661,6 +2662,7 @@ export declare function maskTags(
   text: string,
   syntax: SyntaxPreset,
   format: "html" | "text",
+  options?: { doNotTranslate?: readonly string[] },
 ): { text: string; tokens: string[] };
 
 export declare function unmaskTags(
@@ -2676,6 +2678,7 @@ export declare function localeStrings(
     syntax: SyntaxPreset;
     only: "gaps" | "all";
     blockId?: string;
+    doNotTranslate?: readonly string[];
   },
 ): { strings: LocaleString[]; tokens: Record<string, string[]> };
 
@@ -2687,6 +2690,7 @@ export declare function applyLocaleStrings(
     definitions?: readonly CustomBlockDefinition[];
     syntax: SyntaxPreset;
     tokens: Record<string, string[]>;
+    doNotTranslate?: readonly string[];
   },
 ): {
   operations: Operation[];
@@ -2699,7 +2703,9 @@ export declare function applyLocaleStrings(
 
 `TRANSLATION_MAX_FIELDS = 50` and `TRANSLATION_MAX_CHARS = 20_000` cap each call. `TRANSLATABLE_HTML_FIELDS` is `{ title: ["content"], paragraph: ["content"] }`; every other eligible field is `text`. HTML blocks remain manually translatable and are excluded from `localeStrings`.
 
-`maskTags(text, syntax, format)` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
+`maskTags(text, syntax, format, options?: { doNotTranslate?: readonly string[] })` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
+
+Pass the same `doNotTranslate?: readonly string[]` to `maskTags`, `localeStrings` and `applyLocaleStrings` to protect configured terms in text and HTML attribute values. Terms are trimmed, case-sensitive whole words (Unicode letters, numbers and `_` are word characters), matched longest first without overlaps; tags and chips take precedence. Terms share the tags’ id sequence, and the exact check restores each occurrence byte for byte or rejects it as `tags_changed`. The option defaults to no terms. See [translation masking](/backend/translation#provider-contract) for limits and the editor configuration.
 
 `localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides and hidden blocks. `blockId` limits selection to that block. Existing translations are masked with source ids; changed tags skip the field. It returns extraction-time `sourceHash` values from unmasked defaults.
 
@@ -5924,7 +5930,7 @@ import { createHttpTranslationProvider } from "@templatical/ai-kit/client";
 
 const editor = await init({
   container: "#editor",
-  localization: { locales: ["en", "de"] },
+  localization: { locales: ["en", "de"], doNotTranslate: ["Sable"] },
   translation: createHttpTranslationProvider({ url: "/api" }),
 });
 ```
@@ -5996,6 +6002,7 @@ export declare function maskTags(
   text: string,
   syntax: SyntaxPreset,
   format: "html" | "text",
+  options?: { doNotTranslate?: readonly string[] },
 ): { text: string; tokens: string[] };
 
 export declare function unmaskTags(
@@ -6011,6 +6018,7 @@ export declare function localeStrings(
     syntax: SyntaxPreset;
     only: "gaps" | "all";
     blockId?: string;
+    doNotTranslate?: readonly string[];
   },
 ): { strings: LocaleString[]; tokens: Record<string, string[]> };
 
@@ -6022,6 +6030,7 @@ export declare function applyLocaleStrings(
     definitions?: readonly CustomBlockDefinition[];
     syntax: SyntaxPreset;
     tokens: Record<string, string[]>;
+    doNotTranslate?: readonly string[];
   },
 ): {
   operations: Operation[];
@@ -6037,6 +6046,10 @@ export declare function applyLocaleStrings(
 Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides and hidden blocks are excluded too.
 
 The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids; a changed tag makes the field ineligible. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
+
+`localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. Named references outside HTML 4.01, `&apos;` and the uppercase aliases (`&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;`, `&REG;`) are compared as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. `TranslationRequest` is unchanged.
+
+For headless flows, pass the same `doNotTranslate?: readonly string[]` to `localeStrings` and `applyLocaleStrings`; `maskTags(text, syntax, format, { doNotTranslate })` also accepts it. The helpers trim terms when matching; the size limits are validated by `init()`. Existing translations reuse the source's ids, so a stored translation with a missing or changed protected term makes the field ineligible. Check a configured term by translating a field containing it: the provider receives a placeholder and the saved translation contains the original term.
 
 Calls run sequentially. On `content_too_large` the editor halves the batch and retries down to one field; a single field over the cap cannot be sent. Successful fields received before Cancel or a provider failure apply together as one undo step. A run that changes nothing records nothing. With collaboration it is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped and reported.
 
@@ -11852,6 +11865,8 @@ Each `LocalizedText.sourceHash` stores `sourceHash(defaultValue)` when written. 
 
 Pass `init({ translation })` a [TranslationProvider](/backend/translation), alongside `localization`. In an enabled non-default view, **Translate from {language}** sends missing and out-of-date fields (gaps) only. Current translations and manual edits survive. **Translate everything again…** selects all eligible fields after confirmation naming the language. Both menu actions show counts and are disabled at zero. Block markers offer **Translate** for missing text and **Re-translate** for stale text. Without the provider there is no Translate UI.
 
+Use `localization.doNotTranslate: ["Sable"]` to preserve brand names during Translate. The [translation contract](/backend/translation#provider-contract) defines matching, limits and the exact placeholder check; headless flows pass the same list to `localeStrings` and `applyLocaleStrings`.
+
 Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides and hidden blocks. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
 
 The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids; changed tags make a field ineligible.
@@ -12011,7 +12026,6 @@ For independent block trees or layouts in each language, keep separate templates
 **Translate**
 
 - HTML blocks are left out of Translate. They can still be translated by hand.
-- There's no do-not-translate list or glossary. Only merge and logic tags are protected.
 - The strings round trip is JSON through `localeStrings`/`applyLocaleStrings`. There's no strings CLI command and no XLIFF or CSV support.
 
 **AI in a language view**

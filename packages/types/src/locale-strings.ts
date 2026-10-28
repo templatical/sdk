@@ -1,6 +1,6 @@
 import type { Block } from "./blocks";
 import type { CustomBlockDefinition } from "./custom-blocks";
-import { findOpenTagEnd } from "./html-scan";
+import { decodeHtmlEntities, findOpenTagEnd } from "./html-scan";
 import {
   defaultLocaleOf,
   localeCoverage,
@@ -24,7 +24,13 @@ export const TRANSLATABLE_HTML_FIELDS: Readonly<
 };
 
 type Format = "html" | "text";
-type Range = { start: number; end: number; markup: string; attribute: boolean };
+type Range = {
+  start: number;
+  end: number;
+  markup: string;
+  attribute: boolean;
+  term?: string;
+};
 
 function attributeRanges(html: string): { start: number; end: number }[] {
   const ranges: { start: number; end: number }[] = [];
@@ -97,6 +103,107 @@ function tagRanges(
   return ranges.sort((a, b) => a.start - b.start);
 }
 
+/** Map decoded boundaries to source offsets, excluding reference interiors. */
+function decodedTermText(text: string): { text: string; offsets?: number[] } {
+  if (!text.includes("&")) return { text };
+  let decoded = "";
+  const offsets = [0];
+  let cursor = 0;
+  const literal = (end: number) => {
+    decoded += text.slice(cursor, end);
+    while (cursor < end) offsets.push(++cursor);
+  };
+  for (const match of text.matchAll(
+    /&(?:#[0-9]+|#[xX][0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g,
+  )) {
+    literal(match.index);
+    const value = decodeHtmlEntities(match[0]);
+    decoded += value;
+    for (let i = 1; i < value.length; i++) offsets.push(-1);
+    cursor = match.index + match[0].length;
+    offsets.push(cursor);
+  }
+  literal(text.length);
+  return { text: decoded, offsets };
+}
+
+function termRanges(
+  text: string,
+  format: Format,
+  terms: readonly string[],
+): Range[] {
+  const alternatives = terms
+    .map((term) => term.trim())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (!alternatives.length) return [];
+  const pattern = new RegExp(
+    `(?<![\\p{L}\\p{N}_])(?:${alternatives.join("|")})(?![\\p{L}\\p{N}_])`,
+    "gu",
+  );
+  const segments: { start: number; end: number; attribute: boolean }[] = [];
+  if (format === "text")
+    segments.push({ start: 0, end: text.length, attribute: false });
+  else {
+    segments.push(
+      ...attributeRanges(text).map((range) => ({ ...range, attribute: true })),
+    );
+    const markup = /<(?:\/?[a-z][\w:-]*\b|!--|!|\?)/gi;
+    let cursor = 0;
+    for (let match; (match = markup.exec(text));) {
+      segments.push({ start: cursor, end: match.index, attribute: false });
+      const end =
+        match[0] === "<!--"
+          ? text.indexOf("-->", markup.lastIndex)
+          : findOpenTagEnd(text, markup.lastIndex);
+      if (end < 0) return [];
+      cursor = end + (match[0] === "<!--" ? 3 : 1);
+      markup.lastIndex = cursor;
+    }
+    segments.push({ start: cursor, end: text.length, attribute: false });
+  }
+  const ranges: Range[] = [];
+  for (const segment of segments) {
+    pattern.lastIndex = 0;
+    const value = text.slice(segment.start, segment.end);
+    const decoded =
+      format === "html"
+        ? decodedTermText(value)
+        : { text: value, offsets: undefined };
+    for (let match; (match = pattern.exec(decoded.text));) {
+      const from = decoded.offsets?.[match.index] ?? match.index;
+      const to =
+        decoded.offsets?.[match.index + match[0].length] ??
+        match.index + match[0].length;
+      if (from < 0 || to < 0) continue;
+      const start = segment.start + from;
+      const end = segment.start + to;
+      ranges.push({
+        start,
+        end,
+        markup: text.slice(start, end),
+        attribute: segment.attribute,
+        term: match[0],
+      });
+    }
+  }
+  return ranges;
+}
+
+function maskingRanges(
+  text: string,
+  syntax: SyntaxPreset,
+  format: Format,
+  options?: { doNotTranslate?: readonly string[] },
+): Range[] {
+  const tags = tagRanges(text, syntax, format);
+  const terms = termRanges(text, format, options?.doNotTranslate ?? []).filter(
+    (term) => !tags.some((tag) => term.start < tag.end && term.end > tag.start),
+  );
+  return [...tags, ...terms].sort((a, b) => a.start - b.start);
+}
+
 function maskedText(text: string, ranges: Range[], ids: number[]): string {
   let out = "";
   let cursor = 0;
@@ -108,13 +215,14 @@ function maskedText(text: string, ranges: Range[], ids: number[]): string {
   return out + text.slice(cursor);
 }
 
-/** Mask chips whole in HTML, and raw merge and logic tags in both formats. */
+/** Mask chips whole in HTML, raw tags and configured terms in both formats. */
 export function maskTags(
   text: string,
   syntax: SyntaxPreset,
   format: Format,
+  options?: { doNotTranslate?: readonly string[] },
 ): { text: string; tokens: string[] } {
-  const ranges = tagRanges(text, syntax, format);
+  const ranges = maskingRanges(text, syntax, format, options);
   return {
     text: maskedText(
       text,
@@ -146,13 +254,19 @@ function maskTranslation(
   tokens: string[],
   syntax: SyntaxPreset,
   format: Format,
+  options?: { doNotTranslate?: readonly string[] },
 ): string | null {
-  const ranges = tagRanges(text, syntax, format);
+  const ranges = maskingRanges(text, syntax, format, options);
   const used = new Set<number>();
   const ids: number[] = [];
   for (const range of ranges) {
     const index = tokens.findIndex(
-      (token, i) => token === range.markup && !used.has(i),
+      (token, i) =>
+        !used.has(i) &&
+        (token === range.markup ||
+          (range.term !== undefined &&
+            format === "html" &&
+            decodeHtmlEntities(token) === range.term)),
     );
     if (index < 0) return null;
     used.add(index);
@@ -251,6 +365,7 @@ export function localeStrings(
     syntax: SyntaxPreset;
     only: "gaps" | "all";
     blockId?: string;
+    doNotTranslate?: readonly string[];
   },
 ): { strings: LocaleString[]; tokens: Record<string, string[]> } {
   const coverage = localeCoverage(content, locale, options.definitions);
@@ -273,13 +388,19 @@ export function localeStrings(
           field.target.blockId !== options.blockId))
     )
       continue;
-    const masked = maskTags(field.source, options.syntax, field.format);
+    const masked = maskTags(
+      field.source,
+      options.syntax,
+      field.format,
+      options,
+    );
     const text = field.text
       ? maskTranslation(
           field.text.value,
           masked.tokens,
           options.syntax,
           field.format,
+          options,
         )
       : undefined;
     if (text === null) continue;
@@ -304,6 +425,7 @@ export function applyLocaleStrings(
     definitions?: readonly CustomBlockDefinition[];
     syntax: SyntaxPreset;
     tokens: Record<string, string[]>;
+    doNotTranslate?: readonly string[];
   },
 ): {
   operations: Operation[];
@@ -359,7 +481,8 @@ export function applyLocaleStrings(
     if (
       !tokens ||
       text === null ||
-      maskTranslation(text, tokens, options.syntax, field.format) === null
+      maskTranslation(text, tokens, options.syntax, field.format, options) ===
+        null
     ) {
       rejected.push({ id: value.id, reason: "tags_changed" });
       continue;

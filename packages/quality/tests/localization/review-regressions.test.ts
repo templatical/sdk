@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createDefaultTemplateContent,
+  createButtonBlock,
+  createHtmlBlock,
   createImageBlock,
   createParagraphBlock,
   createSectionBlock,
@@ -16,6 +18,70 @@ function template() {
 }
 
 describe("localized lint review regressions", () => {
+  it("compares plain button tokens literally while keeping HTML entity spellings equivalent", () => {
+    const content = template();
+    const base = "[[Müller]]";
+    const layer = {
+      de: {
+        text: {
+          content: { value: "[[M&uuml;ller]]", sourceHash: sourceHash(base) },
+        },
+      },
+    };
+    content.blocks = [
+      createButtonBlock({
+        id: "button",
+        text: base,
+        l10n: {
+          de: {
+            text: {
+              text: { value: "[[M&uuml;ller]]", sourceHash: sourceHash(base) },
+            },
+          },
+        },
+      }),
+      createParagraphBlock({ id: "paragraph", content: base, l10n: layer }),
+      createHtmlBlock({ id: "html", content: base, l10n: layer }),
+    ];
+    const issues = lintTemplate(content, {
+      contentLocale: "de",
+      mergeTagSyntax: { value: /\[\[.+?\]\]/g, logic: /NEVER/g },
+    }).filter((issue) => issue.ruleId === "localization.merge-tags-differ");
+    expect(issues.map(({ blockId }) => blockId)).toEqual(["button"]);
+  });
+
+  it("treats chip-shaped strings as literal text in buttons and as chips in HTML", () => {
+    const content = template();
+    const base = '<span data-merge-tag="[[name]]">[[label]]</span>';
+    content.blocks = [
+      createButtonBlock({
+        id: "button",
+        text: base,
+        l10n: {
+          de: {
+            text: { text: { value: "[[name]]", sourceHash: sourceHash(base) } },
+          },
+        },
+      }),
+      createParagraphBlock({
+        id: "paragraph",
+        content: base,
+        l10n: {
+          de: {
+            text: {
+              content: { value: "[[name]]", sourceHash: sourceHash(base) },
+            },
+          },
+        },
+      }),
+    ];
+    const issues = lintTemplate(content, {
+      contentLocale: "de",
+      mergeTagSyntax: { value: /\[\[.+?\]\]/g, logic: /NEVER/g },
+    }).filter((issue) => issue.ruleId === "localization.merge-tags-differ");
+    expect(issues.map(({ blockId }) => blockId)).toEqual(["button"]);
+  });
+
   it.each([
     [
       "value spans and their metadata",
@@ -75,7 +141,10 @@ describe("localized lint review regressions", () => {
         l10n: {
           de: {
             text: {
-              content: { value: "Hallo {{name}}", sourceHash: sourceHash(base) },
+              content: {
+                value: "Hallo {{name}}",
+                sourceHash: sourceHash(base),
+              },
             },
           },
         },
