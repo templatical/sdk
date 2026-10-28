@@ -66,13 +66,13 @@ A backend passes the locks it holds and the acting session: `applyOperations(con
 
 `addLocale`, `removeLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations; upgrade the renderer, validator and collaboration backend before storing localized content.
 
-The following batch starts with paragraph `b1` containing `<p>Original</p>`, default locale `en`, direction `ltr` and no language versions. It adds German, writes a German value, hides the block in German, overrides the direction, then removes German and its layers. `source` is `sourceHash("<p>Original</p>")`.
+The following batch starts with paragraph `b1` containing `<p>Original</p>`, default locale `en`, direction `ltr` and no language versions. It adds German, writes a German value, hides the block in German, overrides the direction, then removes German and its layers. `sourceHash` is `sourceHash("<p>Original</p>")`.
 
 ```json
 {"op":"addLocale","locale":"de"}
-{"op":"updateBlockLocale","blockId":"b1","locale":"de","text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}
+{"op":"updateBlockLocale","blockId":"b1","locale":"de","text":{"content":{"value":"<p>Hallo</p>","sourceHash":"f898b751"}},"hidden":true}
 {"op":"updateSettingsLocale","locale":"de","set":{"direction":"rtl"}}
-{"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
+{"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","sourceHash":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
 ```
 
 | Operation | Contract |
@@ -86,11 +86,11 @@ The following batch starts with paragraph `b1` containing `<p>Original</p>`, def
 
 Base updates prune orphan locale entries; their inverse restores the base before restoring the pruned layer paths. Locale `set` overrides refuse section `columns`, menu `items`, table `rows` and `rows.<id>.cells`, and social `icons` with `invalid_operation`. Element leaf paths and custom `fieldValues.<key>` whole-field overrides remain allowed.
 
-`LocalizedText` is `{ value: string; source: string }`. Text paths must match `TRANSLATABLE_FIELDS` for the block type, or `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) for settings, and resolve in the base. Paths use element ids, such as `items.i1.text`; ids containing `.` cannot be addressed. A `set` path must resolve or have an existing object parent. Prototype segments (`__proto__`, `constructor`, `prototype`) and empty segments are refused. Block overrides cannot start with `id`, `type`, `children` or `l10n`; settings overrides cannot start with `locale`, `locales` or `l10n`.
+`LocalizedText` is `{ value: string; sourceHash: string }`. Text paths must match `TRANSLATABLE_FIELDS` for the block type, or `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) for settings, and resolve in the base. Paths use element ids, such as `items.i1.text`; menu item, social icon, table row and table cell ids must not contain `.` or `/`. A `set` path must resolve or have an existing object parent. Prototype segments (`__proto__`, `constructor`, `prototype`) and empty segments are refused. Block overrides cannot start with `id`, `type`, `children` or `l10n`; settings overrides cannot start with `locale`, `locales` or `l10n`.
 
 The engine applies `unset` first (from both maps), then `text`, then `set`, then `hidden`. Writing a path in one map deletes it from the other. `hidden: false` removes the hidden flag. Empty maps, layers and localization containers are omitted; removing the last version omits `settings.locales`.
 
-`set: { path: null }` stores a clearing override: the property is absent in that language's `resolveLocale` projection. `unset: [path]` removes the override, so the default-language value applies again. Layers never store `undefined`; undefined `text` or `set` entries and text entries without string `value` and `source` are refused with `invalid_operation`. Every `unset` path must be non-empty and pass `isSafePath`, even if the base path no longer exists; safe orphan paths remain removable.
+`set: { path: null }` stores a clearing override: the property is absent in that language's `resolveLocale` projection. `unset: [path]` removes the override, so the default-language value applies again. Layers never store `undefined`; undefined `text` or `set` entries and text entries without string `value` and `sourceHash` are refused with `invalid_operation`. Every `unset` path must be non-empty and pass `isSafePath`, even if the base path no longer exists; safe orphan paths remain removable.
 
 ### Clearing overrides
 

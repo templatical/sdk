@@ -16,7 +16,7 @@ describe("deriveLayer", () => {
   it("stores a translated title against the base hash", () => {
     expect(deriveLayer(base, { ...base, content: "Hallo" }, undefined)).toEqual(
       {
-        text: { content: { value: "Hallo", source: sourceHash("Hello") } },
+        text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
       },
     );
   });
@@ -24,7 +24,7 @@ describe("deriveLayer", () => {
   it("resets a translation when the base value is typed back", () => {
     expect(
       deriveLayer(base, base, {
-        text: { content: { value: "Hallo", source: "old" } },
+        text: { content: { value: "Hallo", sourceHash: "old" } },
       }),
     ).toEqual({});
   });
@@ -35,10 +35,10 @@ describe("deriveLayer", () => {
         base,
         { ...base, content: "Hallo" },
         {
-          text: { content: { value: "Hallo", source: "old" } },
+          text: { content: { value: "Hallo", sourceHash: "old" } },
         },
       ),
-    ).toEqual({ text: { content: { value: "Hallo", source: "old" } } });
+    ).toEqual({ text: { content: { value: "Hallo", sourceHash: "old" } } });
   });
 
   it("addresses menu text and URLs by element id", () => {
@@ -52,7 +52,7 @@ describe("deriveLayer", () => {
         undefined,
       ),
     ).toEqual({
-      text: { "items.i1.text": { value: "Start", source: sourceHash("Home") } },
+      text: { "items.i1.text": { value: "Start", sourceHash: sourceHash("Home") } },
       set: { "items.i1.url": "/de" },
     });
   });
@@ -108,7 +108,7 @@ describe("deriveLayer", () => {
       ),
     ).toEqual({
       text: {
-        "fieldValues.headline": { value: "Hallo", source: sourceHash("Hello") },
+        "fieldValues.headline": { value: "Hallo", sourceHash: sourceHash("Hello") },
       },
       set: { "fieldValues.color": "#ffffff" },
     });

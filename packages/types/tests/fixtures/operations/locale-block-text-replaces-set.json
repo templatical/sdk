@@ -53,7 +53,7 @@
       "text": {
         "content": {
           "value": "Hallo",
-          "source": "67eb44ba"
+          "sourceHash": "67eb44ba"
         }
       }
     }
@@ -70,7 +70,7 @@
               "text": {
                 "content": {
                   "value": "Hallo",
-                  "source": "67eb44ba"
+                  "sourceHash": "67eb44ba"
                 }
               }
             }

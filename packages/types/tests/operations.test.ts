@@ -363,7 +363,7 @@ describe("locale operation validation and ordering", () => {
         blockId: "t1",
         locale: "de",
         unset: ["content"],
-        text: { content: { value: "Hallo", source: "67eb44ba" } },
+        text: { content: { value: "Hallo", sourceHash: "67eb44ba" } },
         set: { content: "Override" },
         hidden: false,
       },
@@ -411,7 +411,7 @@ describe("locale operation validation and ordering", () => {
       } as Block,
     ];
     for (const change of [
-      { text: { "items.i.1.text": { value: "Laden", source: "28742cc9" } } },
+      { text: { "items.i.1.text": { value: "Laden", sourceHash: "28742cc9" } } },
       { set: { "items.i.1.url": "https://example.com/de" } },
       { set: { "items.missing": {} } },
     ]) {
@@ -468,7 +468,7 @@ describe("locale operation validation and ordering", () => {
         set: { preheaderText: "Override" },
       },
     ]);
-    const translated = { value: "Hallo", source: "f55c314b" };
+    const translated = { value: "Hallo", sourceHash: "f55c314b" };
     const after = applyOperations(before, [
       {
         op: "updateSettingsLocale",

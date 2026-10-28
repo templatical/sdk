@@ -366,7 +366,7 @@ export function applyLocaleStrings(
       field.target.kind === "settings"
         ? (settingsText ??= {})
         : (grouped.get(field.target.blockId) ?? {});
-    texts[field.path] = { value: text, source: value.sourceHash };
+    texts[field.path] = { value: text, sourceHash: value.sourceHash };
     if (field.target.kind === "block") grouped.set(field.target.blockId, texts);
   }
   const operations: Operation[] = [];

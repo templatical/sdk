@@ -23,7 +23,7 @@ function mismatches(
       content: base,
       l10n: {
         de: {
-          text: { content: { value: translated, source: sourceHash(base) } },
+          text: { content: { value: translated, sourceHash: sourceHash(base) } },
         },
       },
     }),

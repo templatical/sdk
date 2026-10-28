@@ -198,7 +198,7 @@ describe('useEditorCore', () => {
     const customBlocks: CustomBlockDefinition[] = [{ type: 'card', name: 'Card', fields: [{ key: 'label', label: 'Label', type: 'text', default: 'Hello' }], template: '{{ label }}' }];
     content.blocks = [
       { ...createCustomBlock(customBlocks[0]), id: 'card' },
-      createParagraphBlock({ id: 'copy', content: 'Hello *|FNAME|*', l10n: { de: { text: { content: { value: 'Hallo', source: sourceHash('Hello *|FNAME|*') } } } } }),
+      createParagraphBlock({ id: 'copy', content: 'Hello *|FNAME|*', l10n: { de: { text: { content: { value: 'Hallo', sourceHash: sourceHash('Hello *|FNAME|*') } } } } }),
     ];
     editor.content.value = content;
     editor.activeLocale = ref<string | null>(null);

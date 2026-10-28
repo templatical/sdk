@@ -46,7 +46,7 @@
       "text": {
         "items.i1.text": {
           "value": "Laden",
-          "source": "28742cc9"
+          "sourceHash": "28742cc9"
         }
       }
     }
@@ -80,7 +80,7 @@
                     "text": {
                       "items.i1.text": {
                         "value": "Laden",
-                        "source": "28742cc9"
+                        "sourceHash": "28742cc9"
                       }
                     }
                   }

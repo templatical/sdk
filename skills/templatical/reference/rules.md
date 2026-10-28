@@ -82,5 +82,5 @@ Use hosted PNG/JPEG images instead of inline `<svg>` (`compat.html-svg`) or base
 Check a template language with `validate <file> --locale <tag>` and render it with `render <file> --locale <tag>`. Both default to `settings.locale`; an unknown language prints `unknown_locale` and exits 1. A missing `--locale` value exits 2.
 
 - `localization.untranslated` warns per missing text field; rendering falls back to the default language, and this warning alone exits 0.
-- `localization.stale` warns per translation whose source hash no longer matches the default text; this warning alone exits 0.
+- `localization.stale` warns per translation whose `sourceHash` no longer matches the default text; this warning alone exits 0.
 - `localization.merge-tags-differ` warns when a translation's merge-tag multiset differs from the default text; `validate` exits 1 even though the issue is a warning.

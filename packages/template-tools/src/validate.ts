@@ -15,6 +15,7 @@ import {
 } from "@templatical/quality";
 import {
   defaultLocaleOf,
+  elementIdIssues,
   isSafePath,
   isStructuralLocalePath,
   isLocaleTag,
@@ -328,6 +329,13 @@ export function validateTemplate(
       ...validateLocalization(data as TemplateContent, flat, definitions),
     );
   }
+
+  errors.push(
+    ...elementIdIssues(doc as unknown as TemplateContent).map(
+      ({ path, id }) =>
+        `${path}: Element id "${id}" must not contain "." or "/".`,
+    ),
+  );
 
   if (errors.length === 0) {
     const content = data as TemplateContent;

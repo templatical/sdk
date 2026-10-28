@@ -53,7 +53,7 @@ describe("collaboration locale locks", () => {
         l10n: {
           de: {
             text: {
-              "items.home.text": { value: "Start", source: sourceHash("Home") },
+              "items.home.text": { value: "Start", sourceHash: sourceHash("Home") },
             },
           },
           fr: { hidden: true },
@@ -142,7 +142,7 @@ describe("collaboration locale locks", () => {
     a.collaboration.setLockLocale("de");
     const write = (value: string) => {
       a.editor.content.value.blocks[0].l10n = {
-        de: { text: { content: { value, source: "12345678" } } },
+        de: { text: { content: { value, sourceHash: "12345678" } } },
       };
     };
     write("Hal");
@@ -158,7 +158,7 @@ describe("collaboration locale locks", () => {
           op: "updateBlockLocale",
           blockId: "t1",
           locale: "de",
-          text: { content: { value: "Hallo", source: "12345678" } },
+          text: { content: { value: "Hallo", sourceHash: "12345678" } },
         },
       ],
     ]);

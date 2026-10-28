@@ -376,29 +376,30 @@ describe.each([
       { set: { width: 640, [setPath]: undefined } },
     ],
     ["an undefined text entry", { text: { [textPath]: undefined } }],
+    ["a text entry with the old hash member", { text: { [textPath]: { value: "Hallo", source: "67eb44ba" } } }],
     [
       "a text entry missing value",
-      { text: { [textPath]: { source: "67eb44ba" } } },
+      { text: { [textPath]: { sourceHash: "67eb44ba" } } },
     ],
     [
-      "a text entry missing source",
+      "a text entry missing sourceHash",
       { text: { [textPath]: { value: "Hallo" } } },
     ],
     [
       "an undefined text value",
-      { text: { [textPath]: { value: undefined, source: "67eb44ba" } } },
+      { text: { [textPath]: { value: undefined, sourceHash: "67eb44ba" } } },
     ],
     [
-      "an undefined text source",
-      { text: { [textPath]: { value: "Hallo", source: undefined } } },
+      "an undefined text sourceHash",
+      { text: { [textPath]: { value: "Hallo", sourceHash: undefined } } },
     ],
     [
       "a non-string text value",
-      { text: { [textPath]: { value: 42, source: "67eb44ba" } } },
+      { text: { [textPath]: { value: 42, sourceHash: "67eb44ba" } } },
     ],
     [
-      "a non-string text source",
-      { text: { [textPath]: { value: "Hallo", source: 42 } } },
+      "a non-string text sourceHash",
+      { text: { [textPath]: { value: "Hallo", sourceHash: 42 } } },
     ],
   ])("refuses %s with the original batch index", (_label, change) => {
     const before = JSON.stringify(localized);

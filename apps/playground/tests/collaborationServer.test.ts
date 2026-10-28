@@ -376,7 +376,7 @@ describe("SharedCollaborationServer", () => {
             op: "updateBlockLocale",
             blockId: "t1",
             locale: "de",
-            text: { content: { value: "Hallo", source: "12345678" } },
+            text: { content: { value: "Hallo", sourceHash: "12345678" } },
           },
         ],
       }),

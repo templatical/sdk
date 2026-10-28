@@ -66,13 +66,13 @@ Ein Backend übergibt die Sperren, die es hält, und die handelnde Sitzung: `app
 
 `addLocale`, `removeLocale`, `updateBlockLocale` und `updateSettingsLocale` verwalten Sprachversionen im gemeinsamen Baum des SDK. Cloud-Backends und gehostetes MCP unterstützen diese Operationen nicht; aktualisieren Sie Renderer, Validator und Collaboration-Backend, bevor Sie lokalisierte Inhalte speichern.
 
-Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprache `en`, Richtung `ltr` und ohne Sprachversionen. Er fügt Deutsch hinzu, schreibt einen deutschen Wert, blendet den Block auf Deutsch aus, überschreibt die Richtung und entfernt dann Deutsch samt seinen Ebenen. `source` ist `sourceHash("<p>Original</p>")`.
+Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprache `en`, Richtung `ltr` und ohne Sprachversionen. Er fügt Deutsch hinzu, schreibt einen deutschen Wert, blendet den Block auf Deutsch aus, überschreibt die Richtung und entfernt dann Deutsch samt seinen Ebenen. `sourceHash` ist `sourceHash("<p>Original</p>")`.
 
 ```json
 {"op":"addLocale","locale":"de"}
-{"op":"updateBlockLocale","blockId":"b1","locale":"de","text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}
+{"op":"updateBlockLocale","blockId":"b1","locale":"de","text":{"content":{"value":"<p>Hallo</p>","sourceHash":"f898b751"}},"hidden":true}
 {"op":"updateSettingsLocale","locale":"de","set":{"direction":"rtl"}}
-{"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
+{"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","sourceHash":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
 ```
 
 | Operation | Vertrag |
@@ -86,11 +86,11 @@ Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprach
 
 Basisupdates entfernen verwaiste Locale-Einträge; ihre Inverse stellt zuerst die Basis und dann die entfernten Ebenenpfade wieder her. Locale-`set`-Overrides lehnen `columns` bei Sektionen, `items` bei Menüs, `rows` und `rows.<id>.cells` bei Tabellen sowie `icons` bei Social-Blöcken mit `invalid_operation` ab. Eigenschaften einzelner Elemente und vollständige benutzerdefinierte `fieldValues.<key>`-Overrides bleiben erlaubt.
 
-`LocalizedText` ist `{ value: string; source: string }`. Textpfade müssen `TRANSLATABLE_FIELDS` des Blocktyps oder `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) für Einstellungen entsprechen und in der Basis auflösbar sein. Pfade verwenden Element-IDs, etwa `items.i1.text`; IDs mit `.` sind nicht adressierbar. Ein `set`-Pfad muss auflösbar sein oder einen vorhandenen Objekt-Elternpfad haben. Prototypsegmente (`__proto__`, `constructor`, `prototype`) und leere Segmente werden abgelehnt. Block-Overrides dürfen nicht mit `id`, `type`, `children` oder `l10n` beginnen; Einstellungs-Overrides nicht mit `locale`, `locales` oder `l10n`.
+`LocalizedText` ist `{ value: string; sourceHash: string }`. Textpfade müssen `TRANSLATABLE_FIELDS` des Blocktyps oder `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) für Einstellungen entsprechen und in der Basis auflösbar sein. Pfade verwenden Element-IDs, etwa `items.i1.text`; IDs von Menüeinträgen, Social-Icons, Tabellenzeilen und Tabellenzellen dürfen weder `.` noch `/` enthalten. Ein `set`-Pfad muss auflösbar sein oder einen vorhandenen Objekt-Elternpfad haben. Prototypsegmente (`__proto__`, `constructor`, `prototype`) und leere Segmente werden abgelehnt. Block-Overrides dürfen nicht mit `id`, `type`, `children` oder `l10n` beginnen; Einstellungs-Overrides nicht mit `locale`, `locales` oder `l10n`.
 
 Die Engine wendet zuerst `unset` an (auf beide Maps), dann `text`, dann `set`, dann `hidden`. Ein Pfad in einer Map wird aus der anderen gelöscht. `hidden: false` entfernt das Flag. Leere Maps, Ebenen und Lokalisierungscontainer werden weggelassen; das Entfernen der letzten Version lässt `settings.locales` weg.
 
-`set: { path: null }` speichert einen löschenden Override: Die Eigenschaft fehlt in der `resolveLocale`-Projektion dieser Sprache. `unset: [path]` entfernt den Override, sodass wieder der Wert der Standardsprache gilt. Ebenen speichern niemals `undefined`; undefinierte `text`- oder `set`-Einträge und Texteinträge ohne die Strings `value` und `source` werden mit `invalid_operation` abgelehnt. Jeder `unset`-Pfad muss nicht leer sein und `isSafePath` erfüllen, auch wenn der Basispfad nicht mehr existiert; sichere verwaiste Pfade bleiben entfernbar.
+`set: { path: null }` speichert einen löschenden Override: Die Eigenschaft fehlt in der `resolveLocale`-Projektion dieser Sprache. `unset: [path]` entfernt den Override, sodass wieder der Wert der Standardsprache gilt. Ebenen speichern niemals `undefined`; undefinierte `text`- oder `set`-Einträge und Texteinträge ohne die Strings `value` und `sourceHash` werden mit `invalid_operation` abgelehnt. Jeder `unset`-Pfad muss nicht leer sein und `isSafePath` erfüllen, auch wenn der Basispfad nicht mehr existiert; sichere verwaiste Pfade bleiben entfernbar.
 
 ### Overrides löschen
 

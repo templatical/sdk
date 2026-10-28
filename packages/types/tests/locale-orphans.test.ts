@@ -17,7 +17,7 @@ function menuContent() {
   content.settings.preheaderText = "Hello";
   content.settings.l10n = {
     de: {
-      text: { preheaderText: { value: "Hallo", source: sourceHash("Hello") } },
+      text: { preheaderText: { value: "Hallo", sourceHash: sourceHash("Hello") } },
     },
   };
   content.blocks = [
@@ -27,7 +27,7 @@ function menuContent() {
       l10n: {
         de: {
           text: {
-            "items.home.text": { value: "Start", source: sourceHash("Home") },
+            "items.home.text": { value: "Start", sourceHash: sourceHash("Home") },
           },
           set: { "items.home.url": "/de" },
         },

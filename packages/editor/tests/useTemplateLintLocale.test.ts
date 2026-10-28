@@ -38,7 +38,7 @@ describe("live locale lint", () => {
             text: {
               content: {
                 value: "Hallo",
-                source: sourceHash("Hello *|FNAME|*"),
+                sourceHash: sourceHash("Hello *|FNAME|*"),
               },
             },
           },

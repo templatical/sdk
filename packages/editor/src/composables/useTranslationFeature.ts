@@ -337,7 +337,7 @@ export function useTranslationFeature(
               Object.entries(operation.text ?? {}).filter(
                 ([path, value]) =>
                   value.value !== stored?.[path]?.value ||
-                  value.source !== stored?.[path]?.source,
+                  value.sourceHash !== stored?.[path]?.sourceHash,
               ),
             );
             return Object.keys(text).length ? { ...operation, text } : null;

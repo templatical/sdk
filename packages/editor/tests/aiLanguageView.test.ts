@@ -56,7 +56,7 @@ function seed() {
           text: {
             content: {
               value: "<p>DIES IST EIN LANGER DEUTSCHER SATZ</p>",
-              source: sourceHash("<p>A calm English sentence.</p>"),
+              sourceHash: sourceHash("<p>A calm English sentence.</p>"),
             },
           },
         },
@@ -73,7 +73,7 @@ function seed() {
           text: {
             alt: {
               value: "Deutsches Bild",
-              source: sourceHash("English hero"),
+              sourceHash: sourceHash("English hero"),
             },
           },
         },
@@ -257,7 +257,7 @@ describe("language-aware AI", () => {
           text: {
             content: {
               value: "<p>Ein neuer Satz.</p>",
-              source: sourceHash("<p>A calm English sentence.</p>"),
+              sourceHash: sourceHash("<p>A calm English sentence.</p>"),
             },
           },
         },
@@ -850,10 +850,10 @@ describe("language-aware AI", () => {
     await feature.send("Karte");
     expect(editor.content.value.blocks[2].l10n?.de).toEqual({
       text: {
-        "fieldValues.headline": { value: "Hallo", source: sourceHash("Hello") },
+        "fieldValues.headline": { value: "Hallo", sourceHash: sourceHash("Hello") },
         "fieldValues.body": {
           value: "Deutscher Text",
-          source: sourceHash("English body"),
+          sourceHash: sourceHash("English body"),
         },
       },
     });

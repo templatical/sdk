@@ -307,7 +307,7 @@ describe("translation runs", () => {
     (seed.blocks[0] as any).content = "<p>Hello {{name}}</p>";
     seed.blocks[0].l10n = {
       de: {
-        text: { content: { value: "<p>Alt {{name}}</p>", source: "old" } },
+        text: { content: { value: "<p>Alt {{name}}</p>", sourceHash: "old" } },
       },
     };
     (seed.blocks[1] as any).content =

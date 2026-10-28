@@ -127,7 +127,7 @@ Enabled by default for non-default versions. Set `localization: false` to suppre
 | Rule | Default | Meaning |
 | --- | --- | --- |
 | `localization.untranslated` | `warning` | A nonempty default text field has no translation |
-| `localization.stale` | `warning` | A translated field's source hash no longer matches the default |
+| `localization.stale` | `warning` | A translated field's `sourceHash` no longer matches the default |
 | `localization.merge-tags-differ` | `warning` | The translated text's merge-tag multiset differs from the default |
 
 Hidden blocks and their descendants are excluded. The default language produces no localization findings. See [Missing values](/guide/localized-templates#missing-values), [Out-of-date values](/guide/localized-templates#out-of-date-values) and [Merge tags](/guide/localized-templates#merge-tags). The CLI's `validate --locale` treats a merge-tag mismatch as blocking even at warning severity.

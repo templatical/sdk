@@ -354,7 +354,8 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     } else
       for (const path of value as string[]) {
         const text = layer.text?.[path];
-        if (text) text.source = sourceHash(String(readPath(block, path) ?? ""));
+        if (text)
+          text.sourceHash = sourceHash(String(readPath(block, path) ?? ""));
       }
     if (layer.text && !Object.keys(layer.text).length) delete layer.text;
     if (layer.set && !Object.keys(layer.set).length) delete layer.set;

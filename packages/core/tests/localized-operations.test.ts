@@ -57,8 +57,8 @@ describe("mapLocalizedOperations", () => {
   it("maps paragraph content to text stamped with the default value's hash", () => {
     const base = content();
     base.blocks[0].l10n = {
-      de: { text: { content: { value: "Alt", source: "old" } } },
-      fr: { text: { content: { value: "Bonjour", source: "old" } } },
+      de: { text: { content: { value: "Alt", sourceHash: "old" } } },
+      fr: { text: { content: { value: "Bonjour", sourceHash: "old" } } },
     };
     const { result } = check(
       base,
@@ -68,7 +68,7 @@ describe("mapLocalizedOperations", () => {
           op: "updateBlockLocale",
           blockId: "p1",
           locale: "de",
-          text: { content: { value: "Hallo", source: sourceHash("Hello") } },
+          text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
         },
       ],
     );
@@ -108,7 +108,7 @@ describe("mapLocalizedOperations", () => {
   it("deletes a block and its layers in every language", () => {
     const block = paragraph();
     block.l10n = {
-      de: { text: { content: { value: "Hallo", source: "old" } } },
+      de: { text: { content: { value: "Hallo", sourceHash: "old" } } },
     };
     const ops: Operation[] = [
       {
@@ -165,7 +165,7 @@ describe("mapLocalizedOperations", () => {
           op: "updateSettingsLocale",
           locale: "de",
           text: {
-            preheaderText: { value: "Vorschau", source: sourceHash("Preview") },
+            preheaderText: { value: "Vorschau", sourceHash: sourceHash("Preview") },
           },
           set: { direction: "rtl" },
         },
@@ -193,7 +193,7 @@ describe("mapLocalizedOperations", () => {
           blockId: "menu",
           locale: "de",
           text: {
-            "items.home.text": { value: "Start", source: sourceHash("Home") },
+            "items.home.text": { value: "Start", sourceHash: sourceHash("Home") },
           },
         },
       ],
@@ -242,7 +242,7 @@ describe("mapLocalizedOperations", () => {
   it("restores the entire base with the mapped batch's inverse", () => {
     const base = content([paragraph("a"), paragraph("b")]);
     base.blocks[0].l10n = {
-      de: { text: { content: { value: "Alt", source: "old" } } },
+      de: { text: { content: { value: "Alt", sourceHash: "old" } } },
     };
     const move: Operation = {
       op: "moveBlock",
@@ -263,7 +263,7 @@ describe("mapLocalizedOperations", () => {
           op: "updateBlockLocale",
           blockId: "a",
           locale: "de",
-          text: { content: { value: "Neu", source: sourceHash("Hello") } },
+          text: { content: { value: "Neu", sourceHash: sourceHash("Hello") } },
         },
         { op: "updateSettingsLocale", locale: "de", set: { direction: "rtl" } },
       ],
@@ -285,7 +285,7 @@ describe("mapLocalizedOperations", () => {
           op: "updateBlockLocale",
           blockId: "p1",
           locale: "de",
-          text: { content: { value: "Hallo", source: sourceHash("Hello") } },
+          text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
         },
       ],
     );
@@ -297,7 +297,7 @@ describe("mapLocalizedOperations", () => {
     hidden.l10n = {
       de: {
         hidden: true,
-        text: { content: { value: "Geheim", source: "old" } },
+        text: { content: { value: "Geheim", sourceHash: "old" } },
       },
     };
     const section = createSectionBlock({
@@ -340,7 +340,7 @@ describe("mapLocalizedOperations", () => {
     const b = paragraph("b");
     for (const block of [a, b])
       block.l10n = {
-        de: { text: { content: { value: "Hello", source: "old" } } },
+        de: { text: { content: { value: "Hello", sourceHash: "old" } } },
       };
     const { result } = check(
       content([a, b]),
@@ -379,7 +379,7 @@ describe("mapLocalizedOperations", () => {
   });
 
   it.each([
-    { text: { preheaderText: { value: "Preview", source: "old" } } },
+    { text: { preheaderText: { value: "Preview", sourceHash: "old" } } },
     { set: { preheaderText: "Vorschau" } },
   ])("preserves untouched settings text (%j)", (layer) => {
     const base = content();
@@ -404,7 +404,7 @@ describe("mapLocalizedOperations", () => {
   it("resets a changed translation to its default and prunes the empty layer", () => {
     const block = paragraph();
     block.l10n = {
-      de: { text: { content: { value: "Hallo", source: "old" } } },
+      de: { text: { content: { value: "Hallo", sourceHash: "old" } } },
     };
     const { result } = check(
       content([block]),
@@ -473,7 +473,7 @@ describe("mapLocalizedOperations", () => {
           text: {
             "fieldValues.headline": {
               value: "Hallo",
-              source: sourceHash("Hello"),
+              sourceHash: sourceHash("Hello"),
             },
           },
           set: { "fieldValues.color": "#ffffff" },
@@ -489,7 +489,7 @@ describe("mapLocalizedOperations", () => {
           text: {
             "fieldValues.headline": {
               value: "Hallo",
-              source: sourceHash("Hello"),
+              sourceHash: sourceHash("Hello"),
             },
           },
           set: { "fieldValues.color": "#ffffff" },
@@ -507,7 +507,7 @@ describe("mapLocalizedOperations", () => {
       ],
     });
     menu.l10n = {
-      de: { text: { "items.old.text": { value: "Alt", source: "old" } } },
+      de: { text: { "items.old.text": { value: "Alt", sourceHash: "old" } } },
       fr: { set: { "items.old.url": "/fr" } },
     };
     const items = [
@@ -592,7 +592,7 @@ describe("mapLocalizedOperations", () => {
 
   it.each([
     {
-      layer: { text: { content: { value: "Hello", source: "kept" } } },
+      layer: { text: { content: { value: "Hello", sourceHash: "kept" } } },
       initial: "Hello",
     },
     { layer: { set: { content: "Hallo" } }, initial: "Hallo" },
@@ -605,7 +605,7 @@ describe("mapLocalizedOperations", () => {
       base.settings.l10n = {
         de: {
           text: {
-            preheaderText: { value: "Preview", source: "kept-settings" },
+            preheaderText: { value: "Preview", sourceHash: "kept-settings" },
           },
         },
       };
@@ -693,7 +693,7 @@ describe("mapLocalizedOperations", () => {
     hidden.l10n = {
       de: {
         hidden: true,
-        text: { content: { value: "Geheim", source: "old" } },
+        text: { content: { value: "Geheim", sourceHash: "old" } },
       },
       fr: { set: { color: "#ff0000" } },
     };
@@ -757,8 +757,8 @@ describe("mapLocalizedOperations", () => {
   it("keeps deleted and re-added ids in separate lifetimes across edits and a move", () => {
     const old = paragraph();
     old.l10n = {
-      de: { text: { content: { value: "Alt", source: "old" } } },
-      fr: { text: { content: { value: "Bonjour", source: "old" } } },
+      de: { text: { content: { value: "Alt", sourceHash: "old" } } },
+      fr: { text: { content: { value: "Bonjour", sourceHash: "old" } } },
     };
     const block = createParagraphBlock({ id: "p1", content: "Neu" });
     const remove: Operation = { op: "deleteBlock", blockId: "p1" };
@@ -790,7 +790,7 @@ describe("mapLocalizedOperations", () => {
           blockId: "p1",
           locale: "de",
           text: {
-            content: { value: "Bearbeitet", source: sourceHash("Hello") },
+            content: { value: "Bearbeitet", sourceHash: sourceHash("Hello") },
           },
         },
         remove,

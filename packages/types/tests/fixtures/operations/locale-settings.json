@@ -45,7 +45,7 @@
       "text": {
         "preheaderText": {
           "value": "Hallo",
-          "source": "e5f57c59"
+          "sourceHash": "e5f57c59"
         }
       },
       "set": {
@@ -95,7 +95,7 @@
             "text": {
               "preheaderText": {
                 "value": "Hallo",
-                "source": "e5f57c59"
+                "sourceHash": "e5f57c59"
               }
             },
             "set": {

@@ -64,7 +64,7 @@ function content(): TemplateContent {
           text: {
             content: {
               value: "<p>Hallo</p>",
-              source: sourceHash("<p>Hello</p>"),
+              sourceHash: sourceHash("<p>Hello</p>"),
             },
           },
           set: {
@@ -137,7 +137,7 @@ describe("localization API", () => {
         text: {
           "fieldValues.headline": {
             value: "Hallo",
-            source: sourceHash("Hello"),
+            sourceHash: sourceHash("Hello"),
           },
         },
       },
@@ -336,7 +336,7 @@ describe("localization API", () => {
               text: {
                 "fieldValues.headline": {
                   value: "Hallo",
-                  source: sourceHash("Hello"),
+                  sourceHash: sourceHash("Hello"),
                 },
               },
             },
@@ -379,13 +379,13 @@ describe("localized merge-tag load normalization", () => {
             text: {
               content: {
                 value: "<p>Hallo {{name}}</p>",
-                source: sourceHash("<p>Hello {{name}}</p>"),
+                sourceHash: sourceHash("<p>Hello {{name}}</p>"),
               },
             },
           },
           fr: {
             text: {
-              content: { value: "<p>Salut {{name}}</p>", source: "old" },
+              content: { value: "<p>Salut {{name}}</p>", sourceHash: "old" },
             },
           },
         },
@@ -394,9 +394,9 @@ describe("localized merge-tag load normalization", () => {
     seed.settings.locales = ["de", "fr"];
     const normalized = normalizeContentForConfig(seed, undefined);
     const title = normalized.blocks[0] as any;
-    expect(title.l10n.de.text.content.source).toBe(sourceHash(title.content));
+    expect(title.l10n.de.text.content.sourceHash).toBe(sourceHash(title.content));
     expect(title.l10n.de.text.content.value).toContain("data-merge-tag");
-    expect(title.l10n.fr.text.content.source).toBe("old");
+    expect(title.l10n.fr.text.content.sourceHash).toBe("old");
     expect(seed.blocks[0]).toMatchObject({ content: "<p>Hello {{name}}</p>" });
     const { handle } = await open({ content: seed });
     const saved = handle.getContent();
@@ -430,10 +430,10 @@ describe("localized merge-tag load normalization", () => {
       op: "updateBlockLocale",
       blockId: "t1",
       locale: "de",
-      text: { content: { value: "<p>Neu {{name}}</p>", source: "hash" } },
+      text: { content: { value: "<p>Neu {{name}}</p>", sourceHash: "hash" } },
       expect: {
         text: {
-          content: { value: "<p>Alt {{name}}</p>", source: "hash" },
+          content: { value: "<p>Alt {{name}}</p>", sourceHash: "hash" },
           absent: null,
         },
       },

@@ -1,0 +1,34 @@
+{
+  "name": "element-id-add-dot",
+  "content": {
+    "blocks": [],
+    "settings": {
+      "locale": "en"
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "menu",
+        "type": "menu",
+        "items": [
+          {
+            "id": "a.b",
+            "text": "Shop",
+            "url": "https://example.com"
+          }
+        ]
+      },
+      "parent": null,
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "menu"
+    }
+  }
+}

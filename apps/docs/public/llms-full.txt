@@ -1710,13 +1710,13 @@ A backend passes the locks it holds and the acting session: `applyOperations(con
 
 `addLocale`, `removeLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations; upgrade the renderer, validator and collaboration backend before storing localized content.
 
-The following batch starts with paragraph `b1` containing `<p>Original</p>`, default locale `en`, direction `ltr` and no language versions. It adds German, writes a German value, hides the block in German, overrides the direction, then removes German and its layers. `source` is `sourceHash("<p>Original</p>")`.
+The following batch starts with paragraph `b1` containing `<p>Original</p>`, default locale `en`, direction `ltr` and no language versions. It adds German, writes a German value, hides the block in German, overrides the direction, then removes German and its layers. `sourceHash` is `sourceHash("<p>Original</p>")`.
 
 ```json
 {"op":"addLocale","locale":"de"}
-{"op":"updateBlockLocale","blockId":"b1","locale":"de","text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}
+{"op":"updateBlockLocale","blockId":"b1","locale":"de","text":{"content":{"value":"<p>Hallo</p>","sourceHash":"f898b751"}},"hidden":true}
 {"op":"updateSettingsLocale","locale":"de","set":{"direction":"rtl"}}
-{"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
+{"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","sourceHash":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
 ```
 
 | Operation | Contract |
@@ -1730,11 +1730,11 @@ The following batch starts with paragraph `b1` containing `<p>Original</p>`, def
 
 Base updates prune orphan locale entries; their inverse restores the base before restoring the pruned layer paths. Locale `set` overrides refuse section `columns`, menu `items`, table `rows` and `rows.<id>.cells`, and social `icons` with `invalid_operation`. Element leaf paths and custom `fieldValues.<key>` whole-field overrides remain allowed.
 
-`LocalizedText` is `{ value: string; source: string }`. Text paths must match `TRANSLATABLE_FIELDS` for the block type, or `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) for settings, and resolve in the base. Paths use element ids, such as `items.i1.text`; ids containing `.` cannot be addressed. A `set` path must resolve or have an existing object parent. Prototype segments (`__proto__`, `constructor`, `prototype`) and empty segments are refused. Block overrides cannot start with `id`, `type`, `children` or `l10n`; settings overrides cannot start with `locale`, `locales` or `l10n`.
+`LocalizedText` is `{ value: string; sourceHash: string }`. Text paths must match `TRANSLATABLE_FIELDS` for the block type, or `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) for settings, and resolve in the base. Paths use element ids, such as `items.i1.text`; menu item, social icon, table row and table cell ids must not contain `.` or `/`. A `set` path must resolve or have an existing object parent. Prototype segments (`__proto__`, `constructor`, `prototype`) and empty segments are refused. Block overrides cannot start with `id`, `type`, `children` or `l10n`; settings overrides cannot start with `locale`, `locales` or `l10n`.
 
 The engine applies `unset` first (from both maps), then `text`, then `set`, then `hidden`. Writing a path in one map deletes it from the other. `hidden: false` removes the hidden flag. Empty maps, layers and localization containers are omitted; removing the last version omits `settings.locales`.
 
-`set: { path: null }` stores a clearing override: the property is absent in that language's `resolveLocale` projection. `unset: [path]` removes the override, so the default-language value applies again. Layers never store `undefined`; undefined `text` or `set` entries and text entries without string `value` and `source` are refused with `invalid_operation`. Every `unset` path must be non-empty and pass `isSafePath`, even if the base path no longer exists; safe orphan paths remain removable.
+`set: { path: null }` stores a clearing override: the property is absent in that language's `resolveLocale` projection. `unset: [path]` removes the override, so the default-language value applies again. Layers never store `undefined`; undefined `text` or `set` entries and text entries without string `value` and `sourceHash` are refused with `invalid_operation`. Every `unset` path must be non-empty and pass `isSafePath`, even if the base path no longer exists; safe orphan paths remain removable.
 
 ### Clearing overrides
 
@@ -2465,7 +2465,7 @@ import type {
 export interface LocalizedText {
   value: string;
   /** `sourceHash(defaultValue)` when the value was written or kept. */
-  source: string;
+  sourceHash: string;
 }
 
 /** One language's layer on a block. Members are omitted when empty. */
@@ -2585,9 +2585,11 @@ export declare function isStructuralLocalePath(
 
 `pruneLocaleOrphans(block: Block): Block` recursively removes text paths that no longer resolve and set paths whose parent no longer resolves. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` applies the same rule to settings. Both are pure and omit empty localization members. `isStructuralLocalePath(block: Block, path: string, value?: unknown): boolean` identifies section columns, whole built-in lists and element ids that locale overrides must not replace. Pass the proposed `set` value to check a whole-element replacement: its id must stay unchanged, and a table row must retain its cell ids in the same order. Custom `fieldValues.*` overrides are exempt.
 
+`elementIdIssues(content: TemplateContent): { path: string; id: string }[]` reports menu item, social icon, table row and table cell ids containing `.` or `/`, depth first, including section columns and layout wrappers. It is pure; paths use array indices, for example `blocks[2].items[0].id`. `validateTemplate` reports each issue as `<path>: Element id "<id>" must not contain "." or "/".`; `addBlock`, `updateBlock` and `setContent` refuse one with `invalid_operation` and the carrying block's `blockId`.
+
 `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale` projects a complete template, drops hidden blocks recursively, strips localization fields and throws `unknown_locale` for a version the template lacks. Both are pure.
 
-`localeCoverage` returns field ids (`<blockId>/<path>` or `settings/<path>`) in document order, settings last. Missing nonempty defaults go in `missing`; text with a changed source hash goes in `stale`; current text goes in `translated`. Hidden blocks and their descendants are excluded. Pass custom definitions to discover `text` and `textarea` fields. Use coverage for a non-default version; it does not project or validate a locale for you.
+`localeCoverage` returns field ids (`<blockId>/<path>` or `settings/<path>`) in document order, settings last. Missing nonempty defaults go in `missing`; text with a changed `sourceHash` goes in `stale`; current text goes in `translated`. Hidden blocks and their descendants are excluded. Pass custom definitions to discover `text` and `textarea` fields. Use coverage for a non-default version; it does not project or validate a locale for you.
 
 The four locale operations join `Operation`. `position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
 
@@ -2696,7 +2698,7 @@ export declare function applyLocaleStrings(
 
 `maskTags(text, syntax, format)` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
 
-`localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides, hidden blocks and dotted-id list elements. `blockId` limits selection to that block. Existing translations are masked with source ids; changed tags skip the field. It returns extraction-time `sourceHash` values from unmasked defaults.
+`localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides and hidden blocks. `blockId` limits selection to that block. Existing translations are masked with source ids; changed tags skip the field. It returns extraction-time `sourceHash` values from unmasked defaults.
 
 `applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
 
@@ -6029,7 +6031,7 @@ export declare function applyLocaleStrings(
 
 `TranslationRequest.fields` contains 1–50 fields, with at most 20,000 UTF-16 units (`text.length`) together. IDs are `<blockId>/<path>` or `settings/<path>`. `sourceLocale` is the default; `targetLocale` is the selected version. `templateId` is the loaded template's id or `null`. The kit validates unique nonempty ids and locale tags. A result may be partial; omitted fields keep their previous value, and the editor ignores unknown ids.
 
-Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides, hidden blocks and list elements with dotted ids are excluded too.
+Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides and hidden blocks are excluded too.
 
 The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids; a changed tag makes the field ineligible. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
 
@@ -11806,12 +11808,12 @@ Existing templates need no migration; see [Compatibility](#compatibility). The U
 
 | Member | Contract |
 | --- | --- |
-| `block.l10n[locale].text` | `Record<string, LocalizedText>`; each value is `{ value: string; source: string }` |
+| `block.l10n[locale].text` | `Record<string, LocalizedText>`; each value is `{ value: string; sourceHash: string }` |
 | `block.l10n[locale].set` | `Record<string, unknown>` for URLs, images, styling and other overrides; `null` means the property is absent in that language |
 | `block.l10n[locale].hidden` | `true` omits the block and its descendants from this language's render |
 | `settings.l10n[locale]` | `SettingsLocaleLayer`: optional `text` and `set`, without `hidden`; text covers `preheaderText`, overrides can set `direction`, fonts and colors |
 
-A field path joins property names with `.`. At an array, the next segment is the element's `id`, never its index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. A field id is `<blockId>/<path>` or `settings/<path>`.
+A field path joins property names with `.`. At an array, the next segment is the element's `id`, never its index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. A field id is `<blockId>/<path>` or `settings/<path>`. Menu item, social icon, table row and table cell ids must not contain `.` or `/`; validation and `addBlock`, `updateBlock` and `setContent` refuse them.
 
 `TRANSLATABLE_FIELDS` lists text patterns for each block type; `translatableFields(block, definitions)` expands element ids and custom `text` and `textarea` fields. `SETTINGS_TRANSLATABLE_FIELDS` lists settings text paths. A `text` path always names an existing text field. A `set` override may add an optional property absent from the default, but its parent must exist. It cannot change structural keys (`id`, `type`, `children`, `l10n`).
 
@@ -11823,7 +11825,7 @@ A path occurs in at most one of `text` and `set`; writing either removes it from
 
 The **Languages** menu shows the default and each version with coverage. **Add language** offers configured languages the template lacks. **Remove {language}** asks for confirmation and removes that version's layers; removal is undoable.
 
-Text and property edits in a language view affect that language only. When a translatable field has a default value, an edit stores `text` with its `source` hash. If the default has no value, such as an absent preheader, the edit stores a `set` override without staleness tracking. An edit equal to the default leaves no override.
+Text and property edits in a language view affect that language only. When a translatable field has a default value, an edit stores `text` with its `sourceHash`. If the default has no value, such as an absent preheader, the edit stores a `set` override without staleness tracking. An edit equal to the default leaves no override.
 
 **Differs in {language}** marks property overrides. The toolbar’s per-field **Reset** restores only that field from the default and keeps sibling overrides. The block marker’s **Reset** clears all of that block’s `set` overrides; it keeps its `text` translations. **Hide in {language}** leaves a ghost block on the canvas; **Show** restores it. The renderer omits hidden blocks.
 
@@ -11839,15 +11841,15 @@ A missing translation falls back to the default-language value. The block shows 
 
 ## Out-of-date values {#out-of-date-values}
 
-Each `LocalizedText.source` stores `sourceHash(defaultValue)` when written. `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, formatted as eight lowercase hexadecimal digits. A changed default hash marks the translation **Out of date** and produces `localization.stale`.
+Each `LocalizedText.sourceHash` stores `sourceHash(defaultValue)` when written. `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, formatted as eight lowercase hexadecimal digits. A changed default hash marks the translation **Out of date** and produces `localization.stale`.
 
-**Keep** retains the existing translation entry and updates its source hash, even when the changed default now equals the translation. Coverage counts the kept entry as translated. Hide and Show preserve text entries too. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
+**Keep** retains the existing translation entry and updates its `sourceHash`, even when the changed default now equals the translation. Coverage counts the kept entry as translated. Hide and Show preserve text entries too. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
 
 ## Translating {#translating}
 
 Pass `init({ translation })` a [TranslationProvider](/backend/translation), alongside `localization`. In an enabled non-default view, **Translate from {language}** sends missing and out-of-date fields (gaps) only. Current translations and manual edits survive. **Translate everything again…** selects all eligible fields after confirmation naming the language. Both menu actions show counts and are disabled at zero. Block markers offer **Translate** for missing text and **Re-translate** for stale text. Without the provider there is no Translate UI.
 
-Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides, hidden blocks and list elements with dotted ids. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
+Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides and hidden blocks. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
 
 The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids; changed tags make a field ineligible.
 
@@ -11940,7 +11942,7 @@ const content = applyOperations(original, [
     blockId: title.id,
     locale: "de",
     text: {
-      content: { value: "Willkommen", source: sourceHash(title.content) },
+      content: { value: "Willkommen", sourceHash: sourceHash(title.content) },
     },
   },
   { op: "updateSettingsLocale", locale: "de", set: { direction: "ltr" } },
@@ -12000,7 +12002,6 @@ For independent block trees or layouts in each language, keep separate templates
 
 - Text in a custom block's repeatable items can't be translated per field: override the whole `fieldValues.<key>` instead.
 - A layout's own blocks (`init({ layout })`) aren't localizable. Content is localized before the layout wraps it.
-- Menu items, table rows and cells whose id contains `.` can't be localized. Ids the SDK creates never contain `.`.
 - Language tags must match `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`: 2–3 ASCII letters, followed by zero or more hyphen-separated subtags of 2–8 ASCII letters or digits. Forms beginning with `x-…` or `i-…` are rejected because their language segment has one letter; grandfathered forms such as `no-bok` and `zh-min-nan` match and are accepted.
 
 **Translate**
@@ -12064,7 +12065,7 @@ custom.l10n = {
     text: {
       "fieldValues.headline": {
         value: "Willkommen",
-        source: sourceHash("Welcome"),
+        sourceHash: sourceHash("Welcome"),
       },
     },
   },
@@ -17301,7 +17302,7 @@ Enabled by default for non-default versions. Set `localization: false` to suppre
 | Rule | Default | Meaning |
 | --- | --- | --- |
 | `localization.untranslated` | `warning` | A nonempty default text field has no translation |
-| `localization.stale` | `warning` | A translated field's source hash no longer matches the default |
+| `localization.stale` | `warning` | A translated field's `sourceHash` no longer matches the default |
 | `localization.merge-tags-differ` | `warning` | The translated text's merge-tag multiset differs from the default |
 
 Hidden blocks and their descendants are excluded. The default language produces no localization findings. See [Missing values](/guide/localized-templates#missing-values), [Out-of-date values](/guide/localized-templates#out-of-date-values) and [Merge tags](/guide/localized-templates#merge-tags). The CLI's `validate --locale` treats a merge-tag mismatch as blocking even at warning severity.

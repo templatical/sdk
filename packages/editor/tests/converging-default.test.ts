@@ -66,7 +66,7 @@ it("retains the stale German entry after typing the scene's translation into the
   await title().get('[data-testid="locale-keep"]').trigger("click");
   expect(editor.content.value.blocks[0].l10n?.de.text?.content).toEqual({
     value: original.value,
-    source: sourceHash(original.value),
+    sourceHash: sourceHash(original.value),
   });
   expect(localeCoverage(editor.content.value, "de").translated).toContain(
     "languages-title/content",

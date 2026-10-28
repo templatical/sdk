@@ -172,17 +172,17 @@ describe("translation entry points", () => {
     "keeps %s state when Translate everything again returns identical values",
     async (state) => {
       const seed = languageContent();
-      seed.blocks[0].l10n!.de.text!.content.source = sourceHash("Hello");
+      seed.blocks[0].l10n!.de.text!.content.sourceHash = sourceHash("Hello");
       seed.blocks[1].l10n = {
         de: {
-          text: { alt: { value: "Produkt", source: sourceHash("Product") } },
+          text: { alt: { value: "Produkt", sourceHash: sourceHash("Product") } },
         },
       };
       seed.settings.preheaderText = "Preview";
       seed.settings.l10n = {
         de: {
           text: {
-            preheaderText: { value: "Vorschau", source: sourceHash("Preview") },
+            preheaderText: { value: "Vorschau", sourceHash: sourceHash("Preview") },
           },
         },
       };
@@ -256,7 +256,7 @@ describe("translation entry points", () => {
           createTitleBlock({
             id: "ineligible",
             content: source,
-            l10n: { de: { text: { content: { value: old, source: "old" } } } },
+            l10n: { de: { text: { content: { value: old, sourceHash: "old" } } } },
           }),
         ];
       }

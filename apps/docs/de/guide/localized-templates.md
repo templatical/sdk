@@ -21,12 +21,12 @@ Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatib
 
 | Mitglied | Vertrag |
 | --- | --- |
-| `block.l10n[locale].text` | `Record<string, LocalizedText>`; jeder Wert ist `{ value: string; source: string }` |
+| `block.l10n[locale].text` | `Record<string, LocalizedText>`; jeder Wert ist `{ value: string; sourceHash: string }` |
 | `block.l10n[locale].set` | `Record<string, unknown>` für URLs, Bilder, Stile und andere Überschreibungen; `null` bedeutet, dass die Eigenschaft in dieser Sprache fehlt |
 | `block.l10n[locale].hidden` | `true` lässt den Block und seine Nachfahren beim Rendern dieser Sprache aus |
 | `settings.l10n[locale]` | `SettingsLocaleLayer`: optionale `text` und `set`, ohne `hidden`; Text umfasst `preheaderText`, Überschreibungen etwa `direction`, Schriften und Farben |
 
-Ein Feldpfad verbindet Eigenschaftsnamen mit `.`. Bei Arrays ist das nächste Segment die `id` des Elements, niemals sein Index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. Eine Feld-ID ist `<blockId>/<path>` oder `settings/<path>`.
+Ein Feldpfad verbindet Eigenschaftsnamen mit `.`. Bei Arrays ist das nächste Segment die `id` des Elements, niemals sein Index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. Eine Feld-ID ist `<blockId>/<path>` oder `settings/<path>`. IDs von Menüeinträgen, Social-Icons, Tabellenzeilen und Tabellenzellen dürfen weder `.` noch `/` enthalten; die Validierung und `addBlock`, `updateBlock` und `setContent` lehnen sie ab.
 
 `TRANSLATABLE_FIELDS` listet Textmuster pro Blocktyp; `translatableFields(block, definitions)` setzt Element-IDs und benutzerdefinierte `text`- und `textarea`-Felder ein. `SETTINGS_TRANSLATABLE_FIELDS` listet Einstellungstextpfade. Ein `text`-Pfad benennt immer ein vorhandenes Textfeld. Eine `set`-Überschreibung darf eine optionale Eigenschaft ergänzen, die im Standard fehlt, aber ihr übergeordnetes Objekt muss existieren. Strukturschlüssel (`id`, `type`, `children`, `l10n`) sind ausgeschlossen.
 
@@ -38,7 +38,7 @@ Ein Pfad steht höchstens in `text` oder `set`; Schreiben in eines entfernt ihn 
 
 Das Menü **Sprachen** zeigt den Standard und jede Version mit Abdeckung. **Sprache hinzufügen** bietet konfigurierte, noch fehlende Sprachen an. **{language} entfernen** verlangt Bestätigung und entfernt die Ebenen dieser Version; dies lässt sich rückgängig machen.
 
-Text- und Eigenschaftsänderungen in einer Sprachansicht betreffen nur diese Sprache. Hat ein übersetzbares Feld einen Standardwert, speichert eine Bearbeitung `text` mit `source`-Hash. Fehlt der Standardwert, etwa ein nicht vorhandener Preheader, speichert sie eine `set`-Überschreibung ohne Veraltungsprüfung. Ein Wert gleich dem Standard hinterlässt keine Überschreibung.
+Text- und Eigenschaftsänderungen in einer Sprachansicht betreffen nur diese Sprache. Hat ein übersetzbares Feld einen Standardwert, speichert eine Bearbeitung `text` mit `sourceHash`. Fehlt der Standardwert, etwa ein nicht vorhandener Preheader, speichert sie eine `set`-Überschreibung ohne Veraltungsprüfung. Ein Wert gleich dem Standard hinterlässt keine Überschreibung.
 
 **Abweichend in {language}** markiert Eigenschaftsüberschreibungen. Das feldbezogene **Zurücksetzen** in der Werkzeugleiste stellt nur dieses Feld aus dem Standard wieder her und erhält benachbarte Überschreibungen. **Zurücksetzen** an der Blockmarkierung entfernt alle `set`-Überschreibungen dieses Blocks; seine `text`-Übersetzungen bleiben erhalten. **In {language} ausblenden** lässt einen Geisterblock auf der Arbeitsfläche stehen; **Anzeigen** stellt ihn wieder her. Der Renderer lässt ausgeblendete Blöcke aus.
 
@@ -54,7 +54,7 @@ Eine fehlende Übersetzung fällt auf den Standardsprachwert zurück. Der Block 
 
 ## Veraltete Werte {#out-of-date-values}
 
-Jedes `LocalizedText.source` speichert beim Schreiben `sourceHash(defaultValue)`. `sourceHash` ist FNV-1a 32-Bit über UTF-8-Bytes, als acht kleingeschriebene Hexadezimalziffern. Ein geänderter Standard-Hash markiert die Übersetzung **Veraltet** und erzeugt `localization.stale`.
+Jedes `LocalizedText.sourceHash` speichert beim Schreiben `sourceHash(defaultValue)`. `sourceHash` ist FNV-1a 32-Bit über UTF-8-Bytes, als acht kleingeschriebene Hexadezimalziffern. Ein geänderter Standard-Hash markiert die Übersetzung **Veraltet** und erzeugt `localization.stale`.
 
 **Beibehalten** erhält den vorhandenen Übersetzungseintrag und aktualisiert seinen Quell-Hash, auch wenn der geänderte Standard inzwischen der Übersetzung entspricht. Die Abdeckung zählt ihn als übersetzt. Ausblenden und Anzeigen erhalten ebenfalls die Texteinträge. **Standard verwenden** entfernt den Ebenenwert des Felds und stellt den Fallback wieder her. Beide Aktionen erhalten benachbarte Überschreibungen. Im Standard zeigt **Veraltete Übersetzungen: {count}** betroffene Blöcke. Eigenschaftsüberschreibungen in `set` haben keinen Quell-Hash.
 
@@ -62,7 +62,7 @@ Jedes `LocalizedText.source` speichert beim Schreiben `sourceHash(defaultValue)`
 
 Übergeben Sie `init({ translation })` einen [TranslationProvider](/de/backend/translation), zusammen mit `localization`. In einer aktivierten Nicht-Standardsprachansicht sendet **Aus {language} übersetzen** nur fehlende und veraltete Felder (gaps). Aktuelle Übersetzungen und manuelle Bearbeitungen bleiben erhalten. **Alles erneut übersetzen…** wählt nach einer Bestätigung mit dem Sprachnamen alle geeigneten Felder. Beide Menüaktionen zeigen die Feldzahl und sind bei null deaktiviert. Blockmarkierungen bieten **Übersetzen** bei fehlendem Text und **Erneut übersetzen** bei veraltetem Text. Ohne Provider fehlt die Übersetzungsoberfläche.
 
-Übersetzen lässt HTML-Blöcke (von Hand bearbeiten), leere Standardwerte, `set`-Überschreibungen, ausgeblendete Blöcke und Listenelemente mit Punkten in der ID aus. `content` von Titel und Absatz ist `html`, jedes andere Feld `text`. Aufrufe laufen nacheinander mit höchstens 50 Feldern und 20.000 UTF-16-Einheiten maskierten Texts. `content_too_large` halbiert den Batch bis auf ein Feld.
+Übersetzen lässt HTML-Blöcke (von Hand bearbeiten), leere Standardwerte, `set`-Überschreibungen und ausgeblendete Blöcke aus. `content` von Titel und Absatz ist `html`, jedes andere Feld `text`. Aufrufe laufen nacheinander mit höchstens 50 Feldern und 20.000 UTF-16-Einheiten maskierten Texts. `content_too_large` halbiert den Batch bis auf ein Feld.
 
 Der Editor maskiert ganze Merge-/Logik-Chips in HTML sowie rohe, durch die aktive Syntax erkannte Tags in beiden Formaten. Text verwendet `<x id="n"/>`, HTML-Attributwerte `__xn__`. Beide teilen eine ID-Folge ab 1 pro Feld in Quellreihenfolge. Zurückgegebene Felder müssen genau diese IDs jeweils einmal enthalten; Platzhalter dürfen ihre Position ändern. Bei fehlgeschlagener Prüfung bleibt der alte Wert. HTML wird mit Rewrites `sanitizeRichTextHtml` bereinigt; Tokens werden dabei geschützt und die ursprünglichen Tags anschließend bytegetreu wiederhergestellt. Vorhandene Übersetzungen verwenden die Quell-Token-IDs; geänderte Tags schließen ein Feld aus.
 
@@ -130,7 +130,6 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 
 - Text in wiederholbaren Elementen eines benutzerdefinierten Blocks lässt sich nicht feldweise übersetzen: Überschreiben Sie stattdessen das gesamte `fieldValues.<key>`.
 - Die eigenen Blöcke eines Layouts (`init({ layout })`) sind nicht lokalisierbar. Der Inhalt wird lokalisiert, bevor das Layout ihn umschließt.
-- Menüeinträge, Tabellenzeilen und Zellen, deren ID `.` enthält, sind nicht lokalisierbar. Vom SDK erzeugte IDs enthalten nie `.`.
 - Sprach-Tags müssen `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$` entsprechen: 2–3 ASCII-Buchstaben, gefolgt von beliebig vielen mit Bindestrich getrennten Subtags aus 2–8 ASCII-Buchstaben oder Ziffern. Formen mit `x-…` oder `i-…` am Anfang werden abgelehnt, weil ihr Sprachsegment nur einen Buchstaben hat; historische Formen wie `no-bok` und `zh-min-nan` entsprechen dem Muster und werden akzeptiert.
 
 **Übersetzen**

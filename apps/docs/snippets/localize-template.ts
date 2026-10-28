@@ -21,7 +21,7 @@ const content = applyOperations(original, [
     blockId: title.id,
     locale: "de",
     text: {
-      content: { value: "Willkommen", source: sourceHash(title.content) },
+      content: { value: "Willkommen", sourceHash: sourceHash(title.content) },
     },
   },
   { op: "updateSettingsLocale", locale: "de", set: { direction: "ltr" } },

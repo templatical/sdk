@@ -164,7 +164,10 @@ export function deriveLayer(
       text[path] =
         before && before.value === value
           ? before
-          : { value, source: sourceHash(String(readPath(base, path) ?? "")) };
+          : {
+              value,
+              sourceHash: sourceHash(String(readPath(base, path) ?? "")),
+            };
     } else {
       set[path] = value === undefined ? null : value;
     }
@@ -262,7 +265,10 @@ export function deriveSettingsLayer(
       (layer.text ??= {})[path] =
         before?.value === value
           ? before
-          : { value, source: sourceHash(String(readPath(base, path) ?? "")) };
+          : {
+              value,
+              sourceHash: sourceHash(String(readPath(base, path) ?? "")),
+            };
     } else (layer.set ??= {})[path] = value === undefined ? null : value;
   }
   return layer;

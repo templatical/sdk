@@ -33,7 +33,7 @@ Under **Languages**, add German and select it. Translate appears only with `tran
 
 `TranslationRequest.fields` contains 1–50 fields, with at most 20,000 UTF-16 units (`text.length`) together. IDs are `<blockId>/<path>` or `settings/<path>`. `sourceLocale` is the default; `targetLocale` is the selected version. `templateId` is the loaded template's id or `null`. The kit validates unique nonempty ids and locale tags. A result may be partial; omitted fields keep their previous value, and the editor ignores unknown ids.
 
-Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides, hidden blocks and list elements with dotted ids are excluded too.
+Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides and hidden blocks are excluded too.
 
 The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids; a changed tag makes the field ineligible. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
 

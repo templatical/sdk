@@ -123,7 +123,7 @@ Für Nichtstandardversionen standardmäßig aktiv. `localization: false` unterdr
 | Regel | Standard | Bedeutung |
 | --- | --- | --- |
 | `localization.untranslated` | `warning` | Ein nichtleeres Standardtextfeld hat keine Übersetzung |
-| `localization.stale` | `warning` | Der Quell-Hash eines übersetzten Felds stimmt nicht mehr mit dem Standard überein |
+| `localization.stale` | `warning` | Der `sourceHash` eines übersetzten Felds stimmt nicht mehr mit dem Standard überein |
 | `localization.merge-tags-differ` | `warning` | Die Merge-Tag-Multimenge im übersetzten Text weicht vom Standard ab |
 
 Ausgeblendete Blöcke und ihre Nachfahren sind ausgeschlossen. Die Standardsprache erzeugt keine Lokalisierungsbefunde. Siehe [Fehlende Werte](/de/guide/localized-templates#missing-values), [Veraltete Werte](/de/guide/localized-templates#out-of-date-values) und [Merge-Tags](/de/guide/localized-templates#merge-tags). `validate --locale` der CLI behandelt abweichende Merge-Tags auch als Warnung blockierend.

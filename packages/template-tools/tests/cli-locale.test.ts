@@ -37,7 +37,7 @@ function fixture(
                 text: {
                   content: {
                     value: "Hallo",
-                    source: sourceHash(kind === "stale" ? "Old text" : base),
+                    sourceHash: sourceHash(kind === "stale" ? "Old text" : base),
                   },
                 },
               },
@@ -80,7 +80,7 @@ describe("CLI language versions", () => {
             text: {
               content: {
                 value: '<a href="https://example.com/unsubscribe">Abmelden</a>',
-                source: sourceHash(base),
+                sourceHash: sourceHash(base),
               },
             },
           },
@@ -167,7 +167,7 @@ describe("CLI language versions", () => {
     content.settings.l10n = {
       de: {
         text: {
-          preheaderText: { value: "x".repeat(100_000), source: sourceHash("") },
+          preheaderText: { value: "x".repeat(100_000), sourceHash: sourceHash("") },
         },
       },
     };

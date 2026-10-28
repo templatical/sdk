@@ -217,7 +217,7 @@ it("keeps fresh translations current across normalized remote batches and remaps
   content.settings.locales = ["de", "fr"];
   content.blocks = [createTitleBlock({ id: "title", content: "Hello" })];
   const source = sourceHash("Hello {{first_name}}");
-  const first = { value: "Hallo {{first_name}}", source };
+  const first = { value: "Hallo {{first_name}}", sourceHash: source };
   const stale = sourceHash("Earlier {{first_name}}");
   const ops: Operation[] = [
     {
@@ -235,14 +235,14 @@ it("keeps fresh translations current across normalized remote batches and remaps
       op: "updateBlockLocale",
       blockId: "title",
       locale: "de",
-      text: { content: { value: "Guten Tag {{first_name}}", source } },
+      text: { content: { value: "Guten Tag {{first_name}}", sourceHash: source } },
       expect: { text: { content: first } },
     },
     {
       op: "updateBlockLocale",
       blockId: "title",
       locale: "fr",
-      text: { content: { value: "Bonjour {{first_name}}", source: stale } },
+      text: { content: { value: "Bonjour {{first_name}}", sourceHash: stale } },
     },
   ];
   const snapshot = structuredClone(ops);
@@ -254,7 +254,7 @@ it("keeps fresh translations current across normalized remote batches and remaps
     stale: [],
   });
   expect(localeCoverage(result, "fr").stale).toEqual(["title/content"]);
-  expect(result.blocks[0].l10n?.fr.text?.content.source).toBe(stale);
+  expect(result.blocks[0].l10n?.fr.text?.content.sourceHash).toBe(stale);
   expect(ops).toEqual(snapshot);
 });
 
@@ -305,7 +305,7 @@ it("rebases fresh source hashes after a raw guarded update over existing chip ma
       text: {
         content: {
           value: "<p>Willkommen {{first_name}}</p>",
-          source: sourceHash(rawDefault),
+          sourceHash: sourceHash(rawDefault),
         },
       },
     },
@@ -316,7 +316,7 @@ it("rebases fresh source hashes after a raw guarded update over existing chip ma
     expect: { content: `<p>Hello ${CHIP}</p>` },
   });
   const result = applyOperations(content, normalized);
-  expect(result.blocks[0].l10n?.de.text?.content.source).toBe(
+  expect(result.blocks[0].l10n?.de.text?.content.sourceHash).toBe(
     sourceHash(`<p>Welcome ${CHIP}</p>`),
   );
   expect(localeCoverage(result, "de")).toEqual({
@@ -348,7 +348,7 @@ it("propagates a failed locale-batch simulation before later hashes can use stal
       op: "updateBlockLocale",
       blockId: "title",
       locale: "de",
-      text: { content: { value: "Hallo", source: sourceHash("Hello") } },
+      text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
     },
   ];
   const snapshot = structuredClone({ content, ops });
@@ -375,7 +375,7 @@ it("preserves the original batch index and refusal details from a singleton simu
       op: "updateBlockLocale",
       blockId: "missing",
       locale: "de",
-      text: { content: { value: "Hallo", source: sourceHash("Hello") } },
+      text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
     },
   ];
   const snapshot = structuredClone({ content, ops });

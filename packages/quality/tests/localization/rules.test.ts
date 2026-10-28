@@ -84,7 +84,7 @@ describe("localization rules", () => {
             text: {
               content: {
                 value: "Alter Text",
-                source: sourceHash("Old default"),
+                sourceHash: sourceHash("Old default"),
               },
             },
           },
@@ -116,7 +116,7 @@ describe("localization rules", () => {
             text: {
               content: {
                 value: "Hallo *|FNAME|*",
-                source: sourceHash("Hello *|FNAME|* *|FNAME|*"),
+                sourceHash: sourceHash("Hello *|FNAME|* *|FNAME|*"),
               },
             },
           },
@@ -147,7 +147,7 @@ describe("localization rules", () => {
             text: {
               content: {
                 value: "{{name}}",
-                source: sourceHash("{% if user %}{{name}}{% endif %}"),
+                sourceHash: sourceHash("{% if user %}{{name}}{% endif %}"),
               },
             },
           },
@@ -165,7 +165,7 @@ describe("localization rules", () => {
             text: {
               content: {
                 value: "Hallo [[two]] [[one]]",
-                source: sourceHash("Hello [[one]] [[two]]"),
+                sourceHash: sourceHash("Hello [[one]] [[two]]"),
               },
             },
           },
@@ -190,7 +190,7 @@ describe("localization rules", () => {
             text: {
               content: {
                 value: '<a href="https://example.com">Hier klicken</a>',
-                source: sourceHash(
+                sourceHash: sourceHash(
                   '<a href="https://example.com">Click here</a>',
                 ),
               },
@@ -236,7 +236,7 @@ describe("localization rules", () => {
         l10n: {
           de: {
             hidden: true,
-            text: { content: { value: "Versteckt", source: "00000000" } },
+            text: { content: { value: "Versteckt", sourceHash: "00000000" } },
           },
         },
       }),
@@ -245,7 +245,7 @@ describe("localization rules", () => {
         l10n: {
           de: {
             text: {
-              "items.deleted.text": { value: "Verwaist", source: "00000000" },
+              "items.deleted.text": { value: "Verwaist", sourceHash: "00000000" },
             },
           },
         },
@@ -312,7 +312,7 @@ describe("localization rules", () => {
         l10n: {
           de: {
             text: {
-              "items.item/one.text": { value: "Hallo", source: "00000000" },
+              "items.item/one.text": { value: "Hallo", sourceHash: "00000000" },
             },
           },
         },

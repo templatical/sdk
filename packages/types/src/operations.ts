@@ -1,3 +1,4 @@
+import { elementIdIssues } from "./element-ids";
 import type { Block } from "./blocks";
 import { safeClone } from "./clone";
 import { deepEqual } from "./deep-equal";
@@ -82,7 +83,7 @@ export interface UpdateSettingsOperation {
 
 /**
  * Replace `blocks` and `settings` wholesale. The engine checks only that
- * `blocks` is an array and `settings` an object.
+ * `blocks` is an array, `settings` an object, and element ids contain no "." or "/".
  */
 export interface SetContentOperation {
   op: "setContent";
@@ -703,6 +704,22 @@ function change(target: Json, set: Json, unset: readonly string[]): void {
   for (const key of unset) delete target[key];
 }
 
+function assertElementIds(content: TemplateContent, index: number): void {
+  const issue = elementIdIssues(content)[0];
+  if (!issue) return;
+  const blockPath = issue.path.replace(/\.(items|icons|rows)\[.*$/, "");
+  const block = blockPath
+    .replace(/\[(\d+)\]/g, ".$1")
+    .split(".")
+    .reduce<unknown>((value, key) => (value as Json)[key], content) as Json;
+  fail(
+    "invalid_operation",
+    index,
+    `Element id "${issue.id}" must not contain "." or "/".`,
+    typeof block.id === "string" ? block.id : undefined,
+  );
+}
+
 // --- The operations ----------------------------------------------------------
 
 function applyOne(
@@ -750,6 +767,10 @@ function addBlock(content: TemplateContent, op: Json, index: number): void {
   const after = readAfter(op, index);
   const block = op.block;
   assertNewBlock(block, index, parent !== null);
+  assertElementIds(
+    { blocks: [block as unknown as Block], settings: content.settings },
+    index,
+  );
 
   const existing = new Set(idsIn(topLevelOf(content)));
   const seen = new Set<string>();
@@ -886,6 +907,12 @@ function updateBlock(
   }
   assertUnlocked(engine, [blockId], index);
   if (expect) assertExpected(block, expect, index, blockId);
+  const next = { ...block };
+  change(next, set, unset);
+  assertElementIds(
+    { blocks: [next as unknown as Block], settings: content.settings },
+    index,
+  );
   if (section && Object.hasOwn(set, "columns")) {
     resizeColumns(block, set.columns, index, blockId);
   }
@@ -1064,7 +1091,7 @@ function readLocaleChanges(
       (entry) =>
         isRecord(entry) &&
         typeof entry.value === "string" &&
-        typeof entry.source === "string",
+        typeof entry.sourceHash === "string",
     );
   if (
     (op.text !== undefined && !validText(op.text)) ||
@@ -1275,6 +1302,7 @@ function setContent(
       "setContent needs content with a blocks array and a settings object.",
     );
   }
+  assertElementIds(next as unknown as TemplateContent, index);
   const held = engine.locks.find((lock) => heldByOthers(engine, lock));
   if (held) {
     fail(

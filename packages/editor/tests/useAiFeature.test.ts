@@ -473,7 +473,7 @@ describe("useAiFeature without collaboration", () => {
           blockId: "gone",
           locale: "de",
           text: {
-            content: { value: "Hallo", source: sourceHash("Hello") },
+            content: { value: "Hallo", sourceHash: sourceHash("Hello") },
           },
         },
       ];
@@ -2579,7 +2579,7 @@ describe("final fix: replay settlement", () => {
           blockId: "gone",
           locale: "de",
           text: {
-            content: { value: "Hallo", source: sourceHash("Hello") },
+            content: { value: "Hallo", sourceHash: sourceHash("Hello") },
           },
         },
       ];

@@ -22,7 +22,7 @@ import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
 import { runValidate } from "../src/cli/commands/validate";
 
-const translated = { value: "Hallo", source: "00000000" };
+const translated = { value: "Hallo", sourceHash: "00000000" };
 function localized(): any {
   const content: any = createDefaultTemplateContent();
   const paragraph: any = createParagraphBlock();
@@ -97,7 +97,7 @@ const invalid: [string, (content: any) => void, RegExp][] = [
         };
         c.blocks = [menu];
       },
-      /element ids containing '\.' can't be localized/,
+      /Element id ".*" must not contain "\." or "\/"\./,
     ],
   ),
   ...(["row", "cell"] as const).map(
@@ -117,7 +117,7 @@ const invalid: [string, (content: any) => void, RegExp][] = [
         };
         c.blocks = [table];
       },
-      /element ids containing '\.' can't be localized/,
+      /Element id ".*" must not contain "\." or "\/"\./,
     ],
   ),
   [
@@ -381,7 +381,7 @@ describe("localized template validation", () => {
   });
 
   it.each(["text", "set"] as const)(
-    "accepts a resolving %s path beside a dotted sibling row id",
+    "rejects a dotted sibling row id beside a resolving %s path",
     (kind) => {
       const content = localized();
       const table = createTableBlock({
@@ -399,7 +399,12 @@ describe("localized template validation", () => {
         },
       });
       content.blocks = [table];
-      expect(validateTemplate(content)).toEqual({ valid: true, errors: [] });
+      expect(validateTemplate(content)).toEqual({
+        valid: false,
+        errors: [
+          'blocks[0].rows[1].id: Element id "r1.cells" must not contain "." or "/".',
+        ],
+      });
     },
   );
 

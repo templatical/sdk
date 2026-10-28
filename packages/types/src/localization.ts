@@ -9,7 +9,7 @@ import type { TemplateContent, TemplateSettings } from "./template";
 export interface LocalizedText {
   value: string;
   /** `sourceHash(defaultValue)` when the value was written or kept. */
-  source: string;
+  sourceHash: string;
 }
 
 /** One language's layer on a block. Members are omitted when empty. */
@@ -441,7 +441,7 @@ export function localeCoverage(
       // An empty default isn't missing, but an existing translation of it can be stale.
       if (!text && value === "") continue;
       if (!text) result.missing.push(`${id}/${path}`);
-      else if (text.source !== sourceHash(value))
+      else if (text.sourceHash !== sourceHash(value))
         result.stale.push(`${id}/${path}`);
       else result.translated.push(`${id}/${path}`);
     }

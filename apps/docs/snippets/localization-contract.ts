@@ -8,7 +8,7 @@ import type {
 export interface LocalizedText {
   value: string;
   /** `sourceHash(defaultValue)` when the value was written or kept. */
-  source: string;
+  sourceHash: string;
 }
 
 /** One language's layer on a block. Members are omitted when empty. */

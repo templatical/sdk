@@ -25,7 +25,7 @@ custom.l10n = {
     text: {
       "fieldValues.headline": {
         value: "Willkommen",
-        source: sourceHash("Welcome"),
+        sourceHash: sourceHash("Welcome"),
       },
     },
   },

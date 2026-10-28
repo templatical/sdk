@@ -55,10 +55,10 @@ async function openInline(
   if (distinctTranslations)
     content.blocks[0].l10n = {
       ar: {
-        text: { content: { value: "<p>Arabic copy</p>", source: "original" } },
+        text: { content: { value: "<p>Arabic copy</p>", sourceHash: "original" } },
       },
       fr: {
-        text: { content: { value: "<p>French copy</p>", source: "original" } },
+        text: { content: { value: "<p>French copy</p>", sourceHash: "original" } },
       },
     };
   const store = useEditor({ content, localization: { locales: ["ar"] } });

@@ -25,7 +25,7 @@ export function languageContent(): TemplateContent {
       content: "Hello",
       l10n: {
         de: {
-          text: { content: { value: "Hallo", source: sourceHash("Old") } },
+          text: { content: { value: "Hallo", sourceHash: sourceHash("Old") } },
           set: { color: "#123456" },
         },
       },

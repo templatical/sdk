@@ -199,14 +199,14 @@
         "value": {
           "type": "string"
         },
-        "source": {
+        "sourceHash": {
           "type": "string",
           "description": "`sourceHash(defaultValue)` when the value was written or kept."
         }
       },
       "required": [
         "value",
-        "source"
+        "sourceHash"
       ],
       "additionalProperties": false,
       "description": "A translated text value and the hash of the default value it was written against."

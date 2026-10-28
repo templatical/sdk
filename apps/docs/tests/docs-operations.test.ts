@@ -127,7 +127,7 @@ it("EN and DE locale examples are identical, validate, and remove every layer", 
     if (op.op === "updateBlockLocale")
       expect(content.blocks[0].l10n).toEqual({
         de: {
-          text: { content: { value: "<p>Hallo</p>", source: "f898b751" } },
+          text: { content: { value: "<p>Hallo</p>", sourceHash: "f898b751" } },
           hidden: true,
         },
       });

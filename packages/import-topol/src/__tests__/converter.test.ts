@@ -1,3 +1,4 @@
+import { elementIdIssues } from "@templatical/types";
 import { describe, expect, it } from "vitest";
 import type { SectionBlock, SocialIconsBlock } from "@templatical/types";
 import { convertTopolTemplate } from "../converter";
@@ -181,6 +182,7 @@ describe("convertTopolTemplate end to end", () => {
   it("imports only the social platforms named in display", () => {
     const { content } = convertTopolTemplate(NEWSLETTER);
     const third = content.blocks[2] as SectionBlock;
+    expect(elementIdIssues(content)).toEqual([]);
     const social = third.children[2].find(
       (b) => b.type === "social",
     ) as SocialIconsBlock;

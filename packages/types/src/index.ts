@@ -497,3 +497,5 @@ export type {
   UserConfig,
   WebSocketServerConfig,
 } from "./cloud";
+
+export { elementIdIssues } from "./element-ids";

@@ -1,3 +1,4 @@
+import { elementIdIssues } from "@templatical/types";
 import { describe, it, expect } from "vitest";
 import type { Block, DividerBlock } from "@templatical/types";
 import { convertBeeFreeTemplate } from "../converter";
@@ -748,6 +749,7 @@ describe("convertBeeFreeTemplate", () => {
       fixture as BeeFreeTemplate,
     );
 
+    expect(elementIdIssues(content)).toEqual([]);
     // The fixture has multiple rows with images, text, buttons, social icons, spacers, dividers
     expect(content.blocks.length).toBeGreaterThan(0);
     expect(content.settings.width).toBe(600);

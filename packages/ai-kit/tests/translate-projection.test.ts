@@ -40,7 +40,7 @@ it("sends the selected language's translated projection in JSON and multipart co
         content: "<p>Hello</p>",
         l10n: {
           de: {
-            text: { content: { value: "<p>Hallo</p>", source: "00000000" } },
+            text: { content: { value: "<p>Hallo</p>", sourceHash: "00000000" } },
           },
         },
       },
@@ -58,7 +58,7 @@ it("sends the selected language's translated projection in JSON and multipart co
       preheaderText: "English",
       l10n: {
         de: {
-          text: { preheaderText: { value: "Deutsch", source: "00000000" } },
+          text: { preheaderText: { value: "Deutsch", sourceHash: "00000000" } },
         },
       },
     },

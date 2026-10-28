@@ -168,7 +168,7 @@ describe("editor language routing", () => {
       else editor.setBlockHidden("t1", action === "hide");
       expect(editor.content.value.blocks[0].l10n?.de.text?.content).toEqual({
         value: "<p>Hallo</p>",
-        source: sourceHash(action === "keep" ? "<p>Hallo</p>" : "<p>Hello</p>"),
+        sourceHash: sourceHash(action === "keep" ? "<p>Hallo</p>" : "<p>Hello</p>"),
       });
       if (action === "keep")
         expect(localeCoverage(editor.content.value, "de").translated).toContain(
@@ -305,7 +305,7 @@ describe("editor language routing", () => {
           text: {
             content: {
               value: "<p>Hallo</p>",
-              source: sourceHash("<p>Hello</p>"),
+              sourceHash: sourceHash("<p>Hello</p>"),
             },
           },
         },
@@ -345,7 +345,7 @@ describe("editor language routing", () => {
         l10n: {
           de: {
             text: {
-              "items.i1.text": { value: "Start", source: sourceHash("Home") },
+              "items.i1.text": { value: "Start", sourceHash: sourceHash("Home") },
             },
           },
         },
@@ -389,7 +389,7 @@ describe("editor language routing", () => {
         text: {
           "fieldValues.headline": {
             value: "Hallo",
-            source: sourceHash("Hello"),
+            sourceHash: sourceHash("Hello"),
           },
         },
       },
@@ -428,7 +428,7 @@ describe("editor language routing", () => {
           text: {
             "fieldValues.headline": {
               value: headline,
-              source: sourceHash("Hello"),
+              sourceHash: sourceHash("Hello"),
             },
           },
         });
@@ -468,7 +468,7 @@ describe("editor language routing", () => {
       text: {
         content: {
           value: "<p>Hallo</p>",
-          source: sourceHash("<p>Changed</p>"),
+          sourceHash: sourceHash("<p>Changed</p>"),
         },
       },
     });
@@ -639,7 +639,7 @@ describe("editor language routing", () => {
         content: "Base",
         l10n: {
           de: {
-            text: { content: { value: "Deutsch", source: sourceHash("Base") } },
+            text: { content: { value: "Deutsch", sourceHash: sourceHash("Base") } },
           },
         },
       });
@@ -716,7 +716,7 @@ it("routes absent preheader as set and existing preheader as text through valida
   editor.updateSettings({ preheaderText: "Neue Vorschau" });
   expect(editor.content.value.settings.l10n?.de).toEqual({
     text: {
-      preheaderText: { value: "Neue Vorschau", source: sourceHash("Preview") },
+      preheaderText: { value: "Neue Vorschau", sourceHash: sourceHash("Preview") },
     },
   });
   expect(validateTemplate(editor.content.value)).toEqual({
@@ -771,7 +771,7 @@ it.each(["menu item", "table row", "table cell"])(
     expect(saved).toEqual(base);
     expect(localizeBlock(saved, "en", "en")).toEqual(base);
     expect(localizeBlock(saved, "de", "en")).toEqual(base);
-    expect(validateTemplate(editor.content.value).valid).toBe(true);
+    expect(validateTemplate(editor.content.value).valid).toBe(false);
   },
 );
 
@@ -975,7 +975,7 @@ describe("base edits prune locale orphans", () => {
         l10n: {
           de: {
             text: {
-              "items.home.text": { value: "Start", source: sourceHash("Home") },
+              "items.home.text": { value: "Start", sourceHash: sourceHash("Home") },
             },
           },
         },

@@ -29,7 +29,7 @@ const base = (): TemplateContent =>
             text: {
               content: {
                 value: "<p>Frühlingsangebot</p>",
-                source: sourceHash("<p>Spring sale</p>"),
+                sourceHash: sourceHash("<p>Spring sale</p>"),
               },
             },
           },
@@ -67,7 +67,7 @@ const base = (): TemplateContent =>
               l10n: {
                 de: {
                   text: {
-                    "items.i1.text": { value: "Laden", source: "00000000" },
+                    "items.i1.text": { value: "Laden", sourceHash: "00000000" },
                   },
                 },
               },
@@ -90,7 +90,7 @@ const base = (): TemplateContent =>
           text: {
             preheaderText: {
               value: "Jetzt sparen",
-              source: sourceHash("Save now"),
+              sourceHash: sourceHash("Save now"),
             },
           },
         },
@@ -237,7 +237,7 @@ describe("list elements whose ids contain dots", () => {
     const menu = (content.blocks[2] as any).children[0][1];
     menu.items[0].id = "shop.link";
     menu.l10n.de.text = {
-      "items.shop.link.text": { value: "Laden", source: sourceHash("Shop") },
+      "items.shop.link.text": { value: "Laden", sourceHash: sourceHash("Shop") },
     };
     content.blocks = [menu];
     expect(translatableFields(menu)).toEqual([]);
@@ -291,7 +291,7 @@ describe("localizeBlock and resolveLocale", () => {
                 text: {
                   "fieldValues.headline": {
                     value: "Willkommen",
-                    source: sourceHash("Welcome"),
+                    sourceHash: sourceHash("Welcome"),
                   },
                 },
               }
@@ -415,7 +415,7 @@ describe("path safety and clearing", () => {
     const content = base();
     (content.blocks[1] as any).alt = "";
     (content.blocks[1] as any).l10n.de.text = {
-      alt: { value: "Held", source: sourceHash("Hero") },
+      alt: { value: "Held", sourceHash: sourceHash("Hero") },
     };
     expect(localeCoverage(content, "de").stale).toContain("img/alt");
   });
@@ -435,11 +435,11 @@ describe("cloneBlock", () => {
             [kind]: {
               "rows.r1.cells.c1.content":
                 kind === "text"
-                  ? { value: "Eins", source: sourceHash("One") }
+                  ? { value: "Eins", sourceHash: sourceHash("One") }
                   : "Eins",
               "rows.r2.cells.c1.content":
                 kind === "text"
-                  ? { value: "Zwei", source: sourceHash("Two") }
+                  ? { value: "Zwei", sourceHash: sourceHash("Two") }
                   : "Zwei",
             },
           },
@@ -476,7 +476,7 @@ describe("cloneBlock", () => {
       styles: {},
       items: [{ id: "text", text: "Shop", url: "u" }],
       l10n: {
-        de: { text: { "items.text.text": { value: "Laden", source: "x" } } },
+        de: { text: { "items.text.text": { value: "Laden", sourceHash: "x" } } },
       },
     } as any;
     const copy = cloneBlock(menu) as any;
@@ -498,7 +498,7 @@ it("does not resurrect absent optional text in projection or coverage", () => {
         text: {
           "fieldValues.headline": {
             value: "Hallo",
-            source: sourceHash("Hello"),
+            sourceHash: sourceHash("Hello"),
           },
         },
       },

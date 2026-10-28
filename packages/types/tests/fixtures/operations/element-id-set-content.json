@@ -1,0 +1,39 @@
+{
+  "name": "element-id-set-content",
+  "content": {
+    "blocks": [],
+    "settings": {
+      "locale": "en"
+    }
+  },
+  "ops": [
+    {
+      "op": "setContent",
+      "content": {
+        "blocks": [
+          {
+            "id": "social",
+            "type": "social",
+            "icons": [
+              {
+                "id": "a.b",
+                "platform": "facebook",
+                "url": "https://example.com"
+              }
+            ]
+          }
+        ],
+        "settings": {
+          "locale": "en"
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "social"
+    }
+  }
+}

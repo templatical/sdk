@@ -33,7 +33,7 @@ describe("localized path writes", () => {
     content.settings.l10n = {
       de: {
         text: {
-          preheaderText: { value: "Hallo", source: sourceHash("Hello") },
+          preheaderText: { value: "Hallo", sourceHash: sourceHash("Hello") },
         },
         set: { direction: "rtl" },
       },

@@ -11,7 +11,7 @@
             "text": {
               "content": {
                 "value": "Neu",
-                "source": "67eb44ba"
+                "sourceHash": "67eb44ba"
               }
             }
           }
@@ -65,7 +65,7 @@
             "text": {
               "content": {
                 "value": "Hallo",
-                "source": "67eb44ba"
+                "sourceHash": "67eb44ba"
               }
             }
           }

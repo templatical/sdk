@@ -52,7 +52,7 @@ describe("localized lint review regressions", () => {
           l10n: {
             de: {
               text: {
-                content: { value: translated, source: sourceHash(base) },
+                content: { value: translated, sourceHash: sourceHash(base) },
               },
             },
           },
@@ -75,7 +75,7 @@ describe("localized lint review regressions", () => {
         l10n: {
           de: {
             text: {
-              content: { value: "Hallo {{name}}", source: sourceHash(base) },
+              content: { value: "Hallo {{name}}", sourceHash: sourceHash(base) },
             },
           },
         },
@@ -100,7 +100,7 @@ describe("localized lint review regressions", () => {
             text: {
               content: {
                 value: "Hallo {{name}} {{name}}",
-                source: sourceHash(base),
+                sourceHash: sourceHash(base),
               },
             },
           },

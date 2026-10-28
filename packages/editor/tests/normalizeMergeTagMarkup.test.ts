@@ -459,13 +459,13 @@ it("normalizes guarded deletion of an added merge-tag paragraph without changing
 
 describe("remote locale merge tags", () => {
   const text = {
-    content: { value: "<p>Hallo {{first_name}}</p>", source: "12345678" },
+    content: { value: "<p>Hallo {{first_name}}</p>", sourceHash: "12345678" },
   };
   const normalized = {
     content: {
       value:
         '<p>Hallo <span data-merge-tag="{{first_name}}">First Name</span></p>',
-      source: "12345678",
+      sourceHash: "12345678",
     },
   };
 
@@ -533,7 +533,7 @@ describe("localized rich-text boundaries (amendment 18)", () => {
       l10n: {
         de: {
           text: Object.fromEntries(
-            paths.map((path) => [path, { value, source }]),
+            paths.map((path) => [path, { value, sourceHash: source }]),
           ),
         },
       },
@@ -586,7 +586,7 @@ describe("localized rich-text boundaries (amendment 18)", () => {
     ops.push({
       op: "updateSettingsLocale",
       locale: "de",
-      text: { preheaderText: { value, source } },
+      text: { preheaderText: { value, sourceHash: source } },
     });
     const original = safeClone(ops);
     const result = normalizeRemoteOperations(
@@ -602,7 +602,7 @@ describe("localized rich-text boundaries (amendment 18)", () => {
   });
 
   it("resolves rich-text types from existing blocks and earlier additions only", () => {
-    const text = { content: { value: richValue, source } };
+    const text = { content: { value: richValue, sourceHash: source } };
     const blocks = [
       createTitleBlock({ id: "title" }),
       createParagraphBlock({ id: "paragraph" }),
@@ -654,7 +654,7 @@ describe("localized rich-text boundaries (amendment 18)", () => {
     );
     for (const index of [0, 1, 2, 4, 5, 6]) {
       expect(result[index]).toMatchObject({
-        text: { content: { value: richNormalized, source } },
+        text: { content: { value: richNormalized, sourceHash: source } },
       });
     }
     expect(result.slice(7)).toEqual(original.slice(8));
@@ -665,7 +665,7 @@ describe("localized rich-text boundaries (amendment 18)", () => {
     "keeps nested plain locale fields byte-identical in %s while normalizing rich content",
     (kind) => {
       const plain = plainBlocks();
-      const text = { content: { value: richValue, source } };
+      const text = { content: { value: richValue, sourceHash: source } };
       const rich = [
         createTitleBlock({ id: "title", l10n: { de: { text } } }),
         createParagraphBlock({ id: "paragraph", l10n: { de: { text } } }),
@@ -674,7 +674,7 @@ describe("localized rich-text boundaries (amendment 18)", () => {
       const section = createSectionBlock({ children: [[...plain, ...rich]] });
       const content = contentWith([section]);
       content.settings.l10n = {
-        de: { text: { preheaderText: { value, source } } },
+        de: { text: { preheaderText: { value, sourceHash: source } } },
       };
       const op: Operation =
         kind === "addBlock"
@@ -695,12 +695,12 @@ describe("localized rich-text boundaries (amendment 18)", () => {
       expect(block.children[0].slice(0, plain.length)).toEqual(plain);
       for (const child of block.children[0].slice(plain.length)) {
         expect(child.l10n!.de.text).toEqual({
-          content: { value: richNormalized, source },
+          content: { value: richNormalized, sourceHash: source },
         });
       }
       if (result.op === "setContent") {
         expect(result.content.settings.l10n).toEqual({
-          de: { text: { preheaderText: { value, source } } },
+          de: { text: { preheaderText: { value, sourceHash: source } } },
         });
       }
       expect(op).toEqual(original);

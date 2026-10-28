@@ -87,7 +87,7 @@ function languagesCanvas(ctx: SceneContext) {
           text: {
             content: {
               value: "<p>Willkommen zur Herbstkollektion</p>",
-              source: sourceHash("<p>Welcome to the autumn collection</p>"),
+              sourceHash: sourceHash("<p>Welcome to the autumn collection</p>"),
             },
           },
         },
@@ -107,7 +107,7 @@ function languagesCanvas(ctx: SceneContext) {
           text: {
             content: {
               value: "<p>Entdecken Sie unsere neue Kollektion.</p>",
-              source: sourceHash("<p>Discover our new collection.</p>"),
+              sourceHash: sourceHash("<p>Discover our new collection.</p>"),
             },
           },
         },
@@ -121,7 +121,7 @@ function languagesCanvas(ctx: SceneContext) {
           text: {
             content: {
               value: "<p>Das Angebot endet am Donnerstag.</p>",
-              source: sourceHash("<p>The offer ends on Thursday.</p>"),
+              sourceHash: sourceHash("<p>The offer ends on Thursday.</p>"),
             },
           },
         },

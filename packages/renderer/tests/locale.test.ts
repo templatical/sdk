@@ -18,7 +18,7 @@ function localizedContent() {
       content: "Hello",
       l10n: {
         de: {
-          text: { content: { value: "Hallo", source: sourceHash("Hello") } },
+          text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
         },
       },
     }),
@@ -55,7 +55,7 @@ describe("locale rendering", () => {
                 text: {
                   "fieldValues.headline": {
                     value: "Willkommen",
-                    source: sourceHash("Welcome"),
+                    sourceHash: sourceHash("Welcome"),
                   },
                 },
               }

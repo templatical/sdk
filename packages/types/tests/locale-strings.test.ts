@@ -173,13 +173,13 @@ describe("localeStrings", () => {
         text: {
           content: {
             value: "<p>Hallo {{name}}</p>",
-            source: sourceHash("<p>Hello {{name}}</p>"),
+            sourceHash: sourceHash("<p>Hello {{name}}</p>"),
           },
         },
       },
     };
     content.blocks[1].l10n = {
-      de: { text: { alt: { value: "Held", source: "old" } } },
+      de: { text: { alt: { value: "Held", sourceHash: "old" } } },
     };
     expect(extract(content, "gaps").strings.map((s) => s.id)).toEqual([
       "img/alt",
@@ -231,7 +231,7 @@ describe("localeStrings", () => {
       createParagraphBlock({
         id: "empty",
         content: "",
-        l10n: { de: { text: { content: { value: "Alt", source: "old" } } } },
+        l10n: { de: { text: { content: { value: "Alt", sourceHash: "old" } } } },
       }),
       createImageBlock({
         id: "set",
@@ -309,7 +309,7 @@ describe("localeStrings", () => {
           text: {
             content: {
               value: '<p>{{b}} {{a}} <a href="{{url}}">{{a}}</a></p>',
-              source: "old",
+              sourceHash: "old",
             },
           },
         },
@@ -339,14 +339,14 @@ describe("localeStrings", () => {
         ?.content,
     ).toEqual({
       value: paragraph.l10n!.de.text!.content.value,
-      source: sourceHash(paragraph.content),
+      sourceHash: sourceHash(paragraph.content),
     });
   });
 
   it("skips a stored translation whose tags no longer match the source", () => {
     const content = fixture();
     content.blocks[0].l10n = {
-      de: { text: { content: { value: "Hallo {{other}}", source: "old" } } },
+      de: { text: { content: { value: "Hallo {{other}}", sourceHash: "old" } } },
     };
     expect(extract(content).strings.map((s) => s.id)).not.toContain(
       "p/content",
@@ -465,7 +465,7 @@ describe("applyLocaleStrings", () => {
         text: {
           content: {
             value: "<p>Hallo</p>",
-            source: sourceHash("<p>Hello</p>"),
+            sourceHash: sourceHash("<p>Hello</p>"),
           },
         },
       },
@@ -475,17 +475,17 @@ describe("applyLocaleStrings", () => {
         text: {
           preheaderText: {
             value: "Jetzt sparen",
-            source: sourceHash("Save now"),
+            sourceHash: sourceHash("Save now"),
           },
         },
       },
     ]);
     const applied = applyOperations(content, result.operations);
     expect(applied.blocks[0].l10n?.de.text).toEqual({
-      content: { value: "<p>Hallo</p>", source: sourceHash("<p>Hello</p>") },
+      content: { value: "<p>Hallo</p>", sourceHash: sourceHash("<p>Hello</p>") },
     });
     expect(applied.settings.l10n?.de.text).toEqual({
-      preheaderText: { value: "Jetzt sparen", source: sourceHash("Save now") },
+      preheaderText: { value: "Jetzt sparen", sourceHash: sourceHash("Save now") },
     });
     expect(localeCoverage(applied, "de")).toEqual({
       translated: ["settings/content", "settings/preheaderText"],
@@ -576,7 +576,7 @@ describe("applyLocaleStrings", () => {
       tokens: extracted.tokens,
     });
     const applied = applyOperations(content, result.operations);
-    expect(applied.blocks[0].l10n?.de.text?.content.source).toBe(
+    expect(applied.blocks[0].l10n?.de.text?.content.sourceHash).toBe(
       sourceHash("<p>Hello {{name}}</p>"),
     );
     expect(localeCoverage(applied, "de").stale).toEqual(["p/content"]);
@@ -612,7 +612,7 @@ describe("applyLocaleStrings", () => {
         op: "updateBlockLocale",
         blockId: "img",
         locale: "de",
-        text: { alt: { value: "Held", source: "old" } },
+        text: { alt: { value: "Held", sourceHash: "old" } },
       },
     ]);
   });

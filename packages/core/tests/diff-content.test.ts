@@ -269,7 +269,7 @@ describe("diffContent", () => {
 
 describe("diffContent localization", () => {
   const settings = { width: 600, locale: "en", locales: ["de", "fr"] };
-  const translated = { value: "Hallo", source: "12345678" };
+  const translated = { value: "Hallo", sourceHash: "12345678" };
 
   it("emits German text as exactly one locale operation", () => {
     const before = content([leaf("t1")], settings);
@@ -410,7 +410,7 @@ it.each([
   if (kind === "prune") {
     before.settings.preheaderText = "Hello";
     before.settings.l10n = {
-      de: { text: { preheaderText: { value: "Hallo", source: "f55c314b" } } },
+      de: { text: { preheaderText: { value: "Hallo", sourceHash: "f55c314b" } } },
     };
   }
   const after = JSON.parse(JSON.stringify(before)) as TemplateContent;
@@ -423,7 +423,7 @@ it.each([
   if (kind === "remove") delete after.settings.locales;
   if (kind === "layer")
     after.blocks[0].l10n = {
-      de: { text: { content: { value: "Hallo", source: "12345678" } } },
+      de: { text: { content: { value: "Hallo", sourceHash: "12345678" } } },
     };
   if (kind === "prune") {
     delete after.settings.preheaderText;

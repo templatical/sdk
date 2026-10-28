@@ -189,7 +189,7 @@ describe("invertOperations", () => {
 });
 
 describe("locale operation inverses", () => {
-  const translated = { value: "Hallo", source: "67eb44ba" };
+  const translated = { value: "Hallo", sourceHash: "67eb44ba" };
   const base = content(
     [
       { id: "t1", type: "title", content: "Hi" } as Block,
@@ -225,11 +225,11 @@ describe("locale operation inverses", () => {
     };
     const nested = (before.blocks[1] as { children: Block[][] }).children[0][0];
     nested.l10n = {
-      de: { text: { "items.i1.text": { value: "Laden", source: "28742cc9" } } },
+      de: { text: { "items.i1.text": { value: "Laden", sourceHash: "28742cc9" } } },
     };
     before.settings.l10n = {
       de: {
-        text: { preheaderText: { value: "Hallo", source: "e5f57c59" } },
+        text: { preheaderText: { value: "Hallo", sourceHash: "e5f57c59" } },
         set: { direction: "rtl" },
       },
     };
@@ -301,7 +301,7 @@ describe("locale operation inverses", () => {
         op: "updateBlockLocale",
         blockId: "t1",
         locale: "de",
-        text: { content: { value: "Neu", source: "67eb44ba" } },
+        text: { content: { value: "Neu", sourceHash: "67eb44ba" } },
         set: { align: "right" },
         unset: ["color"],
         hidden: false,
@@ -319,7 +319,7 @@ describe("locale operation inverses", () => {
         hidden: true,
         expect: {
           text: {
-            content: { value: "Neu", source: "67eb44ba" },
+            content: { value: "Neu", sourceHash: "67eb44ba" },
             align: null,
             color: null,
           },
@@ -350,7 +350,7 @@ describe("locale operation inverses", () => {
       {
         op: "updateSettingsLocale",
         locale: "de",
-        text: { preheaderText: { value: "Neu", source: "e5f57c59" } },
+        text: { preheaderText: { value: "Neu", sourceHash: "e5f57c59" } },
         unset: ["direction"],
         set: { width: 640 },
       },

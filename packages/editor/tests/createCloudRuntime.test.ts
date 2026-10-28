@@ -1645,7 +1645,7 @@ it("integrated initCloud ignores localization and edits the default view", async
           text: {
             content: {
               value: "<p>Hallo</p>",
-              source: sourceHash("<p>Hello</p>"),
+              sourceHash: sourceHash("<p>Hello</p>"),
             },
           },
         },

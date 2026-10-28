@@ -314,10 +314,13 @@ function normalizeBlock(
         const entry = layer.text?.content;
         return [
           locale,
-          entry?.source === before
+          entry?.sourceHash === before
             ? {
                 ...layer,
-                text: { ...layer.text, content: { ...entry, source: after } },
+                text: {
+                  ...layer.text,
+                  content: { ...entry, sourceHash: after },
+                },
               }
             : layer,
         ];
@@ -598,16 +601,16 @@ export function normalizeRemoteOperations(
       const newEntry = locale ? after?.l10n?.[locale]?.text?.[path] : undefined;
       const oldBase = readPath(before, path);
       const newBase = readPath(after, path);
-      const source =
+      const hash =
         oldEntry && newEntry && deepEqual(entry, oldEntry)
-          ? newEntry.source
+          ? newEntry.sourceHash
           : typeof oldBase === "string" &&
               typeof newBase === "string" &&
-              entry.source === sourceHash(oldBase)
+              entry.sourceHash === sourceHash(oldBase)
             ? sourceHash(newBase)
-            : entry.source;
-      if (source !== entry.source)
-        result = { ...result, [path]: { ...entry, source } };
+            : entry.sourceHash;
+      if (hash !== entry.sourceHash)
+        result = { ...result, [path]: { ...entry, sourceHash: hash } };
     }
     return result;
   };
