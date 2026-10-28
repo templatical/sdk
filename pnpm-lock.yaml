@@ -279,8 +279,8 @@ importers:
   apps/docs:
     devDependencies:
       medium-zoom:
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^1.1.2
+        version: 1.1.2
       vitepress:
         specifier: 2.0.0-alpha.21
         version: 2.0.0-alpha.21(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(postcss@8.5.31)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1)
@@ -3402,8 +3402,8 @@ packages:
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
 
-  medium-zoom@1.1.0:
-    resolution: {integrity: sha512-ewyDsp7k4InCUp3jRmwHBRFGyjBimKps/AJLjRSox+2q/2H4p/PNpQf+pwONWlJiOudkBXtbdmVbFjqyybfTmQ==}
+  medium-zoom@1.1.2:
+    resolution: {integrity: sha512-0wTqeCQ4NGzjPghi7i2lMI6RyGj9N60fGvzY9HiNcxDTcvOw7S+ri7K3xVkrIZ+2uzUg4w/KSVMDdZXYMtHkdw==}
 
   mensch@0.3.4:
     resolution: {integrity: sha512-IAeFvcOnV9V0Yk+bFhYR07O3yNina9ANIN5MoXBKYJ/RLYPurd2d0yw14MDhpr9/momp0WofT1bPUh3hkzdi/g==}
@@ -7108,7 +7108,7 @@ snapshots:
 
   mdn-data@2.27.1: {}
 
-  medium-zoom@1.1.0: {}
+  medium-zoom@1.1.2: {}
 
   mensch@0.3.4: {}
 
