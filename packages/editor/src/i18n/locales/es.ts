@@ -2,6 +2,38 @@ import type en from "./en";
 
 const es: typeof en = {
   localization: {
+    defaultRefused:
+      "No se pudo establecer {language} como idioma predeterminado: {reason}",
+    defaultLockedReason: "otra persona está editando esta plantilla",
+    complete: "Completo",
+    gapTooltip: "{missing} pendientes, {stale} desactualizados",
+    moreActions: "Más acciones para {language}",
+    makeDefaultLanguage: "Establecer como idioma predeterminado",
+    makeDefault: "Establecer como predeterminado",
+    makeDefaultConfirmation:
+      "¿Establecer {language} como idioma predeterminado?",
+    removeConfirmation: "¿Eliminar {language}?",
+    removeDescription:
+      "Esto elimina el texto y los cambios en {language}. Puedes deshacerlo.",
+    defaultChanged: "{language} es ahora el idioma predeterminado.",
+    missingCount: { one: "{count} pendiente", other: "{count} pendientes" },
+    staleCount: {
+      one: "{count} desactualizado",
+      other: "{count} desactualizados",
+    },
+    hiddenBeforeDefault: {
+      one: "Muestra primero el bloque oculto en {language} ({count})",
+      other: "Muestra primero los {count} bloques ocultos en {language}",
+    },
+    defaultGaps: {
+      one: "{count} campo no tiene texto en {language} y conserva su texto en {default}.",
+      other:
+        "{count} campos no tienen texto en {language} y conservan su texto en {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} campo sigue en {old}.",
+      other: "{count} campos siguen en {old}.",
+    },
     translateFrom: "Traducir de {language}",
     translateAllAgain: "Volver a traducir todo…",
     translationConfirmation:
@@ -20,12 +52,9 @@ const es: typeof en = {
     notEnabled: "No habilitado",
     addLanguage: "Añadir idioma",
     removeLanguage: "Eliminar {language}",
-    removeConfirmation: "¿Eliminar {language} y sus traducciones?",
     cancel: "Cancelar",
     notTranslated: "Sin traducir",
-    notTranslatedCount: "{count} sin traducir",
     outOfDate: "Desactualizado",
-    outOfDateCount: "{count} desactualizados",
     keep: "Conservar",
     useDefault: "Usar predeterminado",
     differs: "Diferente en {language}",

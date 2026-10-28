@@ -1,6 +1,11 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi, onTestFinished } from "vitest";
-import { createButtonBlock, createImageBlock } from "@templatical/types";
+import {
+  createButtonBlock,
+  createImageBlock,
+  createTitleBlock,
+  sourceHash,
+} from "@templatical/types";
 import AiChatPanel from "../src/components/ai/AiChatPanel.vue";
 import en from "../src/i18n/locales/en";
 import { TRANSLATIONS_KEY } from "../src/keys";
@@ -42,15 +47,15 @@ describe("language menu", () => {
       "Default",
     );
     expect(wrapper.get('[data-testid="language-option-de"]').text()).toContain(
-      "1 not translated",
+      "1 missing · 1 out of date",
     );
     expect(wrapper.get('[data-testid="language-option-de"]').text()).toContain(
       "1 out of date",
     );
     const disabled = wrapper.get('[data-testid="language-option-fr"]');
     expect(disabled.text()).toContain("Not enabled");
-    expect(disabled.text()).toContain("2 not translated");
-    expect(disabled.text()).toContain("0 out of date");
+    expect(disabled.text()).toContain("2 missing");
+    expect(disabled.text()).not.toContain("0 out of date");
     await disabled.trigger("click");
     expect(editor.activeLocale.value).toBe("fr");
     const before = JSON.stringify(editor.content.value);
@@ -64,7 +69,10 @@ describe("language menu", () => {
     await nextTick();
     expect(editor.activeLocale.value).toBe("de");
     expect(button.text()).toContain("Deutsch");
-    expect(button.text()).toContain("0/2");
+    expect(button.text()).toContain("2");
+    expect(button.attributes("title")).toBe("1 missing, 1 out of date");
+    expect(button.find(".lucide-triangle-alert").exists()).toBe(true);
+    expect(button.text()).not.toContain("/");
     expect(wrapper.get(".tpl-canvas").text()).toContain("Hallo");
   });
 
@@ -77,18 +85,21 @@ describe("language menu", () => {
     expect(wrapper.find('[data-testid="language-add-en"]').exists()).toBe(
       false,
     );
+    await wrapper.get('[data-testid="language-add"]').trigger("click");
     await wrapper.get('[data-testid="language-add-nl"]').trigger("click");
     expect(editor.content.value.settings.locales).toEqual(["de", "fr", "nl"]);
     history.undo();
     await nextTick();
     expect(editor.content.value.settings.locales).toEqual(["de", "fr"]);
     await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
     await wrapper.get('[data-testid="language-remove-de"]').trigger("click");
     expect(editor.content.value.blocks[0].l10n?.de).toBeDefined();
     await wrapper
       .get('[data-testid="language-remove-cancel"]')
       .trigger("click");
     expect(editor.content.value.settings.locales).toContain("de");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
     await wrapper.get('[data-testid="language-remove-de"]').trigger("click");
     await wrapper
       .get('[data-testid="language-remove-confirm"]')
@@ -97,6 +108,167 @@ describe("language menu", () => {
     expect(editor.content.value.blocks[0].l10n).toBeUndefined();
     history.undo();
     expect(editor.content.value.blocks[0].l10n?.de).toBeDefined();
+  });
+
+  it("orders radio rows, marks only the active row and keeps actions behind the submenu", async () => {
+    const { wrapper } = await openLanguages();
+    await chooseLanguage(wrapper, "de");
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    const rows = wrapper.findAll('[role="menuitemradio"]');
+    expect(rows.map((row) => row.attributes("data-testid"))).toEqual([
+      "language-option-en",
+      "language-option-de",
+      "language-option-fr",
+    ]);
+    expect(rows.map((row) => row.attributes("aria-checked"))).toEqual([
+      "false",
+      "true",
+      "false",
+    ]);
+    expect(rows.map((row) => row.find(".lucide-check").exists())).toEqual([
+      false,
+      true,
+      false,
+    ]);
+    expect(rows[1].classes()).toContain("tpl:bg-[var(--tpl-bg-active)]");
+    expect(rows[1].classes()).not.toContain("tpl:bg-transparent");
+    expect(wrapper.find('[data-testid="language-status-en"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="language-remove-de"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="language-actions-fr"]').exists()).toBe(
+      false,
+    );
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    expect(wrapper.get('[data-testid="language-make-default-de"]').text()).toBe(
+      "Make default language",
+    );
+    expect(wrapper.get('[data-testid="language-remove-de"]').text()).toBe(
+      "Remove Deutsch…",
+    );
+    expect(
+      wrapper.get('[data-testid="language-remove-de"]').classes(),
+    ).not.toContain("tpl:text-[var(--tpl-text)]");
+  });
+
+  it("omits zero counts and shows Complete with an icon", async () => {
+    const content = languageContent();
+    content.blocks = Array.from({ length: 5 }, (_, i) =>
+      createTitleBlock({ id: `t${i}`, content: "Hello" }),
+    );
+    const { wrapper, editor } = await openLanguages({ content });
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    expect(wrapper.get('[data-testid="language-status-de"]').text()).toBe(
+      "5 missing",
+    );
+    for (const block of editor.content.value.blocks)
+      block.l10n = {
+        de: {
+          text: {
+            content: { value: "Hallo", sourceHash: sourceHash("Hello") },
+          },
+        },
+      };
+    await nextTick();
+    const status = wrapper.get('[data-testid="language-status-de"]');
+    expect(status.text()).toBe("Complete");
+    expect(status.find(".lucide-check").exists()).toBe(true);
+  });
+
+  it("disables promotion until hidden blocks are shown", async () => {
+    const content = languageContent();
+    content.blocks.forEach((block) => {
+      block.l10n = { de: { hidden: true } };
+    });
+    const { wrapper } = await openLanguages({ content });
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    const action = wrapper.get('[data-testid="language-make-default-de"]');
+    expect(action.attributes("disabled")).toBeDefined();
+    expect(action.attributes("title")).toBe(
+      "Show the 2 blocks hidden in Deutsch first",
+    );
+    await action.trigger("click");
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+  });
+
+  it("promotes with the pre-operation gap count, keeping stale text and set overrides out of it", async () => {
+    const content = languageContent();
+    content.blocks.push(
+      createTitleBlock({
+        id: "override",
+        content: "Base",
+        l10n: { de: { set: { content: "Override" } } },
+      }),
+    );
+    const { wrapper, editor, history } = await openLanguages({ content });
+    const before = JSON.stringify(editor.content.value);
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    const action = wrapper.get('[data-testid="language-make-default-de"]');
+    expect(action.attributes("disabled")).toBeUndefined();
+    await action.trigger("click");
+    const dialog = wrapper.get('[role="dialog"]');
+    expect(dialog.text()).toContain("Make Deutsch the default language?");
+    expect(dialog.text()).toContain(
+      "1 field has no Deutsch text and keeps its English text.",
+    );
+    await wrapper
+      .get('[data-testid="language-default-confirm"]')
+      .trigger("click");
+    expect(editor.content.value.settings.locale).toBe("de");
+    expect(editor.activeLocale.value).toBeNull();
+    history.undo();
+    expect(JSON.stringify(editor.content.value)).toBe(before);
+    expect(history.canUndo.value).toBe(false);
+  });
+
+  it("omits the zero-gap paragraph and cancels promotion without changes", async () => {
+    const content = languageContent();
+    content.blocks = [content.blocks[0]];
+    const { wrapper, editor } = await openLanguages({ content });
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    await wrapper
+      .get('[data-testid="language-make-default-de"]')
+      .trigger("click");
+    expect(wrapper.get('[role="dialog"]').text()).not.toContain("keeps");
+    await wrapper
+      .get('[data-testid="language-default-cancel"]')
+      .trigger("click");
+    expect(editor.content.value.settings.locale).toBe("en");
+  });
+
+  it("uses the danger confirmation and explanatory copy for removal", async () => {
+    const { wrapper, editor } = await openLanguages();
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    await wrapper.get('[data-testid="language-remove-de"]').trigger("click");
+    expect(wrapper.get('[role="dialog"]').text()).toContain("Remove Deutsch?");
+    expect(wrapper.get('[role="dialog"]').text()).toContain(
+      "This deletes the Deutsch text and changes. You can undo it.",
+    );
+    const confirm = wrapper.get('[data-testid="language-remove-confirm"]');
+    expect(confirm.classes()).toContain("tpl:border-[var(--tpl-danger)]");
+    await confirm.trigger("click");
+    expect(editor.content.value.settings.locales).toEqual(["fr"]);
+  });
+
+  it("hides Add language when every configured language is present", async () => {
+    const available = await openLanguages();
+    await available.wrapper
+      .get('[data-testid="language-menu"]')
+      .trigger("click");
+    expect(
+      available.wrapper.find('[data-testid="language-add"]').exists(),
+    ).toBe(true);
+    const { wrapper } = await openLanguages({
+      localization: { locales: ["en", "de", "fr"] },
+    });
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    expect(wrapper.find('[data-testid="language-add"]').exists()).toBe(false);
   });
 
   it("falls back to the tag when Intl.DisplayNames is unavailable", async () => {

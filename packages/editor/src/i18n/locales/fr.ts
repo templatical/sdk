@@ -2,6 +2,34 @@ import type en from "./en";
 
 const fr: typeof en = {
   localization: {
+    defaultRefused:
+      "Impossible de définir {language} comme langue par défaut : {reason}",
+    defaultLockedReason: "quelqu’un d’autre modifie ce modèle",
+    complete: "Complet",
+    gapTooltip: "{missing} manquants, {stale} obsolètes",
+    moreActions: "Autres actions pour {language}",
+    makeDefaultLanguage: "Définir comme langue par défaut",
+    makeDefault: "Définir par défaut",
+    makeDefaultConfirmation: "Définir {language} comme langue par défaut ?",
+    removeConfirmation: "Supprimer {language} ?",
+    removeDescription:
+      "Cela supprime le texte et les modifications en {language}. Vous pouvez annuler cette action.",
+    defaultChanged: "{language} est maintenant la langue par défaut.",
+    missingCount: { one: "{count} manquant", other: "{count} manquants" },
+    staleCount: { one: "{count} obsolète", other: "{count} obsolètes" },
+    hiddenBeforeDefault: {
+      one: "Affichez d’abord le bloc masqué en {language} ({count})",
+      other: "Affichez d’abord les {count} blocs masqués en {language}",
+    },
+    defaultGaps: {
+      one: "{count} champ n’a pas de texte en {language} et conserve son texte en {default}.",
+      other:
+        "{count} champs n’ont pas de texte en {language} et conservent leur texte en {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} champ est encore en {old}.",
+      other: "{count} champs sont encore en {old}.",
+    },
     translateFrom: "Traduire depuis {language}",
     translateAllAgain: "Tout retraduire…",
     translationConfirmation:
@@ -20,12 +48,9 @@ const fr: typeof en = {
     notEnabled: "Non activé",
     addLanguage: "Ajouter une langue",
     removeLanguage: "Supprimer {language}",
-    removeConfirmation: "Supprimer {language} et ses traductions ?",
     cancel: "Annuler",
     notTranslated: "Non traduit",
-    notTranslatedCount: "{count} non traduits",
     outOfDate: "Obsolète",
-    outOfDateCount: "{count} obsolètes",
     keep: "Conserver",
     useDefault: "Utiliser la valeur par défaut",
     differs: "Différent en {language}",

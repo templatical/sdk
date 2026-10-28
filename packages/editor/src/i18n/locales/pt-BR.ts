@@ -2,6 +2,37 @@ import type en from "./en";
 
 const ptBR: typeof en = {
   localization: {
+    defaultRefused:
+      "Não foi possível definir {language} como idioma padrão: {reason}",
+    defaultLockedReason: "outra pessoa está editando este template",
+    complete: "Completo",
+    gapTooltip: "{missing} ausentes, {stale} desatualizados",
+    moreActions: "Mais ações para {language}",
+    makeDefaultLanguage: "Definir como idioma padrão",
+    makeDefault: "Definir como padrão",
+    makeDefaultConfirmation: "Definir {language} como idioma padrão?",
+    removeConfirmation: "Remover {language}?",
+    removeDescription:
+      "Isso exclui o texto e as alterações em {language}. Você pode desfazer esta ação.",
+    defaultChanged: "{language} agora é o idioma padrão.",
+    missingCount: { one: "{count} ausente", other: "{count} ausentes" },
+    staleCount: {
+      one: "{count} desatualizado",
+      other: "{count} desatualizados",
+    },
+    hiddenBeforeDefault: {
+      one: "Mostre primeiro o bloco oculto em {language} ({count})",
+      other: "Mostre primeiro os {count} blocos ocultos em {language}",
+    },
+    defaultGaps: {
+      one: "{count} campo não tem texto em {language} e mantém o texto em {default}.",
+      other:
+        "{count} campos não têm texto em {language} e mantêm o texto em {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} campo ainda está em {old}.",
+      other: "{count} campos ainda estão em {old}.",
+    },
     translateFrom: "Traduzir de {language}",
     translateAllAgain: "Traduzir tudo novamente…",
     translationConfirmation:
@@ -19,12 +50,9 @@ const ptBR: typeof en = {
     notEnabled: "Não habilitado",
     addLanguage: "Adicionar idioma",
     removeLanguage: "Remover {language}",
-    removeConfirmation: "Remover {language} e suas traduções?",
     cancel: "Cancelar",
     notTranslated: "Não traduzido",
-    notTranslatedCount: "{count} não traduzidos",
     outOfDate: "Desatualizado",
-    outOfDateCount: "{count} desatualizados",
     keep: "Manter",
     useDefault: "Usar padrão",
     differs: "Diferente em {language}",

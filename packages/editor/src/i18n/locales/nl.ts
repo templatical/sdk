@@ -2,6 +2,33 @@ import type en from "./en";
 
 const nl: typeof en = {
   localization: {
+    defaultRefused: "Kan {language} niet als standaardtaal instellen: {reason}",
+    defaultLockedReason: "iemand anders bewerkt deze template",
+    complete: "Compleet",
+    gapTooltip: "{missing} ontbreken, {stale} verouderd",
+    moreActions: "Meer acties voor {language}",
+    makeDefaultLanguage: "Als standaardtaal instellen",
+    makeDefault: "Als standaard instellen",
+    makeDefaultConfirmation: "{language} als standaardtaal instellen?",
+    removeConfirmation: "{language} verwijderen?",
+    removeDescription:
+      "Dit verwijdert de tekst en wijzigingen in {language}. Je kunt dit ongedaan maken.",
+    defaultChanged: "{language} is nu de standaardtaal.",
+    missingCount: { one: "{count} ontbreekt", other: "{count} ontbreken" },
+    staleCount: { one: "{count} verouderd", other: "{count} verouderd" },
+    hiddenBeforeDefault: {
+      one: "Toon eerst het {count} verborgen blok in {language}",
+      other: "Toon eerst de {count} verborgen blokken in {language}",
+    },
+    defaultGaps: {
+      one: "{count} veld heeft geen tekst in {language} en behoudt de tekst in {default}.",
+      other:
+        "{count} velden hebben geen tekst in {language} en behouden de tekst in {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} veld is nog in {old}.",
+      other: "{count} velden zijn nog in {old}.",
+    },
     translateFrom: "Vertalen vanuit {language}",
     translateAllAgain: "Alles opnieuw vertalen…",
     translationConfirmation:
@@ -19,12 +46,9 @@ const nl: typeof en = {
     notEnabled: "Niet ingeschakeld",
     addLanguage: "Taal toevoegen",
     removeLanguage: "{language} verwijderen",
-    removeConfirmation: "{language} en de vertalingen verwijderen?",
     cancel: "Annuleren",
     notTranslated: "Niet vertaald",
-    notTranslatedCount: "{count} niet vertaald",
     outOfDate: "Verouderd",
-    outOfDateCount: "{count} verouderd",
     keep: "Behouden",
     useDefault: "Standaard gebruiken",
     differs: "Afwijkend in {language}",

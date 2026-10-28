@@ -2,6 +2,38 @@ import type en from "./en";
 
 const ca: typeof en = {
   localization: {
+    defaultRefused:
+      "No s’ha pogut establir {language} com a llengua per defecte: {reason}",
+    defaultLockedReason: "algú altre està editant aquesta plantilla",
+    complete: "Complet",
+    gapTooltip: "{missing} pendents, {stale} desactualitzats",
+    moreActions: "Més accions per a {language}",
+    makeDefaultLanguage: "Estableix com a llengua per defecte",
+    makeDefault: "Estableix per defecte",
+    makeDefaultConfirmation:
+      "Vols establir {language} com a llengua per defecte?",
+    removeConfirmation: "Vols eliminar {language}?",
+    removeDescription:
+      "Això elimina el text i els canvis en {language}. Ho pots desfer.",
+    defaultChanged: "{language} és ara la llengua per defecte.",
+    missingCount: { one: "{count} pendent", other: "{count} pendents" },
+    staleCount: {
+      one: "{count} desactualitzat",
+      other: "{count} desactualitzats",
+    },
+    hiddenBeforeDefault: {
+      one: "Mostra primer el bloc ocult en {language} ({count})",
+      other: "Mostra primer els {count} blocs ocults en {language}",
+    },
+    defaultGaps: {
+      one: "{count} camp no té text en {language} i conserva el text en {default}.",
+      other:
+        "{count} camps no tenen text en {language} i conserven el text en {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} camp encara és en {old}.",
+      other: "{count} camps encara són en {old}.",
+    },
     translateFrom: "Tradueix de {language}",
     translateAllAgain: "Torna a traduir-ho tot…",
     translationConfirmation:
@@ -19,12 +51,9 @@ const ca: typeof en = {
     notEnabled: "No activat",
     addLanguage: "Afegeix un idioma",
     removeLanguage: "Elimina {language}",
-    removeConfirmation: "Vols eliminar {language} i les seves traduccions?",
     cancel: "Cancel·la",
     notTranslated: "Sense traduir",
-    notTranslatedCount: "{count} sense traduir",
     outOfDate: "Desactualitzat",
-    outOfDateCount: "{count} desactualitzats",
     keep: "Conserva",
     useDefault: "Utilitza el predeterminat",
     differs: "Diferent en {language}",

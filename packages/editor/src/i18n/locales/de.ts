@@ -2,6 +2,34 @@ import type en from "./en";
 
 const de: typeof en = {
   localization: {
+    defaultRefused:
+      "{language} konnte nicht als Standardsprache festgelegt werden: {reason}",
+    defaultLockedReason: "jemand anderes bearbeitet dieses Template",
+    complete: "Vollständig",
+    gapTooltip: "{missing} fehlen, {stale} veraltet",
+    moreActions: "Weitere Aktionen für {language}",
+    makeDefaultLanguage: "Als Standardsprache festlegen",
+    makeDefault: "Als Standard festlegen",
+    makeDefaultConfirmation: "{language} als Standardsprache festlegen?",
+    removeConfirmation: "{language} entfernen?",
+    removeDescription:
+      "Dadurch werden der Text und die Änderungen für {language} gelöscht. Du kannst dies rückgängig machen.",
+    defaultChanged: "{language} ist jetzt die Standardsprache.",
+    missingCount: { one: "{count} fehlt", other: "{count} fehlen" },
+    staleCount: { one: "{count} veraltet", other: "{count} veraltet" },
+    hiddenBeforeDefault: {
+      one: "Zeige zuerst den {count} in {language} ausgeblendeten Block",
+      other: "Zeige zuerst die {count} in {language} ausgeblendeten Blöcke",
+    },
+    defaultGaps: {
+      one: "{count} Feld hat keinen Text in {language} und behält seinen Text in {default}.",
+      other:
+        "{count} Felder haben keinen Text in {language} und behalten ihren Text in {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} Feld ist noch in {old}.",
+      other: "{count} Felder sind noch in {old}.",
+    },
     translateFrom: "Aus {language} übersetzen",
     translateAllAgain: "Alles erneut übersetzen…",
     translationConfirmation:
@@ -19,12 +47,9 @@ const de: typeof en = {
     notEnabled: "Nicht aktiviert",
     addLanguage: "Sprache hinzufügen",
     removeLanguage: "{language} entfernen",
-    removeConfirmation: "{language} und die Übersetzungen entfernen?",
     cancel: "Abbrechen",
     notTranslated: "Nicht übersetzt",
-    notTranslatedCount: "{count} nicht übersetzt",
     outOfDate: "Veraltet",
-    outOfDateCount: "{count} veraltet",
     keep: "Beibehalten",
     useDefault: "Standard verwenden",
     differs: "Abweichend in {language}",

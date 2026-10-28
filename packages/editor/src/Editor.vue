@@ -18,10 +18,17 @@ import type {
   TemplateContent,
   UiTheme,
 } from "@templatical/types";
-import { cloneBlock, defaultLocaleOf, safeClone } from "@templatical/types";
+import {
+  cloneBlock,
+  defaultLocaleOf,
+  defaultLocaleGaps,
+  safeClone,
+} from "@templatical/types";
 // Type-only, so no cloud module is statically reachable from the OSS entry —
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
+import NoticeStack from "./components/NoticeStack.vue";
+import type { LocaleNotice } from "./components/localization/LocaleNotices.vue";
 import TranslationStatus from "./components/localization/TranslationStatus.vue";
 import { useLocaleActions } from "./composables/useLocaleActions";
 import { useTranslationFeature } from "./composables/useTranslationFeature";
@@ -397,9 +404,37 @@ const translation = props.config.translation
     })
   : null;
 if (translation) provide(TRANSLATION_FEATURE_KEY, translation);
-provide(
-  LOCALE_ACTIONS_KEY,
-  useLocaleActions({ editor, history: () => core.history, collaboration }),
+const localeNotice = ref<LocaleNotice | null>(null);
+watch(
+  [() => editor.state.template?.id ?? null, editor.loadVersion],
+  () => {
+    localeNotice.value = null;
+  },
+  { flush: "sync" },
+);
+const localeActions = useLocaleActions({
+  editor,
+  history: () => core.history,
+  collaboration,
+});
+provide(LOCALE_ACTIONS_KEY, {
+  setDefaultLocale(locale) {
+    const notice = {
+      language: locale,
+      old: defaultLocaleOf(editor.content.value),
+      count: defaultLocaleGaps(
+        editor.content.value,
+        locale,
+        props.config.customBlocks,
+      ).length,
+    };
+    const result = localeActions.setDefaultLocale(locale);
+    if (result.applied) localeNotice.value = notice;
+    return result;
+  },
+});
+const LocaleNotices = defineAsyncComponent(
+  () => import("./components/localization/LocaleNotices.vue"),
 );
 const translationLocale = ref(editor.activeLocale.value ?? "");
 if (translation)
@@ -964,7 +999,14 @@ defineExpose({
 
     <!-- Collaboration notices: a refused selection or edit, a skipped undo,
          a refused replace, reconnecting. -->
-    <CollaborationNotices v-if="collaboration" :feature="collaboration" />
+    <NoticeStack v-if="collaboration || localeNotice">
+      <CollaborationNotices v-if="collaboration" :feature="collaboration" />
+      <LocaleNotices
+        v-if="localeNotice"
+        :notice="localeNotice"
+        @dismiss="localeNotice = null"
+      />
+    </NoticeStack>
 
     <!-- Version-history chrome outside the header (the preview banner). Only
          mounted when a provider is configured; the banner's chunk loads the

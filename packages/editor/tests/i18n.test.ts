@@ -52,12 +52,23 @@ function withProvide<T>(
 function getNestedEntries(
   obj: Record<string, unknown>,
   prefix = "",
-): Array<[string, string]> {
-  const entries: Array<[string, string]> = [];
+): Array<[string, string | { one: string; other: string }]> {
+  const entries: Array<[string, string | { one: string; other: string }]> = [];
   for (const key of Object.keys(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
     const value = obj[key];
-    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "one" in value &&
+      "other" in value
+    ) {
+      entries.push([fullKey, value as { one: string; other: string }]);
+    } else if (
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value)
+    ) {
       entries.push(
         ...getNestedEntries(value as Record<string, unknown>, fullKey),
       );
@@ -68,7 +79,14 @@ function getNestedEntries(
   return entries;
 }
 
-function getPlaceholders(value: string): string[] {
+function getPlaceholders(
+  value: string | { one: string; other: string },
+): string[] {
+  if (typeof value !== "string") {
+    const one = getPlaceholders(value.one);
+    expect(getPlaceholders(value.other)).toEqual(one);
+    return one;
+  }
   return (value.match(/\{[a-zA-Z0-9_]+\}/g) ?? []).slice().sort();
 }
 
@@ -271,6 +289,23 @@ describe("loadCloudTranslations", () => {
   });
 });
 
+describe("plural locale entries", () => {
+  it("provides plural pairs for every migrated counted string", () => {
+    for (const key of [
+      "missingCount",
+      "staleCount",
+      "hiddenBeforeDefault",
+      "defaultGaps",
+      "defaultRemaining",
+    ]) {
+      expect((en.localization as Record<string, unknown>)[key]).toEqual({
+        one: expect.any(String),
+        other: expect.any(String),
+      });
+    }
+  });
+});
+
 describe("OSS locale parity", () => {
   // Discover every OSS locale file at test time (mirrors the loader's glob).
   // Adding a locale automatically registers it in this test.
@@ -290,8 +325,8 @@ describe("OSS locale parity", () => {
       );
 
       it("has the same nested keys as en", () => {
-        expect(localeEntries.map(([k]) => k)).toEqual(
-          enEntries.map(([k]) => k),
+        expect(localeEntries.map(([k, value]) => [k, typeof value])).toEqual(
+          enEntries.map(([k, value]) => [k, typeof value]),
         );
       });
 

@@ -66,11 +66,11 @@ test.describe("language versions", () => {
     await page.getByTestId("language-menu").click();
     const german = page.getByTestId("language-option-de");
     await expect(german).toContainText("Deutsch");
-    await expect(german).toContainText("1 not translated");
+    await expect(german).toContainText("1 missing");
     await expect(german).toContainText("1 out of date");
     await german.click();
     await expect(page.getByTestId("language-menu")).toContainText("Deutsch");
-    await expect(page.getByTestId("language-menu")).toContainText("2/4");
+    await expect(page.getByTestId("language-menu")).toContainText("2");
     await expect(
       page.locator('[data-block-id="languages-title"]'),
     ).toContainText("Willkommen zur Herbstkollektion");
@@ -126,7 +126,7 @@ test.describe("language versions", () => {
     await expect(stale).toContainText(
       "Das Angebot von Sable endet am Donnerstag.",
     );
-    await expect(page.getByTestId("language-menu")).toContainText("3/4");
+    await expect(page.getByTestId("language-menu")).toContainText("1");
   });
 
   test("keeps a translation after the default converges to it", async ({
@@ -157,7 +157,7 @@ test.describe("language versions", () => {
     await expect(title.getByTestId("locale-marker-untranslated")).toHaveCount(
       0,
     );
-    await expect(page.getByTestId("language-menu")).toContainText("2/4");
+    await expect(page.getByTestId("language-menu")).toContainText("2");
     await selectLanguage(page, "en");
     await selectLanguage(page, "de");
     await expect(title.getByTestId("locale-marker-untranslated")).toHaveCount(
@@ -177,11 +177,99 @@ test.describe("language versions", () => {
     await page.getByTestId("language-menu").click();
     await expect(page.getByRole("menu")).toContainText("Add language");
     await expect(page.getByTestId("language-option-fr")).toHaveCount(0);
+    await page.getByTestId("language-add").click();
     await page.getByTestId("language-add-fr").click();
     await page.getByTestId("language-menu").click();
     await expect(page.getByTestId("language-option-fr")).toContainText(
       "Français",
     );
+  });
+
+  test("makes German the default after showing its hidden block and reports gaps", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await scenePage.goto("languages");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await selectLanguage(page, "de");
+    await page
+      .locator('[data-block-id="languages-us-only"]')
+      .getByTestId("locale-show")
+      .click();
+    await page.getByTestId("language-menu").click();
+    await page.getByTestId("language-actions-de").click();
+    await page.getByTestId("language-make-default-de").click();
+    await expect(page.getByRole("dialog")).toContainText(
+      "Make Deutsch the default language?",
+    );
+    await expect(page.getByRole("dialog")).toContainText(
+      "2 fields have no Deutsch text and keep their English text.",
+    );
+    await page.getByTestId("language-default-confirm").click();
+    await expect(page.getByTestId("locale-notice")).toHaveText(
+      "Deutsch is now the default language. 2 fields are still in English.",
+    );
+    await expect(page.getByTestId("language-menu")).toHaveText("Deutsch");
+    await page
+      .getByTestId("locale-notice")
+      .getByRole("button", { name: "Dismiss" })
+      .click();
+    await expect(page.getByTestId("locale-notice")).toHaveCount(0);
+  });
+
+  test("removes German through its actions and can undo", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await scenePage.goto("languages");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.getByTestId("language-menu").click();
+    await page.getByTestId("language-actions-de").click();
+    await page.getByTestId("language-remove-de").click();
+    await expect(page.getByRole("dialog")).toContainText(
+      "This deletes the Deutsch text and changes. You can undo it.",
+    );
+    await page.getByTestId("language-remove-confirm").click();
+    await page.getByTestId("language-menu").click();
+    await expect(page.getByTestId("language-option-de")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("ControlOrMeta+z");
+    await page.getByTestId("language-menu").click();
+    await expect(page.getByTestId("language-option-de")).toBeVisible();
+  });
+
+  test("navigates rows and one submenu level at a time with the keyboard", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await scenePage.goto("languages");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    const trigger = page.getByTestId("language-menu");
+    await trigger.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByTestId("language-option-en")).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByTestId("language-option-de")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByTestId("language-remove-de")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("language-actions-de")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("End");
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByTestId("language-add-fr")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("language-add")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
   });
 
   test("renders the Arabic canvas right to left", async ({
@@ -263,6 +351,7 @@ test.describe("language versions", () => {
     );
     await selectLanguage(ada.page, "de");
     await grace.page.getByTestId("language-menu").click();
+    await grace.page.getByTestId("language-add").click();
     await grace.page.getByTestId("language-add-fr").click();
     await selectLanguage(grace.page, "fr");
     await ada.editor.doubleClickBlock("paragraph");
@@ -366,7 +455,10 @@ test.describe("language versions", () => {
     await expect(page.getByTestId("translation-result")).toHaveText(
       "Translated 2 fields",
     );
-    await expect(page.getByTestId("language-menu")).toContainText("4/4");
+    await expect(page.getByTestId("language-menu")).toHaveAttribute(
+      "title",
+      "Deutsch",
+    );
     await expect(
       page.locator('[data-block-id="languages-hero"] img'),
     ).toHaveAttribute("alt", "Ein tragbarer Lautsprecher");
@@ -374,12 +466,7 @@ test.describe("language versions", () => {
       page.locator('[data-block-id="languages-stale"]'),
     ).toContainText("Das Angebot von Sable endet am Freitag.");
     await page.getByTestId("language-menu").click();
-    await expect(page.getByTestId("language-option-de")).toContainText(
-      "0 not translated",
-    );
-    await expect(page.getByTestId("language-option-de")).toContainText(
-      "0 out of date",
-    );
+    await expect(page.getByTestId("language-status-de")).toHaveText("Complete");
     await expect(page.getByTestId("translate-language")).toBeDisabled();
     await page.getByTestId("language-option-en").click();
     await expect(
@@ -412,7 +499,7 @@ test.describe("language versions", () => {
     await expect(
       tagged.getByTestId("locale-marker-untranslated"),
     ).toBeVisible();
-    await expect(page.getByTestId("language-menu")).toContainText("4/5");
+    await expect(page.getByTestId("language-menu")).toContainText("1");
   });
 
   test("Cancel applies the completed batch while the later call is delayed", async ({
@@ -424,6 +511,7 @@ test.describe("language versions", () => {
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await page.getByTestId("language-menu").click();
+    await page.getByTestId("language-add").click();
     await page.getByTestId("language-add-fr").click();
     await selectLanguage(page, "fr");
     await page.getByTestId("language-menu").click();
@@ -435,7 +523,7 @@ test.describe("language versions", () => {
     await expect(page.getByTestId("translation-result")).toHaveText(
       "Translated 2 fields",
     );
-    await expect(page.getByTestId("language-menu")).toContainText("2/5");
+    await expect(page.getByTestId("language-menu")).toContainText("3");
     await expect(
       page.locator('[data-block-id="languages-title"]'),
     ).toContainText("Bienvenue dans la collection d’automne");
@@ -469,7 +557,7 @@ test.describe("language versions", () => {
     await expect(stale).toContainText(
       "Das Angebot von Sable endet am Freitag.",
     );
-    await expect(page.getByTestId("language-menu")).toContainText("3/4");
+    await expect(page.getByTestId("language-menu")).toContainText("1");
   });
 
   test("Rewrite writes its German reply into the German layer", async ({

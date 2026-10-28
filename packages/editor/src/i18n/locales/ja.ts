@@ -2,6 +2,34 @@ import type en from "./en";
 
 const translations: typeof en = {
   localization: {
+    defaultRefused:
+      "{language}をデフォルト言語に設定できませんでした: {reason}",
+    defaultLockedReason: "他のユーザーがこのテンプレートを編集中です",
+    complete: "完了",
+    gapTooltip: "未翻訳 {missing} 件、古い翻訳 {stale} 件",
+    moreActions: "{language}のその他の操作",
+    makeDefaultLanguage: "デフォルト言語に設定",
+    makeDefault: "デフォルトに設定",
+    makeDefaultConfirmation: "{language}をデフォルト言語にしますか？",
+    removeConfirmation: "{language}を削除しますか？",
+    removeDescription:
+      "{language}のテキストと変更を削除します。元に戻すことができます。",
+    defaultChanged: "デフォルト言語を{language}に設定しました。",
+    missingCount: { one: "未翻訳 {count} 件", other: "未翻訳 {count} 件" },
+    staleCount: { one: "古い翻訳 {count} 件", other: "古い翻訳 {count} 件" },
+    hiddenBeforeDefault: {
+      one: "まず{language}で非表示の{count}個のブロックを表示してください",
+      other: "まず{language}で非表示の{count}個のブロックを表示してください",
+    },
+    defaultGaps: {
+      one: "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。",
+      other:
+        "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。",
+    },
+    defaultRemaining: {
+      one: "{count}個のフィールドはまだ{old}のままです。",
+      other: "{count}個のフィールドはまだ{old}のままです。",
+    },
     translateFrom: "{language}から翻訳",
     translateAllAgain: "すべて再翻訳…",
     translationConfirmation:
@@ -19,12 +47,9 @@ const translations: typeof en = {
     notEnabled: "未有効化",
     addLanguage: "言語を追加",
     removeLanguage: "{language}を削除",
-    removeConfirmation: "{language}とその翻訳を削除しますか？",
     cancel: "キャンセル",
     notTranslated: "未翻訳",
-    notTranslatedCount: "未翻訳: {count}",
     outOfDate: "更新が必要",
-    outOfDateCount: "更新が必要: {count}",
     keep: "維持",
     useDefault: "デフォルトを使用",
     differs: "{language}では異なります",

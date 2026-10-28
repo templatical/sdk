@@ -1,5 +1,32 @@
 export default {
   localization: {
+    defaultRefused: "Couldn't make {language} the default language: {reason}",
+    defaultLockedReason: "someone else is editing this template",
+    complete: "Complete",
+    gapTooltip: "{missing} missing, {stale} out of date",
+    moreActions: "More actions for {language}",
+    makeDefaultLanguage: "Make default language",
+    makeDefault: "Make default",
+    makeDefaultConfirmation: "Make {language} the default language?",
+    removeConfirmation: "Remove {language}?",
+    removeDescription:
+      "This deletes the {language} text and changes. You can undo it.",
+    defaultChanged: "{language} is now the default language.",
+    missingCount: { one: "{count} missing", other: "{count} missing" },
+    staleCount: { one: "{count} out of date", other: "{count} out of date" },
+    hiddenBeforeDefault: {
+      one: "Show the {count} block hidden in {language} first",
+      other: "Show the {count} blocks hidden in {language} first",
+    },
+    defaultGaps: {
+      one: "{count} field has no {language} text and keeps its {default} text.",
+      other:
+        "{count} fields have no {language} text and keep their {default} text.",
+    },
+    defaultRemaining: {
+      one: "{count} field is still in {old}.",
+      other: "{count} fields are still in {old}.",
+    },
     translateFrom: "Translate from {language}",
     translateAllAgain: "Translate everything again…",
     translationConfirmation:
@@ -16,12 +43,9 @@ export default {
     notEnabled: "Not enabled",
     addLanguage: "Add language",
     removeLanguage: "Remove {language}",
-    removeConfirmation: "Remove {language} and its translations?",
     cancel: "Cancel",
     notTranslated: "Not translated",
-    notTranslatedCount: "{count} not translated",
     outOfDate: "Out of date",
-    outOfDateCount: "{count} out of date",
     keep: "Keep",
     useDefault: "Use default",
     differs: "Differs in {language}",
