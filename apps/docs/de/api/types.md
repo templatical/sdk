@@ -110,7 +110,7 @@ Sprachversionen ergänzen optionale `BaseBlock.l10n`, `TemplateSettings.locales`
 
 `localeCoverage` liefert Feld-IDs (`<blockId>/<path>` oder `settings/<path>`) in Dokumentreihenfolge, Einstellungen zuletzt. Fehlende nichtleere Standardwerte stehen in `missing`, Text mit geändertem `sourceHash` in `stale`, aktueller Text in `translated`. Ausgeblendete Blöcke und ihre Nachfahren sind ausgeschlossen. Benutzerdefinierte Definitionen erkennen `text`- und `textarea`-Felder. Verwenden Sie die Abdeckung für eine Nichtstandardversion; sie projiziert oder validiert keine Locale.
 
-Die vier Locale-Operationen erweitern `Operation`. `position` ist standardmäßig das Ende; Entfernen kann mit `expect` die gesamte Ebene prüfen. Updates wenden `unset`, `text`, `set`, dann Block-`hidden` an und verwenden die verschachtelte Form `LocaleLayerExpect`. Siehe [Lokalisierte Templates](/de/guide/localized-templates) für Bearbeitung, Feldpfade, Fallback und die Upgrade-Regel.
+`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` und `updateSettingsLocale` erweitern `Operation`. `addLocale.position` ist standardmäßig das Ende; Entfernen kann mit `expect` die gesamte Ebene prüfen. Updates wenden `unset`, `text`, `set`, dann Block-`hidden` an und verwenden die verschachtelte Form `LocaleLayerExpect`. Siehe [Lokalisierte Templates](/de/guide/localized-templates) für Bearbeitung, Feldpfade, Fallback und die Upgrade-Regel.
 
 ## Übersetzung {#translation}
 

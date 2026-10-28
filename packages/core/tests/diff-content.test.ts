@@ -410,7 +410,9 @@ it.each([
   if (kind === "prune") {
     before.settings.preheaderText = "Hello";
     before.settings.l10n = {
-      de: { text: { preheaderText: { value: "Hallo", sourceHash: "f55c314b" } } },
+      de: {
+        text: { preheaderText: { value: "Hallo", sourceHash: "f55c314b" } },
+      },
     };
   }
   const after = JSON.parse(JSON.stringify(before)) as TemplateContent;
@@ -433,4 +435,16 @@ it.each([
   expect(applyOperations(before, ops)).toEqual(after);
   if (kind === "default with versions" || kind === "default gaining versions")
     expect(ops).toEqual([{ op: "setContent", content: after }]);
+});
+
+it("keeps default-language rebases explicit instead of inventing setDefaultLocale in a diff", () => {
+  const before = content([leaf("t1")], {
+    width: 600,
+    locale: "en",
+    locales: ["de"],
+  });
+  const after = applyOperations(before, [
+    { op: "setDefaultLocale", locale: "de" },
+  ]);
+  expect(diff(before, after)).toEqual([{ op: "setContent", content: after }]);
 });

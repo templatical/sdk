@@ -64,7 +64,7 @@ A backend passes the locks it holds and the acting session: `applyOperations(con
 <!-- locale-operations:start -->
 ## Locale operations
 
-`addLocale`, `removeLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations; upgrade the renderer, validator and collaboration backend before storing localized content.
+`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations; upgrade the renderer, validator and collaboration backend before storing localized content.
 
 The following batch starts with paragraph `b1` containing `<p>Original</p>`, default locale `en`, direction `ltr` and no language versions. It adds German, writes a German value, hides the block in German, overrides the direction, then removes German and its layers. `sourceHash` is `sourceHash("<p>Original</p>")`.
 
@@ -79,6 +79,7 @@ The following batch starts with paragraph `b1` containing `<p>Original</p>`, def
 |---|---|
 | `addLocale` | `locale: string`; `position?: number` inserts into `settings.locales`, defaulting to the end. Position must be an integer from 0 through the current length. The default (`settings.locale ?? "en"`) and existing versions are refused case-insensitively. |
 | `removeLocale` | `locale: string`; `expect?: { blocks: Record<string, BlockLocaleLayer>; settings?: SettingsLocaleLayer }` compares every layer exactly. `blocks` holds layers by block id; an absent id means no layer. The separate `settings` member holds the settings layer; absent means none. `expect: { blocks: {} }` requires no block or settings layers, including for a block named `"settings"`. Removes the locale and all its block and settings layers, including blocks inside columns. |
+| `setDefaultLocale` | `locale: string`; an exact tag already in `settings.locales`. Promotes its text and property overrides to the base; the former default takes its list position and gets a layer for changed values. Missing fields keep their base values. Conflicts with every other session’s lock (`locked_by_others`). |
 | `updateBlockLocale` | `blockId: string`; `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `hidden?: boolean`; `expect?: LocaleLayerExpect`. At least one change member must be present. |
 | `updateSettingsLocale` | `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `expect?: Omit<LocaleLayerExpect, "hidden">`. At least one change member must be present. No hidden state or locks. |
 
@@ -91,6 +92,18 @@ Base updates prune orphan locale entries; their inverse restores the base before
 The engine applies `unset` first (from both maps), then `text`, then `set`, then `hidden`. Writing a path in one map deletes it from the other. `hidden: false` removes the hidden flag. Empty maps, layers and localization containers are omitted; removing the last version omits `settings.locales`.
 
 `set: { path: null }` stores a clearing override: the property is absent in that language's `resolveLocale` projection. `unset: [path]` removes the override, so the default-language value applies again. Layers never store `undefined`; undefined `text` or `set` entries and text entries without string `value` and `sourceHash` are refused with `invalid_operation`. Every `unset` path must be non-empty and pass `isSafePath`, even if the base path no longer exists; safe orphan paths remain removable.
+
+### Default language
+
+`{ "op": "setDefaultLocale", "locale": "de" }` makes an existing German version the default. For blocks at every depth, including layout wrappers, and for settings, its `text` values and `set` overrides become the base (`null` removes a property). The old default's differing text becomes `text` stamped with `sourceHash` of the new base; other differing values become `set`. Equal values leave no entry. Gaps retain the old base without an old-default entry. `settings.locale` changes and the old default takes the promoted version's index in `settings.locales`.
+
+Other languages' current text is re-stamped against the new base. Stale text keeps its stored hash; it becomes current if that hash matches the promoted value. If the new base has no value for a text path, the old default's value and other languages' text become `set` entries without staleness tracking. Property overrides whose parent disappears are consolidated at the nearest writable ancestor using that language's prior projected subtree, preserving its inherited properties and overrides. A custom block loses `renderedHtml` only when its `fieldValues` change.
+
+`localeHiddenBlocks(content, locale): string[]` lists hidden block ids depth first, including descendants of hidden blocks; it returns `[]` for the default or an unknown locale. `defaultLocaleGaps(content, locale, definitions?): string[]` lists translatable field ids that keep the old base because the version has neither text nor an applicable property override. Stale text is promoted and is not a gap. Both helpers are pure; pass custom-block definitions to count their text fields.
+
+An unknown version or the current default is `invalid_operation`: `"<locale>" is not a language version of this template.` Hidden blocks refuse with `invalid_operation`, the first hidden `blockId`, and `<count> blocks are hidden in "<locale>". Show them before making it the default.` Every other session's lock conflicts, as for `setContent`; `onRemoteChange.locale` is `null` for this operation. AI batches in a language view refuse it.
+
+`invertOperations` uses `setContent` to restore the exact prior content, including hashes, the promoted layer and cached HTML. Undo therefore has the same whole-template lock rule. Submit the explicit operation through collaboration; a snapshot diff emits `setContent` for a default change.
 
 ### Clearing overrides
 
@@ -113,7 +126,7 @@ Only the locale operations edit existing localization containers: `updateBlock` 
 
 ### Check it
 
-Run `pnpm --filter @templatical/types exec vitest run tests/operations.test.ts tests/invert-operations.test.ts` for the shared fixtures and guarded undo cases. Run `template-tools validate` on the resulting template; engine acceptance alone does not validate the schema.
+Run `pnpm --filter @templatical/types exec vitest run tests/operations.test.ts tests/invert-operations.test.ts tests/set-default-locale.test.ts tests/locale-hidden-blocks.test.ts` for the shared fixtures and guarded undo cases. Run `template-tools validate` on the resulting template; engine acceptance alone does not validate the schema.
 <!-- locale-operations:end -->
 
 ## Errors

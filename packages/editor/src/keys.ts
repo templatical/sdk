@@ -59,6 +59,10 @@ export const TRANSLATION_FEATURE_KEY: InjectionKey<
   import("./composables/useTranslationFeature").UseTranslationFeatureReturn
 > = Symbol("translationFeature");
 
+export const LOCALE_ACTIONS_KEY: InjectionKey<
+  import("./composables/useLocaleActions").UseLocaleActionsReturn
+> = Symbol("localeActions");
+
 export const HISTORY_KEY: InjectionKey<UseHistoryReturn> = Symbol("history");
 
 export const BLOCK_ACTIONS_KEY: InjectionKey<UseBlockActionsReturn> =

@@ -268,3 +268,11 @@ it.each([
     ).toBe("op 0's expect failed: text is now unset");
   },
 );
+
+it("reports an unmet guard on setDefaultLocale without treating it as block data", () => {
+  expect(
+    precondition([
+      { op: "setDefaultLocale", locale: "de", expect: { locale: "en" } },
+    ]),
+  ).toBe("op 0's expect failed: locale is now unset");
+});

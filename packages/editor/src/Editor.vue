@@ -23,6 +23,7 @@ import { cloneBlock, defaultLocaleOf, safeClone } from "@templatical/types";
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
 import TranslationStatus from "./components/localization/TranslationStatus.vue";
+import { useLocaleActions } from "./composables/useLocaleActions";
 import { useTranslationFeature } from "./composables/useTranslationFeature";
 import StructureNotice from "./components/localization/StructureNotice.vue";
 import { useLocalizedDisplay } from "./composables/useLocalizedDisplay";
@@ -57,6 +58,7 @@ import {
   AI_FEATURE_KEY,
   SIZE_CHECK_KEY,
   LOCALIZATION_KEY,
+  LOCALE_ACTIONS_KEY,
   TRANSLATION_FEATURE_KEY,
 } from "./keys";
 
@@ -395,6 +397,10 @@ const translation = props.config.translation
     })
   : null;
 if (translation) provide(TRANSLATION_FEATURE_KEY, translation);
+provide(
+  LOCALE_ACTIONS_KEY,
+  useLocaleActions({ editor, history: () => core.history, collaboration }),
+);
 const translationLocale = ref(editor.activeLocale.value ?? "");
 if (translation)
   watch(

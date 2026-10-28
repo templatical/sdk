@@ -181,7 +181,7 @@ A backend without a realtime channel can still collaborate in order: `join` answ
 
 `init({ onRemoteChange })` is called with `{ actor, ops, locale }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
 
-`locale: string | null` reports the first locale operation's language in a remote batch, otherwise `null`.
+`locale: string | null` reports the first locale operation's language in a remote batch, excluding `setDefaultLocale`, otherwise `null`. A `setDefaultLocale` batch reports `null` because it changes the template's default.
 
 ## In the playground
 

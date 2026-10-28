@@ -142,6 +142,12 @@ export function mapLocalizedOperations(
     operations: Operation[],
     index: number,
   ): TemplateContent => {
+    if (operations.some((operation) => operation?.op === "setDefaultLocale"))
+      throw new OperationError(
+        "invalid_operation",
+        index,
+        "Changing the default language isn't possible in a language view; switch to the default language.",
+      );
     if (operations.some((operation) => operation?.op === "setContent"))
       throw new OperationError(
         "invalid_operation",

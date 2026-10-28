@@ -105,13 +105,13 @@ export interface CollaborationRemoteResync {
 
 /** How {@link UseCollaborationReturn.applyOperations} sends a batch. */
 export interface CollaborationApplyOptions {
-  /** Sent as the batch's `origin`: an AI turn produced it (BY9). */
-  origin: "ai";
+  /** Sent as the batch's `origin` when an AI turn produced it; absent for the session's own edits. */
+  origin?: "ai";
   /**
-   * The turn the batch belongs to. Batches of one turn share an undo step
-   * while that step is the newest one.
+   * The AI turn the batch belongs to; absent for the session's own edits.
+   * Batches of one defined turn share the newest undo step.
    */
-  turn: string;
+  turn?: string;
 }
 
 /** What {@link UseCollaborationReturn.applyOperations} answers. */
@@ -189,10 +189,10 @@ export interface UseCollaborationReturn {
   /** Whether the block exists in the content the backend confirmed. */
   hasConfirmedBlock: (blockId: string) => boolean;
   /**
-   * Apply a batch this editor was handed (an AI turn's) as this session's
-   * own: checked against the view with this session's locks, put on the
-   * canvas, sent with its `origin`, and undone with the rest of its turn. A
-   * refusal changes nothing and sends nothing.
+   * Apply an explicit batch as this session's edit, checking its locks first.
+   * Own edits have a separate undo step and no wire origin. AI batches carry
+   * their origin and share an undo step within a defined turn. A local refusal
+   * changes nothing and sends nothing.
    */
   applyOperations: (
     ops: Operation[],
@@ -787,7 +787,10 @@ export function useCollaboration(
         options.onRemoteChange?.({
           actor: batch.actor,
           ops: batch.ops,
-          locale: batch.ops.find((op) => "locale" in op)?.locale ?? null,
+          locale:
+            batch.ops.find(
+              (op) => op.op !== "setDefaultLocale" && "locale" in op,
+            )?.locale ?? null,
         });
       } catch (error) {
         reportError(error);
@@ -1328,6 +1331,15 @@ export function useCollaboration(
         ),
       };
     }
+    // Refusing an own edit must leave pending typing and its history untouched.
+    if (options.origin === undefined) {
+      try {
+        applyOperations(editor.content.value, ops, lockContext());
+      } catch (error) {
+        if (error instanceof OperationError) return { applied: false, error };
+        throw error;
+      }
+    }
     // Typing not sent yet becomes its own batch, and its own undo step, first.
     flush();
     let next: TemplateContent;
@@ -1341,12 +1353,22 @@ export function useCollaboration(
     }
     const top = session.undo.at(-1);
     let entry: HistoryEntry;
-    if (top && top.turn === options.turn) {
+    if (
+      options.origin === "ai" &&
+      options.turn !== undefined &&
+      top &&
+      top.turn === options.turn
+    ) {
       // Undoing the turn undoes this batch first, then the earlier ones.
       top.ops = [...inverse, ...top.ops];
       entry = top;
     } else {
-      entry = { ops: inverse, turn: options.turn };
+      entry = {
+        ops: inverse,
+        ...(options.origin === "ai" && options.turn !== undefined
+          ? { turn: options.turn }
+          : {}),
+      };
       pushCapped(session.undo, entry);
     }
     session.redo = [];
@@ -1356,7 +1378,7 @@ export function useCollaboration(
     editor.markDirty();
     // Like an edit, a batch the backend refuses takes its undo entry back.
     // If it joined a turn, that turn's whole local undo entry goes.
-    enqueue(session, ops, options.origin, entry);
+    enqueue(session, ops, options.origin ?? "edit", entry);
     return { applied: true, inverse };
   }
 

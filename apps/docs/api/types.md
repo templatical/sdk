@@ -110,7 +110,7 @@ Language versions add optional `BaseBlock.l10n`, `TemplateSettings.locales` and 
 
 `localeCoverage` returns field ids (`<blockId>/<path>` or `settings/<path>`) in document order, settings last. Missing nonempty defaults go in `missing`; text with a changed `sourceHash` goes in `stale`; current text goes in `translated`. Hidden blocks and their descendants are excluded. Pass custom definitions to discover `text` and `textarea` fields. Use coverage for a non-default version; it does not project or validate a locale for you.
 
-The four locale operations join `Operation`. `position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
+`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` and `updateSettingsLocale` join `Operation`. `addLocale.position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
 
 ## Translation {#translation}
 

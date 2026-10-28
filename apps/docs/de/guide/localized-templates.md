@@ -17,7 +17,7 @@ Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatib
 
 ## Datenstruktur
 
-`settings.locale` ist die feste Standardsprache. `settings.locales?: string[]` enthält die anderen Versionen, ohne Duplikate oder Standardsprache. Jeder Schlüssel in `block.l10n` und `settings.l10n` muss in dieser Liste stehen.
+`settings.locale` ist die Standardsprache; `setDefaultLocale` übernimmt eine vorhandene Version. `settings.locales?: string[]` enthält die anderen Versionen, ohne Duplikate oder Standardsprache. Jeder Schlüssel in `block.l10n` und `settings.l10n` muss in dieser Liste stehen.
 
 | Mitglied | Vertrag |
 | --- | --- |
@@ -104,12 +104,13 @@ Ein Layout besitzt eigene `settings.locales`, Block-`l10n` und `settings.l10n`, 
 | --- | --- |
 | `addLocale` | Fügt eine Version zu `settings.locales` hinzu |
 | `removeLocale` | Entfernt die Version und alle zugehörigen Block- und Einstellungsebenen |
+| `setDefaultLocale` | Übernimmt eine Version als Standard; Lücken behalten die alte Basis, ausgeblendete Blöcke verhindern die Änderung |
 | `updateBlockLocale` | Schreibt `text`, `set`, `unset`-Pfade und `hidden` eines Blocks für eine Locale |
 | `updateSettingsLocale` | Schreibt `text`, `set` und `unset` von Einstellungen für eine Locale |
 
 Updates wenden zuerst `unset`, dann `text`, dann `set`, dann `hidden` an (nur Blöcke). `expect` prüft die aktuelle Ebene: Eine Abweichung ergibt `precondition_failed`. Ungültige Pfade, nicht übersetzbare `text`-Pfade und ungültige Locale-Operationen ergeben `invalid_operation`. Nur Locale-Operationen ändern Lokalisierungsfelder; generische `updateBlock` und `updateSettings` lehnen sie ab. `addBlock` darf `l10n` enthalten; `setContent` ersetzt alles. Verwenden Sie `applyOperations` und `invertOperations` aus `@templatical/types`.
 
-`BlockLock.locale?: string | null` und `OperationLock.locale?: string | null` verwenden `null` (auch bei fehlender Angabe) für Standardsprache und Struktur. Eine lokalisierte Bearbeitung an (Block X, `de`) kollidiert mit einer Sperre einer anderen Sitzung auf (X, `de`) oder (X, `null`); eine `fr`-Sperre kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Provider-Sperrmethoden akzeptieren eine optionale Locale. `onRemoteChange.locale` ist die Sprache der ersten Locale-Operation im Batch, sonst `null`. Exakte Verträge stehen unter [Zusammenarbeit](/de/backend/collaboration).
+`BlockLock.locale?: string | null` und `OperationLock.locale?: string | null` verwenden `null` (auch bei fehlender Angabe) für Standardsprache und Struktur. Eine lokalisierte Bearbeitung an (Block X, `de`) kollidiert mit einer Sperre einer anderen Sitzung auf (X, `de`) oder (X, `null`); eine `fr`-Sperre kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Provider-Sperrmethoden akzeptieren eine optionale Locale. `onRemoteChange.locale` ist die Sprache der ersten Locale-Operation im Batch, ausgenommen `setDefaultLocale`, sonst `null`. Ein `setDefaultLocale`-Batch meldet `null`, da er die Standardsprache des Templates ändert. Exakte Verträge stehen unter [Zusammenarbeit](/de/backend/collaboration).
 
 ## Kompatibilität {#compatibility}
 
@@ -117,7 +118,7 @@ Bestehende einsprachige Templates brauchen keine Migration: Sie laden, bearbeite
 
 Alle `@templatical/*`-Pakete erscheinen gemeinsam unter einer Versionsnummer. Halten Sie sie auf derselben Version: Ein Renderer oder Validator aus der Zeit vor den Sprachversionen kennt `l10n` nicht; ein älterer Renderer rendert die Standardsprache, ein älterer Validator lehnt das Template ab.
 
-Ein selbst gebautes Kollaborationsbackend muss die vier Locale-Operationen und die Sperr-`locale` umsetzen; siehe [Zusammenarbeit](/de/backend/collaboration). Bis dahin lehnt es sie als `invalid_operation` ab, und ein Backend, das die Sperr-`locale` ignoriert, serialisiert Bearbeitungen pro Block.
+Ein selbst gebautes Kollaborationsbackend muss die Locale-Operationen aus der [Operations-Referenz](/de/api/operations) und die Sperr-`locale` umsetzen; siehe [Zusammenarbeit](/de/backend/collaboration). Bis dahin lehnt es sie als `invalid_operation` ab, und ein Backend, das die Sperr-`locale` ignoriert, serialisiert Bearbeitungen pro Block.
 
 ## Vollständig getrennte Layouts
 
@@ -127,7 +128,6 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 
 **Standardsprache und Schreibrichtung**
 
-- Die Standardsprache kann in keiner Ansicht geändert werden, solange Sprachversionen existieren.
 - Die Schreibrichtung kann je Sprache unterschiedlich sein. Die Spaltenreihenfolge folgt automatisch der Schreibrichtung der Sprache: Rechts-nach-links-Versionen zeigen die erste Spalte rechts. Explizite linke und rechte Textausrichtung sowie linke/rechte Innenabstände werden nicht gespiegelt. Überschreiben Sie diese je Sprache. Die Spaltenstruktur ist für alle Sprachen gemeinsam und kann nicht pro Sprache überschrieben werden.
 
 **Felder und Layouts**

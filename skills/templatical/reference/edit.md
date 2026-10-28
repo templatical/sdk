@@ -34,7 +34,7 @@ Cloud share:
 | `updateSettings` | `{"op":"updateSettings","set":{…},"unset":["…"]}` |
 | `setContent` | `{"op":"setContent","content":{…}}` — a full replacement, not a scoped change |
 
-The SDK also supports `addLocale`, `removeLocale`, `updateBlockLocale` and
+The SDK also supports `addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` and
 `updateSettingsLocale` for language versions. Their paths, guards and locks
 are documented in [Operations](https://docs.templatical.com/api/operations).
 Follow [localize.md](localize.md) for adding versions, writing values and checking

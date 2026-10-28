@@ -124,3 +124,25 @@ export declare function isStructuralLocalePath(
   path: string,
   value?: unknown,
 ): boolean;
+
+/** Ids of blocks hidden in `locale`, depth first. Pure. */
+export declare function localeHiddenBlocks(
+  content: TemplateContent,
+  locale: string,
+): string[];
+/** Field ids that would keep the current default's value if `locale` became the default. Pure. */
+export declare function defaultLocaleGaps(
+  content: TemplateContent,
+  locale: string,
+  definitions?: readonly CustomBlockDefinition[],
+): string[];
+/** Internal engine helper; not exported by the package entry point. */
+export declare function rebaseDefaultLocale(
+  content: TemplateContent,
+  locale: string,
+): TemplateContent;
+export interface SetDefaultLocaleOperation {
+  op: "setDefaultLocale";
+  /** A language already in `settings.locales`. */
+  locale: string;
+}

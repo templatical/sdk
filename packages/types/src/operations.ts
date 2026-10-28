@@ -4,6 +4,8 @@ import { safeClone } from "./clone";
 import { deepEqual } from "./deep-equal";
 import {
   defaultLocaleOf,
+  localeHiddenBlocks,
+  rebaseDefaultLocale,
   isLocaleTag,
   isSafePath,
   isTranslatablePath,
@@ -107,6 +109,12 @@ export interface RemoveLocaleOperation {
   };
 }
 
+export interface SetDefaultLocaleOperation {
+  op: "setDefaultLocale";
+  /** A language already in `settings.locales`. */
+  locale: string;
+}
+
 export interface LocaleLayerExpect {
   text?: Record<string, LocalizedText | null>;
   /** `null` matches an absent override. */
@@ -149,6 +157,7 @@ export type Operation =
   | SetContentOperation
   | AddLocaleOperation
   | RemoveLocaleOperation
+  | SetDefaultLocaleOperation
   | UpdateBlockLocaleOperation
   | UpdateSettingsLocaleOperation;
 
@@ -225,7 +234,8 @@ export function getColumnCount(layout: unknown): number {
  * `addLocale` and `removeLocale` manage language versions. `updateBlockLocale`
  * and `updateSettingsLocale` change their layers: unset, text, set, then hidden.
  * Empty localization members are pruned. Only `updateBlockLocale` checks
- * language locks; the membership and settings operations ignore locks.
+ * language locks; the membership and settings-layer operations ignore locks.
+ * `setDefaultLocale` promotes a version to the base and checks every lock.
  *
  * Each operation is checked in a fixed order, and the first failing check
  * decides the error (the cross-track contract's C1, which Templatical Cloud's
@@ -749,6 +759,8 @@ function applyOne(
       return updateSettings(content, op, index);
     case "setContent":
       return setContent(content, op, index, engine);
+    case "setDefaultLocale":
+      return setDefaultLocale(content, op, index, engine);
     case "addLocale":
       return addLocale(content, op, index);
     case "removeLocale":
@@ -1323,4 +1335,38 @@ function setContent(
   }
   content.blocks = safeClone(next.blocks) as Block[];
   content.settings = safeClone(next.settings) as unknown as TemplateSettings;
+}
+
+function setDefaultLocale(
+  content: TemplateContent,
+  op: Json,
+  index: number,
+  engine: EngineContext,
+): void {
+  const locale = readLocale(op, index);
+  if (!content.settings.locales?.includes(locale))
+    fail(
+      "invalid_operation",
+      index,
+      `"${locale}" is not a language version of this template.`,
+    );
+  const hidden = localeHiddenBlocks(content, locale);
+  if (hidden.length)
+    fail(
+      "invalid_operation",
+      index,
+      `${hidden.length} blocks are hidden in "${locale}". Show them before making it the default.`,
+      hidden[0],
+    );
+  const held = engine.locks.find((lock) => heldByOthers(engine, lock));
+  if (held)
+    fail(
+      "locked_by_others",
+      index,
+      "Other sessions hold locks on this template.",
+      held.blockId,
+    );
+  const next = rebaseDefaultLocale(content, locale);
+  content.blocks = next.blocks;
+  content.settings = next.settings;
 }

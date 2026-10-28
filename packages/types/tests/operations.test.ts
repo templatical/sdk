@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyOperations,
   applyOperationsInPlace,
+  invertOperations,
   getColumnCount,
   OperationError,
   type Block,
@@ -23,7 +24,14 @@ interface Fixture {
   ops: Operation[];
   result:
     | { content: TemplateContent }
-    | { error: { code: string; opIndex: number; blockId?: string } };
+    | {
+        error: {
+          code: string;
+          opIndex: number;
+          blockId?: string;
+          message?: string;
+        };
+      };
 }
 
 const files = readdirSync(FIXTURES)
@@ -72,6 +80,7 @@ describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () =
       "setContent",
       "addLocale",
       "removeLocale",
+      "setDefaultLocale",
       "updateBlockLocale",
       "updateSettingsLocale",
     ]) {
@@ -117,6 +126,16 @@ describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () =
       expect(applyOperations(fixture.content, fixture.ops, context)).toEqual(
         fixture.result.content,
       );
+      if (file.startsWith("locale-default")) {
+        const after = applyOperations(fixture.content, fixture.ops, context);
+        expect(
+          applyOperations(
+            after,
+            invertOperations(fixture.content, fixture.ops),
+            context,
+          ),
+        ).toEqual(fixture.content);
+      }
     } else {
       let thrown: unknown = null;
       try {
@@ -128,6 +147,9 @@ describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () =
       expect({
         code: (thrown as OperationError).code,
         opIndex: (thrown as OperationError).opIndex,
+        ...("message" in fixture.result.error
+          ? { message: (thrown as OperationError).message }
+          : {}),
         ...("blockId" in fixture.result.error
           ? { blockId: (thrown as OperationError).blockId }
           : {}),
@@ -411,7 +433,9 @@ describe("locale operation validation and ordering", () => {
       } as Block,
     ];
     for (const change of [
-      { text: { "items.i.1.text": { value: "Laden", sourceHash: "28742cc9" } } },
+      {
+        text: { "items.i.1.text": { value: "Laden", sourceHash: "28742cc9" } },
+      },
       { set: { "items.i.1.url": "https://example.com/de" } },
       { set: { "items.missing": {} } },
     ]) {

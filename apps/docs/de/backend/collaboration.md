@@ -181,7 +181,7 @@ Ein Backend ohne Echtzeitkanal kann trotzdem geordnet zusammenarbeiten: `join` a
 
 `init({ onRemoteChange })` wird mit `{ actor, ops, locale }` aufgerufen, nachdem der Batch einer anderen Sitzung auf dem Canvas angewendet wurde. Für die eigenen Änderungen dieses Editors wird es nicht aufgerufen, ebenso wenig für einen Resync, der das Template neu lädt.
 
-`locale: string | null` meldet die Sprache der ersten Locale-Operation eines fremden Batches, sonst `null`.
+`locale: string | null` meldet die Sprache der ersten Locale-Operation eines fremden Batches, ausgenommen `setDefaultLocale`, sonst `null`. Ein `setDefaultLocale`-Batch meldet `null`, da er die Standardsprache des Templates ändert.
 
 ## Im Playground
 

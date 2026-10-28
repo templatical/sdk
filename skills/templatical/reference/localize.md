@@ -9,7 +9,7 @@ Keep language versions in one shared block tree with `settings.locales` and `l10
 
 `init({ localization: { locales: ["en", "de", "fr"] } })` turns on language versions. Existing templates need no migration, and configuration alone writes no localization fields. Keep every `@templatical/*` package on one version: an older renderer renders the default language and an older validator rejects `l10n`. A self-built collaboration backend must apply the locale operations and lock `locale` ([providers.md](providers.md)); until it does, it rejects them as `invalid_operation`. The Cloud editor does not support language versions yet: `initCloud()` ignores the key and logs a warning.
 
-`settings.locale` is the fixed default. `settings.locales` contains other versions without duplicates or the default. A stored version absent from `localization.locales` is selectable but read-only, marked **Not enabled**; value edits and structure changes are refused. `getLocale()`, `setLocale(tag)` and `onLocaleChange(tag)` control view state, which starts at the default and is not saved. An unknown version throws `unknown_locale`.
+`settings.locale` is the default; `setDefaultLocale` promotes an existing version. `settings.locales` contains other versions without duplicates or the default. A stored version absent from `localization.locales` is selectable but read-only, marked **Not enabled**; value edits and structure changes are refused. `getLocale()`, `setLocale(tag)` and `onLocaleChange(tag)` control view state, which starts at the default and is not saved. An unknown version throws `unknown_locale`.
 
 ## Language values
 
@@ -73,7 +73,7 @@ A layout carries its own `settings.locales`, block `l10n` and `settings.l10n`, i
 
 `renderToMjml(content, { locale: "de" })`, `editor.toMjml({ locale: "de" })` and `editor.toHtml({ locale: "de" })` select a version. Omission renders the default regardless of active view. `resolveLocale(content, "de")` is a pure projection: text and overrides applied, hidden blocks removed recursively, localization fields stripped, `settings.locale` set to `de`. The editor's HTML method still needs `render.toHtml` or `render.compileMjml`; local MJML needs the renderer peer.
 
-Locks carry `locale?: string | null`, absent meaning null (default language and structure). Forward the optional locale through provider `acquireLock`, `renewLock`, `releaseLock` and `onUnlock`. A localized edit on (X, de) conflicts with another session's (X, de) or (X, null) lock, while (X, fr) can coexist. Other block operations conflict with every other session's lock on X. `onRemoteChange.locale` reports the first locale operation's language in the batch, otherwise null. A backend ignoring locale serializes per block; check the lock matrix against the contracts in `backend/collaboration` and the shared operation fixtures documented in `api/operations`.
+Locks carry `locale?: string | null`, absent meaning null (default language and structure). Forward the optional locale through provider `acquireLock`, `renewLock`, `releaseLock` and `onUnlock`. A localized edit on (X, de) conflicts with another session's (X, de) or (X, null) lock, while (X, fr) can coexist. Other block operations conflict with every other session's lock on X. `onRemoteChange.locale` reports the first locale operation's language in the batch, excluding `setDefaultLocale`, otherwise null. A `setDefaultLocale` batch reports null because it changes the template's default. A backend ignoring locale serializes per block; check the lock matrix against the contracts in `backend/collaboration` and the shared operation fixtures documented in `api/operations`.
 
 ## Custom blocks
 
@@ -81,11 +81,12 @@ The CLI has no custom-block definitions flag. Both validate and render validate 
 
 Any `text` or `set` entry in a custom block's requested locale layer discards its default-language `renderedHtml`, keeping `renderedStylesheet`. A resolver renders the localized fields; without `renderCustomBlock` the block is omitted, including CLI renders of custom `set` overrides. Blocks without a layer for that locale retain cached HTML. The editor's export path localizes before pre-rendering and retains translated HTML. Check the library example's validation result and localization issues, and verify the rendered MJML contains the translated custom text, rather than assuming CLI validation/rendering can check it.
 
+Use `{ "op": "setDefaultLocale", "locale": "de" }` to promote an existing version. Its values become the base; the former default becomes a version in the same list position. Gaps keep their old default values. `defaultLocaleGaps(content, "de", definitions?)` lists those field ids; stale text and applicable `set` overrides do not count. `localeHiddenBlocks(content, "de")` lists blocks to show first: any hidden block refuses promotion. Other sessions’ locks also refuse it. The inverse restores the exact prior content through `setContent`. See [Operations](https://docs.templatical.com/api/operations) for re-stamping, optional-field removal and refusal messages. Run `template-tools validate` after the edit.
+
 ## Limits
 
 **Defaults and direction**
 
-- The default language can't change while language versions exist, in any view.
 - Direction can differ per language. Column order follows the language's direction automatically: right-to-left versions show the first column on the right. Explicit left and right text alignment and left/right padding aren't mirrored. Override them per language. Column structure is shared across languages and can't be overridden per language.
 
 **Fields and layouts**

@@ -341,6 +341,7 @@ function invertOne(
         ...changes,
       } as UpdateSettingsLocaleOperation;
     }
+    case "setDefaultLocale":
     case "setContent":
       return {
         op: "setContent",
@@ -360,7 +361,8 @@ function invertOne(
  * Every inverse that can be guarded is: it expects what its operation left
  * behind, so an undo that a later edit by someone else has overtaken is refused
  * (`precondition_failed`, `anchor_missing`, `block_missing`) instead of
- * overwriting that edit. A `setContent` inverse has no guard; the backend's
+ * overwriting that edit. `setContent` and `setDefaultLocale` restore snapshots
+ * without a guard; the backend's
  * `locked_by_others` rule is what stops it while others are editing.
  *
  * Throws the engine's `OperationError` when `ops` don't apply to `before`.

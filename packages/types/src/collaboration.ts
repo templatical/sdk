@@ -226,7 +226,10 @@ export interface CollaborationProvider {
 /** What `onRemoteChange` reports: a batch another session made. */
 export interface CollaborationRemoteChange {
   actor: CollaborationActor;
-  /** The first locale operation's language in this batch, otherwise `null`. */
+  /**
+   * The first locale operation's language, excluding `setDefaultLocale`, otherwise `null`.
+   * A `setDefaultLocale` batch reports `null`: it changes the template's default.
+   */
   locale: string | null;
   ops: Operation[];
 }

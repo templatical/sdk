@@ -486,3 +486,207 @@ export function localeCoverage(
   );
   return result;
 }
+
+/** Ids of blocks hidden in `locale`, depth first. Pure. */
+export function localeHiddenBlocks(
+  content: TemplateContent,
+  locale: string,
+): string[] {
+  if (
+    locale === defaultLocaleOf(content) ||
+    !content.settings.locales?.includes(locale)
+  )
+    return [];
+  const ids: string[] = [];
+  const walk = (blocks: Block[]) => {
+    for (const block of blocks) {
+      if (isHidden(block, locale)) ids.push(block.id);
+      if (block.type === "section") block.children.forEach(walk);
+      else if (block.type === "wrapper") walk(block.children);
+    }
+  };
+  walk(content.blocks);
+  return ids;
+}
+
+/** Field ids that would keep the current default's value if `locale` became the default. Pure. */
+export function defaultLocaleGaps(
+  content: TemplateContent,
+  locale: string,
+  definitions: readonly CustomBlockDefinition[] = [],
+): string[] {
+  if (
+    locale === defaultLocaleOf(content) ||
+    !content.settings.locales?.includes(locale)
+  )
+    return [];
+  const gaps: string[] = [];
+  const collect = (id: string, target: Json, paths: readonly string[]) => {
+    const layer = (
+      target.l10n as Record<string, BlockLocaleLayer> | undefined
+    )?.[locale];
+    for (const path of paths) {
+      const value = readPath(target, path);
+      if (typeof value !== "string" || layer?.text?.[path]) continue;
+      const overridden = Object.keys(layer?.set ?? {}).some(
+        (key) =>
+          (path === key || path.startsWith(`${key}.`)) &&
+          (!key.includes(".") ||
+            readPath(target, key.slice(0, key.lastIndexOf("."))) !== undefined),
+      );
+      if (!overridden) gaps.push(`${id}/${path}`);
+    }
+  };
+  const walk = (blocks: Block[]) => {
+    for (const block of blocks) {
+      collect(
+        block.id,
+        block as unknown as Json,
+        translatableFields(block, definitions),
+      );
+      if (block.type === "section") block.children.forEach(walk);
+      else if (block.type === "wrapper") walk(block.children);
+    }
+  };
+  walk(content.blocks);
+  collect(
+    "settings",
+    content.settings as unknown as Json,
+    SETTINGS_TRANSLATABLE_FIELDS,
+  );
+  return gaps;
+}
+
+/** Promote a language's layers to the base. Membership and visibility are checked by the engine. */
+export function rebaseDefaultLocale(
+  content: TemplateContent,
+  locale: string,
+): TemplateContent {
+  const previous = defaultLocaleOf(content);
+  const rebase = <T extends { l10n?: Record<string, BlockLocaleLayer> }>(
+    target: T,
+    textPath: (path: string) => boolean,
+  ): T => {
+    const layers = safeClone(target.l10n ?? {});
+    const promoted = layers[locale] ?? {};
+    const next = safeClone(target) as T & Json;
+    delete next.l10n;
+    for (const [path, value] of orderedSetEntries(promoted.set))
+      writePath(next, path, value);
+    for (const [path, value] of Object.entries(promoted.text ?? {}))
+      if (readPath(target, path) !== undefined)
+        writePath(next, path, value.value);
+    delete layers[locale];
+    const old: BlockLocaleLayer = {};
+    const paths = new Set([
+      ...Object.keys(promoted.set ?? {}),
+      ...Object.keys(promoted.text ?? {}),
+    ]);
+    for (const path of paths) {
+      const before = readPath(target, path);
+      const after = readPath(next, path);
+      if (deepEqual(before, after)) continue;
+      if (
+        textPath(path) &&
+        typeof before === "string" &&
+        typeof after === "string"
+      )
+        (old.text ??= {})[path] = {
+          value: before,
+          sourceHash: sourceHash(after),
+        };
+      else
+        (old.set ??= {})[path] =
+          before === undefined ? null : safeClone(before);
+    }
+    const restoreSubtrees = (layer: BlockLocaleLayer, projected: Json) => {
+      const roots = new Set<string>();
+      for (const path of Object.keys(layer.set ?? {})) {
+        const segments = path.split(".");
+        while (segments.length > 1) {
+          const parent = readPath(next, segments.slice(0, -1).join("."));
+          if (
+            isRecord(parent) ||
+            (Array.isArray(parent) &&
+              readPath(next, segments.join(".")) !== undefined)
+          )
+            break;
+          segments.pop();
+        }
+        const root = segments.join(".");
+        if (root !== path) roots.add(root);
+      }
+      for (const root of roots) {
+        for (const kind of ["text", "set"] as const) {
+          for (const path of Object.keys(layer[kind] ?? {}))
+            if (path === root || path.startsWith(`${root}.`))
+              delete layer[kind]![path];
+        }
+        const value = readPath(projected, root);
+        (layer.set ??= {})[root] =
+          value === undefined ? null : safeClone(value);
+      }
+      if (layer.text && !Object.keys(layer.text).length) delete layer.text;
+    };
+    for (const layer of Object.values(layers)) {
+      // A missing parent needs the whole prior projection, including inherited
+      // siblings and all of this language's overrides and translated values.
+      const projected = safeClone(target) as T & Json;
+      for (const [path, value] of orderedSetEntries(layer.set))
+        writePath(projected, path, value);
+      for (const [path, entry] of Object.entries(layer.text ?? {}))
+        if (readPath(target, path) !== undefined)
+          writePath(projected, path, entry.value);
+      for (const [path, entry] of Object.entries(layer.text ?? {})) {
+        const after = readPath(next, path);
+        if (typeof after !== "string") {
+          (layer.set ??= {})[path] = entry.value;
+          delete layer.text![path];
+        } else {
+          const before = readPath(target, path);
+          if (
+            typeof before === "string" &&
+            entry.sourceHash === sourceHash(before)
+          )
+            entry.sourceHash = sourceHash(after);
+        }
+      }
+      restoreSubtrees(layer, projected);
+    }
+    if (Object.keys(old).length) {
+      restoreSubtrees(old, target as T & Json);
+      layers[previous] = old;
+    }
+    if (Object.keys(layers).length) next.l10n = layers;
+    return next;
+  };
+  const walk = (blocks: Block[]): Block[] =>
+    blocks.map((block) => {
+      // Custom field definitions are not part of an operation's context;
+      // existing text entries identify their translatable paths.
+      const next = rebase(block, (path) =>
+        block.type === "custom"
+          ? Object.values(block.l10n ?? {}).some((layer) =>
+              Object.hasOwn(layer.text ?? {}, path),
+            )
+          : isTranslatablePath(block.type, path),
+      );
+      if (
+        block.type === "custom" &&
+        next.type === "custom" &&
+        !deepEqual(block.fieldValues, next.fieldValues)
+      )
+        delete next.renderedHtml;
+      if (next.type === "section") next.children = next.children.map(walk);
+      else if (next.type === "wrapper") next.children = walk(next.children);
+      return next;
+    });
+  const settings = rebase(content.settings, (path) =>
+    SETTINGS_TRANSLATABLE_FIELDS.includes(path),
+  );
+  settings.locale = locale;
+  settings.locales = content.settings.locales!.map((tag) =>
+    tag === locale ? previous : tag,
+  );
+  return { blocks: walk(content.blocks), settings };
+}

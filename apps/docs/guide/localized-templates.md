@@ -17,7 +17,7 @@ Existing templates need no migration; see [Compatibility](#compatibility). The U
 
 ## Data shape
 
-`settings.locale` is the fixed default language. `settings.locales?: string[]` lists the other versions, without duplicates or the default. Every key in `block.l10n` and `settings.l10n` must occur in that list.
+`settings.locale` is the default language; `setDefaultLocale` promotes an existing version. `settings.locales?: string[]` lists the other versions, without duplicates or the default. Every key in `block.l10n` and `settings.l10n` must occur in that list.
 
 | Member | Contract |
 | --- | --- |
@@ -104,12 +104,13 @@ A layout has its own `settings.locales`, block `l10n` and `settings.l10n`, indep
 | --- | --- |
 | `addLocale` | Adds a version to `settings.locales` |
 | `removeLocale` | Removes the version and every corresponding block/settings layer |
+| `setDefaultLocale` | Promotes a version to the default; gaps keep the old base, hidden blocks refuse the change |
 | `updateBlockLocale` | Writes a block's `text`, `set`, `unset` paths and `hidden` for a locale |
 | `updateSettingsLocale` | Writes settings `text`, `set` and `unset` for a locale |
 
 Updates apply `unset`, then `text`, then `set`, then `hidden` (blocks only). `expect` guards the current layer: a mismatch is `precondition_failed`. Invalid paths, non-text `text` paths and invalid locale operations are `invalid_operation`. Only locale operations change localization fields; generic `updateBlock` and `updateSettings` refuse them. `addBlock` may carry `l10n`; `setContent` replaces everything. Use `applyOperations` and `invertOperations` from `@templatical/types`.
 
-`BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` use `null` (also the absent default) for the default language and structure. A localized edit to (block X, `de`) conflicts with another session's lock on (X, `de`) or (X, `null`); a `fr` lock can coexist. Every other block operation conflicts with any other session's lock on X. Provider lock methods accept an optional locale. `onRemoteChange.locale` is the first locale operation's language in the batch, otherwise `null`. See [Collaboration](/backend/collaboration) for exact contracts.
+`BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` use `null` (also the absent default) for the default language and structure. A localized edit to (block X, `de`) conflicts with another session's lock on (X, `de`) or (X, `null`); a `fr` lock can coexist. Every other block operation conflicts with any other session's lock on X. Provider lock methods accept an optional locale. `onRemoteChange.locale` is the first locale operation's language in the batch, excluding `setDefaultLocale`, otherwise `null`. A `setDefaultLocale` batch reports `null` because it changes the template's default. See [Collaboration](/backend/collaboration) for exact contracts.
 
 ## Compatibility
 
@@ -117,7 +118,7 @@ Existing single-language templates need no migration: they load, edit, save and 
 
 All `@templatical/*` packages release together under one version number. Keep them on the same version: a renderer or validator from before language versions doesn't know `l10n`, so an older renderer renders the default language and an older validator rejects the template.
 
-A collaboration backend you built yourself must apply the four locale operations and the lock `locale`; see [Collaboration](/backend/collaboration). Until it does, it rejects them as `invalid_operation`, and a backend that ignores the lock `locale` serializes edits per block.
+A collaboration backend you built yourself must apply the locale operations in the [Operations reference](/api/operations) and the lock `locale`; see [Collaboration](/backend/collaboration). Until it does, it rejects them as `invalid_operation`, and a backend that ignores the lock `locale` serializes edits per block.
 
 ## Fully separate layouts
 
@@ -127,7 +128,6 @@ For independent block trees or layouts in each language, keep separate templates
 
 **Defaults and direction**
 
-- The default language can't change while language versions exist, in any view.
 - Direction can differ per language. Column order follows the language's direction automatically: right-to-left versions show the first column on the right. Explicit left and right text alignment and left/right padding aren't mirrored. Override them per language. Column structure is shared across languages and can't be overridden per language.
 
 **Fields and layouts**

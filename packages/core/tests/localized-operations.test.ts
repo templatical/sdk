@@ -1022,3 +1022,21 @@ it("preserves a sibling edit combined with an inherited reset in mapped operatio
     left: 7,
   });
 });
+
+it("refuses setDefaultLocale in an AI language-view batch", () => {
+  const base = {
+    blocks: [],
+    settings: { locale: "en", locales: ["de"] },
+  } as unknown as TemplateContent;
+  expect(() =>
+    mapLocalizedOperations(base, "de", [
+      { op: "setDefaultLocale", locale: "en" },
+    ]),
+  ).toThrowError(
+    expect.objectContaining({
+      code: "invalid_operation",
+      message:
+        "Changing the default language isn't possible in a language view; switch to the default language.",
+    }),
+  );
+});

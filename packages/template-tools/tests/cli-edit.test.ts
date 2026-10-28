@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
 import { runEdit } from "../src/cli/commands/edit";
+import { validateTemplate } from "../src/validate";
 import { InvalidTemplateError, UsageError } from "../src/cli/io";
 
 const pad = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -199,4 +200,42 @@ describe("edit command", () => {
     ).toThrow(/not both/);
     expect(readFileSync(file, "utf8")).toBe(before);
   });
+});
+
+it("edits the default language with an explicit operation and validates removed optional fields", () => {
+  const before = {
+    ...BASE,
+    settings: {
+      ...BASE.settings,
+      locales: ["de", "fr"],
+      preheaderText: "Hello",
+      l10n: {
+        de: { set: { preheaderText: null } },
+        fr: {
+          text: { preheaderText: { value: "Bonjour", sourceHash: "f55c314b" } },
+        },
+      },
+    },
+  };
+  writeFileSync(file, JSON.stringify(before));
+  expect(
+    runEdit(
+      parseArgs([
+        "edit",
+        file,
+        "--op",
+        '{"op":"setDefaultLocale","locale":"de"}',
+      ]),
+    ),
+  ).toBe(0);
+  expect(read().settings).toMatchObject({
+    locale: "de",
+    locales: ["en", "fr"],
+    l10n: {
+      en: { set: { preheaderText: "Hello" } },
+      fr: { set: { preheaderText: "Bonjour" } },
+    },
+  });
+  expect(read().settings).not.toHaveProperty("preheaderText");
+  expect(validateTemplate(read()).valid).toBe(true);
 });

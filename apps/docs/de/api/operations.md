@@ -64,7 +64,7 @@ Ein Backend übergibt die Sperren, die es hält, und die handelnde Sitzung: `app
 <!-- locale-operations:start -->
 ## Locale-Operationen
 
-`addLocale`, `removeLocale`, `updateBlockLocale` und `updateSettingsLocale` verwalten Sprachversionen im gemeinsamen Baum des SDK. Cloud-Backends und gehostetes MCP unterstützen diese Operationen nicht; aktualisieren Sie Renderer, Validator und Collaboration-Backend, bevor Sie lokalisierte Inhalte speichern.
+`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` und `updateSettingsLocale` verwalten Sprachversionen im gemeinsamen Baum des SDK. Cloud-Backends und gehostetes MCP unterstützen diese Operationen nicht; aktualisieren Sie Renderer, Validator und Collaboration-Backend, bevor Sie lokalisierte Inhalte speichern.
 
 Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprache `en`, Richtung `ltr` und ohne Sprachversionen. Er fügt Deutsch hinzu, schreibt einen deutschen Wert, blendet den Block auf Deutsch aus, überschreibt die Richtung und entfernt dann Deutsch samt seinen Ebenen. `sourceHash` ist `sourceHash("<p>Original</p>")`.
 
@@ -79,6 +79,7 @@ Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprach
 |---|---|
 | `addLocale` | `locale: string`; `position?: number` fügt in `settings.locales` ein, standardmäßig am Ende. Die Position muss eine Ganzzahl von 0 bis zur aktuellen Länge sein. Standard (`settings.locale ?? "en"`) und vorhandene Versionen werden ohne Beachtung der Groß-/Kleinschreibung abgelehnt. |
 | `removeLocale` | `locale: string`; `expect?: { blocks: Record<string, BlockLocaleLayer>; settings?: SettingsLocaleLayer }` vergleicht alle Ebenen exakt. `blocks` enthält Ebenen nach Block-ID; eine fehlende ID bedeutet keine Ebene. Das separate Feld `settings` enthält die Einstellungsebene; fehlt es, gibt es keine. `expect: { blocks: {} }` verlangt keine Block- oder Einstellungsebenen, auch bei einem Block namens `"settings"`. Entfernt die Sprache und alle Block- und Einstellungsebenen, auch in Spalten. |
+| `setDefaultLocale` | `locale: string`; ein exakter Tag aus `settings.locales`. Übernimmt Text und Eigenschaften als Basis; die bisherige Standardsprache erhält die Listenposition und eine Ebene für abweichende Werte. Fehlende Felder behalten ihre Basiswerte. Kollidiert mit jeder Sperre einer anderen Sitzung (`locked_by_others`). |
 | `updateBlockLocale` | `blockId: string`; `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `hidden?: boolean`; `expect?: LocaleLayerExpect`. Mindestens ein Änderungsfeld muss vorhanden sein. |
 | `updateSettingsLocale` | `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `expect?: Omit<LocaleLayerExpect, "hidden">`. Mindestens ein Änderungsfeld muss vorhanden sein. Kein Ausblendestatus und keine Sperren. |
 
@@ -91,6 +92,18 @@ Basisupdates entfernen verwaiste Locale-Einträge; ihre Inverse stellt zuerst di
 Die Engine wendet zuerst `unset` an (auf beide Maps), dann `text`, dann `set`, dann `hidden`. Ein Pfad in einer Map wird aus der anderen gelöscht. `hidden: false` entfernt das Flag. Leere Maps, Ebenen und Lokalisierungscontainer werden weggelassen; das Entfernen der letzten Version lässt `settings.locales` weg.
 
 `set: { path: null }` speichert einen löschenden Override: Die Eigenschaft fehlt in der `resolveLocale`-Projektion dieser Sprache. `unset: [path]` entfernt den Override, sodass wieder der Wert der Standardsprache gilt. Ebenen speichern niemals `undefined`; undefinierte `text`- oder `set`-Einträge und Texteinträge ohne die Strings `value` und `sourceHash` werden mit `invalid_operation` abgelehnt. Jeder `unset`-Pfad muss nicht leer sein und `isSafePath` erfüllen, auch wenn der Basispfad nicht mehr existiert; sichere verwaiste Pfade bleiben entfernbar.
+
+### Standardsprache
+
+`{ "op": "setDefaultLocale", "locale": "de" }` macht eine vorhandene deutsche Version zur Standardsprache. Für Blöcke jeder Tiefe, einschließlich Layout-Wrappern, und Einstellungen werden `text`-Werte und `set`-Überschreibungen zur Basis (`null` entfernt eine Eigenschaft). Abweichender Text der bisherigen Standardsprache wird als `text` mit `sourceHash` der neuen Basis gespeichert; andere abweichende Werte als `set`. Gleiche Werte hinterlassen keinen Eintrag. Lücken behalten die alte Basis ohne Eintrag für die bisherige Standardsprache. `settings.locale` ändert sich; die bisherige Standardsprache übernimmt den Index der gewählten Version in `settings.locales`.
+
+Aktueller Text anderer Sprachen erhält den Hash der neuen Basis. Veralteter Text behält seinen gespeicherten Hash; entspricht dieser dem übernommenen Wert, wird der Text aktuell. Fehlt der neuen Basis ein Textpfad, werden der bisherige Standardwert und Texte anderer Sprachen zu `set`-Einträgen ohne Veraltungsprüfung. Eigenschaftsüberschreibungen, deren übergeordnetes Objekt entfällt, werden am nächsten beschreibbaren Vorfahren zusammengefasst. Der Wert ist der zuvor projizierte Teilbaum dieser Sprache einschließlich geerbter Eigenschaften und Überschreibungen. Ein benutzerdefinierter Block verliert `renderedHtml` nur, wenn sich seine `fieldValues` ändern.
+
+`localeHiddenBlocks(content, locale): string[]` listet ausgeblendete Block-IDs in Tiefenreihenfolge, einschließlich Kindern ausgeblendeter Blöcke; für Standard- und unbekannte Sprachen ist das Ergebnis `[]`. `defaultLocaleGaps(content, locale, definitions?): string[]` listet übersetzbare Feld-IDs, die mangels Text oder anwendbarer Eigenschaftsüberschreibung die alte Basis behalten. Veralteter Text wird übernommen und zählt nicht als Lücke. Beide Helfer sind rein; übergeben Sie Definitionen, um Textfelder benutzerdefinierter Blöcke mitzuzählen.
+
+Eine unbekannte Version oder die aktuelle Standardsprache erzeugt `invalid_operation`: `"<locale>" is not a language version of this template.` Ausgeblendete Blöcke erzeugen `invalid_operation`, die erste ausgeblendete `blockId` und `<count> blocks are hidden in "<locale>". Show them before making it the default.` Jede Sperre einer anderen Sitzung kollidiert wie bei `setContent`; `onRemoteChange.locale` ist für diese Operation `null`. KI-Batches in einer Sprachansicht lehnen sie ab.
+
+`invertOperations` stellt mit `setContent` den exakten vorherigen Inhalt einschließlich Hashes, übernommener Ebene und HTML-Cache wieder her. Für Rückgängig gilt daher dieselbe templateweite Sperrregel. Senden Sie die explizite Operation über Collaboration; ein Snapshot-Diff erzeugt für eine Änderung der Standardsprache `setContent`.
 
 ### Overrides löschen
 
@@ -113,7 +126,7 @@ Nur Locale-Operationen ändern bestehende Lokalisierungscontainer: `updateBlock`
 
 ### Prüfung
 
-Führen Sie `pnpm --filter @templatical/types exec vitest run tests/operations.test.ts tests/invert-operations.test.ts` für gemeinsame Fixtures und geschützte Umkehrungen aus. Führen Sie `template-tools validate` für das resultierende Template aus; die Engine-Annahme validiert das Schema nicht.
+Führen Sie `pnpm --filter @templatical/types exec vitest run tests/operations.test.ts tests/invert-operations.test.ts tests/set-default-locale.test.ts tests/locale-hidden-blocks.test.ts` für gemeinsame Fixtures und geschützte Umkehrungen aus. Führen Sie `template-tools validate` für das resultierende Template aus; die Engine-Annahme validiert das Schema nicht.
 <!-- locale-operations:end -->
 
 ## Fehler

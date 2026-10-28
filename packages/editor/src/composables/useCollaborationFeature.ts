@@ -130,7 +130,7 @@ export function summarizeAgentEdit(
       op.op === "updateSettingsLocale"
     ) {
       settings = true;
-    } else if (op.op === "setContent") {
+    } else if (op.op === "setContent" || op.op === "setDefaultLocale") {
       templateUpdated = true;
     } else {
       blockIds.add(op.blockId);

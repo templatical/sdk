@@ -183,6 +183,7 @@ export type {
   OperationLock,
   RemoveLocaleOperation,
   SetContentOperation,
+  SetDefaultLocaleOperation,
   UpdateBlockOperation,
   UpdateBlockLocaleOperation,
   UpdateSettingsOperation,
@@ -262,6 +263,8 @@ export {
   defaultLocaleOf,
   resolveLocale,
   localeCoverage,
+  localeHiddenBlocks,
+  defaultLocaleGaps,
 } from "./localization";
 export { createDefaultTemplateContent } from "./template";
 export type { ContentDirection } from "./direction";
