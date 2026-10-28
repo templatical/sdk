@@ -2,6 +2,40 @@ import type en from "./en";
 
 const de: typeof en = {
   localization: {
+    editingLanguage: "Bearbeitung: {language}",
+    languageReadOnly: "Schreibgeschützt: {language} ist nicht aktiviert",
+    backToDefault: "Zurück zu {default}",
+    translateFields: {
+      one: "{count} Feld übersetzen",
+      other: "{count} Felder übersetzen",
+    },
+    translationConfirmation: {
+      one: "{count} Feld erneut übersetzen?",
+      other: "Alle {count} Felder erneut übersetzen?",
+    },
+    translateAllFields: {
+      one: "{count} Feld übersetzen",
+      other: "Alle {count} Felder übersetzen",
+    },
+    translationDescription:
+      "Dies ersetzt die aktuellen Übersetzungen für {language}, einschließlich manueller Änderungen. Du kannst dies rückgängig machen.",
+    translatedFields: {
+      one: "{count} Feld übersetzt.",
+      other: "{count} Felder übersetzt.",
+    },
+    translationTagsChanged: {
+      one: "{count} beibehalten, weil sich die Tags geändert haben.",
+      other: "{count} beibehalten, weil sich die Tags geändert haben.",
+    },
+    translationSkippedLocked: {
+      one: "{count} übersprungen, weil sie gerade bearbeitet werden.",
+      other: "{count} übersprungen, weil sie gerade bearbeitet werden.",
+    },
+    translationMissing: {
+      one: "{count} nicht zurückgegeben.",
+      other: "{count} nicht zurückgegeben.",
+    },
+    translationError: "Der Übersetzungsdienst meldet: {message}",
     defaultRefused:
       "{language} konnte nicht als Standardsprache festgelegt werden: {reason}",
     defaultLockedReason: "jemand anderes bearbeitet dieses Template",
@@ -30,18 +64,10 @@ const de: typeof en = {
       one: "{count} Feld ist noch in {old}.",
       other: "{count} Felder sind noch in {old}.",
     },
-    translateFrom: "Aus {language} übersetzen",
     translateAllAgain: "Alles erneut übersetzen…",
-    translationConfirmation:
-      "Alle Übersetzungen in {language} ersetzen, einschließlich manueller Änderungen?",
     translate: "Übersetzen",
     retranslate: "Erneut übersetzen",
     translating: "{done} von {total} werden übersetzt…",
-    translatedFields: "{count} Felder übersetzt",
-    translationTagsChanged: "{count} behalten den alten Text: Tags geändert",
-    translationSkippedLocked:
-      "{count} übersprungen: werden in {language} bearbeitet",
-    translationMissing: "{count} nicht zurückgegeben",
     languages: "Sprachen",
     default: "Standard",
     notEnabled: "Nicht aktiviert",

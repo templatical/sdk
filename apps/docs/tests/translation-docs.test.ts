@@ -111,13 +111,13 @@ describe("translation documentation", () => {
   it.each([
     [
       "",
-      "**Translate from {language}**",
+      "**Translate {count} fields**",
       /The dismissible result notice[^\n]*/,
       /cancellation/,
     ],
     [
       "de/",
-      "**Aus {language} übersetzen**",
+      "**{count} Felder übersetzen**",
       /Die schließbare Ergebnismeldung[^\n]*/,
       /Abbrüche/,
     ],

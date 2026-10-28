@@ -162,7 +162,14 @@ export function useTranslationFeature(
     cancel();
     lastResult.value = null;
   }
-  watch(editor.activeLocale, cancel, { flush: "sync" });
+  watch(
+    editor.activeLocale,
+    () => {
+      cancel();
+      lastResult.value = null;
+    },
+    { flush: "sync" },
+  );
   watch(
     [editor.content, editor.loadVersion, () => editor.state.template?.id],
     discard,
@@ -382,7 +389,7 @@ export function useTranslationFeature(
             0,
           );
         }
-        lastResult.value = result;
+        if (editor.activeLocale.value === locale) lastResult.value = result;
       }
     } finally {
       active = null;

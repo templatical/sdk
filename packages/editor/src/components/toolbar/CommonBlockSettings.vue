@@ -96,32 +96,39 @@ function startCustomCondition(): void {
 }
 
 function applyCustomCondition(): void {
-  if (!customBefore.value.trim()) return;
+  const before = customBefore.value.trim();
+  const after = customAfter.value.trim();
+  if (!before) return;
   emit("update", {
     displayCondition: {
       label: t.blockSettings.customCondition,
-      before: customBefore.value.trim(),
-      after: customAfter.value.trim(),
+      before,
+      after,
     },
   });
   customConditionMode.value = false;
-  customBefore.value = "";
-  customAfter.value = "";
+  customBefore.value = before;
+  customAfter.value = after;
 }
 
 watch(
-  () => props.block.displayCondition,
-  (condition) => {
-    if (!condition) {
+  [
+    () => editor?.state?.template?.id,
+    () => props.block.id,
+    () => props.block.displayCondition?.label,
+    () => props.block.displayCondition?.before,
+    () => props.block.displayCondition?.after,
+  ],
+  () => {
+    const condition = props.block.displayCondition;
+    if (!condition || !isCustomCondition.value) {
       customConditionMode.value = false;
       customBefore.value = "";
       customAfter.value = "";
       return;
     }
-    if (isCustomCondition.value) {
-      customBefore.value = condition.before;
-      customAfter.value = condition.after ?? "";
-    }
+    customBefore.value = condition.before;
+    customAfter.value = condition.after ?? "";
   },
   { immediate: true },
 );

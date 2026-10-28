@@ -2,7 +2,7 @@
 
 Language versions of one template
 
-init({ templates, layout, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and use Translate from English to fill the gaps, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The do-not-translate list protects Sable during translation. The layout footer follows the selected language and falls back to English when the layout lacks it. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.
+init({ templates, layout, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and translate the gaps in the language bar, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The do-not-translate list protects Sable during translation. The layout footer follows the selected language and falls back to English when the layout lacks it. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.
 
 Contract: https://docs.templatical.com/guide/localized-templates
 Live: https://play.templatical.com/scenes/languages

@@ -2,6 +2,40 @@ import type en from "./en";
 
 const ptBR: typeof en = {
   localization: {
+    editingLanguage: "Editando {language}",
+    languageReadOnly: "Somente leitura: {language} não está habilitado",
+    backToDefault: "Voltar para {default}",
+    translateFields: {
+      one: "Traduzir {count} campo",
+      other: "Traduzir {count} campos",
+    },
+    translationConfirmation: {
+      one: "Traduzir o {count} campo novamente?",
+      other: "Traduzir todos os {count} campos novamente?",
+    },
+    translateAllFields: {
+      one: "Traduzir o {count} campo",
+      other: "Traduzir todos os {count} campos",
+    },
+    translationDescription:
+      "Isso substitui as traduções atuais em {language}, incluindo edições manuais. Você pode desfazer esta ação.",
+    translatedFields: {
+      one: "{count} campo traduzido.",
+      other: "{count} campos traduzidos.",
+    },
+    translationTagsChanged: {
+      one: "{count} mantido porque suas tags mudaram.",
+      other: "{count} mantidos porque suas tags mudaram.",
+    },
+    translationSkippedLocked: {
+      one: "{count} ignorado porque alguém o está editando.",
+      other: "{count} ignorados porque alguém os está editando.",
+    },
+    translationMissing: {
+      one: "{count} não retornado.",
+      other: "{count} não retornados.",
+    },
+    translationError: "O serviço de tradução informou: {message}",
     defaultRefused:
       "Não foi possível definir {language} como idioma padrão: {reason}",
     defaultLockedReason: "outra pessoa está editando este template",
@@ -33,18 +67,10 @@ const ptBR: typeof en = {
       one: "{count} campo ainda está em {old}.",
       other: "{count} campos ainda estão em {old}.",
     },
-    translateFrom: "Traduzir de {language}",
     translateAllAgain: "Traduzir tudo novamente…",
-    translationConfirmation:
-      "Substituir todas as traduções em {language}, incluindo edições manuais?",
     translate: "Traduzir",
     retranslate: "Traduzir novamente",
     translating: "Traduzindo {done} de {total}…",
-    translatedFields: "{count} campos traduzidos",
-    translationTagsChanged:
-      "{count} mantiveram o texto anterior: tags alteradas",
-    translationSkippedLocked: "{count} ignorados: sendo editados em {language}",
-    translationMissing: "{count} não retornados",
     languages: "Idiomas",
     default: "Padrão",
     notEnabled: "Não habilitado",

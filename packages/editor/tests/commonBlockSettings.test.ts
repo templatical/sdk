@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 import {
   createBackgroundImage,
   createSectionBlock,
   createTitleBlock,
+  resolveLocale,
 } from "@templatical/types";
 import type { DisplayCondition } from "@templatical/types";
 import CommonBlockSettings from "../src/components/toolbar/CommonBlockSettings.vue";
@@ -16,6 +17,11 @@ import {
 } from "../src/keys";
 import en from "../src/i18n/locales/en";
 import { mountEditor } from "./helpers/mount";
+import {
+  chooseLanguage,
+  languageContent,
+  openLanguages,
+} from "./helpers/localization";
 
 const pickerStubs = {
   ColorPicker: {
@@ -197,6 +203,193 @@ describe("CommonBlockSettings", () => {
       },
     });
   });
+
+  it("keeps an unchanged custom condition populated after Apply", async () => {
+    const content = languageContent();
+    const condition = {
+      label: "Custom condition",
+      before: "{% if vip %}",
+      after: "{% endif %}",
+    };
+    content.blocks[0].displayCondition = condition;
+    const { wrapper, editor } = await openLanguages({
+      content,
+      displayConditions: { conditions: [], allowCustom: true },
+    });
+    await chooseLanguage(wrapper, "de");
+    editor.selectBlock("title");
+    await vi.dynamicImportSettled();
+    const settings = wrapper.getComponent(CommonBlockSettings);
+    await settings
+      .get('[data-testid="display-condition-section"]')
+      .trigger("click");
+    const areas = settings.findAll("textarea");
+    const apply = settings.findAll("button").find((b) => b.text() === "Apply")!;
+
+    for (const padding of ["", "  "]) {
+      if (padding) {
+        await areas[0].setValue(`${padding}{% if vip %}${padding}`);
+        await areas[1].setValue(`${padding}{% endif %}${padding}`);
+      }
+      await apply.trigger("click");
+
+      expect(
+        resolveLocale(editor.content.value, "de").blocks[0].displayCondition,
+      ).toEqual(condition);
+      expect((areas[0].element as HTMLTextAreaElement).value).toBe(
+        "{% if vip %}",
+      );
+      expect((areas[1].element as HTMLTextAreaElement).value).toBe(
+        "{% endif %}",
+      );
+      expect((apply.element as HTMLButtonElement).disabled).toBe(false);
+    }
+  });
+
+  it("preserves a custom-condition draft across language-view projections and loads another block's condition", async () => {
+    const content = languageContent();
+    const condition = {
+      label: "Custom condition",
+      before: "{% if vip %}",
+      after: "{% endif %}",
+    };
+    content.blocks[0].displayCondition = condition;
+    content.blocks.push(
+      createTitleBlock({
+        id: "other-title",
+        content: "Another title",
+        displayCondition: { ...condition },
+      }),
+    );
+    const { wrapper, editor } = await openLanguages({
+      content,
+      displayConditions: { conditions: [], allowCustom: true },
+    });
+    await chooseLanguage(wrapper, "de");
+    editor.selectBlock("title");
+    await vi.dynamicImportSettled();
+    const settings = wrapper.getComponent(CommonBlockSettings);
+    await settings
+      .get('[data-testid="display-condition-section"]')
+      .trigger("click");
+    const areas = settings.findAll("textarea");
+    expect((areas[0].element as HTMLTextAreaElement).value).toBe(
+      "{% if vip %}",
+    );
+    await areas[0].setValue("{% if draft_vip %}");
+    await areas[1].setValue("{% endif %} draft");
+
+    editor.updateBlock("image", { alt: "Anderes Bild" });
+    await nextTick();
+    expect((areas[0].element as HTMLTextAreaElement).value).toBe(
+      "{% if draft_vip %}",
+    );
+    expect((areas[1].element as HTMLTextAreaElement).value).toBe(
+      "{% endif %} draft",
+    );
+    expect(editor.selectedBlock.value?.displayCondition).toEqual(condition);
+
+    editor.selectBlock("other-title");
+    await nextTick();
+    expect((areas[0].element as HTMLTextAreaElement).value).toBe(
+      "{% if vip %}",
+    );
+    expect((areas[1].element as HTMLTextAreaElement).value).toBe("{% endif %}");
+
+    editor.updateBlock("other-title", {
+      displayCondition: {
+        ...condition,
+        before: "{% if paid %}",
+        after: "{% endif %} paid",
+      },
+    });
+    await nextTick();
+    expect((areas[0].element as HTMLTextAreaElement).value).toBe(
+      "{% if paid %}",
+    );
+    expect((areas[1].element as HTMLTextAreaElement).value).toBe(
+      "{% endif %} paid",
+    );
+  });
+
+  it("leaves a custom draft when selecting a block with a configured condition", async () => {
+    const condition = {
+      label: "VIP",
+      before: "{% if vip %}",
+      after: "{% endif %}",
+      description: "Paying customers",
+    };
+    const content = languageContent();
+    content.blocks.push(
+      createTitleBlock({
+        id: "vip-title",
+        content: "VIP title",
+        displayCondition: condition,
+      }),
+    );
+    const { wrapper, editor } = await openLanguages({
+      content,
+      displayConditions: { conditions: [condition], allowCustom: true },
+    });
+    await chooseLanguage(wrapper, "de");
+    editor.selectBlock("title");
+    await vi.dynamicImportSettled();
+    const settings = wrapper.getComponent(CommonBlockSettings);
+    await settings
+      .get('[data-testid="display-condition-section"]')
+      .trigger("click");
+    await settings
+      .get('[data-testid="display-condition-select"]')
+      .setValue("__custom__");
+    await settings.get("textarea").setValue("{% if draft %}");
+
+    editor.selectBlock("vip-title");
+    await nextTick();
+    expect(
+      (
+        settings.get('[data-testid="display-condition-select"]')
+          .element as HTMLSelectElement
+      ).value,
+    ).toBe("VIP");
+    expect(settings.find("textarea").exists()).toBe(false);
+    expect(settings.text()).toContain("Paying customers");
+  });
+
+  it("reloads the condition when another template reuses the selected block id and condition values", async () => {
+    const { wrapper, editor } = await openLanguages({
+      templates: {
+        load: async (id) => {
+          const content = languageContent();
+          content.blocks[0].displayCondition = {
+            label: "Custom condition",
+            before: "{% if vip %}",
+            after: "{% endif %}",
+          };
+          return { id, content };
+        },
+        create: false,
+        save: false,
+      },
+      displayConditions: { conditions: [], allowCustom: true },
+    });
+    await editor.load("first-template");
+    await chooseLanguage(wrapper, "de");
+    editor.selectBlock("title");
+    await vi.dynamicImportSettled();
+    const settings = wrapper.getComponent(CommonBlockSettings);
+    await settings
+      .get('[data-testid="display-condition-section"]')
+      .trigger("click");
+    const areas = settings.findAll("textarea");
+    await areas[0].setValue("{% if first_template_draft %}");
+
+    await editor.load("second-template");
+    await nextTick();
+    expect(editor.selectedBlock.value?.id).toBe("title");
+    expect((areas[0].element as HTMLTextAreaElement).value).toBe(
+      "{% if vip %}",
+    );
+  });
 });
 
 describe("CommonBlockSettings background image", () => {
@@ -238,7 +431,9 @@ describe("CommonBlockSettings background image", () => {
     await wrapper
       .get('[data-testid="block-settings-background"]')
       .trigger("click");
-    expect(wrapper.find('[data-testid="section-bg-size"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="section-bg-size"]').exists()).toBe(
+      false,
+    );
     expect(wrapper.find('[data-testid="section-bg-repeat"]').exists()).toBe(
       false,
     );
@@ -250,8 +445,6 @@ describe("CommonBlockSettings background image", () => {
     await wrapper
       .get('[data-testid="block-settings-background"]')
       .trigger("click");
-    expect(wrapper.find('[data-testid="section-bg-url"]').exists()).toBe(
-      false,
-    );
+    expect(wrapper.find('[data-testid="section-bg-url"]').exists()).toBe(false);
   });
 });

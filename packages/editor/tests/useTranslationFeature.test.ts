@@ -136,6 +136,20 @@ async function collaborative(provider: TranslationProvider) {
 }
 
 describe("translation runs", () => {
+  it("clears a completed result on a view change without discarding its translations", async () => {
+    const { feature, editor } = open(
+      { translate: async (request) => answer(request) },
+      content(1),
+    );
+    await feature.translate({ only: "gaps" });
+    expect(feature.lastResult.value?.translated).toBe(1);
+    editor.setActiveLocale("fr");
+    expect(feature.lastResult.value).toBeNull();
+    expect(editor.content.value.blocks[0].l10n?.de.text?.content.value).toBe(
+      "<p>Hallo 0</p>",
+    );
+  });
+
   it.each([undefined, "t0"])(
     "counts and re-translates a changed-tag gap with block scope %s",
     async (blockId) => {

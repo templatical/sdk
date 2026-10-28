@@ -2,6 +2,40 @@ import type en from "./en";
 
 const ca: typeof en = {
   localization: {
+    editingLanguage: "Editant {language}",
+    languageReadOnly: "Només lectura: {language} no està activat",
+    backToDefault: "Torna a {default}",
+    translateFields: {
+      one: "Tradueix {count} camp",
+      other: "Tradueix {count} camps",
+    },
+    translationConfirmation: {
+      one: "Vols tornar a traduir el {count} camp?",
+      other: "Vols tornar a traduir els {count} camps?",
+    },
+    translateAllFields: {
+      one: "Tradueix el {count} camp",
+      other: "Tradueix els {count} camps",
+    },
+    translationDescription:
+      "Això substitueix les traduccions actuals en {language}, incloses les edicions manuals. Ho pots desfer.",
+    translatedFields: {
+      one: "S'ha traduït {count} camp.",
+      other: "S'han traduït {count} camps.",
+    },
+    translationTagsChanged: {
+      one: "Se n'ha mantingut {count} perquè les etiquetes han canviat.",
+      other: "Se n'han mantingut {count} perquè les etiquetes han canviat.",
+    },
+    translationSkippedLocked: {
+      one: "Se n'ha omès {count} perquè algú l'està editant.",
+      other: "Se n'han omès {count} perquè algú els està editant.",
+    },
+    translationMissing: {
+      one: "No s'ha retornat {count} camp.",
+      other: "No s'han retornat {count} camps.",
+    },
+    translationError: "El servei de traducció ha dit: {message}",
     defaultRefused:
       "No s’ha pogut establir {language} com a llengua per defecte: {reason}",
     defaultLockedReason: "algú altre està editant aquesta plantilla",
@@ -34,18 +68,10 @@ const ca: typeof en = {
       one: "{count} camp encara és en {old}.",
       other: "{count} camps encara són en {old}.",
     },
-    translateFrom: "Tradueix de {language}",
     translateAllAgain: "Torna a traduir-ho tot…",
-    translationConfirmation:
-      "Vols substituir totes les traduccions en {language}, incloses les edicions manuals?",
     translate: "Tradueix",
     retranslate: "Torna a traduir",
     translating: "S’estan traduint {done} de {total}…",
-    translatedFields: "S’han traduït {count} camps",
-    translationTagsChanged:
-      "{count} conserven el text anterior: etiquetes canviades",
-    translationSkippedLocked: "{count} omesos: s’estan editant en {language}",
-    translationMissing: "{count} no retornats",
     languages: "Idiomes",
     default: "Predeterminat",
     notEnabled: "No activat",

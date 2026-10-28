@@ -2,6 +2,40 @@ import type en from "./en";
 
 const es: typeof en = {
   localization: {
+    editingLanguage: "Editando {language}",
+    languageReadOnly: "Solo lectura: {language} no está habilitado",
+    backToDefault: "Volver a {default}",
+    translateFields: {
+      one: "Traducir {count} campo",
+      other: "Traducir {count} campos",
+    },
+    translationConfirmation: {
+      one: "¿Volver a traducir el {count} campo?",
+      other: "¿Volver a traducir los {count} campos?",
+    },
+    translateAllFields: {
+      one: "Traducir el {count} campo",
+      other: "Traducir los {count} campos",
+    },
+    translationDescription:
+      "Esto sustituye las traducciones actuales en {language}, incluidas las ediciones manuales. Puedes deshacerlo.",
+    translatedFields: {
+      one: "Se ha traducido {count} campo.",
+      other: "Se han traducido {count} campos.",
+    },
+    translationTagsChanged: {
+      one: "Se ha conservado {count} porque sus etiquetas han cambiado.",
+      other: "Se han conservado {count} porque sus etiquetas han cambiado.",
+    },
+    translationSkippedLocked: {
+      one: "Se ha omitido {count} porque alguien lo está editando.",
+      other: "Se han omitido {count} porque alguien los está editando.",
+    },
+    translationMissing: {
+      one: "No se ha devuelto {count} campo.",
+      other: "No se han devuelto {count} campos.",
+    },
+    translationError: "El servicio de traducción ha dicho: {message}",
     defaultRefused:
       "No se pudo establecer {language} como idioma predeterminado: {reason}",
     defaultLockedReason: "otra persona está editando esta plantilla",
@@ -34,19 +68,10 @@ const es: typeof en = {
       one: "{count} campo sigue en {old}.",
       other: "{count} campos siguen en {old}.",
     },
-    translateFrom: "Traducir de {language}",
     translateAllAgain: "Volver a traducir todo…",
-    translationConfirmation:
-      "¿Reemplazar todas las traducciones en {language}, incluidas las ediciones manuales?",
     translate: "Traducir",
     retranslate: "Volver a traducir",
     translating: "Traduciendo {done} de {total}…",
-    translatedFields: "{count} campos traducidos",
-    translationTagsChanged:
-      "{count} conservaron su texto anterior: etiquetas modificadas",
-    translationSkippedLocked:
-      "{count} omitidos: se están editando en {language}",
-    translationMissing: "{count} no devueltos",
     languages: "Idiomas",
     default: "Predeterminado",
     notEnabled: "No habilitado",

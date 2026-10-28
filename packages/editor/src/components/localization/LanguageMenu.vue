@@ -21,7 +21,6 @@ import { useI18n } from "../../composables/useI18n";
 import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   LOCALE_ACTIONS_KEY,
-  TRANSLATION_FEATURE_KEY,
   UI_LOCALE_KEY,
 } from "../../keys";
 import { plural } from "../../i18n/plural";
@@ -37,7 +36,6 @@ import TplModal from "../TplModal.vue";
 const props = defineProps<{ editor: BaseEditorReturn; locales: string[] }>();
 const { t, format } = useI18n();
 const uiLocale = inject(UI_LOCALE_KEY, undefined) ?? "en";
-const translation = inject(TRANSLATION_FEATURE_KEY, null);
 const localeActions = inject(LOCALE_ACTIONS_KEY, null);
 const definitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const root = ref<HTMLElement | null>(null);
@@ -46,7 +44,6 @@ const open = ref(false);
 const submenu = ref<string | null>(null);
 const removing = ref<string | null>(null);
 const promoting = ref<{ locale: string } | null>(null);
-const confirmingTranslation = ref<string | null>(null);
 const promotionError = ref<string | null>(null);
 const confirmation = ref<{
   templateId: string | null;
@@ -243,10 +240,6 @@ function startPromotion(locale: string) {
   promoting.value = { locale };
   submenu.value = null;
 }
-function startTranslation() {
-  captureConfirmation();
-  confirmingTranslation.value = active.value;
-}
 const promotionCount = computed(() =>
   promoting.value
     ? defaultLocaleGaps(
@@ -261,10 +254,6 @@ const confirmationTitle = computed(() => {
     return format(t.localization.makeDefaultConfirmation, {
       language: languageName(promoting.value.locale),
     });
-  if (confirmingTranslation.value)
-    return format(t.localization.translationConfirmation, {
-      language: languageName(confirmingTranslation.value),
-    });
   return format(t.localization.removeConfirmation, {
     language: languageName(removing.value ?? source.value),
   });
@@ -273,7 +262,6 @@ function closeConfirmation() {
   const locale = promoting.value?.locale ?? removing.value;
   confirmation.value = null;
   promotionError.value = null;
-  confirmingTranslation.value = null;
   promoting.value = null;
   removing.value = null;
   void nextTick(() => {
@@ -281,13 +269,9 @@ function closeConfirmation() {
       trigger.value?.focus();
       return;
     }
-    const id = locale ? `language-actions-${locale}` : "translate-all-again";
+    const id = `language-actions-${locale}`;
     root.value?.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.focus();
   });
-}
-function translateGaps() {
-  void translation?.translate({ only: "gaps" });
-  close();
 }
 function confirm() {
   if (!isCurrentConfirmation()) {
@@ -316,13 +300,6 @@ function confirm() {
       });
       return;
     }
-  } else if (confirmingTranslation.value) {
-    if (
-      confirmingTranslation.value === active.value &&
-      translation?.isAvailable.value &&
-      !translation.running.value
-    )
-      void translation.translate({ only: "all" });
   } else if (removing.value && props.locales.includes(removing.value))
     props.editor.removeLocale?.(removing.value);
   closeConfirmation();
@@ -519,44 +496,6 @@ onClickOutside(root, () => {
           }}…
         </button>
       </div>
-      <template v-if="translation?.isAvailable.value && editable">
-        <button
-          type="button"
-          role="menuitem"
-          data-testid="translate-language"
-          :class="rowClass"
-          class="tpl:justify-between"
-          :disabled="
-            !!translation.running.value || translation.counts.value.gaps === 0
-          "
-          @click="translateGaps"
-        >
-          <span>{{
-            format(t.localization.translateFrom, {
-              language: languageName(source),
-            })
-          }}</span
-          ><span class="tpl:tabular-nums">{{
-            translation.counts.value.gaps
-          }}</span>
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          data-testid="translate-all-again"
-          :class="rowClass"
-          class="tpl:justify-between"
-          :disabled="
-            !!translation.running.value || translation.counts.value.all === 0
-          "
-          @click="startTranslation"
-        >
-          <span>{{ t.localization.translateAllAgain }}</span
-          ><span class="tpl:tabular-nums">{{
-            translation.counts.value.all
-          }}</span>
-        </button>
-      </template>
       <div
         v-if="available.length && editable"
         class="tpl:relative tpl:border-t tpl:border-[var(--tpl-border)]"
@@ -596,11 +535,7 @@ onClickOutside(root, () => {
       </div>
     </div>
     <TplModal
-      :visible="
-        removing !== null ||
-        promoting !== null ||
-        confirmingTranslation !== null
-      "
+      :visible="removing !== null || promoting !== null"
       @close="closeConfirmation"
     >
       <section
@@ -648,11 +583,7 @@ onClickOutside(root, () => {
           <button
             type="button"
             :data-testid="
-              promoting
-                ? 'language-default-cancel'
-                : confirmingTranslation
-                  ? 'translation-confirm-cancel'
-                  : 'language-remove-cancel'
+              promoting ? 'language-default-cancel' : 'language-remove-cancel'
             "
             :class="secondaryBtnClass"
             @click="closeConfirmation"
@@ -662,30 +593,18 @@ onClickOutside(root, () => {
           <button
             type="button"
             :data-testid="
-              promoting
-                ? 'language-default-confirm'
-                : confirmingTranslation
-                  ? 'translation-confirm'
-                  : 'language-remove-confirm'
+              promoting ? 'language-default-confirm' : 'language-remove-confirm'
             "
             :class="removing ? dangerBtnClass : primaryBtnClass"
-            :disabled="
-              !editable ||
-              (confirmingTranslation !== null &&
-                (!!translation?.running.value ||
-                  !translation?.isAvailable.value ||
-                  confirmingTranslation !== active))
-            "
+            :disabled="!editable"
             @click="confirm"
           >
             {{
               promoting
                 ? t.localization.makeDefault
-                : confirmingTranslation
-                  ? t.localization.translateAllAgain
-                  : format(t.localization.removeLanguage, {
-                      language: languageName(removing ?? source),
-                    })
+                : format(t.localization.removeLanguage, {
+                    language: languageName(removing ?? source),
+                  })
             }}
           </button>
         </div>

@@ -2,6 +2,40 @@ import type en from "./en";
 
 const translations: typeof en = {
   localization: {
+    editingLanguage: "{language}を編集中",
+    languageReadOnly: "読み取り専用：{language}は有効ではありません",
+    backToDefault: "{default}に戻る",
+    translateFields: {
+      one: "{count}件のフィールドを翻訳",
+      other: "{count}件のフィールドを翻訳",
+    },
+    translationConfirmation: {
+      one: "全{count}件のフィールドを再翻訳しますか？",
+      other: "全{count}件のフィールドを再翻訳しますか？",
+    },
+    translateAllFields: {
+      one: "全{count}件のフィールドを翻訳",
+      other: "全{count}件のフィールドを翻訳",
+    },
+    translationDescription:
+      "手動編集を含む現在の{language}の翻訳を置き換えます。この操作は元に戻せます。",
+    translatedFields: {
+      one: "{count}件のフィールドを翻訳しました。",
+      other: "{count}件のフィールドを翻訳しました。",
+    },
+    translationTagsChanged: {
+      one: "タグが変更されたため{count}件を保持しました。",
+      other: "タグが変更されたため{count}件を保持しました。",
+    },
+    translationSkippedLocked: {
+      one: "他の人が編集中のため{count}件をスキップしました。",
+      other: "他の人が編集中のため{count}件をスキップしました。",
+    },
+    translationMissing: {
+      one: "{count}件が返されませんでした。",
+      other: "{count}件が返されませんでした。",
+    },
+    translationError: "翻訳サービスからのメッセージ：{message}",
     defaultRefused:
       "{language}をデフォルト言語に設定できませんでした: {reason}",
     defaultLockedReason: "他のユーザーがこのテンプレートを編集中です",
@@ -30,18 +64,10 @@ const translations: typeof en = {
       one: "{count}個のフィールドはまだ{old}のままです。",
       other: "{count}個のフィールドはまだ{old}のままです。",
     },
-    translateFrom: "{language}から翻訳",
     translateAllAgain: "すべて再翻訳…",
-    translationConfirmation:
-      "手動の編集を含むすべての{language}の翻訳を置き換えますか？",
     translate: "翻訳",
     retranslate: "再翻訳",
     translating: "{total}件中{done}件を翻訳中…",
-    translatedFields: "{count}件のフィールドを翻訳しました",
-    translationTagsChanged:
-      "{count}件は元のテキストを保持：タグが変更されました",
-    translationSkippedLocked: "{count}件をスキップ：{language}で編集中",
-    translationMissing: "{count}件が返されませんでした",
     languages: "言語",
     default: "デフォルト",
     notEnabled: "未有効化",

@@ -29,10 +29,9 @@ import {
 import type { CloudRuntime } from "./cloud/runtime";
 import NoticeStack from "./components/NoticeStack.vue";
 import type { LocaleNotice } from "./components/localization/LocaleNotices.vue";
-import TranslationStatus from "./components/localization/TranslationStatus.vue";
+import LanguageBar from "./components/localization/LanguageBar.vue";
 import { useLocaleActions } from "./composables/useLocaleActions";
 import { useTranslationFeature } from "./composables/useTranslationFeature";
-import StructureNotice from "./components/localization/StructureNotice.vue";
 import { useLocalizedDisplay } from "./composables/useLocalizedDisplay";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCollaborationFeature } from "./composables/useCollaborationFeature";
@@ -436,17 +435,6 @@ provide(LOCALE_ACTIONS_KEY, {
 const LocaleNotices = defineAsyncComponent(
   () => import("./components/localization/LocaleNotices.vue"),
 );
-const translationLocale = ref(editor.activeLocale.value ?? "");
-if (translation)
-  watch(
-    translation.running,
-    (progress, previous) => {
-      if (progress && !previous)
-        translationLocale.value = editor.activeLocale.value ?? "";
-    },
-    { flush: "sync" },
-  );
-
 // Lazy: an editor without a collaboration provider never downloads it.
 const CollaborationNotices = defineAsyncComponent(
   () => import("./components/collaboration/CollaborationNotices.vue"),
@@ -588,6 +576,12 @@ const core = useEditorCore({
 });
 
 const rightSidebarTab = ref<RightSidebarTab>("content");
+watch(
+  () => editor.state.template?.id,
+  () => {
+    if (editor.selectedBlock.value) rightSidebarTab.value = "content";
+  },
+);
 
 // Cloud's setup-time wiring that needs `core`: the lint save-gate (reads
 // `core.templateLint`) and the capability entries Cloud contributes — mutated
@@ -677,6 +671,26 @@ const bodyInsetClass = computed(() => {
     ? "tpl:left-12 tpl:right-[680px]"
     : "tpl:left-12 tpl:right-[320px]";
 });
+
+// Both bands participate in flow; wrapping and async banner loads resize one box.
+const topChrome = ref<HTMLElement | null>(null);
+const topChromeHeight = ref(0);
+const contentInsetStyle = computed(() => ({
+  top: `calc(3.5 * var(--tpl-base-size) + ${topChromeHeight.value}px)`,
+}));
+let topChromeObserver: ResizeObserver | undefined;
+onMounted(() => {
+  topChromeHeight.value = topChrome.value?.offsetHeight ?? 0;
+  if (topChrome.value && typeof ResizeObserver !== "undefined") {
+    topChromeObserver = new ResizeObserver(([entry]) => {
+      if (entry)
+        topChromeHeight.value =
+          entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+    });
+    topChromeObserver.observe(topChrome.value);
+  }
+});
+onUnmounted(() => topChromeObserver?.disconnect());
 
 // --- Small-screen gate (#235) ---
 // Below ~768px the three-pane chrome can't lay out usably; show a notice
@@ -789,16 +803,18 @@ defineExpose({
       </EditorHeader>
 
       <!-- Left sidebar — absolute, below header -->
-      <Sidebar v-show="!editor.state.previewMode" />
+      <Sidebar v-show="!editor.state.previewMode" :style="contentInsetStyle" />
 
       <!-- Canvas area — absolute, fills remaining space -->
       <div
         class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:bg-[var(--tpl-canvas-bg)]"
-        style="transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
-        :class="[
-          bodyInsetClass,
-          versionHistory?.isPreviewing.value ? 'tpl:top-[104px]' : 'tpl:top-14',
-        ]"
+        style="
+          transition:
+            left var(--tpl-transition),
+            right var(--tpl-transition);
+        "
+        :style="contentInsetStyle"
+        :class="bodyInsetClass"
       >
         <!-- Preview chrome, floated over the canvas.
 
@@ -824,15 +840,6 @@ defineExpose({
           <div
             class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
           >
-            <TranslationStatus
-              v-if="translation"
-              :feature="translation"
-              :locale="translationLocale"
-            />
-            <StructureNotice
-              :change="structureNotice"
-              :template-id="editor.state.template?.id"
-            />
             <!-- Sample / Label. Preview mode only: merge tags are never
                  substituted on the editing canvas, so the choice would have no
                  effect there. A configured `resolvePreview` supersedes samples
@@ -917,6 +924,8 @@ defineExpose({
       <RightSidebar
         v-show="!editor.state.previewMode"
         v-model:tab="rightSidebarTab"
+        :style="contentInsetStyle"
+        style="transition-property: right"
         :selected-block="
           editor.selectedBlock.value
             ? localized.displayBlock(editor.selectedBlock.value)
@@ -944,6 +953,23 @@ defineExpose({
         "
         @update-settings="(updates) => editor.updateSettings(updates)"
       />
+
+      <div
+        ref="topChrome"
+        class="tpl-top-chrome tpl:absolute tpl:top-14 tpl:right-0 tpl:left-0 tpl:z-40"
+      >
+        <VersionHistoryPanels
+          v-if="versionHistory?.isAvailable.value"
+          :feature="versionHistory"
+        />
+        <LanguageBar
+          v-if="config.localization"
+          :editor="editor"
+          :locales="config.localization.locales"
+          :feature="translation"
+          :change="structureNotice"
+        />
+      </div>
     </div>
 
     <!-- Popover mount — Teleport target for toolbars, link dialog, modals.
@@ -1007,14 +1033,6 @@ defineExpose({
         @dismiss="localeNotice = null"
       />
     </NoticeStack>
-
-    <!-- Version-history chrome outside the header (the preview banner). Only
-         mounted when a provider is configured; the banner's chunk loads the
-         first time a version is previewed. -->
-    <VersionHistoryPanels
-      v-if="versionHistory?.isAvailable.value"
-      :feature="versionHistory"
-    />
 
     <!-- Cloud sidebars, modals and overlays. One lazy wrapper, mounted only
          under `initCloud()`; an OSS consumer downloads none of it. -->

@@ -20,17 +20,17 @@ const provider: TranslationProvider = {
   }),
 };
 const button = (id: string) => `[data-testid="${id}"]`;
-async function menu(
+async function bar(
   wrapper: Awaited<ReturnType<typeof openLanguages>>["wrapper"],
 ) {
-  await wrapper.get(button("language-menu")).trigger("click");
+  expect(wrapper.find(button("language-bar")).exists()).toBe(true);
 }
 
 describe("translation entry points", () => {
   it("hides actions without a provider, in the default view and in a read-only version", async () => {
     const absent = await openLanguages();
     await chooseLanguage(absent.wrapper, "de");
-    await menu(absent.wrapper);
+    await bar(absent.wrapper);
     expect(absent.wrapper.find(button("translate-language")).exists()).toBe(
       false,
     );
@@ -38,37 +38,37 @@ describe("translation entry points", () => {
       false,
     );
     const { wrapper } = await openLanguages({ translation: provider });
-    await menu(wrapper);
+    await wrapper.get(button("language-menu")).trigger("click");
     expect(wrapper.find(button("translate-language")).exists()).toBe(false);
     await wrapper.get(button("language-option-fr")).trigger("click");
-    await menu(wrapper);
+    await wrapper.get(button("language-menu")).trigger("click");
     expect(wrapper.find(button("translate-all-again")).exists()).toBe(false);
     expect(wrapper.find(button("locale-retranslate")).exists()).toBe(false);
     await wrapper.get(button("language-option-de")).trigger("click");
-    await menu(wrapper);
+    await bar(wrapper);
     expect(wrapper.get(button("translate-language")).text()).toContain(
-      "Translate from English",
+      "Translate 2 fields",
     );
   });
 
-  it("shows each count, translates gaps, and disables the gaps action at zero", async () => {
+  it("shows the gap count in the bar, translates gaps, and hides the gaps action at zero", async () => {
     const { wrapper, editor, history } = await openLanguages({
       translation: provider,
     });
     await chooseLanguage(wrapper, "de");
-    await menu(wrapper);
+    await bar(wrapper);
     expect(wrapper.get(button("translate-language")).text()).toContain("2");
-    expect(wrapper.get(button("translate-all-again")).text()).toContain("2");
+    expect(wrapper.get(button("translate-all-again")).text()).toBe(
+      "Translate everything again…",
+    );
     await wrapper.get(button("translate-language")).trigger("click");
     await vi.waitFor(() =>
       expect(editor.content.value.blocks[1].l10n?.de.text?.alt.value).toBe(
         "DE Product",
       ),
     );
-    await menu(wrapper);
-    expect(
-      wrapper.get(button("translate-language")).attributes("disabled"),
-    ).toBeDefined();
+    await bar(wrapper);
+    expect(wrapper.find(button("translate-language")).exists()).toBe(false);
     expect(
       wrapper.get(button("translate-all-again")).attributes("disabled"),
     ).toBeUndefined();
@@ -79,10 +79,10 @@ describe("translation entry points", () => {
   it("cancels confirmation without changing manual text, then confirms replacing it", async () => {
     const { wrapper, editor } = await openLanguages({ translation: provider });
     await chooseLanguage(wrapper, "de");
-    await menu(wrapper);
+    await bar(wrapper);
     await wrapper.get(button("translate-all-again")).trigger("click");
     expect(wrapper.get('[role="dialog"]').text()).toContain(
-      "Replace every Deutsch translation, including manual edits?",
+      "This replaces the current Deutsch translations, including manual edits. You can undo it.",
     );
     await wrapper.get(button("translation-confirm-cancel")).trigger("click");
     expect(editor.content.value.blocks[0].l10n?.de.text?.content.value).toBe(
@@ -123,7 +123,7 @@ describe("translation entry points", () => {
     expect(
       wrapper.get(button("locale-retranslate")).attributes("disabled"),
     ).toBeDefined();
-    await menu(wrapper);
+    await bar(wrapper);
     expect(
       wrapper.get(button("translate-language")).attributes("disabled"),
     ).toBeDefined();
@@ -144,13 +144,15 @@ describe("translation entry points", () => {
     );
   });
 
-  it("disables both menu actions when no fields are eligible", async () => {
+  it("hides the gaps action and disables all-again when no fields are eligible", async () => {
     const { wrapper, editor } = await openLanguages({ translation: provider });
     editor.content.value.blocks = [];
     await chooseLanguage(wrapper, "de");
-    await menu(wrapper);
-    for (const id of ["translate-language", "translate-all-again"])
-      expect(wrapper.get(button(id)).attributes("disabled")).toBeDefined();
+    await bar(wrapper);
+    expect(wrapper.find(button("translate-language")).exists()).toBe(false);
+    expect(
+      wrapper.get(button("translate-all-again")).attributes("disabled"),
+    ).toBeDefined();
   });
 
   it.each([null, false, () => {}, {}, { translate: true }])(
@@ -213,7 +215,7 @@ describe("translation entry points", () => {
       expect(editor.state.isDirty).toBe(state !== "clean");
       expect(history.canUndo.value).toBe(state !== "clean");
       expect(history.canRedo.value).toBe(state !== "clean");
-      await menu(wrapper);
+      await bar(wrapper);
       await wrapper.get(button("translate-all-again")).trigger("click");
       await wrapper.get(button("translation-confirm")).trigger("click");
       await vi.waitFor(() => expect(translate).toHaveBeenCalledTimes(1));
@@ -221,7 +223,7 @@ describe("translation entry points", () => {
         expect(wrapper.find(button("translation-result")).exists()).toBe(true),
       );
       expect(wrapper.get(button("translation-result")).text()).toBe(
-        "Translated 0 fields",
+        "Translated 0 fields.",
       );
       expect(JSON.stringify(editor.content.value)).toBe(before);
       expect(editor.state.isDirty).toBe(state !== "clean");

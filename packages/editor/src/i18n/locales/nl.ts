@@ -2,6 +2,40 @@ import type en from "./en";
 
 const nl: typeof en = {
   localization: {
+    editingLanguage: "{language} bewerken",
+    languageReadOnly: "Alleen-lezen: {language} is niet ingeschakeld",
+    backToDefault: "Terug naar {default}",
+    translateFields: {
+      one: "{count} veld vertalen",
+      other: "{count} velden vertalen",
+    },
+    translationConfirmation: {
+      one: "{count} veld opnieuw vertalen?",
+      other: "Alle {count} velden opnieuw vertalen?",
+    },
+    translateAllFields: {
+      one: "{count} veld vertalen",
+      other: "Alle {count} velden vertalen",
+    },
+    translationDescription:
+      "Dit vervangt de huidige vertalingen in {language}, inclusief handmatige wijzigingen. Je kunt dit ongedaan maken.",
+    translatedFields: {
+      one: "{count} veld vertaald.",
+      other: "{count} velden vertaald.",
+    },
+    translationTagsChanged: {
+      one: "{count} behouden omdat de tags zijn gewijzigd.",
+      other: "{count} behouden omdat de tags zijn gewijzigd.",
+    },
+    translationSkippedLocked: {
+      one: "{count} overgeslagen omdat iemand het bewerkt.",
+      other: "{count} overgeslagen omdat iemand ze bewerkt.",
+    },
+    translationMissing: {
+      one: "{count} niet teruggestuurd.",
+      other: "{count} niet teruggestuurd.",
+    },
+    translationError: "De vertaaldienst meldt: {message}",
     defaultRefused: "Kan {language} niet als standaardtaal instellen: {reason}",
     defaultLockedReason: "iemand anders bewerkt deze template",
     complete: "Compleet",
@@ -29,18 +63,10 @@ const nl: typeof en = {
       one: "{count} veld is nog in {old}.",
       other: "{count} velden zijn nog in {old}.",
     },
-    translateFrom: "Vertalen vanuit {language}",
     translateAllAgain: "Alles opnieuw vertalen…",
-    translationConfirmation:
-      "Elke vertaling in {language} vervangen, inclusief handmatige wijzigingen?",
     translate: "Vertalen",
     retranslate: "Opnieuw vertalen",
     translating: "{done} van {total} vertalen…",
-    translatedFields: "{count} velden vertaald",
-    translationTagsChanged: "{count} behielden hun oude tekst: tags gewijzigd",
-    translationSkippedLocked:
-      "{count} overgeslagen: worden bewerkt in {language}",
-    translationMissing: "{count} niet teruggestuurd",
     languages: "Talen",
     default: "Standaard",
     notEnabled: "Niet ingeschakeld",

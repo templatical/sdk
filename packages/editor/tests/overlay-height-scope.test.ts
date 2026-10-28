@@ -160,6 +160,7 @@ describe("overlay height scope", () => {
       "components/SaveBlockDialog.vue",
       "components/SavedBlocksBrowserModal.vue",
       "components/TestEmailModal.vue",
+      "components/localization/LanguageBar.vue",
       "components/localization/LanguageMenu.vue",
     ]);
   });

@@ -1,5 +1,39 @@
 export default {
   localization: {
+    editingLanguage: "Editing {language}",
+    languageReadOnly: "Read-only: {language} isn't enabled",
+    backToDefault: "Back to {default}",
+    translateFields: {
+      one: "Translate {count} field",
+      other: "Translate {count} fields",
+    },
+    translationConfirmation: {
+      one: "Translate all {count} field again?",
+      other: "Translate all {count} fields again?",
+    },
+    translateAllFields: {
+      one: "Translate all {count} field",
+      other: "Translate all {count} fields",
+    },
+    translationDescription:
+      "This replaces the current {language} translations, including manual edits. You can undo it.",
+    translatedFields: {
+      one: "Translated {count} field.",
+      other: "Translated {count} fields.",
+    },
+    translationTagsChanged: {
+      one: "{count} kept because their tags changed.",
+      other: "{count} kept because their tags changed.",
+    },
+    translationSkippedLocked: {
+      one: "{count} skipped because someone is editing them.",
+      other: "{count} skipped because someone is editing them.",
+    },
+    translationMissing: {
+      one: "{count} not returned.",
+      other: "{count} not returned.",
+    },
+    translationError: "The translation service said: {message}",
     defaultRefused: "Couldn't make {language} the default language: {reason}",
     defaultLockedReason: "someone else is editing this template",
     complete: "Complete",
@@ -27,17 +61,10 @@ export default {
       one: "{count} field is still in {old}.",
       other: "{count} fields are still in {old}.",
     },
-    translateFrom: "Translate from {language}",
     translateAllAgain: "Translate everything again…",
-    translationConfirmation:
-      "Replace every {language} translation, including manual edits?",
     translate: "Translate",
     retranslate: "Re-translate",
     translating: "Translating {done} of {total}…",
-    translatedFields: "Translated {count} fields",
-    translationTagsChanged: "{count} kept their old text: tags changed",
-    translationSkippedLocked: "{count} skipped: being edited in {language}",
-    translationMissing: "{count} not returned",
     languages: "Languages",
     default: "Default",
     notEnabled: "Not enabled",

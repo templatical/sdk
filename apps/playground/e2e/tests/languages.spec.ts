@@ -444,16 +444,15 @@ test.describe("language versions", () => {
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await selectLanguage(page, "de");
-    await page.getByTestId("language-menu").click();
-    await expect(page.getByTestId("translate-language")).toContainText(
-      "Translate from English",
+    await expect(page.getByTestId("language-bar")).toContainText(
+      "Editing Deutsch",
     );
-    await expect(
-      page.getByTestId("translate-language").locator("span").last(),
-    ).toHaveText("2");
+    await expect(page.getByTestId("translate-language")).toHaveText(
+      "Translate 2 fields",
+    );
     await page.getByTestId("translate-language").click();
     await expect(page.getByTestId("translation-result")).toHaveText(
-      "Translated 2 fields",
+      "Translated 2 fields.",
     );
     await expect(page.getByTestId("language-menu")).toHaveAttribute(
       "title",
@@ -467,13 +466,17 @@ test.describe("language versions", () => {
     ).toContainText("Das Angebot von Sable endet am Freitag.");
     await page.getByTestId("language-menu").click();
     await expect(page.getByTestId("language-status-de")).toHaveText("Complete");
-    await expect(page.getByTestId("translate-language")).toBeDisabled();
-    await page.getByTestId("language-option-en").click();
+    await expect(page.getByTestId("translate-language")).toHaveCount(0);
+    await page.getByTestId("language-menu").click();
+    await expect(page.getByTestId("language-back-default")).toHaveText(
+      "Back to English",
+    );
+    await page.getByTestId("language-back-default").click();
+    await expect(page.getByTestId("language-bar")).toHaveCount(0);
+    await expect(page.getByTestId("translation-result")).toHaveCount(0);
     await expect(
       page.locator('[data-block-id="languages-stale"]'),
     ).toContainText("The Sable offer ends on Friday.");
-    await page.getByTestId("translation-dismiss").click();
-    await expect(page.getByTestId("translation-status")).toHaveCount(0);
   });
 
   test("keeps a field untranslated when its recorded translation drops a tag", async ({
@@ -489,10 +492,12 @@ test.describe("language versions", () => {
     await expect(
       tagged.getByTestId("locale-marker-untranslated"),
     ).toBeVisible();
-    await page.getByTestId("language-menu").click();
-    await page.getByTestId("translate-language").click();
+    await page
+      .getByTestId("language-bar")
+      .getByTestId("translate-language")
+      .click();
     await expect(page.getByTestId("translation-result")).toHaveText(
-      "Translated 2 fields · 1 kept their old text: tags changed",
+      "Translated 2 fields. 1 kept because their tags changed.",
     );
     await expect(tagged).toContainText("Hello");
     await expect(tagged).not.toContainText("Hallo");
@@ -514,14 +519,16 @@ test.describe("language versions", () => {
     await page.getByTestId("language-add").click();
     await page.getByTestId("language-add-fr").click();
     await selectLanguage(page, "fr");
-    await page.getByTestId("language-menu").click();
-    await page.getByTestId("translate-language").click();
-    await expect(page.getByTestId("translation-status")).toContainText(
+    await page
+      .getByTestId("language-bar")
+      .getByTestId("translate-language")
+      .click();
+    await expect(page.getByTestId("language-bar-status")).toContainText(
       "Translating 2 of 5…",
     );
     await page.getByTestId("translation-cancel").click();
     await expect(page.getByTestId("translation-result")).toHaveText(
-      "Translated 2 fields",
+      "Translated 2 fields.",
     );
     await expect(page.getByTestId("language-menu")).toContainText("3");
     await expect(
@@ -551,7 +558,7 @@ test.describe("language versions", () => {
     await expect(stale.getByTestId("locale-marker-stale")).toBeVisible();
     await stale.getByTestId("locale-retranslate").click();
     await expect(page.getByTestId("translation-result")).toHaveText(
-      "Translated 1 fields",
+      "Translated 1 field.",
     );
     await expect(stale.getByTestId("locale-marker-stale")).toHaveCount(0);
     await expect(stale).toContainText(
@@ -615,10 +622,12 @@ test.describe("language versions", () => {
     await expect(held).toHaveClass(/tpl-block--selected/);
     const remote = ada.page.locator('[data-block-id="languages-stale"]');
     await expect(remote.getByTestId("block-lock")).toBeVisible();
-    await ada.page.getByTestId("language-menu").click();
-    await ada.page.getByTestId("translate-language").click();
+    await ada.page
+      .getByTestId("language-bar")
+      .getByTestId("translate-language")
+      .click();
     await expect(ada.page.getByTestId("translation-result")).toHaveText(
-      "Translated 1 fields · 1 skipped: being edited in Deutsch",
+      "Translated 1 field. 1 skipped because someone is editing them.",
     );
     await expect(remote).toContainText(
       "Das Angebot von Sable endet am Donnerstag.",

@@ -2,6 +2,40 @@ import type en from "./en";
 
 const fr: typeof en = {
   localization: {
+    editingLanguage: "Modification en {language}",
+    languageReadOnly: "Lecture seule : {language} n’est pas activé",
+    backToDefault: "Revenir à {default}",
+    translateFields: {
+      one: "Traduire {count} champ",
+      other: "Traduire {count} champs",
+    },
+    translationConfirmation: {
+      one: "Retraduire le {count} champ ?",
+      other: "Retraduire les {count} champs ?",
+    },
+    translateAllFields: {
+      one: "Traduire le {count} champ",
+      other: "Traduire les {count} champs",
+    },
+    translationDescription:
+      "Ceci remplace les traductions actuelles en {language}, y compris les modifications manuelles. Vous pouvez annuler cette action.",
+    translatedFields: {
+      one: "{count} champ traduit.",
+      other: "{count} champs traduits.",
+    },
+    translationTagsChanged: {
+      one: "{count} conservé car ses balises ont changé.",
+      other: "{count} conservés car leurs balises ont changé.",
+    },
+    translationSkippedLocked: {
+      one: "{count} ignoré car une personne le modifie.",
+      other: "{count} ignorés car une personne les modifie.",
+    },
+    translationMissing: {
+      one: "{count} non renvoyé.",
+      other: "{count} non renvoyés.",
+    },
+    translationError: "Le service de traduction a indiqué : {message}",
     defaultRefused:
       "Impossible de définir {language} comme langue par défaut : {reason}",
     defaultLockedReason: "quelqu’un d’autre modifie ce modèle",
@@ -30,19 +64,10 @@ const fr: typeof en = {
       one: "{count} champ est encore en {old}.",
       other: "{count} champs sont encore en {old}.",
     },
-    translateFrom: "Traduire depuis {language}",
     translateAllAgain: "Tout retraduire…",
-    translationConfirmation:
-      "Remplacer toutes les traductions en {language}, y compris les modifications manuelles ?",
     translate: "Traduire",
     retranslate: "Retraduire",
     translating: "Traduction de {done} sur {total}…",
-    translatedFields: "{count} champs traduits",
-    translationTagsChanged:
-      "{count} ont conservé leur ancien texte : balises modifiées",
-    translationSkippedLocked:
-      "{count} ignorés : en cours de modification en {language}",
-    translationMissing: "{count} non renvoyés",
     languages: "Langues",
     default: "Par défaut",
     notEnabled: "Non activé",
