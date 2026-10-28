@@ -11,6 +11,8 @@ Keep language versions in one shared block tree with `settings.locales` and `l10
 
 `settings.locale` is the default; `setDefaultLocale` promotes an existing version. `settings.locales` contains other versions without duplicates or the default. A stored version absent from `localization.locales` is selectable but read-only, marked **Not enabled**; value edits and structure changes are refused. `getLocale()`, `setLocale(tag)` and `onLocaleChange(tag)` control view state, which starts at the default and is not saved. An unknown version throws `unknown_locale`.
 
+Imported languages from [Beefree](https://docs.templatical.com/guide/migration-from-beefree), [Unlayer](https://docs.templatical.com/guide/migration-from-unlayer) and [Topol](https://docs.templatical.com/guide/migration-from-topol) use these same layers. Every importer accepts `defaultLocale?: string`, used only when the source declares no default; the CLI forwards `import --default-locale <tag>`. Unlayer JSON has no default language: supply the host's configured default or the importer assumes `"en"` and warns for multilingual designs. Inspect `report.warnings` for dropped languages or fields, configure `localization.locales` with the imported languages, then run `template-tools validate imported.json --locale <tag>`.
+
 ## Language values
 
 1. Add a language with **Languages → Add language**, or the `addLocale` operation. Remove with **Remove {language}** or `removeLocale`; removal drops its block and settings layers and is undoable in the editor.

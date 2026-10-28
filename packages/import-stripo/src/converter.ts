@@ -9,6 +9,8 @@ import { convertEditor } from "./editor";
 import { noteImageSpans, type ConvertCtx } from "./fragment";
 
 export interface ConvertStripoOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
   /** Sibling CSS from plugin `getTemplateData()`. Applied inside each HTML fragment. */
   css?: string;
 }
@@ -105,7 +107,9 @@ export function convertStripoTemplate(
 
   const prepared = injectCss(html, options?.css);
   const kind = detectStripoKind(prepared);
-  const fallback = convertHtmlTemplate(prepared);
+  const fallback = convertHtmlTemplate(prepared, {
+    defaultLocale: options?.defaultLocale,
+  });
 
   if (!kind) {
     return {

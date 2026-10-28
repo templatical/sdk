@@ -1,3 +1,5 @@
+import { localeTag, set, text, warn } from "./localization";
+import { lexicalToHtml } from "./lexical";
 import {
   createTitleBlock,
   createParagraphBlock,
@@ -239,7 +241,8 @@ function ensureParagraphWrapped(html: string): string {
 }
 
 function convertText(values: UnlayerContentValues, textColor: string): Block {
-  const html = ensureParagraphWrapped(values.text ?? "");
+  const html =
+    lexicalToHtml(values.textJson) ?? ensureParagraphWrapped(values.text ?? "");
 
   return createParagraphBlock({
     content: inlineStylesToHtml(html, values, textColor),
@@ -557,7 +560,7 @@ function convertHtmlFallback(content: UnlayerContent, comment: string): Block {
  * Converts a single Unlayer content node to a Templatical block.
  * Returns the block and a report entry.
  */
-export function convertContent(
+function convertContentBase(
   content: UnlayerContent,
   warnings: string[],
   context: ContentContext = {},
@@ -569,6 +572,7 @@ export function convertContent(
 
   switch (type) {
     case "text":
+    case "paragraph":
       return {
         block: convertText(values, textColor),
         entry: {
@@ -705,4 +709,107 @@ export function convertContent(
         },
       };
   }
+}
+
+export function convertContent(
+  content: UnlayerContent,
+  warnings: string[],
+  context: ContentContext = {},
+): { block: Block; entry: ImportReportEntry } {
+  const result = convertContentBase(content, warnings, context);
+  const { block } = result;
+  const languages = content.values?._languages as
+    Record<string, UnlayerContentValues> | undefined;
+  for (const [code, values] of Object.entries(languages ?? {})) {
+    const locale = localeTag(code, warnings);
+    if (!locale) continue;
+    if (block.type === "html") {
+      warn(
+        warnings,
+        `Dropped language "${locale}" on "${content.type}": target converted to HTML fallback.`,
+      );
+      continue;
+    }
+    const merged = { ...content.values, ...values };
+    const hasTranslatedContent =
+      (block.type === "paragraph" || block.type === "title") &&
+      (values.text !== undefined || values.textJson !== undefined);
+    const translatedContent = hasTranslatedContent
+      ? ((block.type === "paragraph" ? lexicalToHtml(values.textJson) : null) ??
+        (typeof values.text === "string" ? values.text : null))
+      : null;
+    if (hasTranslatedContent) {
+      // Text fallback belongs to this language, never to the default's values.
+      merged.text = typeof values.text === "string" ? values.text : undefined;
+      merged.textJson = values.textJson;
+      if (translatedContent === null)
+        warn(
+          warnings,
+          `Dropped language "${locale}" on "${content.type}": unreadable translated text.`,
+        );
+    }
+    const translated = convertContentBase(
+      { ...content, values: merged },
+      [],
+      context,
+    ).block;
+    if (
+      (block.type === "paragraph" || block.type === "title") &&
+      (translated.type === "paragraph" || translated.type === "title") &&
+      translatedContent !== null
+    )
+      text(block, locale, "content", block.content, translated.content);
+    if (
+      block.type === "button" &&
+      translated.type === "button" &&
+      values.text !== undefined
+    )
+      text(block, locale, "text", block.text, translated.text);
+    if (block.type === "image" && translated.type === "image") {
+      if (values.altText !== undefined)
+        text(block, locale, "alt", block.alt, translated.alt);
+      if (values.src?.url !== undefined)
+        set(block, locale, "src", translated.src);
+    }
+    if (block.type === "menu" && values.menu?.items) {
+      if (values.menu.items.length !== block.items.length) {
+        warn(
+          warnings,
+          `Dropped language "${locale}" menu translation: item count differs from the source.`,
+        );
+      } else {
+        values.menu.items.forEach((item, index) => {
+          for (const key of Object.keys(item).filter((key) => key !== "text"))
+            warn(
+              warnings,
+              `Dropped language "${locale}" key "${key}": no language mapping for this format.`,
+            );
+          if (typeof item.text === "string")
+            text(
+              block,
+              locale,
+              `items.${block.items[index].id}.text`,
+              block.items[index].text,
+              item.text,
+            );
+        });
+      }
+    }
+    const known =
+      block.type === "paragraph" || block.type === "title"
+        ? ["text", "textJson"]
+        : block.type === "button"
+          ? ["text"]
+          : block.type === "image"
+            ? ["altText", "src"]
+            : block.type === "menu"
+              ? ["menu"]
+              : [];
+    for (const key of Object.keys(values).filter((key) => !known.includes(key)))
+      warn(
+        warnings,
+        `Dropped language "${locale}" key "${key}": no language mapping for this format.`,
+      );
+  }
+  return result;
 }

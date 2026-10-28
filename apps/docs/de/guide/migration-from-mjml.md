@@ -68,6 +68,18 @@ console.log(report);
 - `content` — das konvertierte `TemplateContent`, bereit für den Editor
 - `report` — ein Konvertierungsbericht mit dem Status jedes Quellelements (`converted`, `approximated`, `html-fallback` oder `skipped`)
 
+## Optionen {#options}
+
+`convertMjmlTemplate` akzeptiert als zweites Argument `ConvertMjmlOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert.
+
+Die Quelle deklariert ihre Standardsprache mit `<mjml lang>`.
+
+```ts
+export interface ConvertMjmlOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Den Bericht lesen
 
 Jeder Eintrag in `report.entries` beschreibt ein Quellelement:

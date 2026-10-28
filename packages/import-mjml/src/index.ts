@@ -1,3 +1,4 @@
+export type { ConvertMjmlOptions } from "./converter";
 export { convertMjmlTemplate } from "./converter";
 export type {
   ImportResult,

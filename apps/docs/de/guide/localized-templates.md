@@ -15,6 +15,8 @@ Dieser HTML-Einstiegspunkt läuft in einer Vite-App mit installiertem `@templati
 
 Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatibility). Die UI-Sprache (`init({ locale })`) ist unabhängig von Template-Sprachversionen; siehe [Internationalisierung](/de/guide/i18n).
 
+Importierte Sprachen aus [Beefree](/de/guide/migration-from-beefree#languages), [Unlayer](/de/guide/migration-from-unlayer#languages) und [Topol](/de/guide/migration-from-topol#languages) nutzen dieselben Ebenen. Jeder Importer akzeptiert `defaultLocale?: string`; die CLI akzeptiert `import --default-locale <tag>`. Konfigurieren Sie `localization.locales` mit den importierten Sprachen, um ihre Versionen zu bearbeiten.
+
 ## Datenstruktur
 
 `settings.locale` ist die Standardsprache; `setDefaultLocale` übernimmt eine vorhandene Version. `settings.locales?: string[]` enthält die anderen Versionen, ohne Duplikate oder Standardsprache. Jeder Schlüssel in `block.l10n` und `settings.l10n` muss in dieser Liste stehen.

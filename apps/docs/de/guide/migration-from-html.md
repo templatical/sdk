@@ -72,6 +72,18 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 - `content` — das konvertierte `TemplateContent`, bereit für den Editor
 - `report` — ein Konvertierungsbericht mit dem Status jedes Elements (`converted`, `approximated`, `html-fallback` oder `skipped`)
 
+## Optionen {#options}
+
+`convertHtmlTemplate` akzeptiert als zweites Argument `ConvertHtmlOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert.
+
+Die Quelle deklariert ihre Standardsprache mit `<html lang>`.
+
+```ts
+export interface ConvertHtmlOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Element-Mapping
 
 HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:

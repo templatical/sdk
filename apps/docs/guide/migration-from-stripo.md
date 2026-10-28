@@ -77,6 +77,19 @@ Pass `options.css` with plugin storage (`getTemplateData().css`). Those rules ap
 
 Unrecognized HTML (no Stripo class attributes) is converted through `@templatical/import-html` and the report carries a warning naming that fallback.
 
+## Options {#options}
+
+`convertStripoTemplate` accepts a second argument of type `ConvertStripoOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+`ConvertStripoOptions` also retains `css?: string` for plugin storage. HTML `<html lang>` declares the default.
+
+```ts
+export interface ConvertStripoOptions {
+  defaultLocale?: string;
+  css?: string;
+}
+```
+
 ## Reading the report
 
 Each `report.entries` item describes one source element:

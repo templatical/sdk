@@ -2219,15 +2219,17 @@ One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a J
 
 A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
 
-### `import <file> [--format <fmt>] [--out <name>]` or `import --list-formats`
+### `import <file> [--format <fmt>] [--default-locale <tag>] [--out <name>]` or `import --list-formats`
 
 ```bash
-npx -y @templatical/template-tools import design.json --format unlayer
+npx -y @templatical/template-tools import design.json --format unlayer --default-locale de
 ```
 
 Converts a design from another tool's export format into a new Templatical template, written to `.templatical/<name>.json` (`<name>` defaults to `<file>`'s own base name; override it with `--out <name>`). Without `--format`, `import` sniffs the format from the file's extension and content — reliable for most exports, but pass `--format` explicitly if detection guesses wrong. The result includes a conversion report: how many blocks converted cleanly, how many were approximated, how many fell back to a raw HTML block, and how many were skipped.
 
 Run `import --list-formats` (optionally with `--json`) to see which converter packages are actually resolvable from your current working directory right now — see "Optional dependencies" below.
+
+`--default-locale <tag>` passes the default language to the converter when the source declares none; otherwise the declared language wins. Without either, the default is `"en"`. Beefree, Unlayer and Topol preserve documented language mappings and report dropped translations in `report.warnings`. Check the written file with `validate --locale <tag>`.
 
 ### `live` · `live reload` · `live stop`
 
@@ -11898,6 +11900,8 @@ In a Vite app with `@templatical/editor` installed, use this HTML entry point. T
 
 Existing templates need no migration; see [Compatibility](#compatibility). The UI language (`init({ locale })`) is independent of template language versions; see [Internationalization](/guide/i18n).
 
+Imported languages from [Beefree](/guide/migration-from-beefree#languages), [Unlayer](/guide/migration-from-unlayer#languages) and [Topol](/guide/migration-from-topol#languages) use the same layers. Every importer accepts `defaultLocale?: string`; the CLI accepts `import --default-locale <tag>`. Configure `localization.locales` with the imported languages to edit their versions.
+
 ## Data shape
 
 `settings.locale` is the default language; `setDefaultLocale` promotes an existing version. `settings.locales?: string[]` lists the other versions, without duplicates or the default. Every key in `block.l10n` and `settings.l10n` must occur in that list.
@@ -12940,6 +12944,26 @@ The function returns an `ImportResult` with:
 
 The JSON BeeFree's editor persists (`page.rows`) is the input. A compiled HTML export is a different envelope — use [`@templatical/import-html`](/guide/migration-from-html).
 
+## Languages {#languages}
+
+The default comes from `language.value` at `page.body.language`, `page.language`, then the root, in that order. Translations in module descriptor payloads (or on the module) become `l10n` text: heading `text`, paragraph/list `html`, button `label`, image `alt`, video `thumbAlt`, and menu item `text` by position. A menu item-count mismatch drops that menu translation with a warning. `head.meta.preheader` supplies the default preheader; `head.meta.translations[locale].preheader` supplies its translation.
+
+Translated `subject`, `title` and `description` stay host-owned and produce warnings. Unknown translation keys, including URL or image-source keys, warn once per key and language. A translation targeting an HTML fallback is dropped with a warning.
+
+The mappings follow [Beefree's documented JSON](https://docs.beefree.io/beefree-sdk/ai-and-mcp/ai-addons/deepl), checked 2026-10-28. Fixtures are built from that documentation, not real multilingual exports.
+
+Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dropped with a warning naming the language. Text entries carry `{ value, sourceHash }`, hashed from the imported default. Enable `init({ localization: { locales } })` with the imported languages to show the Languages menu. Check the result with `template-tools validate imported.json --locale <tag>` and inspect `report.warnings`.
+
+## Options {#options}
+
+`convertBeeFreeTemplate` accepts a second argument of type `ConvertBeeFreeOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+```ts
+export interface ConvertBeeFreeOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Block Mapping
 
 BeeFree block types map to Templatical equivalents:
@@ -13107,6 +13131,18 @@ Pass the persist document from `getDocument()`. That object is `{ body, variable
 
 Email JSON 2.0 through 4.1 is accepted after a key normalizer. Kebab-case styles (`background-color`) and camelCase (`backgroundColor`) are the same property, two versions. Inline `{ reference, default }` colour objects resolve to `default`, or to the matching `variables[]` entry when `default` is missing. The `reference` name is a design token, not a recipient field, so it is not stored as a merge tag.
 :::
+
+## Options {#options}
+
+`convertChamaileonTemplate` accepts a second argument of type `ConvertChamaileonOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
+
+```ts
+export interface ConvertChamaileonOptions {
+  defaultLocale?: string;
+}
+```
 
 ## Report
 
@@ -13328,6 +13364,18 @@ Pass the persist page, not `EditorCore.toMJML()` output. `toMJML` is a compile p
 
 Open-source Easy Email is a different JSON (`type: "section"` / `"text"` without the `standard-` prefix). This package throws a dedicated error rather than mis-import it. Zalify ships `easyEmailToEasyEmailPro()` for that direction.
 :::
+
+## Options {#options}
+
+`convertEasyEmailProTemplate` accepts a second argument of type `ConvertEasyEmailProOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
+
+```ts
+export interface ConvertEasyEmailProOptions {
+  defaultLocale?: string;
+}
+```
 
 ## Report
 
@@ -13551,6 +13599,18 @@ console.log(report);
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each element (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+## Options {#options}
+
+`convertHtmlTemplate` accepts a second argument of type `ConvertHtmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+The source declares its default with `<html lang>`.
+
+```ts
+export interface ConvertHtmlOptions {
+  defaultLocale?: string;
+}
+```
 
 ## Element Mapping
 
@@ -13850,6 +13910,18 @@ console.log(report);
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each source element (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
+## Options {#options}
+
+`convertMjmlTemplate` accepts a second argument of type `ConvertMjmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+The source declares its default with `<mjml lang>`.
+
+```ts
+export interface ConvertMjmlOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Reading the report
 
 Each `report.entries` item describes one source element:
@@ -14098,6 +14170,19 @@ Pass `options.css` with plugin storage (`getTemplateData().css`). Those rules ap
 
 Unrecognized HTML (no Stripo class attributes) is converted through `@templatical/import-html` and the report carries a warning naming that fallback.
 
+## Options {#options}
+
+`convertStripoTemplate` accepts a second argument of type `ConvertStripoOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+`ConvertStripoOptions` also retains `css?: string` for plugin storage. HTML `<html lang>` declares the default.
+
+```ts
+export interface ConvertStripoOptions {
+  defaultLocale?: string;
+  css?: string;
+}
+```
+
 ## Reading the report
 
 Each `report.entries` item describes one source element:
@@ -14281,6 +14366,26 @@ It also accepts the design serialized as a JSON string, for callers that store o
 ::: tip
 Pass the design object itself, not Topol's whole API response. Topol's editor hands it to you directly, as the first of four arguments to `onSave` — no envelope to unwrap there. Its REST APIs do wrap it, and which field holds the design depends on the endpoint: the template-retrieval endpoint returns `{ data: { id, name, screenshot_url, definition, html } }`, so use `.data.definition`; the predefined-templates endpoint returns the design under `json`, alongside `html`. Passing either envelope by mistake, as an object or as a JSON string, is recognised — the converter sees a `json` or `definition` key on a root with the wrong shape and names both fields in the error. A root with a different shape altogether — not an object, unparseable JSON, or an object with neither key — still throws, naming what it expected instead. The design is unwrapped explicitly rather than detected automatically, because guessing which field holds it risks importing an envelope's `html` string — output that belongs to `@templatical/import-html`, not this package.
 :::
+
+## Languages {#languages}
+
+The `langs[]` entry with `primary: true` declares the default; otherwise the first entry does. Each source `uid` is mapped to a newly generated block id. `translations[uid].content` becomes text through the existing `mj-text`/`mj-button` conversion. Image `attributes.alt` becomes text; `attributes.href` becomes button `set.url` or image `set.linkUrl`; image `attributes.src` becomes `set.src`.
+
+`translations["mj-preview"].content` supplies the preheader, including the default entry's preview. `mj-subject` is dropped with a warning because the host owns the subject. Translations targeting a skipped block or an HTML fallback are dropped with warnings. Language-conditional section variants are not read.
+
+The mappings follow [Topol's documented language structure](https://docs.topol.io/email-editor/guide/multilingual-templates.html), checked 2026-10-28. Fixtures are built from that documentation, not real multilingual exports.
+
+Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dropped with a warning naming the language. Text entries carry `{ value, sourceHash }`, hashed from the imported default. Enable `init({ localization: { locales } })` with the imported languages to show the Languages menu. Check the result with `template-tools validate imported.json --locale <tag>` and inspect `report.warnings`.
+
+## Options {#options}
+
+`convertTopolTemplate` accepts a second argument of type `ConvertTopolOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+```ts
+export interface ConvertTopolOptions {
+  defaultLocale?: string;
+}
+```
 
 ## Reading the report
 
@@ -14478,6 +14583,28 @@ The design JSON Unlayer's hosted editor and `editor.saveDesign()` emit is the in
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each content node (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+## Languages {#languages}
+
+`values._languages[locale]` supplies overrides. Text and `textJson` become paragraph `content`; heading `text`, button `text`, image `altText`, and menu item text become hashed text entries. Image `src.url` becomes `set.src`; row `backgroundImage.url` becomes the section's `set.backgroundImage`. Menu items map by position only when item counts match; otherwise the menu translation is dropped with a warning. Translated menu item links are not mapped; warnings name each discarded key and language once. A localized background image inherits the default image’s unspecified settings; an explicitly empty translated URL stores `set.backgroundImage = null`, removing the image in that language only.
+
+Modern text uses Lexical `textJson` before legacy `text`; the `paragraph` content type is supported. Successfully read Lexical block markup is kept without an extra paragraph wrapper. Unreadable Lexical state falls back to `values.text`. A translation uses only its own `textJson` or legacy `text`: if neither is readable, no text entry is stored, coverage remains missing, and the report warns. The JSON has no default language or per-language direction: pass the host's default as `defaultLocale`. Without it, a multilingual design assumes `"en"` and warns. Device `_override.<device>._languages` translations are dropped with warnings. Unknown translation keys and HTML-fallback targets also warn.
+
+The mappings follow [Unlayer's documented overrides](https://docs.unlayer.com/builder/templates/multi-language), checked 2026-10-28. Fixtures are built from that documentation, not real multilingual exports.
+
+Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dropped with a warning naming the language. Text entries carry `{ value, sourceHash }`, hashed from the imported default. Enable `init({ localization: { locales } })` with the imported languages to show the Languages menu. Check the result with `template-tools validate imported.json --locale <tag>` and inspect `report.warnings`.
+
+## Options {#options}
+
+`convertUnlayerTemplate` accepts a second argument of type `ConvertUnlayerOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
+
+```ts
+export interface ConvertUnlayerOptions {
+  defaultLocale?: string;
+}
+```
 
 ## Block Mapping
 

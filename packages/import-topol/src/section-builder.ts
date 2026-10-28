@@ -119,6 +119,11 @@ function convertColumnChildren(
       child.tagName === "mj-social"
         ? convertSocial(child, ctx)
         : convertLeaf(child, ctx);
+    if (child.uid)
+      ctx.uidMap?.set(child.uid, {
+        node: child,
+        block: converted?.block ?? null,
+      });
     if (!converted) continue;
     entries.push(converted.entry);
     if (converted.block) blocks.push(converted.block);

@@ -76,6 +76,26 @@ Es akzeptiert das Design auch als serialisierten JSON-String, für Aufrufer, die
 Übergeben Sie das Design-Objekt selbst, nicht Topols gesamte API-Antwort. Topols Editor übergibt es Ihnen direkt, als erstes von vier Argumenten an `onSave` — dort gibt es keine Hülle auszupacken. Seine REST-APIs umschließen es hingegen, und welches Feld das Design enthält, hängt vom Endpunkt ab: Der Template-Endpunkt liefert `{ data: { id, name, screenshot_url, definition, html } }`, verwenden Sie also `.data.definition`; der Endpunkt für vordefinierte Vorlagen liefert das Design unter `json`, neben `html`. Wird eine dieser Hüllen versehentlich übergeben — als Objekt oder als JSON-String —, erkennt der Konverter das: Er sieht einen `json`- oder `definition`-Schlüssel auf einer Wurzel mit falscher Form und nennt beide Felder in der Fehlermeldung. Eine Wurzel mit einer anderen Form — kein Objekt, nicht parsbares JSON, oder ein Objekt ohne beide Schlüssel — wirft weiterhin einen Fehler und nennt, was erwartet wurde. Das Design wird explizit ausgepackt statt automatisch erkannt, denn ein Rateversuch riskiert, den `html`-String der Hülle zu importieren — eine Ausgabe, die zu `@templatical/import-html` gehört, nicht zu diesem Paket.
 :::
 
+## Sprachen {#languages}
+
+Der `langs[]`-Eintrag mit `primary: true` deklariert die Standardsprache; andernfalls der erste Eintrag. Jede Quell-`uid` wird einer neu generierten Block-ID zugeordnet. `translations[uid].content` wird durch die bestehende `mj-text`/`mj-button`-Konvertierung zu Text. Image `attributes.alt` wird zu Text; `attributes.href` wird zu Button `set.url` oder Image `set.linkUrl`; Image `attributes.src` wird zu `set.src`.
+
+`translations["mj-preview"].content` liefert den Preheader, einschließlich des Previews der Standardsprache. `mj-subject` wird mit Warnung verworfen, weil der Host den Betreff verwaltet. Übersetzungen für übersprungene Blöcke oder HTML-Fallbacks werden mit Warnungen verworfen. Sprachabhängige Sektionsvarianten werden nicht gelesen.
+
+Die Abbildung folgt [Topols dokumentierter Sprachstruktur](https://docs.topol.io/email-editor/guide/multilingual-templates.html), geprüft am 2026-10-28. Die Fixtures stammen aus dieser Dokumentation, nicht aus echten mehrsprachigen Exporten.
+
+Codes werden von `_` nach `-` normalisiert und müssen `isLocaleTag` bestehen. Nicht unterstützte Tags werden mit einer Warnung unter Angabe der Sprache verworfen. Texteinträge enthalten `{ value, sourceHash }`, gehasht aus dem importierten Standardwert. Aktivieren Sie `init({ localization: { locales } })` mit den importierten Sprachen, um das Sprachmenü anzuzeigen. Prüfen Sie das Ergebnis mit `template-tools validate imported.json --locale <tag>` und kontrollieren Sie `report.warnings`.
+
+## Optionen {#options}
+
+`convertTopolTemplate` akzeptiert als zweites Argument `ConvertTopolOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert.
+
+```ts
+export interface ConvertTopolOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Den Bericht lesen
 
 Jeder Eintrag in `report.entries` beschreibt einen Quellknoten:

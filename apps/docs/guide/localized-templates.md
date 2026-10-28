@@ -15,6 +15,8 @@ In a Vite app with `@templatical/editor` installed, use this HTML entry point. T
 
 Existing templates need no migration; see [Compatibility](#compatibility). The UI language (`init({ locale })`) is independent of template language versions; see [Internationalization](/guide/i18n).
 
+Imported languages from [Beefree](/guide/migration-from-beefree#languages), [Unlayer](/guide/migration-from-unlayer#languages) and [Topol](/guide/migration-from-topol#languages) use the same layers. Every importer accepts `defaultLocale?: string`; the CLI accepts `import --default-locale <tag>`. Configure `localization.locales` with the imported languages to edit their versions.
+
 ## Data shape
 
 `settings.locale` is the default language; `setDefaultLocale` promotes an existing version. `settings.locales?: string[]` lists the other versions, without duplicates or the default. Every key in `block.l10n` and `settings.l10n` must occur in that list.

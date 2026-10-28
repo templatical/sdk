@@ -81,6 +81,28 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 
 Das Design-JSON, das Unlayers gehosteter Editor und `editor.saveDesign()` erzeugen, ist die Eingabe. Ein kompiliertes HTML-Export ist ein anderes Envelope — [`@templatical/import-html`](/de/guide/migration-from-html).
 
+## Sprachen {#languages}
+
+`values._languages[locale]` liefert Overrides. Text und `textJson` werden zu Paragraph `content`; Heading `text`, Button `text`, Image `altText` und Menütext werden zu gehashten Texteinträgen. Image `src.url` wird zu `set.src`; Row `backgroundImage.url` wird zum `set.backgroundImage` der Sektion. Menüeinträge werden nur bei gleicher Anzahl nach Position zugeordnet; andernfalls entfällt die Menüübersetzung mit Warnung. Übersetzte Links in Menüeinträgen werden nicht übernommen; Warnungen nennen jeden verworfenen Schlüssel und jede Sprache einmal. Ein lokalisiertes Hintergrundbild erbt die nicht angegebenen Einstellungen des Standardbilds; eine explizit leere übersetzte URL speichert `set.backgroundImage = null` und entfernt das Bild nur in dieser Sprache.
+
+Moderner Text nutzt Lexical `textJson` vor dem älteren `text`; der Inhaltstyp `paragraph` wird unterstützt. Lesbares Lexical-Block-Markup bleibt ohne zusätzlichen Absatz-Wrapper erhalten. Unlesbarer Lexical-Zustand fällt auf `values.text` zurück. Eine Übersetzung nutzt nur ihr eigenes `textJson` oder älteres `text`: Ist beides nicht lesbar, wird kein Texteintrag gespeichert, die Abdeckung bleibt fehlend und der Bericht warnt. Das JSON enthält weder Standardsprache noch sprachabhängige Schreibrichtung: Übergeben Sie die Standardsprache des Hosts als `defaultLocale`. Ohne diese Option nimmt ein mehrsprachiges Design `"en"` an und warnt. Übersetzungen unter `_override.<device>._languages` werden mit Warnungen verworfen. Unbekannte Übersetzungsschlüssel und HTML-Fallback-Ziele erzeugen ebenfalls Warnungen.
+
+Die Abbildung folgt [Unlayers dokumentierten Overrides](https://docs.unlayer.com/builder/templates/multi-language), geprüft am 2026-10-28. Die Fixtures stammen aus dieser Dokumentation, nicht aus echten mehrsprachigen Exporten.
+
+Codes werden von `_` nach `-` normalisiert und müssen `isLocaleTag` bestehen. Nicht unterstützte Tags werden mit einer Warnung unter Angabe der Sprache verworfen. Texteinträge enthalten `{ value, sourceHash }`, gehasht aus dem importierten Standardwert. Aktivieren Sie `init({ localization: { locales } })` mit den importierten Sprachen, um das Sprachmenü anzuzeigen. Prüfen Sie das Ergebnis mit `template-tools validate imported.json --locale <tag>` und kontrollieren Sie `report.warnings`.
+
+## Optionen {#options}
+
+`convertUnlayerTemplate` akzeptiert als zweites Argument `ConvertUnlayerOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert.
+
+Dieses JSON-Format liefert dem Importer keine Standardsprache. Übergeben Sie die vom Host konfigurierte Sprache als `defaultLocale`.
+
+```ts
+export interface ConvertUnlayerOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Block-Mapping
 
 Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:

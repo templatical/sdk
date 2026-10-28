@@ -33,6 +33,11 @@ import type {
   ImportResult,
 } from "./types";
 
+export interface ConvertEasyEmailProOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
+
 const INVALID_MESSAGE =
   "Invalid Easy Email Pro template: expected a page JSON object (EmailTemplate { subject, content } or the page element).";
 const OSS_MESSAGE =
@@ -98,6 +103,7 @@ const REQUIRED_DEFAULTS = DEFAULT_TEMPLATE_DEFAULTS as Required<
  */
 export function convertEasyEmailProTemplate(
   doc: EasyEmailProDocument | EasyEmailProPage | string,
+  options: ConvertEasyEmailProOptions = {},
 ): ImportResult {
   const root: unknown = typeof doc === "string" ? safeParse(doc) : doc;
 
@@ -119,6 +125,7 @@ export function convertEasyEmailProTemplate(
   const resolve = contextFromPage(page);
   const data = isPlainObject(page.data) ? page.data : {};
   const settings = readSettings(page, data, resolve);
+  settings.locale = options.defaultLocale?.replaceAll("_", "-") ?? "en";
   const map: MapContext = { resolve, warnings, contentWidth: settings.width };
 
   const subjectRaw = typeof subject === "string" ? subject.trim() : "";

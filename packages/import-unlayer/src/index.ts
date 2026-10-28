@@ -1,3 +1,4 @@
+export type { ConvertUnlayerOptions } from "./converter";
 export { convertUnlayerTemplate } from "./converter";
 export type {
   UnlayerTemplate,

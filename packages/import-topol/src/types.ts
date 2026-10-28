@@ -59,7 +59,19 @@ export interface TopolNode {
 }
 
 /** The design root — the node whose `tagName` is `mj-global-style`. */
+export interface TopolTranslation {
+  content?: string;
+  attributes?: Record<string, TopolAttrValue>;
+}
+
+export interface TopolLanguage {
+  key: string;
+  primary?: boolean;
+  translations?: Record<string, TopolTranslation>;
+}
+
 export interface TopolDesign extends TopolNode {
+  langs?: TopolLanguage[];
   tagName: string;
   fonts?: unknown;
   style?: unknown;

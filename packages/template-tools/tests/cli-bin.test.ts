@@ -28,6 +28,19 @@ describe("bin dispatch", () => {
     expect(stderr.join("")).toContain("templatical <command>");
   });
 
+  it("documents --default-locale on import and its fallback precedence", async () => {
+    expect(await main(["help"])).toBe(0);
+    const lines = stderr.join("").split("\n");
+    expect(
+      lines.find((line) => line.trimStart().startsWith("import ")),
+    ).toContain("[--default-locale <tag>]");
+    const option = lines.find((line) =>
+      line.trimStart().startsWith("--default-locale "),
+    );
+    expect(option).toContain("source-declared default wins");
+    expect(option).toContain('default: "en"');
+  });
+
   it("lists each custom-block usage line exactly once", async () => {
     await main(["help"]);
     const out = stderr.join("");

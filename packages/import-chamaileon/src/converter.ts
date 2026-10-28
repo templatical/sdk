@@ -29,6 +29,11 @@ import type {
   ImportResult,
 } from "./types";
 
+export interface ConvertChamaileonOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
+
 const INVALID_MESSAGE =
   "Invalid Chamaileon template: expected the document JSON object from getDocument().";
 const WRONG_BODY_MESSAGE =
@@ -70,6 +75,7 @@ const REQUIRED_DEFAULTS = DEFAULT_TEMPLATE_DEFAULTS as Required<
  */
 export function convertChamaileonTemplate(
   doc: ChamaileonDocument | string,
+  options: ConvertChamaileonOptions = {},
 ): ImportResult {
   const root: unknown = typeof doc === "string" ? safeParse(doc) : doc;
 
@@ -158,6 +164,7 @@ export function convertChamaileonTemplate(
     settings: {
       ...defaults.settings,
       width,
+      locale: options.defaultLocale?.replaceAll("_", "-") ?? "en",
       backgroundColor,
       ...(previewRaw ? { preheaderText: previewRaw } : {}),
     },

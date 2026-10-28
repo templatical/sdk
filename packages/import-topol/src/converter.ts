@@ -1,3 +1,5 @@
+import { localeTag, registerLocales, set, text, warn } from "./localization";
+import { convertLeaf } from "./block-mapper";
 import { createDefaultTemplateContent } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
 import { readGlobalStyle } from "./global-style";
@@ -9,6 +11,11 @@ import type {
   ImportResult,
   TopolDesign,
 } from "./types";
+
+export interface ConvertTopolOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
 
 const ROOT_TAG = "mj-global-style";
 
@@ -39,6 +46,7 @@ const EMPTY_DESIGN_WARNING =
  */
 export function convertTopolTemplate(
   design: TopolDesign | string,
+  options: ConvertTopolOptions = {},
 ): ImportResult {
   const root: unknown = typeof design === "string" ? safeParse(design) : design;
 
@@ -72,8 +80,17 @@ export function convertTopolTemplate(
   const blocks: Block[] = [];
 
   const style = readGlobalStyle(topolDesign, container, warnings);
+  const languages = topolDesign.langs ?? [];
+  const primary =
+    languages.find((language) => language.primary) ?? languages[0];
+  style.settings.locale =
+    (primary ? localeTag(primary.key, warnings) : null) ??
+    options.defaultLocale?.replaceAll("_", "-") ??
+    "en";
+  const uidMap: NonNullable<MapContext["uidMap"]> = new Map();
 
   const ctx: MapContext = {
+    uidMap,
     style,
     columnWidth: style.settings.width,
   };
@@ -92,6 +109,88 @@ export function convertTopolTemplate(
     blocks,
     settings: style.settings,
   };
+
+  const preview = primary?.translations?.["mj-preview"]?.content;
+  if (typeof preview === "string") content.settings.preheaderText = preview;
+  for (const language of languages) {
+    const locale = localeTag(language.key, warnings);
+    if (!locale) continue;
+    for (const [uid, translation] of Object.entries(
+      language.translations ?? {},
+    )) {
+      if (uid === "mj-subject") {
+        warn(
+          warnings,
+          `Dropped language "${locale}" mj-subject: the host owns this field.`,
+        );
+        continue;
+      }
+      if (locale === content.settings.locale) continue;
+      if (uid === "mj-preview") {
+        if (typeof translation.content === "string")
+          text(
+            content.settings,
+            locale,
+            "preheaderText",
+            content.settings.preheaderText,
+            translation.content,
+          );
+        continue;
+      }
+      const target = uidMap.get(uid);
+      const block = target?.block;
+      if (!block || block.type === "html") {
+        warn(
+          warnings,
+          `Dropped language "${locale}" translation for uid "${uid}": target converted to ${block ? "HTML fallback" : "null"}.`,
+        );
+        continue;
+      }
+      if (typeof translation.content === "string") {
+        const converted = convertLeaf(
+          { ...target.node, content: translation.content },
+          ctx,
+        )?.block;
+        if (
+          (block.type === "title" || block.type === "paragraph") &&
+          converted &&
+          (converted.type === "title" || converted.type === "paragraph")
+        )
+          text(block, locale, "content", block.content, converted.content);
+        else if (block.type === "button" && converted?.type === "button")
+          text(block, locale, "text", block.text, converted.text);
+        else
+          warn(
+            warnings,
+            `Dropped language "${locale}" content for uid "${uid}": no language mapping for this format.`,
+          );
+      }
+      for (const [key, value] of Object.entries(translation.attributes ?? {})) {
+        if (typeof value !== "string") continue;
+        if (key === "alt" && block.type === "image")
+          text(block, locale, "alt", block.alt, value);
+        else if (key === "href" && block.type === "button")
+          set(block, locale, "url", value);
+        else if (key === "href" && block.type === "image")
+          set(block, locale, "linkUrl", value);
+        else if (key === "src" && block.type === "image")
+          set(block, locale, "src", value);
+        else
+          warn(
+            warnings,
+            `Dropped language "${locale}" attribute "${key}" for uid "${uid}": no language mapping for this format.`,
+          );
+      }
+    }
+  }
+  registerLocales(content);
+  const versions = languages
+    .map((language) => localeTag(language.key, warnings))
+    .filter(
+      (locale): locale is string =>
+        locale !== null && locale !== content.settings.locale,
+    );
+  if (versions.length) content.settings.locales = [...new Set(versions)];
 
   const summary = {
     total: entries.length,

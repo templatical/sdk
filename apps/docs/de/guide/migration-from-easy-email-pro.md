@@ -80,6 +80,18 @@ Zusätzliche `html`- / `mjml`- / `thumbnail`- / `id`-Schlüssel auf dem Umschlag
 Open-Source-Easy-Email ist ein anderes JSON (`type: "section"` / `"text"` ohne das Präfix `standard-`). Dieses Paket wirft einen eigenen Fehler, statt es falsch zu importieren. Zalify liefert `easyEmailToEasyEmailPro()` für diese Richtung.
 :::
 
+## Optionen {#options}
+
+`convertEasyEmailProTemplate` akzeptiert als zweites Argument `ConvertEasyEmailProOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert.
+
+Dieses JSON-Format liefert dem Importer keine Standardsprache. Übergeben Sie die vom Host konfigurierte Sprache als `defaultLocale`.
+
+```ts
+export interface ConvertEasyEmailProOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Bericht
 
 Jeder Eintrag in `report.entries` beschreibt einen erzeugten Block:

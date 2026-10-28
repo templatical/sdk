@@ -24,6 +24,11 @@ import {
 } from "./style-parser";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
+export interface ConvertHtmlOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
+
 function emptyPadding() {
   return { top: 0, right: 0, bottom: 0, left: 0 };
 }
@@ -263,7 +268,10 @@ function pageImageWarning($: CheerioAPI): string | null {
  * console.log(report.warnings);
  * ```
  */
-export function convertHtmlTemplate(html: string): ImportResult {
+export function convertHtmlTemplate(
+  html: string,
+  options: ConvertHtmlOptions = {},
+): ImportResult {
   if (typeof html !== "string") {
     throw new Error(
       "Invalid HTML template: expected a string. Pass the raw HTML source as a string.",
@@ -286,6 +294,11 @@ export function convertHtmlTemplate(html: string): ImportResult {
   const warnings: string[] = [];
 
   const settings = extractSettings($, linkUnderline);
+  settings.locale = (
+    $("html").attr("lang")?.trim() ||
+    options.defaultLocale ||
+    "en"
+  ).replaceAll("_", "-");
   const pageImage = pageImageWarning($);
   if (pageImage) warnings.push(pageImage);
   const blocks = processBody($, entries, warnings, settings.width);

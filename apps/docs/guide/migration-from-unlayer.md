@@ -83,6 +83,28 @@ The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each content node (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
+## Languages {#languages}
+
+`values._languages[locale]` supplies overrides. Text and `textJson` become paragraph `content`; heading `text`, button `text`, image `altText`, and menu item text become hashed text entries. Image `src.url` becomes `set.src`; row `backgroundImage.url` becomes the section's `set.backgroundImage`. Menu items map by position only when item counts match; otherwise the menu translation is dropped with a warning. Translated menu item links are not mapped; warnings name each discarded key and language once. A localized background image inherits the default image’s unspecified settings; an explicitly empty translated URL stores `set.backgroundImage = null`, removing the image in that language only.
+
+Modern text uses Lexical `textJson` before legacy `text`; the `paragraph` content type is supported. Successfully read Lexical block markup is kept without an extra paragraph wrapper. Unreadable Lexical state falls back to `values.text`. A translation uses only its own `textJson` or legacy `text`: if neither is readable, no text entry is stored, coverage remains missing, and the report warns. The JSON has no default language or per-language direction: pass the host's default as `defaultLocale`. Without it, a multilingual design assumes `"en"` and warns. Device `_override.<device>._languages` translations are dropped with warnings. Unknown translation keys and HTML-fallback targets also warn.
+
+The mappings follow [Unlayer's documented overrides](https://docs.unlayer.com/builder/templates/multi-language), checked 2026-10-28. Fixtures are built from that documentation, not real multilingual exports.
+
+Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dropped with a warning naming the language. Text entries carry `{ value, sourceHash }`, hashed from the imported default. Enable `init({ localization: { locales } })` with the imported languages to show the Languages menu. Check the result with `template-tools validate imported.json --locale <tag>` and inspect `report.warnings`.
+
+## Options {#options}
+
+`convertUnlayerTemplate` accepts a second argument of type `ConvertUnlayerOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+
+This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
+
+```ts
+export interface ConvertUnlayerOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Block Mapping
 
 Unlayer content types map to Templatical equivalents:

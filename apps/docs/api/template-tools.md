@@ -108,15 +108,17 @@ One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a J
 
 A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
 
-### `import <file> [--format <fmt>] [--out <name>]` or `import --list-formats`
+### `import <file> [--format <fmt>] [--default-locale <tag>] [--out <name>]` or `import --list-formats`
 
 ```bash
-npx -y @templatical/template-tools import design.json --format unlayer
+npx -y @templatical/template-tools import design.json --format unlayer --default-locale de
 ```
 
 Converts a design from another tool's export format into a new Templatical template, written to `.templatical/<name>.json` (`<name>` defaults to `<file>`'s own base name; override it with `--out <name>`). Without `--format`, `import` sniffs the format from the file's extension and content — reliable for most exports, but pass `--format` explicitly if detection guesses wrong. The result includes a conversion report: how many blocks converted cleanly, how many were approximated, how many fell back to a raw HTML block, and how many were skipped.
 
 Run `import --list-formats` (optionally with `--json`) to see which converter packages are actually resolvable from your current working directory right now — see "Optional dependencies" below.
+
+`--default-locale <tag>` passes the default language to the converter when the source declares none; otherwise the declared language wins. Without either, the default is `"en"`. Beefree, Unlayer and Topol preserve documented language mappings and report dropped translations in `report.warnings`. Check the written file with `validate --locale <tag>`.
 
 ### `live` · `live reload` · `live stop`
 

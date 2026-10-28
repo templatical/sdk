@@ -108,15 +108,17 @@ Eine Operation über `--op '<json>'`, oder ein Batch über `--ops <file>`, das a
 
 Ein Batch wird der Reihe nach und alles-oder-nichts angewendet: Die erste abgelehnte Operation stoppt den ganzen Batch, es wird nichts geschrieben, und der Fehler nennt die Operation, ihren Code und den Grund (`Operation 2 (updateBlock) was refused: block_missing — …`). Selbst wenn jede Operation eines Batches erfolgreich ist, wird das Ergebnis vor dem Schreiben noch einmal strukturell validiert — eine Abfolge, die ein ungültiges Dokument erzeugt, wird abgelehnt, und die Datei bleibt unangetastet. Bei Erfolg überschreibt `edit` `<file>` direkt; es gibt kein `--out`.
 
-### `import <file> [--format <fmt>] [--out <name>]` oder `import --list-formats`
+### `import <file> [--format <fmt>] [--default-locale <tag>] [--out <name>]` oder `import --list-formats`
 
 ```bash
-npx -y @templatical/template-tools import design.json --format unlayer
+npx -y @templatical/template-tools import design.json --format unlayer --default-locale de
 ```
 
 Konvertiert ein Design aus dem Exportformat eines anderen Tools in ein neues Templatical-Template, geschrieben nach `.templatical/<name>.json` (`<name>` ist standardmäßig der Basisname von `<file>`; überschreiben Sie ihn mit `--out <name>`). Ohne `--format` erkennt `import` das Format anhand der Dateiendung und des Inhalts — für die meisten Exporte zuverlässig, aber geben Sie `--format` explizit an, wenn die Erkennung danebenliegt. Das Ergebnis enthält einen Konvertierungsbericht: wie viele Blöcke sauber konvertiert wurden, wie viele angenähert wurden, wie viele auf einen rohen HTML-Block zurückgefallen sind und wie viele übersprungen wurden.
 
 Führen Sie `import --list-formats` aus (optional mit `--json`), um zu sehen, welche Konverter-Pakete gerade tatsächlich aus Ihrem aktuellen Arbeitsverzeichnis auflösbar sind — siehe „Optionale Abhängigkeiten" unten.
+
+`--default-locale <tag>` übergibt dem Konverter die Standardsprache, wenn die Quelle keine angibt; andernfalls hat die deklarierte Sprache Vorrang. Ohne beide Angaben gilt `"en"`. Beefree, Unlayer und Topol erhalten dokumentierte Sprachzuordnungen und melden verworfene Übersetzungen in `report.warnings`. Prüfen Sie die geschriebene Datei mit `validate --locale <tag>`.
 
 ### `live` · `live reload` · `live stop`
 

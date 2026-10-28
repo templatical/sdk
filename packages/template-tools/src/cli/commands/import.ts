@@ -342,6 +342,7 @@ export async function runImport(args: ParsedArgs): Promise<number> {
     report: unknown;
   };
 
+  const defaultLocale = flagValue(args, "default-locale");
   let content: unknown;
   let report: unknown;
   if (spec.input === "stripo") {
@@ -351,10 +352,13 @@ export async function runImport(args: ParsedArgs): Promise<number> {
     // broken converter rather than a missing file.
     const unpacked = unpackStripoSource(source);
     const css = unpacked.css ?? siblingCss(path, source);
-    ({ content, report } = convert(unpacked.html, css ? { css } : undefined));
+    ({ content, report } = convert(unpacked.html, {
+      ...(css ? { css } : {}),
+      defaultLocale,
+    }));
   } else {
     const input = spec.input === "json" ? JSON.parse(source) : source;
-    ({ content, report } = convert(input));
+    ({ content, report } = convert(input, { defaultLocale }));
   }
 
   const outName = flagValue(args, "out") ?? basename(path, extname(path));

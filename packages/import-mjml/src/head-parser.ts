@@ -114,6 +114,7 @@ export function extractSettings(
   $: CheerioAPI,
   cascade: AttributeCascade,
   warnings: string[],
+  defaultLocale?: string,
 ): TemplateContent["settings"] {
   const $body = findByTag($, "mj-body").first();
   const $root = findByTag($, "mjml").first();
@@ -152,8 +153,11 @@ export function extractSettings(
     .join("\n");
   const anchor = readAnchorRule(styleCss);
 
-  const locale =
-    ($root.attr("lang") ?? "").trim() || REQUIRED_TEMPLATE_DEFAULTS.locale;
+  const locale = (
+    ($root.attr("lang") ?? "").trim() ||
+    defaultLocale ||
+    REQUIRED_TEMPLATE_DEFAULTS.locale
+  ).replaceAll("_", "-");
   const direction = readDirection($root.attr("dir"), locale);
 
   const title = findByTag($, "mj-title").first().text().trim();
