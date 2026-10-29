@@ -48,13 +48,13 @@ describe("localized template documentation contracts", () => {
       const source = plain(file);
       expect(source).toMatch(
         german
-          ? /Werkzeugleiste zeigt eine Sprachmarkierung[^.]*Auf \{default\} zurücksetzen[^.]*erhält benachbarte Überschreibungen/
-          : /toolbar shows a language pill[^.]*Reset to \{default\}[^.]*(?:keeps|preserves) sibling overrides/,
+          ? /Einstellungsbereich zeigt eine Sprachmarkierung[^.]*Auf \{default\} zurücksetzen[^.]*erhält benachbarte Überschreibungen/
+          : /settings panel shows a language pill[^.]*Reset to \{default\}[^.]*(?:keeps|preserves) sibling overrides/,
       );
       expect(source).toMatch(
         german
-          ? /Änderungen zurücksetzen im Chip entfernt alle set-Überschreibungen dieses Blocks[^.]*text-Übersetzungen bleiben erhalten/
-          : /(?:block )?chip[’']s Reset changes clears all of that block[’']s set overrides[^.]*keeps[^.]*text translations/,
+          ? /Änderungen zurücksetzen im Statusabzeichen entfernt alle set-Überschreibungen dieses Blocks[^.]*text-Übersetzungen bleiben erhalten/
+          : /status badge[’']s Reset changes clears all of that block[’']s set overrides[^.]*keeps[^.]*text translations/,
       );
     },
   );

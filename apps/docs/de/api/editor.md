@@ -307,7 +307,7 @@ router.beforeEach((to, from, next) => {
 
 ### `getLocale()` / `setLocale(locale)`
 
-`getLocale(): string` liefert die aktive Template-Sprache, anfangs den Standard. `setLocale(locale: string): void` wählt bei aktivierter Lokalisierung den Standard oder eine vorhandene Version; eine unbekannte Version wirft `SdkError` mit Code `unknown_locale`. Eine gespeicherte Version außerhalb von `localization.locales` bleibt auswählbar, aber schreibgeschützt (**Nicht aktiviert**); Wert- und Strukturänderungen werden abgelehnt. Siehe [Bearbeitung in einer Sprache](/de/guide/localized-templates#bearbeitung-in-einer-sprache).
+`getLocale(): string` liefert die aktive Template-Sprache, anfangs den Standard. `setLocale(locale: string): void` wählt bei aktivierter Lokalisierung den Standard oder eine vorhandene Version; eine unbekannte Version wirft `SdkError` mit Code `unknown_locale`. Eine gespeicherte Version außerhalb von `localization.locales` bleibt auswählbar, aber schreibgeschützt (**Nicht aktiviert**); Wert- und Strukturänderungen werden abgelehnt. Siehe [Eine Sprache hinzufügen](/de/guide/localized-templates#eine-sprache-hinzufugen).
 
 `toMjml(options?: { locale?: string }): Promise<string>` und `toHtml(options?: { locale?: string }): Promise<string>` rendern die ausgewählte Version, etwa `editor.toMjml({ locale: "de" })`. Ohne `locale` gilt der Standard, unabhängig von der aktiven Ansicht. Unbekannte Versionen lehnen mit `unknown_locale` ab. Render-Provider erhalten den projizierten Inhalt ohne Lokalisierungsfelder.
 

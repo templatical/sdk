@@ -78,6 +78,14 @@ describe("translation documentation", () => {
         "/templates/{template}/translate",
         "Templatical-AI-Wire: 1",
         "AbortError",
+        // The single source for masking, do-not-translate and DeepL.
+        '<x id="n"/>',
+        "__xn__",
+        "doNotTranslate",
+        "tag_handling=html",
+        "tag_handling=xml",
+        "https://developers.deepl.com/docs/xml-and-html-handling/html",
+        "https://developers.deepl.com/docs/xml-and-html-handling/xml",
       ]) {
         expect.soft(page, term).toContain(term);
       }
@@ -87,23 +95,30 @@ describe("translation documentation", () => {
     },
   );
 
-  it.each(["", "de/"])(
-    "%sguide explains translation and includes the strings round trip",
-    (prefix) => {
+  it.each([
+    ["", "/backend/translation#provider-contract"],
+    ["de/", "/de/backend/translation#provider-vertrag"],
+  ])(
+    "%sguide explains translation, includes the strings round trip and links the contract",
+    (prefix, contract) => {
       const page = read(`${prefix}guide/localized-templates.md`);
       for (const term of [
         "<<< @/snippets/translate-strings.ts",
+        "<<< @/snippets/translate-subject.ts",
         "translation",
-        "<x",
-        "__xn__",
-        "tag_handling=html",
-        "tag_handling=xml",
         "localization.untranslated",
         "localization.stale",
-        "https://developers.deepl.com/docs/xml-and-html-handling/html",
-        "https://developers.deepl.com/docs/xml-and-html-handling/xml",
+        `](${contract})`,
       ])
         expect.soft(page).toContain(term);
+      // Masking, limits and the DeepL settings live on the contract page only.
+      for (const term of [
+        "__xn__",
+        "tag_handling=",
+        "UTF-16",
+        "sanitizeRichTextHtml",
+      ])
+        expect.soft(page, term).not.toContain(term);
       expect(page).toMatch(/^## (Limits|Grenzen)/m);
     },
   );
@@ -204,6 +219,21 @@ describe("translation documentation", () => {
         issue.ruleId.startsWith("localization."),
       ),
     ).toEqual([]);
+  });
+
+  it("runs the subject-line example through a TranslationProvider with tags and terms masked", async () => {
+    const { subject, masked, germanSubject } = await snippet(
+      "translate-subject",
+      "subject, masked, germanSubject",
+    );
+    expect(subject).toContain("{{first_name}}");
+    expect(subject).toContain("Sable");
+    expect(masked.text).not.toContain("{{first_name}}");
+    expect(masked.text).not.toContain("Sable");
+    expect(masked.tokens).toEqual(["{{first_name}}", "Sable"]);
+    expect(germanSubject).toBe(
+      "{{first_name}}, Ihre Sable-Bestellung ist unterwegs",
+    );
   });
 
   it("runs the server example through the HTTP provider and conformance suite", async () => {

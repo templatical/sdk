@@ -60,6 +60,7 @@ it("keeps locale operations out of the generated AI operations prompt", async ()
     "removeLocale",
     "updateBlockLocale",
     "updateSettingsLocale",
+    "setDefaultLocale",
   ]) {
     expect(OPERATIONS_GUIDE).not.toContain(op);
     expect(read(resolve(PKG, "prompts/operations.md"))).not.toContain(op);

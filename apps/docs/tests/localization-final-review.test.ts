@@ -44,9 +44,12 @@ describe("localization public contracts", () => {
       /grandfathered.*(?:rejected|aren't accepted)|historische Tags.*nicht akzeptiert/,
     );
   });
-  it.each(["", "de/"])(
+  it.each([
+    ["", ["language versions", "Translate"]],
+    ["de/", ["Sprachversionen", "übersetzen"]],
+  ])(
     "%s guide description contains the lookup terms in one sentence",
-    (lang) => {
+    (lang, words) => {
       const description =
         read(`apps/docs/${lang}guide/localized-templates.md`).match(
           /^description: (.+)$/m,
@@ -56,6 +59,8 @@ describe("localization public contracts", () => {
         "l10n",
         "resolveLocale",
         "--locale",
+        "TranslationProvider",
+        ...words,
       ])
         expect.soft(description).toContain(term);
       expect(

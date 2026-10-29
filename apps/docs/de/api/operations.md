@@ -101,7 +101,7 @@ Aktueller Text anderer Sprachen erhält den Hash der neuen Basis. Veralteter Tex
 
 `localeHiddenBlocks(content, locale): string[]` listet ausgeblendete Block-IDs in Tiefenreihenfolge, einschließlich Kindern ausgeblendeter Blöcke; für Standard- und unbekannte Sprachen ist das Ergebnis `[]`. `defaultLocaleGaps(content, locale, definitions?): string[]` listet übersetzbare Feld-IDs, die mangels Text oder anwendbarer Eigenschaftsüberschreibung die alte Basis behalten. Veralteter Text wird übernommen und zählt nicht als Lücke. Beide Helfer sind rein; übergeben Sie Definitionen, um Textfelder benutzerdefinierter Blöcke mitzuzählen.
 
-Eine unbekannte Version oder die aktuelle Standardsprache erzeugt `invalid_operation`: `"<locale>" is not a language version of this template.` Ausgeblendete Blöcke erzeugen `invalid_operation`, die erste ausgeblendete `blockId` und `<count> blocks are hidden in "<locale>". Show them before making it the default.` Jede Sperre einer anderen Sitzung kollidiert wie bei `setContent`; `onRemoteChange.locale` ist für diese Operation `null`. KI-Batches in einer Sprachansicht lehnen sie ab.
+Eine unbekannte Version oder die aktuelle Standardsprache erzeugt `invalid_operation`: `"<locale>" is not a language version of this template.` Ausgeblendete Blöcke erzeugen `invalid_operation`, die erste ausgeblendete `blockId` und `<count> blocks are hidden in "<locale>". Show them before making it the default.` Jede Sperre einer anderen Sitzung lehnt sie wie bei `setContent` mit `locked_by_others` ab; `onRemoteChange.locale` ist für diese Operation `null`. KI-Batches in einer Sprachansicht lehnen sie ab.
 
 `invertOperations` stellt mit `setContent` den exakten vorherigen Inhalt einschließlich Hashes, übernommener Ebene und HTML-Cache wieder her. Für Rückgängig gilt daher dieselbe templateweite Sperrregel. Senden Sie die explizite Operation über Collaboration; ein Snapshot-Diff erzeugt für eine Änderung der Standardsprache `setContent`.
 
@@ -140,7 +140,7 @@ Ein abgelehnter Batch wirft einen `OperationError` mit `code` und `opIndex`, dem
 | `anchor_missing` | Der `after`-Block ist nicht im Zielcontainer | 409 |
 | `precondition_failed` | `expect` gilt nicht | 409 |
 | `lock_held` | Eine andere Sitzung hält den Block | 409 |
-| `locked_by_others` | Eine andere Sitzung hält eine Sperre, bei `setContent` | 409 |
+| `locked_by_others` | Eine andere Sitzung hält eine Sperre, bei `setContent` oder einem Wechsel der Standardsprache | 409 |
 | `invalid_operation` | Die Operation ist fehlerhaft oder kann nie gelten | 422 |
 
 ### Welcher Fehler gewinnt

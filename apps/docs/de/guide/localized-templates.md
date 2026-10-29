@@ -1,104 +1,160 @@
 ---
 title: Lokalisierte Templates
-description: Sprachversionen mit settings.locales und l10n speichern, mit resolveLocale projizieren und mit --locale validieren oder rendern.
+description: Sprachversionen einer E-Mail in settings.locales und l10n speichern, mit Ihrem TranslationProvider übersetzen, mit resolveLocale projizieren und mit --locale prüfen oder rendern.
 ---
 
 # Lokalisierte Templates
 
-Sprachversionen einer E-Mail teilen mit `settings.locales` und `l10n` einen Blockbaum; `resolveLocale` projiziert eine Version und `--locale` wählt sie zur Prüfung aus.
+Sprachversionen halten alle Übersetzungen einer E-Mail in einem Template: ein gemeinsamer Blockbaum plus `l10n`-Ebenen mit dem Text, den Eigenschaftsüberschreibungen und den ausgeblendeten Blöcken jeder Sprache aus `settings.locales`. Autoren fügen Versionen im Editor hinzu, bearbeiten sie und füllen sie mit Übersetzen über Ihren `TranslationProvider`; `resolveLocale` und `--locale` projizieren, prüfen und rendern eine Version.
 
-## Sprachversionen aktivieren
+Sprachversionen teilen eine Struktur. Für unabhängige Blockbäume pro Sprache speichern Sie separate Templates und wechseln mit `editor.load(id)`.
 
-Dieser HTML-Einstiegspunkt läuft in einer Vite-App mit installiertem `@templatical/editor`. Das leere Template beginnt auf Englisch. Unter **Sprachen** wählen Sie **Sprache hinzufügen** und Deutsch; die Konfiguration allein schreibt keine Lokalisierungsfelder.
+## Einrichtung
 
-<<< @/snippets/localized-editor.html
+```ts
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
 
-Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatibility). Die UI-Sprache (`init({ locale })`) ist unabhängig von Template-Sprachversionen; siehe [Internationalisierung](/de/guide/i18n).
+const editor = await init({
+  container: "#editor",
+  localization: { locales: ["en", "de", "fr"] },
+});
+```
 
-Importierte Sprachen aus [Beefree](/de/guide/migration-from-beefree#languages), [Unlayer](/de/guide/migration-from-unlayer#languages) und [Topol](/de/guide/migration-from-topol#languages) nutzen dieselben Ebenen. Jeder Importer akzeptiert `defaultLocale?: string`; die CLI akzeptiert `import --default-locale <tag>`. Konfigurieren Sie `localization.locales` mit den importierten Sprachen, um ihre Versionen zu bearbeiten.
+`localization.locales` listet die BCP-47-Tags, die Autoren hinzufügen können. `settings.locale` des Templates ist seine Standardsprache; ein leeres Template beginnt auf Englisch (`"en"`). Die Liste allein schreibt nichts ins Template: Das Menü **Sprachen** erscheint im Header, und ein Autor fügt dort eine Version hinzu. Für eine statische Seite ohne Bundler binden Sie den Editor wie im [Schnellstart](/de/getting-started/quick-start#mount-the-editor) über das CDN ein und übergeben denselben `localization`-Schlüssel.
+
+Ergänzen Sie `translation` für Übersetzen und `localization.doNotTranslate` für Markennamen; siehe [Übersetzen](#translating). Die UI-Sprache des Editors (`init({ locale })`) ist unabhängig von Template-Sprachen; siehe [Internationalisierung](/de/guide/i18n). Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatibility). `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
+
+## Eine Sprache hinzufügen
+
+Öffnen Sie **Sprachen**, wählen Sie **Sprache hinzufügen** und dann eine Sprache; das Untermenü bietet die konfigurierten Sprachen an, die dem Template fehlen. Wählen Sie die neue Version im Menü aus, um sie zu bearbeiten: Die Sprachleiste unter dem Header zeigt **Bearbeitung: {language}**. **Zurück zu {default}** in der Leiste oder die Standardzeile im Menü führt zur Standardsprache zurück. Die Schaltfläche **Weitere Aktionen für {language}** jeder Version bietet **Als Standardsprache festlegen** ([Standardsprache](#standardsprache)) und **{language} entfernen…**, das eine Bestätigung verlangt und sich rückgängig machen lässt.
+
+Text- und Eigenschaftsänderungen in einer Sprachansicht betreffen nur diese Sprache. Hat ein übersetzbares Feld einen Standardwert, speichert eine Bearbeitung `text` mit seinem `sourceHash`; fehlt der Standardwert, etwa ein nicht vorhandener Preheader, speichert sie eine `set`-Überschreibung ohne Veraltungsprüfung. Ein Wert gleich dem Standard hinterlässt keine Überschreibung. Der Einstellungsbereich zeigt eine Sprachmarkierung an jedem überschriebenen oder übersetzten Feld und das Symbol **Auf {default} zurücksetzen**: Es stellt nur dieses Feld aus dem Standard wieder her und erhält benachbarte Überschreibungen. **Änderungen zurücksetzen** im Statusabzeichen entfernt alle `set`-Überschreibungen dieses Blocks; seine `text`-Übersetzungen bleiben erhalten. **In {language} ausblenden** in den Blockeinstellungen lässt einen Geisterblock auf der Arbeitsfläche stehen; **Anzeigen** stellt ihn wieder her, und der Renderer lässt ausgeblendete Blöcke aus.
+
+Hinzufügen, Verschieben, Löschen, Duplizieren, Einfügen und Ziehen ändern den gemeinsamen Baum für alle Sprachen. Die Sprachleiste zeigt **Strukturänderungen gelten für jede Sprache** einmal pro Sitzung und Template. Eine Version in `settings.locales`, die in `localization.locales` fehlt, bleibt auswählbar, schreibgeschützt und als **Nicht aktiviert** markiert: Wert- und Strukturänderungen werden abgelehnt.
+
+Die aktive Sprache ist Ansichtsstatus und wird nicht gespeichert; jede Sitzung startet im Standard. `editor.getLocale()`, `editor.setLocale(tag)` und `init({ onLocaleChange })` lesen, wählen und melden sie; eine unbekannte Version wirft `SdkError` mit Code `unknown_locale`. Siehe [Editor-API](/de/api/editor).
+
+Aus [Beefree](/de/guide/migration-from-beefree#languages), [Unlayer](/de/guide/migration-from-unlayer#languages) und [Topol](/de/guide/migration-from-topol#languages) importierte Sprachen nutzen dieselben Ebenen. Jeder Importer akzeptiert `defaultLocale?: string` für eine Quelle ohne deklarierten Standard, und `template-tools import --default-locale <tag>` übergibt ihn über die CLI. Prüfen Sie `report.warnings` auf verworfene Sprachen und tragen Sie die importierten Sprachen in `localization.locales` ein, um sie zu bearbeiten. Ohne Editor schreiben Sie Versionen mit den [Locale-Operationen](#operationen-und-zusammenarbeit) oder mit `strings import` ([Übersetzen](#translating)).
+
+## Übersetzen {#translating}
+
+Übergeben Sie einen [`TranslationProvider`](/de/backend/translation) als `init({ translation })` neben `localization`; ohne ihn gibt es keine Übersetzungsoberfläche. In einer aktivierten Sprachansicht sendet **{count} Felder übersetzen** in der Sprachleiste die fehlenden und veralteten Felder (die Lücken), sodass aktuelle Übersetzungen und manuelle Änderungen erhalten bleiben; ohne Lücken ist die Aktion ausgeblendet. **Alles erneut übersetzen…** sendet nach einer Bestätigung, die die Feldzahl nennt und das Ersetzen manueller Änderungen erklärt, jedes geeignete Feld; ohne geeignete Felder ist die Aktion deaktiviert. Das Statusabzeichen eines Blocks bietet **Übersetzen** bei fehlendem Text und **Erneut übersetzen** bei veraltetem Text oder abweichenden Merge-Tags.
+
+Übersetzen maskiert Merge-Tags, Logik-Tags und die Begriffe aus `localization.doNotTranslate` (zum Beispiel `["Sable"]`) als nummerierte Platzhalter und übernimmt ein zurückgegebenes Feld nur, wenn es genau die gesendeten Platzhalter enthält; jedes andere Feld behält seinen bisherigen Wert und wird gemeldet. HTML-Blöcke, leere Standardwerte, `set`-Überschreibungen und ausgeblendete Blöcke werden nicht gesendet: Übersetzen Sie HTML-Blöcke von Hand. Der [Übersetzungsvertrag](/de/backend/translation#provider-vertrag) definiert Platzhalter, Batch-Grenzen, Fehler und die DeepL-Einstellungen.
+
+Während eines Durchlaufs zeigt die Sprachleiste **{done} von {total} werden übersetzt…** mit **Abbrechen**, und der Editor bleibt bearbeitbar. Vor Abbruch oder Fehler zurückgegebene Felder werden gemeinsam als ein Rückgängig-Schritt angewendet; ein Durchlauf ohne Änderung zeichnet nichts auf. Mit Zusammenarbeit ist ein Durchlauf eine gewöhnliche Bearbeitung, und Blöcke, die eine andere Sitzung in dieser Sprache oder strukturell hält, werden übersprungen. Die schließbare Ergebnismeldung nennt übersetzte Felder, wegen geänderter Tags beibehaltene Felder, nicht zurückgegebene Felder, wegen laufender Bearbeitung übersprungene Blöcke und die Fehlermeldung des Übersetzungsdienstes. Schließen Sie sie, um wieder die Zahlen zu sehen; ein Ansichtswechsel löscht sie.
+
+KI-Chat, Mit KI beheben, Umformulieren und Alt-Text schreiben bearbeiten die aktive Sprache; siehe [KI in Sprachansichten](/de/backend/ai#ki-in-sprachansichten).
+
+Für den Austausch als Dateien mit einem Übersetzungsdienst oder Übersetzer schreibt `strings export` die Lücken einer Sprache als JSON, und `strings import` wendet die übersetzte Datei an:
+
+```bash
+npx -y @templatical/template-tools strings export template.json --locale de --out strings.de.json
+npx -y @templatical/template-tools strings import template.json strings.de.json --json
+```
+
+Setzen Sie den `text` jedes Eintrags und lassen Sie `id`, `sourceHash` und Platzhalter unverändert. Import wendet jeden String an, dessen `sourceHash` noch zum aktuellen Standard passt und dessen Platzhalter exakt zurückkommen, schreibt die angenommenen Strings und endet mit Exit `1`, wenn ein String abgelehnt wurde. Übergeben Sie beiden Befehlen dieselben `--do-not-translate`- und `--definitions`-Dateien; siehe [Strings](/de/api/template-tools#strings).
+
+Im Code ist derselbe Rundlauf `localeStrings` → JSON → `applyLocaleStrings` aus `@templatical/types`. Dieses vollständige TypeScript-Beispiel extrahiert die Lücken, simuliert eine JSON-Bearbeitung durch einen Übersetzer und wendet die zurückgegebenen Locale-Operationen an. Ein Standardwert, der bearbeitet wird, während die Datei unterwegs ist, macht diesen String veraltet. Die reinen Helfer bereinigen zurückgegebenes HTML nicht: Bereinigen Sie es vor dem Anwenden und erhalten Sie dabei die Platzhalter.
+
+<<< @/snippets/translate-strings.ts
+
+## Eine Sprache prüfen
+
+Die Sprachschaltfläche im Header nennt die aktive Sprache; in einer Sprachansicht mit Lücken ergänzt sie ein Warnsymbol und die Zahl der Lücken, mit „{missing} fehlen, {stale} veraltet“ im Tooltip. Die Sprachleiste zeigt dieselben Zahlen oder **Vollständig**. Ein Block mit einem Lokalisierungszustand trägt ein Symbol als Statusabzeichen in seiner oberen rechten Ecke (oben links in einer Rechts-nach-links-Ansicht); sein Tooltip und sein zugänglicher Name nennen die Beschriftung unten. Wählen Sie das Abzeichen oder **Zum Block springen** bei einem Lokalisierungsbefund im Bereich Probleme, um sein Popover zu öffnen.
+
+| Abzeichen-Beschriftung | Bedeutung | Aktionen |
+| --- | --- | --- |
+| **In {language} ausgeblendet** | Der Block ist nicht in der E-Mail dieser Sprache | **Anzeigen** |
+| **Nicht übersetzt** | Ein Feld hat keinen Text in dieser Sprache; die E-Mail zeigt den Standardtext | **Übersetzen** |
+| **Veraltet** | Der Standardtext wurde nach der Übersetzung geändert | **Erneut übersetzen**, **Beibehalten**, **{default} verwenden** |
+| **Merge-Tags unterscheiden sich** | Die Merge-Tags einer aktuellen Übersetzung weichen vom Standardtext ab | **Erneut übersetzen**, **{default} verwenden** |
+| **Geändert in {language}** | Eigenschaften sind in dieser Sprache überschrieben | **Änderungen zurücksetzen** |
+| **In {count} Sprachen veraltet** | In der Standardansicht: Übersetzungen dieses Blocks sind veraltet | **Öffnen**, pro Sprache |
+
+Ein Block mit mehreren Zuständen zeigt den ersten in dieser Reihenfolge; bei mehreren Feldern in einem Zustand zählt seine Beschriftung sie („{count} nicht übersetzt“). **Übersetzen** und **Erneut übersetzen** benötigen einen Übersetzungs-Provider. In der Vorschau erscheinen keine Abzeichen, und die Blöcke eines Layouts haben keine ([Layouts](#layouts)). `template-tools validate --locale <tag>` und `lintTemplate(content, { contentLocale })` melden dieselben Lücken mit den drei Regeln unten; siehe [Ergebnis prüfen](#check-your-work).
+
+### Fehlende Werte {#missing-values}
+
+Eine fehlende Übersetzung fällt auf den Standardsprachwert zurück. Der Block zeigt **Nicht übersetzt**, die Abdeckung meldet das Feld als fehlend und `localization.untranslated` gibt eine Warnung aus. Leere Standardwerte und ausgeblendete Blöcke zählen nicht als fehlend. Eine absichtlich leere Übersetzung ist ein Wert und löst keinen Fallback aus.
+
+### Veraltete Werte {#out-of-date-values}
+
+Jede Übersetzung speichert den `sourceHash` des Standardwerts, gegen den sie geschrieben wurde. Ändert sich der Standard, ist die Übersetzung **Veraltet**, und `localization.stale` meldet sie. **Erneut übersetzen** übersetzt sie neu. **Beibehalten** behält den Text und speichert den aktuellen Hash, auch wenn der geänderte Standard inzwischen der Übersetzung entspricht; die Abdeckung zählt sie dann als übersetzt. **{default} verwenden** entfernt die Übersetzung, sodass der Standard erscheint. Keine dieser Aktionen ändert benachbarte Überschreibungen, und Aus- und Einblenden eines Blocks erhält seinen Text. In der Standardansicht markiert **In {count} Sprachen veraltet** die betroffenen Blöcke. Überschreibungen in `set` haben keinen Quell-Hash. [Typen](/de/api/types#localization) beschreibt das Hash-Format.
+
+### Merge-Tags {#merge-tags}
+
+Übernehmen Sie die Merge-Tags des Standards einschließlich wiederholter Vorkommen in jedes übersetzte Feld: `localization.merge-tags-differ` vergleicht sie als Multimenge, und der Editor bietet in jeder Sprache dieselbe Merge-Tag-Liste an. Eine aktuelle Übersetzung mit abweichenden Tags zeigt **Merge-Tags unterscheiden sich**. Ihr **Erneut übersetzen** sendet mit einem Provider alle geeigneten Textfelder dieses Blocks; **{default} verwenden** entfernt nur die abweichenden Übersetzungen. Fehlender und veralteter Text haben Vorrang vor diesem Zustand. Die Regel ist eine Warnung, aber die CLI-Validierung endet bei ihr mit Exit `1`, auch bei `valid: true`; fehlende und veraltete Übersetzungen allein ändern den Exit-Code nicht.
+
+## Eine Sprache rendern
+
+`renderToMjml(content, { locale: "de" })`, `editor.toMjml({ locale: "de" })`, `editor.toHtml({ locale: "de" })` und `template-tools render template.json --locale de` rendern eine Version. Ohne `locale` rendern sie den Standard, unabhängig von der Ansicht im Editor; eine unbekannte Version scheitert mit `unknown_locale`. Projizierte Sprache und Richtung bestimmen MJML-`lang` und `dir`. Lokaler MJML-Export benötigt den optionalen Peer `@templatical/renderer`, HTML einen Provider mit `render.toHtml` oder `render.compileMjml`; siehe [Rendering & Export](/de/backend/render).
+
+Mit installiertem `@templatical/types` und `@templatical/renderer` fügt dieses vollständige TypeScript-Beispiel Deutsch hinzu, schreibt Text und Richtung, prüft die Abdeckung und rendert deutsches MJML:
+
+<<< @/snippets/localize-template.ts
+
+`resolveLocale(content, locale)` ist die Projektion hinter jedem Rendern: Sie wendet Text, Überschreibungen und Einstellungen an, entfernt ausgeblendete Blöcke, entfernt die Lokalisierungsfelder und setzt `settings.locale` auf die projizierte Sprache. Fehlende Werte bleiben beim Standard. Speichern Sie den Originalinhalt mit allen Versionen, nicht die Projektion. Die Vorschau zeigt die aktive Sprache mit dem zusammengesetzten Layout, bevor `resolvePreview` läuft, und ein Sprachwechsel verwirft das Ergebnis der vorherigen Sprache.
+
+Ein benutzerdefinierter Block mit einem `text`- oder `set`-Eintrag in der angefragten Sprache verliert in der Projektion sein zwischengespeichertes `renderedHtml` der Standardsprache und rendert daher über `renderCustomBlock`; ohne Callback wird er ausgelassen, statt in der Standardsprache zu erscheinen. Der Export des Editors rendert ihn in der angefragten Sprache. Siehe [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript#benutzerdefinierte-blocke).
 
 ## Datenstruktur
 
-`settings.locale` ist die Standardsprache; `setDefaultLocale` übernimmt eine vorhandene Version. `settings.locales?: string[]` enthält die anderen Versionen, ohne Duplikate oder Standardsprache. Jeder Schlüssel in `block.l10n` und `settings.l10n` muss in dieser Liste stehen.
+`settings.locale` ist die Standardsprache. `settings.locales?: string[]` enthält die anderen Versionen, ohne Duplikate oder Standardsprache. Jeder Schlüssel in `block.l10n` und `settings.l10n` muss in dieser Liste stehen.
 
 | Mitglied | Vertrag |
 | --- | --- |
 | `block.l10n[locale].text` | `Record<string, LocalizedText>`; jeder Wert ist `{ value: string; sourceHash: string }` |
 | `block.l10n[locale].set` | `Record<string, unknown>` für URLs, Bilder, Stile und andere Überschreibungen; `null` bedeutet, dass die Eigenschaft in dieser Sprache fehlt |
-| `block.l10n[locale].hidden` | `true` lässt den Block und seine Nachfahren beim Rendern dieser Sprache aus |
-| `settings.l10n[locale]` | `SettingsLocaleLayer`: optionale `text` und `set`, ohne `hidden`; Text umfasst `preheaderText`, Überschreibungen etwa `direction`, Schriften und Farben |
+| `block.l10n[locale].hidden` | `true` lässt den Block und seine Nachfahren in dieser Sprache aus |
+| `settings.l10n[locale]` | `SettingsLocaleLayer`: optionale `text` (`preheaderText`) und `set` (etwa `direction`, Schriften und Farben), ohne `hidden` |
 
-Ein Feldpfad verbindet Eigenschaftsnamen mit `.`. Bei Arrays ist das nächste Segment die `id` des Elements, niemals sein Index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. Eine Feld-ID ist `<blockId>/<path>` oder `settings/<path>`. IDs von Menüeinträgen, Social-Icons, Tabellenzeilen und Tabellenzellen dürfen weder `.` noch `/` enthalten; die Validierung und `addBlock`, `updateBlock` und `setContent` lehnen sie ab.
+Sprach-Tags müssen `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$` entsprechen: 2–3 ASCII-Buchstaben, gefolgt von beliebig vielen mit Bindestrich getrennten Subtags aus 2–8 ASCII-Buchstaben oder Ziffern. Formen mit `x-…` oder `i-…` am Anfang werden abgelehnt, weil ihr Sprachsegment nur einen Buchstaben hat; historische Formen wie `no-bok` und `zh-min-nan` entsprechen dem Muster und werden akzeptiert.
 
-`TRANSLATABLE_FIELDS` listet Textmuster pro Blocktyp; `translatableFields(block, definitions)` setzt Element-IDs und benutzerdefinierte `text`- und `textarea`-Felder ein. `SETTINGS_TRANSLATABLE_FIELDS` listet Einstellungstextpfade. Ein `text`-Pfad benennt immer ein vorhandenes Textfeld. Eine `set`-Überschreibung darf eine optionale Eigenschaft ergänzen, die im Standard fehlt, aber ihr übergeordnetes Objekt muss existieren. Strukturschlüssel (`id`, `type`, `children`, `l10n`) sind ausgeschlossen.
+Ein Feldpfad verbindet Eigenschaftsnamen mit `.`; bei Arrays ist das nächste Segment die `id` des Elements, niemals sein Index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. Eine Feld-ID ist `<blockId>/<path>` oder `settings/<path>`. IDs von Menüeinträgen, Social-Icons, Tabellenzeilen und Tabellenzellen dürfen weder `.` noch `/` enthalten: `validateTemplate` meldet sie, und `addBlock`, `updateBlock` und `setContent` lehnen sie mit `invalid_operation` ab.
 
-`set` lehnt außerdem `columns` einer Sektion und vollständige integrierte Listenpfade ab: `items` bei Menüs, `rows` und `rows.<id>.cells` bei Tabellen sowie `icons` bei Social-Blöcken. Diese strukturellen Überschreibungen ergeben `invalid_operation`; bearbeiten Sie stattdessen die Eigenschaften einzelner Elemente. Vollständige benutzerdefinierte `fieldValues.<key>`-Überschreibungen bleiben erlaubt.
+`text` enthält nur lesbare Felder: die `TRANSLATABLE_FIELDS` jedes Blocktyps (Inhalt, Alt-Text, Button-Text, Countdown-Beschriftungen, Menüeintragstext, Tabellenzelleninhalt), den Preheader sowie benutzerdefinierte `text`- und `textarea`-Felder. Alles andere, etwa URLs, Bildquellen, Größen und Farben, ist eine `set`-Überschreibung. Ein Pfad steht höchstens in `text` oder `set`. `set` kann `columns` einer Sektion und vollständige integrierte Listen (`items`, `rows`, `rows.<id>.cells`, `icons`) nicht ersetzen; überschreiben Sie stattdessen die Eigenschaften einzelner Elemente. Leere Ebenen und Felder werden weggelassen, nie als `{}` oder `[]` gespeichert. [Typen](/de/api/types#localization) enthält die Deklarationen und Pfadregeln.
 
-Ein Pfad steht höchstens in `text` oder `set`; Schreiben in eines entfernt ihn aus dem anderen. Leere Ebenen, `text`, `set`, `l10n` und `settings.locales` werden weggelassen statt als `{}` oder `[]` gespeichert. Exakte Deklarationen stehen unter [Typen](/de/api/types#localization).
+## Layouts
 
-## Bearbeitung in einer Sprache
+Eine `init({ layout })`-Hülle wird um das Template herum zusammengesetzt, außerhalb davon, ihr Text gehört also nicht zum Template. Ein Layout kann eigene `settings.locales`, Block-`l10n` und `settings.l10n` tragen, auch für die Wrapper-Kinder neben dem Slot, unabhängig von den Sprachen des Templates. Vorschau, `toMjml()`, `toHtml()`, die Test-E-Mail-Vorschau und `renderToMjml(content, { layout, locale })` projizieren es vor dem Zusammensetzen mit `resolveLocale(layout, locale, { missing: "default" })`; fehlt dem Layout die Sprache, erscheint seine Standardsprache.
 
-Das Menü **Sprachen** zeigt den Standard und jede Version mit Abdeckung. **Sprache hinzufügen** bietet konfigurierte, noch fehlende Sprachen an. **{language} entfernen** verlangt Bestätigung und entfernt die Ebenen dieser Version; dies lässt sich rückgängig machen.
+Der Editor bearbeitet das Layout nie. Seine Blöcke haben weder Auswahl noch Lint- oder Statusabzeichen, Übersetzen sendet sie nicht, und die Sprachzahlen enthalten sie nicht. Übersetzen Sie stattdessen die Layout-Datei, zum Beispiel mit der CLI:
 
-Text- und Eigenschaftsänderungen in einer Sprachansicht betreffen nur diese Sprache. Hat ein übersetzbares Feld einen Standardwert, speichert eine Bearbeitung `text` mit `sourceHash`. Fehlt der Standardwert, etwa ein nicht vorhandener Preheader, speichert sie eine `set`-Überschreibung ohne Veraltungsprüfung. Ein Wert gleich dem Standard hinterlässt keine Überschreibung.
+```bash
+npx -y @templatical/template-tools edit layout.json --op '{"op":"addLocale","locale":"de"}' --json
+npx -y @templatical/template-tools strings export layout.json --locale de --out layout.de.json
+npx -y @templatical/template-tools strings import layout.json layout.de.json --json
+npx -y @templatical/template-tools validate layout.json --locale de --json
+```
 
-**Geändert in {language}** markiert Eigenschaftsüberschreibungen. Öffnen Sie den Status-Chip des Blocks, ein Symbol oben rechts im Block (bei Rechts-nach-links-Inhalten oben links), für **Änderungen zurücksetzen**. Die Werkzeugleiste zeigt eine Sprachmarkierung; das Symbol **Auf {default} zurücksetzen** stellt nur dieses Feld aus dem Standard wieder her und erhält benachbarte Überschreibungen. **Änderungen zurücksetzen** im Chip entfernt alle `set`-Überschreibungen dieses Blocks; seine `text`-Übersetzungen bleiben erhalten. **In {language} ausblenden** lässt einen Geisterblock auf der Arbeitsfläche stehen; **Anzeigen** stellt ihn wieder her. Der Renderer lässt ausgeblendete Blöcke aus.
+Setzen Sie zwischen Export und Import den `text` jedes Eintrags in `layout.de.json`, wie unter [Übersetzen](#translating).
 
-Hinzufügen, Verschieben, Löschen, Duplizieren, Einfügen und Ziehen ändern den gemeinsamen Baum für alle Sprachen. Der Editor zeigt **Strukturänderungen gelten für jede Sprache** einmal pro Sitzung und Template. Eine Version in `settings.locales`, die in `localization.locales` fehlt, bleibt auswählbar, schreibgeschützt und als **Nicht aktiviert** markiert: Wert- und Strukturänderungen werden abgelehnt.
+## Standardsprache
 
-Das Löschen eines Basisfelds oder Listenelements entfernt in allen Sprachen Texteinträge mit nicht mehr auflösbarem Pfad und Überschreibungen mit nicht mehr auflösbarem Elternobjekt. Das Entfernen des Standard-Preheaders entfernt daher seine Textübersetzungen. Leere Lokalisierungsfelder entfallen. Rückgängig stellt zuerst die Basis und dann die entfernten Einträge wieder her; das Entfernen einer Sprache und Rückgängig ergeben wieder denselben Inhalt.
+`settings.locale` ist die Standardsprache: der Text, auf den jede Version zurückfällt und aus dem sie übersetzt wird. Um eine Version zu übernehmen, öffnen Sie **Sprachen**, wählen bei der Version **Weitere Aktionen für {language}** und dann **Als Standardsprache festlegen**. Die Bestätigung **{language} als Standardsprache festlegen?** nennt, falls vorhanden, die Felder ohne Text in dieser Sprache: „{count} Felder haben keinen Text in {language} und behalten ihren Text in {default}.“ **Als Standard festlegen** wendet die Änderung als ein Rückgängig-Schritt an, wechselt die Ansicht zum neuen Standard und meldet „{language} ist jetzt die Standardsprache.“ Der Eintrag ist deaktiviert, solange Blöcke in dieser Sprache ausgeblendet sind („Zeige zuerst die {count} in {language} ausgeblendeten Blöcke“), und wird in einem schreibgeschützten Editor oder für eine nicht aktivierte Version nicht angeboten.
 
-Die aktive Sprache ist Ansichtsstatus und wird nicht gespeichert. Sitzungen starten im Standard. `editor.getLocale()` liest sie; `editor.setLocale(tag)` wählt bei aktivierter Lokalisierung den Standard oder eine vorhandene Version. `onLocaleChange(tag)` meldet Wechsel, einschließlich Rückkehr zum Standard nach Entfernen oder Laden eines anderen Templates. Unbekannte Versionen werfen `SdkError` mit Code `unknown_locale`.
+Die Änderung ist eine Operation, `{ "op": "setDefaultLocale", "locale": "de" }`:
 
-## Fehlende Werte {#missing-values}
+- Der deutsche Text und die deutschen Überschreibungen werden zur Basis. Englisch übernimmt den Platz von Deutsch in `settings.locales`, mit seinen abweichenden Werten in einer englischen Ebene.
+- Ein Feld ohne deutschen Text behält seinen englischen Wert, sodass die deutsche E-Mail dort Englisch zeigt. `defaultLocaleGaps(content, "de", definitions?)` listet diese Feld-IDs vor der Änderung; danach meldet `validate --locale en` sie als `localization.untranslated`. Englisch behält für diese Felder keine eigene Kopie: Nach der Änderung ändert eine Bearbeitung im deutschen Standard auch die englische E-Mail. Übersetzen Sie die Lücken zuerst ins Deutsche, bis `defaultLocaleGaps(content, "de")` `[]` liefert. Übersetzen und `strings export` senden keine HTML-Blöcke und keine leeren Standardwerte: Übersetzen Sie HTML-Blöcke von Hand in der deutschen Ansicht; ein leerer Standardwert hat keinen Text zu bewahren und kann eine Lücke bleiben.
+- Andere Sprachen behalten ihren Zustand gegenüber der neuen Basis: Aktueller Text wird neu gestempelt und bleibt aktuell; veralteter Text behält seinen gespeicherten Hash und bleibt veraltet, außer dieser Hash entspricht dem übernommenen deutschen Wert, dann wird er aktuell.
+- Eine Version mit ausgeblendeten Blöcken wird mit `invalid_operation` abgelehnt; `localeHiddenBlocks(content, "de")` listet die zuerst einzublendenden Blöcke. Eine unbekannte Version wird ebenfalls mit `invalid_operation` abgelehnt, und mit Zusammenarbeit lehnt jede Sperre einer anderen Sitzung die Änderung mit `locked_by_others` ab.
 
-Eine fehlende Übersetzung fällt auf den Standardsprachwert zurück. Der Block zeigt **Nicht übersetzt**, die Abdeckung meldet das Feld als fehlend und `localization.untranslated` gibt eine Warnung aus. Leere Standardwerte und ausgeblendete Blöcke zählen nicht als fehlend. Eine absichtlich leere Übersetzung ist ein Wert und löst keinen Fallback aus.
+`updateSettings` kann `settings.locale` nicht ändern, solange Versionen bestehen, und KI in einer Sprachansicht kann `setDefaultLocale` nicht ausführen. [Operationen](/de/api/operations#standardsprache) beschreibt die neu gestempelten Hashes, entfernte optionale Felder, die Umkehrung und die Ablehnungsmeldungen. Prüfen Sie das Ergebnis: Die gespeicherte Datei hat `settings.locale` `"de"` und `"en"` in `settings.locales`, `template-tools validate template.json --json` meldet `valid: true`, und `validate template.json --locale en --json` listet die verbleibenden Lücken als `localization.untranslated`.
 
-## Veraltete Werte {#out-of-date-values}
+## Kommentare
 
-Jedes `LocalizedText.sourceHash` speichert beim Schreiben `sourceHash(defaultValue)`. `sourceHash` ist FNV-1a 32-Bit über UTF-8-Bytes, als acht kleingeschriebene Hexadezimalziffern. Ein geänderter Standard-Hash markiert die Übersetzung **Veraltet** und erzeugt `localization.stale`.
+Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort sendet `CommentInput.locale`, die Sprache der Ansicht, in der er geschrieben wurde, einschließlich des Tags der Standardsprache; Ihr [Kommentar-Provider](/de/backend/comments#locale) speichert ihn und liefert `Comment.locale` zurück. Ein Kommentar ohne Tag, der davor geschrieben wurde, zählt zur aktuellen Standardsprache des Templates. Mit konfigurierter Lokalisierung zeigt jeder Kommentar und jede Antwort ein Sprachabzeichen, und **Diese Sprache** im Kommentarbereich zeigt die Threads, deren Hauptkommentar oder eine Antwort in der aktiven Sprache ist, mit allen Nachrichten und Abzeichen. Der Filter ist Ansichtsstatus und wird nicht gespeichert. Die Kommentare von Cloud speichern die Sprache noch nicht.
 
-**Beibehalten** erhält den vorhandenen Übersetzungseintrag und aktualisiert seinen Quell-Hash, auch wenn der geänderte Standard inzwischen der Übersetzung entspricht. Die Abdeckung zählt ihn als übersetzt. Ausblenden und Anzeigen erhalten ebenfalls die Texteinträge. **{default} verwenden** entfernt den Ebenenwert des Felds und stellt den Fallback wieder her. Beide Aktionen erhalten benachbarte Überschreibungen. Im Standard zeigt **In {count} Sprachen veraltet** betroffene Blöcke. Eigenschaftsüberschreibungen in `set` haben keinen Quell-Hash.
+## Betreffzeilen {#subject-lines}
 
-## Übersetzen {#translating}
+Ein Template hat kein Betreff-Feld: Die Betreffzeile gehört dem Host, der die E-Mail versendet, daher enthalten Übersetzen und `strings export` sie nicht. Übersetzen Sie sie mit demselben `TranslationProvider` als ein `text`-Feld: Maskieren Sie ihre Merge-Tags und geschützten Begriffe mit `maskTags`, senden Sie sie und stellen Sie die Antwort mit `unmaskTags` wieder her, das `null` liefert, wenn ein Platzhalter fehlt oder geändert wurde. Dieses vollständige TypeScript-Beispiel benötigt `@templatical/types` und `@templatical/ai-kit`; ersetzen Sie den Mock durch den Provider, den Sie `init({ translation })` übergeben:
 
-Übergeben Sie `init({ translation })` einen [TranslationProvider](/de/backend/translation), zusammen mit `localization`. In einer aktivierten Nicht-Standardsprachansicht sendet **{count} Felder übersetzen** in der Sprachleiste nur fehlende und veraltete Felder (gaps). Aktuelle Übersetzungen und manuelle Bearbeitungen bleiben erhalten. **Alles erneut übersetzen…** wählt nach einer Bestätigung mit der Feldzahl alle geeigneten Felder; die Bestätigung erklärt auch das Ersetzen manueller Änderungen. Die Lückenaktion wird bei null ausgeblendet; Alles erneut übersetzen ist deaktiviert, wenn keine Felder geeignet sind. Block-Chip-Popover bieten **Übersetzen** bei fehlendem Text und **Erneut übersetzen** bei veraltetem Text oder abweichenden Merge-Tags. Ohne Provider fehlt die Übersetzungsoberfläche.
+<<< @/snippets/translate-subject.ts
 
-Verwenden Sie `localization.doNotTranslate: ["Sable"]`, um Markennamen beim Übersetzen zu bewahren. Der [Übersetzungsvertrag](/de/backend/translation#provider-vertrag) definiert Abgleich, Limits und die exakte Platzhalterprüfung; Headless-Abläufe übergeben dieselbe Liste an `localeStrings` und `applyLocaleStrings`.
-
-Übersetzen lässt HTML-Blöcke (von Hand bearbeiten), leere Standardwerte, `set`-Überschreibungen und ausgeblendete Blöcke aus. `content` von Titel und Absatz ist `html`, jedes andere Feld `text`. Aufrufe laufen nacheinander mit höchstens 50 Feldern und 20.000 UTF-16-Einheiten maskierten Texts. `content_too_large` halbiert den Batch bis auf ein Feld.
-
-Der Editor maskiert ganze Merge-/Logik-Chips in HTML sowie rohe, durch die aktive Syntax erkannte Tags in beiden Formaten. Text verwendet `<x id="n"/>`, HTML-Attributwerte `__xn__`. Beide teilen eine ID-Folge ab 1 pro Feld in Quellreihenfolge. Zurückgegebene Felder müssen genau diese IDs jeweils einmal enthalten; Platzhalter dürfen ihre Position ändern. Bei fehlgeschlagener Prüfung bleibt der alte Wert. HTML wird mit Rewrites `sanitizeRichTextHtml` bereinigt; Tokens werden dabei geschützt und die ursprünglichen Tags anschließend bytegetreu wiederhergestellt. Vorhandene Übersetzungen verwenden die Quell-Token-IDs. Stimmen die Tags der gespeicherten Übersetzung nicht mehr überein, wird ihr alter Text nicht gesendet und das Feld aus dem aktuellen Standard übersetzt. `localeStrings` enthält weiterhin die maskierte aktuelle Quelle und `sourceHash`, jedoch kein `text`; allein die Abdeckung bestimmt die Auswahl von Lücken oder allen Feldern.
-
-Die Sprachleiste zeigt den Fortschritt und bietet **Abbrechen**; der Editor bleibt bearbeitbar. Vor Abbruch oder Fehler erhaltene gültige Felder werden gemeinsam als ein Rückgängig-Schritt angewendet. Mit Zusammenarbeit ist dies eine gewöhnliche Bearbeitung; durch andere Sitzungen in der erfassten Zielsprache oder strukturell gesperrte Blöcke werden ausgelassen. Ein Durchlauf ohne Änderung zeichnet nichts auf; ein zweiter paralleler Durchlauf lehnt mit `translation_running` ab. Die schließbare Ergebnismeldung nennt übersetzte Felder, wegen geänderter Tags erhaltenen Text, ausgelassene Felder, wegen laufender Bearbeitung übersprungene Blöcke und die Fehlermeldung des Providers. Schließen Sie das Ergebnis, um wieder die Abdeckung zu sehen; ein Ansichtswechsel löscht es. **Zurück zu {default}** öffnet die Standardsprache. Die Leiste enthält auch den schließbaren Hinweis auf Strukturänderungen, einmal pro Sitzung und Template.
-
-Für JSON-Austausch über die Befehlszeile verwenden Sie [`strings export` und `strings import`](/de/api/template-tools#strings). Für einen Übersetzungsdienst oder JSON-Dateien über die Bibliothek verwenden Sie `localeStrings` → JSON → `applyLocaleStrings` aus `@templatical/types`. Dieses vollständige TypeScript-Beispiel extrahiert Lücken, simuliert eine JSON-Bearbeitung durch einen Übersetzer und wendet Locale-Operationen an. IDs, Tokens und der `sourceHash` zum Extraktionszeitpunkt bleiben unverändert; ein währenddessen bearbeiteter Standardwert macht das Ergebnis veraltet. Die reinen Helfer bereinigen HTML nicht; bereinigen Sie externe Übersetzungen unter Erhaltung der Platzhalter vor dem Anwenden.
-
-<<< @/snippets/translate-strings.ts
-
-Gruppieren Sie für DeepL die Felder nach Format, senden Sie `tag_handling=html` für `html` und `tag_handling=xml` für `text` und ordnen Sie Ergebnisse wieder den Feld-IDs zu. DeepL dokumentiert [HTML-Verarbeitung](https://developers.deepl.com/docs/xml-and-html-handling/html) und [XML-Verarbeitung](https://developers.deepl.com/docs/xml-and-html-handling/xml) (geprüft am 26.10.2026). XML-Beispiele erhalten Platzhalter-IDs und leere Elemente; HTML-Verarbeitung erhält Markup bei toleranter Syntaxanalyse. Diese Einstellungen ersetzen nicht die exakte Platzhalterprüfung des Editors. Prüfen Sie das Backend mit `runTranslationConformance`; der [Übersetzungsvertrag](/de/backend/translation#check-it) enthält den ausführbaren Check.
-
-Speichern Sie nach dem Durchlauf und führen Sie `npx -y @templatical/template-tools validate template.json --locale de --json` aus. Prüfen Sie, dass weder `localization.untranslated` noch `localization.stale` auftreten und auch `localization.merge-tags-differ` frei bleibt. Die ersten beiden sind Hinweise; Exit 0 allein beweist keine vollständige Übersetzung. Übersetzen Sie ausgeschlossene Felder bei Bedarf von Hand.
-
-## Merge-Tags {#merge-tags}
-
-Übernehmen Sie dieselben Merge-Tags einschließlich wiederholter Vorkommen in jedes übersetzte Textfeld. `localization.merge-tags-differ` vergleicht Tag-Multimengen mit dem Standard; der Editor verwendet dieselbe Merge-Tag-Liste in jeder Sprache. Weichen die Tags einer aktuellen Übersetzung ab, zeigt der Status-Chip des Blocks **Merge-Tags unterscheiden sich**. Sein Popover bietet **Erneut übersetzen** mit einem Provider, das alle geeigneten Textfelder dieses Blocks sendet, und **{default} verwenden**, das nur die abweichenden Übersetzungen entfernt. Fehlender und veralteter Text haben Vorrang vor diesem Zustand. Die Regel ist eine Warnung, aber die CLI-Validierung behandelt abweichende Tags als blockierend und beendet mit `1`, auch bei `valid: true`. Fehlende und veraltete Übersetzungen allein bleiben Hinweise.
-
-## Eine Sprache rendern
-
-Mit installiertem `@templatical/types` und `@templatical/renderer` erstellt dieses vollständige TypeScript-Beispiel eine Version, schreibt Text und Richtung, prüft die Abdeckung und rendert deutsches MJML:
-
-<<< @/snippets/localize-template.ts
-
-`renderToMjml(content, { locale })` löst die Sprache vor dem Rendern auf. `editor.toMjml({ locale })` und `editor.toHtml({ locale })` akzeptieren dieselbe optionale Auswahl. Ohne Auswahl wird der Standard gerendert, unabhängig von der aktiven Editoransicht. Lokaler MJML-Export benötigt den optionalen Peer `@templatical/renderer`; HTML benötigt einen Provider mit `render.toHtml` oder `render.compileMjml`. Siehe [Rendering & Export](/de/backend/render).
-
-`resolveLocale(content, locale)` ist rein: Es wendet Text, Überschreibungen und Einstellungen an, entfernt ausgeblendete Blöcke rekursiv, entfernt Lokalisierungsfelder und setzt das projizierte `settings.locale`. Fehlende Werte bleiben beim Standard. Unbekannte Versionen werfen `unknown_locale`. Projizierte Sprache und Richtung bestimmen MJML-`lang` und `dir`. Speichern Sie den Originalinhalt mit allen Versionen statt dieser Projektion.
-
-Die Vorschau lokalisiert die aktive Sprache, setzt das Layout zusammen und ruft dann `resolvePreview` auf. Das zurückgegebene einfache Template wird direkt gerendert. Ein Sprachwechsel verwirft den Cache und Antworten für die vorherige Sprache.
-
-Ein Layout besitzt eigene `settings.locales`, Block-`l10n` und `settings.l10n`, unabhängig von den Sprachen des Inhalts. Auch Wrapper-Kinder neben dem Slot können übersetzt werden. Vorschau, Export und Test-E-Mail-Vorschau projizieren das Layout vor dem Zusammensetzen mit `resolveLocale(layout, locale, { missing: "default" })` für die angefragte Sprache. Fehlt diese dem Layout, gilt dessen Standardsprache. Der Editor bearbeitet das Layout nicht. Eine Layout-Datei lässt sich mit `template-tools validate --locale de` prüfen.
-
-**Benutzerdefinierte Blöcke:** Jeder `text`- oder `set`-Eintrag in der Ebene der angeforderten Sprache entfernt das Standardsprach-`renderedHtml` aus der Projektion. `renderedStylesheet` bleibt erhalten. Übergeben Sie `renderCustomBlock`, um die lokalisierten Felder zu rendern; ohne Callback wird der Block ausgelassen, statt den Standardsprach-Pre-Render anzuzeigen. Blöcke ohne Ebene für diese Sprache behalten ihr zwischengespeichertes HTML. Der Editor-Export lokalisiert vor dem Pre-Rendering und erzeugt übersetztes benutzerdefiniertes HTML. Siehe [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript).
+Übergeben Sie die Merge-Tag-Syntax und die `doNotTranslate`-Liste Ihres Editors; das Beispiel verwendet `SYNTAX_PRESETS.liquid`. Es gibt <code v-pre>{{first_name}}, Ihre Sable-Bestellung ist unterwegs</code> aus. Die Feld-`id` wählen Sie selbst; der Provider gibt sie unverändert zurück. Speichern Sie den Betreff jeder Sprache in Ihren eigenen Daten beim Template.
 
 ## Operationen und Zusammenarbeit
 
@@ -106,13 +162,13 @@ Ein Layout besitzt eigene `settings.locales`, Block-`l10n` und `settings.l10n`, 
 | --- | --- |
 | `addLocale` | Fügt eine Version zu `settings.locales` hinzu |
 | `removeLocale` | Entfernt die Version und alle zugehörigen Block- und Einstellungsebenen |
-| `setDefaultLocale` | Übernimmt eine Version als Standard; Lücken behalten die alte Basis, ausgeblendete Blöcke verhindern die Änderung |
-| `updateBlockLocale` | Schreibt `text`, `set`, `unset`-Pfade und `hidden` eines Blocks für eine Locale |
-| `updateSettingsLocale` | Schreibt `text`, `set` und `unset` von Einstellungen für eine Locale |
+| `setDefaultLocale` | Macht eine Version zum Standard; siehe [Standardsprache](#standardsprache) |
+| `updateBlockLocale` | Schreibt `text`, `set`, `unset`-Pfade und `hidden` eines Blocks für eine Sprache |
+| `updateSettingsLocale` | Schreibt `text`, `set` und `unset` der Einstellungen für eine Sprache |
 
-Updates wenden zuerst `unset`, dann `text`, dann `set`, dann `hidden` an (nur Blöcke). `expect` prüft die aktuelle Ebene: Eine Abweichung ergibt `precondition_failed`. Ungültige Pfade, nicht übersetzbare `text`-Pfade und ungültige Locale-Operationen ergeben `invalid_operation`. Nur Locale-Operationen ändern Lokalisierungsfelder; generische `updateBlock` und `updateSettings` lehnen sie ab. `addBlock` darf `l10n` enthalten; `setContent` ersetzt alles. Verwenden Sie `applyOperations` und `invertOperations` aus `@templatical/types`.
+Wenden Sie sie mit `applyOperations` an und kehren Sie sie mit `invertOperations` aus `@templatical/types` um, führen Sie sie mit `template-tools edit` aus oder senden Sie sie als Kollaborations-Batch. Nur diese Operationen ändern Lokalisierungsfelder: `updateBlock` und `updateSettings` lehnen sie ab, `addBlock` darf das `l10n` eines neuen Blocks enthalten, und `setContent` ersetzt alles. Eine fehlgeschlagene `expect`-Prüfung ergibt `precondition_failed`; ein ungültiger Pfad, eine ungültige Sprache oder ein nicht übersetzbares Textfeld ergibt `invalid_operation`. [Operationen](/de/api/operations#locale-operationen) beschreibt die exakten Formen, die Reihenfolge der Updates und die Rückgängig-Prüfungen.
 
-`BlockLock.locale?: string | null` und `OperationLock.locale?: string | null` verwenden `null` (auch bei fehlender Angabe) für Standardsprache und Struktur. Eine lokalisierte Bearbeitung an (Block X, `de`) kollidiert mit einer Sperre einer anderen Sitzung auf (X, `de`) oder (X, `null`); eine `fr`-Sperre kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Provider-Sperrmethoden akzeptieren eine optionale Locale. `onRemoteChange.locale` ist die Sprache der ersten Locale-Operation im Batch, ausgenommen `setDefaultLocale`, sonst `null`. Ein `setDefaultLocale`-Batch meldet `null`, da er die Standardsprache des Templates ändert. Exakte Verträge stehen unter [Zusammenarbeit](/de/backend/collaboration).
+`BlockLock.locale?: string | null` und `OperationLock.locale?: string | null` verwenden `null` oder einen fehlenden Wert für Standardsprache und Struktur. Eine lokalisierte Bearbeitung an (Block X, `de`) kollidiert mit einer Sperre einer anderen Sitzung auf (X, `de`) oder (X, `null`); eine Sperre auf (X, `fr`) kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X, und `setDefaultLocale` mit jeder Sperre. `onRemoteChange.locale` ist die Sprache der ersten Locale-Operation im Batch, ausgenommen `setDefaultLocale`, sonst `null`; ein `setDefaultLocale`-Batch meldet `null`, da er die Standardsprache des Templates ändert. Exakte Verträge stehen unter [Zusammenarbeit](/de/backend/collaboration).
 
 ## Kompatibilität {#compatibility}
 
@@ -120,58 +176,44 @@ Bestehende einsprachige Templates brauchen keine Migration: Sie laden, bearbeite
 
 Alle `@templatical/*`-Pakete erscheinen gemeinsam unter einer Versionsnummer. Halten Sie sie auf derselben Version: Ein Renderer oder Validator aus der Zeit vor den Sprachversionen kennt `l10n` nicht; ein älterer Renderer rendert die Standardsprache, ein älterer Validator lehnt das Template ab.
 
-Ein selbst gebautes Kollaborationsbackend muss die Locale-Operationen aus der [Operations-Referenz](/de/api/operations) und die Sperr-`locale` umsetzen; siehe [Zusammenarbeit](/de/backend/collaboration). Bis dahin lehnt es sie als `invalid_operation` ab, und ein Backend, das die Sperr-`locale` ignoriert, serialisiert Bearbeitungen pro Block.
-
-## Vollständig getrennte Layouts
-
-Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Templates und wechseln mit `editor.load(id)`. Sprachversionen teilen eine Struktur.
+Ein selbst gebautes Kollaborationsbackend muss die Locale-Operationen aus der [Operations-Referenz](/de/api/operations) und die Sperr-`locale` umsetzen; siehe [Zusammenarbeit](/de/backend/collaboration). Bis dahin lehnt es sie als `invalid_operation` ab, und ein Backend, das die Sperr-`locale` ignoriert, serialisiert Bearbeitungen pro Block. Ein selbst gebautes Kommentar-Backend speichert `locale`; siehe [Kommentare](#kommentare).
 
 ## Grenzen
 
-**Standardsprache und Schreibrichtung**
-
-- Die Schreibrichtung kann je Sprache unterschiedlich sein. Die Spaltenreihenfolge folgt automatisch der Schreibrichtung der Sprache: Rechts-nach-links-Versionen zeigen die erste Spalte rechts. Explizite linke und rechte Textausrichtung sowie linke/rechte Innenabstände werden nicht gespiegelt. Überschreiben Sie diese je Sprache. Die Spaltenstruktur ist für alle Sprachen gemeinsam und kann nicht pro Sprache überschrieben werden.
-
-**Felder und Layouts**
-
-- Text in wiederholbaren Elementen eines benutzerdefinierten Blocks lässt sich nicht feldweise übersetzen: Überschreiben Sie stattdessen das gesamte `fieldValues.<key>`.
-- Sprach-Tags müssen `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$` entsprechen: 2–3 ASCII-Buchstaben, gefolgt von beliebig vielen mit Bindestrich getrennten Subtags aus 2–8 ASCII-Buchstaben oder Ziffern. Formen mit `x-…` oder `i-…` am Anfang werden abgelehnt, weil ihr Sprachsegment nur einen Buchstaben hat; historische Formen wie `no-bok` und `zh-min-nan` entsprechen dem Muster und werden akzeptiert.
-
-**Übersetzen**
-
-- HTML-Blöcke werden beim Übersetzen ausgelassen. Sie lassen sich weiterhin von Hand übersetzen.
-- XLIFF und CSV werden nicht unterstützt.
-
-**KI in einer Sprachansicht**
-
-- Von der KI hinzugefügte Blöcke gelangen mit ihrem Text als Standardinhalt in den gemeinsamen Baum, wie beim Einfügen.
-- Die KI kann dort nicht das gesamte Template ersetzen. Wechseln Sie dafür zur Standardsprache.
-- Bei benutzerdefinierter Merge-Tag-Syntax prüft Rewrite nur Chips und deklarierte Tags.
-
-**Kommentare, Verlauf, CLI und Cloud**
-
-- Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über einen eigenen [Kommentar-Provider](/de/backend/comments#locale) den Sprach-Tag der Ansicht; Cloud speichert ihn noch nicht. Jeder Hauptkommentar und jede Antwort zeigt ein Sprachabzeichen; ein Kommentar ohne Tag zählt zur aktuellen Standardsprache. **Diese Sprache** zeigt ganze Threads, wenn der Hauptkommentar oder eine Antwort zur aktiven Sprache gehört, und erhält alle Nachrichten und Abzeichen. Der Filter ist Ansichtsstatus und wird nicht gespeichert. Der Versionsverlauf gilt weiterhin pro Template.
+- Die Spaltenstruktur ist für alle Sprachen gemeinsam und lässt sich nicht pro Sprache überschreiben. Die Spaltenreihenfolge folgt der Schreibrichtung jeder Sprache, sodass eine Rechts-nach-links-Version die erste Spalte rechts zeigt, aber explizite linke und rechte Textausrichtung sowie linke/rechte Innenabstände werden nicht gespiegelt: Überschreiben Sie sie pro Sprache.
+- Text in wiederholbaren Elementen eines benutzerdefinierten Blocks lässt sich nicht feldweise übersetzen, weil die Elemente keine IDs haben. Überschreiben Sie stattdessen das gesamte `fieldValues.<key>` pro Sprache.
+- Übersetzen lässt HTML-Blöcke aus. Übersetzen Sie sie von Hand in der Sprachansicht.
+- Von der KI in einer Sprachansicht hinzugefügte Blöcke gelangen mit ihrem Text als Standardinhalt in den gemeinsamen Baum, wie beim Einfügen. Die KI kann in einer Sprachansicht nicht das gesamte Template ersetzen; wechseln Sie dafür zur Standardsprache.
+- Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über Ihren Kommentar-Provider den Sprach-Tag der Ansicht; Cloud speichert ihn noch nicht. Der Versionsverlauf gilt weiterhin pro Template, nicht pro Sprache.
 - Der Cloud-Editor unterstützt noch keine Sprachversionen oder Übersetzung: `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
+- Strings werden als JSON ausgetauscht; XLIFF und CSV werden nicht unterstützt.
 
-## Ergebnis prüfen
+## Ergebnis prüfen {#check-your-work}
 
-Für eine gespeicherte `template.json` wählen Sie die Sprache in der CLI:
+Für eine gespeicherte `template.json` prüfen und rendern Sie eine Sprache:
 
 ```bash
 npx -y @templatical/template-tools validate template.json --locale de --json
 npx -y @templatical/template-tools render template.json --locale de --format mjml --out template.de.mjml
 ```
 
-`validateTemplate` prüft die aufgelösten Blöcke und Einstellungen jeder deklarierten Sprache gegen die normalen Schemas und nennt bei Projektionsfehlern die Locale. Gelöschte Pflichtfelder und ungültige Override-Typen scheitern auch dann, wenn eine andere Sprache für Lint gewählt ist. Ein Fehler im Linter selbst ergibt Exit `2`, mit Diagnose auf stderr und ohne Ergebnisdokument.
+`validate --locale de` prüft die Projektion jeder deklarierten Sprache gegen die normalen Schemas und nennt bei Projektionsfehlern die Sprache; danach lintet es die deutsche Projektion einschließlich `localization.untranslated`, `localization.stale` und `localization.merge-tags-differ`. Lesen Sie die Befunde auch bei Exit `0`: Fehlende und veraltete Übersetzungen sind Warnungen. Lesen Sie nach `strings import` zuerst dessen `rejected`-Liste.
 
-`validate --locale de` prüft Struktur und projizierten Inhalt, einschließlich `localization.untranslated`, `localization.stale` und `localization.merge-tags-differ`. Exit `0` bedeutet Erfolg, `1` ungültige Struktur, Fehler-Lint, abweichende Merge-Tags oder eine unbekannte Locale, `2` Fehlbedienung/Toolfehler (einschließlich fehlendem oder leerem `--locale`-Wert) und `3` eine fehlende optionale Abhängigkeit. Eine unbekannte Locale ergibt Exit `1`, schreibt `unknown_locale` auf stderr ohne Ergebnisdokument, auch mit `--json`. Ein fehlender oder leerer `--locale`-Wert ergibt Exit `2`. `valid: true` allein bedeutet nicht Exit `0`. Siehe [Template-Tools](/de/api/template-tools).
+| Exit | `validate` und `render` | `strings import` |
+| --- | --- | --- |
+| `0` | Erfolg; Warnungen wie `localization.untranslated` und `localization.stale` können bleiben | Kein String wurde abgelehnt (Einträge ohne `text` werden übersprungen) |
+| `1` | Ungültige Struktur, eine unbekannte Locale oder bei `validate` ein Lint-Befund mit Schweregrad Fehler oder `localization.merge-tags-differ` (auch bei `valid: true`) | Ein String wurde abgelehnt (die angenommenen Strings werden geschrieben), das Template ist ungültig oder `targetLocale` ist keine seiner Versionen (nichts wird geschrieben) |
+| `2` | Fehlbedienung oder Toolfehler: ein fehlender oder leerer `--locale`-Wert, eine ungültige `--definitions`-Datei oder bei `validate` eine Ausnahme im Linter | Fehlbedienung: fehlende Argumente oder eine unlesbare oder ungültige Strings-, Definitions- oder Begriffsdatei |
+| `3` | Eine fehlende optionale Abhängigkeit: `mjml` für `render --format html` und `validate --html` | Nicht verwendet |
 
-Übergeben Sie für benutzerdefinierte Übersetzungen `--definitions definitions.json` an `validate` und `render`. Die Datei ist ein JSON-Array von `CustomBlockDefinition`; Rendering verwendet das Liquid-Template und CSS jedes Typs. Siehe [Strings und Definitionen](/de/api/template-tools#strings) für `strings export` / `strings import`, `--do-not-translate`, Teilimporte und Exit-Codes. Für den Bibliotheksweg verwenden Sie `validateTemplate(content, definitions)`, danach `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })` und `renderCustomBlock` zum Rendern. Dieses vollständige TypeScript-Beispiel benötigt `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` und `liquidjs`:
+Eine unbekannte Locale ergibt Exit `1` und schreibt `unknown_locale` auf stderr ohne Ergebnisdokument, auch mit `--json`. Ein fehlender oder leerer `--locale`-Wert ergibt Exit `2`. `valid: true` allein bedeutet nicht Exit `0`. Siehe [Template-Tools](/de/api/template-tools#exit-codes).
+
+Übergeben Sie für Übersetzungen benutzerdefinierter Blöcke `--definitions definitions.json`, ein JSON-Array von `CustomBlockDefinition`, an `validate`, `render` und beide `strings`-Befehle; Rendering verwendet das Liquid-Template und CSS jedes Typs. Für den Bibliotheksweg verwenden Sie `validateTemplate(content, definitions)`, danach `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })` und `renderCustomBlock` zum Rendern. Dieses vollständige TypeScript-Beispiel benötigt `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` und `liquidjs`:
 
 <<< @/snippets/localize-custom-block.ts
 
-Prüfen Sie `validation.valid`, lesen Sie `issues` und bestätigen Sie, dass das MJML `Willkommen` statt des zwischengespeicherten `Welcome` enthält. Siehe [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript) und die [CLI-Bibliotheks-API](/de/api/template-tools#nutzung-als-bibliothek).
+Prüfen Sie `validation.valid`, lesen Sie `issues` und bestätigen Sie, dass das MJML `Willkommen` statt des zwischengespeicherten `Welcome` enthält. Siehe [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript#benutzerdefinierte-blocke) und die [CLI-Bibliotheks-API](/de/api/template-tools#nutzung-als-bibliothek). Prüfen Sie ein Übersetzungs-Backend mit `runTranslationConformance` wie im [Übersetzungsvertrag](/de/backend/translation#check-it) beschrieben.
 
 ## Im Playground
 
-Das [Sprachen-Setup](https://play.templatical.com/scenes/languages) öffnet ein Template mit deutschem Text, einem anderen Hero-Bild, einem ausgeblendeten Block und einem veralteten Wert. Wechseln Sie zu Deutsch, bearbeiten Sie den Text und kehren Sie zu Englisch zurück, um zu prüfen, dass er unverändert bleibt. Wählen Sie **Keep**, um die Veraltet-Markierung zu entfernen, fügen Sie Französisch hinzu oder wählen Sie Arabisch für Inhalte von rechts nach links.
+Das [Sprachen-Setup](https://play.templatical.com/scenes/languages) öffnet ein Template mit deutschem Text, einem anderen Hero-Bild, einem auf Deutsch ausgeblendeten Block, einem veralteten deutschen Wert, einem Layout-Footer pro Sprache und einem aufgezeichneten Übersetzungs-Provider, mit Sable auf der Liste der nicht zu übersetzenden Begriffe. Wechseln Sie zu Deutsch und nutzen Sie **{count} Felder übersetzen** oder **Erneut übersetzen** am veralteten Block; bearbeiten Sie deutschen Text und kehren Sie zu Englisch zurück, um zu prüfen, dass er unverändert bleibt. Wählen Sie **Beibehalten**, um ein Veraltet-Abzeichen zu entfernen, fügen Sie Französisch hinzu oder wählen Sie Arabisch für Inhalte von rechts nach links. Die Varianten zeigen ein geändertes Tag (`?translation=tags-changed`), Teilergebnisse beim Abbrechen (`?translation=cancel`), Kollaborationssperren (`?collaboration=1&user=Ada`) und 300 Blöcke in 20 Sprachen (`?scale=1`).

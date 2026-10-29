@@ -307,7 +307,7 @@ router.beforeEach((to, from, next) => {
 
 ### `getLocale()` / `setLocale(locale)`
 
-`getLocale(): string` returns the active template language, initially the default. `setLocale(locale: string): void` selects the default or an existing version with localization enabled; an unknown version throws `SdkError` with code `unknown_locale`. A stored version missing from `localization.locales` remains selectable but read-only (**Not enabled**), with edits and structure changes refused. See [Editing in a language](/guide/localized-templates#editing-in-a-language).
+`getLocale(): string` returns the active template language, initially the default. `setLocale(locale: string): void` selects the default or an existing version with localization enabled; an unknown version throws `SdkError` with code `unknown_locale`. A stored version missing from `localization.locales` remains selectable but read-only (**Not enabled**), with edits and structure changes refused. See [Adding a language](/guide/localized-templates#adding-a-language).
 
 `toMjml(options?: { locale?: string }): Promise<string>` and `toHtml(options?: { locale?: string }): Promise<string>` render the selected version, for example `editor.toMjml({ locale: "de" })`. Omit `locale` to render the default, independently of the active view. An unknown version rejects with `unknown_locale`. Render providers receive the projected content, with localization fields removed.
 

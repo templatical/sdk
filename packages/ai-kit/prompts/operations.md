@@ -72,7 +72,7 @@ A refused batch throws an `OperationError` with `code` and `opIndex`, the 0-base
 | `anchor_missing` | The `after` block isn't in the target container | 409 |
 | `precondition_failed` | `expect` doesn't hold | 409 |
 | `lock_held` | Another session holds the block | 409 |
-| `locked_by_others` | Another session holds a lock, for `setContent` | 409 |
+| `locked_by_others` | Another session holds a lock, for `setContent` or a change of the default language | 409 |
 | `invalid_operation` | The operation is malformed or can never apply | 422 |
 
 ### Which error wins

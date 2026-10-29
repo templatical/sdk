@@ -44,6 +44,22 @@ template on one version before writing localized content. Check an SDK batch
 with the shared operation fixtures, then run `template-tools validate` on
 the resulting template.
 
+To make an existing German version the default language:
+
+```
+npx -y @templatical/template-tools@0.51.1 edit .templatical/<name>.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
+```
+
+German's values become the base and the old default becomes a version. A
+block hidden in German refuses it with `invalid_operation`: list them with
+`localeHiddenBlocks(content, "de")` and show them first. Fields without German
+text keep the old default's value, and the old default keeps no copy of them:
+translate them into German first, until `defaultLocaleGaps(content, "de")`
+returns `[]` ([localize.md](localize.md)). HTML blocks and empty defaults aren't
+sent by Translate or `strings export`: translate HTML blocks by hand in the
+German view; an empty default has no text to keep.
+`updateSettings` refuses to change `settings.locale` while versions exist.
+
 An agent connected to a template through Templatical Cloud's hosted MCP server
 edits with this same vocabulary through the server's `edit_template` tool, so
 the shapes and rules here hold there too.

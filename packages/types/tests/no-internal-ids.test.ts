@@ -20,7 +20,7 @@ it("keeps internal tracker and slice ids out of package source and JSDoc", () =>
         readFileSync(file, "utf8")
           .split("\n")
           .forEach((line, index) => {
-            if (/LOC[1-3]|OI-\d+/.test(line)) {
+            if (/LOC[1-3]|LOCR|OI-\d+/.test(line)) {
               violations.push(
                 `${relative(PACKAGES, file)}:${index + 1}: ${line.trim()}`,
               );

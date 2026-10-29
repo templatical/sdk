@@ -112,6 +112,104 @@ describe("localization agent path", () => {
       expect(source).toContain(term);
   });
 
+  it("routes each localization job to its docs page", () => {
+    const source = read("reference/localize.md");
+    for (const page of [
+      "guide/localized-templates",
+      "backend/translation",
+      "api/operations",
+      "api/template-tools",
+      "api/types",
+    ])
+      expect.soft(source, page).toContain(page);
+    for (const term of [
+      "setDefaultLocale",
+      "defaultLocaleGaps",
+      "localeHiddenBlocks",
+      "strings export",
+      "strings import",
+      "doNotTranslate",
+      "providers.md",
+      "maskTags",
+      "unmaskTags",
+      "the old default keeps no copy of them",
+      "before the change",
+      "`locked_by_others`",
+      "unless that hash equals the promoted value",
+      "setting each entry's `text`",
+      "shows an icon whose tooltip and accessible name give the label",
+      "don't send HTML blocks or empty defaults",
+    ])
+      expect.soft(source, term).toContain(term);
+    expect(source).not.toContain("translate them in the new default");
+    expect(source).not.toContain("keep their current or out-of-date state");
+  });
+
+  it("gives the CLI, edit and authoring playbooks the language commands", () => {
+    const cli = read("reference/cli.md");
+    expect(cli).toContain("--default-locale");
+    expect(cli).toContain('"op":"setDefaultLocale"');
+    const edit = read("reference/edit.md");
+    expect(edit).toContain(
+      `edit .templatical/<name>.json --op '{"op":"setDefaultLocale","locale":"de"}' --json`,
+    );
+    expect(edit).toContain("localeHiddenBlocks");
+    expect(edit).toContain("the old default keeps no copy of them");
+    expect(edit).toContain("translate HTML blocks by hand");
+    const rules = read("reference/rules.md");
+    expect(rules).toMatch(/ids? must not contain `\.` or `\/`/);
+    expect(rules).toContain("setDefaultLocale");
+  });
+
+  it.each([
+    [
+      32,
+      "default language",
+      [
+        "localize.md",
+        "edit.md",
+        "setDefaultLocale",
+        "defaultLocaleGaps",
+        "localeHiddenBlocks",
+        "Make default language",
+        "invalid_operation",
+        "validate --locale en",
+        "one undo step",
+        "before the change",
+        "keeps no copy",
+        "locked_by_others",
+        "translated from exactly the promoted German text",
+        "settings.locales contains en",
+      ],
+    ],
+    [
+      33,
+      "template-tools",
+      [
+        "cli.md",
+        "localize.md",
+        "strings export",
+        "strings import",
+        "--do-not-translate",
+        "sourceHash",
+        "placeholders unchanged",
+        "rejected",
+        "exit 1",
+        "validate --locale de",
+      ],
+    ],
+  ] as const)(
+    "eval %i covers its language job end to end",
+    (id, prompt, terms) => {
+      const data = JSON.parse(read("evals/evals.json"));
+      const entry = data.evals.find((entry: { id: number }) => entry.id === id);
+      expect(entry).toBeDefined();
+      expect(entry.prompt).toContain(prompt);
+      for (const term of terms)
+        expect.soft(entry.expected_output, term).toContain(term);
+    },
+  );
+
   it("has a localization eval covering disabled versions and collaboration", () => {
     const data = JSON.parse(read("evals/evals.json"));
     const entry = data.evals.find((entry: { prompt: string }) =>

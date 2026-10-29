@@ -2,6 +2,10 @@
 "@templatical/editor": minor
 ---
 
-Add `init({ localization, translation })`, the Languages switcher, missing/stale/override markers, field resets, `getLocale()`, `setLocale()` and locale-selecting exports. Translate missing or stale text, re-translate blocks or translate all eligible fields with protected tags and one undo step. AI chat, Fix, Rewrite and alt text edit the active language. `initCloud()` ignores `localization` and `translation` with warnings.
+Add language versions and translation to the editor. `init({ localization: { locales, doNotTranslate? } })` turns on the **Languages** menu: add a language, make a version the default language (one undo step) or remove it. A language bar under the header shows the version being edited, its missing and out-of-date counts, **Translate {count} fields**, **Translate everything again…** and **Back to {default}**. A status badge on each block's top corner shows hidden, missing, out-of-date, differing merge tags or changed properties, with a popover for Show, Translate, Re-translate, Keep, Use default and Reset changes; a localization finding's jump in Issues opens it. The settings panel marks translated or overridden fields with a language pill and a per-field reset.
+
+`init({ translation })` takes a `TranslationProvider`. Translate sends the gaps or every eligible field, masks merge tags, logic tags and the `doNotTranslate` terms (at most 500, each 1–100 characters after trimming; `init` rejects any other list), applies what passes the exact check as one undo step and reports the rest. AI chat, Fix with AI, Rewrite and Write alt text edit the active language.
+
+Comments record the language they were written in, show a language badge and filter with **This language**. A layout's own language versions follow the selected language in preview, export and test email. `getLocale()`, `setLocale()`, `onLocaleChange` and `toMjml({ locale })` / `toHtml({ locale })` select versions from the host. `initCloud()` ignores `localization` and `translation` with warnings.
 
 Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.

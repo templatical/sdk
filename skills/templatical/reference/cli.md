@@ -56,6 +56,20 @@ mode](live.md), and build mode is unaffected.
 
 If quality lint itself throws during `validate`, the command exits 2 with a diagnostic on stderr and no result document, including with `--json`.
 
+## Languages
+
+`validate` and `render` take `--locale <tag>` to check or render one language
+version; `import` takes `--default-locale <tag>` for a source that declares no
+default language. A template's default language changes through `edit`, like
+every operation:
+
+```bash
+npx -y @templatical/template-tools@0.51.1 edit template.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
+```
+
+The workflow, its gap and hidden-block checks, and the `strings` round trip
+below are in [localize.md](localize.md).
+
 ## Strings
 
 For a saved template with German in `settings.locales`, export its missing/stale fields, edit each entry’s `text`, then import:

@@ -101,7 +101,7 @@ Other languages' current text is re-stamped against the new base. Stale text kee
 
 `localeHiddenBlocks(content, locale): string[]` lists hidden block ids depth first, including descendants of hidden blocks; it returns `[]` for the default or an unknown locale. `defaultLocaleGaps(content, locale, definitions?): string[]` lists translatable field ids that keep the old base because the version has neither text nor an applicable property override. Stale text is promoted and is not a gap. Both helpers are pure; pass custom-block definitions to count their text fields.
 
-An unknown version or the current default is `invalid_operation`: `"<locale>" is not a language version of this template.` Hidden blocks refuse with `invalid_operation`, the first hidden `blockId`, and `<count> blocks are hidden in "<locale>". Show them before making it the default.` Every other session's lock conflicts, as for `setContent`; `onRemoteChange.locale` is `null` for this operation. AI batches in a language view refuse it.
+An unknown version or the current default is `invalid_operation`: `"<locale>" is not a language version of this template.` Hidden blocks refuse with `invalid_operation`, the first hidden `blockId`, and `<count> blocks are hidden in "<locale>". Show them before making it the default.` Any other session's lock refuses it with `locked_by_others`, as for `setContent`; `onRemoteChange.locale` is `null` for this operation. AI batches in a language view refuse it.
 
 `invertOperations` uses `setContent` to restore the exact prior content, including hashes, the promoted layer and cached HTML. Undo therefore has the same whole-template lock rule. Submit the explicit operation through collaboration; a snapshot diff emits `setContent` for a default change.
 
@@ -140,7 +140,7 @@ A refused batch throws an `OperationError` with `code` and `opIndex`, the 0-base
 | `anchor_missing` | The `after` block isn't in the target container | 409 |
 | `precondition_failed` | `expect` doesn't hold | 409 |
 | `lock_held` | Another session holds the block | 409 |
-| `locked_by_others` | Another session holds a lock, for `setContent` | 409 |
+| `locked_by_others` | Another session holds a lock, for `setContent` or a change of the default language | 409 |
 | `invalid_operation` | The operation is malformed or can never apply | 422 |
 
 ### Which error wins
