@@ -310,6 +310,29 @@ describe("chip popovers", () => {
     );
   });
 
+  it("shows the current default excerpt without its markup", async () => {
+    const content = languageContent();
+    content.blocks = [
+      createParagraphBlock({
+        id: "p",
+        content:
+          '<p>Hello <strong>world</strong>, <a href="#">see more</a></p>',
+        l10n: {
+          de: {
+            text: { content: { value: "<p>Hallo</p>", sourceHash: "old" } },
+          },
+        },
+      }),
+    ];
+    const { wrapper, editor } = await openLanguages({ content });
+    editor.setActiveLocale("de");
+    await nextTick();
+    await wrapper.get('[data-testid="locale-chip"]').trigger("click");
+    expect(wrapper.get('[data-testid="locale-popover"]').text()).toContain(
+      "Now: “Hello world, see more”",
+    );
+  });
+
   it("counts stale fields, shows the current default excerpt capped at 60 characters, and keeps both", async () => {
     const content = languageContent();
     content.blocks = [

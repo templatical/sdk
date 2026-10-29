@@ -127,7 +127,7 @@ const count = computed(() =>
 const excerpt = computed(() => {
   const value = readPath(props.block, stale.value[0] ?? "");
   if (typeof value !== "string") return "";
-  const text = value.replace(/<[^>]*>/g, "");
+  const text = value.split(/<[^>]*>/).join("");
   return Array.from(text).slice(0, 60).join("");
 });
 </script>

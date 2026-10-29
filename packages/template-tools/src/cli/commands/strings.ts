@@ -109,12 +109,17 @@ export function runStrings(args: ParsedArgs): number {
   const definitions = readDefinitions(args, cwd);
   const doNotTranslate = readDoNotTranslate(args, cwd);
   const preset = valueFlag(args, "syntax");
-  if (preset !== undefined && !Object.hasOwn(SYNTAX_PRESETS, preset)) {
+  // Take the name from the preset list itself, so only a built-in preset's
+  // patterns ever reach the masking regexes.
+  const presetName = (Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]).find(
+    (name) => name === preset,
+  );
+  if (preset !== undefined && presetName === undefined) {
     throw new UsageError(
       `Unknown --syntax "${preset}". Use ${Object.keys(SYNTAX_PRESETS).join(", ")}.`,
     );
   }
-  const syntax = resolveSyntax(preset as SyntaxPresetName | undefined);
+  const syntax = resolveSyntax(presetName);
   const out = valueFlag(args, "out") ?? valueFlag(args, "o");
   const content = readTemplateFile(file, cwd);
   const assertValid = (data: unknown) => {
