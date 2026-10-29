@@ -48,6 +48,41 @@ describe("translateFields", () => {
     expect(prompt).toContain("German");
     expect(prompt).toContain(JSON.stringify(request.fields));
   });
+  it("tells the model to reply with the JSON object alone", async () => {
+    const model = scriptedModel([
+      answer([good, { id: "i/alt", text: 'Hallo <x id="1"/>' }]),
+    ]);
+    await translateFields({ request, model });
+    expect(model.calls[0].system).toContain(
+      "Reply with the JSON object alone, with no code fence and no other text.",
+    );
+  });
+  it.each(["```json\n", "```\n", "```JSON\n"])(
+    "accepts an answer wrapped in a code fence on the first attempt: %j",
+    async (fence) => {
+      const text = JSON.stringify({
+        fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
+      });
+      const model = scriptedModel([
+        [{ type: "text", text: fence + text + "\n```\n" }],
+      ]);
+      expect(await translateFields({ request, model })).toEqual({
+        fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
+      });
+      expect(model.calls).toHaveLength(1);
+    },
+  );
+  it("repairs prose around JSON, since only a surrounding code fence is dropped", async () => {
+    const text = JSON.stringify({
+      fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
+    });
+    const model = scriptedModel([
+      [{ type: "text", text: `Here is the translation:\n${text}` }],
+      answer([good, { id: "i/alt", text: 'Hallo <x id="1"/>' }]),
+    ]);
+    expect((await translateFields({ request, model })).fields).toHaveLength(2);
+    expect(model.calls).toHaveLength(2);
+  });
   it.each([
     "Hallo",
     'Hallo <x id="1"/><x id="1"/>',

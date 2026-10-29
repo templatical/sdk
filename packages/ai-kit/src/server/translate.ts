@@ -1,6 +1,7 @@
 import type { TranslationRequest, TranslationResult } from "@templatical/types";
 import { SdkError, unmaskTags } from "@templatical/types";
 import { TRANSLATE_INSTRUCTIONS } from "../generated/assets";
+import { stripFences } from "./checks";
 import type { AiModelAdapter, AiModelMessage } from "./model";
 import { fill } from "./fill";
 import { languageName } from "./prompts";
@@ -12,7 +13,7 @@ function passingFields(
 ): TranslationResult["fields"] {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(answer);
+    parsed = JSON.parse(stripFences(answer).trim());
   } catch {
     return [];
   }

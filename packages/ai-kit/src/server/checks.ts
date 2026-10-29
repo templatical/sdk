@@ -9,7 +9,7 @@ import type { AiMergeTags } from "@templatical/types";
 import type { AiModelMessage } from "./model";
 import { unknownMergeTags } from "./merge-tags";
 
-function stripFences(text: string): string {
+export function stripFences(text: string): string {
   return text.replace(/^\s*```[a-z]*\s*|\s*```\s*$/gi, "");
 }
 
