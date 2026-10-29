@@ -69,6 +69,46 @@ describe("BeeFree languages", () => {
         .content.settings.locale,
     ).toBe("de");
   });
+  it.each([
+    [
+      undefined,
+      "{{lang}}",
+      "en",
+      [
+        'Ignored defaultLocale "{{lang}}": unsupported language tag. Used "en".',
+      ],
+    ],
+    ["{{lang}}", "de_DE", "de-DE", []],
+    [
+      "{{lang}}",
+      "not a tag",
+      "en",
+      [
+        'Ignored defaultLocale "not a tag": unsupported language tag. Used "en".',
+      ],
+    ],
+  ])(
+    "uses a valid fallback when the declared language is %s and defaultLocale is %s",
+    (declared, defaultLocale, locale, ignored) => {
+      const source = {
+        page: {
+          rows: [],
+          ...(declared ? { language: { value: declared } } : {}),
+        },
+      };
+      const { content, report } = convertBeeFreeTemplate(source as never, {
+        defaultLocale,
+      });
+      expect(content.settings.locale).toBe(locale);
+      expect(
+        report.warnings.filter((warning) => warning.startsWith("Ignored ")),
+      ).toEqual(ignored);
+      if (declared)
+        expect(report.warnings).toContain(
+          `Dropped language "${declared}": unsupported language tag.`,
+        );
+    },
+  );
   it("warns and skips a menu with different item counts", () => {
     const source = structuredClone(multilingual);
     source.page.rows[0].columns[0].modules[6].descriptor.menu!.translations[

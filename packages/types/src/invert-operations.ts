@@ -362,8 +362,9 @@ function invertOne(
  * behind, so an undo that a later edit by someone else has overtaken is refused
  * (`precondition_failed`, `anchor_missing`, `block_missing`) instead of
  * overwriting that edit. `setContent` and `setDefaultLocale` restore snapshots
- * without a guard; the backend's
- * `locked_by_others` rule is what stops it while others are editing.
+ * without a guard of their own: the backend's `locked_by_others` rule stops
+ * them while others hold locks, and the collaboration controller skips such a
+ * step once another session's batch has changed the content it applies to.
  *
  * Throws the engine's `OperationError` when `ops` don't apply to `before`.
  */

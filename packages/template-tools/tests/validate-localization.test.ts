@@ -42,6 +42,46 @@ it("validates localized layout descendants and reports unresolved layer paths", 
     'blocks[0].children[1].l10n["de"].text["missing"] does not resolve in its base',
   );
 });
+describe("hiding a layout's slot", () => {
+  function layout() {
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ["de"];
+    const slot = createSlotBlock();
+    const footer = createParagraphBlock({ content: "Unsubscribe" });
+    const card = createWrapperBlock({ children: [slot, footer] });
+    const logo = createParagraphBlock({ content: "Brand" });
+    content.blocks = [logo, card];
+    return { content, slot, card, footer, logo };
+  }
+
+  it.each(["slot", "card"] as const)(
+    "reports hidden on the %s in a language",
+    (name) => {
+      const parts = layout();
+      parts[name].l10n = { de: { hidden: true } };
+      const path = name === "slot" ? "blocks[1].children[0]" : "blocks[1]";
+      expect(validateTemplate(parts.content)).toEqual({
+        valid: false,
+        errors: [
+          `${path}.l10n["de"].hidden cannot hide the layout's slot or a block that contains it`,
+        ],
+      });
+    },
+  );
+
+  it.each(["footer", "logo"] as const)(
+    "accepts hiding the ordinary layout block %s",
+    (name) => {
+      const parts = layout();
+      parts[name].l10n = { de: { hidden: true } };
+      expect(validateTemplate(parts.content)).toEqual({
+        valid: true,
+        errors: [],
+      });
+    },
+  );
+});
+
 function localized(): any {
   const content: any = createDefaultTemplateContent();
   const paragraph: any = createParagraphBlock();

@@ -34,6 +34,7 @@ import {
   resolveLocale,
   applyOperationsInPlace,
   CollaborationConflict,
+  deepEqual,
   invertOperations,
   OperationError,
   safeClone,
@@ -150,6 +151,19 @@ interface TurnRecord {
   redo: Operation[] | null;
   serverApplied: boolean;
   batchIds: Set<string>;
+  /**
+   * Under collaboration, the content the turn's last batch, or its last Undo
+   * or Redo, left; `null` once another change landed between its batches. A
+   * whole-template snapshot in the inverse applies only on exactly this
+   * content, so it can't overwrite an edit made since, including another
+   * session's edit that a refusal of the turn kept.
+   */
+  view?: TemplateContent | null;
+}
+
+/** The current content, for a turn record's `view`. */
+function snapshotOf(content: TemplateContent): TemplateContent {
+  return safeClone(toRaw(content));
 }
 
 interface Memory {
@@ -883,9 +897,18 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           onOperations: async (ops) => {
             check(job);
             checkLocale(startingLocale);
+            const before = collaboration
+              ? snapshotOf(editor.content.value)
+              : null;
             const result = applyModelOps(ops, turn, scope, locale);
             if (result.applied && result.inverse.length > 0) {
               record.inverse = [...result.inverse, ...record.inverse];
+              if (collaboration)
+                record.view =
+                  record.view === undefined ||
+                  (record.view !== null && deepEqual(record.view, before))
+                    ? snapshotOf(editor.content.value)
+                    : null;
               operationCount += ops.length;
               update({ operationCount });
             }
@@ -1170,6 +1193,18 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             const ops = direction === "undo" ? record?.inverse : record?.redo;
             if (!record || record.serverApplied || !ops || ops.length === 0)
               return;
+            // A snapshot carries no guard of its own: it applies only on the
+            // content the turn (or its last replay) left.
+            if (
+              collaboration &&
+              ops.some((op) => op.op === "setContent") &&
+              (!record.view ||
+                !deepEqual(record.view, toRaw(editor.content.value)))
+            )
+              throw new CollaborationConflict(
+                `The template changed since this message's changes, so ${direction === "undo" ? "undoing" : "redoing"} them would overwrite that.`,
+                { code: "precondition_failed" },
+              );
             const result = applySharedOps(
               ops,
               `${direction}:${id}:${crypto.randomUUID()}`,
@@ -1182,6 +1217,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
               });
             if (direction === "undo") record.redo = result.inverse;
             else record.inverse = result.inverse;
+            if (collaboration) record.view = snapshotOf(editor.content.value);
           }
           patch(scope, id, {
             undone: direction === "undo",

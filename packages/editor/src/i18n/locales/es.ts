@@ -60,6 +60,10 @@ const es: typeof en = {
       one: "No se ha devuelto {count} campo.",
       other: "No se han devuelto {count} campos.",
     },
+    translationTooLarge: {
+      one: "{count} campo es demasiado largo para traducirlo.",
+      other: "{count} campos son demasiado largos para traducirlos.",
+    },
     translationError: "El servicio de traducción ha dicho: {message}",
     defaultRefused:
       "No se pudo establecer {language} como idioma predeterminado: {reason}",
@@ -84,6 +88,7 @@ const es: typeof en = {
       one: "Muestra primero el bloque oculto en {language} ({count})",
       other: "Muestra primero los {count} bloques ocultos en {language}",
     },
+    defaultNotEnabled: "Añade primero {default} a los idiomas habilitados",
     defaultGaps: {
       one: "{count} campo no tiene texto en {language} y conserva su texto en {default}.",
       other:

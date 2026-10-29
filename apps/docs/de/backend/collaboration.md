@@ -11,6 +11,9 @@ Geben Sie dem Editor einen Collaboration-Provider, und mehrere Personen können 
 import { init } from '@templatical/editor';
 
 let sessionId = '';
+const lockUrl = (templateId: string, blockId: string, locale?: string | null) =>
+  `/api/templates/${templateId}/locks/${blockId}` +
+  (locale ? `?locale=${encodeURIComponent(locale)}` : '');
 
 const editor = await init({
   container: '#editor',
@@ -31,19 +34,19 @@ const editor = await init({
       api(`/api/templates/${templateId}/operations?after=${revision}`, {
         headers: { 'X-Session-Id': sessionId },
       }),
-    acquireLock: (templateId, blockId) =>
+    acquireLock: (templateId, blockId, locale) =>
       api(`/api/templates/${templateId}/locks`, {
         method: 'POST',
         headers: { 'X-Session-Id': sessionId },
-        body: JSON.stringify({ blockId }),
+        body: JSON.stringify({ blockId, locale: locale ?? null }),
       }),
-    renewLock: (templateId, blockId) =>
-      api(`/api/templates/${templateId}/locks/${blockId}`, {
+    renewLock: (templateId, blockId, locale) =>
+      api(lockUrl(templateId, blockId, locale), {
         method: 'PUT',
         headers: { 'X-Session-Id': sessionId },
       }),
-    releaseLock: async (templateId, blockId) => {
-      await fetch(`/api/templates/${templateId}/locks/${blockId}`, {
+    releaseLock: async (templateId, blockId, locale) => {
+      await fetch(lockUrl(templateId, blockId, locale), {
         method: 'DELETE',
         headers: { 'X-Session-Id': sessionId },
         keepalive: true,
@@ -63,12 +66,12 @@ Das Backend kombiniert `X-Session-Id` mit dem authentifizierten Nutzer, um den B
 
 - **Er schickt jede Änderung als Operationen.** Der Editor vergleicht den Canvas mit dem, was er zuletzt geschickt hat, und macht aus dem Unterschied einen Batch: Aus Ziehen wird ein `moveBlock`, aus Tippen ein `updateBlock`. Tippen in einen Block wartet auf eine Pause von 300 ms, höchstens eine Sekunde; alles andere geht sofort. Es ist immer nur ein Batch unterwegs, sodass die Batches einer Sitzung der Reihe nach ankommen, und ein Batch, der unterwegs scheitert, wird mit derselben `batchId` erneut geschickt.
 - **Er wendet die Batches aller in Revisionsreihenfolge an.** Batches anderer Sitzungen werden gepuffert und strikt nach Revision angewendet, die noch unbestätigten eigenen Änderungen darüber. Eine Lücke, die sich nicht innerhalb einer Sekunde schließt, holt er mit `operationsAfter`.
-- **Er sperrt den ausgewählten Block.** Wer einen Block auswählt, nimmt seine Sperre; ein Block, den eine andere Sitzung hält, zeigt Name und Farbe der haltenden Person und lässt sich nicht auswählen. Sperren werden alle 10 Sekunden erneuert und beim Abwählen, beim Laden eines anderen Templates und beim Schließen der Seite freigegeben.
+- **Er sperrt den ausgewählten Block.** Wer einen Block auswählt, nimmt seine Sperre in der Sprache der aktiven Ansicht: `locale: null` in der Standardansicht und das Tag der Version in einer Sprachansicht, auch in einer schreibgeschützten Version mit **Nicht aktiviert**, deren Betrachter die Sperre hält, aber nichts bearbeiten kann. Die Sperre einer anderen Sitzung auf dem Block verhindert die Auswahl und zeigt Name und Farbe der haltenden Person, wenn eine der beiden Sperren `null` ist oder beide dieselbe Sprache haben. Sperren werden alle 10 Sekunden erneuert und beim Abwählen, beim Laden eines anderen Templates und beim Schließen der Seite freigegeben.
 - **Er zeigt, wer da ist.** Die Kopfzeile zeigt einen Avatar pro Person: Die Sitzungen eines Nutzers in mehreren Tabs zählen einmal, jeder Gast zählt für sich.
 - **Er macht aus Merge-Tags in ankommenden Batches Tags.** Ein Batch einer anderen Sitzung – eines Agenten, eines anderen Editors, eines Servers – bekommt die nackten Tokens in Titeln und Absätzen beim Ankommen umgewandelt, so wie [geladene Inhalte](/de/guide/merge-tags#tokens-in-geladenen-inhalten), und dafür wird nichts zurückgeschickt. Ankommende Batches werden ohne ihr `expect` angewendet: Das hat Ihr Backend schon gegen seine eigene Kopie geprüft.
 - **Er zeigt Änderungen von Agenten.** Ein Batch, dessen Actor `type: 'mcp'` hat, zeigt einen Hinweis mit `actor.client` und `actor.name` („Claude für Ada hat 3 Blöcke geändert“) und umrandet die geänderten Blöcke für 2 Sekunden. Ein Resync, dessen `actor` `type: 'mcp'` hat, zeigt „Claude für Ada hat die Vorlage aktualisiert“, ohne Rahmen. Batches und Resyncs eines Agenten innerhalb von 2 Sekunden teilen sich einen Hinweis. Agenten brauchen keine Präsenz und nehmen keine Sperren.
 - **Zeigt KI-Änderungen.** Ein Batch mit `actor.type: 'ai'` zeigt „AI (for Ada) changed 3 blocks“ und umrahmt die geänderten Blöcke. Ein Re-Sync zeigt einen Template-Aktualisierungshinweis ohne eigenen Block-Rahmen. Die anfragende Sitzung sieht beim Batch nur den Rahmen und keinen Hinweis. Die Operationen eines [KI-Providers](/de/backend/ai) erreichen Ihr Backend als Batches dieser Person mit `origin: 'ai'`.
-- **Er macht mit Operationen rückgängig.** Rückgängig und Wiederholen schicken die Umkehrung Ihrer eigenen Batches, jeweils abgesichert durch das, was sie vorzufinden erwarten. Ein Rückgängig-Schritt, den die Änderung eines anderen überholt hat, wird abgelehnt und mit einem Hinweis übersprungen, nie über deren Arbeit angewendet. Änderungen anderer landen nie in Ihrem Verlauf.
+- **Er macht mit Operationen rückgängig.** Rückgängig und Wiederholen schicken die Umkehrung Ihrer eigenen Batches, jeweils abgesichert durch das, was sie vorzufinden erwarten. Ein Rückgängig-Schritt, den die Änderung eines anderen überholt hat, wird abgelehnt und mit einem Hinweis übersprungen, nie über deren Arbeit angewendet. Ein Schritt, der einen Snapshot des ganzen Templates wiederherstellt (das Rückgängigmachen einer Inhaltsersetzung oder von Als Standardsprache festlegen), kann nicht angeben, was er erwartet; er wird übersprungen, sobald dieser Editor danach einen Batch einer anderen Sitzung empfangen hat. Einen vom Backend schon angenommenen, aber noch nicht zugestellten Batch fängt die `setContent`-Regel in [`submit`](#submit) ab. Änderungen anderer landen nie in Ihrem Verlauf.
 - **Er speichert nur Umbenennungen.** Der Inhalt erreicht Ihr Backend über `submit`, deshalb erhält `templates.save` nur noch einen neuen Namen, nachdem die Batches des Editors bestätigt sind. Autosave funktioniert weiter: Es wartet die Batches ab und benennt bei Bedarf um.
 - **Er sagt es dem Nutzer**, wenn eine Auswahl oder eine Änderung abgelehnt wurde, wenn ein Rückgängig-Schritt übersprungen wurde, wenn eine Version nicht wiederhergestellt werden kann, weil andere Sperren halten, und solange die Verbindung weg ist.
 
@@ -86,7 +89,7 @@ Nach einem Reconnect wird `join` für dasselbe Template erneut aufgerufen: Antwo
 
 ### `submit`
 
-Wenden Sie die Operationen des Batches auf das Template an, der Reihe nach und alles oder nichts, und antworten Sie mit der Revision, die dabei entstanden ist. `baseRevision` ist die letzte Revision, die der Editor bestätigt hatte; Batches werden auf den aktuellen Inhalt angewendet, wie auch immer er gerade aussieht, und genau dafür gibt es die Nachbar-Anker und Vorbedingungen der Operationen. Eine `batchId`, die Sie schon angewendet haben, antwortet mit der Revision dieses Batches und wendet nichts an, denn der Editor schickt nach einem Fehler unterwegs erneut. Schicken Sie den Batch mit seiner Revision und seinem Actor über `onBatch` an jede andere Sitzung.
+Wenden Sie die Operationen des Batches auf das Template an, der Reihe nach und alles oder nichts, und antworten Sie mit der Revision, die dabei entstanden ist. `baseRevision` ist die letzte Revision, die der Editor bestätigt hatte; Batches werden auf den aktuellen Inhalt angewendet, wie auch immer er gerade aussieht, und genau dafür gibt es die Nachbar-Anker und Vorbedingungen der Operationen. Die Ausnahme ist ein Batch mit einem `setContent`: lehnen Sie ihn mit `409` und `precondition_failed` ab, wenn seine `baseRevision` nicht die aktuelle Revision ist, denn eine Ersetzung des ganzen Inhalts auf Grundlage einer älteren Revision würde Batches überschreiben, die der Absender nie gesehen hat. Der Editor verwirft ihn dann: Ein Rückgängig- oder Wiederholen-Schritt wird mit einem Hinweis übersprungen, jede andere Änderung als nicht gespeichert gemeldet. Einen solchen Batch verwirft er auch selbst, bevor er ihn sendet, wenn ihn der Batch einer anderen Sitzung zuerst erreicht. Eine `batchId`, die Sie schon angewendet haben, antwortet mit der Revision dieses Batches und wendet nichts an, denn der Editor schickt nach einem Fehler unterwegs erneut. Prüfen Sie eine wiederholte `batchId` zuerst, wie im Beispiel unten, und erst dann die `setContent`-Regel: Ein erneut gesendeter Snapshot behält die `baseRevision` seines ersten Versuchs; einer, der schon angewendet wurde, antwortet also mit seiner Revision statt mit `409`. Schicken Sie den Batch mit seiner Revision und seinem Actor über `onBatch` an jede andere Sitzung.
 
 ### `operationsAfter`
 
@@ -98,7 +101,7 @@ Antworten Sie mit jedem Batch nach `revision`, der Reihe nach. Haben Sie nicht m
 
 `BlockLock.locale?: string | null` unterscheidet Sprachsperren; fehlend bedeutet `null`, Standardsprache und Struktur. Die Signaturen sind `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` und `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Leiten Sie die Locale an das Backend und über `onLock` / `onUnlock(blockId, sessionId, locale?)` weiter.
 
-`updateBlockLocale` an (X, de) kollidiert mit (X, de) oder (X, null) einer anderen Sitzung; (X, fr) kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Übergeben Sie `locale` in `OperationLock` an `applyOperations`; ein Backend ohne Locale-Auswertung serialisiert pro Block. Aktualisieren Sie das Backend vor dem Aktivieren von [Sprachversionen](/de/guide/localized-templates#compatibility).
+`updateBlockLocale` an (X, de) kollidiert mit (X, de) oder (X, null) einer anderen Sitzung; (X, fr) kann parallel bestehen. `updateBlock`, `moveBlock` und `deleteBlock` auf X kollidieren mit jeder Sperre einer anderen Sitzung auf X, Verschieben und Löschen auch mit Sperren auf den Blöcken in X; `addBlock` prüft keine Sperren. Übergeben Sie `locale` in `OperationLock` an `applyOperations`; ein Backend ohne Locale-Auswertung serialisiert pro Block. Aktualisieren Sie das Backend vor dem Aktivieren von [Sprachversionen](/de/guide/localized-templates#compatibility). Lehnen Sie `acquireLock` auf (X, `locale`) mit `lock_held` und der haltenden Person ab, wenn ein anderer Besitzer eine Sperre auf X hält und die Locale einer der beiden Sperren `null` ist oder beide gleich sind; andernfalls gewähren Sie sie, speichern ihre `locale` und erneuern und lösen sie nach Block und Locale.
 
 ### Ablehnungen
 
@@ -127,18 +130,22 @@ Trägt ein Batch `origin: 'ai'`, senden Sie ihn mit `actor.type: 'ai'` und derse
 import { applyOperations, OperationError } from '@templatical/types';
 
 app.post('/api/templates/:id/operations', async (req, res) => {
-  const { batchId, ops } = req.body;
+  const { batchId, baseRevision, ops } = req.body;
   const sessionId = req.get('X-Session-Id') ?? null; // however you identify it
   const template = await db.templates.lockForUpdate(req.params.id);
 
   const known = await db.batches.find(template.id, batchId);
   if (known) return res.json({ revision: known.revision });
 
+  if (ops.some((op) => op.op === 'setContent') && baseRevision !== template.revision) {
+    return res.status(409).json({ message: 'The template changed since this replacement was made.', code: 'precondition_failed' });
+  }
+
   const locks = await db.locks.unexpired(template.id);
   let content;
   try {
     content = applyOperations(template.content, ops, {
-      locks: locks.map((lock) => ({ blockId: lock.blockId, sessionId: lock.owner })),
+      locks: locks.map((lock) => ({ blockId: lock.blockId, sessionId: lock.owner, locale: lock.locale ?? null })),
       session: sessionId ? ownerOf(req.user, sessionId) : null,
     });
   } catch (error) {

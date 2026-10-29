@@ -60,6 +60,10 @@ const fr: typeof en = {
       one: "{count} non renvoyé.",
       other: "{count} non renvoyés.",
     },
+    translationTooLarge: {
+      one: "{count} champ est trop long pour être traduit.",
+      other: "{count} champs sont trop longs pour être traduits.",
+    },
     translationError: "Le service de traduction a indiqué : {message}",
     defaultRefused:
       "Impossible de définir {language} comme langue par défaut : {reason}",
@@ -80,6 +84,7 @@ const fr: typeof en = {
       one: "Affichez d’abord le bloc masqué en {language} ({count})",
       other: "Affichez d’abord les {count} blocs masqués en {language}",
     },
+    defaultNotEnabled: "Ajoutez d’abord {default} aux langues activées",
     defaultGaps: {
       one: "{count} champ n’a pas de texte en {language} et conserve son texte en {default}.",
       other:

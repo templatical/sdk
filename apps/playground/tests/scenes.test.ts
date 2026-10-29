@@ -299,7 +299,7 @@ describe("Languages scene", () => {
     });
     expect(scene!.config(context())).toMatchObject({
       templates: { load: expect.any(Function), save: expect.any(Function) },
-      localization: { locales: ["de", "fr", "ar"] },
+      localization: { locales: ["en", "de", "fr", "ar"] },
     });
     for (const copies of [en.scenes, de.scenes]) {
       expect((copies as SceneCopies).languages).toMatchObject({
@@ -350,7 +350,7 @@ describe("Languages scene", () => {
     });
     expect(scene!.config(context("collaboration=1&user=Ada"))).toMatchObject({
       user: { id: "user-ada", name: "Ada" },
-      localization: { locales: ["de", "fr", "ar"] },
+      localization: { locales: ["en", "de", "fr", "ar"] },
       collaboration: {
         join: expect.any(Function),
         acquireLock: expect.any(Function),
@@ -474,7 +474,7 @@ describe("Languages scene", () => {
       { getElementById: () => ({}) },
     );
     expect(config.localization).toEqual({
-      locales: ["de", "fr", "ar"],
+      locales: ["en", "de", "fr", "ar"],
       doNotTranslate: ["Sable"],
     });
     expect(config.translation.translate).toBeTypeOf("function");

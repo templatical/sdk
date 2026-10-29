@@ -94,6 +94,12 @@ const submenuHiddenBlocks = computed(() =>
     ? localeHiddenBlocks(props.editor.content.value, submenu.value)
     : [],
 );
+// Make default turns the current default into a version; one outside
+// `localization.locales` would be read-only and couldn't be promoted back.
+const defaultEnabled = computed(() => props.locales.includes(source.value));
+const promotionBlocked = computed(
+  () => submenuHiddenBlocks.value.length > 0 || !defaultEnabled.value,
+);
 const gapCount = computed(
   () =>
     (activeCoverage.value?.missing.length ?? 0) +
@@ -241,7 +247,11 @@ function startRemove(locale: string) {
   submenu.value = null;
 }
 function startPromotion(locale: string) {
-  if (localeHiddenBlocks(props.editor.content.value, locale).length) return;
+  if (
+    !defaultEnabled.value ||
+    localeHiddenBlocks(props.editor.content.value, locale).length
+  )
+    return;
   captureConfirmation();
   promoting.value = { locale };
   submenu.value = null;
@@ -290,6 +300,7 @@ function confirm() {
     const locale = promoting.value.locale;
     if (
       !props.locales.includes(locale) ||
+      !defaultEnabled.value ||
       localeHiddenBlocks(props.editor.content.value, locale).length
     )
       return;
@@ -488,26 +499,30 @@ onClickOutside(root, () => {
           role="menuitem"
           :data-testid="`language-make-default-${row.locale}`"
           :class="rowClass"
-          :aria-disabled="submenuHiddenBlocks.length > 0"
+          :aria-disabled="promotionBlocked"
           :aria-label="t.localization.makeDefaultLanguage"
-          :aria-describedby="submenuHiddenBlocks.length ? reasonId : undefined"
+          :aria-describedby="promotionBlocked ? reasonId : undefined"
           @click="startPromotion(row.locale)"
         >
           <ArrowUpToLine :size="14" aria-hidden="true" class="tpl:shrink-0" />
           <span class="tpl:flex tpl:min-w-0 tpl:flex-col tpl:gap-1">
             <span>{{ t.localization.makeDefaultLanguage }}</span>
             <span
-              v-if="submenuHiddenBlocks.length"
+              v-if="promotionBlocked"
               :id="reasonId"
               class="tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
             >
               {{
-                plural(
-                  t.localization.hiddenBeforeDefault,
-                  submenuHiddenBlocks.length,
-                  uiLocale,
-                  { language: languageName(row.locale) },
-                )
+                !defaultEnabled
+                  ? format(t.localization.defaultNotEnabled, {
+                      default: languageName(source),
+                    })
+                  : plural(
+                      t.localization.hiddenBeforeDefault,
+                      submenuHiddenBlocks.length,
+                      uiLocale,
+                      { language: languageName(row.locale) },
+                    )
               }}
             </span>
           </span>

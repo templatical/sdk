@@ -139,6 +139,11 @@ describe("localization agent path", () => {
       "setting each entry's `text`",
       "shows an icon whose tooltip and accessible name give the label",
       "don't send HTML blocks or empty defaults",
+      "HTML blocks are included but never sent by Translate or `strings export`",
+      "drop `text` from stale entries",
+      "jq '[.. | objects | select(.l10n?.de?.hidden == true) | .id]' template.json",
+      "validate template.json --locale de --json` reports every gap",
+      "validate template.json --locale en --json` lists the remaining gaps",
     ])
       expect.soft(source, term).toContain(term);
     expect(source).not.toContain("translate them in the new default");
@@ -156,6 +161,23 @@ describe("localization agent path", () => {
     expect(edit).toContain("localeHiddenBlocks");
     expect(edit).toContain("the old default keeps no copy of them");
     expect(edit).toContain("translate HTML blocks by hand");
+    expect(edit).toContain(
+      "jq '[.. | objects | select(.l10n?.de?.hidden == true) | .id]' .templatical/<name>.json",
+    );
+    expect(edit).toMatch(/reports every gap as\s+`localization\.untranslated`/);
+    expect(cli).toContain(
+      "empty `text` is applied only when the source has no placeholders, otherwise it is rejected as `tags_changed`",
+    );
+    expect(cli).toContain(
+      "follow [version-awareness.md](version-awareness.md)",
+    );
+    const version = read("reference/version-awareness.md");
+    expect(version).toContain("[localize.md](localize.md)");
+    expect(version).toContain("**The CLI pin can be older than the install.**");
+    expect(version).toContain("`@templatical/template-tools@<installed>`");
+    expect(read("reference/validate.md")).toContain(
+      "each `{ blockId, ruleId, severity, message, suggestion, reference }`",
+    );
     const rules = read("reference/rules.md");
     expect(rules).toMatch(/ids? must not contain `\.` or `\/`/);
     expect(rules).toContain("setDefaultLocale");
@@ -222,8 +244,15 @@ describe("localization agent path", () => {
       "validate --locale",
       "read-only",
       "locale",
+      "de/fr locks coexist",
+      "can't edit it",
     ]) {
       expect(entry.expected_output).toContain(term);
     }
+    // German stays disabled, so the prompt asks no German collaborator to edit.
+    expect(entry.prompt).toContain(
+      "German reviewers have the same block selected",
+    );
+    expect(entry.prompt).not.toContain("German and French collaborators");
   });
 });

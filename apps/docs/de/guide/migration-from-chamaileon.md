@@ -76,7 +76,7 @@ E-Mail-JSON 2.0 bis 4.1 wird nach einem Schlüssel-Normalisierer akzeptiert. Keb
 
 ## Optionen {#options}
 
-`convertChamaileonTemplate` akzeptiert als zweites Argument `ConvertChamaileonOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert.
+`convertChamaileonTemplate` akzeptiert als zweites Argument `ConvertChamaileonOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert. Eine deklarierte Standardsprache oder ein `defaultLocale`, das danach kein Sprach-Tag ist, etwa ein Platzhalter <code v-pre>{{lang}}</code>, wird mit einem `report.warnings`-Eintrag ignoriert, der den Wert nennt; dann gilt der nächste gültige Wert oder `"en"`.
 
 Dieses JSON-Format liefert dem Importer keine Standardsprache. Übergeben Sie die vom Host konfigurierte Sprache als `defaultLocale`.
 

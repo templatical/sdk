@@ -207,6 +207,46 @@ describe("SharedCollaborationServer", () => {
     expect(refusal.holders?.map((holder) => holder.name)).toEqual(["Grace"]);
   });
 
+  it("refuses a batch with a setContent unless it is based on the current revision", () => {
+    server.submit("tpl", GRACE, {
+      batchId: "b-1",
+      baseRevision: 0,
+      ops: [{ op: "updateBlock", blockId: "t1", set: { content: "Grace" } }],
+    });
+    const replace = {
+      op: "setContent" as const,
+      content: { blocks: [], settings: { width: 600 } } as never,
+    };
+
+    const refusal = refusalOf(() =>
+      server.submit("tpl", ADA, {
+        batchId: "b-2",
+        baseRevision: 0,
+        ops: [{ op: "updateSettings", set: { width: 640 } }, replace],
+      }),
+    );
+
+    expect(refusal).toMatchObject({ status: 409, code: "precondition_failed" });
+    expect(server.load("tpl", SEED).content.blocks[0]).toMatchObject({
+      content: "Grace",
+    });
+    expect(server.load("tpl", SEED).revision).toBe(1);
+    expect(
+      server.submit("tpl", GRACE, {
+        batchId: "b-3",
+        baseRevision: 0,
+        ops: [{ op: "updateSettings", set: { width: 640 } }],
+      }),
+    ).toEqual({ revision: 2 });
+    expect(
+      server.submit("tpl", ADA, {
+        batchId: "b-4",
+        baseRevision: 2,
+        ops: [replace],
+      }),
+    ).toEqual({ revision: 3 });
+  });
+
   it("sends a re-sync instead of a replace, and of a batch too large to broadcast", () => {
     server.submit("tpl", ADA, {
       batchId: "b-1",

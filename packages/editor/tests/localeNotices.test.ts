@@ -71,6 +71,22 @@ describe("locale notices", () => {
     );
   });
 
+  it("clears the notice when Undo restores the old default, and Redo doesn't bring it back", async () => {
+    const { wrapper, editor, history } = await openLanguages();
+    await promote(wrapper);
+    expect(wrapper.get('[data-testid="locale-notice"]').text()).toContain(
+      "Deutsch is now the default language.",
+    );
+    history.undo();
+    await flushPromises();
+    expect(editor.content.value.settings.locale).toBe("en");
+    expect(wrapper.find('[data-testid="locale-notice"]').exists()).toBe(false);
+    history.redo();
+    await flushPromises();
+    expect(editor.content.value.settings.locale).toBe("de");
+    expect(wrapper.find('[data-testid="locale-notice"]').exists()).toBe(false);
+  });
+
   it("omits the remainder when no fields kept the old default", async () => {
     const content = languageContent();
     content.blocks = [content.blocks[0]];

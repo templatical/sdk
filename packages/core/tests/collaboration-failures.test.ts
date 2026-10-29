@@ -374,6 +374,31 @@ describe("useCollaboration when things go wrong", () => {
       expect(a.notices).toEqual([]);
     });
 
+    it("drops a whole-content fallback captured while another session's batch arrives, instead of sending it over that batch", async () => {
+      const a = await openClient(server, "Ada");
+
+      a.editor.setContent(withDuplicateParagraph(safeClone(BASE)));
+      server.pushAs(AGENT, [
+        { op: "updateBlock", blockId: "t1", set: { content: "Bob" } },
+      ]);
+      server.deliverAll();
+      await settle();
+      server.deliverAll();
+      await settle();
+
+      expect(
+        server.submitted.some((batch) =>
+          batch.ops.some((op) => op.op === "setContent"),
+        ),
+      ).toBe(false);
+      expect(a.notices).toContainEqual({
+        type: "editRefused",
+        code: "precondition_failed",
+      });
+      expect(text(server.content)).toBe("Bob");
+      expect(text(a.editor.content.value)).toBe("Bob");
+    });
+
     it("takes back a whole-content change while others hold locks, saying so", async () => {
       const a = await openClient(server, "Ada");
       const b = await openClient(server, "Grace");

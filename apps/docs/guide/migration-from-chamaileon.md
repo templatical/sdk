@@ -76,7 +76,7 @@ Email JSON 2.0 through 4.1 is accepted after a key normalizer. Kebab-case styles
 
 ## Options {#options}
 
-`convertChamaileonTemplate` accepts a second argument of type `ConvertChamaileonOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertChamaileonTemplate` accepts a second argument of type `ConvertChamaileonOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
 

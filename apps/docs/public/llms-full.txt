@@ -985,8 +985,8 @@ unmount();
 | `theme`              | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `uiTheme`            | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `localization` | `{ locales: string[]; doNotTranslate?: string[] }` | No | Enables template language versions. Omitted: no language UI; existing layers survive. Upgrade renderer, validator and collaboration backend first. `initCloud()` ignores it and logs a warning. See [Localized templates](/guide/localized-templates). `doNotTranslate` accepts at most 500 terms, each 1–100 characters after trimming; matching terms survive Translate byte for byte. Invalid lists reject with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` See [masking](/backend/translation#provider-contract). |
-| `translation` | `TranslationProvider` | No | Translates eligible fields in an enabled non-default language view; requires `localization`. Omitted: no Translate UI. Independent of `ai`; `initCloud()` ignores it with a warning. See [Translation](/backend/translation). |
-| `onLocaleChange` | `(locale: string) => void` | No | Called when the active template language changes, including fallback to the default. Active language is view state and is not saved. |
+| `translation` | `TranslationProvider` | No | Translates eligible fields in an enabled non-default language view; requires `localization`. Omitted: no Translate UI. Independent of `ai`; `initCloud()` ignores it with a warning. A value that isn't an object with a `translate` function rejects `init()` with `SdkError`: `translation must be an object with a translate function.` See [Translation](/backend/translation). |
+| `onLocaleChange` | `(locale: string) => void` | No | Called with the language the canvas shows (`getLocale()`) whenever it changes: selecting a version, falling back to the default, and a new default while the default is shown (Make default, its undo or redo, another session's `setDefaultLocale`, or a loaded or restored template whose default differs). Promoting the version on screen doesn't call it. Active language is view state and is not saved. |
 | `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `branding`           | `boolean`                                                         | No       | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `smallScreenNotice`  | `boolean`                                                         | No       | Show a "use a larger screen" notice instead of the editor on viewports narrower than ~768px. Defaults to `true`. The drag-and-drop editor is a desktop-class tool and can't lay out usably on a phone. Set to `false` to render the editor at any width if you handle small screens yourself                                                                                                                                                                                                                                   |
@@ -1733,21 +1733,21 @@ Base updates prune orphan locale entries; their inverse restores the base before
 
 `LocalizedText` is `{ value: string; sourceHash: string }`. Text paths must match `TRANSLATABLE_FIELDS` for the block type, or `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) for settings, and resolve in the base. Paths use element ids, such as `items.i1.text`; menu item, social icon, table row and table cell ids must not contain `.` or `/`. A `set` path must resolve or have an existing object parent. Prototype segments (`__proto__`, `constructor`, `prototype`) and empty segments are refused. Block overrides cannot start with `id`, `type`, `children` or `l10n`; settings overrides cannot start with `locale`, `locales` or `l10n`.
 
-The engine applies `unset` first (from both maps), then `text`, then `set`, then `hidden`. Writing a path in one map deletes it from the other. `hidden: false` removes the hidden flag. Empty maps, layers and localization containers are omitted; removing the last version omits `settings.locales`.
+The engine applies `unset` first (from both maps), then `text`, then `set`, then `hidden`. Writing a path in one map deletes it from the other. `hidden: false` removes the hidden flag. `hidden: true` on a layout's `slot` block, or on a block that contains it, is refused with `invalid_operation`, the block's `blockId` and `A layout's slot block, and any block that contains it, can't be hidden.`, because the layout couldn't compose that language. For the same reason, `moveBlock` and `addBlock` refuse placing the slot, or a block holding it, under a section a language hides, and `addBlock` refuses a new block whose own layers hide the slot it holds: `invalid_operation`, the placed block's `blockId` and `A layout's slot block can't be placed inside a block that a language hides.` Empty maps, layers and localization containers are omitted; removing the last version omits `settings.locales`.
 
 `set: { path: null }` stores a clearing override: the property is absent in that language's `resolveLocale` projection. `unset: [path]` removes the override, so the default-language value applies again. Layers never store `undefined`; undefined `text` or `set` entries and text entries without string `value` and `sourceHash` are refused with `invalid_operation`. Every `unset` path must be non-empty and pass `isSafePath`, even if the base path no longer exists; safe orphan paths remain removable.
 
 ### Default language
 
-`{ "op": "setDefaultLocale", "locale": "de" }` makes an existing German version the default. For blocks at every depth, including layout wrappers, and for settings, its `text` values and `set` overrides become the base (`null` removes a property). The old default's differing text becomes `text` stamped with `sourceHash` of the new base; other differing values become `set`. Equal values leave no entry. Gaps retain the old base without an old-default entry. `settings.locale` changes and the old default takes the promoted version's index in `settings.locales`.
+`{ "op": "setDefaultLocale", "locale": "de" }` makes an existing German version the default. For blocks at every depth, including layout wrappers, and for settings, its `text` values and `set` overrides become the base (`null` removes a property). The old default's differing text becomes `text` stamped with `sourceHash` of the new base; other differing values become `set`. Equal values leave no entry, except text the promoted version translated to the same value: the old default keeps it as a current `text` entry, so it doesn't read as missing there. Gaps retain the old base without an old-default entry. `settings.locale` changes and the old default takes the promoted version's index in `settings.locales`.
 
 Other languages' current text is re-stamped against the new base. Stale text keeps its stored hash; it becomes current if that hash matches the promoted value. If the new base has no value for a text path, the old default's value and other languages' text become `set` entries without staleness tracking. Property overrides whose parent disappears are consolidated at the nearest writable ancestor using that language's prior projected subtree, preserving its inherited properties and overrides. A custom block loses `renderedHtml` only when its `fieldValues` change.
 
-`localeHiddenBlocks(content, locale): string[]` lists hidden block ids depth first, including descendants of hidden blocks; it returns `[]` for the default or an unknown locale. `defaultLocaleGaps(content, locale, definitions?): string[]` lists translatable field ids that keep the old base because the version has neither text nor an applicable property override. Stale text is promoted and is not a gap. Both helpers are pure; pass custom-block definitions to count their text fields.
+`localeHiddenBlocks(content, locale): string[]` lists, depth first, the ids of blocks whose own `l10n[locale].hidden` is `true`; it also looks inside hidden blocks, so a hidden child of a hidden section is listed separately and needs its own `hidden: false`. It returns `[]` for the default or an unknown locale. `defaultLocaleGaps(content, locale, definitions?): string[]` lists translatable field ids with a nonempty default that keep the old base because the version has neither text nor an applicable property override. Stale text is promoted and is not a gap; neither is an empty default, as in `localeCoverage`. Both helpers are pure; pass custom-block definitions to count their text fields.
 
-An unknown version or the current default is `invalid_operation`: `"<locale>" is not a language version of this template.` Hidden blocks refuse with `invalid_operation`, the first hidden `blockId`, and `<count> blocks are hidden in "<locale>". Show them before making it the default.` Any other session's lock refuses it with `locked_by_others`, as for `setContent`; `onRemoteChange.locale` is `null` for this operation. AI batches in a language view refuse it.
+An unknown version or the current default is `invalid_operation`: `"<locale>" is not a language version of this template.` Hidden blocks refuse with `invalid_operation`, the first hidden `blockId`, and `<count> blocks are hidden in "<locale>". Show them before making it the default.` Any other session's lock refuses it with `locked_by_others`, as for `setContent`; `onRemoteChange.locale` is `null` for this operation. The checks run in that order: the tag, the version, hidden blocks, then locks, so hidden blocks win over a lock. AI batches in a language view refuse it.
 
-`invertOperations` uses `setContent` to restore the exact prior content, including hashes, the promoted layer and cached HTML. Undo therefore has the same whole-template lock rule. Submit the explicit operation through collaboration; a snapshot diff emits `setContent` for a default change.
+`invertOperations` uses `setContent` to restore the exact prior content, including hashes, the promoted layer and cached HTML. Undo therefore has the same whole-template lock rule. A snapshot can't expect what it overwrites, so under collaboration the editor also records the content each such undo or redo step applies to, and skips the step (`undoSkipped`, `precondition_failed`) once this editor has received another session's batch after it, locked or not. A batch the backend committed but hasn't delivered yet is caught by the backend: it refuses a batch with a `setContent` whose `baseRevision` isn't the current revision ([Collaboration](/backend/collaboration#submit)). The undo of a `setContent` works the same way. Without other sessions' batches, undo and redo restore the content exactly. Submit the explicit operation through collaboration; a snapshot diff emits `setContent` for a default change.
 
 ### Clearing overrides
 
@@ -1760,7 +1760,7 @@ This separate batch starts with German already in `settings.locales`, block `b1`
 {"op":"updateSettingsLocale","locale":"de","unset":["linkColor"]}
 ```
 
-`LocaleLayerExpect` is `{ text?: Record<string, LocalizedText | null>; set?: Record<string, unknown>; hidden?: boolean }`. Text and override guards compare the current layer's value, with absent values read as `null`. A hidden guard compares `layer.hidden === true`. A mismatch produces `precondition_failed`. Block locale updates check shape, the named block (`block_missing`), paths, locks, guards, then the change.
+`LocaleLayerExpect` is `{ text?: Record<string, LocalizedText | null>; set?: Record<string, unknown>; hidden?: boolean }`. Text and override guards compare the current layer's value, with absent values read as `null`. A hidden guard compares `layer.hidden === true`. A mismatch produces `precondition_failed`. Block locale updates check shape, the named block (`block_missing`), paths, locks, guards, then the change, which includes the slot rule.
 
 A lock can carry `locale?: string | null`. An absent or `null` locale holds the default and structure. A block locale update conflicts with another session's lock on the same block and locale, or on its structure (`lock_held`, with `blockId`). Different locales coexist. Structural block updates, moves and deletes conflict with every locale lock on the affected blocks. Adding and removing locales and settings locale updates ignore locks.
 
@@ -1799,6 +1799,8 @@ When one operation breaks several rules, the first failing check decides:
 6. The target container: `block_missing` for a missing parent section; `invalid_operation` for a parent that isn't a section or a column out of range.
 7. The anchor (`anchor_missing`).
 8. The change itself (`invalid_operation`): a layout that would drop columns that still hold blocks.
+
+Element ids containing `.` or `/` are refused only where an operation adds one, and the check sits at a different step per operation: `addBlock` checks them with its shape (step 1), and checks no locks at all; `updateBlock` checks them as the change itself (step 8), after locks and preconditions; `setContent` checks them after its shape and before locks. The shared fixtures pin each case.
 
 ## Applying operations
 
@@ -2158,7 +2160,7 @@ Add `--json` for machine-readable result output on stdout when a command produce
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). Pass `--definitions <file>` for custom `text` and `textarea` translations; the same definitions feed validation, quality lint and `--html` rendering. See [Localized templates](/guide/localized-templates#check-your-work).
+Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). Pass `--definitions <file>` for custom `text` and `textarea` translations; the same definitions feed validation, quality lint and `--html` rendering. See [Localized templates](/guide/localized-templates#check-your-work). `--json` prints `{ valid, errors, issues }`, plus `htmlBytes` with `--html`; each issue is `{ blockId, ruleId, severity, message, suggestion, reference }`, optionally with `excerpt`, `clients` and `fix` (`{ description, removesBlock? }`, which the CLI doesn't apply). `blockId` is `null` for a template-level issue. Select localization findings by `ruleId`, for example by piping `validate template.json --locale de --json` into `jq '.issues[] | select(.ruleId | startswith("localization."))'`.
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -2187,7 +2189,9 @@ npx -y @templatical/template-tools strings export template.json --locale de --ou
 npx -y @templatical/template-tools strings import template.json strings.de.json --json
 ```
 
-Between export and import, set each entry’s `text` to its translation. Keep `id`, `sourceHash` and every placeholder unchanged. Entries without `text` are skipped; an empty `text` is applied. The strings file is `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`, with `strings` containing [`LocaleString`](/api/types#translation) entries (`id`, `format`, masked `source`, `sourceHash`, optional masked `text`). Tokens are regenerated from the current defaults on import; they are not in the file. HTML blocks, empty defaults, `set` overrides and hidden blocks are excluded from export.
+Between export and import, set each entry’s `text` to its translation. Keep `id`, `sourceHash` and every placeholder unchanged. Entries without `text` are skipped; an empty `text` is applied when the source has no placeholders, and otherwise rejected as `tags_changed`. The strings file is `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`, with `strings` containing [`LocaleString`](/api/types#translation) entries (`id`, `format`, masked `source`, `sourceHash`, optional masked `text`). A stale entry, whose default changed after it was translated, has no `text`: its stored translation is in `previous`, masked like `source`. Import never reads `previous`, so a stale entry left without `text` stays stale; write its `text` from the current `source`. Tokens are regenerated from the current defaults on import; they are not in the file. HTML blocks, empty defaults, `set` overrides and hidden blocks are excluded from export.
+
+Both commands work on a language version, never on the template’s default language. `strings export --locale` with the default language, or a strings file whose `targetLocale` is the default language, exits `1` with a message on stderr. Import refuses a strings file whose `sourceLocale` isn’t the template’s default language, for example one exported before another language became the default: it exits `2` and writes nothing. Export the strings again.
 
 | Flag | Contract |
 |---|---|
@@ -2198,9 +2202,13 @@ Between export and import, set each entry’s `text` to its translation. Keep `i
 | `--do-not-translate <file>` | JSON array of protected terms, on both commands. At most 500 terms, each 1–100 characters after trimming. Matching is case-sensitive, longest first, non-overlapping, in text and HTML attribute values. Word boundaries are characters other than Unicode letters, numbers or `_`. |
 | `--out <file>` | Export destination; default stdout. Import destination; default overwrite the input template. Creates parent directories. |
 
-Use the same syntax, definitions and protected terms on both commands. The masking and exact placeholder check are the [translation contract](/backend/translation#provider-contract): `<x id="n"/>` in text and `__xn__` in HTML attributes, sharing one id sequence per field. Import checks placeholders, restores the original bytes, then rejects unsafe restored HTML. Allowed tags are `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (including merge/logic chips). Any `on*` attribute or `href`/`src` value starting with `javascript:` after trimming and lower-casing is refused.
+Use the same syntax, definitions and protected terms on both commands. The masking and exact placeholder check are the [translation contract](/backend/translation#provider-contract): `<x id="n"/>` in text and `__xn__` in HTML attributes, sharing one id sequence per field. Import checks placeholders, restores the original bytes, then rejects unsafe markup as `unsafe_html`:
 
-Import rejection reasons are `stale` (the current default’s hash changed), `tags_changed` (placeholders or restored tags/terms differ), `unknown_field`, `not_translatable` and `unsafe_html`. Accepted strings are validated and written even when others are rejected. Rejections leave those fields’ stored values intact. Import exits `0` when nothing is rejected, `1` otherwise. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr. Missing arguments, unreadable/invalid strings files or invalid definitions/term files exit `2`.
+- **`html` strings:** allowed tags are `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (including merge/logic chips). Any `on*` attribute is refused, and so is a string that ends inside a tag. A comment, CDATA section, declaration or processing instruction is refused unless the field’s default contains the same one byte for byte; browsers end a CDATA section in HTML at its first `>`.
+- **URL attributes in `html` strings** follow the editor’s rich-text sanitizer. Character references are decoded, tab, LF and CR are removed and leading control characters and spaces are stripped, as a browser does. `href`, `xlink:href`, `formaction`, `action`, `ping`, `background` and `poster` must then be relative, a `#` fragment, or use `http:`, `https:`, `mailto:`, `tel:`, `ftp:`, `ftps:`, `sms:`, `xmpp:` or `cid:`. `src` may also be a `data:image/` URL for PNG, JPEG, GIF, WebP or SVG, with the type followed by `;` (for example `data:image/png;base64,…`). Any other scheme is refused, including `javascript:`, `vbscript:`, `data:` and `file:`.
+- **`text`-format strings,** custom-block `text` and `textarea` fields included: every tag, comment, CDATA section and declaration must also be in the field’s default, byte for byte. A string that ends inside a tag counts as a tag.
+
+Import rejection reasons are `stale` (the current default’s hash changed), `tags_changed` (placeholders or restored tags/terms differ), `unknown_field`, `not_translatable` and `unsafe_html`. Accepted strings are validated and written even when others are rejected. Rejections leave those fields’ stored values intact. Import exits `0` when nothing is rejected, `1` otherwise. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr, and the default language exits `1` with a message on stderr, both without a result document. Missing arguments, unreadable/invalid strings files, a strings file from another default language or invalid definitions/term files exit `2`.
 
 Without `--out`, export prints the strings file itself, including with `--json`. With `--out <file> --json`, its result is `{ file, sourceLocale, targetLocale, count }`. Import’s `--json` result is `{ applied, rejected: [{ id, reason }], file }`, where `applied` counts fields. Check the exit code and each rejection, then run `validate template.json --locale de --json` to check remaining missing/stale values.
 
@@ -2229,7 +2237,7 @@ Converts a design from another tool's export format into a new Templatical templ
 
 Run `import --list-formats` (optionally with `--json`) to see which converter packages are actually resolvable from your current working directory right now — see "Optional dependencies" below.
 
-`--default-locale <tag>` passes the default language to the converter when the source declares none; otherwise the declared language wins. Without either, the default is `"en"`. Beefree, Unlayer and Topol preserve documented language mappings and report dropped translations in `report.warnings`. Check the written file with `validate --locale <tag>`.
+`--default-locale <tag>` passes the default language to the converter when the source declares none; otherwise the declared language wins. Without either, the default is `"en"`. A value that isn't a language tag after `_` becomes `-` exits `2` (`--default-locale needs a language tag such as en or de-AT, not "<value>".`). A declared language that isn't a tag, such as <code v-pre>&lt;html lang="{{lang}}"&gt;</code>, is ignored with a warning, and `--default-locale` or `"en"` applies. Beefree, Unlayer and Topol preserve documented language mappings and report dropped translations in `report.warnings`. Check the written file with `validate --locale <tag>`.
 
 ### `live` · `live reload` · `live stop`
 
@@ -2278,8 +2286,8 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | Code | Meaning |
 |---|---|
 | `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
-| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `strings import`, any rejected string (accepted strings are written). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
-| `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, an exception inside quality lint, or an unexpected internal error. |
+| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `strings import`, any rejected string (accepted strings are written). For `strings export` and `strings import`, the template’s default language as the target language. For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
+| `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, a strings file whose `sourceLocale` isn’t the template’s default language, an exception inside quality lint, or an unexpected internal error. |
 | `3` | A missing optional dependency. The error message names the exact install command. |
 
 ::: tip Exit code 3 is not a failure
@@ -2636,17 +2644,12 @@ export declare function localeHiddenBlocks(
   content: TemplateContent,
   locale: string,
 ): string[];
-/** Field ids that would keep the current default's value if `locale` became the default. Pure. */
+/** Field ids with a nonempty default that would keep the current default's value if `locale` became the default. Pure. */
 export declare function defaultLocaleGaps(
   content: TemplateContent,
   locale: string,
   definitions?: readonly CustomBlockDefinition[],
 ): string[];
-/** Internal engine helper; not exported by the package entry point. */
-export declare function rebaseDefaultLocale(
-  content: TemplateContent,
-  locale: string,
-): TemplateContent;
 export interface SetDefaultLocaleOperation {
   op: "setDefaultLocale";
   /** A language already in `settings.locales`. */
@@ -2660,7 +2663,7 @@ export interface SetDefaultLocaleOperation {
 
 `pruneLocaleOrphans(block: Block): Block` recursively removes text paths that no longer resolve and set paths whose parent no longer resolves. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` applies the same rule to settings. Both are pure and omit empty localization members. `isStructuralLocalePath(block: Block, path: string, value?: unknown): boolean` identifies section columns, whole built-in lists and element ids that locale overrides must not replace. Pass the proposed `set` value to check a whole-element replacement: its id must stay unchanged, and a table row must retain its cell ids in the same order. Custom `fieldValues.*` overrides are exempt.
 
-`elementIdIssues(content: TemplateContent): { path: string; id: string }[]` reports menu item, social icon, table row and table cell ids containing `.` or `/`, depth first, including section columns and layout wrappers. It is pure; paths use array indices, for example `blocks[2].items[0].id`. `validateTemplate` reports each issue as `<path>: Element id "<id>" must not contain "." or "/".`; `addBlock`, `updateBlock` and `setContent` refuse one with `invalid_operation` and the carrying block's `blockId`.
+`elementIdIssues(content: TemplateContent): { path: string; id: string }[]` reports menu item, social icon, table row and table cell ids containing `.` or `/`, depth first, including section columns and layout wrappers. It is pure; paths use array indices, for example `blocks[2].items[0].id`. `validateTemplate` reports each issue as `<path>: Element id "<id>" must not contain "." or "/".`; `addBlock`, `updateBlock` and `setContent` refuse one they introduce (on a new block, or new on its block) with `invalid_operation` and the carrying block's `blockId`; an id already on its block stays editable.
 
 `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale(content, locale, options?: { missing?: "throw" | "default" })` projects a complete template or layout, including wrapper children, drops hidden blocks recursively and strips localization fields. Omitted `missing` or `missing: "throw"` throws `unknown_locale` for a version the document lacks. With `missing: "default"`, an unknown version projects the document's default and keeps its default `settings.locale`. Known versions are unaffected. Both helpers are pure.
 
@@ -2780,7 +2783,9 @@ Pass the same `doNotTranslate?: readonly string[]` to `maskTags`, `localeStrings
 
 `localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides and hidden blocks. `blockId` limits selection to that block. Existing translations are masked with source ids. Coverage alone selects gaps (missing and stale) or all fields (also current). If stored tags or protected terms cannot be masked with the current source's tokens, the field still includes its masked current default and `sourceHash`, with `text` omitted; translation starts from that current default. It returns extraction-time `sourceHash` values from unmasked defaults.
 
-`applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
+`applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time, so an out-of-date entry from `localeStrings`, whose `text` is its stored translation, becomes current when applied unchanged. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
+
+`isSafeUrlAttribute(name: string, value: string): boolean` is the URL policy that the editor's rich-text sanitizer and `template-tools strings import` apply to returned HTML. Pass the attribute value with character references decoded, as a browser reads it; the name is compared case-insensitively. An attribute that holds no URL returns `true`. For `href`, `xlink:href`, `formaction`, `action`, `ping`, `background` and `poster`, it removes tab, LF and CR, strips leading control characters and spaces, and then accepts an empty value, a URL without a scheme, a `#` fragment, or the schemes `http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp` and `cid`. `src` also accepts a `data:image/` URL of type `png`, `jpeg`, `jpg`, `gif`, `webp` or `svg+xml` followed by `;`. Every other scheme, including `javascript:`, `vbscript:`, `data:` and `file:`, returns `false`. It doesn't check tags or `on*` attributes; refuse those separately.
 
 ## Base Types
 
@@ -3797,7 +3802,7 @@ Deterministic lint reports specific content, client and size findings. It does n
 
 ### History
 
-`conversation` is optional. With it, the chat loads the stored messages when it opens, and each message's Undo and Redo call your backend, which answers the operations to apply (`{ operations, replayId }`) or a batch it applied (`{ applied: { batchId, revision } }`). Without it, the chat lives in memory for the session, and a message's Undo applies the turn's own inverse, refused when someone changed those blocks since.
+`conversation` is optional. With it, the chat loads the stored messages when it opens, and each message's Undo and Redo call your backend, which answers the operations to apply (`{ operations, replayId }`) or a batch it applied (`{ applied: { batchId, revision } }`). Without it, the chat lives in memory for the session, and a message's Undo applies the turn's own inverse. A block-level inverse expects what the turn left, so that Undo is refused when someone changed those blocks since. A turn that replaced the whole template is undone by a snapshot: with collaboration, its Undo and Redo are refused unless the template is exactly as the turn, or its last Undo or Redo, left it, so they don't overwrite a later edit this editor has received, another session's included, nor the edit a backend refusal of the turn kept. A batch your backend committed but hasn't delivered yet is caught by the [`setContent` rule](/backend/collaboration#submit).
 
 After applying or refusing operations, the editor calls `settleReplay(templateId, messageId, { replayId, direction, applied, sessionId })`. Change `undone` only on `applied: true`; with `applied: false`, or no settlement, keep the message's state. Settle each `replayId` once; later settlements are no-ops. A server-applied `{ applied }` answer is never settled. A settlement failure reaches `onError`, and the local row keeps the direction actually applied to the template.
 
@@ -3881,6 +3886,9 @@ Give the editor a collaboration provider and several people can edit one templat
 import { init } from '@templatical/editor';
 
 let sessionId = '';
+const lockUrl = (templateId: string, blockId: string, locale?: string | null) =>
+  `/api/templates/${templateId}/locks/${blockId}` +
+  (locale ? `?locale=${encodeURIComponent(locale)}` : '');
 
 const editor = await init({
   container: '#editor',
@@ -3901,19 +3909,19 @@ const editor = await init({
       api(`/api/templates/${templateId}/operations?after=${revision}`, {
         headers: { 'X-Session-Id': sessionId },
       }),
-    acquireLock: (templateId, blockId) =>
+    acquireLock: (templateId, blockId, locale) =>
       api(`/api/templates/${templateId}/locks`, {
         method: 'POST',
         headers: { 'X-Session-Id': sessionId },
-        body: JSON.stringify({ blockId }),
+        body: JSON.stringify({ blockId, locale: locale ?? null }),
       }),
-    renewLock: (templateId, blockId) =>
-      api(`/api/templates/${templateId}/locks/${blockId}`, {
+    renewLock: (templateId, blockId, locale) =>
+      api(lockUrl(templateId, blockId, locale), {
         method: 'PUT',
         headers: { 'X-Session-Id': sessionId },
       }),
-    releaseLock: async (templateId, blockId) => {
-      await fetch(`/api/templates/${templateId}/locks/${blockId}`, {
+    releaseLock: async (templateId, blockId, locale) => {
+      await fetch(lockUrl(templateId, blockId, locale), {
         method: 'DELETE',
         headers: { 'X-Session-Id': sessionId },
         keepalive: true,
@@ -3933,12 +3941,12 @@ The backend combines `X-Session-Id` with the authenticated user to identify the 
 
 - **Sends every edit as operations.** The editor compares the canvas with what it last sent and turns the difference into a batch: a drag becomes a `moveBlock`, typing an `updateBlock`. Typing into one block waits for a 300 ms pause, at most a second; everything else goes at once. One batch is in flight at a time, so a session's batches arrive in order, and a batch that fails in transit is sent again with the same `batchId`.
 - **Applies everyone's batches in revision order.** Batches from other sessions are buffered and applied strictly by revision, with this session's unconfirmed edits replayed on top. A gap that isn't filled within a second is fetched with `operationsAfter`.
-- **Locks the selected block.** Selecting a block takes its lock; another session's locked block shows its holder's name and colour and can't be selected. Locks renew every 10 seconds and are released on deselect, on loading another template and when the page closes.
+- **Locks the selected block.** Selecting a block takes its lock in the active view's language: `locale: null` in the default view, and the version's tag in a language view, including a read-only **Not enabled** version, whose viewer holds the lock but can't edit. Another session's lock on the block stops the selection, showing its holder's name and colour, when either lock is `null` or both are in the same language. Locks renew every 10 seconds and are released on deselect, on loading another template and when the page closes.
 - **Shows who is here.** The header shows one avatar per person: a user's sessions in several tabs count once, and each guest counts on their own.
 - **Turns merge tags in arriving batches into tags.** A batch from another session — an agent's, another editor's, a server's — has the bare tokens in its titles and paragraphs converted as it arrives, the way [loaded content](/guide/merge-tags#tokens-in-loaded-content) is, and nothing is sent back for it. Arriving batches apply without their `expect`: your backend checked those against its own copy.
 - **Shows agents' edits.** A batch whose actor has `type: 'mcp'` shows a notice naming `actor.client` and `actor.name` ("Claude for Ada changed 3 blocks") and outlines the blocks it changed for 2 seconds. A re-sync whose `actor` has `type: 'mcp'` shows "Claude for Ada updated the template", with no outline. Batches and re-syncs from one agent within 2 seconds share a notice. Agents need no presence and take no locks.
 - **Shows the AI's edits.** A batch with `actor.type: 'ai'` shows "AI (for Ada) changed 3 blocks" and outlines the changed blocks. A re-sync shows a template-update notice without its own block outline. The requesting session sees only a batch's outline, with no notice. An [AI provider](/backend/ai)'s operations reach your backend as this user's batches with `origin: 'ai'`.
-- **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. Other people's edits never enter your undo history.
+- **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. A step that restores a whole-template snapshot (the undo of a content replacement or of Make default) can't name what it expects, so it is skipped once this editor has received another session's batch after it; a batch your backend committed but hasn't delivered yet is caught by the `setContent` rule in [`submit`](#submit). Other people's edits never enter your undo history.
 - **Saves only renames.** Content reaches your backend through `submit`, so `templates.save` receives only a new name, after the editor's batches are confirmed. Autosave keeps working: it settles the batches and renames if needed.
 - **Tells the user** when a selection or an edit was refused, when an undo step was skipped, when a version can't be restored because others hold locks, and while the connection is down.
 
@@ -4128,7 +4136,7 @@ Called when a template is loaded, with this editor's session id (a UUID the edit
 
 ### `submit`
 
-Apply the batch's operations to the template, in order and all or nothing, then answer with the revision it produced. `baseRevision` is the last revision the editor had confirmed; batches are applied to the current content whatever it is, which is what the operations' sibling anchors and preconditions are for. A `batchId` you have already applied answers with that batch's revision and applies nothing, because the editor resends after a failure in transit. Send the batch to every other session with `onBatch`, with its revision and actor.
+Apply the batch's operations to the template, in order and all or nothing, then answer with the revision it produced. `baseRevision` is the last revision the editor had confirmed; batches are applied to the current content whatever it is, which is what the operations' sibling anchors and preconditions are for. A batch that contains a `setContent` is the exception: refuse it with `409` and `precondition_failed` when its `baseRevision` isn't the current revision, because a whole-content replacement built on an older revision would overwrite batches its sender never saw. The editor then drops it: an undo or redo step is skipped with a notice, and any other edit is reported as not saved. It also drops such a batch itself, before sending it, when another session's batch reaches it first. A `batchId` you have already applied answers with that batch's revision and applies nothing, because the editor resends after a failure in transit. Check a repeated `batchId` first, as the sample below does, then the `setContent` rule: a resent snapshot keeps the `baseRevision` of its first attempt, so one that already landed answers with its revision, not `409`. Send the batch to every other session with `onBatch`, with its revision and actor.
 
 ### `operationsAfter`
 
@@ -4140,7 +4148,7 @@ Answer with every batch after `revision`, in order. When you no longer have them
 
 `BlockLock.locale?: string | null` distinguishes language locks; absence means `null`, the default language and structure. The signatures are `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` and `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Forward locale to the backend and through `onLock` / `onUnlock(blockId, sessionId, locale?)`.
 
-`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. Every other block operation conflicts with every other session's lock on X. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#compatibility).
+`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. `updateBlock`, `moveBlock` and `deleteBlock` on X conflict with every other session's lock on X, and a move or delete also with locks on the blocks inside X; `addBlock` checks no locks. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#compatibility). Refuse `acquireLock` on (X, `locale`) with `lock_held` and the holder when another owner holds a lock on X and either lock's locale is `null` or both are equal; otherwise grant it, store its `locale`, and renew and release it by block and locale.
 
 ### Refusals
 
@@ -4169,18 +4177,22 @@ When a batch carries `origin: 'ai'`, broadcast it with `actor.type: 'ai'`, the s
 import { applyOperations, OperationError } from '@templatical/types';
 
 app.post('/api/templates/:id/operations', async (req, res) => {
-  const { batchId, ops } = req.body;
+  const { batchId, baseRevision, ops } = req.body;
   const sessionId = req.get('X-Session-Id') ?? null; // however you identify it
   const template = await db.templates.lockForUpdate(req.params.id);
 
   const known = await db.batches.find(template.id, batchId);
   if (known) return res.json({ revision: known.revision });
 
+  if (ops.some((op) => op.op === 'setContent') && baseRevision !== template.revision) {
+    return res.status(409).json({ message: 'The template changed since this replacement was made.', code: 'precondition_failed' });
+  }
+
   const locks = await db.locks.unexpired(template.id);
   let content;
   try {
     content = applyOperations(template.content, ops, {
-      locks: locks.map((lock) => ({ blockId: lock.blockId, sessionId: lock.owner })),
+      locks: locks.map((lock) => ({ blockId: lock.blockId, sessionId: lock.owner, locale: lock.locale ?? null })),
       session: sessionId ? ownerOf(req.user, sessionId) : null,
     });
   } catch (error) {
@@ -6129,11 +6141,11 @@ Only title and paragraph `content` use `format: "html"`; every other eligible fi
 
 The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids. If their tags no longer match, the old translation is not sent and the field is translated from the current default. `localeStrings` retains its masked current source and `sourceHash`, omitting `text`; coverage alone selects gaps or all fields. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
 
-`localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. In `html` fields, terms match the decoded text: numeric references, the HTML 4.01 named references, `&apos;` and the uppercase aliases `&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;` and `&REG;` are decoded before matching, so `&apos;` matches a term's `'`. Other named references stay as written, and reference names are case-exact (`&Amp;` stays literal). In `text` fields, terms match the text as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. `TranslationRequest` is unchanged.
+`localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. In `html` fields, terms match the decoded text: numeric references, the HTML 4.01 named references, `&apos;` and the uppercase aliases `&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;` and `&REG;` are decoded before matching, so `&apos;` matches a term's `'`. Other named references stay as written, and reference names are case-exact (`&Amp;` stays literal). In `text` fields, terms match the text as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. An extra literal occurrence of a term is plain text: with `["Cloud"]`, the source `Templatical Cloud stores cloud files` masks to `Templatical <x id="1"/> stores cloud files`, and the German `Templatical <x id="1"/> speichert Cloud-Dateien` is accepted, because every placeholder returns exactly once. `TranslationRequest` is unchanged.
 
 For headless flows, pass the same `doNotTranslate?: readonly string[]` to `localeStrings` and `applyLocaleStrings`; `maskTags(text, syntax, format, { doNotTranslate })` also accepts it. The helpers trim terms when matching; the size limits are validated by `init()`. Existing translations reuse the source's ids. If a stored translation lacks or changes a protected term, a selected field remains eligible: the old translation is not sent, and translation starts from the current default. Check a configured term by translating a field containing it: the provider receives a placeholder and the saved translation contains the original term.
 
-Calls run sequentially. On `content_too_large` the editor halves the batch and retries down to one field; a single field over the cap cannot be sent. Successful fields received before Cancel or a provider failure apply together as one undo step. A run that changes nothing records nothing. With collaboration it is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped and reported.
+Calls run sequentially. On `content_too_large` the editor halves the batch and retries down to one field; a provider that still refuses one field ends the run with its message. A single field over the 20,000-unit cap isn't sent: the run stops at that field without calling the provider, keeps the fields already returned, and the result notice says "1 field is too long to translate.", the editor's own limit. Translate that field by hand, or round-trip its block with `strings export --block <id>` and `strings import`. Successful fields received before Cancel or a provider failure apply together as one undo step. A run that changes nothing records nothing. With collaboration it is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped and reported.
 
 | `code` | Wire status | Meaning |
 | --- | --- | --- |
@@ -11843,18 +11855,27 @@ You can copy the content settings onto the layout and override `backgroundColor`
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
-import { applyLayout } from '@templatical/types';
+import { applyLayout, resolveLocale } from '@templatical/types';
 
 const mjml = await renderToMjml(content, { layout });
 const composed = applyLayout(layout, content);
+
+// One language version of a localized template, as renderToMjml composes it:
+const germanMjml = await renderToMjml(content, { layout, locale: 'de' });
+const german = applyLayout(
+  resolveLocale(layout, 'de', { missing: 'default' }),
+  resolveLocale(content, 'de'),
+);
 ```
 
 Preview, `toMjml`, and `toHtml` compose first, then optionally `resolvePreview`:
 
 ```
-base = applyLayout(layout, content)
+base = applyLayout(resolveLocale(layout, locale, { missing: "default" }), resolveLocale(content, locale))
 if (resolvePreview) base = await resolvePreview({ content: base, recipient })
 ```
+
+`locale` is the active language in preview, or the `locale` option of `toMjml` / `toHtml`, which defaults to the template's default language. Layout and template are projected separately, the layout with `missing: "default"`: its default language needn't match the template's, and a language the layout lacks uses the layout's default. See [Localized templates](/guide/localized-templates#layouts).
 
 The editing canvas never takes this path. Layout compose is synchronous.
 
@@ -11902,15 +11923,15 @@ Add `translation` for Translate and `localization.doNotTranslate` for brand name
 
 ## Adding a language
 
-Open **Languages**, choose **Add language**, then a language; the submenu offers the configured languages the template lacks. Select the new version in the menu to edit it: the language bar under the header reads **Editing {language}**. **Back to {default}** in the bar, or the default row in the menu, returns to the default language. Each version's **More actions for {language}** button offers **Make default language** ([Default language](#default-language)) and **Remove {language}…**, which asks for confirmation and can be undone.
+Open **Languages**, choose **Add language**, then a language; the submenu offers the configured languages the template lacks. Labels name each language in itself, for example `de` as **Deutsch** and `fr` as **Français**, wherever they show `{language}` or `{default}`. Select the new version in the menu to edit it: the language bar under the header reads **Editing {language}**. **Back to {default}** in the bar, or the default row in the menu, returns to the default language. Each version's **More actions for {language}** button offers **Make default language** ([Default language](#default-language)) and **Remove {language}…**, which asks for confirmation and can be undone.
 
 Text and property edits in a language view change only that language. When a translatable field has a default value, an edit stores `text` with its `sourceHash`; when the default has no value, such as an absent preheader, the edit stores a `set` override, which isn't tracked for staleness. An edit equal to the default leaves no override. For an overridden or translated field, the settings panel shows a language pill and a **Reset to {default}** icon that restores only that field from the default and keeps sibling overrides. The status badge’s **Reset changes** clears all of that block’s `set` overrides; it keeps its `text` translations. **Hide in {language}** in the block's settings leaves a ghost block on the canvas; **Show** restores it, and the renderer omits hidden blocks.
 
-Add, move, delete, duplicate, paste and drag change the shared tree for every language. The language bar shows **Structure changes apply to every language.** once per session per template. A version in `settings.locales` but absent from `localization.locales` stays selectable, read-only and marked **Not enabled**: value edits and structure changes are refused.
+Add, move, delete, duplicate, paste and drag change the shared tree for every language. The language bar shows **Structure changes apply to every language.** once per session per template. A version in `settings.locales` but absent from `localization.locales` stays selectable, read-only and marked **Not enabled**: value edits and structure changes are refused. Selecting a block there still takes its lock for that language, so with collaboration a reviewer in the read-only view and an author editing another language can hold the same block at once.
 
 The active language is view state and isn't saved; every session starts on the default. `editor.getLocale()`, `editor.setLocale(tag)` and `init({ onLocaleChange })` read, select and report it; an unknown version throws `SdkError` with code `unknown_locale`. See [Editor API](/api/editor).
 
-Languages imported from [Beefree](/guide/migration-from-beefree#languages), [Unlayer](/guide/migration-from-unlayer#languages) and [Topol](/guide/migration-from-topol#languages) use the same layers. Every importer accepts `defaultLocale?: string` for a source that declares no default, and `template-tools import --default-locale <tag>` passes it from the CLI. Inspect `report.warnings` for dropped languages, then add the imported languages to `localization.locales` to edit them. Without the editor, write versions with the [locale operations](#operations-and-collaboration) or with `strings import` ([Translating](#translating)).
+Languages imported from [Beefree](/guide/migration-from-beefree#languages), [Unlayer](/guide/migration-from-unlayer#languages) and [Topol](/guide/migration-from-topol#languages) use the same layers. Every importer accepts `defaultLocale?: string` for a source that declares no default, and `template-tools import --default-locale <tag>` passes it from the CLI; an invalid tag there exits `2`. An importer ignores a declared default or `defaultLocale` that isn't a language tag, warns, and falls back to the next valid value or `"en"`. Inspect `report.warnings` for dropped languages, then add the imported languages to `localization.locales` to edit them. Without the editor, write versions with the [locale operations](#operations-and-collaboration) or with `strings import` ([Translating](#translating)).
 
 ## Translating {#translating}
 
@@ -11929,9 +11950,9 @@ npx -y @templatical/template-tools strings export template.json --locale de --ou
 npx -y @templatical/template-tools strings import template.json strings.de.json --json
 ```
 
-Set each entry's `text` and keep its `id`, `sourceHash` and placeholders unchanged. Import applies every string whose `sourceHash` still matches the current default and whose placeholders come back exactly, writes the accepted strings, and exits `1` when any string was rejected. Pass the same `--do-not-translate` and `--definitions` files to both commands; see [Strings](/api/template-tools#strings).
+Set each entry's `text` and keep its `id`, `sourceHash` and placeholders unchanged. An out-of-date entry has no `text`: its old translation is in `previous`, which import never reads, so translate it again from `source`. Import applies every string whose `sourceHash` still matches the current default and whose placeholders come back exactly, writes the accepted strings, and exits `1` when any string was rejected. Both commands refuse the default language, and import refuses a file exported before another language became the default. Pass the same `--do-not-translate` and `--definitions` files to both commands; see [Strings](/api/template-tools#strings).
 
-In code, the same round trip is `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts the gaps, simulates a translator's JSON edit and applies the returned locale operations. A default edited while the file is out makes that string out of date. The pure helpers don't sanitize returned HTML: sanitize it, keeping the placeholders, before applying it.
+In code, the same round trip is `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts the gaps with `Sable` protected, simulates a translator's JSON edit and applies the returned locale operations; pass the same `doNotTranslate` list to both helpers. `localeStrings` returns an out-of-date entry's stored translation in `text`, and `applyLocaleStrings` stamps every `text` it receives with the extraction-time hash, so applying that entry unchanged marks the field current, as **Keep** does. Drop `text` from out-of-date entries before handing them to a translator, as the example does by moving it to `previous`, or use `strings export`. With `only: "gaps"`, only out-of-date entries carry `text`; with `only: "all"`, `localeCoverage(content, locale).stale` lists them. A default edited while the file is out makes that string out of date. The pure helpers don't sanitize returned HTML: sanitize it, keeping the placeholders, before applying it.
 
 ```ts
 import {
@@ -11946,34 +11967,49 @@ import {
 
 const original = createDefaultTemplateContent("Arial", { locale: "en" });
 original.blocks.push(
-  createTitleBlock({ id: "greeting", content: "<p>Hello {{first_name}}</p>" }),
+  createTitleBlock({
+    id: "greeting",
+    content: "<p>Hello {{first_name}}, welcome to Sable</p>",
+  }),
 );
 const base = applyOperations(original, [{ op: "addLocale", locale: "de" }]);
 const syntax = SYNTAX_PRESETS.liquid;
-const extracted = localeStrings(base, "de", { syntax, only: "gaps" });
+const doNotTranslate = ["Sable"];
+const extracted = localeStrings(base, "de", {
+  syntax,
+  only: "gaps",
+  doNotTranslate,
+});
 const json = JSON.stringify({
   sourceLocale: "en",
   targetLocale: "de",
-  strings: extracted.strings.map((field) => ({
-    ...field,
-    text: field.text ?? "",
-  })),
+  // With only: "gaps", only an out-of-date entry has `text`: its stored
+  // translation. Move it to `previous`, as `strings export` does, so an entry
+  // returned untouched can't be applied as current.
+  strings: extracted.strings.map(({ text, ...field }) =>
+    text === undefined ? field : { ...field, previous: text },
+  ),
   tokens: extracted.tokens,
 });
 
-// Send this JSON to a translator. Keep ids, source hashes and tokens unchanged.
+// Send this JSON to a translator, who sets each entry's `text`.
+// Keep ids, source hashes and tokens unchanged.
 const file: {
   sourceLocale: string;
   targetLocale: string;
-  strings: { id: string; text: string; sourceHash: string }[];
+  strings: { id: string; text?: string; sourceHash: string }[];
   tokens: Record<string, string[]>;
 } = JSON.parse(json);
-file.strings[0].text = '<p>Hallo <x id="1"/></p>';
+file.strings[0].text = '<p>Hallo <x id="1"/>, willkommen bei <x id="2"/></p>';
+// Skip entries without `text`, as `strings import` does.
+const translated = file.strings.flatMap(({ id, text, sourceHash }) =>
+  text === undefined ? [] : [{ id, text, sourceHash }],
+);
 const { operations, rejected } = applyLocaleStrings(
   base,
   file.targetLocale,
-  file.strings,
-  { syntax, tokens: file.tokens },
+  translated,
+  { syntax, tokens: file.tokens, doNotTranslate },
 );
 if (rejected.length) throw new Error(JSON.stringify(rejected));
 const content = applyOperations(base, operations);
@@ -11995,11 +12031,11 @@ The header's language button names the active language; in a language view with 
 | **Changed in {language}** | Properties are overridden in this language | **Reset changes** |
 | **Out of date in {count} languages** | In the default view: this block's translations are out of date | **Open**, per language |
 
-A block in several states shows the first one in this order; with several fields in one state its label counts them ("{count} not translated"). **Translate** and **Re-translate** need a translation provider. Badges don't show in preview, and a layout's blocks have none ([Layouts](#layouts)). `template-tools validate --locale <tag>` and `lintTemplate(content, { contentLocale })` report the same gaps with the three rules below; see [Check your work](#check-your-work).
+A block in several states shows the first one in this order; with several fields in one state its label counts them ("{count} not translated"). **Translate** and **Re-translate** need a translation provider. Badges don't show in preview, and a layout's blocks have none ([Layouts](#layouts)). `template-tools validate --locale <tag>` and `lintTemplate(content, { contentLocale })` report missing, out-of-date and merge-tag findings as `localization.untranslated`, `localization.stale` and `localization.merge-tags-differ`, described below; see [Check your work](#check-your-work).
 
 ### Missing values {#missing-values}
 
-A missing translation falls back to the default-language value. The block shows **Not translated**, coverage reports the field as missing, and `localization.untranslated` reports a warning. Empty defaults and hidden blocks don't count as missing. A deliberate empty translation is a value and doesn't fall back.
+A missing translation falls back to the default-language value. The block shows **Not translated**, coverage reports the field as missing, and `localization.untranslated` reports a warning. Empty defaults and hidden blocks don't count as missing. HTML block content does count, although Translate and `strings export` don't send it: the language bar counts it as missing without offering **Translate {count} fields** for it, and the warning stays until you translate it by hand in the language view. A deliberate empty translation is a value and doesn't fall back.
 
 ### Out-of-date values {#out-of-date-values}
 
@@ -12072,13 +12108,15 @@ A custom block with any `text` or `set` entry in the requested language loses it
 
 Language tags must match `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`: 2–3 ASCII letters, followed by zero or more hyphen-separated subtags of 2–8 ASCII letters or digits. Forms beginning with `x-…` or `i-…` are rejected because their language segment has one letter; grandfathered forms such as `no-bok` and `zh-min-nan` match and are accepted.
 
-A field path joins property names with `.`; at an array, the next segment is the element's `id`, never its index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. A field id is `<blockId>/<path>` or `settings/<path>`. Menu item, social icon, table row and table cell ids must not contain `.` or `/`: `validateTemplate` reports them, and `addBlock`, `updateBlock` and `setContent` refuse them with `invalid_operation`.
+A field path joins property names with `.`; at an array, the next segment is the element's `id`, never its index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. A field id is `<blockId>/<path>` or `settings/<path>`. Menu item, social icon, table row and table cell ids must not contain `.` or `/`: `validateTemplate` reports them, and `addBlock`, `updateBlock` and `setContent` refuse an operation that adds one (a new block, item, row or cell) with `invalid_operation`. An id already in the template stays editable, so a template saved with one can still be edited; rename it to localize that element and to pass validation.
 
 `text` holds human-readable fields only: the `TRANSLATABLE_FIELDS` of each block type (content, alt text, button text, countdown labels, menu item text, table cell content), the preheader, and custom `text` and `textarea` fields. Everything else, such as URLs, image sources, sizes and colors, is a `set` override. A path is in at most one of `text` and `set`. `set` can't replace section `columns` or whole built-in lists (`items`, `rows`, `rows.<id>.cells`, `icons`); override their element leaves instead. Empty layers and members are omitted, never stored as `{}` or `[]`. [Types](/api/types#localization) has the declarations and path rules.
 
 ## Layouts
 
 An `init({ layout })` shell is composed around the template, outside it, so its text isn't part of the template. A layout can carry its own `settings.locales`, block `l10n` and `settings.l10n`, including the wrapper children beside the slot, independent of the template's languages. Preview, `toMjml()`, `toHtml()`, the test-email preview and `renderToMjml(content, { layout, locale })` project it with `resolveLocale(layout, locale, { missing: "default" })` before composing; a language the layout lacks shows the layout's default.
+
+A language can't hide the layout's slot or a wrapper that contains it, because the layout couldn't compose that language: `updateBlockLocale` refuses `hidden: true` on them with `invalid_operation`, `moveBlock` and `addBlock` refuse placing the slot under a block a language hides, and `validateTemplate` reports such a layer. Hiding any other layout block works as in a template.
 
 The editor never edits the layout. Its blocks have no selection, lint or status badge, Translate doesn't send them, and the language counts don't include them. Translate the layout file instead, for example with the CLI:
 
@@ -12093,20 +12131,20 @@ Set each entry's `text` in `layout.de.json` between export and import, as in [Tr
 
 ## Default language
 
-`settings.locale` is the default language: the text every version falls back to and is translated from. To promote a version, open **Languages**, select the version's **More actions for {language}** and choose **Make default language**. The confirmation, **Make {language} the default language?**, counts the fields that have no text in that language, when there are any: "{count} fields have no {language} text and keep their {default} text." **Make default** applies the change as one undo step, switches the view to the new default and reports "{language} is now the default language." The item is disabled while blocks are hidden in that language ("Show the {count} blocks hidden in {language} first"), and it isn't offered in a read-only editor or for a version that isn't enabled.
+`settings.locale` is the default language: the text every version falls back to and is translated from. To promote a version, open **Languages**, select the version's **More actions for {language}** and choose **Make default language**. The confirmation, **Make {language} the default language?**, counts the fields that have no text in that language, when there are any: "{count} fields have no {language} text and keep their {default} text." **Make default** applies the change as one undo step, switches the view to the new default and reports "{language} is now the default language."; undoing it removes that notice. The item is disabled, with the reason under it, while the current default isn't in `localization.locales` ("Add {default} to the enabled languages first"), because the old default would become a version nobody can edit or promote back; and while blocks are hidden in that language ("Show the {count} blocks hidden in {language} first"). It isn't offered in a read-only editor or for a version that isn't enabled.
 
 The change is one operation, `{ "op": "setDefaultLocale", "locale": "de" }`:
 
-- German's text and overrides become the base. English takes German's place in `settings.locales`, with its differing values in an English layer.
-- A field without German text keeps its English value, so the German email shows English there. `defaultLocaleGaps(content, "de", definitions?)` lists those field ids before the change; afterwards, `validate --locale en` reports them as `localization.untranslated`. English keeps no copy of those fields: after the change, editing one in the German default also changes the English email. Translate the gaps into German first, until `defaultLocaleGaps(content, "de")` returns `[]`. Translate and `strings export` don't send HTML blocks or empty defaults: translate HTML blocks by hand in the German view; an empty default has no text to keep, so it can stay a gap.
+- German's text and overrides become the base. English takes German's place in `settings.locales`, with its differing values in an English layer; text German had translated to the same value stays a current English translation.
+- A field without German text keeps its English value, so the German email shows English there. `defaultLocaleGaps(content, "de", definitions?)` lists those field ids before the change; afterwards, `validate --locale en` reports them as `localization.untranslated`. English keeps no copy of those fields: after the change, editing one in the German default also changes the English email. Translate the gaps into German first, until `defaultLocaleGaps(content, "de")` returns `[]`. An empty default, such as a decorative image's `alt: ""`, has no text to keep and isn't a gap. Translate and `strings export` don't send HTML blocks: translate HTML blocks by hand in the German view.
 - Other languages keep their state against the new base: current text is re-stamped and stays current; out-of-date text keeps its stored hash and stays out of date, unless that hash equals the promoted German value, in which case it becomes current.
 - A version with hidden blocks is refused with `invalid_operation`; `localeHiddenBlocks(content, "de")` lists the blocks to show first. An unknown version is refused with `invalid_operation` too, and with collaboration any other session's lock refuses the change with `locked_by_others`.
 
-`updateSettings` can't change `settings.locale` while versions exist, and AI in a language view can't run `setDefaultLocale`. [Operations](/api/operations#default-language) gives the re-stamped hashes, removed optional fields, the inverse and the refusal messages. Check the result: the saved file has `settings.locale` `"de"` with `"en"` in `settings.locales`, `template-tools validate template.json --json` reports `valid: true`, and `validate template.json --locale en --json` lists the remaining gaps as `localization.untranslated`.
+`updateSettings` can't change `settings.locale` while versions exist, and AI in a language view can't run `setDefaultLocale`. [Operations](/api/operations#default-language) gives the re-stamped hashes, removed optional fields, the inverse and the refusal messages. Check the result: the saved file has `settings.locale` `"de"` with `"en"` in `settings.locales`, `template-tools validate template.json --json` reports `valid: true`, and `validate template.json --locale en --json` lists the remaining gaps as `localization.untranslated`, and only those: a field whose German text equalled the English keeps a current English entry.
 
 ## Comments
 
-Comment threads are shared across languages. Every new comment and reply sends `CommentInput.locale`, the language of the view it was written in, the default's tag included; your [comments provider](/backend/comments#locale) stores it and returns `Comment.locale`. A comment without a tag, written before this, counts as the template's current default language. With localization configured, every comment and reply shows a language badge, and **This language** in the comments panel shows the threads whose root or any reply is in the active language, with all their messages and badges. The filter is view state and isn't saved. Cloud's comments don't store the language yet.
+Comment threads are shared across languages. Every new comment and reply sends `CommentInput.locale`, the language of the view it was written in, the default's tag included; your [comments provider](/backend/comments#locale) stores it and returns `Comment.locale`. A comment without a tag, saved before language versions existed or by a comments backend that doesn't store `locale` (Cloud's doesn't yet), counts as the template's current default language and follows a change of the default; a tagged comment keeps its tag. With localization configured, every comment and reply shows a language badge, and **This language** in the comments panel shows the threads whose root or any reply is in the active language, with all their messages and badges. The filter is view state and isn't saved. Cloud's comments don't store the language yet.
 
 ## Subject lines
 
@@ -12160,7 +12198,7 @@ Pass the merge-tag syntax and `doNotTranslate` list your editor uses; the exampl
 
 Apply them with `applyOperations` and undo them with `invertOperations` from `@templatical/types`, run them through `template-tools edit`, or send them as a collaboration batch. Only these operations change localization fields: `updateBlock` and `updateSettings` refuse them, `addBlock` may carry a new block's `l10n`, and `setContent` replaces everything. A failed `expect` guard is `precondition_failed`; an invalid path, language or text field is `invalid_operation`. [Operations](/api/operations#locale-operations) gives the exact shapes, the order updates apply in and the undo guards.
 
-`BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` use `null`, or an absent value, for the default language and structure. A localized edit to (block X, `de`) conflicts with another session's lock on (X, `de`) or (X, `null`); a lock on (X, `fr`) can coexist. Every other block operation conflicts with any other session's lock on X, and `setDefaultLocale` with every lock. `onRemoteChange.locale` is the language of the batch's first locale operation, excluding `setDefaultLocale`, otherwise `null`; a `setDefaultLocale` batch reports `null` because it changes the template's default. See [Collaboration](/backend/collaboration) for the exact contracts.
+`BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` use `null`, or an absent value, for the default language and structure. A localized edit to (block X, `de`) conflicts with another session's lock on (X, `de`) or (X, `null`); a lock on (X, `fr`) can coexist. `updateBlock`, `moveBlock` and `deleteBlock` on X conflict with any other session's lock on X (a move or delete also with locks inside X), `addBlock` checks no locks, and `setDefaultLocale` conflicts with every lock. `onRemoteChange.locale` is the language of the batch's first locale operation, excluding `setDefaultLocale`, otherwise `null`; a `setDefaultLocale` batch reports `null` because it changes the template's default. See [Collaboration](/backend/collaboration) for the exact contracts.
 
 ## Compatibility
 
@@ -13020,7 +13058,7 @@ Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dro
 
 ## Options {#options}
 
-`convertBeeFreeTemplate` accepts a second argument of type `ConvertBeeFreeOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertBeeFreeTemplate` accepts a second argument of type `ConvertBeeFreeOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 ```ts
 export interface ConvertBeeFreeOptions {
@@ -13198,7 +13236,7 @@ Email JSON 2.0 through 4.1 is accepted after a key normalizer. Kebab-case styles
 
 ## Options {#options}
 
-`convertChamaileonTemplate` accepts a second argument of type `ConvertChamaileonOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertChamaileonTemplate` accepts a second argument of type `ConvertChamaileonOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
 
@@ -13431,7 +13469,7 @@ Open-source Easy Email is a different JSON (`type: "section"` / `"text"` without
 
 ## Options {#options}
 
-`convertEasyEmailProTemplate` accepts a second argument of type `ConvertEasyEmailProOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertEasyEmailProTemplate` accepts a second argument of type `ConvertEasyEmailProOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
 
@@ -13666,7 +13704,7 @@ The function returns an `ImportResult` with:
 
 ## Options {#options}
 
-`convertHtmlTemplate` accepts a second argument of type `ConvertHtmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertHtmlTemplate` accepts a second argument of type `ConvertHtmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 The source declares its default with `<html lang>`.
 
@@ -13976,7 +14014,7 @@ console.log(report);
 
 ## Options {#options}
 
-`convertMjmlTemplate` accepts a second argument of type `ConvertMjmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertMjmlTemplate` accepts a second argument of type `ConvertMjmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 The source declares its default with `<mjml lang>`.
 
@@ -14236,7 +14274,7 @@ Unrecognized HTML (no Stripo class attributes) is converted through `@templatica
 
 ## Options {#options}
 
-`convertStripoTemplate` accepts a second argument of type `ConvertStripoOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertStripoTemplate` accepts a second argument of type `ConvertStripoOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 `ConvertStripoOptions` also retains `css?: string` for plugin storage. HTML `<html lang>` declares the default.
 
@@ -14443,7 +14481,7 @@ Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dro
 
 ## Options {#options}
 
-`convertTopolTemplate` accepts a second argument of type `ConvertTopolOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertTopolTemplate` accepts a second argument of type `ConvertTopolOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 ```ts
 export interface ConvertTopolOptions {
@@ -14660,7 +14698,7 @@ Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dro
 
 ## Options {#options}
 
-`convertUnlayerTemplate` accepts a second argument of type `ConvertUnlayerOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertUnlayerTemplate` accepts a second argument of type `ConvertUnlayerOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
 

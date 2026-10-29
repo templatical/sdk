@@ -73,6 +73,16 @@ describe("Unlayer languages", () => {
     expect(content.settings.locale).toBe("de");
     expect(report.warnings.join(" ")).not.toMatch(/assumed/);
   });
+  it("falls back to en from an invalid defaultLocale, reports it and still notes the assumption", () => {
+    const { content, report } = converted(multilingual, {
+      defaultLocale: "{{lang}}",
+    });
+    expect(content.settings.locale).toBe("en");
+    expect(report.warnings).toContain(
+      'Ignored defaultLocale "{{lang}}": unsupported language tag. Used "en".',
+    );
+    expect(report.warnings.join(" ")).toMatch(/assumed.*"en"/i);
+  });
   it("warns about a device language and does not register it", () => {
     const source = structuredClone(multilingual) as any;
     source.body.rows[0].values._override = {

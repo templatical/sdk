@@ -60,6 +60,10 @@ const ptBR: typeof en = {
       one: "{count} não retornado.",
       other: "{count} não retornados.",
     },
+    translationTooLarge: {
+      one: "{count} campo é longo demais para traduzir.",
+      other: "{count} campos são longos demais para traduzir.",
+    },
     translationError: "O serviço de tradução informou: {message}",
     defaultRefused:
       "Não foi possível definir {language} como idioma padrão: {reason}",
@@ -83,6 +87,7 @@ const ptBR: typeof en = {
       one: "Mostre primeiro o bloco oculto em {language} ({count})",
       other: "Mostre primeiro os {count} blocos ocultos em {language}",
     },
+    defaultNotEnabled: "Adicione primeiro {default} aos idiomas habilitados",
     defaultGaps: {
       one: "{count} campo não tem texto em {language} e mantém o texto em {default}.",
       other:

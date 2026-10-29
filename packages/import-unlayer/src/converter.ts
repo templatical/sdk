@@ -1,4 +1,10 @@
-import { localeTag, registerLocales, set, warn } from "./localization";
+import {
+  defaultLocaleOption,
+  localeTag,
+  registerLocales,
+  set,
+  warn,
+} from "./localization";
 import {
   createSectionBlock,
   createDefaultTemplateContent,
@@ -318,7 +324,8 @@ export function convertUnlayerTemplate(
   const headers = template.body.headers ?? [];
   const footers = template.body.footers ?? [];
   const settings = extractSettings(template);
-  settings.locale = options.defaultLocale?.replaceAll("_", "-") ?? "en";
+  const defaultLocale = defaultLocaleOption(options.defaultLocale, warnings);
+  settings.locale = defaultLocale ?? "en";
   const mappedValues = new Set<unknown>();
   for (const row of [...headers, ...template.body.rows, ...footers]) {
     mappedValues.add(row.values);
@@ -367,7 +374,7 @@ export function convertUnlayerTemplate(
     }
   };
   scan(template);
-  if (hasLanguages && !options.defaultLocale)
+  if (hasLanguages && !defaultLocale)
     warnings.push(
       'Unlayer JSON declares no default language; assumed "en". Pass defaultLocale to select another language.',
     );

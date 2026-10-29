@@ -29,7 +29,7 @@ from prose.
 
 ## Lint severity
 
-`issues[]` is the quality lint — accessibility, structure, links, deliverability, compatibility, localization — with severity
+`issues[]` is the quality lint — accessibility, structure, links, deliverability, compatibility, localization — each `{ blockId, ruleId, severity, message, suggestion, reference }`, optionally with `excerpt`, `clients` and `fix`, with severity
 `error`, `warning` or `info`. Structural failure or any error-severity lint issue
 returns exit 1. Warnings and info are advisory except for `localization.merge-tags-differ`, which causes exit 1. A missing preheader
 (`info`) is worth one mention; a `warning` is worth fixing before the user sends.

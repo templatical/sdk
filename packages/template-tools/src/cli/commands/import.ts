@@ -15,6 +15,7 @@ import {
   writeTemplateFile,
 } from "../io";
 import { resolveOptional } from "../resolve-optional";
+import { isLocaleTag } from "@templatical/types";
 import { WORKING_DIR } from "../../live/index";
 
 interface FormatSpec {
@@ -303,6 +304,16 @@ export async function runImport(args: ParsedArgs): Promise<number> {
 
   const file = args.positional[0];
   if (!file) throw new UsageError("import needs a source file.");
+  // The importers normalize `_` to `-`, so `de_AT` is accepted as they are.
+  const defaultLocale = flagValue(args, "default-locale");
+  if (
+    args.flags["default-locale"] !== undefined &&
+    !isLocaleTag(defaultLocale?.replaceAll("_", "-") ?? "")
+  ) {
+    throw new UsageError(
+      `--default-locale needs a language tag such as en or de-AT${defaultLocale === undefined ? "" : `, not "${defaultLocale}"`}.`,
+    );
+  }
   const path = resolveFrom(file, cwd);
 
   let source: string;
@@ -342,7 +353,6 @@ export async function runImport(args: ParsedArgs): Promise<number> {
     report: unknown;
   };
 
-  const defaultLocale = flagValue(args, "default-locale");
   let content: unknown;
   let report: unknown;
   if (spec.input === "stripo") {

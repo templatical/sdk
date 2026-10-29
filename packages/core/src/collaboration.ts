@@ -205,6 +205,19 @@ interface HistoryEntry {
   ops: Operation[];
   /** The AI turn whose batches this step undoes, if it is one. */
   turn?: string;
+  /**
+   * The view `ops` apply to, kept when they restore a `setContent` snapshot.
+   * A snapshot can't expect what it overwrites, so the step is refused once
+   * the view differs: another session's batch landed in between.
+   */
+  view?: TemplateContent;
+}
+
+/** `entry` guarded for `view` when it restores a snapshot. */
+function guarded(entry: HistoryEntry, view: TemplateContent): HistoryEntry {
+  if (entry.ops.some((op) => op.op === "setContent")) entry.view = view;
+  else delete entry.view;
+  return entry;
 }
 
 interface PendingBatch {
@@ -218,6 +231,18 @@ interface PendingBatch {
   sent: boolean;
   /** Set once the backend confirms it. */
   revision: number | null;
+  /**
+   * The revision of the first attempt, sent again on every retry: a retry
+   * must not claim a base it wasn't built on, or a snapshot passes the
+   * backend's rule over a batch that landed during the delay.
+   */
+  baseRevision?: number;
+  /**
+   * The view a batch holding a `setContent` was built on. Replayed over any
+   * other view, the snapshot would overwrite a batch it never saw, so it is
+   * dropped instead; the backend refuses it for the same reason.
+   */
+  base?: TemplateContent;
 }
 
 interface Session {
@@ -358,6 +383,8 @@ export function useCollaboration(
   let active: Session | null = null;
   let suspended = false;
   let writing = false;
+  /** True while `rebuild` replays: `pump` holds batches until it ends. */
+  let rebuilding = false;
   let captureQueued = false;
   let typingTimer: ReturnType<typeof setTimeout> | null = null;
   let typingSince = 0;
@@ -550,33 +577,49 @@ export function useCollaboration(
         return;
       }
     }
-    const entry: HistoryEntry = { ops: invertOperations(session.view, ops) };
+    const entry = guarded({ ops: invertOperations(session.view, ops) }, next);
     pushCapped(session.undo, entry);
     session.redo = [];
     bumpHistory();
+    const base = session.view;
     session.view = next;
-    enqueue(session, ops, "edit", entry);
+    enqueue(session, ops, "edit", entry, base);
   }
 
+  /** Queue `ops`, built on `base`, as one or more batches and send them. */
   function enqueue(
     session: Session,
     ops: Operation[],
     origin: PendingBatch["origin"],
     entry: HistoryEntry | null,
+    base: TemplateContent,
   ): void {
     const group = { dropped: false };
     let offset = 0;
+    let chunkBase: TemplateContent | null = base;
     do {
+      const chunk = ops.slice(offset, offset + MAX_BATCH_OPS);
       session.pending.push({
         batchId: crypto.randomUUID(),
-        ops: ops.slice(offset, offset + MAX_BATCH_OPS),
+        ops: chunk,
         origin,
         entry,
         group,
         sent: false,
         revision: null,
+        ...(chunkBase && chunk.some((op) => op.op === "setContent")
+          ? { base: chunkBase }
+          : {}),
       });
       offset += MAX_BATCH_OPS;
+      // A later chunk with a snapshot is built on this one's result.
+      if (chunkBase && ops.slice(offset).some((op) => op.op === "setContent")) {
+        try {
+          chunkBase = applyOperations(chunkBase, chunk);
+        } catch {
+          chunkBase = null;
+        }
+      }
     } while (offset < ops.length);
     pump(session);
   }
@@ -584,7 +627,8 @@ export function useCollaboration(
   // --- Sending ---------------------------------------------------------------
 
   function pump(session: Session): void {
-    if (session.inFlight) return;
+    // A batch captured mid-rebuild is checked by the replay before it goes.
+    if (session.inFlight || rebuilding) return;
     const next = session.pending.find((batch) => !batch.sent);
     if (!next) {
       settleWaiters(session);
@@ -599,7 +643,7 @@ export function useCollaboration(
     provider
       .submit(session.templateId, {
         batchId: batch.batchId,
-        baseRevision: session.revision,
+        baseRevision: (batch.baseRevision ??= session.revision),
         ops: batch.ops,
         ...(batch.origin === "ai" ? { origin: "ai" as const } : {}),
       })
@@ -800,33 +844,53 @@ export function useCollaboration(
 
   /** Recompute the view from `confirmed`, replaying what is still pending. */
   function rebuild(session: Session): void {
+    const outer = !rebuilding;
+    rebuilding = true;
+    try {
+      replay(session);
+    } finally {
+      if (outer) rebuilding = false;
+    }
+    if (outer) pump(session);
+  }
+
+  /** `rebuild`'s work, with sending held until it ends. */
+  function replay(session: Session): void {
     // Typing not sent yet becomes a batch first, so the canvas holds nothing
-    // the replay below doesn't know about.
+    // the replay below doesn't know about. It isn't sent yet: built on the
+    // old view, it is checked like any other pending batch.
     if (session === active) flush();
     let view = session.confirmed;
     for (let index = 0; index < session.pending.length; index++) {
       const batch = session.pending[index];
-      try {
-        view = applyOperations(view, batch.ops);
-      } catch (error) {
-        if (batch.sent) {
-          // The backend decides this one; it will almost certainly refuse it.
+      let code: CollaborationConflictCode;
+      if (batch.base && !deepEqual(batch.base, view)) {
+        // A snapshot over a base that moved would overwrite what moved it.
+        code = "precondition_failed";
+      } else {
+        try {
+          view = applyOperations(view, batch.ops);
           continue;
-        }
-        if (dropRefusedGroup(session, batch)) {
-          const code =
+        } catch (error) {
+          code =
             error instanceof OperationError ? error.code : "invalid_operation";
-          notify(
-            batch.origin === "edit" || batch.origin === "ai"
-              ? { type: "editRefused", code }
-              : { type: "undoSkipped", code },
-            session,
-          );
         }
-        // Earlier pending chunks of that group may already be in this view.
-        view = session.confirmed;
-        index = -1;
       }
+      if (batch.sent) {
+        // The backend decides this one; it will almost certainly refuse it.
+        continue;
+      }
+      if (dropRefusedGroup(session, batch)) {
+        notify(
+          batch.origin === "edit" || batch.origin === "ai"
+            ? { type: "editRefused", code }
+            : { type: "undoSkipped", code },
+          session,
+        );
+      }
+      // Earlier pending chunks of that group may already be in this view.
+      view = session.confirmed;
+      index = -1;
     }
     session.view = view;
     settleWaiters(session);
@@ -1298,6 +1362,10 @@ export function useCollaboration(
     const entry = (direction === "undo" ? session.undo : session.redo).pop();
     if (!entry) return;
     bumpHistory();
+    if (entry.view && !deepEqual(entry.view, session.view)) {
+      notify({ type: "undoSkipped", code: "precondition_failed" });
+      return;
+    }
     let next: TemplateContent;
     try {
       next = applyOperations(session.view, entry.ops, lockContext());
@@ -1306,14 +1374,16 @@ export function useCollaboration(
       notify({ type: "undoSkipped", code: error.code });
       return;
     }
-    const counter: HistoryEntry = {
-      ops: invertOperations(session.view, entry.ops),
-    };
+    const counter = guarded(
+      { ops: invertOperations(session.view, entry.ops) },
+      next,
+    );
     pushCapped(direction === "undo" ? session.redo : session.undo, counter);
+    const base = session.view;
     session.view = next;
     renderView(next);
     editor?.markDirty();
-    enqueue(session, entry.ops, direction, counter);
+    enqueue(session, entry.ops, direction, counter, base);
   }
 
   function applyFromTurn(
@@ -1359,26 +1429,34 @@ export function useCollaboration(
       top &&
       top.turn === options.turn
     ) {
-      // Undoing the turn undoes this batch first, then the earlier ones.
+      // Undoing the turn undoes this batch first, then the earlier ones. A
+      // snapshot guard another session's batch has already overtaken stays as
+      // it is: re-guarding it on this batch's view would let Undo through.
+      const overtaken =
+        top.view !== undefined && !deepEqual(top.view, session.view);
       top.ops = [...inverse, ...top.ops];
-      entry = top;
+      entry = overtaken ? top : guarded(top, next);
     } else {
-      entry = {
-        ops: inverse,
-        ...(options.origin === "ai" && options.turn !== undefined
-          ? { turn: options.turn }
-          : {}),
-      };
+      entry = guarded(
+        {
+          ops: inverse,
+          ...(options.origin === "ai" && options.turn !== undefined
+            ? { turn: options.turn }
+            : {}),
+        },
+        next,
+      );
       pushCapped(session.undo, entry);
     }
     session.redo = [];
     bumpHistory();
+    const base = session.view;
     session.view = next;
     renderView(next);
     editor.markDirty();
     // Like an edit, a batch the backend refuses takes its undo entry back.
     // If it joined a turn, that turn's whole local undo entry goes.
-    enqueue(session, ops, options.origin ?? "edit", entry);
+    enqueue(session, ops, options.origin ?? "edit", entry, base);
     return { applied: true, inverse };
   }
 

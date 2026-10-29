@@ -131,7 +131,7 @@ const editor = await init({
     ]
   }
 },
-  localization: { locales: ["de", "fr", "ar"], doNotTranslate: ["Sable"] },
+  localization: { locales: ["en", "de", "fr", "ar"], doNotTranslate: ["Sable"] },
   translation: createMockTranslationProvider({ translations }),
   ai: createMockAiProvider({
     ...AI_RECORDINGS,

@@ -83,6 +83,14 @@ const resultText = computed(() => {
         uiLocale,
       ),
     );
+  if (result.tooLarge.length)
+    parts.push(
+      plural(
+        t.localization.translationTooLarge,
+        result.tooLarge.length,
+        uiLocale,
+      ),
+    );
   if (result.error)
     parts.push(
       format(t.localization.translationError, {

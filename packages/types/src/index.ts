@@ -375,6 +375,7 @@ export {
   getTagAttrValue,
 } from "./html-scan";
 export { fillEmptyParagraphs, isBlankRichText } from "./rich-text";
+export { isSafeUrlAttribute } from "./safe-url";
 export type { FontFamily } from "./fonts";
 export {
   BUILT_IN_FONT_STACKS,

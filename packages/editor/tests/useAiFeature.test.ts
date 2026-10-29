@@ -27,6 +27,8 @@ import { normalizeRemoteOperations } from "../src/utils/normalizeMergeTagMarkup"
 import { createHttpAiProvider } from "../../ai-kit/src/client";
 import { createMockAiProvider } from "../../ai-kit/src/testing";
 import { createReferenceHandler } from "../../ai-kit/tests/helpers/reference-server";
+import { FakeCollaborationServer } from "../../core/tests/helpers/fake-collaboration-server";
+import { AGENT } from "../../core/tests/helpers/collaboration-harness";
 
 const CONTENT = {
   blocks: [
@@ -3634,4 +3636,140 @@ it('abandons a completed rewrite response even when it emitted no text chunks', 
     finish({ html: '<p>Draft</p>' });
     expect(await pending).toMatchObject({ name: 'AbortError' });
   } finally { ai.destroy(); scope.stop(); }
+});
+
+describe("the chat's Undo of a whole-template turn under collaboration", () => {
+  const replacement = {
+    blocks: [{ id: "t1", type: "title", content: "<p>Replaced</p>" }],
+    settings: { width: 640 },
+  } as unknown as TemplateContent;
+  const bob: Operation = {
+    op: "updateBlock",
+    blockId: "t1",
+    set: { content: "<p>Bob</p>" },
+  };
+  const titleOf = (content: TemplateContent) =>
+    (content.blocks.find((block) => block.id === "t1") as { content?: string })
+      ?.content;
+  async function settled() {
+    for (let i = 0; i < 4; i++) await settle();
+  }
+
+  async function open() {
+    const server = new FakeCollaborationServer(safeClone(CONTENT));
+    const scope = effectScope();
+    const value = scope.run(() => {
+      const collaboration = useCollaborationFeature({
+        provider: server.provider("Ada"),
+        loadTemplate: async () => server.template(),
+      });
+      const editor = useEditor({
+        content: safeClone(CONTENT),
+        templates: server.templatesProvider(),
+        lockedBlocks: collaboration.locks,
+      });
+      collaboration.attach(editor);
+      const ai = useAiFeature({
+        provider: {
+          ...off,
+          chat: chatting(async (on) => {
+            await on.onOperations([
+              { op: "setContent", content: safeClone(replacement) },
+            ]);
+          }),
+        } as AiProvider,
+        editor,
+        collaboration,
+        history: () => collaboration.history,
+        reload: null,
+        mergeTags: () => ({ syntax: "liquid", tags: [] }),
+        normalize: (ops) => [...ops],
+        commentsOpen: null,
+      });
+      return { editor, collaboration, ai };
+    })!;
+    await value.editor.load(server.templateId);
+    await settled();
+    const assistant = () =>
+      value.ai.messages.value.find((item) => item.role === "assistant")!;
+    return { ...value, server, scope, assistant };
+  }
+
+  it("refuses Undo once another session changed the template after the turn, keeping that edit", async () => {
+    const { ai, editor, server, scope, assistant } = await open();
+    try {
+      await ai.send("Replace everything");
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(titleOf(server.content)).toBe("<p>Replaced</p>");
+      server.pushAs(AGENT, [bob]);
+      server.deliverAll();
+      await settled();
+      const submits = server.submits;
+      await ai.undoMessage(assistant().id);
+      await settled();
+      expect(server.submits).toBe(submits);
+      expect(assistant()).toMatchObject({
+        undone: false,
+        failure: {
+          context: "undo",
+          error: expect.objectContaining({ code: "precondition_failed" }),
+        },
+      });
+      for (const content of [editor.content.value, server.content])
+        expect(titleOf(content)).toBe("<p>Bob</p>");
+    } finally {
+      scope.stop();
+    }
+  });
+
+  it("offers no working Undo for a turn the backend refused, keeping the other session's edit", async () => {
+    const { ai, editor, server, scope, assistant } = await open();
+    try {
+      // Committed at the backend before the turn's batch, not yet delivered.
+      server.pushAs(AGENT, [bob]);
+      await ai.send("Replace everything");
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(server.submitted.at(-1)?.ops[0].op).toBe("setContent");
+      expect(titleOf(server.content)).toBe("<p>Bob</p>");
+      expect(titleOf(editor.content.value)).toBe("<p>Bob</p>");
+      await ai.undoMessage(assistant().id);
+      await settled();
+      server.deliverAll();
+      await settled();
+      for (const content of [editor.content.value, server.content])
+        expect(titleOf(content)).toBe("<p>Bob</p>");
+      expect(assistant().undone).toBe(false);
+    } finally {
+      scope.stop();
+    }
+  });
+
+  it("still undoes and redoes the turn exactly when nobody else changed the template", async () => {
+    const { ai, editor, server, scope, assistant } = await open();
+    try {
+      await ai.send("Replace everything");
+      await settled();
+      server.deliverAll();
+      await settled();
+      await ai.undoMessage(assistant().id);
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(editor.content.value).toEqual(CONTENT);
+      expect(server.content).toEqual(CONTENT);
+      await ai.redoMessage(assistant().id);
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(titleOf(editor.content.value)).toBe("<p>Replaced</p>");
+      expect(titleOf(server.content)).toBe("<p>Replaced</p>");
+      expect(assistant().failure).toBeUndefined();
+    } finally {
+      scope.stop();
+    }
+  });
 });

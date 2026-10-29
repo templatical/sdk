@@ -225,12 +225,18 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         "unknown_locale",
       );
     }
-    if (activeLocale.value === locale) return;
     activeLocale.value = locale;
-    notifyHandler(options.onError, () =>
-      options.onLocaleChange?.(locale ?? fallback),
-    );
   }
+
+  // The one place that reports the language shown: a view change, a fallback,
+  // and a default that changes under the view (Make default, its undo and
+  // redo, a remote setDefaultLocale) alike. Promoting the version on screen
+  // changes nothing here, so it reports nothing.
+  watch(
+    () => activeLocale.value ?? defaultLocaleOf(state.content),
+    (locale) =>
+      notifyHandler(options.onError, () => options.onLocaleChange?.(locale)),
+  );
 
   // Also covers remote content replacement and snapshot history navigation.
   watch(

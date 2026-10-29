@@ -165,6 +165,7 @@ describe("language bar", () => {
       tagsChanged: ["a", "b"],
       skippedLocked: ["c", "d", "e"],
       missing: ["f"],
+      tooLarge: [],
       error: { code: "rate_limited", message: "Try later" },
       cancelled: false,
     });
@@ -216,6 +217,56 @@ describe("language bar", () => {
       expect(bar.find(id("translation-result")).exists()).toBe(false);
       expect(bar.get(id("language-bar-status")).text()).toBe(
         "1 missing, 1 out of date",
+      );
+    } finally {
+      bar.unmount();
+    }
+  });
+
+  it("reports a field over the cap as the editor's own limit, not the service's", async () => {
+    const { wrapper } = await openLanguages({ translation: provider });
+    await chooseLanguage(wrapper, "de");
+    const lastResult = ref<TranslationRunResult | null>({
+      translated: 1,
+      tagsChanged: [],
+      skippedLocked: [],
+      missing: [],
+      tooLarge: ["title/content"],
+      error: null,
+      cancelled: false,
+    });
+    const feature: UseTranslationFeatureReturn = {
+      isAvailable: computed(() => true),
+      counts: computed(() => ({ gaps: 1, all: 2 })),
+      running: ref(null),
+      lastResult,
+      cancel: () => {},
+      translate: async () => lastResult.value!,
+      dismissResult: () => {
+        lastResult.value = null;
+      },
+    };
+    const bar = mount(LanguageBar, {
+      props: {
+        ...wrapper.findComponent(LanguageBar).props(),
+        feature,
+      } as never,
+      global: {
+        provide: { [TRANSLATIONS_KEY as symbol]: en },
+        stubs: { teleport: true },
+      },
+    });
+    try {
+      expect(bar.get(id("translation-result")).text()).toBe(
+        "Translated 1 field. 1 field is too long to translate.",
+      );
+      lastResult.value = {
+        ...lastResult.value!,
+        tooLarge: ["a", "b"],
+      };
+      await nextTick();
+      expect(bar.get(id("translation-result")).text()).toBe(
+        "Translated 1 field. 2 fields are too long to translate.",
       );
     } finally {
       bar.unmount();

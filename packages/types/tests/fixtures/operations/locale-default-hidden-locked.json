@@ -1,0 +1,47 @@
+{
+  "name": "locale-default-hidden-locked",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hello",
+        "l10n": {
+          "de": {
+            "hidden": true
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de",
+        "fr"
+      ]
+    }
+  },
+  "locks": [
+    {
+      "blockId": "t1",
+      "sessionId": "other",
+      "locale": "fr"
+    }
+  ],
+  "session": "me",
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "t1",
+      "message": "1 blocks are hidden in \"de\". Show them before making it the default."
+    }
+  }
+}

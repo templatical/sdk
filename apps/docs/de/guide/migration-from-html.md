@@ -74,7 +74,7 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 
 ## Optionen {#options}
 
-`convertHtmlTemplate` akzeptiert als zweites Argument `ConvertHtmlOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert.
+`convertHtmlTemplate` akzeptiert als zweites Argument `ConvertHtmlOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert. Eine deklarierte Standardsprache oder ein `defaultLocale`, das danach kein Sprach-Tag ist, etwa ein Platzhalter <code v-pre>{{lang}}</code>, wird mit einem `report.warnings`-Eintrag ignoriert, der den Wert nennt; dann gilt der nächste gültige Wert oder `"en"`.
 
 Die Quelle deklariert ihre Standardsprache mit `<html lang>`.
 

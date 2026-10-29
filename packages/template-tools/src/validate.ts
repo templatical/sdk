@@ -145,6 +145,19 @@ function pathNeedsDottedElementId(target: unknown, path: string): boolean {
   return false;
 }
 
+/** True for a layout's slot block and for any block that contains it. */
+function holdsSlot(block: unknown): boolean {
+  if (block === null || typeof block !== "object") return false;
+  const { type, children } = block as { type?: unknown; children?: unknown };
+  if (type === "slot") return true;
+  return (
+    Array.isArray(children) &&
+    children.some((child) =>
+      Array.isArray(child) ? child.some(holdsSlot) : holdsSlot(child),
+    )
+  );
+}
+
 function validateLocalization(
   content: TemplateContent,
   flat: FlatBlock[],
@@ -266,6 +279,13 @@ function validateLocalization(
       translatableFields(typed, definitions),
       ["id", "type", "children", "l10n"],
     );
+    if (!holdsSlot(typed)) continue;
+    for (const [locale, layer] of Object.entries(typed.l10n ?? {})) {
+      if (layer?.hidden === true)
+        errors.push(
+          `${path}.l10n[${JSON.stringify(locale)}].hidden cannot hide the layout's slot or a block that contains it`,
+        );
+    }
   }
   checkLayers(
     settings,

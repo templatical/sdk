@@ -426,6 +426,16 @@ watch(
   },
   { flush: "sync" },
 );
+// Undo (or any other change) that moves the default away from the notice's
+// language makes the notice untrue.
+watch(
+  () => defaultLocaleOf(editor.content.value),
+  (current) => {
+    if (localeNotice.value && localeNotice.value.language !== current)
+      localeNotice.value = null;
+  },
+  { flush: "sync" },
+);
 const localeActions = useLocaleActions({
   editor,
   history: () => core.history,

@@ -3,6 +3,7 @@ import {
   applyOperations,
   defaultLocaleOf,
   isLocaleTag,
+  localeCoverage,
   localeStrings,
   readPath,
   resolveLocale,
@@ -21,7 +22,7 @@ import {
 import { validateTemplate } from "../../validate";
 import { flagValue, type ParsedArgs } from "../args";
 import { readDefinitions, readDoNotTranslate } from "../definitions";
-import { isSafeTranslationHtml } from "../html-safety";
+import { isSafeTranslationHtml, isSafeTranslationText } from "../html-safety";
 import {
   EXIT,
   InvalidTemplateError,
@@ -31,11 +32,17 @@ import {
 } from "../io";
 import { emit, note } from "../output";
 
+/** A strings file entry; `previous` is never read on import. */
+type StringsFileEntry = LocaleString & {
+  /** A stale entry's stored translation, masked; `text` is left absent. */
+  previous?: string;
+};
+
 interface StringsFile {
   templatical: "strings/1";
   sourceLocale: string;
   targetLocale: string;
-  strings: LocaleString[];
+  strings: StringsFileEntry[];
 }
 
 function readStringsFile(file: string, cwd: string): StringsFile {
@@ -63,6 +70,18 @@ function readStringsFile(file: string, cwd: string): StringsFile {
     );
   }
   return data as unknown as StringsFile;
+}
+
+/** Refuse the default language: strings work on a language version. */
+function assertLanguageVersion(
+  template: TemplateContent,
+  locale: string,
+  file: string,
+): void {
+  if (locale === defaultLocaleOf(template))
+    throw new InvalidTemplateError(
+      `"${locale}" is the default language of ${file}, not a language version. Use a language from settings.locales.`,
+    );
 }
 
 function valueFlag(args: ParsedArgs, name: string): string | undefined {
@@ -118,12 +137,21 @@ export function runStrings(args: ParsedArgs): number {
     const blockId = valueFlag(args, "block");
     // Unlike coverage, projection refuses an unknown language.
     resolveLocale(template, locale);
-    const { strings } = localeStrings(template, locale, {
+    assertLanguageVersion(template, locale, file);
+    const stale = new Set(localeCoverage(template, locale, definitions).stale);
+    // A stale entry's old text goes aside, so importing the file unchanged
+    // can't stamp it with the current hash.
+    const strings = localeStrings(template, locale, {
       definitions,
       doNotTranslate,
       syntax,
       only,
       blockId,
+    }).strings.map(({ text, ...entry }): StringsFileEntry => {
+      if (text === undefined) return entry;
+      return stale.has(entry.id)
+        ? { ...entry, previous: text }
+        : { ...entry, text };
     });
     const data: StringsFile = {
       templatical: "strings/1",
@@ -150,7 +178,12 @@ export function runStrings(args: ParsedArgs): number {
   }
 
   const data = readStringsFile(stringsFile!, cwd);
+  if (data.sourceLocale !== defaultLocaleOf(template))
+    throw new UsageError(
+      `${stringsFile} was exported from "${data.sourceLocale}", but the default language of ${file} is "${defaultLocaleOf(template)}". Export the strings again.`,
+    );
   resolveLocale(template, data.targetLocale);
+  assertLanguageVersion(template, data.targetLocale, file);
   const options = { definitions, doNotTranslate, syntax };
   // Import re-masks defaults even when a stored translation has broken tags.
   const defaults = structuredClone(template);
@@ -211,8 +244,14 @@ export function runStrings(args: ParsedArgs): number {
       rejected.push(...result.rejected);
       continue;
     }
-    const restored = unmaskTags(entry.text, current.tokens[entry.id]);
-    if (field?.format === "html" && !isSafeTranslationHtml(restored!)) {
+    const tokens = current.tokens[entry.id];
+    const restored = unmaskTags(entry.text, tokens)!;
+    const source = field ? unmaskTags(field.source, tokens)! : "";
+    if (
+      field?.format === "html"
+        ? !isSafeTranslationHtml(restored, source)
+        : !isSafeTranslationText(restored, source)
+    ) {
       rejected.push({ id: entry.id, reason: "unsafe_html" });
       continue;
     }

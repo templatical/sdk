@@ -1,4 +1,10 @@
-import { localeTag, registerLocales, text, warn } from "./localization";
+import {
+  defaultLocaleOption,
+  localeTag,
+  registerLocales,
+  text,
+  warn,
+} from "./localization";
 import {
   canonicalFontStack,
   createSectionBlock,
@@ -325,7 +331,7 @@ export function convertBeeFreeTemplate(
     template.language?.value;
   settings.locale =
     (declared ? localeTag(declared, warnings) : null) ??
-    options.defaultLocale?.replaceAll("_", "-") ??
+    defaultLocaleOption(options.defaultLocale, warnings) ??
     "en";
   const meta = template.head?.meta;
   if (typeof meta?.preheader === "string")

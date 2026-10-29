@@ -509,7 +509,7 @@ export function localeHiddenBlocks(
   return ids;
 }
 
-/** Field ids that would keep the current default's value if `locale` became the default. Pure. */
+/** Field ids with a nonempty default that would keep the current default's value if `locale` became the default. Pure. */
 export function defaultLocaleGaps(
   content: TemplateContent,
   locale: string,
@@ -527,7 +527,9 @@ export function defaultLocaleGaps(
     )?.[locale];
     for (const path of paths) {
       const value = readPath(target, path);
-      if (typeof value !== "string" || layer?.text?.[path]) continue;
+      // An empty default has no text to keep, as in localeCoverage.
+      if (typeof value !== "string" || value === "" || layer?.text?.[path])
+        continue;
       const overridden = Object.keys(layer?.set ?? {}).some(
         (key) =>
           (path === key || path.startsWith(`${key}.`)) &&
@@ -585,7 +587,21 @@ export function rebaseDefaultLocale(
     for (const path of paths) {
       const before = readPath(target, path);
       const after = readPath(next, path);
-      if (deepEqual(before, after)) continue;
+      if (deepEqual(before, after)) {
+        // Text translated to the old default's own value stays a current
+        // translation, so the old default doesn't read it as missing.
+        if (
+          promoted.text?.[path] &&
+          textPath(path) &&
+          typeof before === "string" &&
+          before !== ""
+        )
+          (old.text ??= {})[path] = {
+            value: before,
+            sourceHash: sourceHash(before),
+          };
+        continue;
+      }
       if (
         textPath(path) &&
         typeof before === "string" &&

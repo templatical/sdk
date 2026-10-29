@@ -60,6 +60,47 @@ describe("CLI strings documentation", () => {
     },
   );
   it.each([
+    "apps/docs/api/template-tools.md",
+    "apps/docs/de/api/template-tools.md",
+    "skills/templatical/reference/cli.md",
+  ])(
+    "%s documents stale entries' previous text, the default-language refusals and the markup rule",
+    (file) => {
+      const text = readFileSync(resolve(root, file), "utf8");
+      for (const contract of [
+        "`previous`",
+        "`xlink:href`",
+        "`ping`",
+        "`vbscript:`",
+        "CDATA",
+      ]) {
+        expect(text, contract).toContain(contract);
+      }
+      expect(text).toMatch(/`text`-[Ff]ormat/);
+      expect(text).toMatch(/default language|Standardsprache/);
+      expect(text).not.toMatch(
+        /starting with `javascript:`|mit `javascript:` beginnt/,
+      );
+    },
+  );
+  it.each([
+    "apps/docs/guide/localized-templates.md",
+    "apps/docs/de/guide/localized-templates.md",
+    "skills/templatical/reference/localize.md",
+  ])("%s says a stale entry's old text is exported as previous", (file) => {
+    const text = readFileSync(resolve(root, file), "utf8");
+    expect(text).toContain("`previous`");
+  });
+  it.each([
+    "apps/docs/backend/translation.md",
+    "apps/docs/de/backend/translation.md",
+  ])("%s says an extra literal occurrence of a term is plain text", (file) => {
+    const text = readFileSync(resolve(root, file), "utf8");
+    expect(text).toMatch(
+      /extra literal occurrence of a term is plain text|zusätzliches wörtliches Vorkommen eines Begriffs ist normaler Text/,
+    );
+  });
+  it.each([
     "apps/docs/guide/localized-templates.md",
     "apps/docs/de/guide/localized-templates.md",
     "skills/templatical/reference/localize.md",

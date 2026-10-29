@@ -1,7 +1,7 @@
 import { load, type CheerioAPI } from "cheerio";
 import { convertHtmlTemplate } from "@templatical/import-html";
 import type { ImportReport, ImportResult } from "@templatical/import-html";
-import { createDefaultTemplateContent } from "@templatical/types";
+import { createDefaultTemplateContent, isLocaleTag } from "@templatical/types";
 import { convertCompiled } from "./compiled";
 import { colorFromPaint, imageFromPaint } from "./css";
 import { detectStripoKind } from "./detect";
@@ -13,6 +13,35 @@ export interface ConvertStripoOptions {
   defaultLocale?: string;
   /** Sibling CSS from plugin `getTemplateData()`. Applied inside each HTML fragment. */
   css?: string;
+}
+
+/**
+ * The default language, as `convertHtmlTemplate` reads it: `<html lang>`, else
+ * `defaultLocale`, else `"en"`. A value that isn't a language tag after `_` →
+ * `-` is skipped, with a warning naming it. The fallback converter warns on its
+ * own report, so the Stripo path repeats the check for its report.
+ */
+function defaultLanguage(
+  declared: string | undefined,
+  defaultLocale: string | undefined,
+  warnings: string[],
+): string {
+  const rejected: string[] = [];
+  let locale = "en";
+  for (const [value, name] of [
+    [declared, "the source's default language"],
+    [defaultLocale, "defaultLocale"],
+  ] as const) {
+    if (!value) continue;
+    const tag = value.replaceAll("_", "-");
+    if (isLocaleTag(tag)) {
+      locale = tag;
+      break;
+    }
+    rejected.push(`Ignored ${name} "${value}": unsupported language tag.`);
+  }
+  for (const message of rejected) warnings.push(`${message} Used "${locale}".`);
+  return locale;
 }
 
 function injectCss(html: string, css?: string): string {
@@ -130,6 +159,11 @@ export function convertStripoTemplate(
     css: options?.css,
   };
   const $page = load(prepared);
+  const locale = defaultLanguage(
+    $page("html").attr("lang")?.trim(),
+    options?.defaultLocale,
+    ctx.warnings,
+  );
   const pageBg = pageBackground($page);
   const pageImage = pageImageWarning($page);
   if (pageImage) ctx.warnings.push(pageImage);
@@ -151,6 +185,7 @@ export function convertStripoTemplate(
       settings: {
         ...defaults.settings,
         ...fallback.content.settings,
+        locale,
         backgroundColor: pageBg,
       },
     },

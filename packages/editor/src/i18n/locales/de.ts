@@ -60,6 +60,10 @@ const de: typeof en = {
       one: "{count} nicht zurückgegeben.",
       other: "{count} nicht zurückgegeben.",
     },
+    translationTooLarge: {
+      one: "{count} Feld ist zu lang zum Übersetzen.",
+      other: "{count} Felder sind zu lang zum Übersetzen.",
+    },
     translationError: "Der Übersetzungsdienst meldet: {message}",
     defaultRefused:
       "{language} konnte nicht als Standardsprache festgelegt werden: {reason}",
@@ -80,6 +84,8 @@ const de: typeof en = {
       one: "Zeige zuerst den {count} in {language} ausgeblendeten Block",
       other: "Zeige zuerst die {count} in {language} ausgeblendeten Blöcke",
     },
+    defaultNotEnabled:
+      "Füge {default} zuerst zu den aktivierten Sprachen hinzu",
     defaultGaps: {
       one: "{count} Feld hat keinen Text in {language} und behält seinen Text in {default}.",
       other:

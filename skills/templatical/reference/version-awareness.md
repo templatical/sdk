@@ -1,6 +1,6 @@
 # Version awareness
 
-**Consulted by:** [integrate.md](integrate.md) · [diagnose.md](diagnose.md)
+**Consulted by:** [integrate.md](integrate.md) · [diagnose.md](diagnose.md) · [localize.md](localize.md)
 
 Resolve the consumer's installed `@templatical/editor` version — from their
 lockfile or `package.json` — before answering anything version-sensitive.
@@ -16,3 +16,9 @@ lockfile or `package.json` — before answering anything version-sensitive.
   necessarily the consumer's installed version. When the consumer is behind,
   say so, and offer to diff via `docs.templatical.com/changelog.json` rather
   than silently answering from a newer release.
+- **The CLI pin can be older than the install.** [cli.md](cli.md) pins the
+  CLI this copy of the skill shipped with. When the installed `@templatical/*`
+  version is newer, pin that installed version for the session: keep the
+  `npx -y` prefix and write `@templatical/template-tools@<installed>`. Say once
+  that the skill is older than the SDK, and offer the update from
+  [talking.md](talking.md). Never substitute `@latest`.

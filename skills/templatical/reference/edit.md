@@ -55,9 +55,19 @@ block hidden in German refuses it with `invalid_operation`: list them with
 `localeHiddenBlocks(content, "de")` and show them first. Fields without German
 text keep the old default's value, and the old default keeps no copy of them:
 translate them into German first, until `defaultLocaleGaps(content, "de")`
-returns `[]` ([localize.md](localize.md)). HTML blocks and empty defaults aren't
-sent by Translate or `strings export`: translate HTML blocks by hand in the
-German view; an empty default has no text to keep.
+returns `[]` ([localize.md](localize.md)); an empty default isn't a gap. HTML
+blocks aren't sent by Translate or `strings export`:
+translate HTML blocks by hand in the German view.
+Without code, the CLI checks the same: the refusal names only the number of
+hidden blocks (exit 2, nothing written), so list them with
+`jq '[.. | objects | select(.l10n?.de?.hidden == true) | .id]' .templatical/<name>.json`
+and show each with `{"op":"updateBlockLocale","blockId":"<id>","locale":"de","hidden":false}`.
+`validate .templatical/<name>.json --locale de --json` then reports every gap as
+`localization.untranslated`, and
+`strings export .templatical/<name>.json --locale de --out strings.de.json`
+exports them, except HTML blocks, with any out-of-date fields, for
+`strings import`. After the change,
+`validate --locale en` lists the gaps left; a field German translated to the English text keeps a current entry.
 `updateSettings` refuses to change `settings.locale` while versions exist.
 
 An agent connected to a template through Templatical Cloud's hosted MCP server

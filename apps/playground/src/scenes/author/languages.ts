@@ -441,7 +441,7 @@ export const languages: Scene = {
       locales:
         ctx.search.get("scale") === "1"
           ? [...SCALE_LOCALES]
-          : ["de", "fr", "ar"],
+          : ["en", "de", "fr", "ar"],
       doNotTranslate: ["Sable"],
     };
     const translation = translationFor(ctx);
@@ -530,7 +530,7 @@ const editor = await init({
     save: async (id, patch) => (template = { ...template, ...patch, id }),
   },
   layout: ${JSON.stringify(languagesLayout(), null, 2)},
-  localization: { locales: ["de", "fr", "ar"], doNotTranslate: ["Sable"] },
+  localization: { locales: ["en", "de", "fr", "ar"], doNotTranslate: ["Sable"] },
   translation: createMockTranslationProvider({ translations }),
   ai: createMockAiProvider({
     ...AI_RECORDINGS,

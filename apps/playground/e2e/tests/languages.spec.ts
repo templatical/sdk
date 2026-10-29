@@ -680,6 +680,31 @@ test.describe("language versions", () => {
     await expect(page.getByTestId("language-default-confirm")).toHaveCount(0);
   });
 
+  // The scale variant keeps English, its default, out of `localization.locales`.
+  test("explains disabled promotion while the default isn't an enabled language", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await scenePage.goto("languages", { scale: "1" });
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.getByTestId("language-menu").click();
+    await page.getByTestId("language-actions-de").click();
+    const action = page.getByTestId("language-make-default-de");
+    await expect(action).toBeFocused();
+    await expect(action).toHaveAttribute("aria-disabled", "true");
+    const reason = page.locator(
+      `[id="${await action.getAttribute("aria-describedby")}"]`,
+    );
+    await expect(reason).toHaveText(
+      "Add English to the enabled languages first",
+    );
+    await expect(reason).toBeVisible();
+    await action.press("Enter");
+    await expect(page.getByTestId("language-default-confirm")).toHaveCount(0);
+  });
+
   test("flips a bottom-edge stale popover above its chip and keeps Keep reachable", async ({
     page,
     scenePage,

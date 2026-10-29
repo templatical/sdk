@@ -33,3 +33,106 @@ describe("translation HTML safety", () => {
     expect(isSafeTranslationHtml(html)).toBe(true);
   });
 });
+
+describe("translation HTML safety: comment-like markup", () => {
+  it.each([
+    "<p><![CDATA[><img src=x onerror=alert(1)>]]>Hallo</p>",
+    "<p>Hallo<!-- note --></p>",
+    "<p>Hallo<!x></p>",
+    "<!doctype html><p>Hallo</p>",
+    "<p><?xml version?>Hallo</p>",
+  ])("rejects %s when the source carries no such markup", async (html) => {
+    const { isSafeTranslationHtml } = await import("../src/cli/html-safety");
+    expect(isSafeTranslationHtml(html, "<p>Hello</p>")).toBe(false);
+  });
+  it("accepts a comment the source carries byte for byte, and no other", async () => {
+    const { isSafeTranslationHtml } = await import("../src/cli/html-safety");
+    const source = "<p>Hello<!-- note --></p>";
+    expect(isSafeTranslationHtml("<p><!-- note -->Hallo</p>", source)).toBe(
+      true,
+    );
+    expect(isSafeTranslationHtml("<p>Hallo<!-- other --></p>", source)).toBe(
+      false,
+    );
+    expect(
+      isSafeTranslationHtml(
+        "<p><![CDATA[><img src=x onerror=alert(1)>]]>Hallo</p>",
+        source,
+      ),
+    ).toBe(false);
+  });
+  it("rejects a string that ends inside a tag", async () => {
+    const { isSafeTranslationHtml } = await import("../src/cli/html-safety");
+    expect(
+      isSafeTranslationHtml(
+        "<p>Hallo <span onmouseover=alert(1)//",
+        "<p>Hello</p>",
+      ),
+    ).toBe(false);
+    expect(
+      isSafeTranslationHtml("<p>Hallo <span title=x", "<p>Hello</p>"),
+    ).toBe(false);
+  });
+});
+
+describe("translation HTML safety: URL attributes", () => {
+  it.each([
+    '<a href="java\tscript:alert(1)">x</a>',
+    '<a href="java&#9;script:alert(1)">x</a>',
+    '<a href="java&#x09;script:alert(1)">x</a>',
+    '<a href="\x01javascript:alert(1)">x</a>',
+    '<a href="&#1;javascript:alert(1)">x</a>',
+    '<a href="data:text/html,x">x</a>',
+    '<a href="data:image/png;base64,AAAA">x</a>',
+    '<a href="vbscript:msgbox(1)">x</a>',
+    '<a href="file:///etc/passwd">x</a>',
+    '<span src="data:text/html,x">x</span>',
+    '<a ping="javascript:alert(1)">x</a>',
+    '<a xlink:href="javascript:alert(1)">x</a>',
+    '<span background="java&#9;script:alert(1)">x</span>',
+    '<span formaction="vbscript:x">x</span>',
+  ])("rejects %s, as the editor's sanitizer removes it", async (html) => {
+    const { isSafeTranslationHtml } = await import("../src/cli/html-safety");
+    expect(isSafeTranslationHtml(html)).toBe(false);
+  });
+  it.each([
+    '<a href="https://x.test">x</a>',
+    '<a href=" https://x.test">x</a>',
+    '<a href="mailto:x@x.test">x</a>',
+    '<a href="tel:+1234">x</a>',
+    '<a href="#top">x</a>',
+    '<a href="/relative/path">x</a>',
+    '<a href="{{url}}">x</a>',
+    '<span src="data:image/png;base64,AAAA">x</span>',
+    '<span title="javascript:alert(1)">x</span>',
+  ])("accepts %s, as the editor's sanitizer keeps it", async (html) => {
+    const { isSafeTranslationHtml } = await import("../src/cli/html-safety");
+    expect(isSafeTranslationHtml(html)).toBe(true);
+  });
+});
+
+describe("translation text safety", () => {
+  it.each([
+    ["Hallo <img src=x onerror=alert(1)>", "Hello"],
+    ["Hallo <b>", "Hello"],
+    ["Hallo </b>", "Hello"],
+    ["Hallo <!-- x -->", "Hello"],
+    ["Hallo <![CDATA[x]]>", "Hello"],
+    ["<!doctype html>Hallo", "Hello"],
+    ["Hallo <span onmouseover=alert(1)//", "Hello"],
+    ['Nutzen Sie <b onclick="alert(1)"> für Fett', "Use <b> for bold"],
+  ])("rejects %s for the source %s", async (text, source) => {
+    const { isSafeTranslationText } = await import("../src/cli/html-safety");
+    expect(isSafeTranslationText(text, source)).toBe(false);
+  });
+  it.each([
+    ["Hallo", "Hello"],
+    ["Preis < 10 € & mehr > 5", "Price < 10 € & more > 5"],
+    ["Nutzen Sie <b> für Fett", "Use <b> for bold"],
+    ["Hallo <!-- x -->", "Hello <!-- x -->"],
+    ["Hallo &lt;b&gt;", "Hello"],
+  ])("accepts %s for the source %s", async (text, source) => {
+    const { isSafeTranslationText } = await import("../src/cli/html-safety");
+    expect(isSafeTranslationText(text, source)).toBe(true);
+  });
+});

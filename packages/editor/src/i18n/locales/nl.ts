@@ -60,6 +60,10 @@ const nl: typeof en = {
       one: "{count} niet teruggestuurd.",
       other: "{count} niet teruggestuurd.",
     },
+    translationTooLarge: {
+      one: "{count} veld is te lang om te vertalen.",
+      other: "{count} velden zijn te lang om te vertalen.",
+    },
     translationError: "De vertaaldienst meldt: {message}",
     defaultRefused: "Kan {language} niet als standaardtaal instellen: {reason}",
     defaultLockedReason: "iemand anders bewerkt deze template",
@@ -79,6 +83,7 @@ const nl: typeof en = {
       one: "Toon eerst het {count} verborgen blok in {language}",
       other: "Toon eerst de {count} verborgen blokken in {language}",
     },
+    defaultNotEnabled: "Voeg eerst {default} toe aan de ingeschakelde talen",
     defaultGaps: {
       one: "{count} veld heeft geen tekst in {language} en behoudt de tekst in {default}.",
       other:

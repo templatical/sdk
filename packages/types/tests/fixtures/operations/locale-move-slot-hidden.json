@@ -1,0 +1,50 @@
+{
+  "name": "locale-move-slot-hidden",
+  "content": {
+    "blocks": [
+      {
+        "id": "slot",
+        "type": "slot"
+      },
+      {
+        "id": "hidden",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          []
+        ],
+        "l10n": {
+          "de": {
+            "hidden": true
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "moveBlock",
+      "blockId": "slot",
+      "parent": {
+        "sectionId": "hidden",
+        "column": 0
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "slot",
+      "message": "A layout's slot block can't be placed inside a block that a language hides."
+    }
+  }
+}

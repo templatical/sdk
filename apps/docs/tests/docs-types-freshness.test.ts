@@ -358,8 +358,35 @@ describe("public localization declarations", () => {
         ),
       );
     };
-    const source = signatures(readTypes("localization.ts"));
+    // The snippet is the public contract: it declares what the package entry
+    // re-exports from localization.ts, and no engine-internal helper that the
+    // module exports only for operations.ts (such as rebaseDefaultLocale).
+    const entry = ts.createSourceFile(
+      "index.ts",
+      readTypes("index.ts"),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    const published = new Set(
+      entry.statements.flatMap((node) =>
+        ts.isExportDeclaration(node) &&
+        !node.isTypeOnly &&
+        node.moduleSpecifier &&
+        (node.moduleSpecifier as ts.StringLiteral).text === "./localization" &&
+        node.exportClause &&
+        ts.isNamedExports(node.exportClause)
+          ? node.exportClause.elements.map((element) => element.name.text)
+          : [],
+      ),
+    );
+    const source = new Map(
+      [...signatures(readTypes("localization.ts"))].filter(([name]) =>
+        published.has(name),
+      ),
+    );
     const snippet = signatures(readDocs("snippets/localization-contract.ts"));
+    expect(published).toContain("defaultLocaleGaps");
+    expect(published).not.toContain("rebaseDefaultLocale");
     expect([...snippet.keys()].sort()).toEqual([...source.keys()].sort());
     for (const [name, signature] of source)
       expect.soft(snippet.get(name), name).toEqual(signature);

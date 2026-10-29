@@ -1,4 +1,11 @@
-import { localeTag, registerLocales, set, text, warn } from "./localization";
+import {
+  defaultLocaleOption,
+  localeTag,
+  registerLocales,
+  set,
+  text,
+  warn,
+} from "./localization";
 import { convertLeaf } from "./block-mapper";
 import { createDefaultTemplateContent } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
@@ -85,7 +92,7 @@ export function convertTopolTemplate(
     languages.find((language) => language.primary) ?? languages[0];
   style.settings.locale =
     (primary ? localeTag(primary.key, warnings) : null) ??
-    options.defaultLocale?.replaceAll("_", "-") ??
+    defaultLocaleOption(options.defaultLocale, warnings) ??
     "en";
   const uidMap: NonNullable<MapContext["uidMap"]> = new Map();
 

@@ -10,6 +10,7 @@ import {
   sourceHash,
   SdkError,
   SYNTAX_PRESETS,
+  TRANSLATION_MAX_CHARS,
   type TranslationErrorCode,
   type TranslationProvider,
   type TranslationRequest,
@@ -299,6 +300,33 @@ describe("translation runs", () => {
       code: "content_too_large",
       message: "Too big",
     });
+  });
+
+  it("stops at a field over the cap without calling the provider, keeps earlier fields and names it as the editor's limit", async () => {
+    const seed = content(3);
+    (seed.blocks[1] as { content: string }).content =
+      `<p>${"x".repeat(TRANSLATION_MAX_CHARS)}</p>`;
+    const requests: string[][] = [];
+    const { feature, editor } = open(
+      {
+        translate: async (request) => {
+          requests.push(request.fields.map(({ id }) => id));
+          return answer(request);
+        },
+      },
+      seed,
+    );
+    const result = await feature.translate({ only: "all" });
+    expect(requests).toEqual([["t0/content"]]);
+    expect(result).toMatchObject({
+      translated: 1,
+      tooLarge: ["t1/content"],
+      error: null,
+      cancelled: false,
+    });
+    expect(localeCoverage(editor.content.value, "de").translated).toEqual([
+      "t0/content",
+    ]);
   });
 
   it.each(["cancel", "error", "switch"])(

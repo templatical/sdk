@@ -70,7 +70,7 @@ console.log(report);
 
 ## Options {#options}
 
-`convertMjmlTemplate` accepts a second argument of type `ConvertMjmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`.
+`convertMjmlTemplate` accepts a second argument of type `ConvertMjmlOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
 
 The source declares its default with `<mjml lang>`.
 

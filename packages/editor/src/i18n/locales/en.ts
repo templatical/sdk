@@ -57,6 +57,10 @@ export default {
       one: "{count} not returned.",
       other: "{count} not returned.",
     },
+    translationTooLarge: {
+      one: "{count} field is too long to translate.",
+      other: "{count} fields are too long to translate.",
+    },
     translationError: "The translation service said: {message}",
     defaultRefused: "Couldn't make {language} the default language: {reason}",
     defaultLockedReason: "someone else is editing this template",
@@ -76,6 +80,7 @@ export default {
       one: "Show the {count} block hidden in {language} first",
       other: "Show the {count} blocks hidden in {language} first",
     },
+    defaultNotEnabled: "Add {default} to the enabled languages first",
     defaultGaps: {
       one: "{count} field has no {language} text and keeps its {default} text.",
       other:

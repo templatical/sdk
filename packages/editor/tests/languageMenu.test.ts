@@ -267,6 +267,55 @@ describe("language menu", () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
   });
 
+  it("disables promotion while the current default isn't an enabled language", async () => {
+    const { wrapper, editor, history } = await openLanguages({
+      localization: { locales: ["de", "nl"] },
+    });
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    const action = wrapper.get('[data-testid="language-make-default-de"]');
+    expect(action.attributes("aria-disabled")).toBe("true");
+    expect(action.attributes("disabled")).toBeUndefined();
+    const reason = wrapper.get(`#${action.attributes("aria-describedby")}`);
+    expect(reason.text()).toBe("Add English to the enabled languages first");
+    expect(action.text()).toContain(reason.text());
+    await action.trigger("click");
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    expect(editor.content.value.settings.locale).toBe("en");
+    expect(history.canUndo.value).toBe(false);
+  });
+
+  it("names the enabling reason ahead of hidden blocks", async () => {
+    const content = languageContent();
+    content.blocks[0].l10n!.de.hidden = true;
+    const { wrapper } = await openLanguages({
+      content,
+      localization: { locales: ["de", "nl"] },
+    });
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    const action = wrapper.get('[data-testid="language-make-default-de"]');
+    expect(action.attributes("aria-disabled")).toBe("true");
+    expect(
+      wrapper.get(`#${action.attributes("aria-describedby")}`).text(),
+    ).toBe("Add English to the enabled languages first");
+  });
+
+  it("enables promotion when the current default is an enabled language", async () => {
+    const { wrapper } = await openLanguages({
+      localization: { locales: ["en", "de", "nl"] },
+    });
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    const action = wrapper.get('[data-testid="language-make-default-de"]');
+    expect(action.attributes("aria-disabled")).toBe("false");
+    expect(action.attributes("aria-describedby")).toBeUndefined();
+    await action.trigger("click");
+    expect(wrapper.get('[role="dialog"]').text()).toContain(
+      "Make Deutsch the default language?",
+    );
+  });
+
   it("promotes with the pre-operation gap count, keeping stale text and set overrides out of it", async () => {
     const content = languageContent();
     content.blocks.push(

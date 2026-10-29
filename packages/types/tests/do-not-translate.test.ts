@@ -178,7 +178,7 @@ describe("do-not-translate strings round trip", () => {
     });
   });
 
-  it("checks terms again after restoring placeholders", () => {
+  it("keeps an extra literal occurrence of a term as plain text after restoring placeholders", () => {
     const content = fixture();
     const extracted = localeStrings(content, "de", options);
     expect(extracted.tokens["p/content"]).toEqual(["Sable"]);
@@ -194,10 +194,102 @@ describe("do-not-translate strings round trip", () => {
       ],
       { ...options, tokens: extracted.tokens },
     );
-    expect(result).toEqual({
-      operations: [],
-      rejected: [{ id: "p/content", reason: "tags_changed" }],
+    expect(result.rejected).toEqual([]);
+    expect(
+      applyOperations(content, result.operations).blocks[0].l10n?.de.text
+        ?.content,
+    ).toEqual({
+      value: "<p>Sable Sable</p>",
+      sourceHash: sourceHash("<p>Try Sable today</p>"),
     });
+  });
+
+  describe.each([
+    ["an html field", "p/content"],
+    ["a text field", "settings/preheaderText"],
+  ])("a German compound with a protected term in %s", (_label, id) => {
+    const source = "Templatical Cloud stores cloud files";
+    const german = "Templatical Cloud speichert Cloud-Dateien";
+    const config = { syntax, only: "all" as const, doNotTranslate: ["Cloud"] };
+    function cloudFixture() {
+      const content = fixture();
+      content.blocks = [createParagraphBlock({ id: "p", content: source })];
+      content.settings.preheaderText = source;
+      return content;
+    }
+    const field = (content: ReturnType<typeof cloudFixture>) =>
+      localeStrings(content, "de", config).strings.find(
+        (entry) => entry.id === id,
+      )!;
+
+    it("accepts the term as plain text next to its placeholder", () => {
+      const content = cloudFixture();
+      const extracted = localeStrings(content, "de", config);
+      const entry = field(content);
+      expect(entry.source).toBe('Templatical <x id="1"/> stores cloud files');
+      expect(extracted.tokens[id]).toEqual(["Cloud"]);
+      const result = applyLocaleStrings(
+        content,
+        "de",
+        [
+          {
+            id,
+            text: 'Templatical <x id="1"/> speichert Cloud-Dateien',
+            sourceHash: entry.sourceHash,
+          },
+        ],
+        { ...config, tokens: extracted.tokens },
+      );
+      expect(result.rejected).toEqual([]);
+      const applied = applyOperations(content, result.operations);
+      const stored =
+        id === "p/content"
+          ? applied.blocks[0].l10n?.de.text?.content
+          : applied.settings.l10n?.de.text?.preheaderText;
+      expect(stored).toEqual({ value: german, sourceHash: sourceHash(source) });
+      expect(field(applied).text).toBe(
+        'Templatical <x id="1"/> speichert Cloud-Dateien',
+      );
+    });
+
+    it("still requires the placeholder itself", () => {
+      const content = cloudFixture();
+      const extracted = localeStrings(content, "de", config);
+      const result = applyLocaleStrings(
+        content,
+        "de",
+        [{ id, text: german, sourceHash: field(content).sourceHash }],
+        { ...config, tokens: extracted.tokens },
+      );
+      expect(result).toEqual({
+        operations: [],
+        rejected: [{ id, reason: "tags_changed" }],
+      });
+    });
+  });
+
+  it("masks the same way when a term list is reused, and keeps lists apart", () => {
+    const text = "Sable Cloud by Templatical; Cloud-Sable";
+    const first = ["Sable", "Templatical"];
+    const second = ["Cloud"];
+    const once = maskTags(text, syntax, "text", { doNotTranslate: first });
+    expect(once).toEqual({
+      text: '<x id="1"/> Cloud by <x id="2"/>; Cloud-<x id="3"/>',
+      tokens: ["Sable", "Templatical", "Sable"],
+    });
+    expect(maskTags(text, syntax, "text", { doNotTranslate: first })).toEqual(
+      once,
+    );
+    expect(
+      maskTags(text, syntax, "text", { doNotTranslate: [...first] }),
+    ).toEqual(once);
+    expect(maskTags(text, syntax, "text", { doNotTranslate: second })).toEqual({
+      text: 'Sable <x id="1"/> by Templatical; <x id="2"/>-Sable',
+      tokens: ["Cloud", "Cloud"],
+    });
+    expect(maskTags(text, syntax, "html", { doNotTranslate: first })).toEqual(
+      once,
+    );
   });
 
   it("reuses source ids in a reordered existing translation", () => {
@@ -479,7 +571,7 @@ describe("do-not-translate HTML entities", () => {
     ]);
   });
 
-  it("rechecks decoded protected terms after restoring source bytes", () => {
+  it("keeps an extra decoded occurrence of a term as plain text after restoring source bytes", () => {
     const content = fixture();
     content.blocks = [
       createParagraphBlock({ id: "p", content: "<p>M&uuml;ller</p>" }),
@@ -499,11 +591,40 @@ describe("do-not-translate HTML entities", () => {
       ],
       { ...config, tokens: extracted.tokens },
     );
-    expect(result).toEqual({
-      operations: [],
-      rejected: [{ id: "p/content", reason: "tags_changed" }],
-    });
+    expect(result.rejected).toEqual([]);
+    expect(result.operations).toMatchObject([
+      { text: { content: { value: "<p>M&uuml;ller M&#252;ller</p>" } } },
+    ]);
   });
+
+  it.each([
+    ["a plain-text spelling of the term", "<p>Müller und M&uuml;ller</p>"],
+    ["reordered spellings", "<p>M&#252;ller und M&uuml;ller</p>"],
+  ])(
+    "re-exports a stored translation with %s so that it restores byte for byte",
+    (_label, stored) => {
+      const content = fixture();
+      content.blocks = [
+        createParagraphBlock({
+          id: "p",
+          content:
+            stored === "<p>Müller und M&uuml;ller</p>"
+              ? "<p>M&uuml;ller</p>"
+              : "<p>M&uuml;ller and M&#252;ller</p>",
+          l10n: {
+            de: { text: { content: { value: stored, sourceHash: "old" } } },
+          },
+        }),
+      ];
+      const config = { ...options, doNotTranslate: ["Müller"] };
+      const extracted = localeStrings(content, "de", config);
+      const entry = extracted.strings[0];
+      expect(entry.text).toBeDefined();
+      expect(unmaskTags(entry.text!, extracted.tokens["p/content"])).toBe(
+        stored,
+      );
+    },
+  );
 });
 
 describe("uppercase entity aliases", () => {

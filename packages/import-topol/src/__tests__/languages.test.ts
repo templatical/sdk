@@ -35,6 +35,40 @@ describe("Topol languages", () => {
     ).toBe("de");
   });
   it.each([
+    [
+      undefined,
+      "{{lang}}",
+      "en",
+      [
+        'Ignored defaultLocale "{{lang}}": unsupported language tag. Used "en".',
+      ],
+    ],
+    ["{{lang}}", "de_DE", "de-DE", []],
+    [
+      "{{lang}}",
+      "not a tag",
+      "en",
+      [
+        'Ignored defaultLocale "not a tag": unsupported language tag. Used "en".',
+      ],
+    ],
+  ])(
+    "uses a valid fallback when the primary language is %s and defaultLocale is %s",
+    (primary, defaultLocale, locale, ignored) => {
+      const { content, report } = convertTopolTemplate(
+        {
+          tagName: "mj-global-style",
+          ...(primary ? { langs: [{ key: primary, primary: true }] } : {}),
+        } as never,
+        { defaultLocale },
+      );
+      expect(content.settings.locale).toBe(locale);
+      expect(
+        report.warnings.filter((warning) => warning.startsWith("Ignored ")),
+      ).toEqual(ignored);
+    },
+  );
+  it.each([
     [0, "content", "Hello", "Hallo"],
     [1, "content", "<p>Welcome</p>", "<p>Willkommen</p>"],
     [2, "text", "Shop", "Kaufen"],

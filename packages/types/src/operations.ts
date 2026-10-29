@@ -714,19 +714,45 @@ function change(target: Json, set: Json, unset: readonly string[]): void {
   for (const key of unset) delete target[key];
 }
 
-function assertElementIds(content: TemplateContent, index: number): void {
-  const issue = elementIdIssues(content)[0];
+/** Each element id containing "." or "/", with the id of the block that holds it. */
+function dottedElementIds(
+  content: TemplateContent,
+): { id: string; blockId: string | undefined }[] {
+  return elementIdIssues(content).map((issue) => {
+    const blockPath = issue.path.replace(/\.(items|icons|rows)\[.*$/, "");
+    const block = blockPath
+      .replace(/\[(\d+)\]/g, ".$1")
+      .split(".")
+      .reduce<unknown>((value, key) => (value as Json)[key], content) as Json;
+    return {
+      id: issue.id,
+      blockId: typeof block.id === "string" ? block.id : undefined,
+    };
+  });
+}
+
+/**
+ * Refuse an element id containing "." or "/" that the operation introduces:
+ * one `content` has and `before` doesn't have on the same block. Ids a
+ * template already holds stay editable.
+ */
+function assertElementIds(
+  content: TemplateContent,
+  index: number,
+  before?: TemplateContent,
+): void {
+  const key = ({ id, blockId }: { id: string; blockId?: string }) =>
+    JSON.stringify([blockId ?? null, id]);
+  const existing = new Set(before ? dottedElementIds(before).map(key) : []);
+  const issue = dottedElementIds(content).find(
+    (candidate) => !existing.has(key(candidate)),
+  );
   if (!issue) return;
-  const blockPath = issue.path.replace(/\.(items|icons|rows)\[.*$/, "");
-  const block = blockPath
-    .replace(/\[(\d+)\]/g, ".$1")
-    .split(".")
-    .reduce<unknown>((value, key) => (value as Json)[key], content) as Json;
   fail(
     "invalid_operation",
     index,
     `Element id "${issue.id}" must not contain "." or "/".`,
-    typeof block.id === "string" ? block.id : undefined,
+    issue.blockId,
   );
 }
 
@@ -799,7 +825,9 @@ function addBlock(content: TemplateContent, op: Json, index: number): void {
   }
 
   const list = container(content, parent, index);
-  list.splice(insertionIndex(list, after, index), 0, safeClone(block));
+  const position = insertionIndex(list, after, index);
+  assertSlotPlacement(content, block, parent, index, true);
+  list.splice(position, 0, safeClone(block));
 }
 
 function moveBlock(
@@ -854,6 +882,13 @@ function moveBlock(
   // wrong parent is reported as such. It is a live list: when it is also the
   // block's own list, the anchor is looked up without the moved block.
   const target = container(content, parent, index);
+  // The anchor, then the change, are checked before anything moves.
+  insertionIndex(
+    target.filter((sibling) => sibling !== location.block),
+    after,
+    index,
+  );
+  assertSlotPlacement(content, location.block, parent, index, false);
   location.list.splice(location.index, 1);
   target.splice(insertionIndex(target, after, index), 0, location.block);
 }
@@ -924,6 +959,7 @@ function updateBlock(
   assertElementIds(
     { blocks: [next as unknown as Block], settings: content.settings },
     index,
+    { blocks: [block as unknown as Block], settings: content.settings },
   );
   if (section && Object.hasOwn(set, "columns")) {
     resizeColumns(block, set.columns, index, blockId);
@@ -1267,6 +1303,66 @@ function changeLocale(
   if (Object.keys(l10n).length === 0) delete target.l10n;
 }
 
+/** True for a layout's slot block and for any block that contains it. */
+function holdsSlot(block: unknown): boolean {
+  if (!isRecord(block)) return false;
+  if (block.type === "slot") return true;
+  return (
+    Array.isArray(block.children) &&
+    block.children.some((child) =>
+      Array.isArray(child) ? child.some(holdsSlot) : holdsSlot(child),
+    )
+  );
+}
+
+/** Whether any language's layer hides `block`. */
+function hiddenInALanguage(block: unknown): boolean {
+  return (
+    isRecord(block) &&
+    isRecord(block.l10n) &&
+    Object.values(block.l10n).some(
+      (layer) => isRecord(layer) && layer.hidden === true,
+    )
+  );
+}
+
+/** True when a language hides the slot inside `block`: it, or a block between them. */
+function hidesSlot(block: unknown): boolean {
+  if (!isRecord(block) || !holdsSlot(block)) return false;
+  if (hiddenInALanguage(block)) return true;
+  return (
+    Array.isArray(block.children) &&
+    block.children.some((child) =>
+      Array.isArray(child) ? child.some(hidesSlot) : hidesSlot(child),
+    )
+  );
+}
+
+/**
+ * Refuse placing `block` where a language would hide the slot it holds: under
+ * a parent section hidden in a language, or with a hidden block on the way.
+ */
+function assertSlotPlacement(
+  content: TemplateContent,
+  block: unknown,
+  parent: BlockParent,
+  index: number,
+  ownLayers: boolean,
+): void {
+  if (!holdsSlot(block)) return;
+  const section = parent === null ? null : locate(content, parent.sectionId);
+  if (
+    (section !== null && hiddenInALanguage(section.block)) ||
+    (ownLayers && hidesSlot(block))
+  )
+    fail(
+      "invalid_operation",
+      index,
+      "A layout's slot block can't be placed inside a block that a language hides.",
+      isRecord(block) && typeof block.id === "string" ? block.id : undefined,
+    );
+}
+
 function updateBlockLocale(
   content: TemplateContent,
   op: Json,
@@ -1289,6 +1385,14 @@ function updateBlockLocale(
     index,
     blockId,
   );
+  // Without its slot, a layout can't compose that language at all.
+  if (changes.hidden === true && holdsSlot(block))
+    fail(
+      "invalid_operation",
+      index,
+      "A layout's slot block, and any block that contains it, can't be hidden.",
+      blockId,
+    );
   changeLocale(block, locale, changes);
 }
 
@@ -1323,7 +1427,7 @@ function setContent(
       "setContent needs content with a blocks array and a settings object.",
     );
   }
-  assertElementIds(next as unknown as TemplateContent, index);
+  assertElementIds(next as unknown as TemplateContent, index, content);
   const held = engine.locks.find((lock) => heldByOthers(engine, lock));
   if (held) {
     fail(

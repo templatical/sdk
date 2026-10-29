@@ -127,21 +127,35 @@ function decodedTermText(text: string): { text: string; offsets?: number[] } {
   return { text: decoded, offsets };
 }
 
+/** Compiled term patterns, one per term list; `null` when no term is left after trimming. */
+const termPatterns = new WeakMap<readonly string[], RegExp | null>();
+
+function termPattern(terms: readonly string[]): RegExp | null {
+  let pattern = termPatterns.get(terms);
+  if (pattern === undefined) {
+    const alternatives = terms
+      .map((term) => term.trim())
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length)
+      .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    pattern = alternatives.length
+      ? new RegExp(
+          `(?<![\\p{L}\\p{N}_])(?:${alternatives.join("|")})(?![\\p{L}\\p{N}_])`,
+          "gu",
+        )
+      : null;
+    termPatterns.set(terms, pattern);
+  }
+  return pattern;
+}
+
 function termRanges(
   text: string,
   format: Format,
   terms: readonly string[],
 ): Range[] {
-  const alternatives = terms
-    .map((term) => term.trim())
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length)
-    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  if (!alternatives.length) return [];
-  const pattern = new RegExp(
-    `(?<![\\p{L}\\p{N}_])(?:${alternatives.join("|")})(?![\\p{L}\\p{N}_])`,
-    "gu",
-  );
+  const pattern = terms.length ? termPattern(terms) : null;
+  if (!pattern) return [];
   const segments: { start: number; end: number; attribute: boolean }[] = [];
   if (format === "text")
     segments.push({ start: 0, end: text.length, attribute: false });
@@ -258,21 +272,33 @@ function maskTranslation(
 ): string | null {
   const ranges = maskingRanges(text, syntax, format, options);
   const used = new Set<number>();
-  const ids: number[] = [];
-  for (const range of ranges) {
+  const claim = (matches: (token: string) => boolean) => {
     const index = tokens.findIndex(
-      (token, i) =>
-        !used.has(i) &&
-        (token === range.markup ||
-          (range.term !== undefined &&
-            format === "html" &&
-            decodeHtmlEntities(token) === range.term)),
+      (token, i) => !used.has(i) && matches(token),
     );
-    if (index < 0) return null;
-    used.add(index);
-    ids.push(index + 1);
-  }
-  return used.size === tokens.length ? maskedText(text, ranges, ids) : null;
+    if (index >= 0) used.add(index);
+    return index;
+  };
+  // Exact spellings first, so another spelling of a term keeps its own bytes.
+  const indexes = ranges.map((range) =>
+    claim((token) => token === range.markup),
+  );
+  ranges.forEach((range, i) => {
+    if (indexes[i] < 0 && range.term !== undefined && format === "html")
+      indexes[i] = claim((token) => decodeHtmlEntities(token) === range.term);
+  });
+  // A term beyond the protected occurrences is plain text; a tag isn't.
+  if (
+    used.size !== tokens.length ||
+    ranges.some((range, i) => indexes[i] < 0 && range.term === undefined)
+  )
+    return null;
+  const matched = ranges.filter((_, i) => indexes[i] >= 0);
+  return maskedText(
+    text,
+    matched,
+    indexes.filter((index) => index >= 0).map((index) => index + 1),
+  );
 }
 
 export interface LocaleString {

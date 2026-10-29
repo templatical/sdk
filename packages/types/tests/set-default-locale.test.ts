@@ -78,7 +78,7 @@ describe("setDefaultLocale", () => {
       },
     });
   });
-  it("stores the former default against the new base and omits equal values", () => {
+  it("stores the former default against the new base, and equal text as a current entry", () => {
     const before = seed();
     before.blocks.push(
       createTitleBlock({
@@ -91,7 +91,9 @@ describe("setDefaultLocale", () => {
     expect(after.blocks[0].l10n).toEqual({
       en: { text: { content: text("Hello", "Hallo") } },
     });
-    expect(after.blocks[1]).not.toHaveProperty("l10n");
+    expect(after.blocks[1].l10n).toEqual({
+      en: { text: { content: text("Hello", "Hello") } },
+    });
   });
   it("keeps gaps at the former base without an old-default entry", () => {
     const before = seed();
@@ -313,10 +315,49 @@ it("keeps custom property overrides out of text when the operation has no field 
   });
 });
 
-it("counts defined empty text fields as values retained from the former default", () => {
+it("keeps text the new default translated to the same value as a current entry of the old default", () => {
+  const before = seed();
+  before.blocks.push(
+    createTitleBlock({
+      id: "brand",
+      content: "Sable",
+      l10n: { de: { text: { content: text("Sable", "Sable") } } },
+    }),
+  );
+  before.settings.preheaderText = "Sable";
+  before.settings.l10n = {
+    de: { text: { preheaderText: text("Sable", "Sable") } },
+  };
+  expect(defaultLocaleGaps(before, "de")).toEqual([]);
+  const after = roundTrip(before);
+  expect(after.blocks[1].l10n).toEqual({
+    en: { text: { content: text("Sable", "Sable") } },
+  });
+  expect(after.settings.l10n?.en).toEqual({
+    text: { preheaderText: text("Sable", "Sable") },
+  });
+  const english = localeCoverage(after, "en");
+  expect(english.missing).toEqual([]);
+  expect(english.translated).toEqual(
+    expect.arrayContaining(["brand/content", "settings/preheaderText"]),
+  );
+});
+
+it("still leaves no old-default entry for a gap field the new default had no text for", () => {
+  const before = seed();
+  before.blocks.push(createTitleBlock({ id: "gap", content: "Gap" }));
+  const after = roundTrip(before);
+  expect(after.blocks[1]).not.toHaveProperty("l10n");
+  expect(localeCoverage(after, "en").missing).toEqual(["gap/content"]);
+});
+
+it("skips empty defaults, as coverage does, so the gap list can reach []", () => {
   const before = seed();
   before.blocks.push(createImageBlock({ id: "empty", alt: "" }));
-  expect(defaultLocaleGaps(before, "de")).toEqual(["empty/alt"]);
+  expect(defaultLocaleGaps(before, "de")).toEqual([]);
+  expect(localeCoverage(before, "de").missing).toEqual([]);
+  before.blocks.push(createImageBlock({ id: "decorative", alt: "Photo" }));
+  expect(defaultLocaleGaps(before, "de")).toEqual(["decorative/alt"]);
 });
 
 function removedParentFixture(name: string): TemplateContent {

@@ -84,6 +84,135 @@ describe("elementIdIssues", () => {
   });
 });
 
+describe("element ids already in the template", () => {
+  function legacy() {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createMenuBlock({
+        id: "menu",
+        items: [
+          {
+            id: "nav.home",
+            text: "Home",
+            url: "https://example.com",
+            openInNewTab: false,
+            bold: false,
+            underline: false,
+          },
+        ],
+      }),
+    ];
+    return content;
+  }
+  const added = {
+    id: "a.b",
+    text: "Shop",
+    url: "https://example.com/shop",
+    openInNewTab: false,
+    bold: false,
+    underline: false,
+  };
+
+  it("stay editable: a color change on a menu whose item id is nav.home succeeds", () => {
+    const content = legacy();
+    const after = applyOperations(content, [
+      { op: "updateBlock", blockId: "menu", set: { color: "#ff0000" } },
+    ]);
+    expect(after.blocks[0]).toMatchObject({
+      color: "#ff0000",
+      items: [{ id: "nav.home", text: "Home" }],
+    });
+  });
+
+  it("stay editable when an update rewrites the list that holds them", () => {
+    const content = legacy();
+    const menu = content.blocks[0] as ReturnType<typeof createMenuBlock>;
+    const after = applyOperations(content, [
+      {
+        op: "updateBlock",
+        blockId: "menu",
+        set: { items: [{ ...menu.items[0], text: "Start" }] },
+      },
+    ]);
+    expect(after.blocks[0]).toMatchObject({
+      items: [{ id: "nav.home", text: "Start" }],
+    });
+  });
+
+  it("survive a setContent that keeps them on the same block", () => {
+    const content = legacy();
+    const next = structuredClone(content);
+    next.settings.width = 640;
+    expect(
+      applyOperations(content, [{ op: "setContent", content: next }]),
+    ).toEqual(next);
+  });
+
+  it("refuse an update that adds an item a.b next to them", () => {
+    const content = legacy();
+    const menu = content.blocks[0] as ReturnType<typeof createMenuBlock>;
+    expect(() =>
+      applyOperations(content, [
+        {
+          op: "updateBlock",
+          blockId: "menu",
+          set: { items: [...menu.items, added] },
+        },
+      ]),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "invalid_operation",
+        blockId: "menu",
+        message: 'Element id "a.b" must not contain "." or "/".',
+      }),
+    );
+  });
+
+  it("refuse a setContent that adds a.b, or copies nav.home into a new block", () => {
+    const content = legacy();
+    const withItem = structuredClone(content);
+    (withItem.blocks[0] as ReturnType<typeof createMenuBlock>).items.push(
+      added,
+    );
+    const copied = structuredClone(content);
+    copied.blocks.push({ ...structuredClone(content.blocks[0]), id: "copy" });
+    for (const [next, id, blockId] of [
+      [withItem, "a.b", "menu"],
+      [copied, "nav.home", "copy"],
+    ] as const) {
+      expect(() =>
+        applyOperations(content, [{ op: "setContent", content: next }]),
+      ).toThrowError(
+        expect.objectContaining({
+          code: "invalid_operation",
+          blockId,
+          message: `Element id "${id}" must not contain "." or "/".`,
+        }),
+      );
+    }
+  });
+
+  it("refuse an addBlock that carries one, even when another block has it", () => {
+    const content = legacy();
+    expect(() =>
+      applyOperations(content, [
+        {
+          op: "addBlock",
+          block: { ...structuredClone(content.blocks[0]), id: "copy" },
+          parent: null,
+          after: "menu",
+        },
+      ]),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "invalid_operation",
+        blockId: "copy",
+        message: 'Element id "nav.home" must not contain "." or "/".',
+      }),
+    );
+  });
+});
+
 it.each([
   ["addBlock", 'Element id "v1.2" must not contain "." or "/".'],
   ["updateBlock", 'Element id "r.1" must not contain "." or "/".'],

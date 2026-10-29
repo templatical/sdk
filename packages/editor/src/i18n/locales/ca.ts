@@ -60,6 +60,10 @@ const ca: typeof en = {
       one: "No s'ha retornat {count} camp.",
       other: "No s'han retornat {count} camps.",
     },
+    translationTooLarge: {
+      one: "{count} camp és massa llarg per traduir-lo.",
+      other: "{count} camps són massa llargs per traduir-los.",
+    },
     translationError: "El servei de traducció ha dit: {message}",
     defaultRefused:
       "No s’ha pogut establir {language} com a llengua per defecte: {reason}",
@@ -84,6 +88,7 @@ const ca: typeof en = {
       one: "Mostra primer el bloc ocult en {language} ({count})",
       other: "Mostra primer els {count} blocs ocults en {language}",
     },
+    defaultNotEnabled: "Afegeix primer {default} als idiomes activats",
     defaultGaps: {
       one: "{count} camp no té text en {language} i conserva el text en {default}.",
       other:

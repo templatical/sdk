@@ -23,6 +23,18 @@ it.each(["", "de/"])(
   },
 );
 
+it.each(["", "de/"])(
+  "%s layout guide composes each language with both projections",
+  (language) => {
+    const text = read(`apps/docs/${language}guide/layout.md`);
+    expect(text).toContain(
+      'base = applyLayout(resolveLocale(layout, locale, { missing: "default" }), resolveLocale(content, locale))',
+    );
+    expect(text).not.toContain("base = applyLayout(layout, content)");
+    expect(text).toContain(`(/${language}guide/localized-templates#layouts)`);
+  },
+);
+
 it("the skill routes layout localization to its contract", () => {
   const text = read("skills/templatical/reference/localize.md");
   expect(text).toContain('missing: "default"');

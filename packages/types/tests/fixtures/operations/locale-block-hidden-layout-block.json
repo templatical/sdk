@@ -1,0 +1,70 @@
+{
+  "name": "locale-block-hidden-layout-block",
+  "content": {
+    "blocks": [
+      {
+        "id": "card",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "slot",
+            "type": "slot"
+          },
+          {
+            "id": "footer",
+            "type": "title",
+            "content": "Footer"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlockLocale",
+      "blockId": "footer",
+      "locale": "de",
+      "hidden": true
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "card",
+          "type": "wrapper",
+          "children": [
+            {
+              "id": "slot",
+              "type": "slot"
+            },
+            {
+              "id": "footer",
+              "type": "title",
+              "content": "Footer",
+              "l10n": {
+                "de": {
+                  "hidden": true
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": [
+          "de"
+        ]
+      }
+    }
+  }
+}

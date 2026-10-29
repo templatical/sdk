@@ -29,8 +29,8 @@
   `styles.padding` (`{ top, right, bottom, left }` in px). Element ids inside
   blocks (menu `items[].id`, social `icons[].id`, table `rows[].id` and
   `rows[].cells[].id`) are path segments in language versions, so
-  these ids must not contain `.` or `/`: validation refuses them. Use ids like
-  `nav-shop`.
+  these ids must not contain `.` or `/`: validation refuses them, and operations
+  refuse adding one. Use ids like `nav-shop`.
 - **Structure content in sections.** A `section` has `children`: an array of
   columns, each column an array of blocks. `columns` is `"1"`, `"2"`, `"3"`,
   `"2-1"`, or `"1-2"`, and the column count in `children` must match. Don't nest

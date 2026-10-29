@@ -39,6 +39,8 @@ export interface TranslationRunResult {
   tagsChanged: string[];
   skippedLocked: string[];
   missing: string[];
+  /** A field over the per-call character cap: never sent, and the run stops there. */
+  tooLarge: string[];
   error: { code: string; message: string } | null;
   cancelled: boolean;
 }
@@ -229,6 +231,7 @@ export function useTranslationFeature(
       tagsChanged: [],
       skippedLocked: [],
       missing: [],
+      tooLarge: [],
       error: null,
       cancelled: false,
     };
@@ -249,12 +252,12 @@ export function useTranslationFeature(
           chunk.push(field);
           chars += field.source.length;
         }
-        if (chunk.length === 0)
-          throw new SdkError(
-            "A field is too large to translate.",
-            413,
-            "content_too_large",
-          );
+        if (chunk.length === 0) {
+          // The editor's own limit: the field is never sent, so no service
+          // refused it. Fields returned so far still apply.
+          result.tooLarge.push(extraction.strings[offset].id);
+          break;
+        }
         let answer: TranslationResult;
         try {
           answer = await abortable(

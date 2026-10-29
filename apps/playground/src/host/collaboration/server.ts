@@ -25,6 +25,10 @@ import {
  * apply in order and all or nothing, a repeated `batchId` answers with its
  * revision, locks belong to a session and an identity together, and a batch
  * broadcast that would be larger than 8,000 bytes goes out as a re-sync.
+ *
+ * It also applies the SDK's snapshot rule, which Templatical Cloud doesn't
+ * apply yet: a batch holding a `setContent` must be based on the current
+ * revision, checked after a repeated `batchId`.
  */
 
 /** Presence colours, in Templatical Cloud's order. */
@@ -301,6 +305,20 @@ export class SharedCollaborationServer {
         status: 422,
         code: "invalid_operation",
         message: `A batch holds 1 to ${MAX_OPS_PER_BATCH} operations.`,
+      });
+    }
+
+    // A batch that replaces the whole content must be based on the current
+    // revision: replayed over batches its sender never saw, it would overwrite
+    // them. Other batches apply to the current content, whatever it is.
+    if (
+      batch.ops.some((op) => op.op === "setContent") &&
+      batch.baseRevision !== state.revision
+    ) {
+      refuse({
+        status: 409,
+        code: "precondition_failed",
+        message: `The template is at revision ${state.revision}, but this batch replaces the whole content from revision ${batch.baseRevision}. Catch up and try again.`,
       });
     }
 

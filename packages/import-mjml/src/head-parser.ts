@@ -2,6 +2,7 @@ import type { CheerioAPI } from "cheerio";
 import {
   canonicalFontStack,
   DEFAULT_TEMPLATE_DEFAULTS,
+  isLocaleTag,
   resolveContentDirection,
 } from "@templatical/types";
 import type {
@@ -103,6 +104,34 @@ function readDirection(
 }
 
 /**
+ * The default language: the source's tag, else `defaultLocale`, else the
+ * template default (`"en"`). A value that isn't a language tag after `_` →
+ * `-` is skipped, with a warning naming it.
+ */
+function defaultLanguage(
+  declared: string | undefined,
+  defaultLocale: string | undefined,
+  warnings: string[],
+): string {
+  const rejected: string[] = [];
+  let locale: string = REQUIRED_TEMPLATE_DEFAULTS.locale;
+  for (const [value, name] of [
+    [declared, "the source's default language"],
+    [defaultLocale, "defaultLocale"],
+  ] as const) {
+    if (!value) continue;
+    const tag = value.replaceAll("_", "-");
+    if (isLocaleTag(tag)) {
+      locale = tag;
+      break;
+    }
+    rejected.push(`Ignored ${name} "${value}": unsupported language tag.`);
+  }
+  for (const message of rejected) warnings.push(`${message} Used "${locale}".`);
+  return locale;
+}
+
+/**
  * Build `TemplateSettings` from the `mjml` and `mj-body` attributes, the
  * attribute cascade and the remaining `mj-head` children.
  *
@@ -153,11 +182,11 @@ export function extractSettings(
     .join("\n");
   const anchor = readAnchorRule(styleCss);
 
-  const locale = (
-    ($root.attr("lang") ?? "").trim() ||
-    defaultLocale ||
-    REQUIRED_TEMPLATE_DEFAULTS.locale
-  ).replaceAll("_", "-");
+  const locale = defaultLanguage(
+    $root.attr("lang")?.trim(),
+    defaultLocale,
+    warnings,
+  );
   const direction = readDirection($root.attr("dir"), locale);
 
   const title = findByTag($, "mj-title").first().text().trim();

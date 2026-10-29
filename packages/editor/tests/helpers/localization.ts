@@ -48,7 +48,7 @@ export async function openLanguages(
       config: {
         container: document.createElement("div"),
         content: languageContent(),
-        localization: { locales: ["de", "nl"] },
+        localization: { locales: ["en", "de", "nl"] },
         ...config,
       },
       translations: await loadTranslations("en"),

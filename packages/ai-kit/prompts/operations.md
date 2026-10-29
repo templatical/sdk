@@ -88,6 +88,8 @@ When one operation breaks several rules, the first failing check decides:
 7. The anchor (`anchor_missing`).
 8. The change itself (`invalid_operation`): a layout that would drop columns that still hold blocks.
 
+Element ids containing `.` or `/` are refused only where an operation adds one, and the check sits at a different step per operation: `addBlock` checks them with its shape (step 1), and checks no locks at all; `updateBlock` checks them as the change itself (step 8), after locks and preconditions; `setContent` checks them after its shape and before locks. The shared fixtures pin each case.
+
 ## Applying operations
 
 ```ts

@@ -18,6 +18,21 @@ export function localeTag(value: string, warnings: string[]): string | null {
   return null;
 }
 
+/** The `defaultLocale` option as a tag; `null`, with a warning, when it isn't one. */
+export function defaultLocaleOption(
+  value: string | undefined,
+  warnings: string[],
+): string | null {
+  if (!value) return null;
+  const locale = value.replaceAll("_", "-");
+  if (isLocaleTag(locale)) return locale;
+  warn(
+    warnings,
+    `Ignored defaultLocale "${value}": unsupported language tag. Used "en".`,
+  );
+  return null;
+}
+
 export function text(
   target: Target,
   locale: string,

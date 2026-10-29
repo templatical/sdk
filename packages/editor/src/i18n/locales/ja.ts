@@ -56,6 +56,10 @@ const translations: typeof en = {
       one: "{count}件が返されませんでした。",
       other: "{count}件が返されませんでした。",
     },
+    translationTooLarge: {
+      one: "{count}件のフィールドは長すぎて翻訳できません。",
+      other: "{count}件のフィールドは長すぎて翻訳できません。",
+    },
     translationError: "翻訳サービスからのメッセージ：{message}",
     defaultRefused:
       "{language}をデフォルト言語に設定できませんでした: {reason}",
@@ -76,6 +80,7 @@ const translations: typeof en = {
       one: "まず{language}で非表示の{count}個のブロックを表示してください",
       other: "まず{language}で非表示の{count}個のブロックを表示してください",
     },
+    defaultNotEnabled: "まず{default}を有効な言語に追加してください",
     defaultGaps: {
       one: "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。",
       other:

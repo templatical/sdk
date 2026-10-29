@@ -1,6 +1,7 @@
 import {
   createDefaultTemplateContent,
   DEFAULT_TEMPLATE_DEFAULTS,
+  isLocaleTag,
 } from "@templatical/types";
 import type {
   Block,
@@ -58,6 +59,20 @@ const REQUIRED_DEFAULTS = DEFAULT_TEMPLATE_DEFAULTS as Required<
     | "locale"
   >
 >;
+
+/** The `defaultLocale` option as a tag, else `"en"` with a warning naming it. */
+function defaultLanguage(
+  value: string | undefined,
+  warnings: string[],
+): string {
+  if (!value) return "en";
+  const locale = value.replaceAll("_", "-");
+  if (isLocaleTag(locale)) return locale;
+  warnings.push(
+    `Ignored defaultLocale "${value}": unsupported language tag. Used "en".`,
+  );
+  return "en";
+}
 
 /**
  * Convert a Chamaileon `getDocument()` tree into a Templatical template.
@@ -164,7 +179,7 @@ export function convertChamaileonTemplate(
     settings: {
       ...defaults.settings,
       width,
-      locale: options.defaultLocale?.replaceAll("_", "-") ?? "en",
+      locale: defaultLanguage(options.defaultLocale, warnings),
       backgroundColor,
       ...(previewRaw ? { preheaderText: previewRaw } : {}),
     },

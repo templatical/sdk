@@ -182,6 +182,17 @@ export class FakeCollaborationServer {
             },
           );
         }
+        // The snapshot rule: a whole-content replace must be based on the
+        // current revision, or it would overwrite batches its sender never saw.
+        if (
+          batch.ops.some((op) => op.op === "setContent") &&
+          batch.baseRevision !== this.revision
+        ) {
+          throw new CollaborationConflict(
+            "The template changed since this batch's base revision.",
+            { code: "precondition_failed", status: 409 },
+          );
+        }
         try {
           this.content = applyOperations(this.content, batch.ops, {
             locks: [...this.locks.values()].map((lock) => ({

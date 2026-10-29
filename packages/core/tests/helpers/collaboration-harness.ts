@@ -83,6 +83,8 @@ export interface ClientOptions extends Partial<
   templates?: TemplatesProvider;
   /** `false` leaves the template unloaded. */
   load?: boolean;
+  /** Passed to `useEditor`. */
+  onLocaleChange?: (locale: string) => void;
 }
 
 /**
@@ -115,6 +117,7 @@ export async function openClient(
       lockedBlocks: collaboration.locks,
       lockLocale: collaboration.lockLocale,
       lockSessionId: collaboration.sessionId,
+      onLocaleChange: extra.onLocaleChange,
     });
     collaboration.attach(editor);
     return { editor, collaboration };

@@ -17,7 +17,7 @@ afterEach(() =>
     .reverse()
     .forEach((cleanup) => cleanup()),
 );
-function open() {
+function open(onLocaleChange?: (locale: string) => void) {
   const seed = createDefaultTemplateContent();
   seed.settings.locale = "en";
   seed.settings.locales = ["de", "fr"];
@@ -35,6 +35,7 @@ function open() {
     const editor = useEditor({
       content: seed,
       localization: { locales: ["de", "fr"] },
+      onLocaleChange,
     });
     const history = useHistory({
       content: editor.content,
@@ -113,5 +114,41 @@ describe("useLocaleActions", () => {
     expect(actions.setDefaultLocale("de")).toEqual({ applied: false, error });
     expect(editor.content.value).toEqual(before);
     expect(editor.activeLocale.value).toBe(null);
+  });
+});
+
+describe("onLocaleChange on the effective language", () => {
+  it("fires for Make default from the default view, its undo and its redo", () => {
+    const onLocaleChange = vi.fn();
+    const { editor, history } = open(onLocaleChange);
+    const actions = useLocaleActions({ editor, history: () => history });
+    expect(actions.setDefaultLocale("de")).toEqual({ applied: true });
+    expect(editor.activeLocale.value).toBe(null);
+    expect(onLocaleChange.mock.calls).toEqual([["de"]]);
+    history.undo();
+    expect(editor.content.value.settings.locale).toBe("en");
+    expect(onLocaleChange.mock.calls).toEqual([["de"], ["en"]]);
+    history.redo();
+    expect(editor.content.value.settings.locale).toBe("de");
+    expect(onLocaleChange.mock.calls).toEqual([["de"], ["en"], ["de"]]);
+  });
+  it("fires nothing when the active version is promoted", () => {
+    const onLocaleChange = vi.fn();
+    const { editor, history } = open(onLocaleChange);
+    editor.setActiveLocale("de");
+    expect(onLocaleChange.mock.calls).toEqual([["de"]]);
+    const actions = useLocaleActions({ editor, history: () => history });
+    expect(actions.setDefaultLocale("de")).toEqual({ applied: true });
+    expect(editor.activeLocale.value).toBe(null);
+    expect(onLocaleChange.mock.calls).toEqual([["de"]]);
+  });
+  it("still reports selecting a version and falling back to the default", () => {
+    const onLocaleChange = vi.fn();
+    const { editor } = open(onLocaleChange);
+    editor.setActiveLocale("fr");
+    editor.setActiveLocale("fr");
+    editor.removeLocale("fr");
+    expect(editor.activeLocale.value).toBe(null);
+    expect(onLocaleChange.mock.calls).toEqual([["fr"], ["en"]]);
   });
 });
