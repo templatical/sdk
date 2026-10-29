@@ -8,7 +8,6 @@ import {
   inputClass,
   inputGroupInputClass,
   inputSuffixClass,
-  labelClass,
 } from "../../constants/styleConstants";
 import type { VideoBlock } from "@templatical/types";
 import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
@@ -110,29 +109,31 @@ async function openMediaBrowser(): Promise<void> {
 </script>
 
 <template>
-  <FieldRow class="tpl:mb-3.5" path="url">
-    <label :class="labelClass">{{ t.video.videoUrl }}</label>
+  <FieldRow :label="t.video.videoUrl" class="tpl:mb-3.5" path="url">
     <MergeTagInput
       :model-value="block.url"
       type="url"
       :placeholder="t.video.videoUrlPlaceholder"
       @update:model-value="updateField('url', $event)"
     />
-    <FieldRow v-if="block.url" path="openInNewTab"
-      ><ToggleSwitch
-        class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
-        :model-value="block.openInNewTab ?? false"
-        :label="t.video.openInNewTab"
-        @update:model-value="updateField('openInNewTab', $event)"
-    /></FieldRow>
+    <FieldRow v-if="block.url" path="openInNewTab" :label="t.video.openInNewTab"
+      ><template #label-actions="{ controlId }"
+        ><ToggleSwitch
+          :control-id="controlId"
+          hide-label
+          class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+          :model-value="block.openInNewTab ?? false"
+          :label="t.video.openInNewTab"
+          @update:model-value="updateField('openInNewTab', $event)" /></template
+    ></FieldRow>
   </FieldRow>
   <FieldRow v-if="urlHasMergeTag" class="tpl:mb-3.5" path="placeholderUrl">
-    <label :class="labelClass">
+    <template #label>
       {{ t.video.placeholderUrl }}
       <span class="tpl:font-normal tpl:text-[var(--tpl-text-dim)]">
         {{ t.video.optional }}
       </span>
-    </label>
+    </template>
     <input
       type="url"
       :class="inputClass"
@@ -145,12 +146,12 @@ async function openMediaBrowser(): Promise<void> {
     />
   </FieldRow>
   <FieldRow class="tpl:mb-3.5" path="thumbnailUrl">
-    <label :class="labelClass">
+    <template #label>
       {{ t.video.customThumbnail }}
       <span class="tpl:font-normal tpl:text-[var(--tpl-text-dim)]">
         {{ t.video.optional }}
       </span>
-    </label>
+    </template>
     <MergeTagInput
       :model-value="block.thumbnailUrl"
       type="url"
@@ -172,8 +173,7 @@ async function openMediaBrowser(): Promise<void> {
       {{ t.image.browseMedia }}
     </button>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="alt">
-    <label :class="labelClass">{{ t.video.altText }}</label>
+  <FieldRow :label="t.video.altText" class="tpl:mb-3.5" path="alt">
     <MergeTagInput
       :model-value="block.alt"
       type="text"
@@ -181,8 +181,7 @@ async function openMediaBrowser(): Promise<void> {
       @update:model-value="updateField('alt', $event)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="width">
-    <label :class="labelClass">{{ t.video.width }}</label>
+  <FieldRow :label="t.video.width" class="tpl:mb-3.5" path="width">
     <select
       :class="inputClass"
       data-testid="video-width-mode"
@@ -210,8 +209,7 @@ async function openMediaBrowser(): Promise<void> {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="height">
-    <label :class="labelClass">{{ t.video.height }}</label>
+  <FieldRow :label="t.video.height" class="tpl:mb-3.5" path="height">
     <select
       :class="inputClass"
       data-testid="video-height-mode"
@@ -236,8 +234,7 @@ async function openMediaBrowser(): Promise<void> {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="align">
-    <label :class="labelClass">{{ t.title.align }}</label>
+  <FieldRow :label="t.title.align" class="tpl:mb-3.5" path="align">
     <SlidingPillSelect
       :options="[
         { value: 'left', label: t.title.alignLeft },

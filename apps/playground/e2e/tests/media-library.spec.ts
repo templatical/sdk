@@ -58,6 +58,32 @@ async function openBlankEditorMediaOff(page: Page, shadowDom: boolean) {
 }
 
 test.describe("Media library", () => {
+  test("keeps selected image actions inside the minimum canvas at 1280 × 720", async ({
+    page,
+    shadowDom,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const editorPage = await openBlankEditorMediaOff(page, shadowDom);
+    await editorPage.clickPaletteItem("image");
+    const body = page.locator(".tpl-body");
+    await expect
+      .poll(() =>
+        body.evaluate((element) => element.scrollWidth <= element.clientWidth),
+      )
+      .toBe(true);
+    await editorPage.selectBlockByType("image");
+    for (const action of await page
+      .locator(".tpl-block-actions button")
+      .all()) {
+      await action.click({ trial: true });
+      const box = (await action.boundingBox())!;
+      const bounds = (await body.boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+    }
+    expect(await body.evaluate((element) => element.scrollLeft)).toBe(0);
+  });
+
   test.describe("with media provider", () => {
     test.beforeEach(async ({ scenePage, editorPage }) => {
       await scenePage.goto("media");

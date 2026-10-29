@@ -14,7 +14,11 @@ import {
   type TranslationProvider,
 } from "@templatical/types";
 import { createSharedCollaboration } from "../../host/collaboration/client";
-import { templatesProviderFor } from "../../host/providers";
+import {
+  PLAYGROUND_USER,
+  commentsProviderFor,
+  templatesProviderFor,
+} from "../../host/providers";
 import type { Scene, SceneContext } from "../types";
 
 const TRANSLATIONS = {
@@ -217,6 +221,7 @@ export const languages: Scene = {
         seed: () => languagesCanvas(ctx),
       });
       return {
+        comments: commentsProviderFor("languages"),
         templates: shared.templates,
         collaboration: shared.collaboration,
         layout,
@@ -227,6 +232,8 @@ export const languages: Scene = {
       };
     }
     return {
+      user: PLAYGROUND_USER,
+      comments: commentsProviderFor("languages"),
       templates: templatesProviderFor("languages"),
       layout,
       localization,
@@ -248,9 +255,34 @@ import "@templatical/editor/style.css";
 
 // In-memory storage for this example; replace with your backend.
 let template = { id: "languages", content: createDefaultTemplateContent() };
+const user = { id: "playground-user", name: "Playground User" };
+const comments = new Map();
 const translations = ${JSON.stringify(TRANSLATIONS, null, 2)};
 const editor = await init({
   container: document.getElementById("editor"),
+  user: user,
+  comments: {
+    list: async () => structuredClone([...comments.values()]),
+    create: async (_templateId, input) => {
+      const comment = {
+        ...input,
+        id: crypto.randomUUID(),
+        author: user,
+        createdAt: new Date().toISOString(),
+      };
+      if (input.parentId) {
+        const parent = comments.get(input.parentId);
+        if (!parent) throw new Error("Comment thread not found.");
+        (parent.replies ??= []).push(comment);
+      } else {
+        comments.set(comment.id, comment);
+      }
+      return structuredClone(comment);
+    },
+    update: false,
+    delete: false,
+    setResolved: false,
+  },
   templates: {
     load: async () => template,
     create: false,

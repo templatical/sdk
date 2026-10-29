@@ -109,6 +109,7 @@ import {
   TEMPLATE_LINT_KEY,
   EDITOR_ROOT_KEY,
   POPOVER_ROOT_KEY,
+  LOCALE_CHIP_OPENERS_KEY,
 } from "../keys";
 import {
   createImageUrlResolver,
@@ -650,6 +651,7 @@ export function useEditorCore(
   const editorRoot = options.editorRoot ?? document;
   provide(EDITOR_ROOT_KEY, editorRoot);
   provide(POPOVER_ROOT_KEY, popoverRoot);
+  provide(LOCALE_CHIP_OPENERS_KEY, new Map());
   provide(TRANSLATIONS_KEY, translations);
   provide(EDITOR_KEY, editor);
   provide(HISTORY_KEY, history);

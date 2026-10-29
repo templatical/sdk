@@ -516,6 +516,9 @@ function handleFetchData(
                 <component
                   :is="getBlockComponent(block)"
                   :block="displayBlock(block)"
+                  v-bind="
+                    block.type === 'section' ? { sourceBlock: block } : {}
+                  "
                   :viewport="viewport"
                   @fetch-data="handleFetchData(block, $event)"
                   @update="

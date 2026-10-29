@@ -2,6 +2,31 @@ import type en from "./en";
 
 const nl: typeof en = {
   localization: {
+    tagsDiffer: "Samenvoegvelden verschillen",
+    tagsDifferExplanation:
+      "De samenvoegvelden komen niet overeen met de tekst in {default}.",
+    changed: "Gewijzigd in {language}",
+    notTranslatedCount: {
+      one: "{count} niet vertaald",
+      other: "{count} niet vertaald",
+    },
+    missingExplanation:
+      "Nog niet vertaald. De e-mail toont de tekst in {default}.",
+    staleExplanation: "De tekst in {default} is sinds de vertaling gewijzigd.",
+    currentExcerpt: "Nu: “{excerpt}”",
+    useDefaultLanguage: "{default} gebruiken",
+    changedProperties: {
+      one: "{count} eigenschap verschilt van {default}.",
+      other: "{count} eigenschappen verschillen van {default}.",
+    },
+    resetChanges: "Wijzigingen resetten",
+    staleLanguages: {
+      one: "Verouderd in {count} taal",
+      other: "Verouderd in {count} talen",
+    },
+    open: "Openen",
+    resetToDefault: "Resetten naar {default}",
+    hiddenExplanation: "Dit blok staat niet in de e-mail in {language}.",
     editingLanguage: "{language} bewerken",
     languageReadOnly: "Alleen-lezen: {language} is niet ingeschakeld",
     backToDefault: "Terug naar {default}",
@@ -76,13 +101,9 @@ const nl: typeof en = {
     notTranslated: "Niet vertaald",
     outOfDate: "Verouderd",
     keep: "Behouden",
-    useDefault: "Standaard gebruiken",
-    differs: "Afwijkend in {language}",
-    reset: "Herstellen",
     hidden: "Verborgen in {language}",
     show: "Tonen",
     hide: "Verbergen in {language}",
-    translationsOutOfDate: "Verouderde vertalingen: {count}",
     dismiss: "Sluiten",
     structureNotice: "Structuurwijzigingen gelden voor elke taal",
     aiActiveLanguage:
@@ -688,6 +709,7 @@ const nl: typeof en = {
     collapsePreview: "Voorbeeld van {block} inklappen",
   },
   comments: {
+    filterLanguage: "Deze taal",
     button: "Opmerkingen",
     title: "Opmerkingen",
     close: "Sluiten",

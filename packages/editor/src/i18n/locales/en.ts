@@ -1,5 +1,29 @@
 export default {
   localization: {
+    tagsDiffer: "Merge tags differ",
+    tagsDifferExplanation: "Its merge tags don't match the {default} text.",
+    changed: "Changed in {language}",
+    notTranslatedCount: {
+      one: "{count} not translated",
+      other: "{count} not translated",
+    },
+    missingExplanation:
+      "Not translated yet. The email shows the {default} text.",
+    staleExplanation: "{default} changed since this was translated.",
+    currentExcerpt: "Now: “{excerpt}”",
+    useDefaultLanguage: "Use {default}",
+    changedProperties: {
+      one: "{count} property differs from {default}.",
+      other: "{count} properties differ from {default}.",
+    },
+    resetChanges: "Reset changes",
+    staleLanguages: {
+      one: "Out of date in {count} language",
+      other: "Out of date in {count} languages",
+    },
+    open: "Open",
+    resetToDefault: "Reset to {default}",
+    hiddenExplanation: "This block isn't in the {language} email.",
     editingLanguage: "Editing {language}",
     languageReadOnly: "Read-only: {language} isn't enabled",
     backToDefault: "Back to {default}",
@@ -74,13 +98,9 @@ export default {
     notTranslated: "Not translated",
     outOfDate: "Out of date",
     keep: "Keep",
-    useDefault: "Use default",
-    differs: "Differs in {language}",
-    reset: "Reset",
     hidden: "Hidden in {language}",
     show: "Show",
     hide: "Hide in {language}",
-    translationsOutOfDate: "Translations out of date: {count}",
     dismiss: "Dismiss",
     structureNotice: "Structure changes apply to every language.",
     aiActiveLanguage:
@@ -754,6 +774,7 @@ export default {
     collapsePreview: "Collapse {block} preview",
   },
   comments: {
+    filterLanguage: "This language",
     button: "Comments",
     title: "Comments",
     close: "Close",

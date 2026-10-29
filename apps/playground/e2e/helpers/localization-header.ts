@@ -14,11 +14,12 @@ import css from "../../../../packages/editor/src/styles/index.css?inline";
 
 type HeaderProps = InstanceType<typeof EditorHeader>["$props"];
 
-export async function mountCrowdedHeader(shadowDom: boolean) {
+export async function mountCrowdedHeader(shadowDom: boolean, width?: number) {
   const host = document.createElement("div");
   host.dataset.testid = "language-header-harness";
   host.style.cssText =
     "position:fixed;inset:0;z-index:20000;background:var(--tpl-bg)";
+  if (width !== undefined) host.style.width = `${width}px`;
   document.body.appendChild(host);
   const root = shadowDom ? host.attachShadow({ mode: "open" }) : host;
   const style = document.createElement("style");

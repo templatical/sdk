@@ -25,8 +25,9 @@ function onChange(event: Event): void {
     v-if="value !== undefined"
     data-testid="scene-init-key"
     class="pg-init-picker"
+    :title="`${code}: ${value}`"
   >
-    <code class="font-mono">{{ code }}: "{{ value }}"</code>
+    <code class="min-w-0 truncate font-mono">{{ code }}: "{{ value }}"</code>
     <ChevronDown :size="12" :stroke-width="2" aria-hidden="true" />
     <select
       data-testid="scene-value-picker"
@@ -46,8 +47,9 @@ function onChange(event: Event): void {
   </label>
   <code
     v-else
+    :title="code"
     data-testid="scene-init-key"
-    class="shrink-0 font-mono text-xs text-gray-600 dark:text-gray-400"
+    class="min-w-0 truncate font-mono text-xs text-gray-600 dark:text-gray-400"
     >{{ code }}</code
   >
 </template>

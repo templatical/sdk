@@ -43,6 +43,7 @@ export async function openLanguages(
   config: Partial<TemplaticalEditorConfig> = {},
 ) {
   const wrapper = mount(Editor, {
+    attachTo: document.body,
     props: {
       config: {
         container: document.createElement("div"),

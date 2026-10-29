@@ -18,10 +18,11 @@ import type {
   SectionBlock as SectionBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { computed, inject, ref, type Component } from "vue";
+import { computed, inject, provide, ref, type Component } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import {
   EDITOR_KEY,
+  ANCESTOR_HIDDEN_LOCALES_KEY,
   APPLIES_CONDITION_FILTER_KEY,
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
@@ -40,17 +41,29 @@ const sectionBlockComponentMap: Record<string, Component> = {
 
 const props = defineProps<{
   block: SectionBlockType;
+  sourceBlock?: SectionBlockType;
   viewport: ViewportSize;
 }>();
 
 const { t } = useI18n();
 const editor = requireInject(EDITOR_KEY, "SectionBlock");
 const { displayBlock } = useLocalizedDisplay(editor);
-const baseBlock = computed(
-  () =>
-    editor.content.value.blocks.find(
-      (block) => block.id === props.block.id && block.type === "section",
-    ) as SectionBlockType | undefined,
+const baseBlock = computed(() => props.sourceBlock ?? props.block);
+const ancestorHiddenLocales = inject(
+  ANCESTOR_HIDDEN_LOCALES_KEY,
+  computed<ReadonlySet<string>>(() => new Set()),
+);
+provide(
+  ANCESTOR_HIDDEN_LOCALES_KEY,
+  computed(
+    () =>
+      new Set([
+        ...ancestorHiddenLocales.value,
+        ...Object.entries(baseBlock.value.l10n ?? {})
+          .filter(([, layer]) => layer.hidden)
+          .map(([locale]) => locale),
+      ]),
+  ),
 );
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
@@ -94,10 +107,7 @@ const columnWidths = computed(() => {
 const columns = computed(() => {
   const count = columnWidths.value.length;
   const children = [
-    ...(editor.state.previewMode
-      ? props.block
-      : (baseBlock.value ?? props.block)
-    ).children,
+    ...(editor.state.previewMode ? props.block : baseBlock.value).children,
   ];
   while (children.length < count) {
     children.push([]);
@@ -272,6 +282,11 @@ function handleFetchData(
               <component
                 :is="getBlockComponent(childBlock)"
                 :block="displayBlock(childBlock)"
+                v-bind="
+                  childBlock.type === 'section'
+                    ? { sourceBlock: childBlock }
+                    : {}
+                "
                 :viewport="viewport"
                 @fetch-data="handleFetchData(childBlock, $event)"
                 @update="

@@ -6,7 +6,6 @@ import { useI18n } from "../../composables/useI18n";
 import {
   inputGroupInputClass,
   inputSuffixClass,
-  labelClass,
 } from "../../constants/styleConstants";
 import type { DividerBlock } from "@templatical/types";
 
@@ -26,8 +25,7 @@ function updateField(field: string, value: unknown): void {
 </script>
 
 <template>
-  <FieldRow class="tpl:mb-3.5" path="lineStyle">
-    <label :class="labelClass">{{ t.divider.style }}</label>
+  <FieldRow :label="t.divider.style" class="tpl:mb-3.5" path="lineStyle">
     <SlidingPillSelect
       :options="[
         { value: 'solid', label: t.divider.solid },
@@ -38,15 +36,13 @@ function updateField(field: string, value: unknown): void {
       @update:model-value="updateField('lineStyle', $event)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="color">
-    <label :class="labelClass">{{ t.divider.color }}</label>
+  <FieldRow :label="t.divider.color" class="tpl:mb-3.5" path="color">
     <ColorPicker
       :model-value="block.color"
       @update:model-value="updateField('color', $event)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="thickness">
-    <label :class="labelClass">{{ t.divider.thickness }}</label>
+  <FieldRow :label="t.divider.thickness" class="tpl:mb-3.5" path="thickness">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"

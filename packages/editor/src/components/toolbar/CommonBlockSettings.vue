@@ -9,7 +9,6 @@ import CollapsibleSection from "./CollapsibleSection.vue";
 import HeroControl from "./HeroControl.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
-  labelClass,
   monoTextareaClass,
   primaryBtnClass,
 } from "../../constants/styleConstants";
@@ -178,12 +177,12 @@ function toggleVisibility(key: VisibilityKey): void {
       :no-border="isFirstSection"
       @toggle="toggleSection('spacing')"
     >
-      <FieldRow path="styles.padding"
-        ><SpacingControl
-          :label="t.blockSettings.padding"
-          :model-value="block.styles.padding"
-          @update:model-value="updateStyle('padding', $event)"
-      /></FieldRow>
+      <SpacingControl
+        path="styles.padding"
+        :label="t.blockSettings.padding"
+        :model-value="block.styles.padding"
+        @update:model-value="updateStyle('padding', $event)"
+      />
     </CollapsibleSection>
 
     <CollapsibleSection
@@ -192,8 +191,7 @@ function toggleVisibility(key: VisibilityKey): void {
       header-test-id="block-settings-background"
       @toggle="toggleSection('bg')"
     >
-      <label :class="labelClass">{{ t.blockSettings.color }}</label>
-      <FieldRow path="styles.backgroundColor"
+      <FieldRow path="styles.backgroundColor" :label="t.blockSettings.color"
         ><ColorPicker
           :model-value="block.styles.backgroundColor ?? ''"
           allow-transparent
@@ -201,8 +199,12 @@ function toggleVisibility(key: VisibilityKey): void {
       /></FieldRow>
       <!-- Only sections take an image here: MJML has no background-url on
            columns or content elements. -->
-      <FieldRow v-if="block.type === 'section'" path="backgroundImage"
+      <FieldRow
+        v-if="block.type === 'section'"
+        path="backgroundImage"
+        :label="t.blockSettings.backgroundImage"
         ><BackgroundImageControl
+          hide-label
           class="tpl:mt-3.5"
           :model-value="block.backgroundImage"
           testid-prefix="section"
@@ -210,7 +212,10 @@ function toggleVisibility(key: VisibilityKey): void {
           :hero-mode="heroApplied"
           @update:model-value="emit('update', { backgroundImage: $event })"
       /></FieldRow>
-      <FieldRow v-if="block.type === 'section'" path="hero"
+      <FieldRow
+        v-if="block.type === 'section'"
+        path="hero"
+        :label="t.blocks.hero"
         ><HeroControl :section="block" @update="emit('update', $event)"
       /></FieldRow>
     </CollapsibleSection>
@@ -237,18 +242,22 @@ function toggleVisibility(key: VisibilityKey): void {
           v-for="item in VISIBILITY_ITEMS"
           :key="item.key"
           :path="`visibility.${item.key}`"
-          ><ToggleSwitch
-            class="tpl:text-xs tpl:text-[var(--tpl-text)]"
-            :model-value="isVisible(item.key)"
-            :label="t.blockSettings[item.labelKey]"
-            @update:model-value="toggleVisibility(item.key)"
-          >
-            <span class="tpl:flex tpl:items-center tpl:gap-2">
+          :label="t.blockSettings[item.labelKey]"
+          ><template #label
+            ><span class="tpl:flex tpl:items-center tpl:gap-2">
               <component :is="item.icon" :size="14" :stroke-width="1.5" />
               {{ t.blockSettings[item.labelKey] }}
-            </span>
-          </ToggleSwitch></FieldRow
-        >
+            </span></template
+          ><template #label-actions="{ controlId }"
+            ><ToggleSwitch
+              :control-id="controlId"
+              hide-label
+              class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+              :model-value="isVisible(item.key)"
+              :label="t.blockSettings[item.labelKey]"
+              @update:model-value="toggleVisibility(item.key)"
+            ></ToggleSwitch></template
+        ></FieldRow>
       </div>
     </CollapsibleSection>
 
@@ -260,7 +269,9 @@ function toggleVisibility(key: VisibilityKey): void {
       @toggle="toggleSection('condition')"
     >
       <div class="tpl:space-y-2">
-        <FieldRow path="displayCondition"
+        <FieldRow
+          path="displayCondition"
+          :label="t.blockSettings.displayCondition"
           ><select
             data-testid="display-condition-select"
             class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"

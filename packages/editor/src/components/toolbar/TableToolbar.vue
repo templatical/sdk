@@ -134,20 +134,22 @@ function removeTableColumn(colIndex: number): void {
       </div>
     </div>
   </div>
-  <FieldRow class="tpl:mb-3.5" path="hasHeaderRow">
-    <ToggleSwitch
-      class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-      :model-value="block.hasHeaderRow"
-      :label="t.table.hasHeaderRow"
-      @update:model-value="updateField('hasHeaderRow', $event)"
-    />
-  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="hasHeaderRow" :label="t.table.hasHeaderRow"
+    ><template #label-actions="{ controlId }"
+      ><ToggleSwitch
+        :control-id="controlId"
+        hide-label
+        class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+        :model-value="block.hasHeaderRow"
+        :label="t.table.hasHeaderRow"
+        @update:model-value="updateField('hasHeaderRow', $event)" /></template
+  ></FieldRow>
   <FieldRow
+    :label="t.table.headerBackgroundColor"
     v-if="block.hasHeaderRow"
     class="tpl:mb-3.5"
     path="headerBackgroundColor"
   >
-    <label :class="labelClass">{{ t.table.headerBackgroundColor }}</label>
     <ColorPicker
       :model-value="block.headerBackgroundColor ?? ''"
       :seed-color="DEFAULT_TABLE_ROW_BG"
@@ -155,15 +157,13 @@ function removeTableColumn(colIndex: number): void {
       @update:model-value="updateField('headerBackgroundColor', $event || null)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="borderColor">
-    <label :class="labelClass">{{ t.table.borderColor }}</label>
+  <FieldRow :label="t.table.borderColor" class="tpl:mb-3.5" path="borderColor">
     <ColorPicker
       :model-value="block.borderColor"
       @update:model-value="updateField('borderColor', $event)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="borderWidth">
-    <label :class="labelClass">{{ t.table.borderWidth }}</label>
+  <FieldRow :label="t.table.borderWidth" class="tpl:mb-3.5" path="borderWidth">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"
@@ -181,8 +181,7 @@ function removeTableColumn(colIndex: number): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="cellPadding">
-    <label :class="labelClass">{{ t.table.cellPadding }}</label>
+  <FieldRow :label="t.table.cellPadding" class="tpl:mb-3.5" path="cellPadding">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"
@@ -200,8 +199,7 @@ function removeTableColumn(colIndex: number): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="fontFamily">
-    <label :class="labelClass">{{ t.table.fontFamily }}</label>
+  <FieldRow :label="t.table.fontFamily" class="tpl:mb-3.5" path="fontFamily">
     <select
       :class="inputClass"
       :value="fontSelectValue(block.fontFamily)"
@@ -222,8 +220,7 @@ function removeTableColumn(colIndex: number): void {
       </option>
     </select>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="fontSize">
-    <label :class="labelClass">{{ t.table.fontSize }}</label>
+  <FieldRow :label="t.table.fontSize" class="tpl:mb-3.5" path="fontSize">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"
@@ -241,15 +238,13 @@ function removeTableColumn(colIndex: number): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="color">
-    <label :class="labelClass">{{ t.table.color }}</label>
+  <FieldRow :label="t.table.color" class="tpl:mb-3.5" path="color">
     <ColorPicker
       :model-value="block.color ?? ''"
       @update:model-value="updateField('color', $event || undefined)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="textAlign">
-    <label :class="labelClass">{{ t.table.textAlign }}</label>
+  <FieldRow :label="t.table.textAlign" class="tpl:mb-3.5" path="textAlign">
     <SlidingPillSelect
       :options="[
         { value: 'left', label: t.title.alignLeft, icon: AlignLeft },

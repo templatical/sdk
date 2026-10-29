@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { chromePillClass } from "../constants/styleConstants";
+import { languageName } from "../utils/languageName";
 import { formatRelativeTime } from "../utils/formatRelativeTime";
-import { EDITOR_KEY, requireInject } from "../keys";
+import { EDITOR_KEY, LOCALIZATION_KEY, requireInject } from "../keys";
 import { useI18n } from "../composables/useI18n";
 import type { UseCommentsFeatureReturn } from "../composables/useCommentsFeature";
 import type { Comment } from "@templatical/types";
@@ -17,7 +19,7 @@ import {
   Trash2,
   X,
 } from "@lucide/vue";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, inject, nextTick, ref, watch } from "vue";
 
 /**
  * The review panel, **shared by both entry points**.
@@ -46,6 +48,14 @@ const comments = computed(() => props.feature.headless);
 
 type FilterMode = "all" | "unresolved" | "block";
 const filterMode = ref<FilterMode>("unresolved");
+const localization = inject(LOCALIZATION_KEY, undefined);
+const thisLanguage = ref(false);
+const activeLanguage = computed(
+  () => editor.activeLocale?.value ?? editor.content.value.settings.locale,
+);
+function commentLanguage(comment: Comment): string {
+  return comment.locale ?? editor.content.value.settings.locale;
+}
 
 const newCommentBody = ref("");
 const replyingTo = ref<string | null>(null);
@@ -122,6 +132,13 @@ const filteredComments = computed(() => {
     items = items.filter((c) => c.blockId === filterBlockId.value);
   }
 
+  if (thisLanguage.value) {
+    items = items.filter((thread) =>
+      [thread, ...(thread.replies ?? [])].some(
+        (comment) => commentLanguage(comment) === activeLanguage.value,
+      ),
+    );
+  }
   return items;
 });
 
@@ -357,7 +374,7 @@ defineExpose({ filterByBlock, focusNewComment });
 
       <!-- Filter bar -->
       <div
-        class="tpl:flex tpl:gap-1 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2"
+        class="tpl:flex tpl:flex-wrap tpl:gap-1 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2"
       >
         <button
           type="button"
@@ -390,6 +407,17 @@ defineExpose({ filterByBlock, focusNewComment });
           @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
         >
           {{ t.comments.filterBlock }}
+        </button>
+        <button
+          v-if="localization"
+          type="button"
+          data-testid="comments-filter-language"
+          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)]"
+          :class="thisLanguage ? 'tpl-comment-filter--active' : ''"
+          :aria-pressed="thisLanguage"
+          @click="thisLanguage = !thisLanguage"
+        >
+          {{ t.comments.filterLanguage }}
         </button>
       </div>
 
@@ -444,7 +472,9 @@ defineExpose({ filterByBlock, focusNewComment });
               <div
                 class="tpl:flex tpl:items-start tpl:justify-between tpl:gap-2"
               >
-                <div class="tpl:flex tpl:items-center tpl:gap-1.5">
+                <div
+                  class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1.5"
+                >
                   <span
                     class="tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
                   >
@@ -457,6 +487,12 @@ defineExpose({ filterByBlock, focusNewComment });
                   <span class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]">
                     {{ formatTime(thread.createdAt) }}
                   </span>
+                  <span
+                    v-if="localization"
+                    data-testid="comment-locale-badge"
+                    :class="chromePillClass"
+                    >{{ languageName(commentLanguage(thread)) }}</span
+                  >
                   <span
                     v-if="thread.updatedAt"
                     class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"
@@ -659,7 +695,9 @@ defineExpose({ filterByBlock, focusNewComment });
                   <div
                     class="tpl:flex tpl:items-start tpl:justify-between tpl:gap-2"
                   >
-                    <div class="tpl:flex tpl:items-center tpl:gap-1.5">
+                    <div
+                      class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1.5"
+                    >
                       <span
                         class="tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
                       >
@@ -674,6 +712,12 @@ defineExpose({ filterByBlock, focusNewComment });
                       >
                         {{ formatTime(reply.createdAt) }}
                       </span>
+                      <span
+                        v-if="localization"
+                        data-testid="comment-locale-badge"
+                        :class="chromePillClass"
+                        >{{ languageName(commentLanguage(reply)) }}</span
+                      >
                       <span
                         v-if="reply.updatedAt"
                         class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"

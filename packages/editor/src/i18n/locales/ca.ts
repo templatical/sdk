@@ -2,6 +2,31 @@ import type en from "./en";
 
 const ca: typeof en = {
   localization: {
+    tagsDiffer: "Les etiquetes de fusió difereixen",
+    tagsDifferExplanation:
+      "Les etiquetes de fusió no coincideixen amb el text en {default}.",
+    changed: "Canviat en {language}",
+    notTranslatedCount: {
+      one: "{count} sense traduir",
+      other: "{count} sense traduir",
+    },
+    missingExplanation:
+      "Encara no s’ha traduït. El correu mostra el text en {default}.",
+    staleExplanation: "El text en {default} ha canviat des de la traducció.",
+    currentExcerpt: "Ara: «{excerpt}»",
+    useDefaultLanguage: "Utilitza {default}",
+    changedProperties: {
+      one: "{count} propietat difereix de {default}.",
+      other: "{count} propietats difereixen de {default}.",
+    },
+    resetChanges: "Restableix els canvis",
+    staleLanguages: {
+      one: "Desactualitzat en {count} idioma",
+      other: "Desactualitzat en {count} idiomes",
+    },
+    open: "Obre",
+    resetToDefault: "Restableix a {default}",
+    hiddenExplanation: "Aquest bloc no és al correu en {language}.",
     editingLanguage: "Editant {language}",
     languageReadOnly: "Només lectura: {language} no està activat",
     backToDefault: "Torna a {default}",
@@ -81,13 +106,9 @@ const ca: typeof en = {
     notTranslated: "Sense traduir",
     outOfDate: "Desactualitzat",
     keep: "Conserva",
-    useDefault: "Utilitza el predeterminat",
-    differs: "Diferent en {language}",
-    reset: "Restableix",
     hidden: "Amagat en {language}",
     show: "Mostra",
     hide: "Amaga en {language}",
-    translationsOutOfDate: "Traduccions desactualitzades: {count}",
     dismiss: "Tanca",
     structureNotice: "Els canvis d’estructura s’apliquen a tots els idiomes",
     aiActiveLanguage:
@@ -760,6 +781,7 @@ const ca: typeof en = {
     collapsePreview: "Redueix la vista prèvia de {block}",
   },
   comments: {
+    filterLanguage: "Aquest idioma",
     button: "Comentaris",
     title: "Comentaris",
     close: "Tancar",

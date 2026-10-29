@@ -5,6 +5,101 @@ const harness = fileURLToPath(
   new URL("../helpers/localization-header.ts", import.meta.url),
 );
 
+for (const editorWidth of [530, 768]) {
+  test(`all header controls remain clickable in a ${editorWidth}px editor in both language views`, async ({
+    page,
+    scenePage,
+    shadowDom,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await scenePage.goto("minimum");
+    await page.evaluate(
+      async ({ url, shadow, width }) => {
+        const { mountCrowdedHeader } = await import(/* @vite-ignore */ url);
+        await mountCrowdedHeader(shadow, width);
+      },
+      { url: `/@fs${harness}`, shadow: shadowDom, width: editorWidth },
+    );
+    const host = page.getByTestId("language-header-harness");
+    const header = host.locator("header");
+    for (const language of ["en", "zh-Hant-HK"]) {
+      if (language !== "en") {
+        await host.getByTestId("language-menu").click();
+        await host.getByTestId(`language-option-${language}`).click();
+      }
+      const controls = header.locator("button:visible:enabled");
+      expect(await controls.count()).toBeGreaterThan(8);
+      for (const control of await controls.all()) {
+        await control.click({ trial: true });
+        await control.focus();
+      }
+      expect(
+        await host.locator(".tpl").evaluate((element) => ({
+          left: element.scrollLeft,
+          overflow: element.scrollWidth > element.clientWidth,
+        })),
+      ).toEqual({ left: 0, overflow: false });
+    }
+  });
+}
+
+test("the compact header at 1280 × 720 shows the whole template name", async ({
+  page,
+  scenePage,
+  editorPage,
+}) => {
+  await scenePage.goto("languages");
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
+  const root = page.locator(".tpl").first();
+  // The playground's editor is 1024px wide here, inside the compact query.
+  expect(
+    await root
+      .locator(".tpl-header-container")
+      .evaluate((element) => element.getBoundingClientRect().width),
+  ).toBeLessThanOrEqual(1024);
+  const name = root.getByTestId("template-name");
+  await expect(name).toHaveText("Languages");
+  expect(
+    await name.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+});
+
+test("the 768px Languages scene keeps its code label clear of Docs and its editor unscrolled", async ({
+  page,
+  scenePage,
+  editorPage,
+}) => {
+  await page.setViewportSize({ width: 768, height: 1000 });
+  await scenePage.goto("languages");
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
+  const key = await page.getByTestId("scene-init-key").boundingBox();
+  const docs = await page.getByTestId("toolbar-docs").boundingBox();
+  expect(key!.x + key!.width).toBeLessThanOrEqual(docs!.x);
+  const root = page.locator(".tpl").first();
+  for (const language of ["en", "de"]) {
+    if (language === "de") {
+      await root.getByTestId("language-menu").click();
+      await root.getByTestId("language-option-de").click();
+    }
+    for (const control of await root
+      .locator("header button:visible:enabled")
+      .all()) {
+      await control.click({ trial: true });
+      await control.focus();
+    }
+    expect(
+      await root.evaluate((element) => ({
+        left: element.scrollLeft,
+        overflow: element.scrollWidth > element.clientWidth,
+      })),
+    ).toEqual({ left: 0, overflow: false });
+  }
+});
+
 for (const width of [1440, 1920]) {
   for (const rootFontSize of [8, 16]) {
     test(`a long language name keeps every header control reachable at ${width}px with a ${rootFontSize}px host root`, async ({

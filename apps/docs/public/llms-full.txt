@@ -11927,7 +11927,7 @@ The **Languages** menu shows the default and each version with coverage. **Add l
 
 Text and property edits in a language view affect that language only. When a translatable field has a default value, an edit stores `text` with its `sourceHash`. If the default has no value, such as an absent preheader, the edit stores a `set` override without staleness tracking. An edit equal to the default leaves no override.
 
-**Differs in {language}** marks property overrides. The toolbar’s per-field **Reset** restores only that field from the default and keeps sibling overrides. The block marker’s **Reset** clears all of that block’s `set` overrides; it keeps its `text` translations. **Hide in {language}** leaves a ghost block on the canvas; **Show** restores it. The renderer omits hidden blocks.
+**Changed in {language}** marks property overrides. Open the block’s status chip, an icon in its top-right corner (top-left in right-to-left content), to use **Reset changes**. The toolbar shows a language pill and a **Reset to {default}** icon that restores only that field from the default and keeps sibling overrides. The chip’s **Reset changes** clears all of that block’s `set` overrides; it keeps its `text` translations. **Hide in {language}** leaves a ghost block on the canvas; **Show** restores it. The renderer omits hidden blocks.
 
 Add, move, delete, duplicate, paste and drag change the shared tree for every language. The editor shows **Structure changes apply to every language.** once per session per template. A version in `settings.locales` but absent from `localization.locales` remains selectable, read-only and marked **Not enabled**: both value edits and structure changes are refused.
 
@@ -11943,11 +11943,11 @@ A missing translation falls back to the default-language value. The block shows 
 
 Each `LocalizedText.sourceHash` stores `sourceHash(defaultValue)` when written. `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, formatted as eight lowercase hexadecimal digits. A changed default hash marks the translation **Out of date** and produces `localization.stale`.
 
-**Keep** retains the existing translation entry and updates its `sourceHash`, even when the changed default now equals the translation. Coverage counts the kept entry as translated. Hide and Show preserve text entries too. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
+**Keep** retains the existing translation entry and updates its `sourceHash`, even when the changed default now equals the translation. Coverage counts the kept entry as translated. Hide and Show preserve text entries too. **Use {default}** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Out of date in {count} languages** identifies affected blocks. Property overrides in `set` have no source hash.
 
 ## Translating {#translating}
 
-Pass `init({ translation })` a [TranslationProvider](/backend/translation), alongside `localization`. In an enabled non-default view, **Translate {count} fields** in the language bar sends missing and out-of-date fields (gaps) only. Current translations and manual edits survive. **Translate everything again…** selects all eligible fields after a confirmation that names the field count and explains replacement of manual edits. The gaps action is hidden at zero; Translate everything again is disabled when no fields are eligible. Block markers offer **Translate** for missing text and **Re-translate** for stale text. Without the provider there is no Translate UI.
+Pass `init({ translation })` a [TranslationProvider](/backend/translation), alongside `localization`. In an enabled non-default view, **Translate {count} fields** in the language bar sends missing and out-of-date fields (gaps) only. Current translations and manual edits survive. **Translate everything again…** selects all eligible fields after a confirmation that names the field count and explains replacement of manual edits. The gaps action is hidden at zero; Translate everything again is disabled when no fields are eligible. Block-chip popovers offer **Translate** for missing text and **Re-translate** for stale text or mismatched merge tags. Without the provider there is no Translate UI.
 
 Use `localization.doNotTranslate: ["Sable"]` to preserve brand names during Translate. The [translation contract](/backend/translation#provider-contract) defines matching, limits and the exact placeholder check; headless flows pass the same list to `localeStrings` and `applyLocaleStrings`.
 
@@ -12014,7 +12014,7 @@ After the run, save and run `npx -y @templatical/template-tools validate templat
 
 ## Merge tags {#merge-tags}
 
-Keep the same merge tags, including repeated occurrences, in each translated text field. `localization.merge-tags-differ` compares tag multisets against the default; the editor uses the same merge-tag list in every language. The rule is a warning, but CLI validation treats a merge-tag mismatch as blocking and exits `1`, even when `valid: true`. Missing and stale translations alone remain advisory.
+Keep the same merge tags, including repeated occurrences, in each translated text field. `localization.merge-tags-differ` compares tag multisets against the default; the editor uses the same merge-tag list in every language. When a current translation’s tags differ, the block’s status chip shows **Merge tags differ**. Its popover offers **Re-translate** with a provider, which sends every eligible text field of that block, and **Use {default}**, which removes only the mismatched translations. Missing and out-of-date text take priority over this state. The rule is a warning, but CLI validation treats a merge-tag mismatch as blocking and exits `1`, even when `valid: true`. Missing and stale translations alone remain advisory.
 
 ## Rendering a language
 
@@ -12120,7 +12120,7 @@ For independent block trees or layouts in each language, keep separate templates
 
 **Comments, history, CLI and Cloud**
 
-- Comment threads are shared across languages. Each new comment and reply stores its view’s language tag through a BYO [comments provider](/backend/comments#locale); Cloud does not store it yet. Version history remains per template.
+- Comment threads are shared across languages. Each new comment and reply stores its view’s language tag through a BYO [comments provider](/backend/comments#locale); Cloud does not store it yet. Every root and reply shows its language badge; an untagged comment counts as the current default language. **This language** shows whole threads whose root or any reply matches the active language, retaining every message and badge. The filter is view state and is not saved. Version history remains per template.
 - The Cloud editor doesn't support language versions or translation yet: `initCloud()` ignores `localization` and `translation` and logs a warning.
 
 ## Check your work

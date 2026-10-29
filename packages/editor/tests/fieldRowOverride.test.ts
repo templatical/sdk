@@ -45,10 +45,10 @@ describe("field overrides", () => {
     expect(desktop.get('[role="switch"]').attributes("aria-checked")).toBe(
       "true",
     );
-    expect(mobile.find('[data-testid="field-override-dot"]').exists()).toBe(
+    expect(mobile.find('[data-testid="field-locale-pill"]').exists()).toBe(
       false,
     );
-    expect(desktop.find('[data-testid="field-override-dot"]').exists()).toBe(
+    expect(desktop.find('[data-testid="field-locale-pill"]').exists()).toBe(
       true,
     );
     expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
@@ -92,14 +92,14 @@ describe("field overrides", () => {
     expect(
       wrapper
         .get(
-          '[data-locale-path="visibility.desktop"] [data-testid="field-override-dot"]',
+          '[data-locale-path="visibility.desktop"] [data-testid="field-locale-pill"]',
         )
         .exists(),
     ).toBe(true);
     expect(
       wrapper
         .find(
-          '[data-locale-path="visibility.mobile"] [data-testid="field-override-dot"]',
+          '[data-locale-path="visibility.mobile"] [data-testid="field-locale-pill"]',
         )
         .exists(),
     ).toBe(false);
@@ -110,12 +110,12 @@ describe("field overrides", () => {
     expect(history.canUndo.value).toBe(false);
   });
 
-  it("shows a dot and emits reset without changing its input", async () => {
+  it("shows a language pill and emits reset without changing its input", async () => {
     const wrapper = mountEditor(FieldRow, {
       props: { label: "Color", overridden: true } as any,
       slots: { default: '<input value="red">' },
     });
-    expect(wrapper.find('[data-testid="field-override-dot"]').exists()).toBe(
+    expect(wrapper.find('[data-testid="field-locale-pill"]').exists()).toBe(
       true,
     );
     await wrapper.get('[data-testid="field-reset"]').trigger("click");
@@ -134,7 +134,7 @@ describe("field overrides", () => {
     await nextTick();
     await vi.dynamicImportSettled();
     const row = wrapper.get('[data-locale-path="color"]');
-    expect(row.find('[data-testid="field-override-dot"]').exists()).toBe(true);
+    expect(row.find('[data-testid="field-locale-pill"]').exists()).toBe(true);
     await row.get('[data-testid="field-reset"]').trigger("click");
     expect(editor.content.value.blocks[0].l10n?.de.set).toBeUndefined();
     expect(editor.content.value.blocks[0].l10n?.de.text?.content.value).toBe(
@@ -162,7 +162,7 @@ describe("field overrides", () => {
     await wrapper.get("#tpl-tab-settings").trigger("click");
     await vi.dynamicImportSettled();
     const row = wrapper.get(`[data-locale-path="settings/${path}"]`);
-    expect(row.text()).toContain("Differs in Deutsch");
+    expect(row.get('[data-testid="field-locale-pill"]').text()).toBe("Deutsch");
     await row.get('[data-testid="field-reset"]').trigger("click");
     expect(editor.content.value.settings.l10n).toBeUndefined();
     history.undo();

@@ -2,6 +2,31 @@ import type en from "./en";
 
 const es: typeof en = {
   localization: {
+    tagsDiffer: "Las etiquetas de combinación difieren",
+    tagsDifferExplanation:
+      "Sus etiquetas de combinación no coinciden con el texto en {default}.",
+    changed: "Cambiado en {language}",
+    notTranslatedCount: {
+      one: "{count} sin traducir",
+      other: "{count} sin traducir",
+    },
+    missingExplanation:
+      "Aún no se ha traducido. El correo muestra el texto en {default}.",
+    staleExplanation: "El texto en {default} ha cambiado desde la traducción.",
+    currentExcerpt: "Ahora: «{excerpt}»",
+    useDefaultLanguage: "Usar {default}",
+    changedProperties: {
+      one: "{count} propiedad difiere de {default}.",
+      other: "{count} propiedades difieren de {default}.",
+    },
+    resetChanges: "Restablecer cambios",
+    staleLanguages: {
+      one: "Desactualizado en {count} idioma",
+      other: "Desactualizado en {count} idiomas",
+    },
+    open: "Abrir",
+    resetToDefault: "Restablecer a {default}",
+    hiddenExplanation: "Este bloque no está en el correo en {language}.",
     editingLanguage: "Editando {language}",
     languageReadOnly: "Solo lectura: {language} no está habilitado",
     backToDefault: "Volver a {default}",
@@ -81,13 +106,9 @@ const es: typeof en = {
     notTranslated: "Sin traducir",
     outOfDate: "Desactualizado",
     keep: "Conservar",
-    useDefault: "Usar predeterminado",
-    differs: "Diferente en {language}",
-    reset: "Restablecer",
     hidden: "Oculto en {language}",
     show: "Mostrar",
     hide: "Ocultar en {language}",
-    translationsOutOfDate: "Traducciones desactualizadas: {count}",
     dismiss: "Cerrar",
     structureNotice: "Los cambios de estructura se aplican a todos los idiomas",
     aiActiveLanguage:
@@ -759,6 +780,7 @@ const es: typeof en = {
     collapsePreview: "Contraer la vista previa de {block}",
   },
   comments: {
+    filterLanguage: "Este idioma",
     button: "Comentarios",
     title: "Comentarios",
     close: "Cerrar",

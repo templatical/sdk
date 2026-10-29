@@ -1,14 +1,14 @@
 <script setup lang="ts">
+import { chromePillClass } from "../../constants/styleConstants";
 import { computed, inject } from "vue";
 import { RotateCcw } from "@lucide/vue";
-import { deepEqual, readPath } from "@templatical/types";
-import {
-  labelClass,
-  secondaryBtnCompactClass,
-} from "../../constants/styleConstants";
+import { deepEqual, generateId, readPath } from "@templatical/types";
+import { ghostBtnClass } from "../../constants/styleConstants";
 import { EDITOR_KEY } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import { languageName } from "../../utils/languageName";
+
+const actionClass = ghostBtnClass.replace("tpl:text-sm", "tpl:text-xs");
 
 const props = withDefaults(
   defineProps<{
@@ -21,6 +21,7 @@ const props = withDefaults(
 );
 const emit = defineEmits<{ (e: "reset"): void }>();
 const editor = inject(EDITOR_KEY, null);
+const controlId = `tpl-field-${generateId()}`;
 const { t, format } = useI18n();
 const layer = computed(() => {
   const locale = editor?.activeLocale?.value;
@@ -56,9 +57,12 @@ const paths = computed(() =>
     : [],
 );
 const isOverridden = computed(() => props.overridden ?? paths.value.length > 0);
+const language = computed(() =>
+  languageName(editor?.activeLocale?.value ?? ""),
+);
 const description = computed(() =>
-  format(t.localization.differs, {
-    language: languageName(editor?.activeLocale?.value ?? ""),
+  format(t.localization.resetToDefault, {
+    default: languageName(editor?.content.value.settings.locale ?? "en"),
   }),
 );
 function reset() {
@@ -80,32 +84,38 @@ function reset() {
     "
   >
     <div
-      v-if="label || isOverridden"
-      class="tpl:flex tpl:items-center tpl:justify-between tpl:gap-1"
+      v-if="label || $slots.label || isOverridden"
+      class="tpl:mb-1.5 tpl:flex tpl:items-center tpl:justify-between tpl:gap-1"
     >
-      <label v-if="label" :class="labelClass">{{ label }}</label>
-      <span
-        v-if="isOverridden"
-        class="tpl:flex tpl:items-center tpl:gap-1 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
-        :title="description"
-      >
+      <div class="tpl:flex tpl:items-center tpl:gap-1.5">
+        <label
+          v-if="label || $slots.label"
+          :for="controlId"
+          class="tpl:block tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+          ><slot name="label">{{ label }}</slot></label
+        >
         <span
-          data-testid="field-override-dot"
-          aria-hidden="true"
-          class="tpl:size-1.5 tpl:rounded-full tpl:bg-[var(--tpl-secondary)]"
-        />
-        <span v-if="settings">{{ description }}</span>
+          v-if="isOverridden"
+          data-testid="field-locale-pill"
+          :class="chromePillClass"
+          >{{ language }}</span
+        >
+      </div>
+      <div class="tpl:flex tpl:items-center tpl:gap-1">
+        <slot name="label-actions" v-bind="{ controlId }" />
         <button
+          v-if="isOverridden"
           type="button"
           data-testid="field-reset"
-          :aria-label="`${t.localization.reset}: ${label ?? path ?? description}`"
-          :class="secondaryBtnCompactClass"
+          :aria-label="description"
+          :title="description"
+          :class="[actionClass, 'tpl:p-1']"
           @click="reset"
         >
-          <RotateCcw :size="12" />{{ t.localization.reset }}
+          <RotateCcw :size="12" aria-hidden="true" />
         </button>
-      </span>
+      </div>
     </div>
-    <slot />
+    <slot v-bind="{ controlId }" />
   </div>
 </template>

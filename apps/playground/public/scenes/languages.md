@@ -17,6 +17,8 @@ import "@templatical/editor/style.css";
 
 // In-memory storage for this example; replace with your backend.
 let template = { id: "languages", content: createDefaultTemplateContent() };
+const user = { id: "playground-user", name: "Playground User" };
+const comments = new Map();
 const translations = {
   "de": {
     "languages-title/content": "<p>Willkommen zur Herbstkollektion</p>",
@@ -37,6 +39,29 @@ const translations = {
 };
 const editor = await init({
   container: document.getElementById("editor"),
+  user: user,
+  comments: {
+    list: async () => structuredClone([...comments.values()]),
+    create: async (_templateId, input) => {
+      const comment = {
+        ...input,
+        id: crypto.randomUUID(),
+        author: user,
+        createdAt: new Date().toISOString(),
+      };
+      if (input.parentId) {
+        const parent = comments.get(input.parentId);
+        if (!parent) throw new Error("Comment thread not found.");
+        (parent.replies ??= []).push(comment);
+      } else {
+        comments.set(comment.id, comment);
+      }
+      return structuredClone(comment);
+    },
+    update: false,
+    delete: false,
+    setResolved: false,
+  },
   templates: {
     load: async () => template,
     create: false,

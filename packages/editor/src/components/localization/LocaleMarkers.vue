@@ -5,56 +5,83 @@ import {
   localeCoverage,
   localeStrings,
   SYNTAX_PRESETS,
+  TRANSLATABLE_HTML_FIELDS,
   type Block,
+  type TemplateContent,
 } from "@templatical/types";
 import {
-  TRANSLATION_FEATURE_KEY,
   EDITOR_KEY,
+  ANCESTOR_HIDDEN_LOCALES_KEY,
   LOCALIZATION_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   MERGE_TAG_SYNTAX_KEY,
 } from "../../keys";
-import { useI18n } from "../../composables/useI18n";
-import { languageName } from "../../utils/languageName";
-import { secondaryBtnCompactClass } from "../../constants/styleConstants";
+import { mergeTagsDiffer } from "../../utils/mergeTagTokens";
+import LocaleStatusChip from "./LocaleStatusChip.vue";
 
 const props = defineProps<{ block: Block }>();
-const translation = inject(TRANSLATION_FEATURE_KEY, null);
 const editor = inject(EDITOR_KEY, null);
 const config = inject(LOCALIZATION_KEY, undefined);
 const definitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
-const { t, format } = useI18n();
+const ancestorHiddenLocales = inject(
+  ANCESTOR_HIDDEN_LOCALES_KEY,
+  computed<ReadonlySet<string>>(() => new Set()),
+);
 const locale = computed(() => editor?.activeLocale?.value);
-const language = computed(() => languageName(locale.value ?? ""));
 const layer = computed(() =>
   locale.value ? props.block.l10n?.[locale.value] : undefined,
 );
-const prefix = computed(() => `${props.block.id}/`);
-function fields(locale: string) {
-  const result = localeCoverage(editor!.content.value, locale, definitions);
-  return {
-    missing: result.missing.filter((id) => id.startsWith(prefix.value)),
-    stale: result.stale
-      .filter((id) => id.startsWith(prefix.value))
-      .map((id) => id.slice(prefix.value.length)),
-  };
-}
-const eligibleGaps = computed(() =>
-  editor && locale.value
-    ? localeStrings(editor.content.value, locale.value, {
+// The chip owns this block's fields, never its children or the template's settings.
+const scopedContent = computed<TemplateContent>(() => ({
+  blocks: [
+    props.block.type === "section" || props.block.type === "wrapper"
+      ? { ...props.block, children: [] }
+      : props.block,
+  ],
+  settings: {
+    locale: editor!.content.value.settings.locale,
+    locales: editor!.content.value.settings.locales,
+  } as TemplateContent["settings"],
+}));
+const coverage = computed(() =>
+  editor && locale.value && !ancestorHiddenLocales.value.has(locale.value)
+    ? localeCoverage(scopedContent.value, locale.value, definitions)
+    : { missing: [], stale: [], translated: [] },
+);
+const stale = computed(() =>
+  coverage.value.stale.map((id) => id.slice(props.block.id.length + 1)),
+);
+// Current translations whose merge tags differ from the default's, as
+// `localization.merge-tags-differ` reports them. Stale fields show as stale first.
+const tagsDiffer = computed(() =>
+  coverage.value.translated.flatMap((id) => {
+    const path = id.slice(props.block.id.length + 1);
+    const base = readPath(props.block, path);
+    const value = layer.value?.text?.[path]?.value;
+    const format =
+      props.block.type === "html" ||
+      TRANSLATABLE_HTML_FIELDS[props.block.type]?.includes(path)
+        ? "html"
+        : "text";
+    return typeof base === "string" &&
+      value !== undefined &&
+      mergeTagsDiffer(base, value, syntax, format)
+      ? [path]
+      : [];
+  }),
+);
+const eligibleTranslation = computed(() =>
+  editor && locale.value && !ancestorHiddenLocales.value.has(locale.value)
+    ? localeStrings(scopedContent.value, locale.value, {
         syntax,
         definitions,
         doNotTranslate: config?.doNotTranslate,
         blockId: props.block.id,
-        only: "gaps",
+        only: state.value === "tags-differ" ? "all" : "gaps",
       }).strings.length > 0
     : false,
 );
-const missing = computed(
-  () => locale.value && fields(locale.value).missing.length > 0,
-);
-const stale = computed(() => (locale.value ? fields(locale.value).stale : []));
 const setPaths = computed(() =>
   Object.keys(layer.value?.set ?? {}).filter((path) => {
     const segments = path.split(".");
@@ -67,98 +94,56 @@ const setPaths = computed(() =>
       : parent !== undefined;
   }),
 );
-const defaultStale = computed(
-  () =>
-    editor?.content.value.settings.locales?.reduce(
-      (count, locale) => count + fields(locale).stale.length,
-      0,
-    ) ?? 0,
+const staleLocales = computed(() =>
+  !locale.value && editor
+    ? (editor.content.value.settings.locales ?? []).filter(
+        (tag) =>
+          !ancestorHiddenLocales.value.has(tag) &&
+          localeCoverage(scopedContent.value, tag, definitions).stale.length >
+            0,
+      )
+    : [],
 );
-const editable = computed(
-  () => locale.value && config?.locales.includes(locale.value),
+const state = computed(() => {
+  if (!locale.value) return staleLocales.value.length ? "default-stale" : null;
+  if (ancestorHiddenLocales.value.has(locale.value)) return null;
+  if (layer.value?.hidden) return "hidden";
+  if (coverage.value.missing.length) return "missing";
+  if (stale.value.length) return "stale";
+  if (tagsDiffer.value.length) return "tags-differ";
+  return setPaths.value.length ? "changed" : null;
+});
+const count = computed(() =>
+  state.value === "missing"
+    ? coverage.value.missing.length
+    : state.value === "stale"
+      ? stale.value.length
+      : state.value === "tags-differ"
+        ? tagsDiffer.value.length
+        : state.value === "default-stale"
+          ? staleLocales.value.length
+          : setPaths.value.length,
 );
+const excerpt = computed(() => {
+  const value = readPath(props.block, stale.value[0] ?? "");
+  if (typeof value !== "string") return "";
+  const text = value.replace(/<[^>]*>/g, "");
+  return Array.from(text).slice(0, 60).join("");
+});
 </script>
 
 <template>
-  <div
-    v-if="config"
-    class="tpl:relative tpl:z-[6] tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1 tpl:text-xs tpl:text-[var(--tpl-chrome-text)]"
-    @click.stop
-  >
-    <template v-if="locale">
-      <span v-if="missing" data-testid="locale-marker-untranslated">{{
-        t.localization.notTranslated
-      }}</span>
-      <button
-        v-if="
-          missing && eligibleGaps && editable && translation?.isAvailable.value
-        "
-        type="button"
-        data-testid="locale-translate"
-        :class="secondaryBtnCompactClass"
-        :disabled="!!translation.running.value"
-        @click="translation.translate({ only: 'gaps', blockId: block.id })"
-      >
-        {{ t.localization.translate }}
-      </button>
-      <span v-if="stale.length" data-testid="locale-marker-stale">
-        {{ t.localization.outOfDate }}
-        <button
-          v-if="eligibleGaps && editable && translation?.isAvailable.value"
-          type="button"
-          data-testid="locale-retranslate"
-          :class="secondaryBtnCompactClass"
-          :disabled="!!translation.running.value"
-          @click="translation.translate({ only: 'gaps', blockId: block.id })"
-        >
-          {{ t.localization.retranslate }}
-        </button>
-        <button
-          v-if="editable"
-          type="button"
-          data-testid="locale-keep"
-          :class="secondaryBtnCompactClass"
-          @click="editor?.keepTranslations?.(block.id, stale)"
-        >
-          {{ t.localization.keep }}
-        </button>
-        <button
-          v-if="editable"
-          type="button"
-          data-testid="locale-use-default"
-          :class="secondaryBtnCompactClass"
-          @click="editor?.resetLocaleFields?.(block.id, stale)"
-        >
-          {{ t.localization.useDefault }}
-        </button>
-      </span>
-      <span v-if="setPaths.length" data-testid="locale-marker-differs">
-        {{ format(t.localization.differs, { language }) }}
-        <button
-          v-if="editable"
-          type="button"
-          data-testid="locale-reset"
-          :class="secondaryBtnCompactClass"
-          @click="editor?.resetLocaleFields?.(block.id, setPaths)"
-        >
-          {{ t.localization.reset }}
-        </button>
-      </span>
-      <span v-if="layer?.hidden" data-testid="locale-marker-hidden">
-        {{ format(t.localization.hidden, { language }) }}
-        <button
-          v-if="editable"
-          type="button"
-          data-testid="locale-show"
-          :class="secondaryBtnCompactClass"
-          @click="editor?.setBlockHidden?.(block.id, false)"
-        >
-          {{ t.localization.show }}
-        </button>
-      </span>
-    </template>
-    <span v-else-if="defaultStale" data-testid="locale-marker-stale">{{
-      format(t.localization.translationsOutOfDate, { count: defaultStale })
-    }}</span>
-  </div>
+  <LocaleStatusChip
+    v-if="config && state"
+    :block-id="block.id"
+    :state="state"
+    :count="count"
+    :stale="stale"
+    :tags-differ="tagsDiffer"
+    :set-paths="setPaths"
+    :stale-locales="staleLocales"
+    :excerpt="excerpt"
+    :eligible-gaps="eligibleTranslation"
+    :editable="!!locale && config.locales.includes(locale)"
+  />
 </template>

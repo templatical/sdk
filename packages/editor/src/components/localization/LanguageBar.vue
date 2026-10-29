@@ -12,7 +12,7 @@ import { CUSTOM_BLOCK_DEFINITIONS_KEY, UI_LOCALE_KEY } from "../../keys";
 import { plural } from "../../i18n/plural";
 import { languageName } from "../../utils/languageName";
 import {
-  ghostBtnClass,
+  ghostBtnCompactClass,
   primaryBtnClass,
   primaryBtnCompactClass,
   secondaryBtnClass,
@@ -160,13 +160,16 @@ watch(
     <div
       class="tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-between tpl:gap-x-6 tpl:gap-y-2"
     >
+      <!-- A 16-unit basis keeps the label and status on one line each; on a
+           narrow editor the actions wrap to their own row instead. -->
       <div
-        class="tpl:flex tpl:min-w-0 tpl:flex-1 tpl:flex-wrap tpl:items-center tpl:gap-x-3 tpl:gap-y-1"
+        class="tpl:flex tpl:min-w-0 tpl:grow tpl:basis-64 tpl:flex-wrap tpl:items-center tpl:gap-x-3 tpl:gap-y-1"
       >
         <span
-          class="tpl:inline-flex tpl:items-center tpl:gap-2 tpl:font-medium tpl:text-[var(--tpl-text)]"
+          data-testid="language-bar-label"
+          class="tpl:inline-flex tpl:items-center tpl:gap-2 tpl:font-medium tpl:whitespace-nowrap tpl:text-[var(--tpl-text)]"
         >
-          <Languages :size="14" aria-hidden="true" />
+          <Languages :size="14" aria-hidden="true" class="tpl:shrink-0" />
           {{
             format(t.localization.editingLanguage, {
               language: languageName(active),
@@ -178,13 +181,16 @@ watch(
           role="status"
           aria-live="polite"
           aria-atomic="true"
+          class="tpl:whitespace-nowrap"
         >
           <template v-if="feature?.running.value">{{
             format(t.localization.translating, feature.running.value)
           }}</template>
+          <!-- A result can run to a provider's whole message, so it wraps. -->
           <span
             v-else-if="feature?.lastResult.value"
             data-testid="translation-result"
+            class="tpl:whitespace-normal"
             >{{ resultText }}</span
           >
           <template v-else>{{ status }}</template>
@@ -194,7 +200,7 @@ watch(
           type="button"
           data-testid="translation-dismiss"
           :aria-label="t.localization.dismiss"
-          :class="ghostBtnClass"
+          :class="ghostBtnCompactClass"
           @click="feature.dismissResult()"
         >
           <X :size="14" aria-hidden="true" />
@@ -205,7 +211,7 @@ watch(
           v-if="feature?.running.value"
           type="button"
           data-testid="translation-cancel"
-          :class="ghostBtnClass"
+          :class="ghostBtnCompactClass"
           @click="feature.cancel()"
         >
           {{ t.localization.cancel }}
@@ -231,7 +237,7 @@ watch(
             ref="allAgain"
             type="button"
             data-testid="translate-all-again"
-            :class="ghostBtnClass"
+            :class="ghostBtnCompactClass"
             :disabled="!!feature.running.value || allCount === 0"
             @click="startConfirmation"
           >
@@ -241,7 +247,7 @@ watch(
         <button
           type="button"
           data-testid="language-back-default"
-          :class="ghostBtnClass"
+          :class="ghostBtnCompactClass"
           @click="editor.setActiveLocale?.(null)"
         >
           {{
@@ -262,7 +268,7 @@ watch(
       <button
         type="button"
         :aria-label="t.localization.dismiss"
-        :class="ghostBtnClass"
+        :class="ghostBtnCompactClass"
         @click="structureVisible = false"
       >
         <X :size="14" aria-hidden="true" />

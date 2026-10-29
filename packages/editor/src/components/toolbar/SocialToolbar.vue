@@ -77,6 +77,7 @@ function removeSocialIcon(iconId: string): void {
             :path="
               icon.id.includes('.') ? undefined : `icons.${icon.id}.platform`
             "
+            :label="t.social.icons"
             ><select
               data-testid="social-platform-select"
               :class="inputClass"
@@ -109,6 +110,7 @@ function removeSocialIcon(iconId: string): void {
         </div>
         <FieldRow
           :path="icon.id.includes('.') ? undefined : `icons.${icon.id}.url`"
+          :label="t.button.url"
           ><MergeTagInput
             :model-value="icon.url"
             type="url"
@@ -122,8 +124,7 @@ function removeSocialIcon(iconId: string): void {
       </button>
     </div>
   </div>
-  <FieldRow class="tpl:mb-3.5" path="iconStyle">
-    <label :class="labelClass">{{ t.social.style }}</label>
+  <FieldRow :label="t.social.style" class="tpl:mb-3.5" path="iconStyle">
     <select
       :class="inputClass"
       :value="block.iconStyle"
@@ -142,8 +143,7 @@ function removeSocialIcon(iconId: string): void {
       <option value="plain">{{ t.social.stylePlain }}</option>
     </select>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="iconTone">
-    <label :class="labelClass">{{ t.social.color }}</label>
+  <FieldRow :label="t.social.color" class="tpl:mb-3.5" path="iconTone">
     <select
       data-testid="social-tone-select"
       :class="inputClass"
@@ -160,8 +160,7 @@ function removeSocialIcon(iconId: string): void {
       <option value="light">{{ t.social.colorLight }}</option>
     </select>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="iconSize">
-    <label :class="labelClass">{{ t.social.size }}</label>
+  <FieldRow :label="t.social.size" class="tpl:mb-3.5" path="iconSize">
     <SlidingPillSelect
       :options="[
         { value: 'small', label: t.social.sizeSmall },
@@ -172,8 +171,7 @@ function removeSocialIcon(iconId: string): void {
       @update:model-value="updateField('iconSize', $event)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="spacing">
-    <label :class="labelClass">{{ t.social.spacing }}</label>
+  <FieldRow :label="t.social.spacing" class="tpl:mb-3.5" path="spacing">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"
@@ -191,8 +189,7 @@ function removeSocialIcon(iconId: string): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="align">
-    <label :class="labelClass">{{ t.social.align }}</label>
+  <FieldRow :label="t.social.align" class="tpl:mb-3.5" path="align">
     <SlidingPillSelect
       :options="[
         { value: 'left', label: t.title.alignLeft, icon: AlignLeft },

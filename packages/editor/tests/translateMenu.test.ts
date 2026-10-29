@@ -111,15 +111,27 @@ describe("translation entry points", () => {
       },
     });
     await chooseLanguage(wrapper, "de");
+    await wrapper
+      .get('[data-block-id="image"] [data-testid="locale-chip"]')
+      .trigger("click");
     expect(wrapper.get(button("locale-translate")).text()).toBe("Translate");
+    await wrapper
+      .get('[data-block-id="title"] [data-testid="locale-chip"]')
+      .trigger("click");
     expect(wrapper.get(button("locale-retranslate")).text()).toBe(
       "Re-translate",
     );
     await wrapper.get(button("locale-retranslate")).trigger("click");
     expect(requests).toEqual([["title/content"]]);
+    await wrapper
+      .get('[data-block-id="image"] [data-testid="locale-chip"]')
+      .trigger("click");
     expect(
       wrapper.get(button("locale-translate")).attributes("disabled"),
     ).toBeDefined();
+    await wrapper
+      .get('[data-block-id="title"] [data-testid="locale-chip"]')
+      .trigger("click");
     expect(
       wrapper.get(button("locale-retranslate")).attributes("disabled"),
     ).toBeDefined();
@@ -134,6 +146,9 @@ describe("translation entry points", () => {
     await vi.waitFor(() =>
       expect(wrapper.find(button("locale-retranslate")).exists()).toBe(false),
     );
+    await wrapper
+      .get('[data-block-id="image"] [data-testid="locale-chip"]')
+      .trigger("click");
     await wrapper.get(button("locale-translate")).trigger("click");
     expect(requests[1]).toEqual(["image/alt"]);
     finish({ fields: [{ id: "image/alt", text: "Produkt" }] });
@@ -277,25 +292,21 @@ describe("translation entry points", () => {
         },
       });
       await chooseLanguage(wrapper, "de");
-      expect(
-        wrapper
-          .find('[data-block-id="eligible"] [data-testid="locale-translate"]')
-          .exists(),
-      ).toBe(true);
-      const ineligible = wrapper.get('[data-block-id="ineligible"]');
-      expect(
-        ineligible
-          .find(
-            button(
-              kind === "raw HTML"
-                ? "locale-marker-untranslated"
-                : "locale-marker-stale",
-            ),
-          )
-          .exists(),
-      ).toBe(true);
-      expect(ineligible.find(button("locale-translate")).exists()).toBe(false);
-      expect(ineligible.find(button("locale-retranslate")).exists()).toBe(
+      await wrapper
+        .get('[data-block-id="eligible"] [data-testid="locale-chip"]')
+        .trigger("click");
+      expect(wrapper.find(button("locale-translate")).exists()).toBe(true);
+      await wrapper
+        .get('[data-block-id="ineligible"] [data-testid="locale-chip"]')
+        .trigger("click");
+      const chip = wrapper.get(
+        '[data-block-id="ineligible"] [data-testid="locale-chip"]',
+      );
+      expect(chip.attributes("data-state")).toBe(
+        kind === "raw HTML" ? "missing" : "stale",
+      );
+      expect(wrapper.find(button("locale-translate")).exists()).toBe(false);
+      expect(wrapper.find(button("locale-retranslate")).exists()).toBe(
         kind !== "raw HTML",
       );
     },

@@ -28,3 +28,11 @@ describe("playground comment languages", () => {
     },
   );
 });
+
+it("enables comments with the ordinary Languages scene user", async () => {
+  const { languages } = await import("../src/scenes/author/languages");
+  const { PLAYGROUND_USER } = await import("../src/host/providers");
+  const config = languages.config!({ search: new URLSearchParams() } as any);
+  expect(config.comments).toBeDefined();
+  expect(config.user).toEqual(PLAYGROUND_USER);
+});

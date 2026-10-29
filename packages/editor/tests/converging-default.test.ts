@@ -10,6 +10,8 @@ import { chooseLanguage, openLanguages } from "./helpers/localization";
 // The scene's storage/collaboration adapters are unrelated to its content fixture.
 vi.mock("../../../apps/playground/src/host/providers", () => ({
   templatesProviderFor: () => undefined,
+  commentsProviderFor: () => undefined,
+  PLAYGROUND_USER: { id: "playground-user", name: "Playground User" },
 }));
 vi.mock("../../../apps/playground/src/host/collaboration/client", () => ({
   createSharedCollaboration: () => {
@@ -60,10 +62,13 @@ it("retains the stale German entry after typing the scene's translation into the
     "languages-title/content",
   );
   await chooseLanguage(wrapper, "de");
-  expect(title().get('[data-testid="locale-marker-stale"]').text()).toContain(
-    "Out of date",
-  );
-  await title().get('[data-testid="locale-keep"]').trigger("click");
+  expect(
+    title()
+      .get('[data-testid="locale-chip"][data-state="stale"]')
+      .attributes("aria-label"),
+  ).toContain("Out of date");
+  await title().get('[data-testid="locale-chip"]').trigger("click");
+  await wrapper.get('[data-testid="locale-keep"]').trigger("click");
   expect(editor.content.value.blocks[0].l10n?.de.text?.content).toEqual({
     value: original.value,
     sourceHash: sourceHash(original.value),

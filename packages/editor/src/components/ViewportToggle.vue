@@ -67,7 +67,7 @@ const pillOffset = computed(() => {
     >
       <Monitor v-if="vp.value === 'desktop'" :size="18" :stroke-width="1.5" />
       <Smartphone v-else :size="18" :stroke-width="1.5" />
-      <span>{{ vp.label }}</span>
+      <span class="tpl-header-label">{{ vp.label }}</span>
     </button>
   </div>
 </template>

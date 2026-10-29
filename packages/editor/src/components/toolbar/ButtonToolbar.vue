@@ -12,7 +12,6 @@ import {
   inputClass,
   inputGroupInputClass,
   inputSuffixClass,
-  labelClass,
 } from "../../constants/styleConstants";
 import type { ButtonBlock } from "@templatical/types";
 import { fontSelectValue } from "../../utils/withCurrentFont";
@@ -69,8 +68,7 @@ function updateCustomWidth(raw: string): void {
 </script>
 
 <template>
-  <FieldRow class="tpl:mb-3.5" path="fontFamily">
-    <label :class="labelClass">{{ t.button.fontFamily }}</label>
+  <FieldRow :label="t.button.fontFamily" class="tpl:mb-3.5" path="fontFamily">
     <select
       :class="inputClass"
       :value="fontSelectValue(block.fontFamily)"
@@ -91,61 +89,66 @@ function updateCustomWidth(raw: string): void {
       </option>
     </select>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="text">
-    <label :class="labelClass">{{ t.button.text }}</label>
+  <FieldRow :label="t.button.text" class="tpl:mb-3.5" path="text">
     <MergeTagInput
       :model-value="block.text"
       type="text"
       @update:model-value="updateField('text', $event)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="url">
-    <label :class="labelClass">{{ t.button.url }}</label>
+  <FieldRow :label="t.button.url" class="tpl:mb-3.5" path="url">
     <MergeTagInput
       :model-value="block.url"
       type="url"
       :placeholder="t.button.urlPlaceholder"
       @update:model-value="updateField('url', $event)"
     />
-    <FieldRow v-if="block.url" path="openInNewTab"
-      ><ToggleSwitch
-        class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
-        :model-value="block.openInNewTab ?? false"
-        :label="t.button.openInNewTab"
-        @update:model-value="updateField('openInNewTab', $event)"
-    /></FieldRow>
+    <FieldRow
+      v-if="block.url"
+      path="openInNewTab"
+      :label="t.button.openInNewTab"
+      ><template #label-actions="{ controlId }"
+        ><ToggleSwitch
+          :control-id="controlId"
+          hide-label
+          class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+          :model-value="block.openInNewTab ?? false"
+          :label="t.button.openInNewTab"
+          @update:model-value="updateField('openInNewTab', $event)" /></template
+    ></FieldRow>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="backgroundColor">
-    <label :class="labelClass">{{ t.button.background }}</label>
+  <FieldRow
+    :label="t.button.background"
+    class="tpl:mb-3.5"
+    path="backgroundColor"
+  >
     <ColorPicker
       :model-value="block.backgroundColor"
       allow-transparent
       @update:model-value="updateField('backgroundColor', $event)"
     />
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="textColor">
-    <label :class="labelClass">{{ t.button.textColor }}</label>
+  <FieldRow :label="t.button.textColor" class="tpl:mb-3.5" path="textColor">
     <ColorPicker
       :model-value="block.textColor"
       @update:model-value="updateField('textColor', $event)"
     />
   </FieldRow>
-  <FieldRow path="border"
-    ><BorderControl
-      :model-value="block.border"
-      testid-prefix="button"
-      @update:model-value="updateField('border', $event)"
-  /></FieldRow>
-  <FieldRow path="borderRadius"
-    ><RadiusControl
-      :model-value="block.borderRadius"
-      :label="t.button.borderRadius"
-      :max="50"
-      testid-prefix="button"
-      @update:model-value="updateField('borderRadius', $event)"
-  /></FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="fontSize">
-    <label :class="labelClass">{{ t.button.fontSize }}</label>
+  <BorderControl
+    path="border"
+    :model-value="block.border"
+    testid-prefix="button"
+    @update:model-value="updateField('border', $event)"
+  />
+  <RadiusControl
+    path="borderRadius"
+    :model-value="block.borderRadius"
+    :label="t.button.borderRadius"
+    :max="50"
+    testid-prefix="button"
+    @update:model-value="updateField('borderRadius', $event)"
+  />
+  <FieldRow :label="t.button.fontSize" class="tpl:mb-3.5" path="fontSize">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"
@@ -163,8 +166,7 @@ function updateCustomWidth(raw: string): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="width">
-    <label :class="labelClass">{{ t.button.width }}</label>
+  <FieldRow :label="t.button.width" class="tpl:mb-3.5" path="width">
     <select
       :class="inputClass"
       :value="widthMode"
@@ -190,8 +192,7 @@ function updateCustomWidth(raw: string): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
-  <FieldRow class="tpl:mb-3.5" path="align">
-    <label :class="labelClass">{{ t.title.align }}</label>
+  <FieldRow :label="t.title.align" class="tpl:mb-3.5" path="align">
     <SlidingPillSelect
       :options="[
         { value: 'left', label: t.title.alignLeft },

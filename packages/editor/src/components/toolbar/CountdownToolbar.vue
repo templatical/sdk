@@ -89,13 +89,20 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
 
   <FieldRow :label="t.countdown.display">
     <div class="tpl:grid tpl:grid-cols-2 tpl:gap-2">
-      <FieldRow v-for="item in unitItems" :key="item.unit" :path="item.showKey"
-        ><ToggleSwitch
-          class="tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-          :model-value="block[item.showKey]"
-          :label="t.countdown[item.translationKey]"
-          @update:model-value="updateField(item.showKey, $event)"
-      /></FieldRow>
+      <FieldRow
+        v-for="item in unitItems"
+        :key="item.unit"
+        :path="item.showKey"
+        :label="t.countdown[item.translationKey]"
+        ><template #label-actions="{ controlId }"
+          ><ToggleSwitch
+            :control-id="controlId"
+            hide-label
+            class="tpl:text-[12px] tpl:text-[var(--tpl-text)]"
+            :model-value="block[item.showKey]"
+            :label="t.countdown[item.translationKey]"
+            @update:model-value="updateField(item.showKey, $event)" /></template
+      ></FieldRow>
     </div>
   </FieldRow>
 
@@ -174,7 +181,11 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
 
   <FieldRow :label="t.countdown.labels">
     <div class="tpl:grid tpl:grid-cols-2 tpl:gap-2">
-      <FieldRow v-for="item in unitItems" :key="item.unit" :path="item.labelKey"
+      <FieldRow
+        v-for="item in unitItems"
+        :key="item.unit"
+        :path="item.labelKey"
+        :label="t.countdown[item.translationKey]"
         ><input
           type="text"
           :class="inputClass"
@@ -217,11 +228,14 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     />
   </FieldRow>
 
-  <FieldRow path="hideOnExpiry"
-    ><ToggleSwitch
-      class="tpl:mb-3.5 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-      :model-value="block.hideOnExpiry"
-      :label="t.countdown.hideOnExpiry"
-      @update:model-value="updateField('hideOnExpiry', $event)"
-  /></FieldRow>
+  <FieldRow path="hideOnExpiry" :label="t.countdown.hideOnExpiry"
+    ><template #label-actions="{ controlId }"
+      ><ToggleSwitch
+        :control-id="controlId"
+        hide-label
+        class="tpl:mb-3.5 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
+        :model-value="block.hideOnExpiry"
+        :label="t.countdown.hideOnExpiry"
+        @update:model-value="updateField('hideOnExpiry', $event)" /></template
+  ></FieldRow>
 </template>

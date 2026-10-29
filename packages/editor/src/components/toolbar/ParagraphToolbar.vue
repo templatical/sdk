@@ -4,7 +4,6 @@ import { useI18n } from "../../composables/useI18n";
 import {
   inputGroupInputClass,
   inputSuffixClass,
-  labelClass,
 } from "../../constants/styleConstants";
 import type { ParagraphBlock } from "@templatical/types";
 import { RICH_TEXT_SPACING } from "@templatical/types";
@@ -22,11 +21,11 @@ const { t } = useI18n();
 
 <template>
   <FieldRow
+    :label="t.paragraph.paragraphSpacing"
     class="tpl:mb-3.5"
     data-testid="paragraph-spacing"
     path="paragraphSpacing"
   >
-    <label :class="labelClass">{{ t.paragraph.paragraphSpacing }}</label>
     <div class="tpl:flex tpl:items-stretch">
       <!-- Shows the built-in gap when the block sets none, so the field always
            reads the gap actually in effect rather than an empty box. -->

@@ -121,10 +121,11 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
         </div>
 
         <div v-if="shows('width')" data-testid="template-settings-width-preset">
-          <FieldRow path="width" settings />
-          <label :class="labelClass">{{
-            t.templateSettings.widthPreset
-          }}</label>
+          <FieldRow
+            path="width"
+            settings
+            :label="t.templateSettings.widthPreset"
+          />
           <div
             class="tpl:grid tpl:grid-cols-4 tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-hover)]"
           >
@@ -154,10 +155,11 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
         </div>
 
         <div v-if="shows('width')" data-testid="template-settings-width-custom">
-          <FieldRow path="width" settings />
-          <label :class="labelClass">{{
-            t.templateSettings.customWidth
-          }}</label>
+          <FieldRow
+            path="width"
+            settings
+            :label="t.templateSettings.customWidth"
+          />
           <div class="tpl:flex tpl:items-stretch">
             <input
               type="number"
@@ -197,10 +199,11 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('backgroundColor')"
           data-testid="template-settings-background"
         >
-          <FieldRow path="backgroundColor" settings />
-          <label :class="labelClass">{{
-            t.templateSettings.backgroundColor
-          }}</label>
+          <FieldRow
+            path="backgroundColor"
+            settings
+            :label="t.templateSettings.backgroundColor"
+          />
           <ColorPicker
             :model-value="settings.backgroundColor"
             :placeholder="DEFAULT_BG_COLOR"
@@ -212,8 +215,11 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('textColor')"
           data-testid="template-settings-text-color"
         >
-          <FieldRow path="textColor" settings />
-          <label :class="labelClass">{{ t.templateSettings.textColor }}</label>
+          <FieldRow
+            path="textColor"
+            settings
+            :label="t.templateSettings.textColor"
+          />
           <ColorPicker
             :model-value="settings.textColor ?? ''"
             seed-color="#1a1a1a"
@@ -225,8 +231,11 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('linkColor')"
           data-testid="template-settings-link-color"
         >
-          <FieldRow path="linkColor" settings />
-          <label :class="labelClass">{{ t.templateSettings.linkColor }}</label>
+          <FieldRow
+            path="linkColor"
+            settings
+            :label="t.templateSettings.linkColor"
+          />
           <ColorPicker
             :model-value="settings.linkColor ?? ''"
             seed-color="#0066cc"
@@ -240,21 +249,32 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('linkUnderline')"
           data-testid="template-settings-link-underline"
         >
-          <FieldRow path="linkUnderline" settings />
-          <ToggleSwitch
-            class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-            :model-value="settings.linkUnderline"
+          <FieldRow
+            path="linkUnderline"
+            settings
             :label="t.templateSettings.linkUnderline"
-            @update:model-value="emit('update', { linkUnderline: $event })"
-          />
+            ><template #label-actions="{ controlId }"
+              ><ToggleSwitch
+                :control-id="controlId"
+                hide-label
+                class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+                :model-value="settings.linkUnderline"
+                :label="t.templateSettings.linkUnderline"
+                @update:model-value="
+                  emit('update', { linkUnderline: $event })
+                " /></template
+          ></FieldRow>
         </div>
 
         <div
           v-if="shows('fontFamily')"
           data-testid="template-settings-font-family"
         >
-          <FieldRow path="fontFamily" settings />
-          <label :class="labelClass">{{ t.templateSettings.fontFamily }}</label>
+          <FieldRow
+            path="fontFamily"
+            settings
+            :label="t.templateSettings.fontFamily"
+          />
           <select
             :class="inputClass"
             :value="displayedFontFamily"
@@ -322,15 +342,21 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('direction')"
           data-testid="template-settings-direction"
         >
-          <FieldRow path="direction" settings />
-          <ToggleSwitch
-            class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-            :model-value="isRtl"
+          <FieldRow
+            path="direction"
+            settings
             :label="t.templateSettings.contentDirection"
-            @update:model-value="
-              emit('update', { direction: $event ? 'rtl' : 'ltr' })
-            "
-          />
+            ><template #label-actions="{ controlId }"
+              ><ToggleSwitch
+                :control-id="controlId"
+                hide-label
+                class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+                :model-value="isRtl"
+                :label="t.templateSettings.contentDirection"
+                @update:model-value="
+                  emit('update', { direction: $event ? 'rtl' : 'ltr' })
+                " /></template
+          ></FieldRow>
           <p
             class="tpl:mt-1 tpl:text-xs tpl:leading-relaxed tpl:text-[var(--tpl-text-dim)]"
           >
@@ -360,7 +386,11 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('preheaderText')"
           data-testid="template-settings-preheader"
         >
-          <FieldRow path="preheaderText" settings />
+          <FieldRow
+            path="preheaderText"
+            settings
+            :label="t.templateSettings.preheaderText"
+          />
           <MergeTagTextarea
             :model-value="settings.preheaderText ?? ''"
             :placeholder="t.templateSettings.preheaderTextPlaceholder"

@@ -2,6 +2,31 @@ import type en from "./en";
 
 const fr: typeof en = {
   localization: {
+    tagsDiffer: "Les balises de fusion diffèrent",
+    tagsDifferExplanation:
+      "Ses balises de fusion ne correspondent pas au texte en {default}.",
+    changed: "Modifié en {language}",
+    notTranslatedCount: {
+      one: "{count} non traduit",
+      other: "{count} non traduit",
+    },
+    missingExplanation:
+      "Pas encore traduit. L’e-mail affiche le texte en {default}.",
+    staleExplanation: "Le texte en {default} a changé depuis la traduction.",
+    currentExcerpt: "Maintenant : « {excerpt} »",
+    useDefaultLanguage: "Utiliser {default}",
+    changedProperties: {
+      one: "{count} propriété diffère de {default}.",
+      other: "{count} propriétés diffèrent de {default}.",
+    },
+    resetChanges: "Réinitialiser les modifications",
+    staleLanguages: {
+      one: "Obsolète dans {count} langue",
+      other: "Obsolète dans {count} langues",
+    },
+    open: "Ouvrir",
+    resetToDefault: "Réinitialiser en {default}",
+    hiddenExplanation: "Ce bloc ne figure pas dans l’e-mail en {language}.",
     editingLanguage: "Modification en {language}",
     languageReadOnly: "Lecture seule : {language} n’est pas activé",
     backToDefault: "Revenir à {default}",
@@ -77,13 +102,9 @@ const fr: typeof en = {
     notTranslated: "Non traduit",
     outOfDate: "Obsolète",
     keep: "Conserver",
-    useDefault: "Utiliser la valeur par défaut",
-    differs: "Différent en {language}",
-    reset: "Réinitialiser",
     hidden: "Masqué en {language}",
     show: "Afficher",
     hide: "Masquer en {language}",
-    translationsOutOfDate: "Traductions obsolètes : {count}",
     dismiss: "Fermer",
     structureNotice:
       "Les changements de structure s’appliquent à toutes les langues",
@@ -689,6 +710,7 @@ const fr: typeof en = {
     collapsePreview: "Réduire l'aperçu de {block}",
   },
   comments: {
+    filterLanguage: "Cette langue",
     button: "Commentaires",
     title: "Commentaires",
     close: "Fermer",

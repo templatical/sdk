@@ -2,6 +2,31 @@ import type en from "./en";
 
 const ptBR: typeof en = {
   localization: {
+    tagsDiffer: "As merge tags são diferentes",
+    tagsDifferExplanation:
+      "As merge tags não correspondem ao texto em {default}.",
+    changed: "Alterado em {language}",
+    notTranslatedCount: {
+      one: "{count} sem tradução",
+      other: "{count} sem tradução",
+    },
+    missingExplanation:
+      "Ainda não traduzido. O e-mail mostra o texto em {default}.",
+    staleExplanation: "O texto em {default} mudou desde a tradução.",
+    currentExcerpt: "Agora: “{excerpt}”",
+    useDefaultLanguage: "Usar {default}",
+    changedProperties: {
+      one: "{count} propriedade difere de {default}.",
+      other: "{count} propriedades diferem de {default}.",
+    },
+    resetChanges: "Redefinir alterações",
+    staleLanguages: {
+      one: "Desatualizado em {count} idioma",
+      other: "Desatualizado em {count} idiomas",
+    },
+    open: "Abrir",
+    resetToDefault: "Redefinir para {default}",
+    hiddenExplanation: "Este bloco não está no e-mail em {language}.",
     editingLanguage: "Editando {language}",
     languageReadOnly: "Somente leitura: {language} não está habilitado",
     backToDefault: "Voltar para {default}",
@@ -80,13 +105,9 @@ const ptBR: typeof en = {
     notTranslated: "Não traduzido",
     outOfDate: "Desatualizado",
     keep: "Manter",
-    useDefault: "Usar padrão",
-    differs: "Diferente em {language}",
-    reset: "Redefinir",
     hidden: "Oculto em {language}",
     show: "Mostrar",
     hide: "Ocultar em {language}",
-    translationsOutOfDate: "Traduções desatualizadas: {count}",
     dismiss: "Fechar",
     structureNotice: "As alterações de estrutura se aplicam a todos os idiomas",
     aiActiveLanguage:
@@ -757,6 +778,7 @@ const ptBR: typeof en = {
     collapsePreview: "Recolher a prévia de {block}",
   },
   comments: {
+    filterLanguage: "Este idioma",
     button: "Comentários",
     title: "Comentários",
     close: "Fechar",

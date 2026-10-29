@@ -4,7 +4,6 @@ import { useI18n } from "../../composables/useI18n";
 import {
   inputGroupInputClass,
   inputSuffixClass,
-  labelClass,
 } from "../../constants/styleConstants";
 import type { SpacerBlock } from "@templatical/types";
 
@@ -20,8 +19,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <FieldRow class="tpl:mb-3.5" path="height">
-    <label :class="labelClass">{{ t.spacer.height }}</label>
+  <FieldRow :label="t.spacer.height" class="tpl:mb-3.5" path="height">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"

@@ -42,7 +42,7 @@ Das Menü **Sprachen** zeigt den Standard und jede Version mit Abdeckung. **Spra
 
 Text- und Eigenschaftsänderungen in einer Sprachansicht betreffen nur diese Sprache. Hat ein übersetzbares Feld einen Standardwert, speichert eine Bearbeitung `text` mit `sourceHash`. Fehlt der Standardwert, etwa ein nicht vorhandener Preheader, speichert sie eine `set`-Überschreibung ohne Veraltungsprüfung. Ein Wert gleich dem Standard hinterlässt keine Überschreibung.
 
-**Abweichend in {language}** markiert Eigenschaftsüberschreibungen. Das feldbezogene **Zurücksetzen** in der Werkzeugleiste stellt nur dieses Feld aus dem Standard wieder her und erhält benachbarte Überschreibungen. **Zurücksetzen** an der Blockmarkierung entfernt alle `set`-Überschreibungen dieses Blocks; seine `text`-Übersetzungen bleiben erhalten. **In {language} ausblenden** lässt einen Geisterblock auf der Arbeitsfläche stehen; **Anzeigen** stellt ihn wieder her. Der Renderer lässt ausgeblendete Blöcke aus.
+**Geändert in {language}** markiert Eigenschaftsüberschreibungen. Öffnen Sie den Status-Chip des Blocks, ein Symbol oben rechts im Block (bei Rechts-nach-links-Inhalten oben links), für **Änderungen zurücksetzen**. Die Werkzeugleiste zeigt eine Sprachmarkierung; das Symbol **Auf {default} zurücksetzen** stellt nur dieses Feld aus dem Standard wieder her und erhält benachbarte Überschreibungen. **Änderungen zurücksetzen** im Chip entfernt alle `set`-Überschreibungen dieses Blocks; seine `text`-Übersetzungen bleiben erhalten. **In {language} ausblenden** lässt einen Geisterblock auf der Arbeitsfläche stehen; **Anzeigen** stellt ihn wieder her. Der Renderer lässt ausgeblendete Blöcke aus.
 
 Hinzufügen, Verschieben, Löschen, Duplizieren, Einfügen und Ziehen ändern den gemeinsamen Baum für alle Sprachen. Der Editor zeigt **Strukturänderungen gelten für jede Sprache** einmal pro Sitzung und Template. Eine Version in `settings.locales`, die in `localization.locales` fehlt, bleibt auswählbar, schreibgeschützt und als **Nicht aktiviert** markiert: Wert- und Strukturänderungen werden abgelehnt.
 
@@ -58,11 +58,11 @@ Eine fehlende Übersetzung fällt auf den Standardsprachwert zurück. Der Block 
 
 Jedes `LocalizedText.sourceHash` speichert beim Schreiben `sourceHash(defaultValue)`. `sourceHash` ist FNV-1a 32-Bit über UTF-8-Bytes, als acht kleingeschriebene Hexadezimalziffern. Ein geänderter Standard-Hash markiert die Übersetzung **Veraltet** und erzeugt `localization.stale`.
 
-**Beibehalten** erhält den vorhandenen Übersetzungseintrag und aktualisiert seinen Quell-Hash, auch wenn der geänderte Standard inzwischen der Übersetzung entspricht. Die Abdeckung zählt ihn als übersetzt. Ausblenden und Anzeigen erhalten ebenfalls die Texteinträge. **Standard verwenden** entfernt den Ebenenwert des Felds und stellt den Fallback wieder her. Beide Aktionen erhalten benachbarte Überschreibungen. Im Standard zeigt **Veraltete Übersetzungen: {count}** betroffene Blöcke. Eigenschaftsüberschreibungen in `set` haben keinen Quell-Hash.
+**Beibehalten** erhält den vorhandenen Übersetzungseintrag und aktualisiert seinen Quell-Hash, auch wenn der geänderte Standard inzwischen der Übersetzung entspricht. Die Abdeckung zählt ihn als übersetzt. Ausblenden und Anzeigen erhalten ebenfalls die Texteinträge. **{default} verwenden** entfernt den Ebenenwert des Felds und stellt den Fallback wieder her. Beide Aktionen erhalten benachbarte Überschreibungen. Im Standard zeigt **In {count} Sprachen veraltet** betroffene Blöcke. Eigenschaftsüberschreibungen in `set` haben keinen Quell-Hash.
 
 ## Übersetzen {#translating}
 
-Übergeben Sie `init({ translation })` einen [TranslationProvider](/de/backend/translation), zusammen mit `localization`. In einer aktivierten Nicht-Standardsprachansicht sendet **{count} Felder übersetzen** in der Sprachleiste nur fehlende und veraltete Felder (gaps). Aktuelle Übersetzungen und manuelle Bearbeitungen bleiben erhalten. **Alles erneut übersetzen…** wählt nach einer Bestätigung mit der Feldzahl alle geeigneten Felder; die Bestätigung erklärt auch das Ersetzen manueller Änderungen. Die Lückenaktion wird bei null ausgeblendet; Alles erneut übersetzen ist deaktiviert, wenn keine Felder geeignet sind. Blockmarkierungen bieten **Übersetzen** bei fehlendem Text und **Erneut übersetzen** bei veraltetem Text. Ohne Provider fehlt die Übersetzungsoberfläche.
+Übergeben Sie `init({ translation })` einen [TranslationProvider](/de/backend/translation), zusammen mit `localization`. In einer aktivierten Nicht-Standardsprachansicht sendet **{count} Felder übersetzen** in der Sprachleiste nur fehlende und veraltete Felder (gaps). Aktuelle Übersetzungen und manuelle Bearbeitungen bleiben erhalten. **Alles erneut übersetzen…** wählt nach einer Bestätigung mit der Feldzahl alle geeigneten Felder; die Bestätigung erklärt auch das Ersetzen manueller Änderungen. Die Lückenaktion wird bei null ausgeblendet; Alles erneut übersetzen ist deaktiviert, wenn keine Felder geeignet sind. Block-Chip-Popover bieten **Übersetzen** bei fehlendem Text und **Erneut übersetzen** bei veraltetem Text oder abweichenden Merge-Tags. Ohne Provider fehlt die Übersetzungsoberfläche.
 
 Verwenden Sie `localization.doNotTranslate: ["Sable"]`, um Markennamen beim Übersetzen zu bewahren. Der [Übersetzungsvertrag](/de/backend/translation#provider-vertrag) definiert Abgleich, Limits und die exakte Platzhalterprüfung; Headless-Abläufe übergeben dieselbe Liste an `localeStrings` und `applyLocaleStrings`.
 
@@ -82,7 +82,7 @@ Speichern Sie nach dem Durchlauf und führen Sie `npx -y @templatical/template-t
 
 ## Merge-Tags {#merge-tags}
 
-Übernehmen Sie dieselben Merge-Tags einschließlich wiederholter Vorkommen in jedes übersetzte Textfeld. `localization.merge-tags-differ` vergleicht Tag-Multimengen mit dem Standard; der Editor verwendet dieselbe Merge-Tag-Liste in jeder Sprache. Die Regel ist eine Warnung, aber die CLI-Validierung behandelt abweichende Tags als blockierend und beendet mit `1`, auch bei `valid: true`. Fehlende und veraltete Übersetzungen allein bleiben Hinweise.
+Übernehmen Sie dieselben Merge-Tags einschließlich wiederholter Vorkommen in jedes übersetzte Textfeld. `localization.merge-tags-differ` vergleicht Tag-Multimengen mit dem Standard; der Editor verwendet dieselbe Merge-Tag-Liste in jeder Sprache. Weichen die Tags einer aktuellen Übersetzung ab, zeigt der Status-Chip des Blocks **Merge-Tags unterscheiden sich**. Sein Popover bietet **Erneut übersetzen** mit einem Provider, das alle geeigneten Textfelder dieses Blocks sendet, und **{default} verwenden**, das nur die abweichenden Übersetzungen entfernt. Fehlender und veralteter Text haben Vorrang vor diesem Zustand. Die Regel ist eine Warnung, aber die CLI-Validierung behandelt abweichende Tags als blockierend und beendet mit `1`, auch bei `valid: true`. Fehlende und veraltete Übersetzungen allein bleiben Hinweise.
 
 ## Eine Sprache rendern
 
@@ -150,7 +150,7 @@ Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Te
 
 **Kommentare, Verlauf, CLI und Cloud**
 
-- Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über einen eigenen [Kommentar-Provider](/de/backend/comments#locale) den Sprach-Tag der Ansicht; Cloud speichert ihn noch nicht. Der Versionsverlauf gilt weiterhin pro Template.
+- Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über einen eigenen [Kommentar-Provider](/de/backend/comments#locale) den Sprach-Tag der Ansicht; Cloud speichert ihn noch nicht. Jeder Hauptkommentar und jede Antwort zeigt ein Sprachabzeichen; ein Kommentar ohne Tag zählt zur aktuellen Standardsprache. **Diese Sprache** zeigt ganze Threads, wenn der Hauptkommentar oder eine Antwort zur aktiven Sprache gehört, und erhält alle Nachrichten und Abzeichen. Der Filter ist Ansichtsstatus und wird nicht gespeichert. Der Versionsverlauf gilt weiterhin pro Template.
 - Der Cloud-Editor unterstützt noch keine Sprachversionen oder Übersetzung: `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
 
 ## Ergebnis prüfen

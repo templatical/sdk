@@ -51,6 +51,6 @@ function toggle(): void {
       class="tpl:text-[var(--tpl-primary-hover)]"
       aria-hidden="true"
     />
-    {{ t.ai.menu.button }}
+    <span class="tpl-header-label">{{ t.ai.menu.button }}</span>
   </button>
 </template>

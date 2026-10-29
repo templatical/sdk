@@ -21,6 +21,76 @@ import {
 } from "./helpers/localization";
 
 describe("language menu", () => {
+  it("names the trigger with the language and the tag the compact header shows", async () => {
+    const content = languageContent();
+    content.settings.locales = ["de", "nl", "ja"];
+    const { wrapper, editor } = await openLanguages({
+      content,
+      localization: { locales: ["de", "nl", "ja"] },
+    });
+    const trigger = () => wrapper.get('[data-testid="language-menu"]');
+    expect(trigger().attributes("aria-label")).toBe("English (en)");
+    for (const [tag, name] of [
+      ["de", "Deutsch (de)"],
+      ["nl", "Nederlands (nl)"],
+      ["ja", "日本語 (ja)"],
+    ]) {
+      editor.setActiveLocale(tag);
+      await nextTick();
+      // Both renderings of the trigger are inside its accessible name.
+      expect(trigger().attributes("aria-label")).toBe(name);
+      expect(name).toContain(trigger().get(".tpl-language-name").text());
+      expect(name).toContain(trigger().get(".tpl-language-tag").text());
+    }
+  });
+
+  it("keeps promotion reasons unique and stable across two light-DOM editors", async () => {
+    const content = languageContent();
+    content.blocks[0].l10n!.de.hidden = true;
+    const one = await openLanguages({ content });
+    const two = await openLanguages({ content: structuredClone(content) });
+    const ids: string[] = [];
+    for (const { wrapper } of [one, two]) {
+      await wrapper.get('[data-testid="language-menu"]').trigger("click");
+      await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+      const action = wrapper.get('[data-testid="language-make-default-de"]');
+      const id = action.attributes("aria-describedby");
+      ids.push(id);
+      expect(wrapper.get(`#${id}`).text()).toBeTruthy();
+      await wrapper
+        .get('[data-testid="language-menu"]')
+        .trigger("keydown", { key: "Escape" });
+      await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+      expect(
+        wrapper
+          .get('[data-testid="language-make-default-de"]')
+          .attributes("aria-describedby"),
+      ).toBe(id);
+    }
+    expect(ids[0]).not.toBe(ids[1]);
+    for (const id of ids)
+      expect(document.querySelectorAll(`#${id}`)).toHaveLength(1);
+    // Both editors' status-chip popovers open at once (by keyboard, which an
+    // outside click in the other editor doesn't close).
+    const popovers: string[] = [];
+    for (const { wrapper, editor } of [one, two]) {
+      editor.setActiveLocale("de");
+      await nextTick();
+      const chip = wrapper.get(
+        '[data-block-id="image"] [data-testid="locale-chip"]',
+      );
+      await chip.trigger("keydown", { key: "Enter" });
+      const id = wrapper
+        .get('[data-testid="locale-popover"]')
+        .attributes("id")!;
+      expect(chip.attributes("aria-controls")).toBe(id);
+      popovers.push(id);
+    }
+    expect(popovers[0]).not.toBe(popovers[1]);
+    for (const id of popovers)
+      expect(document.querySelectorAll(`[id="${id}"]`)).toHaveLength(1);
+  });
+
   it("bases the language-button cap on editor sizing with an 8px host root", async () => {
     const previous = document.documentElement.style.fontSize;
     document.documentElement.style.fontSize = "8px";
@@ -130,8 +200,10 @@ describe("language menu", () => {
       true,
       false,
     ]);
-    expect(rows[1].classes()).toContain("tpl:bg-[var(--tpl-bg-active)]");
-    expect(rows[1].classes()).not.toContain("tpl:bg-transparent");
+    expect(rows[1].element.parentElement?.getAttribute("data-active")).toBe(
+      "true",
+    );
+    expect(rows[1].classes()).toContain("tpl:bg-transparent");
     expect(wrapper.find('[data-testid="language-status-en"]').exists()).toBe(
       false,
     );
@@ -186,10 +258,11 @@ describe("language menu", () => {
     await wrapper.get('[data-testid="language-menu"]').trigger("click");
     await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
     const action = wrapper.get('[data-testid="language-make-default-de"]');
-    expect(action.attributes("disabled")).toBeDefined();
-    expect(action.attributes("title")).toBe(
-      "Show the 2 blocks hidden in Deutsch first",
-    );
+    expect(action.attributes("aria-disabled")).toBe("true");
+    expect(action.attributes("disabled")).toBeUndefined();
+    expect(
+      wrapper.get(`#${action.attributes("aria-describedby")}`).text(),
+    ).toBe("Show the 2 blocks hidden in Deutsch first");
     await action.trigger("click");
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
   });
@@ -294,9 +367,7 @@ describe("language menu", () => {
       true,
     );
     expect(wrapper.find('[data-testid="language-menu"]').exists()).toBe(false);
-    expect(wrapper.find('[data-testid^="locale-marker-"]').exists()).toBe(
-      false,
-    );
+    expect(wrapper.find('[data-testid="locale-chip"]').exists()).toBe(false);
   });
 
   it("keeps a long native name bounded in the left group and leaves centre controls interactive", async () => {

@@ -8,6 +8,7 @@ defineProps<{
   field: CustomBlockNumberField;
   modelValue: number;
   readOnly?: boolean;
+  hideLabel?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -19,6 +20,7 @@ const { t } = useI18n();
 
 <template>
   <FieldWrapper
+    :hide-label="hideLabel"
     :label="field.label"
     :required="field.required"
     :read-only="readOnly"

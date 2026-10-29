@@ -2,6 +2,8 @@
 defineProps<{
   modelValue: boolean;
   label?: string;
+  hideLabel?: boolean;
+  controlId?: string;
   disabled?: boolean;
   required?: boolean;
 }>();
@@ -12,19 +14,21 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <label
+  <component
+    :is="hideLabel ? 'div' : 'label'"
     :class="[
       'tpl:flex tpl:items-center tpl:justify-between tpl:gap-2',
       disabled ? 'tpl:cursor-not-allowed' : 'tpl:cursor-pointer',
     ]"
   >
-    <span v-if="$slots.default || label || required">
+    <span v-if="!hideLabel && ($slots.default || label || required)">
       <slot>{{ label }}</slot>
       <span v-if="required" class="tpl:text-[var(--tpl-danger)]"> *</span>
     </span>
     <button
       type="button"
       role="switch"
+      :id="controlId"
       :aria-checked="modelValue"
       :aria-label="label"
       :disabled="disabled"
@@ -44,5 +48,5 @@ const emit = defineEmits<{
         :class="modelValue ? 'tpl:translate-x-4' : 'tpl:translate-x-0'"
       />
     </button>
-  </label>
+  </component>
 </template>

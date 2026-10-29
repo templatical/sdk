@@ -2,6 +2,31 @@ import type en from "./en";
 
 const de: typeof en = {
   localization: {
+    tagsDiffer: "Merge-Tags unterscheiden sich",
+    tagsDifferExplanation:
+      "Die Merge-Tags stimmen nicht mit dem Text auf {default} überein.",
+    changed: "Geändert in {language}",
+    notTranslatedCount: {
+      one: "{count} nicht übersetzt",
+      other: "{count} nicht übersetzt",
+    },
+    missingExplanation:
+      "Noch nicht übersetzt. Die E-Mail zeigt den Text auf {default}.",
+    staleExplanation: "{default} wurde seit der Übersetzung geändert.",
+    currentExcerpt: "Jetzt: „{excerpt}“",
+    useDefaultLanguage: "{default} verwenden",
+    changedProperties: {
+      one: "{count} Eigenschaft unterscheidet sich von {default}.",
+      other: "{count} Eigenschaften unterscheiden sich von {default}.",
+    },
+    resetChanges: "Änderungen zurücksetzen",
+    staleLanguages: {
+      one: "In {count} Sprache veraltet",
+      other: "In {count} Sprachen veraltet",
+    },
+    open: "Öffnen",
+    resetToDefault: "Auf {default} zurücksetzen",
+    hiddenExplanation: "Dieser Block ist nicht in der E-Mail auf {language}.",
     editingLanguage: "Bearbeitung: {language}",
     languageReadOnly: "Schreibgeschützt: {language} ist nicht aktiviert",
     backToDefault: "Zurück zu {default}",
@@ -77,13 +102,9 @@ const de: typeof en = {
     notTranslated: "Nicht übersetzt",
     outOfDate: "Veraltet",
     keep: "Beibehalten",
-    useDefault: "Standard verwenden",
-    differs: "Abweichend in {language}",
-    reset: "Zurücksetzen",
     hidden: "In {language} ausgeblendet",
     show: "Anzeigen",
     hide: "In {language} ausblenden",
-    translationsOutOfDate: "Veraltete Übersetzungen: {count}",
     dismiss: "Schließen",
     structureNotice: "Strukturänderungen gelten für jede Sprache",
     aiActiveLanguage:
@@ -760,6 +781,7 @@ const de: typeof en = {
     collapsePreview: "Vorschau von {block} zuklappen",
   },
   comments: {
+    filterLanguage: "Diese Sprache",
     button: "Kommentare",
     title: "Kommentare",
     close: "Schließen",

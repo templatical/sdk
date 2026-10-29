@@ -3,6 +3,7 @@ import { computed, inject, nextTick, ref, watch } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import {
   AlertTriangle,
+  ArrowUpToLine,
   Check,
   ChevronDown,
   ChevronRight,
@@ -13,6 +14,7 @@ import {
 import {
   defaultLocaleGaps,
   defaultLocaleOf,
+  generateId,
   localeCoverage,
   localeHiddenBlocks,
 } from "@templatical/types";
@@ -30,6 +32,7 @@ import {
   primaryBtnClass,
   secondaryBtnClass,
   secondaryBtnCompactClass,
+  chromePillClass,
 } from "../../constants/styleConstants";
 import TplModal from "../TplModal.vue";
 
@@ -40,6 +43,7 @@ const localeActions = inject(LOCALE_ACTIONS_KEY, null);
 const definitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const root = ref<HTMLElement | null>(null);
 const trigger = ref<HTMLButtonElement | null>(null);
+const reasonId = `tpl-language-reason-${generateId()}`;
 const open = ref(false);
 const submenu = ref<string | null>(null);
 const removing = ref<string | null>(null);
@@ -102,7 +106,7 @@ const triggerTitle = computed(() =>
     : languageName(active.value),
 );
 const rowClass =
-  "tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:border-0 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:text-xs tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50";
+  "tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:border-0 tpl:bg-transparent tpl:px-3 tpl:py-2.5 tpl:text-left tpl:text-xs tpl:transition-colors tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50";
 const surfaceClass =
   "tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)] tpl:shadow-[var(--tpl-shadow-md)]";
 
@@ -337,7 +341,9 @@ onClickOutside(root, () => {
       aria-haspopup="menu"
       :aria-expanded="open"
       :title="triggerTitle"
+      :aria-label="`${languageName(active)} (${active})`"
       :class="secondaryBtnCompactClass"
+      class="tpl-language-trigger"
       style="
         max-width: calc(9 * var(--tpl-base-size));
         min-width: 0;
@@ -345,16 +351,27 @@ onClickOutside(root, () => {
       "
       @click="toggle"
     >
-      <span class="tpl:truncate">{{ languageName(active) }}</span>
+      <span class="tpl-language-name tpl:truncate">{{
+        languageName(active)
+      }}</span>
+      <span class="tpl-language-tag tpl:truncate" aria-hidden="true">{{
+        active
+      }}</span>
       <template v-if="gapCount">
         <AlertTriangle
           :size="12"
           aria-hidden="true"
           class="tpl:shrink-0 tpl:text-[var(--tpl-warning)]"
         />
-        <span class="tpl:shrink-0 tpl:tabular-nums">{{ gapCount }}</span>
+        <span class="tpl-language-count tpl:shrink-0 tpl:tabular-nums">{{
+          gapCount
+        }}</span>
       </template>
-      <ChevronDown :size="12" aria-hidden="true" class="tpl:shrink-0" />
+      <ChevronDown
+        :size="12"
+        aria-hidden="true"
+        class="tpl-language-chevron tpl:shrink-0"
+      />
     </button>
     <div
       v-if="open"
@@ -373,16 +390,14 @@ onClickOutside(root, () => {
           v-for="row in rows"
           :key="row.locale"
           class="tpl-language-row tpl:flex tpl:items-center"
+          :data-active="active === row.locale"
         >
           <button
             type="button"
             role="menuitemradio"
             :aria-checked="active === row.locale"
             :data-testid="`language-option-${row.locale}`"
-            :class="[
-              rowClass,
-              { 'tpl:bg-[var(--tpl-bg-active)]': active === row.locale },
-            ]"
+            :class="rowClass"
             @click="select(row.locale)"
           >
             <span class="tpl:flex tpl:w-3 tpl:shrink-0"
@@ -396,7 +411,8 @@ onClickOutside(root, () => {
                 <span>{{ languageName(row.locale) }}</span>
                 <span
                   v-if="row.locale === source || !locales.includes(row.locale)"
-                  class="tpl:rounded tpl:bg-[var(--tpl-bg-active)] tpl:px-1 tpl:py-0.5 tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
+                  class="tpl-language-pill"
+                  :class="chromePillClass"
                   >{{
                     row.locale === source
                       ? t.localization.default
@@ -415,8 +431,14 @@ onClickOutside(root, () => {
                   "
                   :size="10"
                   aria-hidden="true"
+                  class="tpl:text-[var(--tpl-warning)]"
                 />
-                <Check v-else :size="10" aria-hidden="true" />
+                <Check
+                  v-else
+                  :size="10"
+                  aria-hidden="true"
+                  class="tpl:text-[var(--tpl-success)]"
+                />
                 {{ status(row.coverage) }}
               </span>
             </span>
@@ -457,29 +479,36 @@ onClickOutside(root, () => {
           })
         "
         :class="surfaceClass"
-        class="tpl:absolute tpl:left-full tpl:top-0 tpl:ml-1 tpl:w-64 tpl:overflow-hidden"
+        class="tpl-language-submenu tpl:absolute tpl:left-full tpl:top-0 tpl:ml-1 tpl:w-64 tpl:overflow-hidden"
       >
         <button
           type="button"
           role="menuitem"
           :data-testid="`language-make-default-${row.locale}`"
           :class="rowClass"
-          :disabled="submenuHiddenBlocks.length > 0"
-          :title="
-            submenuHiddenBlocks.length
-              ? plural(
+          :aria-disabled="submenuHiddenBlocks.length > 0"
+          :aria-label="t.localization.makeDefaultLanguage"
+          :aria-describedby="submenuHiddenBlocks.length ? reasonId : undefined"
+          @click="startPromotion(row.locale)"
+        >
+          <ArrowUpToLine :size="14" aria-hidden="true" class="tpl:shrink-0" />
+          <span class="tpl:flex tpl:min-w-0 tpl:flex-col tpl:gap-1">
+            <span>{{ t.localization.makeDefaultLanguage }}</span>
+            <span
+              v-if="submenuHiddenBlocks.length"
+              :id="reasonId"
+              class="tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
+            >
+              {{
+                plural(
                   t.localization.hiddenBeforeDefault,
                   submenuHiddenBlocks.length,
                   uiLocale,
                   { language: languageName(row.locale) },
                 )
-              : undefined
-          "
-          @click="startPromotion(row.locale)"
-        >
-          <Check :size="14" aria-hidden="true" />{{
-            t.localization.makeDefaultLanguage
-          }}
+              }}
+            </span>
+          </span>
         </button>
         <button
           type="button"
@@ -518,7 +547,7 @@ onClickOutside(root, () => {
           data-language-submenu
           :aria-label="t.localization.addLanguage"
           :class="surfaceClass"
-          class="tpl:absolute tpl:left-full tpl:bottom-0 tpl:ml-1 tpl:max-h-64 tpl:w-48 tpl:overflow-y-auto"
+          class="tpl-language-submenu tpl:absolute tpl:left-full tpl:bottom-0 tpl:ml-1 tpl:max-h-64 tpl:w-48 tpl:overflow-y-auto"
         >
           <button
             v-for="locale in available"
@@ -614,6 +643,37 @@ onClickOutside(root, () => {
 </template>
 
 <style scoped>
+@container tpl-header (max-width: 760px) {
+  .tpl-language-submenu {
+    left: 0;
+    top: 100%;
+    bottom: auto;
+    margin: 4px 0 0;
+    max-width: 100%;
+  }
+}
+
+.tpl-language-row:hover,
+.tpl-language-row:focus-within,
+[role="menuitem"]:hover {
+  background: var(--tpl-bg-hover);
+}
+.tpl-language-row[data-active="true"] {
+  background: var(--tpl-bg-active);
+}
+/* The pill's usual fill is the active row's tint; paper keeps it visible. */
+.tpl-language-row[data-active="true"] .tpl-language-pill {
+  background: var(--tpl-bg);
+}
+/* The menu renders in the header, never inside block content, so the raw
+   tokens are the right ones here. */
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  color: var(--tpl-text-muted);
+}
+[aria-disabled="true"] svg {
+  color: var(--tpl-text-dim);
+}
 @media (hover: hover) and (pointer: fine) {
   .tpl-language-actions {
     opacity: 0;

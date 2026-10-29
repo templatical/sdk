@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import FieldRow from "./FieldRow.vue";
+import FieldLabel from "./fields/FieldLabel.vue";
 import { useI18n } from "../../composables/useI18n";
 import { useDataSourceFetch } from "@templatical/core";
 import type { CustomBlock, CustomBlockField } from "@templatical/types";
@@ -117,14 +118,22 @@ function updateField(key: string, value: unknown): void {
     </div>
 
     <template v-for="field in definition.fields" :key="field.key">
-      <FieldRow :path="`fieldValues.${field.key}`"
-        ><component
-          :is="resolveFieldComponent(field.type)"
-          :field="field"
-          :model-value="block.fieldValues[field.key]"
-          :read-only="isFieldReadOnly(field)"
-          @update:model-value="updateField(field.key, $event)"
-      /></FieldRow>
+      <FieldRow :path="`fieldValues.${field.key}`" :label="field.label"
+        ><template #label
+          ><FieldLabel
+            :label="field.label"
+            :required="field.required"
+            :read-only="isFieldReadOnly(field)" /></template
+        ><template #default="{ controlId }"
+          ><component
+            :control-id="field.type === 'boolean' ? controlId : undefined"
+            :is="resolveFieldComponent(field.type)"
+            :field="field"
+            hide-label
+            :model-value="block.fieldValues[field.key]"
+            :read-only="isFieldReadOnly(field)"
+            @update:model-value="updateField(field.key, $event)" /></template
+      ></FieldRow>
     </template>
   </div>
 </template>

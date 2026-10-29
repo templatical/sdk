@@ -86,14 +86,14 @@ describe("language menu interactions", () => {
     expect(trigger.attributes("aria-expanded")).toBe("false");
   });
 
-  it("focuses Remove when promotion is disabled", async () => {
+  it("focuses the reason-bearing promotion item when it is disabled", async () => {
     const { wrapper, trigger } = openMenu(true);
     await trigger.trigger("click");
     await wrapper
       .get('[data-testid="language-option-de"]')
       .trigger("keydown", { key: "ArrowRight" });
     expect(document.activeElement).toBe(
-      wrapper.get('[data-testid="language-remove-de"]').element,
+      wrapper.get('[data-testid="language-make-default-de"]').element,
     );
   });
 

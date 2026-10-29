@@ -42,9 +42,17 @@ import type { OnRequestMedia } from "./index";
 export const TRANSLATIONS_KEY: InjectionKey<Translations> =
   Symbol("translations");
 
+export const LOCALE_CHIP_OPENERS_KEY: InjectionKey<Map<string, () => void>> =
+  Symbol("localeChipOpeners");
+
 export const LOCALIZATION_KEY: InjectionKey<
   { locales: string[]; doNotTranslate?: string[] } | undefined
 > = Symbol("localization");
+
+/** Languages in which an ancestor section excludes its descendants. */
+export const ANCESTOR_HIDDEN_LOCALES_KEY: InjectionKey<
+  ComputedRef<ReadonlySet<string>>
+> = Symbol("ancestorHiddenLocales");
 
 export const EDITOR_KEY: InjectionKey<BaseEditorReturn> = Symbol("editor");
 

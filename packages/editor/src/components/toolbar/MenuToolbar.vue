@@ -8,7 +8,6 @@ import NumberWithSuffix from "./NumberWithSuffix.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
-  labelClass,
   removeItemBtnClass,
   addItemBtnClass,
 } from "../../constants/styleConstants";
@@ -86,6 +85,7 @@ function removeMenuItem(itemId: string): void {
         <div class="tpl:flex tpl:items-center tpl:gap-2">
           <FieldRow
             :path="item.id.includes('.') ? undefined : `items.${item.id}.text`"
+            :label="t.menu.text"
             ><input
               type="text"
               :class="inputClass"
@@ -110,6 +110,7 @@ function removeMenuItem(itemId: string): void {
         </div>
         <FieldRow
           :path="item.id.includes('.') ? undefined : `items.${item.id}.url`"
+          :label="t.button.url"
           ><MergeTagInput
             :model-value="item.url"
             type="url"
@@ -127,18 +128,22 @@ function removeMenuItem(itemId: string): void {
                 ? undefined
                 : `items.${item.id}.${toggle.key}`
             "
-            ><ToggleSwitch
-              :model-value="item[toggle.key]"
-              :label="toggle.label"
-              @update:model-value="updateMenuItem(item.id, toggle.key, $event)"
-          /></FieldRow>
+            :label="toggle.label"
+            ><template #label-actions="{ controlId }"
+              ><ToggleSwitch
+                :control-id="controlId"
+                hide-label
+                :model-value="item[toggle.key]"
+                :label="toggle.label"
+                @update:model-value="
+                  updateMenuItem(item.id, toggle.key, $event)
+                " /></template
+          ></FieldRow>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-2">
-          <label :class="labelClass" class="tpl:!mb-0">{{
-            t.menu.color
-          }}</label>
           <FieldRow
             :path="item.id.includes('.') ? undefined : `items.${item.id}.color`"
+            :label="t.menu.color"
             ><ColorPicker
               swatch-only
               :model-value="item.color || block.linkColor || block.color || ''"

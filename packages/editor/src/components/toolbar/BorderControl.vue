@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import NumberWithSuffix from "./NumberWithSuffix.vue";
@@ -15,6 +16,7 @@ import { BORDER_SIDES, uniformBorder } from "@templatical/types";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
+  path?: string;
   modelValue: BorderValue | undefined;
   /** Prefix for the inputs' `data-testid`s, e.g. `"image"`. */
   testidPrefix: string;
@@ -107,12 +109,8 @@ const sideOptions = computed(() =>
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <div class="tpl:mb-2 tpl:flex tpl:items-center tpl:justify-between">
-      <span
-        class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        >{{ t.blockSettings.border }}</span
-      >
+  <FieldRow :path="path" :label="t.blockSettings.border">
+    <template #label-actions>
       <LinkToggle
         :linked="linked"
         :link-label="t.blockSettings.linkSides"
@@ -120,7 +118,7 @@ const sideOptions = computed(() =>
         :testid="`${testidPrefix}-border-link`"
         @toggle="toggleLinked"
       />
-    </div>
+    </template>
     <div v-if="!linked" class="tpl:mb-3.5">
       <label :class="labelClass">{{ t.blockSettings.borderSide }}</label>
       <SlidingPillSelect
@@ -160,5 +158,5 @@ const sideOptions = computed(() =>
         />
       </div>
     </template>
-  </div>
+  </FieldRow>
 </template>

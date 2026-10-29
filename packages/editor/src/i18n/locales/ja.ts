@@ -2,6 +2,27 @@ import type en from "./en";
 
 const translations: typeof en = {
   localization: {
+    tagsDiffer: "差し込み項目が異なります",
+    tagsDifferExplanation: "差し込み項目が{default}のテキストと一致しません。",
+    changed: "{language}で変更済み",
+    notTranslatedCount: { one: "{count}件未翻訳", other: "{count}件未翻訳" },
+    missingExplanation:
+      "まだ翻訳されていません。メールには{default}のテキストが表示されます。",
+    staleExplanation: "翻訳後に{default}のテキストが変更されました。",
+    currentExcerpt: "現在：「{excerpt}」",
+    useDefaultLanguage: "{default}を使用",
+    changedProperties: {
+      one: "{count}個のプロパティが{default}と異なります。",
+      other: "{count}個のプロパティが{default}と異なります。",
+    },
+    resetChanges: "変更をリセット",
+    staleLanguages: {
+      one: "{count}言語で更新が必要",
+      other: "{count}言語で更新が必要",
+    },
+    open: "開く",
+    resetToDefault: "{default}にリセット",
+    hiddenExplanation: "このブロックは{language}のメールに含まれません。",
     editingLanguage: "{language}を編集中",
     languageReadOnly: "読み取り専用：{language}は有効ではありません",
     backToDefault: "{default}に戻る",
@@ -77,13 +98,9 @@ const translations: typeof en = {
     notTranslated: "未翻訳",
     outOfDate: "更新が必要",
     keep: "維持",
-    useDefault: "デフォルトを使用",
-    differs: "{language}では異なります",
-    reset: "リセット",
     hidden: "{language}では非表示",
     show: "表示",
     hide: "{language}で非表示",
-    translationsOutOfDate: "更新が必要な翻訳: {count}",
     dismiss: "閉じる",
     structureNotice: "構造の変更はすべての言語に適用されます",
     aiActiveLanguage:
@@ -674,6 +691,7 @@ const translations: typeof en = {
     collapsePreview: "{block} のプレビューを折りたたむ",
   },
   comments: {
+    filterLanguage: "この言語",
     button: "コメント",
     title: "コメント",
     close: "閉じる",

@@ -12,7 +12,15 @@ import {
   MessageCircle,
   Trash2,
 } from "@lucide/vue";
-import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  nextTick,
+  ref,
+  watchPostEffect,
+} from "vue";
+import { useEventListener, useResizeObserver } from "@vueuse/core";
 import { useResolvedBackgroundUrl } from "../../composables/useImageUrlResolver";
 import {
   backgroundImageHostClass,
@@ -175,6 +183,59 @@ const canSaveAsBlock = computed(
     caps.savedBlocks?.canCreate.value === true,
 );
 
+// The action bar sits to the right of the selected block. Where the canvas pane
+// has no room for it there (a full-width block on a narrow pane), it moves
+// inside the block's right edge, below the corner badges, so it never widens
+// the pane's scroll area or hides under the properties sidebar. A block too
+// short for that keeps the bar centred on itself rather than on the next block.
+const blockElement = ref<HTMLElement | null>(null);
+const actionsElement = ref<HTMLElement | null>(null);
+const actionsStyle = ref({ left: "calc(100% + 8px)", top: "50%" });
+const canvasBody = computed(() =>
+  actionsElement.value?.closest<HTMLElement>(".tpl-body"),
+);
+function positionActions(): void {
+  const block = blockElement.value;
+  const actions = actionsElement.value;
+  if (!block?.offsetWidth || !actions?.offsetWidth) return;
+  const box = block.getBoundingClientRect();
+  // Client rects carry a host's transform scale; style offsets don't.
+  const scale = box.width / block.offsetWidth || 1;
+  const pane = canvasBody.value;
+  const paneLeft = pane
+    ? (pane.getBoundingClientRect().left - box.left) / scale + pane.clientLeft
+    : -Infinity;
+  const paneRight = pane ? paneLeft + pane.clientWidth : Infinity;
+  const left = Math.max(
+    paneLeft + 4,
+    Math.min(block.offsetWidth + 8, paneRight - actions.offsetWidth - 4),
+  );
+  const centre = Math.max(
+    28 + actions.offsetHeight / 2,
+    block.offsetHeight / 2,
+  );
+  const top =
+    left < block.offsetWidth &&
+    centre + actions.offsetHeight / 2 <= block.offsetHeight + 8
+      ? `${centre}px`
+      : "50%";
+  // Scrolling the pane calls this often; an unchanged position doesn't re-render.
+  if (actionsStyle.value.left !== `${left}px` || actionsStyle.value.top !== top)
+    actionsStyle.value = { left: `${left}px`, top };
+}
+watchPostEffect(positionActions);
+useResizeObserver(
+  computed(() =>
+    actionsElement.value
+      ? [blockElement.value, actionsElement.value, canvasBody.value].filter(
+          (element): element is HTMLElement => !!element,
+        )
+      : [],
+  ),
+  positionActions,
+);
+useEventListener(canvasBody, "scroll", positionActions, { passive: true });
+
 // The action bar is chrome for editing a single block; during a pick session the
 // canvas is in a different mode and N bars would be noise.
 const showActions = computed(() => props.isSelected && !isPicking.value);
@@ -291,6 +352,7 @@ function handleConditionToggle(): void {
 <template>
   <div
     v-if="!isHiddenInPreview"
+    ref="blockElement"
     class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow"
     :class="{
       'tpl-block--selected': isSelected,
@@ -304,8 +366,14 @@ function handleConditionToggle(): void {
     :data-tpl-picked="picked || undefined"
     @click="handleClick"
   >
-    <BlockIssueBadge :block-id="block.id" />
-    <LocaleMarkers v-if="!previewMode" :block="block" />
+    <!-- Status badges share the block's top corner (top-left in a
+         right-to-left view): lint issues inward, localization at the corner. -->
+    <div
+      class="tpl-block-badges tpl:absolute tpl:top-1 tpl:inset-e-1 tpl:z-10 tpl:flex tpl:gap-1"
+    >
+      <BlockIssueBadge :block-id="block.id" />
+      <LocaleMarkers v-if="!previewMode" :block="block" />
+    </div>
     <div
       v-if="lock"
       data-testid="block-lock"
@@ -333,12 +401,15 @@ function handleConditionToggle(): void {
       aria-hidden="true"
       class="tpl-block-agent-highlight tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
     />
-    <!-- Floating action bar — positioned to the right of selected block -->
+    <!-- Floating action bar — placed by positionActions(): beside the selected
+         block, or inside its right edge when the canvas pane has no room -->
     <div
       v-if="showActions"
+      ref="actionsElement"
+      :style="actionsStyle"
       role="toolbar"
       :aria-label="t.blockActions.drag"
-      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
+      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:top-1/2 tpl:z-20 tpl:flex tpl:-translate-y-1/2 tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
     >
       <button
         ref="dragButtonRef"

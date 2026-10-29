@@ -325,7 +325,7 @@ onUnmounted(() => {
       >
         <!-- Only the title block shrinks: a long see-it line would otherwise
              squeeze the controls before it and nudge the arrows. -->
-        <div class="flex items-center gap-3 min-w-0">
+        <div class="flex flex-1 items-center gap-3 min-w-0">
           <button
             v-if="!isPhone"
             type="button"
@@ -421,8 +421,10 @@ onUnmounted(() => {
             </a>
           </div>
           <!-- On a phone the card carries the title block. -->
-          <div v-if="!isPhone" class="min-w-0">
-            <div class="flex min-w-0 items-baseline gap-2">
+          <div v-if="!isPhone" class="min-w-0 flex-1">
+            <div
+              class="pg-scene-heading flex min-w-0 items-baseline gap-2 overflow-hidden"
+            >
               <h1
                 class="m-0 min-w-0 truncate text-base font-semibold leading-tight text-gray-900 dark:text-gray-100"
               >

@@ -489,6 +489,11 @@ describe("chrome tokens survive the email-content override", () => {
   const styles = read("styles/index.css");
   const blockWrapper = read("components/blocks/BlockWrapper.vue");
   const sectionBlock = read("components/blocks/SectionBlock.vue");
+  // The corner badges render in a block's slot, inside a section's content.
+  const cornerBadges = [
+    read("components/localization/LocaleStatusChip.vue"),
+    read("components/canvas/BlockIssueBadge.vue"),
+  ];
 
   /* `.tpl[data-tpl-theme="dark"] .tpl-block-content` re-declares these tokens so
      email content renders light. A section's children render INSIDE that
@@ -555,10 +560,10 @@ describe("chrome tokens survive the email-content override", () => {
   });
 
   it("block chrome never references a shadowed token directly", () => {
-    // Every reference to these tokens inside BlockWrapper/SectionBlock is
-    // chrome — email content is styled from block data via inline styles — so
-    // any raw usage here is the regression.
-    for (const src of [blockWrapper, sectionBlock]) {
+    // Every reference to these tokens inside BlockWrapper/SectionBlock and the
+    // corner badges is chrome — email content is styled from block data via
+    // inline styles — so any raw usage here is the regression.
+    for (const src of [blockWrapper, sectionBlock, ...cornerBadges]) {
       for (const name of [...SHADOWED, "text"]) {
         expect(src).not.toContain(`var(--tpl-${name})`);
       }
