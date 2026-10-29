@@ -1,9 +1,11 @@
 import { computed } from "vue";
 import {
   defaultLocaleOf,
+  localeCoverage,
   localizeBlock,
   resolveLocale,
   type Block,
+  type CustomBlockDefinition,
 } from "@templatical/types";
 import type { BaseEditorReturn } from "./useEditorCore";
 
@@ -16,7 +18,14 @@ export function useLocalizedDisplay(
     const locale = editor.activeLocale?.value;
     return locale ? resolveLocale(base, locale) : base;
   });
-  const settings = computed(() => content.value.settings);
+  // Settings project on their own, so reading them doesn't project every block.
+  const settings = computed(() => {
+    const base = editor.content.value;
+    const locale = editor.activeLocale?.value;
+    return locale
+      ? resolveLocale({ blocks: [], settings: base.settings }, locale).settings
+      : base.settings;
+  });
   function displayBlock(block: Block): Block {
     const locale = editor.activeLocale?.value;
     return locale
@@ -24,4 +33,18 @@ export function useLocalizedDisplay(
       : block;
   }
   return { content, settings, displayBlock };
+}
+
+/** The active language view's coverage; `null` in the default view. */
+export function useActiveLocaleCoverage(
+  editor: Pick<BaseEditorReturn, "content" | "activeLocale">,
+  definitions: readonly CustomBlockDefinition[],
+) {
+  return computed(() => {
+    const source = defaultLocaleOf(editor.content.value);
+    const active = editor.activeLocale?.value ?? source;
+    return active === source
+      ? null
+      : localeCoverage(editor.content.value, active, definitions);
+  });
 }

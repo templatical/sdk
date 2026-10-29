@@ -15,6 +15,7 @@ import type {
   BlockDefaults,
   CustomBlockDefinition,
   DisplayCondition,
+  LocaleCoverage,
   LogicPair,
   LogicTag,
   MergeTag,
@@ -66,6 +67,23 @@ export const AI_FEATURE_KEY: InjectionKey<UseAiFeatureReturn> =
 export const TRANSLATION_FEATURE_KEY: InjectionKey<
   import("./composables/useTranslationFeature").UseTranslationFeatureReturn
 > = Symbol("translationFeature");
+
+/**
+ * The active language view's coverage, `null` in the default view. One pass
+ * per change serves the header trigger, the language bar and its Translate
+ * counts. Provided by `Editor.vue`.
+ */
+export const ACTIVE_LOCALE_COVERAGE_KEY: InjectionKey<
+  ComputedRef<LocaleCoverage | null>
+> = Symbol("activeLocaleCoverage");
+
+/**
+ * The active language's projection of the whole template, one per change for
+ * the few readers that need all of it (a "match image" hero's band width).
+ * Provided by `Editor.vue`.
+ */
+export const LOCALIZED_CONTENT_KEY: InjectionKey<ComputedRef<TemplateContent>> =
+  Symbol("localizedContent");
 
 export const LOCALE_ACTIONS_KEY: InjectionKey<
   import("./composables/useLocaleActions").UseLocaleActionsReturn

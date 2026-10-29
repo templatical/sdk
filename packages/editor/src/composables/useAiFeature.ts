@@ -1,5 +1,6 @@
 import {
   computed,
+  getCurrentScope,
   ref,
   shallowRef,
   toRaw,
@@ -282,6 +283,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   let destroyed = false;
   let authorVersion = 0;
   let applyingAi = false;
+  let pendingJobs = 0;
+  let stopAuthorWatch: (() => void) | null = null;
+  // Watchers made later (from `enqueue` and a job's end) belong to this
+  // composable, not to whichever component's setup queued the job.
+  const ownerScope = getCurrentScope();
   type LaneKind =
     "turn" | "replay" | "clear" | "history" | "read" | "reconcile";
   interface Session {
@@ -436,12 +442,14 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           } finally {
             scope.active = null;
             scope.busy.value = false;
+            if (--pendingJobs === 0) watchAuthorEdits();
             pump(scope);
           }
           resolve(result);
         },
       };
       scope.queue.push(job);
+      if (pendingJobs++ === 0) watchAuthorEdits();
       pump(scope);
     });
   }
@@ -1430,7 +1438,33 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     panel.value = null;
   }
 
+  /**
+   * Content changes outside an AI application are the author's. A job
+   * snapshots `authorVersion` and compares it later (`reloadCurrent`), so
+   * while a job is queued or running each change is checked as it happens.
+   * Between jobs every change is the author's, and the first one is enough to
+   * make an earlier snapshot differ (a late-applied batch reconciles against
+   * its turn's snapshot), so an idle editor walks the content at most twice.
+   */
+  function watchAuthorEdits(): void {
+    if (destroyed) return;
+    stopAuthorWatch?.();
+    const idle = pendingJobs === 0;
+    const create = () =>
+      watch(
+        editor.content,
+        () => {
+          if (!applyingAi && !currentSession.value?.committingReload)
+            authorVersion++;
+        },
+        { deep: true, flush: "sync", once: idle },
+      );
+    stopAuthorWatch = ownerScope?.active ? ownerScope.run(create)! : create();
+  }
+  watchAuthorEdits();
+
   const watchers: (() => void)[] = [
+    () => stopAuthorWatch?.(),
     watch(
       () => editor.state.isDirty,
       (dirty, previous) => {
@@ -1440,14 +1474,6 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           keptYourVersion.value = false;
       },
       { flush: "sync" },
-    ),
-    watch(
-      editor.content,
-      () => {
-        if (!applyingAi && !currentSession.value?.committingReload)
-          authorVersion++;
-      },
-      { deep: true, flush: "sync" },
     ),
   ];
   if (options.commentsOpen) {

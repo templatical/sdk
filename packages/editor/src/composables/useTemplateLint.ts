@@ -85,12 +85,14 @@ export function useTemplateLint(
   const issues = ref<LintIssue[]>([]) as Ref<LintIssue[]>;
   const contentVersion = ref(0);
   const lintVersion = ref(-1);
+  // One walk of the content per tick, before the render that reads the
+  // versions; per write, the walk would repeat for every language's layers.
   const stopVersionWatch = watch(
     opts.content,
     () => {
       contentVersion.value++;
     },
-    { deep: true, flush: "sync" },
+    { deep: true },
   );
   const ready = ref(false);
   const unavailable = ref(false);
@@ -117,9 +119,8 @@ export function useTemplateLint(
       };
       ready.value = true;
       runLint();
-      stopWatch = watchDebounced(opts.content, runLint, {
+      stopWatch = watchDebounced(contentVersion, runLint, {
         debounce: opts.debounce ?? 500,
-        deep: true,
       });
     } catch {
       if (destroyed) return;

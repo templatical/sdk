@@ -368,12 +368,14 @@ export function localeStrings(
     doNotTranslate?: readonly string[];
   },
 ): { strings: LocaleString[]; tokens: Record<string, string[]> } {
-  const coverage = localeCoverage(content, locale, options.definitions);
-  const selected = new Set(
+  // Coverage lists every eligible field (its default isn't empty), so only
+  // gaps need it to select.
+  const coverage =
     options.only === "all"
-      ? [...coverage.translated, ...coverage.missing, ...coverage.stale]
-      : [...coverage.missing, ...coverage.stale],
-  );
+      ? null
+      : localeCoverage(content, locale, options.definitions);
+  const selected =
+    coverage && new Set([...coverage.missing, ...coverage.stale]);
   const strings: LocaleString[] = [];
   const tokens: Record<string, string[]> = {};
   for (const [id, field] of eligibleFields(
@@ -382,7 +384,7 @@ export function localeStrings(
     options.definitions,
   )) {
     if (
-      !selected.has(id) ||
+      (selected && !selected.has(id)) ||
       (options.blockId !== undefined &&
         (field.target.kind !== "block" ||
           field.target.blockId !== options.blockId))

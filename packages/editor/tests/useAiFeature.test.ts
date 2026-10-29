@@ -3417,6 +3417,24 @@ it("keeps author edits made before a buffered server fact starts reconciliation"
   expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Keep this author edit</p>" });
 });
 
+it("detects author edits during a job queued from a component scope that has since stopped", async () => {
+  const applied = deferred<void>();
+  const { ai, editor, reload } = await openLocal({ chat: chatting(async (on) => {
+    await applied.promise;
+    on.onApplied({ batchId: "server", revision: 2, operationCount: 1 });
+  }) }, { reload: async () => {} });
+  const component = effectScope();
+  const turn = component.run(() => ai.send("Server turn"))!;
+  component.stop();
+  await settle();
+  editor.updateBlock("t1", { content: "<p>Author edit during the turn</p>" });
+  applied.resolve();
+  await turn;
+  expect(reload).not.toHaveBeenCalled();
+  expect(ai.keptYourVersion.value).toBe(true);
+  expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Author edit during the turn</p>" });
+});
+
 it("does not count the AI's own applied batches as author edits before reload", async () => {
   const { ai, reload } = await openLocal({ chat: chatting(async (on) => {
     await on.onOperations(greet);

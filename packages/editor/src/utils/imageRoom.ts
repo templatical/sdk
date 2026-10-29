@@ -170,6 +170,12 @@ export function sectionBandWidth(
   return null;
 }
 
+/** Whether `block` is an applied "match image" hero. */
+export function isMatchImageHero(block: Block): boolean {
+  const hero = isSection(block) ? resolveHero(block) : null;
+  return !!hero?.applied && hero.height === "image";
+}
+
 /**
  * The desktop box width a "match image" hero's height follows on every
  * viewport, as the renderer's fixed height does: the band width it is drawn
@@ -182,9 +188,7 @@ export function matchImageBoxWidth(
   layout?: TemplateContent,
   locale?: string,
 ): number | undefined {
-  if (!isSection(block)) return undefined;
-  const hero = resolveHero(block);
-  if (!hero?.applied || hero.height !== "image") return undefined;
+  if (!isMatchImageHero(block)) return undefined;
   const banded = content
     ? sectionBandWidth(content, block.id, layout, locale)
     : null;

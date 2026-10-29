@@ -38,8 +38,9 @@ import {
   EDITOR_KEY,
   KEYBOARD_REORDER_KEY,
   LAYOUT_KEY,
+  LOCALIZED_CONTENT_KEY,
 } from "../../keys";
-import { matchImageBoxWidth } from "../../utils/imageRoom";
+import { isMatchImageHero, matchImageBoxWidth } from "../../utils/imageRoom";
 import { readableTextColor } from "../../utils/readableTextColor";
 
 const props = defineProps<{
@@ -289,17 +290,20 @@ const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
 // moved the number and the canvas never changed, while a unit test on
 // `getBlockWrapperStyle` still passed.
 const editor = inject(EDITOR_KEY, null);
-const localized = editor ? useLocalizedDisplay(editor) : null;
+// The editor shares one projection; a standalone wrapper projects its own.
+const localizedContent =
+  inject(LOCALIZED_CONTENT_KEY, null) ??
+  (editor ? useLocalizedDisplay(editor).content : null);
 const layout = inject(LAYOUT_KEY, undefined);
 
 const contentStyle = computed(() =>
   getBlockWrapperStyle(display.value, {
     backgroundImageUrl: sectionBackgroundUrl.value,
-    heroBoxWidth: matchImageBoxWidth(
-      display.value,
-      localized?.content.value,
-      layout,
-    ),
+    // Only such a hero reads the projected template; every block reading it
+    // would project the whole template once per block on each edit.
+    heroBoxWidth: isMatchImageHero(display.value)
+      ? matchImageBoxWidth(display.value, localizedContent?.value, layout)
+      : undefined,
   }),
 );
 

@@ -365,6 +365,88 @@ describe("Languages scene", () => {
     });
   });
 
+  it("builds 300 blocks of mixed types in 20 languages for the scale variant, half translated and a tenth out of date", async () => {
+    const scene = getScene("languages")!;
+    expect(scene.variants).toContainEqual({
+      name: "300 blocks in 20 languages",
+      query: { scale: "1" },
+    });
+    const content = scene.content!(context("scale=1"));
+    const blocks = content.blocks.flatMap((block) =>
+      block.type === "section" ? [block, ...block.children.flat()] : [block],
+    );
+    expect(blocks).toHaveLength(300);
+    expect(new Set(blocks.map((block) => block.type))).toEqual(
+      new Set([
+        "title",
+        "paragraph",
+        "image",
+        "button",
+        "menu",
+        "section",
+        "video",
+        "table",
+        "divider",
+        "html",
+        "spacer",
+      ]),
+    );
+    expect([content.settings.locale, ...content.settings.locales!]).toEqual([
+      "en",
+      "de",
+      "fr",
+      "es",
+      "ja",
+      "nl",
+      "ca",
+      "pt-BR",
+      "ar",
+      "it",
+      "pl",
+      "sv",
+      "da",
+      "fi",
+      "nb",
+      "cs",
+      "hu",
+      "tr",
+      "ko",
+      "zh-CN",
+    ]);
+    const config = scene.config(context("scale=1"));
+    expect(config.localization?.locales).toEqual(content.settings.locales);
+    for (const locale of content.settings.locales!) {
+      const coverage = localeCoverage(content, locale);
+      expect([
+        coverage.translated.length,
+        coverage.stale.length,
+        coverage.missing.length,
+      ]).toEqual([112, 28, 140]);
+    }
+
+    vi.stubGlobal("window", {});
+    try {
+      await config.translation!.translate(
+        {
+          templateId: null,
+          sourceLocale: "en",
+          targetLocale: "de",
+          fields: [
+            { id: "scale-0/content", text: "<p>Line 0</p>", format: "html" },
+            { id: "scale-2/alt", text: "Line 2", format: "text" },
+          ],
+        },
+        new AbortController().signal,
+      );
+      expect(
+        (window as { __tplPlaygroundTranslateCalls?: unknown })
+          .__tplPlaygroundTranslateCalls,
+      ).toEqual([{ fields: 2, chars: 19 }]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("runs the displayed snippet with a complete in-memory templates provider", async () => {
     const scene = getScene("languages");
     expect(scene?.snippet).toBeTypeOf("string");

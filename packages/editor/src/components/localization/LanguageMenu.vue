@@ -20,7 +20,9 @@ import {
 } from "@templatical/types";
 import type { BaseEditorReturn } from "../../composables/useEditorCore";
 import { useI18n } from "../../composables/useI18n";
+import { useActiveLocaleCoverage } from "../../composables/useLocalizedDisplay";
 import {
+  ACTIVE_LOCALE_COVERAGE_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   LOCALE_ACTIONS_KEY,
   UI_LOCALE_KEY,
@@ -66,11 +68,11 @@ const available = computed(() =>
 const editable = computed(
   () => active.value === source.value || props.locales.includes(active.value),
 );
-const activeCoverage = computed(() =>
-  active.value === source.value
-    ? null
-    : localeCoverage(props.editor.content.value, active.value, definitions),
-);
+// The editor shares one pass with the language bar; a standalone menu
+// computes its own.
+const activeCoverage =
+  inject(ACTIVE_LOCALE_COVERAGE_KEY, null) ??
+  useActiveLocaleCoverage(props.editor, definitions);
 const rows = computed(() =>
   open.value
     ? [source.value, ...versions.value].map((locale) => ({

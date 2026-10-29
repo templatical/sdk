@@ -4,11 +4,16 @@ const seenTemplates = new Set<string>();
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from "vue";
 import { Languages, X } from "@lucide/vue";
-import { defaultLocaleOf, localeCoverage } from "@templatical/types";
+import { defaultLocaleOf } from "@templatical/types";
 import type { BaseEditorReturn } from "../../composables/useEditorCore";
 import type { UseTranslationFeatureReturn } from "../../composables/useTranslationFeature";
 import { useI18n } from "../../composables/useI18n";
-import { CUSTOM_BLOCK_DEFINITIONS_KEY, UI_LOCALE_KEY } from "../../keys";
+import { useActiveLocaleCoverage } from "../../composables/useLocalizedDisplay";
+import {
+  ACTIVE_LOCALE_COVERAGE_KEY,
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  UI_LOCALE_KEY,
+} from "../../keys";
 import { plural } from "../../i18n/plural";
 import { languageName } from "../../utils/languageName";
 import {
@@ -31,11 +36,11 @@ const definitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const source = computed(() => defaultLocaleOf(props.editor.content.value));
 const active = computed(() => props.editor.activeLocale?.value ?? source.value);
 const enabled = computed(() => props.locales.includes(active.value));
-const coverage = computed(() =>
-  active.value === source.value
-    ? null
-    : localeCoverage(props.editor.content.value, active.value, definitions),
-);
+// The editor shares one pass with the header trigger; a standalone bar
+// computes its own.
+const coverage =
+  inject(ACTIVE_LOCALE_COVERAGE_KEY, null) ??
+  useActiveLocaleCoverage(props.editor, definitions);
 const status = computed(() => {
   if (!enabled.value)
     return format(t.localization.languageReadOnly, {

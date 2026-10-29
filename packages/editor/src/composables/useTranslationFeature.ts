@@ -14,6 +14,7 @@ import {
   applyOperationsInPlace,
   defaultLocaleOf,
   invertOperations,
+  localeCoverage,
   localeStrings,
   safeClone,
   SdkError,
@@ -22,6 +23,7 @@ import {
   unmaskTags,
   type Block,
   type CustomBlockDefinition,
+  type LocaleCoverage,
   type LocaleString,
   type Operation,
   type SyntaxPreset,
@@ -65,6 +67,8 @@ interface UseTranslationFeatureOptions {
   syntax: () => SyntaxPreset;
   history: () => Pick<UseHistoryReturn, "record">;
   collaboration?: Pick<UseCollaborationFeatureReturn, "core"> | null;
+  /** The active view's coverage when the editor already computes it. */
+  coverage?: () => LocaleCoverage | null;
 }
 
 /** Provider errors cross bundles and may be plain objects. */
@@ -143,16 +147,26 @@ export function useTranslationFeature(
       !!editor.content.value.settings.locales?.includes(locale)
     );
   });
+  // One extraction of every eligible field; the gaps among them come from the
+  // coverage the editor already computes, so a change costs one coverage pass.
   const counts = computed(() => {
     if (!isAvailable.value) return { gaps: 0, all: 0 };
-    const extract = (only: "gaps" | "all") =>
-      localeStrings(editor.content.value, editor.activeLocale.value!, {
-        definitions: options.definitions(),
-        syntax: options.syntax(),
-        doNotTranslate: options.localization?.doNotTranslate,
-        only,
-      }).strings.length;
-    return { gaps: extract("gaps"), all: extract("all") };
+    const locale = editor.activeLocale.value!;
+    const definitions = options.definitions();
+    const coverage =
+      options.coverage?.() ??
+      localeCoverage(editor.content.value, locale, definitions);
+    const gapIds = new Set([...coverage.missing, ...coverage.stale]);
+    const { strings } = localeStrings(editor.content.value, locale, {
+      definitions,
+      syntax: options.syntax(),
+      doNotTranslate: options.localization?.doNotTranslate,
+      only: "all",
+    });
+    return {
+      gaps: strings.filter(({ id }) => gapIds.has(id)).length,
+      all: strings.length,
+    };
   });
   function cancel() {
     active?.controller.abort();

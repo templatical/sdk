@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import {
   applyOperations,
   applyLocaleStrings,
@@ -19,6 +19,7 @@ import {
   unmaskTags,
   type CustomBlockDefinition,
 } from "../src";
+import * as localization from "../src/localization";
 
 const liquid = SYNTAX_PRESETS.liquid;
 const options = { syntax: liquid, only: "all" as const };
@@ -214,6 +215,29 @@ describe("localeStrings", () => {
         sourceHash: sourceHash("Save now"),
       },
     ]);
+  });
+
+  it("selects every eligible field for all without a coverage pass, which only gaps needs", () => {
+    const coverage = vi.spyOn(localization, "localeCoverage");
+    onTestFinished(() => coverage.mockRestore());
+    const content = fixture();
+    content.blocks[1].l10n = {
+      de: { text: { alt: { value: "Held", sourceHash: "old" } } },
+    };
+    expect(extract(content).strings.map((s) => s.id)).toEqual([
+      "p/content",
+      "img/alt",
+      "menu/items.shop.text",
+      "settings/preheaderText",
+    ]);
+    expect(coverage).not.toHaveBeenCalled();
+    expect(extract(content, "gaps").strings.map((s) => s.id)).toEqual([
+      "p/content",
+      "img/alt",
+      "menu/items.shop.text",
+      "settings/preheaderText",
+    ]);
+    expect(coverage).toHaveBeenCalledOnce();
   });
 
   it("filters to one block without including settings", () => {

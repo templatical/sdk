@@ -32,7 +32,10 @@ import type { LocaleNotice } from "./components/localization/LocaleNotices.vue";
 import LanguageBar from "./components/localization/LanguageBar.vue";
 import { useLocaleActions } from "./composables/useLocaleActions";
 import { useTranslationFeature } from "./composables/useTranslationFeature";
-import { useLocalizedDisplay } from "./composables/useLocalizedDisplay";
+import {
+  useActiveLocaleCoverage,
+  useLocalizedDisplay,
+} from "./composables/useLocalizedDisplay";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCollaborationFeature } from "./composables/useCollaborationFeature";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
@@ -61,10 +64,12 @@ import type { Translations } from "./i18n";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
 import {
+  ACTIVE_LOCALE_COVERAGE_KEY,
   AI_FEATURE_KEY,
   SIZE_CHECK_KEY,
   LOCALIZATION_KEY,
   LOCALE_ACTIONS_KEY,
+  LOCALIZED_CONTENT_KEY,
   TRANSLATION_FEATURE_KEY,
 } from "./keys";
 
@@ -219,6 +224,7 @@ const editor = useEditor({
 });
 
 const localized = useLocalizedDisplay(editor);
+provide(LOCALIZED_CONTENT_KEY, localized.content);
 editor.setCustomBlockDefinitions(props.config.customBlocks ?? []);
 if (collaboration) {
   watch(
@@ -391,6 +397,14 @@ const ai = props.config.ai
   : null;
 if (ai) provide(AI_FEATURE_KEY, ai);
 
+// One coverage pass per change in a language view, shared by the header
+// trigger, the language bar and its Translate counts.
+const activeCoverage = useActiveLocaleCoverage(
+  editor,
+  props.config.customBlocks ?? [],
+);
+provide(ACTIVE_LOCALE_COVERAGE_KEY, activeCoverage);
+
 const translation = props.config.translation
   ? useTranslationFeature({
       provider: props.config.translation,
@@ -400,6 +414,7 @@ const translation = props.config.translation
       history: () => core.history,
       definitions: () => props.config.customBlocks ?? [],
       syntax: () => core.mergeTagSyntax,
+      coverage: () => activeCoverage.value,
     })
   : null;
 if (translation) provide(TRANSLATION_FEATURE_KEY, translation);

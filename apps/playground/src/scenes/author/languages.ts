@@ -4,13 +4,23 @@ import {
   createMockTranslationProvider,
 } from "@templatical/ai-kit/testing";
 import {
+  createButtonBlock,
   createDefaultTemplateContent,
+  createDividerBlock,
+  createHtmlBlock,
   createImageBlock,
+  createMenuBlock,
   createParagraphBlock,
+  createSectionBlock,
   createSlotBlock,
+  createSpacerBlock,
+  createTableBlock,
+  createVideoBlock,
   createWrapperBlock,
   createTitleBlock,
   sourceHash,
+  type Block,
+  type TemplateContent,
   type TranslationProvider,
 } from "@templatical/types";
 import { createSharedCollaboration } from "../../host/collaboration/client";
@@ -44,7 +54,234 @@ const TRANSLATIONS = {
 const GERMAN_REWRITE =
   "<p>Entdecken Sie die Highlights unserer Herbstkollektion.</p>";
 
+// `?scale=1`: the editor's eight UI languages (English is the default) plus
+// twelve others, over 300 blocks of mixed types.
+const SCALE_LOCALES = [
+  "de",
+  "fr",
+  "es",
+  "ja",
+  "nl",
+  "ca",
+  "pt-BR",
+  "ar",
+  "it",
+  "pl",
+  "sv",
+  "da",
+  "fi",
+  "nb",
+  "cs",
+  "hu",
+  "tr",
+  "ko",
+  "zh-CN",
+];
+const SCALE_BLOCKS = 300;
+
+/** Records each call's field and character counts for the scale measurement. */
+function countingTranslation(): TranslationProvider {
+  const mock = createMockTranslationProvider();
+  return {
+    translate(request, signal) {
+      const w = window as {
+        __tplPlaygroundTranslateCalls?: { fields: number; chars: number }[];
+      };
+      (w.__tplPlaygroundTranslateCalls ??= []).push({
+        fields: request.fields.length,
+        chars: request.fields.reduce(
+          (sum, field) => sum + field.text.length,
+          0,
+        ),
+      });
+      return mock.translate(request, signal);
+    },
+  };
+}
+
+/**
+ * Each block's text is translated in half the languages and out of date in a
+ * tenth of them, varying by block so every language has its own gaps.
+ */
+function scaleTranslations(
+  index: number,
+  fields: Record<string, string>,
+  html: boolean,
+): Pick<Block, "l10n"> {
+  const entries = SCALE_LOCALES.flatMap((locale, offset) => {
+    if ((index + offset) % 2) return [];
+    const stale = (index + offset) % 10 === 0;
+    const text = Object.fromEntries(
+      Object.entries(fields).map(([path, value]) => [
+        path,
+        {
+          value: html
+            ? value.replace("<p>", `<p>[${locale}] `)
+            : `[${locale}] ${value}`,
+          sourceHash: sourceHash(stale ? `${value} (earlier)` : value),
+        },
+      ]),
+    );
+    return [[locale, { text }]];
+  });
+  return { l10n: Object.fromEntries(entries) };
+}
+
+function scaleBlock(index: number): Block[] {
+  const id = `scale-${index}`;
+  const line = `Line ${index} of the Sable autumn update`;
+  switch (index % 13) {
+    case 0:
+      return [
+        createTitleBlock({
+          id,
+          content: `<p>${line}</p>`,
+          ...scaleTranslations(index, { content: `<p>${line}</p>` }, true),
+        }),
+      ];
+    case 1:
+    case 6:
+      return [
+        createParagraphBlock({
+          id,
+          content: `<p>Hello {{first_name}}, ${line.toLowerCase()}.</p>`,
+          ...scaleTranslations(
+            index,
+            { content: `<p>Hello {{first_name}}, ${line.toLowerCase()}.</p>` },
+            true,
+          ),
+        }),
+      ];
+    case 2:
+      return [
+        createImageBlock({
+          id,
+          src: "/examples/sable/speaker.png",
+          alt: line,
+          ...scaleTranslations(index, { alt: line }, false),
+        }),
+      ];
+    case 3:
+      return [
+        createButtonBlock({
+          id,
+          text: `Shop line ${index}`,
+          url: "https://example.com",
+          ...scaleTranslations(index, { text: `Shop line ${index}` }, false),
+        }),
+      ];
+    case 4:
+      return [
+        createMenuBlock({
+          id,
+          items: [
+            { id: "new", text: "New in", url: "https://example.com/new" },
+            { id: "sale", text: "Sale", url: "https://example.com/sale" },
+          ].map((item) => ({
+            ...item,
+            openInNewTab: false,
+            bold: false,
+            underline: false,
+          })),
+          ...scaleTranslations(
+            index,
+            { "items.new.text": "New in", "items.sale.text": "Sale" },
+            false,
+          ),
+        }),
+      ];
+    case 5: {
+      const column = (side: string) =>
+        createParagraphBlock({
+          id: `${id}-${side}`,
+          content: `<p>${line}, ${side} column.</p>`,
+          ...scaleTranslations(
+            index,
+            { content: `<p>${line}, ${side} column.</p>` },
+            true,
+          ),
+        });
+      return [
+        createSectionBlock({
+          id,
+          columns: "2",
+          children: [[column("left")], [column("right")]],
+        }),
+      ];
+    }
+    case 7:
+      return [
+        createVideoBlock({
+          id,
+          alt: `Video for line ${index}`,
+          ...scaleTranslations(
+            index,
+            { alt: `Video for line ${index}` },
+            false,
+          ),
+        }),
+      ];
+    case 8:
+      return [
+        createTableBlock({
+          id,
+          rows: [
+            { id: "head", cells: [{ id: "item", content: "Item" }] },
+            { id: "body", cells: [{ id: "item", content: line }] },
+          ],
+          ...scaleTranslations(
+            index,
+            {
+              "rows.head.cells.item.content": "Item",
+              "rows.body.cells.item.content": line,
+            },
+            false,
+          ),
+        }),
+      ];
+    case 9:
+      return [createDividerBlock({ id })];
+    case 10:
+      return [
+        createHtmlBlock({
+          id,
+          content: `<p>${line}</p>`,
+          ...scaleTranslations(index, { content: `<p>${line}</p>` }, true),
+        }),
+      ];
+    case 11:
+      return [createSpacerBlock({ id })];
+    default:
+      return [
+        createParagraphBlock({
+          id,
+          content: `<p>${line}.</p>`,
+          ...scaleTranslations(index, { content: `<p>${line}.</p>` }, true),
+        }),
+      ];
+  }
+}
+
+/** 300 blocks, counting a section's two children, in 20 languages. */
+function scaleCanvas(): TemplateContent {
+  const content = createDefaultTemplateContent(undefined, { locale: "en" });
+  content.settings.locales = [...SCALE_LOCALES];
+  content.settings.l10n = { ar: { set: { direction: "rtl" } } };
+  const blocks: Block[] = [];
+  let count = 0;
+  for (let index = 0; count < SCALE_BLOCKS; index++) {
+    const next = scaleBlock(index);
+    const size = next[0].type === "section" ? 3 : 1;
+    if (count + size > SCALE_BLOCKS) continue;
+    blocks.push(...next);
+    count += size;
+  }
+  content.blocks = blocks;
+  return content;
+}
+
 function translationFor(ctx: SceneContext): TranslationProvider {
+  if (ctx.search.get("scale") === "1") return countingTranslation();
   const mock = createMockTranslationProvider({ translations: TRANSLATIONS });
   if (ctx.search.get("translation") === "tags-changed") {
     return {
@@ -83,6 +320,7 @@ function translationFor(ctx: SceneContext): TranslationProvider {
 }
 
 function languagesCanvas(ctx: SceneContext) {
+  if (ctx.search.get("scale") === "1") return scaleCanvas();
   const content = createDefaultTemplateContent(undefined, { locale: "en" });
   content.settings.locales = ["de", "ar"];
   content.settings.l10n = { ar: { set: { direction: "rtl" } } };
@@ -187,7 +425,7 @@ export const languages: Scene = {
   job: "Language versions of one template",
   initKey: "localization",
   summary:
-    "init({ templates, layout, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and translate the gaps in the language bar, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The do-not-translate list protects Sable during translation. The layout footer follows the selected language and falls back to English when the layout lacks it. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.",
+    "init({ templates, layout, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and translate the gaps in the language bar, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The do-not-translate list protects Sable during translation. The layout footer follows the selected language and falls back to English when the layout lacks it. The variants demonstrate a changed tag, partial results on Cancel, collaboration locks and a template of 300 blocks in 20 languages.",
   catalog: "oss",
   group: "configure",
   docs: "/guide/localized-templates",
@@ -200,7 +438,10 @@ export const languages: Scene = {
   config(ctx) {
     const layout = languagesLayout();
     const localization = {
-      locales: ["de", "fr", "ar"],
+      locales:
+        ctx.search.get("scale") === "1"
+          ? [...SCALE_LOCALES]
+          : ["de", "fr", "ar"],
       doNotTranslate: ["Sable"],
     };
     const translation = translationFor(ctx);
@@ -309,5 +550,6 @@ await editor.load("languages");`,
       name: "As Ada, with collaboration",
       query: { collaboration: "1", user: "Ada" },
     },
+    { name: "300 blocks in 20 languages", query: { scale: "1" } },
   ],
 };
