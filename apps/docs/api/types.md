@@ -651,7 +651,21 @@ type ViewportSize = 'desktop' | 'mobile';
 
 ## Factory Functions
 
-All factory functions accept an optional partial override object and return a complete block with a generated ID.
+The block factory functions below accept an optional partial override object and return a complete block with a generated ID. `createCustomBlockLiquid(liquidjs)` is also exported for headless custom-block rendering; see the [Custom blocks guide](/guide/custom-blocks) for its contract and optional liquidjs peer.
+
+The factory's public module shape has no declaration dependency on `liquidjs`. Passing the actual module preserves its `Liquid` instance type:
+
+```ts
+export interface CustomBlockLiquidModule {
+  Liquid: new (...args: any[]) => any;
+  Tag: abstract new (...args: any[]) => any;
+  CycleTag: new (...args: any[]) => any;
+  Value: new (...args: any[]) => any;
+  toValue: (value: any) => any;
+}
+
+export declare function createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>;
+```
 
 ```ts
 import {

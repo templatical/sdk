@@ -9,8 +9,8 @@ import { isHiddenOnAll, getCssClassAttr } from "../visibility";
  *
  * Custom block HTML resolution order:
  *   1. `context.customBlockHtml` map — populated by `renderToMjml` when the
- *      caller passes a `renderCustomBlock` option (typical for editor
- *      consumers and headless callers wiring their own resolver).
+ *      caller passes `customBlocks` definitions or a `renderCustomBlock`
+ *      callback (the editor's path).
  *   2. `block.renderedHtml` — populated by an external pre-render step
  *      (e.g., a previous render pass that mutated the block).
  *   3. Empty — block omitted from output.

@@ -14,7 +14,7 @@
 // never be moved into the URL or off to a host the author didn't write.
 
 import {
-  createLiquid,
+  createRecipeLiquid,
   fileTagMessage,
   fileTags,
   NO_PARTIALS,
@@ -106,7 +106,7 @@ export function checkRecipe(def: CustomBlockWorkingFile): CustomBlockIssue[] {
       });
   const err = add("error");
   const warn = add("warning");
-  const engine = createLiquid();
+  const engine = createRecipeLiquid();
 
   for (const [part, text] of [
     ["/request/url", r.request.url],
@@ -241,7 +241,7 @@ export async function runRecipe(
 ): Promise<RecipeResult> {
   const expectedOrigin = literalOrigin(recipe.request.url);
   if (expectedOrigin === null) return { ok: false, error: HOST_TEMPLATE_ERROR };
-  const engine = createLiquid();
+  const engine = createRecipeLiquid();
   const encoded = Object.fromEntries(
     Object.entries(fieldValues).map(([k, v]) => [k, encodeValue(v)]),
   );

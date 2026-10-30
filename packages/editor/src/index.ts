@@ -843,17 +843,17 @@ export interface TemplaticalEditor extends TemplaticalEditorBase {
   /**
    * Render a single custom block to its HTML representation, using the
    * registered custom block definition's template and the block's current
-   * field values. Exposed for headless callers that want to reuse the
-   * editor's renderer (e.g., to drive `@templatical/renderer`'s
-   * `renderCustomBlock` option from outside the editor instance).
+   * field values. `toMjml()` wires this into the renderer automatically.
+   * Headless callers with definitions pass them as `customBlocks` to
+   * `@templatical/renderer`.
    */
   renderCustomBlock(block: CustomBlock): Promise<string>;
   /**
    * Look up the definition-level `stylesheet` for a registered custom block
    * type. Returns the raw CSS string, or `undefined` when the type is unknown
-   * or the definition has no stylesheet. Exposed for headless callers that
-   * want to drive `@templatical/renderer`'s `getCustomBlockStylesheet` option
-   * from outside the editor instance.
+   * or the definition has no stylesheet. `toMjml()` wires this into the
+   * renderer automatically. Headless callers pass their definitions as
+   * `customBlocks` to `@templatical/renderer`.
    */
   getCustomBlockStylesheet(customType: string): string | undefined;
 }

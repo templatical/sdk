@@ -177,6 +177,32 @@ describe('useBlockRegistry', () => {
       expect(html).toContain('Hello World');
     });
 
+    it.each([
+      ['script text', '<p>{{ title }}</p>', { title: '<script>alert(1)</script>' }, '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>'],
+      ['quoted attribute', '<a href="{{ title }}">Link</a>', { title: 'x" onmouseover="alert(1)' }, '<a href="x&#34; onmouseover=&#34;alert(1)">Link</a>'],
+      ['escape set', '{{ title }}', { title: '&<>"\'' }, '&amp;&lt;&gt;&#34;&#39;'],
+      ['raw HTML', '{{ title | raw }}', { title: '<strong>Body</strong>' }, '<strong>Body</strong>'],
+      ['echo tag', '{% echo title %}', { title: '<script>x</script>' }, '&lt;script&gt;x&lt;/script&gt;'],
+      ['repeatable items', '{% for item in items %}<p>{{ item.title }}</p>{% endfor %}', { items: [{ title: '<em>One & two</em>' }] }, '<p>&lt;em&gt;One &amp; two&lt;/em&gt;</p>'],
+      ['numbers and conditions', '{% if enabled %}{{ count }}:{{ enabled }}{% else %}off{% endif %}', { count: 42, enabled: true }, '42:true'],
+      ['false condition', '{% if enabled %}{{ count }}{% else %}{{ enabled }}:off{% endif %}', { count: 0, enabled: false }, 'false:off'],
+      ['template style', '<style>.card { color: red; }</style><p>{{ title }}</p>', { title: 'Body' }, '<style>.card { color: red; }</style><p>Body</p>'],
+    ])('renders %s with the block output contract', async (_name, template, fieldValues, expected) => {
+      const registry = useBlockRegistry();
+      const def: CustomBlockDefinition = {
+        type: 'escaping', name: 'Escaping', template,
+        fields: [
+          { key: 'title', type: 'text', label: 'Title' },
+          { key: 'items', type: 'repeatable', label: 'Items', fields: [{ key: 'title', type: 'text', label: 'Title' }] },
+          { key: 'count', type: 'number', label: 'Count' },
+          { key: 'enabled', type: 'boolean', label: 'Enabled' },
+        ],
+      };
+      registry.registerCustom(def, DummyComponent);
+      const block = registry.createBlock('custom:escaping')!;
+      expect(await registry.renderCustomBlock({ ...block, type: 'custom', customType: 'escaping', fieldValues })).toBe(expected);
+    });
+
     it('returns error HTML when Liquid rendering throws', async () => {
       const registry = useBlockRegistry();
       const def: CustomBlockDefinition = {

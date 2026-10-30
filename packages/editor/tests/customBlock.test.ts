@@ -13,6 +13,7 @@ import {
   TRANSLATIONS_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
 } from "../src/keys";
+import { useBlockRegistry } from "../src/composables/useBlockRegistry";
 import en from "../src/i18n/locales/en";
 
 function definition(
@@ -86,6 +87,36 @@ describe("CustomBlock canvas", () => {
     });
     await flushPromises();
     expect(wrapper.html()).toContain("<p>Hello</p>");
+  });
+
+  it("sanitizes raw field HTML at the canvas sink", async () => {
+    const def = definition({ template: '<div>{{ title | raw }}</div>' });
+    const registry = useBlockRegistry();
+    registry.registerCustom(def, CustomBlock);
+    const { wrapper } = mountCustom(def, {
+      fieldValues: { title: '<img src="x" onerror="window.__x=1"><a href="javascript:alert(1)">Link</a>' },
+      render: (block) => registry.renderCustomBlock({ ...createCustomBlock(def), ...block }),
+    });
+    await vi.waitFor(() => expect(wrapper.find('img').exists()).toBe(true));
+    expect(wrapper.find('img').attributes()).toEqual({ src: 'x' });
+    expect(wrapper.find('a').attributes()).toEqual({});
+    expect(wrapper.find('a').text()).toBe('Link');
+    wrapper.unmount();
+  });
+
+  it("shows escaped field text as the literal value", async () => {
+    const def = definition();
+    const registry = useBlockRegistry();
+    registry.registerCustom(def, CustomBlock);
+    const title = '<script>alert(1)</script> & "quoted"';
+    const { wrapper } = mountCustom(def, {
+      fieldValues: { title },
+      render: (block) => registry.renderCustomBlock({ ...createCustomBlock(def), ...block }),
+    });
+    await vi.waitFor(() => expect(wrapper.text()).toBe(title));
+    expect(wrapper.find('script').exists()).toBe(false);
+    expect(wrapper.findAll('div').at(-1)!.element.innerHTML).toBe('&lt;script&gt;alert(1)&lt;/script&gt; &amp; "quoted"');
+    wrapper.unmount();
   });
 
   it("shows the render-error state when the renderer throws", async () => {
