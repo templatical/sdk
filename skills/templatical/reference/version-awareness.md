@@ -1,6 +1,7 @@
 # Version awareness
 
-**Consulted by:** [integrate.md](integrate.md) · [diagnose.md](diagnose.md)
+**Consulted by:** [integrate.md](integrate.md) · [diagnose.md](diagnose.md) ·
+[upgrade.md](upgrade.md)
 
 Resolve the consumer's installed `@templatical/editor` version — from their
 lockfile or `package.json` — before answering anything version-sensitive.
@@ -15,4 +16,5 @@ lockfile or `package.json` — before answering anything version-sensitive.
   `https://docs.templatical.com/llms-meta.json`'s `sdkVersion` field — not
   necessarily the consumer's installed version. When the consumer is behind,
   say so, and offer to diff via `docs.templatical.com/changelog.json` rather
-  than silently answering from a newer release.
+  than silently answering from a newer release. Moving them to that release
+  is [upgrade.md](upgrade.md).
