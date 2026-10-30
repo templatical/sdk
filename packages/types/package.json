@@ -8,14 +8,6 @@
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },
-  "peerDependencies": {
-    "liquidjs": "^10.30.0"
-  },
-  "peerDependenciesMeta": {
-    "liquidjs": {
-      "optional": true
-    }
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -36,6 +28,14 @@
   ],
   "license": "MIT",
   "module": "./dist/index.js",
+  "peerDependencies": {
+    "liquidjs": "^10.30.0"
+  },
+  "peerDependenciesMeta": {
+    "liquidjs": {
+      "optional": true
+    }
+  },
   "publishConfig": {
     "access": "public"
   },
