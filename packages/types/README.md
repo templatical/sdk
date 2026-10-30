@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@templatical/types?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/types)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
 
-Zero-dependency package containing all shared types for the [Templatical](https://github.com/templatical/sdk) email editor ecosystem. Block schemas, template config, factory helpers, and type guards.
+Package with no required runtime dependencies containing all shared types for the [Templatical](https://github.com/templatical/sdk) email editor ecosystem. Block schemas, template config, factory helpers, and type guards. The custom-block Liquid factory takes an optional `liquidjs` peer.
 
 Use this directly if you need to programmatically create or transform Templatical templates — for example, in a backend service, codegen pipeline, or migration script.
 
@@ -49,6 +49,7 @@ function describeBlock(block: Block): string {
 
 - **Block types** — `Block`, `TitleBlock`, `ParagraphBlock`, `ImageBlock`, `ButtonBlock`, `SectionBlock`, `DividerBlock`, `SpacerBlock`, `SocialIconsBlock`, `MenuBlock`, `TableBlock`, `HtmlBlock`, `VideoBlock`, `CountdownBlock`, `CustomBlock`
 - **Factory functions** — `createTitleBlock()`, `createParagraphBlock()`, etc. for every block type
+- **Custom-block Liquid engine** — `createCustomBlockLiquid(liquidjs)` for the same escaped template output in the editor, CLI and a headless resolver. Install the optional `liquidjs` peer to use it; see the [Custom blocks guide](https://docs.templatical.com/guide/custom-blocks).
 - **Type guards** — `isTitle()`, `isParagraph()`, `isImage()`, `isSection()`, etc.
 - **Template types** — `Template`, `TemplateContent`, `TemplateSettings`
 - **Theme types** — `ThemeOverrides`, `UiTheme`, `BlockDefaults`, `FontsConfig`

@@ -24,6 +24,18 @@ npx -y @templatical/template-tools validate .templatical/my-template.json
 
 Add `--json` to any command for machine-readable output on stdout.
 
+## Custom block output
+
+Custom block templates HTML-escape `{{ }}`, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output by default: `&`, `<`, `>`, `"` and `'` become `&amp;`, `&lt;`, `&gt;`, `&#34;` and `&#39;`. To render a field as HTML, write `{{ body | raw }}`. Always quote attribute values and validate URL schemes from untrusted sources; escaping does not validate URLs. The editor canvas also sanitizes rendered blocks; MJML and email output keep the template's HTML. Server-side rendering uses `renderToMjml(content, { customBlocks: definitions })`; a lower-level resolver uses the same engine:
+
+```ts
+import * as liquidjs from 'liquidjs';
+import { createCustomBlockLiquid } from '@templatical/types';
+const liquid = createCustomBlockLiquid(liquidjs);
+```
+
+Install `@templatical/types` and `liquidjs` in the resolver project. See the [Custom blocks guide](https://docs.templatical.com/guide/custom-blocks) for the renderer option and factory contracts. Data-source recipes retain an unescaped engine so JSON body quotes are preserved; use `{{ key | json }}` for JSON values.
+
 ## Exit codes
 
 | Code | Meaning |

@@ -172,7 +172,7 @@ export const pricingCardBlock: CustomBlockDefinition = {
   template: `<div style="border: {{ highlighted | if: '2px' | else: '1px' }} solid {{ highlighted | if: accentColor | else: '#e5e7eb' }}; border-radius: 8px; padding: 24px; text-align: center; {{ highlighted | if: 'background-color: #f0fdfa;' }}">
   <div style="font-size: 14px; font-weight: 600; color: {{ accentColor }}; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">{{ planName }}</div>
   <div style="font-size: 32px; font-weight: bold; color: #111827; margin-bottom: 16px;">{{ price }}</div>
-  <div style="text-align: left; font-size: 14px; color: #4b5563; line-height: 1.8;">{{ features | newline_to_br }}</div>
+  <div style="text-align: left; font-size: 14px; color: #4b5563; line-height: 1.8;">{{ features | escape | newline_to_br | raw }}</div>
 </div>`,
 };
 

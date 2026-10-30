@@ -1,6 +1,5 @@
-// Renders a custom block the way the editor and the renderer do: Liquid over
-// fieldValues for the HTML, then renderToMjml with that HTML and the
-// definition's stylesheet, which the renderer emits once into <mj-head>.
+// Specimen states use the shared Liquid engine; MJML rendering passes the
+// definition to the renderer, which resolves field values and stylesheet.
 
 import { renderToMjml } from "@templatical/renderer";
 import type { TemplateContent } from "@templatical/types";
@@ -35,11 +34,5 @@ export async function renderSpecimenMjml(
   def: CustomBlockWorkingFile,
   template: TemplateContent = buildSpecimenTemplate(def),
 ): Promise<string> {
-  const liquid = createLiquid();
-  return renderToMjml(template, {
-    renderCustomBlock: async (block) =>
-      String(await liquid.parseAndRender(def.template, block.fieldValues)),
-    getCustomBlockStylesheet: (customType) =>
-      customType === def.type ? def.stylesheet : undefined,
-  });
+  return renderToMjml(template, { customBlocks: [def] });
 }

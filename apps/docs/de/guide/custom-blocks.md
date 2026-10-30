@@ -83,7 +83,7 @@ const editor = await init({
 
 1. **Block-Palette** — Der `name` und das `icon` erscheinen hier. Benutzer ziehen den Block aus der Palette in ihr Template.
 2. **Einstellungsbereich** — Jeder Eintrag in `fields` wird zu einem Formularelement, mit dem Benutzer den Inhalt des Blocks bearbeiten können.
-3. **Editor-Canvas** — Das Liquid-`template` wird genau wie definiert gerendert, wobei die Feldwerte aus dem Einstellungsbereich übernommen werden.
+3. **Editor-Canvas** — Das Liquid-`template` rendert HTML-escaped Feldwerte aus dem Einstellungsbereich; der Canvas bereinigt das Ergebnis.
 
 ::: tip Palette neu anordnen
 Standardmäßig erscheint ein benutzerdefinierter Block in der Palette nach allen integrierten Blöcken. Um ihn nach oben zu holen — oder um nicht verwendete integrierte Typen auszublenden — übergeben Sie die Option [`paletteBlocks`](/de/api/editor#block-palette-anpassen) und referenzieren Sie Ihren benutzerdefinierten Block über seinen `custom:`-präfixierten Typ (z. B. `"custom:testimonial"`).
@@ -421,6 +421,40 @@ Liquid wertet einen leeren String als wahr, und ein Feld, das der Nutzer geleert
 
 Die vollständige Syntaxreferenz finden Sie in der [Liquid-Dokumentation](https://liquidjs.com/tags/overview.html).
 
+### Ausgabe-Escaping
+
+Die Ausgabe von <code v-pre>{{ }}</code>, `{% echo %}`, `echo` innerhalb von `{% liquid %}` und `{% cycle %}` wird standardmäßig HTML-escaped, auch bei Feldern wiederholbarer Elemente. Liquid verwendet genau diese Ersetzungen:
+
+| Zeichen | Entität |
+| --- | --- |
+| `&` | `&amp;` |
+| `<` | `&lt;` |
+| `>` | `&gt;` |
+| `"` | `&#34;` |
+| `'` | `&#39;` |
+
+Verwenden Sie für ein Feld, das HTML enthalten soll, Liquids eingebauten Filter `raw`:
+
+```liquid
+<div>{{ body | raw }}</div>
+```
+
+Ein zusätzliches `| escape` bei gewöhnlicher Ausgabe escaped den Wert zweimal. Entfernen Sie es, wenn das Template bereits das Standard-Escaping verwendet. `{% capture %}` speichert seine bereits escapte Ausgabe; geben Sie den gespeicherten Wert mit <code v-pre>{{ name | raw }}</code> aus, damit er nicht noch einmal escaped wird:
+
+```liquid
+{% capture name %}{{ body }}{% endcapture %}{{ name | raw }}
+```
+
+Wenn ein Filter HTML erzeugt, escapen Sie zuerst das Feld und setzen Sie `raw` an das Ende. Zum Beispiel erhält <code v-pre>{{ field | escape | newline_to_br | raw }}</code> den escapten Feldtext und lässt das vom Filter erzeugte `<br />`-HTML zu. `raw` muss der letzte Filter sein, damit die Engine das erzeugte HTML anschließend nicht escaped.
+
+Verwenden Sie `| raw` nur für HTML, das Sie rendern möchten. Setzen Sie Attributwerte immer in Anführungszeichen, etwa <code v-pre>&lt;a href="{{ url }}"&gt;</code>: Escaping schützt nur Attribute in Anführungszeichen. Escaping validiert keine URL-Schemata; validieren Sie URL-Felder aus nicht vertrauenswürdigen Quellen in Ihrer Integration, bevor Sie E-Mails rendern.
+
+Der Editor-Canvas bereinigt zusätzlich jeden gerenderten Block. Er entfernt die Elemente `script`, `style`, `iframe`, `object`, `embed`, `link`, `meta`, `base` und `form`, alle `on*`-Attribute, `srcdoc` und unsichere URL-Schemata. Diese Bereinigung gilt nur für den Canvas, auch für mit `| raw` markierte Ausgaben; die E-Mail-Ausgabe behält das HTML des Templates. Verwenden Sie `stylesheet` auf der Definition für CSS, das auch im Canvas erscheinen soll.
+
+Ein Merge-Tag, dessen Text `"` oder `'` enthält, erreicht die Ausgabe als Entitäten `&#34;` oder `&#39;`. Wenn Ihr ESP in diesem Feld wörtliche Anführungszeichen benötigt, verwenden Sie dafür `| raw`.
+
+**Prüfung:** Setzen Sie ein Textfeld auf `<b>Hello</b>` und rendern Sie es mit <code v-pre>{{ body }}</code>: Der Canvas zeigt den wörtlichen Text `<b>Hello</b>`. Ändern Sie das Template zu <code v-pre>{{ body | raw }}</code>: Der Canvas zeigt **Hello** in Fettschrift.
+
 ## Datenquellen
 
 Benutzerdefinierte Blöcke werden noch leistungsfähiger, wenn sie durch eine API-Datenquelle gestützt werden. Anstatt jedes Feld manuell auszufüllen, ruft eine Datenquelle externe Daten ab und füllt den Block automatisch. Wenn der Block zur Arbeitsfläche hinzugefügt wird (oder wenn der Benutzer eine Aktualisierung auslöst), wird der `onFetch`-Callback aufgerufen und die zurückgegebenen Daten füllen die Feldwerte des Blocks.
@@ -585,7 +619,7 @@ const pricingTier: CustomBlockDefinition = {
 
 ## Tipps zur E-Mail-Kompatibilität
 
-Benutzerdefinierte Block-Templates werden als rohes HTML innerhalb der E-Mail gerendert. Beachten Sie diese Richtlinien:
+Benutzerdefinierte Block-Templates erzeugen E-Mail-HTML mit standardmäßig HTML-escaped Feldausgaben. Verwenden Sie `| raw` für Felder, die HTML liefern sollen. Beachten Sie diese Richtlinien:
 
 - **Inline-Stile verwenden** -- E-Mail-Clients entfernen `<style>`-Blöcke. Platzieren Sie alle Stilangaben in `style`-Attributen.
 - **Tabellen für Layouts verwenden** -- Flexbox und CSS Grid funktionieren in den meisten E-Mail-Clients nicht (insbesondere in Outlook). Verwenden Sie `<table>` für nebeneinander liegende Layouts.
@@ -613,28 +647,28 @@ dataSource: {
 
 ## Rendern außerhalb des Editors
 
-`editor.toMjml()` und die Aufrufe des Editors an einen [`render`-Provider](/de/backend/render) lösen jeden benutzerdefinierten Block vor dem Rendern zu HTML auf, und die Nutzlast bringt das Stylesheet jedes Blocks mit, sodass `renderToMjml(payload.content)` keine Optionen braucht. Template-JSON aus `getContent()` oder aus `save` eines `templates`-Providers enthält Feldwerte, kein HTML. Ein Server, der ein gespeichertes Template selbst rendert, braucht deshalb auch die Definitionen. Übergeben Sie `renderCustomBlock` und `getCustomBlockStylesheet` an `renderToMjml`, aus einem Modul, das Editor und Server beide importieren:
+Rendern Sie gespeicherte Templates serverseitig mit `renderToMjml(content, { customBlocks: definitions })`. Template-JSON aus `getContent()` oder aus `save` eines `templates`-Providers enthält Feldwerte, kein HTML. `editor.toMjml()` und die Aufrufe des Editors an einen [`render`-Provider](/de/backend/render) lösen jeden benutzerdefinierten Block bereits zu HTML auf und bringen sein Stylesheet mit; für diese Nutzlast braucht `renderToMjml(payload.content)` keine Optionen. Installieren Sie den optionalen Peer `liquidjs` (`^10.30.0`) im Serverprojekt:
 
 ```ts
-import { Liquid } from 'liquidjs';
 import { renderToMjml } from '@templatical/renderer';
-import { testimonial } from './custom-blocks/testimonial';
+import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
 
-const definitions = new Map([[testimonial.type, testimonial]]);
-const liquid = new Liquid();
-
-const mjml = await renderToMjml(content, {
-  renderCustomBlock: async (block) => {
-    const definition = definitions.get(block.customType);
-    return definition
-      ? liquid.parseAndRender(definition.template, block.fieldValues)
-      : '';
-  },
-  getCustomBlockStylesheet: (type) => definitions.get(type)?.stylesheet,
-});
+export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
+  return renderToMjml(content, { customBlocks: definitions });
+}
 ```
 
-Ohne `renderCustomBlock` fehlt ein benutzerdefinierter Block in der Ausgabe, ohne `getCustomBlockStylesheet` sein `stylesheet`. `dataSource.onFetch` läuft nur im Editor; der Server rendert die gespeicherten Feldwerte.
+`customBlocks?: CustomBlockDefinition[]` rendert das `template` jeder passenden Definition mit den `fieldValues` des Blocks und gibt ihr `stylesheet` einmal pro Typ aus. Bei doppelten Typen gewinnt die letzte Definition. Ein unbekannter Typ verwendet `renderedHtml` und `renderedStylesheet` aus dem gespeicherten Block; eine gelistete Definition ohne Stylesheet gibt keines aus. Ein Liquid-Templatefehler lässt `renderToMjml` fehlschlagen. `customBlocks` zusammen mit `renderCustomBlock` wirft `TypeError: [Templatical] customBlocks cannot be combined with renderCustomBlock`; zusammen mit `getCustomBlockStylesheet` wirft es `TypeError: [Templatical] customBlocks cannot be combined with getCustomBlockStylesheet`. Der Renderer importiert `liquidjs` nur, wenn der Inhalt einen benutzerdefinierten Block enthält. Fehlt der Peer, wirft er `[Templatical] customBlocks requires the optional liquidjs package.`
+
+Für einen eigenen Resolver erstellt `createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>` dieselbe Engine und erhält den `Liquid`-Rückgabetyp des Moduls:
+
+```ts
+import * as liquidjs from 'liquidjs';
+import { createCustomBlockLiquid } from '@templatical/types';
+const liquid = createCustomBlockLiquid(liquidjs);
+```
+
+Die festen Optionen sind `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'` und `templates: {}`. Die leere Template-Map lässt `{% include %}`, `{% render %}` und `{% layout %}` keine Partials von Datenträger oder Netzwerk laden. Die Ausgabe von <code v-pre>{{ }}</code>, `{% echo %}`, `echo` innerhalb von `{% liquid %}` und `{% cycle %}` wird HTML-escaped; ein abschließendes `| raw` nimmt einen Ausgabe- oder Echo-Wert davon aus. Der optionale `liquidjs`-Peer-Bereich ist `^10.30.0`: Die Factory verwendet Interna von `Tag`, `Value` und `CycleTag`, um diese Tag-Regeln umzusetzen. Aufrufer müssen daher innerhalb dieses Bereichs bleiben. Prüfen Sie die exakte Ausgabe mit `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` läuft nur im Editor; der Server rendert die gespeicherten Feldwerte.
 
 ## Im Playground
 
@@ -646,4 +680,4 @@ Das Setup **Custom blocks** registriert einen Blocktyp, der neben den integriert
 
 Der [Agent Skill](/de/guide/agent-skill) definiert einen benutzerdefinierten Block aus einer Beschreibung, zeigt ihn live an und schreibt ihn in Ihre Codebasis.
 
-Templates und Stylesheets von Custom-Blöcken werden unverändert gerendert. Prüfen Sie HTML und CSS mit `custom-block validate` und dem [Kompatibilitätskatalog](/de/quality/compatibility/rule-catalog); die Client-Daten stammen von [caniemail](https://www.caniemail.com/).
+Templates und Stylesheets von Custom-Blöcken werden an den Renderer übergeben; Feldausgaben sind standardmäßig HTML-escaped. Prüfen Sie HTML und CSS mit `custom-block validate` und dem [Kompatibilitätskatalog](/de/quality/compatibility/rule-catalog); die Client-Daten stammen von [caniemail](https://www.caniemail.com/).

@@ -610,7 +610,21 @@ type ViewportSize = 'desktop' | 'mobile';
 
 ## Factory-Funktionen
 
-Alle Factory-Funktionen akzeptieren ein optionales Partial-Override-Objekt und geben einen vollständigen Block mit generierter ID zurück.
+Die folgenden Block-Factory-Funktionen akzeptieren ein optionales Partial-Override-Objekt und geben einen vollständigen Block mit generierter ID zurück. `createCustomBlockLiquid(liquidjs)` wird ebenfalls für das Headless-Rendering benutzerdefinierter Blöcke exportiert; der [Leitfaden für benutzerdefinierte Blöcke](/de/guide/custom-blocks) beschreibt den Vertrag und den optionalen liquidjs-Peer.
+
+Die öffentliche Modulstruktur der Factory hat keine Deklarationsabhängigkeit von `liquidjs`. Mit dem tatsächlichen Modul bleibt dessen `Liquid`-Instanztyp erhalten:
+
+```ts
+export interface CustomBlockLiquidModule {
+  Liquid: new (...args: any[]) => any;
+  Tag: abstract new (...args: any[]) => any;
+  CycleTag: new (...args: any[]) => any;
+  Value: new (...args: any[]) => any;
+  toValue: (value: any) => any;
+}
+
+export declare function createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>;
+```
 
 ```ts
 import {

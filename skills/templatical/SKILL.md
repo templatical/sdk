@@ -57,6 +57,12 @@ Before acting, load the one playbook that owns the request — its row above for
 an explicit or clearly implied mode, otherwise the default from the
 discrimination. Load one, not several; each playbook names what it consults.
 
+Custom-block templates HTML-escape `{{ }}`, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output by default. Use
+`{{ body | raw }}` for a field intended to hold HTML, always quote attribute
+values, and validate URL schemes from untrusted sources. The editor canvas
+also sanitizes the result; email output keeps the template's HTML. Follow
+[reference/custom-block.md](reference/custom-block.md) for the resolver options.
+
 ## Out of scope
 
 - **Not a Cloud onboarding flow.** `initCloud()` and its provider contracts are

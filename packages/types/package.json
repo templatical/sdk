@@ -4,6 +4,7 @@
   "version": "0.51.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
+    "liquidjs": "^10.30.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },
@@ -27,6 +28,14 @@
   ],
   "license": "MIT",
   "module": "./dist/index.js",
+  "peerDependencies": {
+    "liquidjs": "^10.30.0"
+  },
+  "peerDependenciesMeta": {
+    "liquidjs": {
+      "optional": true
+    }
+  },
   "publishConfig": {
     "access": "public"
   },

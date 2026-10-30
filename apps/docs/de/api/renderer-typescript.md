@@ -55,6 +55,7 @@ interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // Standard: true
+  customBlocks?: CustomBlockDefinition[];
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
   blockRenderers?: BlockRendererMap;
   getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
@@ -67,37 +68,34 @@ interface RenderOptions {
 | `customFonts` | `[]` | Definitionen benutzerdefinierter Schriftarten für `<mj-font>`-Deklarationen in der gerenderten Ausgabe |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Stack, der an eine benutzerdefinierte Schriftart ohne eigenen `fallback` oder an eine einzelne, nicht eingebaute Schriftfamilie angehängt wird. Ein vollständiger Stack wird unverändert ausgegeben. |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
-| `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
+| `customBlocks` | -- | `CustomBlockDefinition[]` für Headless-Rendering. Bei gleichen Typen gewinnt die letzte Definition; unbekannte Typen verwenden gespeichertes `renderedHtml` und `renderedStylesheet`. Bei vorhandenen Blöcken ist der optionale Peer `liquidjs` `^10.30.0` erforderlich. Siehe den [Leitfaden für benutzerdefinierte Blöcke](/de/guide/custom-blocks). |
+| `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro Block aufgerufen. Der Editor übergibt dies über `editor.toMjml()`. Nicht mit `customBlocks` kombinierbar. Wenn keine der beiden Optionen übergeben wird, verwendet jeder benutzerdefinierte Block `renderedHtml` (falls vorhanden). |
 | `blockRenderers` | `{}` | Typbezogene Renderer-Overrides, keyed nach `block.type`. Ein Countdown-GIF-Backend nutzt dies. Ein Override übernimmt die Prüfung auf „auf allen Viewports ausgeblendet“. |
-| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Editor-Konsumenten übergeben das Registry-Stylesheet. Wenn weggelassen, wird stattdessen das `renderedStylesheet` jedes Typs ausgegeben (die Kopie, die der Editor schreibt, bevor ein Render-Provider oder der Cloud-Speicher den Inhalt sieht); wird es übergeben, entscheidet es für jeden Typ, und die Kopien werden ignoriert. |
+| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Nicht mit `customBlocks` kombinierbar. Eine gelistete Definition entscheidet über das Stylesheet ihres Typs, auch wenn keines ausgegeben wird; unbekannte Typen verwenden gespeichertes `renderedStylesheet`. Ein übergebener Resolver entscheidet für jeden Typ und ignoriert gespeicherte Kopien. |
 | `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${dir}/${platform}.png` aufgelöst, wobei `dir` der Stil ist, bei einem `iconTone` von `dark` oder `light` gefolgt von `-${tone}`. Siehe [Social-Media-Icons](#social-media-icons) unten. |
 
 ### Benutzerdefinierte Blöcke
 
-Wenn der Inhaltsbaum benutzerdefinierte Blöcke enthält, fragt der Renderer den übergebenen `renderCustomBlock`-Callback, um jeden in HTML zu konvertieren. Aus dem Editor:
+Headless-Aufrufer übergeben dieselben Definitionen, die sie im Editor registrieren:
 
 ```ts
-const mjml = await renderToMjml(editor.getContent(), {
-  renderCustomBlock: editor.renderCustomBlock,
-});
+import { renderToMjml } from '@templatical/renderer';
+import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
+
+export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
+  return renderToMjml(content, { customBlocks: definitions });
+}
 ```
 
-Headless- / Node.js-Konsumenten (ohne montierten Editor) können einen eigenen Resolver bereitstellen – zum Beispiel die gleiche Liquid-Vorlage gegen die `fieldValues` des Blocks ausführen:
+Für einen eigenen Resolver verwenden Sie die gemeinsame Liquid-Factory:
 
 ```ts
-import { Liquid } from 'liquidjs';
-
-const engine = new Liquid();
-const definitionsByType = new Map(/* Ihre CustomBlockDefinition-Liste, nach type indiziert */);
-
-const mjml = await renderToMjml(content, {
-  async renderCustomBlock(block) {
-    const definition = definitionsByType.get(block.customType);
-    if (!definition) return '';
-    return engine.parseAndRender(definition.template, block.fieldValues);
-  },
-});
+import * as liquidjs from 'liquidjs';
+import { createCustomBlockLiquid } from '@templatical/types';
+const liquid = createCustomBlockLiquid(liquidjs);
 ```
+
+Fallback, genaue Konflikte und Fehlermeldung bei fehlendem Peer sowie die festen Optionen der Factory stehen im [Leitfaden für benutzerdefinierte Blöcke](/de/guide/custom-blocks). <code v-pre>{{ body | raw }}</code> erhält HTML aus einem dafür vorgesehenen Feld. Setzen Sie Attributwerte immer in Anführungszeichen und validieren Sie URL-Schemata aus nicht vertrauenswürdigen Quellen. Nur der Editor-Canvas bereinigt den gerenderten Block; die E-Mail-Ausgabe behält das HTML des Templates.
 
 ### Social-Media-Icons
 
