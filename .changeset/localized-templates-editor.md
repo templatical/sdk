@@ -6,7 +6,7 @@ Add language versions and translation to the editor. `init({ localization: { loc
 
 `init({ translation })` takes a `TranslationProvider`. Translate sends the gaps or every eligible field, masks merge tags, logic tags and the `doNotTranslate` terms (at most 500, each 1–100 characters after trimming; `init` rejects any other list), applies what passes the exact check as one undo step and reports the rest. A single field over the 20,000-unit request cap isn't sent: the run stops there and reports "1 field is too long to translate." A `translation` value without a `translate` function rejects `init()`. AI chat, Fix with AI, Rewrite and Write alt text edit the active language. With collaboration, the in-memory chat's Undo and Redo of a turn that replaced the whole template are refused once this editor has seen the template change since; the backend's `setContent` rule catches a batch it hasn't delivered yet.
 
-Comments record the language they were written in, show a language badge and filter with **This language**. A layout's own language versions follow the selected language in preview, export and test email. `getLocale()`, `setLocale()`, `onLocaleChange` and `toMjml({ locale })` / `toHtml({ locale })` select versions from the host. `initCloud()` ignores `localization` and `translation` with warnings.
+Comments record the language they were written in, show a language badge and filter with **This language**. A layout's own language versions follow the selected language in preview, export and test email. `getLocale()`, `setLocale()`, `onLocaleChange` and `toMjml({ locale })` / `toHtml({ locale })` select versions from the host.
 
 Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.
 

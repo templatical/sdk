@@ -135,7 +135,7 @@ Present means edited — the panel shows an *(edited)* marker. Set it on edit, *
 
 The editor sends `CommentInput.locale` on every new comment and reply: the active view's language tag, including the default language (for example, `"en"` or `"de"`). A reply uses its own view's language even when its parent was written in another language.
 
-Your comments backend must store the tag and return it as `Comment.locale` from `create`, `list` and `subscribe`, including on replies. An absent or `null` tag means the comment predates this feature and counts as the template's current default language. Explicit tags keep their meaning when the default changes. The Cloud comments provider omits `locale` from requests; Cloud does not store comment languages yet.
+Your comments backend must store the tag and return it as `Comment.locale` from `create`, `list` and `subscribe`, including on replies. An absent or `null` tag means the comment predates this feature and counts as the template's current default language. Explicit tags keep their meaning when the default changes.
 
 To check your backend, create a comment and a reply in each language view, then re-read the list: both must retain the tag sent on creation. Comments received through `subscribe` must retain their tags too.
 

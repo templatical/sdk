@@ -21,7 +21,7 @@ const editor = await init({
 });
 ```
 
-For a static page without a bundler, mount from the CDN as in the [Quick Start](/getting-started/quick-start#mount-the-editor); `translation` can be any object with a `translate` method. Under **Languages**, add German and select it. Translate appears only with `translation`, configured `localization` and an enabled non-default language view. It needs no `AiProvider` or loaded template; `templateId` is `null` without one. Omit `translation` and there is no Translate UI. `initCloud()` ignores `translation` with a warning. See [Localized templates](/guide/localized-templates#translating) for the actions and JSON strings round trip, and [Subject lines](/guide/localized-templates#subject-lines) for text outside the template.
+For a static page without a bundler, mount from the CDN as in the [Quick Start](/getting-started/quick-start#mount-the-editor); `translation` can be any object with a `translate` method. Under **Languages**, add German and select it. Translate appears only with `translation`, configured `localization` and an enabled non-default language view. It needs no `AiProvider` or loaded template; `templateId` is `null` without one. Omit `translation` and there is no Translate UI. See [Localized templates](/guide/localized-templates#translating) for the actions and JSON strings round trip, and [Subject lines](/guide/localized-templates#subject-lines) for text outside the template.
 
 ## Provider contract
 

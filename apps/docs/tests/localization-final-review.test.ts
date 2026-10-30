@@ -151,7 +151,6 @@ describe("eval-driven guidance", () => {
       for (const rule of [
         "`localization.untranslated`, `localization.stale`",
         "`localization.merge-tags-differ`",
-        "Cloud",
       ])
         expect.soft(text).toContain(rule);
     },

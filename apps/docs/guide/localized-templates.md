@@ -23,7 +23,7 @@ const editor = await init({
 
 `localization.locales` lists the BCP 47 tags authors can add. The template's `settings.locale` is its default language; a blank template starts in English (`"en"`). Configuring the list writes nothing into the template: the **Languages** menu appears in the header, and an author adds a version from it. For a static page without a bundler, mount from the CDN as in the [Quick Start](/getting-started/quick-start#mount-the-editor) and pass the same `localization` key.
 
-Add `translation` for Translate and `localization.doNotTranslate` for brand names; see [Translating](#translating). The editor's UI language (`init({ locale })`) is independent of template languages; see [Internationalization](/guide/i18n). Existing templates need no migration; see [Compatibility](#compatibility). `initCloud()` ignores `localization` and `translation` and logs a warning.
+Add `translation` for Translate and `localization.doNotTranslate` for brand names; see [Translating](#translating). The editor's UI language (`init({ locale })`) is independent of template languages; see [Internationalization](/guide/i18n). Existing templates need no migration; see [Compatibility](#compatibility).
 
 ## Adding a language
 
@@ -148,7 +148,7 @@ The change is one operation, `{ "op": "setDefaultLocale", "locale": "de" }`:
 
 ## Comments
 
-Comment threads are shared across languages. Every new comment and reply sends `CommentInput.locale`, the language of the view it was written in, the default's tag included; your [comments provider](/backend/comments#locale) stores it and returns `Comment.locale`. A comment without a tag, saved before language versions existed or by a comments backend that doesn't store `locale` (Cloud's doesn't yet), counts as the template's current default language and follows a change of the default; a tagged comment keeps its tag. With localization configured, every comment and reply shows a language badge, and **This language** in the comments panel shows the threads whose root or any reply is in the active language, with all their messages and badges. The filter is view state and isn't saved. Cloud's comments don't store the language yet.
+Comment threads are shared across languages. Every new comment and reply sends `CommentInput.locale`, the language of the view it was written in, the default's tag included; your [comments provider](/backend/comments#locale) stores it and returns `Comment.locale`. A comment without a tag, saved before language versions existed or by a comments backend that doesn't store `locale`, counts as the template's current default language and follows a change of the default; a tagged comment keeps its tag. With localization configured, every comment and reply shows a language badge, and **This language** in the comments panel shows the threads whose root or any reply is in the active language, with all their messages and badges. The filter is view state and isn't saved.
 
 ## Subject lines
 
@@ -186,8 +186,7 @@ A collaboration backend you built yourself must apply the locale operations in t
 - Text in a custom block's repeatable items can't be translated field by field, because the items have no ids. Override the whole `fieldValues.<key>` per language instead.
 - Translate leaves out HTML blocks. Translate them by hand in the language view.
 - Blocks the AI adds in a language view enter the shared tree with their text as default content, as a paste does. AI can't replace the whole template in a language view; switch to the default language for that.
-- Comment threads are shared across languages. Each new comment and reply stores its view’s language tag through your comments provider; Cloud does not store it yet. Version history remains per template, not per language.
-- The Cloud editor doesn't support language versions or translation yet: `initCloud()` ignores `localization` and `translation` and logs a warning.
+- Comment threads are shared across languages. Each new comment and reply stores its view’s language tag through your comments provider. Version history remains per template, not per language.
 - Strings are exchanged as JSON; XLIFF and CSV aren't supported.
 
 ## Check your work

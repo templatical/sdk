@@ -23,7 +23,7 @@ const editor = await init({
 
 `localization.locales` listet die BCP-47-Tags, die Autoren hinzufügen können. `settings.locale` des Templates ist seine Standardsprache; ein leeres Template beginnt auf Englisch (`"en"`). Die Liste allein schreibt nichts ins Template: Das Menü **Sprachen** erscheint im Header, und ein Autor fügt dort eine Version hinzu. Für eine statische Seite ohne Bundler binden Sie den Editor wie im [Schnellstart](/de/getting-started/quick-start#mount-the-editor) über das CDN ein und übergeben denselben `localization`-Schlüssel.
 
-Ergänzen Sie `translation` für Übersetzen und `localization.doNotTranslate` für Markennamen; siehe [Übersetzen](#translating). Die UI-Sprache des Editors (`init({ locale })`) ist unabhängig von Template-Sprachen; siehe [Internationalisierung](/de/guide/i18n). Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatibility). `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
+Ergänzen Sie `translation` für Übersetzen und `localization.doNotTranslate` für Markennamen; siehe [Übersetzen](#translating). Die UI-Sprache des Editors (`init({ locale })`) ist unabhängig von Template-Sprachen; siehe [Internationalisierung](/de/guide/i18n). Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatibility).
 
 ## Eine Sprache hinzufügen
 
@@ -148,7 +148,7 @@ Die Änderung ist eine Operation, `{ "op": "setDefaultLocale", "locale": "de" }`
 
 ## Kommentare
 
-Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort sendet `CommentInput.locale`, die Sprache der Ansicht, in der er geschrieben wurde, einschließlich des Tags der Standardsprache; Ihr [Kommentar-Provider](/de/backend/comments#locale) speichert ihn und liefert `Comment.locale` zurück. Ein Kommentar ohne Tag, gespeichert vor den Sprachversionen oder von einem Kommentar-Backend, das `locale` nicht speichert (das von Cloud tut es noch nicht), zählt zur aktuellen Standardsprache des Templates und folgt einem Wechsel der Standardsprache; ein Kommentar mit Tag behält sein Tag. Mit konfigurierter Lokalisierung zeigt jeder Kommentar und jede Antwort ein Sprachabzeichen, und **Diese Sprache** im Kommentarbereich zeigt die Threads, deren Hauptkommentar oder eine Antwort in der aktiven Sprache ist, mit allen Nachrichten und Abzeichen. Der Filter ist Ansichtsstatus und wird nicht gespeichert. Die Kommentare von Cloud speichern die Sprache noch nicht.
+Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort sendet `CommentInput.locale`, die Sprache der Ansicht, in der er geschrieben wurde, einschließlich des Tags der Standardsprache; Ihr [Kommentar-Provider](/de/backend/comments#locale) speichert ihn und liefert `Comment.locale` zurück. Ein Kommentar ohne Tag, gespeichert vor den Sprachversionen oder von einem Kommentar-Backend, das `locale` nicht speichert, zählt zur aktuellen Standardsprache des Templates und folgt einem Wechsel der Standardsprache; ein Kommentar mit Tag behält sein Tag. Mit konfigurierter Lokalisierung zeigt jeder Kommentar und jede Antwort ein Sprachabzeichen, und **Diese Sprache** im Kommentarbereich zeigt die Threads, deren Hauptkommentar oder eine Antwort in der aktiven Sprache ist, mit allen Nachrichten und Abzeichen. Der Filter ist Ansichtsstatus und wird nicht gespeichert.
 
 ## Betreffzeilen {#subject-lines}
 
@@ -186,8 +186,7 @@ Ein selbst gebautes Kollaborationsbackend muss die Locale-Operationen aus der [O
 - Text in wiederholbaren Elementen eines benutzerdefinierten Blocks lässt sich nicht feldweise übersetzen, weil die Elemente keine IDs haben. Überschreiben Sie stattdessen das gesamte `fieldValues.<key>` pro Sprache.
 - Übersetzen lässt HTML-Blöcke aus. Übersetzen Sie sie von Hand in der Sprachansicht.
 - Von der KI in einer Sprachansicht hinzugefügte Blöcke gelangen mit ihrem Text als Standardinhalt in den gemeinsamen Baum, wie beim Einfügen. Die KI kann in einer Sprachansicht nicht das gesamte Template ersetzen; wechseln Sie dafür zur Standardsprache.
-- Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über Ihren Kommentar-Provider den Sprach-Tag der Ansicht; Cloud speichert ihn noch nicht. Der Versionsverlauf gilt weiterhin pro Template, nicht pro Sprache.
-- Der Cloud-Editor unterstützt noch keine Sprachversionen oder Übersetzung: `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
+- Kommentar-Threads werden zwischen den Sprachen geteilt. Jeder neue Kommentar und jede Antwort speichert über Ihren Kommentar-Provider den Sprach-Tag der Ansicht. Der Versionsverlauf gilt weiterhin pro Template, nicht pro Sprache.
 - Strings werden als JSON ausgetauscht; XLIFF und CSV werden nicht unterstützt.
 
 ## Ergebnis prüfen {#check-your-work}

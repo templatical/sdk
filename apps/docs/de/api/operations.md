@@ -64,7 +64,7 @@ Ein Backend übergibt die Sperren, die es hält, und die handelnde Sitzung: `app
 <!-- locale-operations:start -->
 ## Locale-Operationen
 
-`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` und `updateSettingsLocale` verwalten Sprachversionen im gemeinsamen Baum des SDK. Cloud-Backends und gehostetes MCP unterstützen diese Operationen nicht; aktualisieren Sie Renderer, Validator und Collaboration-Backend, bevor Sie lokalisierte Inhalte speichern.
+`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` und `updateSettingsLocale` verwalten Sprachversionen im gemeinsamen Baum des SDK. Aktualisieren Sie Renderer, Validator und Collaboration-Backend, bevor Sie lokalisierte Inhalte speichern.
 
 Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprache `en`, Richtung `ltr` und ohne Sprachversionen. Er fügt Deutsch hinzu, schreibt einen deutschen Wert, blendet den Block auf Deutsch aus, überschreibt die Richtung und entfernt dann Deutsch samt seinen Ebenen. `sourceHash` ist `sourceHash("<p>Original</p>")`.
 

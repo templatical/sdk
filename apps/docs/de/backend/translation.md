@@ -21,7 +21,7 @@ const editor = await init({
 });
 ```
 
-Für eine statische Seite ohne Bundler binden Sie den Editor wie im [Schnellstart](/de/getting-started/quick-start#mount-the-editor) über das CDN ein; `translation` kann jedes Objekt mit einer `translate`-Methode sein. Fügen Sie unter **Sprachen** Deutsch hinzu und wählen Sie es aus. Übersetzen erscheint nur mit `translation`, konfigurierter `localization` und einer aktivierten Nicht-Standardsprachansicht. Weder `AiProvider` noch ein geladenes Template sind nötig; ohne Template ist `templateId` gleich `null`. Ohne `translation` fehlt die Übersetzungsoberfläche. `initCloud()` ignoriert `translation` mit einer Warnung. [Lokalisierte Templates](/de/guide/localized-templates#translating) beschreibt die Aktionen und den JSON-Strings-Rundlauf, [Betreffzeilen](/de/guide/localized-templates#subject-lines) den Text außerhalb des Templates.
+Für eine statische Seite ohne Bundler binden Sie den Editor wie im [Schnellstart](/de/getting-started/quick-start#mount-the-editor) über das CDN ein; `translation` kann jedes Objekt mit einer `translate`-Methode sein. Fügen Sie unter **Sprachen** Deutsch hinzu und wählen Sie es aus. Übersetzen erscheint nur mit `translation`, konfigurierter `localization` und einer aktivierten Nicht-Standardsprachansicht. Weder `AiProvider` noch ein geladenes Template sind nötig; ohne Template ist `templateId` gleich `null`. Ohne `translation` fehlt die Übersetzungsoberfläche. [Lokalisierte Templates](/de/guide/localized-templates#translating) beschreibt die Aktionen und den JSON-Strings-Rundlauf, [Betreffzeilen](/de/guide/localized-templates#subject-lines) den Text außerhalb des Templates.
 
 ## Provider-Vertrag
 

@@ -135,7 +135,7 @@ Vorhanden bedeutet bearbeitet — das Panel zeigt eine *(bearbeitet)*-Markierung
 
 Der Editor sendet bei jedem neuen Kommentar und jeder Antwort `CommentInput.locale`: den Sprach-Tag der aktiven Ansicht, einschließlich der Standardsprache (zum Beispiel `"en"` oder `"de"`). Eine Antwort verwendet die Sprache ihrer Ansicht, auch wenn ihr Elternkommentar in einer anderen Sprache verfasst wurde.
 
-Ihr Kommentar-Backend muss den Tag speichern und als `Comment.locale` bei `create`, `list` und `subscribe` zurückgeben, auch für Antworten. Fehlt der Tag oder ist er `null`, stammt der Kommentar aus der Zeit vor dieser Funktion und zählt zur aktuellen Standardsprache des Templates. Explizite Tags behalten ihre Bedeutung, wenn sich die Standardsprache ändert. Der Kommentar-Provider von Cloud lässt `locale` in Anfragen weg; Cloud speichert die Kommentarsprache noch nicht.
+Ihr Kommentar-Backend muss den Tag speichern und als `Comment.locale` bei `create`, `list` und `subscribe` zurückgeben, auch für Antworten. Fehlt der Tag oder ist er `null`, stammt der Kommentar aus der Zeit vor dieser Funktion und zählt zur aktuellen Standardsprache des Templates. Explizite Tags behalten ihre Bedeutung, wenn sich die Standardsprache ändert.
 
 Zur Prüfung erstellen Sie einen Kommentar und eine Antwort in jeder Sprachansicht und lesen die Liste erneut: Beide müssen den gesendeten Sprach-Tag behalten. Über `subscribe` empfangene Kommentare behalten ihren Tag ebenfalls.
 

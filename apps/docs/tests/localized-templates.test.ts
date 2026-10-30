@@ -197,7 +197,7 @@ describe("localized template guide", () => {
   });
 
   it.each([...pages, "../../skills/templatical/reference/localize.md"])(
-    "%s has Limits covering columns, fields, Translate, AI, comments and Cloud",
+    "%s has Limits covering columns, fields, Translate, AI and comments",
     (page) => {
       const source = readFileSync(join(DOCS, page), "utf8");
       const limits =
@@ -213,9 +213,7 @@ describe("localized template guide", () => {
             "nicht das gesamte Template ersetzen",
             "Kommentar-Threads werden zwischen den Sprachen geteilt",
             "den Sprach-Tag der Ansicht",
-            "Cloud speichert ihn noch nicht",
             "Der Versionsverlauf gilt weiterhin pro Template",
-            "unterstützt noch keine Sprachversionen",
             "XLIFF und CSV",
           ]
         : [
@@ -228,9 +226,7 @@ describe("localized template guide", () => {
             "can't replace the whole template",
             "Comment threads are shared across languages",
             "its view’s language tag",
-            "Cloud does not store it yet",
             "Version history remains per template",
-            "doesn't support language versions",
             "XLIFF and CSV",
           ];
       expect(limits).not.toMatch(/glossary|Glossar/);
