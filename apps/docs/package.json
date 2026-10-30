@@ -1,8 +1,8 @@
 {
   "name": "@templatical/docs",
   "devDependencies": {
-    "medium-zoom": "^1.1.0",
-    "vitepress": "2.0.0-alpha.20",
+    "medium-zoom": "^1.1.2",
+    "vitepress": "2.0.0-alpha.21",
     "vitest": "^5.0.5",
     "vue": "^3.5.44"
   },
