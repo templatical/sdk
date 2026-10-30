@@ -8493,7 +8493,7 @@ These are the same constraints as [Embedding](/getting-started/embedding). They 
 
 Source: https://docs.templatical.com/guide/agent-skill
 
-Templatical ships one [Agent Skill](https://agentskills.io) — **free, open-source, and running entirely in your own AI coding agent:** `templatical`. Ask it for an email and it writes, edits, imports, validates or previews a template; ask it about the SDK and it installs, mounts, scaffolds or troubleshoots an `@templatical/editor` integration. One skill, and it decides for itself which job a request needs.
+Templatical ships one [Agent Skill](https://agentskills.io) — **free, open-source, and running entirely in your own AI coding agent:** `templatical`. Ask it for an email and it writes, edits, imports, validates or previews a template; ask it about the SDK and it installs, mounts, scaffolds, troubleshoots or upgrades an `@templatical/editor` integration. One skill, and it decides for itself which job a request needs.
 
 There is no backend and no API key: your agent is the inference. Nothing is sent to Templatical.
 
@@ -8559,6 +8559,7 @@ npx skills add templatical/sdk
 - **Scaffold** a proposed integration into your repository, installed with your own package manager and checked against your running dev server.
 - **Define a custom block** from a description: fields and a Liquid template, checked against a schema and for email-client safety, then shown in the live editor in its edge-case states. A block that loads data can be filled from a real endpoint through a recipe whose credential is an environment variable, so the secret stays out of the page. The skill writes the block into your codebase, and changes one you already have.
 - **Diagnose** an integration that misbehaves, against a table of verified traps.
+- **Upgrade** an integration to a newer release: it reads every changelog entry between your installed version and the target, applies the breaking changes that touch your code with the replacement each entry names, and checks the result with your own typecheck and build plus the validator.
 - **Answer a question** about the SDK by fetching this documentation site directly.
 
 The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
@@ -8615,6 +8616,20 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 5. **Reports** what changed, what was left alone, and what's still needed — a provider, an optional peer, a Cloud auth endpoint.
 
 Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against a table of verified traps — a missing `style.css` import, a trapped `position: fixed` ancestor, a container with no height, and more.
+
+### Upgrade to a newer release
+
+Ask it to "upgrade Templatical", or to move you from your installed version to the latest. Before 1.0 a minor release can remove an export, rename an option or change a default, so the skill works from the changelog, not from memory. It:
+
+1. **Resolves both versions**: the installed one from your lockfile, and the target from the docs site's `llms-meta.json` or the version you name.
+2. **Reads every [changelog](/changelog) entry in between** and searches your code for each export, `init()` option and type the entry names.
+3. **Proposes the change and waits**: one install command that moves every `@templatical/*` package to the same version, and each code change quoted from its changelog entry.
+4. **Checks the result** with your own typecheck and build, `template-tools validate` on one of your stored templates, and your dev server.
+5. **Reports** each entry as applied, not applicable, or needing your decision.
+
+Templates saved by an older release keep loading and rendering: fields join the template model with a runtime fallback. When a template predates a field the schema now requires, the skill adds the value the runtime already used for it, and only to the templates you hand it.
+
+Asking "what would break if we upgraded?" stops after step 2, with no edits.
 
 ## Good to know
 

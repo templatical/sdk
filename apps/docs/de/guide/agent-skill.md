@@ -1,11 +1,11 @@
 ---
 title: KI-Agent-Skill
-description: Ein kostenloser, quelloffener Agent Skill, der Templatical-E-Mail-Vorlagen aus einem Prompt schreibt, bearbeitet, importiert und validiert, sie live im echten Editor anzeigt, und eine @templatical/editor-Integration installiert, aufsetzt oder deren Fehler behebt — ohne Backend oder API-Schlüssel.
+description: Ein kostenloser, quelloffener Agent Skill, der Templatical-E-Mail-Vorlagen aus einem Prompt schreibt, bearbeitet, importiert und validiert, sie live im echten Editor anzeigt, und eine @templatical/editor-Integration installiert, aufsetzt, deren Fehler behebt oder sie auf ein neueres Release aktualisiert — ohne Backend oder API-Schlüssel.
 ---
 
 # KI-Agent-Skill
 
-Templatical bietet einen [Agent Skill](https://agentskills.io) — **kostenlos, quelloffen und vollständig in Ihrem eigenen KI-Coding-Agenten ausgeführt:** `templatical`. Bitten Sie ihn um eine E-Mail, und er schreibt, bearbeitet, importiert, validiert oder zeigt eine Vorlage live an; fragen Sie ihn etwas zur SDK, und er installiert sie, bindet sie ein, setzt eine Integration auf oder behebt deren Fehler. Ein Skill — und er entscheidet selbst, welche Aufgabe eine Anfrage braucht.
+Templatical bietet einen [Agent Skill](https://agentskills.io) — **kostenlos, quelloffen und vollständig in Ihrem eigenen KI-Coding-Agenten ausgeführt:** `templatical`. Bitten Sie ihn um eine E-Mail, und er schreibt, bearbeitet, importiert, validiert oder zeigt eine Vorlage live an; fragen Sie ihn etwas zur SDK, und er installiert sie, bindet sie ein, setzt eine Integration auf, behebt deren Fehler oder aktualisiert sie auf ein neueres Release. Ein Skill — und er entscheidet selbst, welche Aufgabe eine Anfrage braucht.
 
 Es gibt kein Backend und keinen API-Schlüssel: Ihr Agent ist die Inferenz. Nichts wird an Templatical gesendet.
 
@@ -71,6 +71,7 @@ npx skills add templatical/sdk
 - **Setzen Sie** eine vorgeschlagene Integration in Ihr Repository um, installiert mit Ihrem eigenen Paketmanager und geprüft gegen Ihren laufenden Dev-Server.
 - **Definieren Sie einen benutzerdefinierten Block** aus einer Beschreibung: Felder und ein Liquid-Template, geprüft gegen ein Schema und auf E-Mail-Client-Sicherheit, dann im Live-Editor in seinen Grenzfall-Zuständen dargestellt. Ein Block, der Daten lädt, lässt sich über ein Rezept mit echten Endpunktdaten füllen, dessen Zugangsdaten eine Umgebungsvariable sind, sodass das Geheimnis nicht auf die Seite gelangt. Der Skill schreibt den Block in Ihre Codebasis und ändert einen bestehenden.
 - **Diagnostizieren** Sie eine Integration, die nicht wie erwartet funktioniert, anhand einer Tabelle verifizierter Fallstricke.
+- **Aktualisieren** Sie eine Integration auf ein neueres Release: Er liest jeden Changelog-Eintrag zwischen Ihrer installierten Version und dem Ziel, wendet die Breaking Changes, die Ihren Code betreffen, mit der Ersetzung an, die der jeweilige Eintrag nennt, und prüft das Ergebnis mit Ihrem eigenen Typecheck und Build sowie dem Validator.
 - **Beantworten Sie eine Frage** zur SDK, indem diese Dokumentationsseite direkt abgerufen wird.
 
 Die mechanischen Schritte — validieren, rendern, importieren, Live-Vorschau — sind [`@templatical/template-tools`](/de/api/template-tools). Der Skill steuert diese CLI; dieselben Befehle laufen ohne Agenten aus einer Shell.
@@ -127,6 +128,20 @@ Bitten Sie ihn, eine komplett neue Integration aufzusetzen, einer bestehenden ei
 5. **Berichtet er**, was sich geändert hat, was unangetastet blieb, und was noch gebraucht wird — ein Provider, eine optionale Peer-Abhängigkeit, ein Cloud-Auth-Endpunkt.
 
 Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte rückwärts: Er liest Ihren `init()`-/`initCloud()`-Aufruf, die Bundler-Konfiguration und das CSS-Setup, und prüft jedes davon gegen eine Tabelle verifizierter Fallstricke — ein fehlender `style.css`-Import, ein gefangener `position: fixed`-Vorfahre, ein Container ohne Höhe, und mehr.
+
+### Auf ein neueres Release aktualisieren
+
+Bitten Sie ihn, „Templatical zu aktualisieren", oder Sie von Ihrer installierten Version auf die neueste zu bringen. Vor 1.0 kann ein Minor-Release einen Export entfernen, eine Option umbenennen oder einen Standardwert ändern, deshalb arbeitet der Skill mit dem Changelog, nicht aus dem Gedächtnis. Dabei:
+
+1. **Ermittelt er beide Versionen**: die installierte aus Ihrem Lockfile und das Ziel aus der `llms-meta.json` der Doku-Seite oder aus der Version, die Sie nennen.
+2. **Liest er jeden [Changelog](/de/changelog)-Eintrag dazwischen** und durchsucht Ihren Code nach jedem Export, jeder `init()`-Option und jedem Typ, den der Eintrag nennt.
+3. **Schlägt er die Änderung vor und wartet**: ein Installationsbefehl, der jedes `@templatical/*`-Paket auf dieselbe Version bringt, und jede Codeänderung, zitiert aus ihrem Changelog-Eintrag.
+4. **Prüft er das Ergebnis** mit Ihrem eigenen Typecheck und Build, `template-tools validate` auf einer Ihrer gespeicherten Vorlagen und Ihrem Dev-Server.
+5. **Berichtet er** jeden Eintrag als angewendet, nicht zutreffend oder als Ihre Entscheidung.
+
+Mit einem älteren Release gespeicherte Vorlagen laden und rendern weiter: Felder kommen mit einem Laufzeit-Fallback ins Vorlagenmodell. Fehlt einer Vorlage ein Feld, das das Schema inzwischen verlangt, setzt der Skill den Wert ein, den die Laufzeit dafür bereits verwendet hat, und nur in den Vorlagen, die Sie ihm geben.
+
+Die Frage „Was würde bei einem Update brechen?" endet nach Schritt 2, ohne Änderungen.
 
 ## Gut zu wissen
 
