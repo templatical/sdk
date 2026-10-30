@@ -7,8 +7,8 @@ templates and helps you integrate
 [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor)
 into an application. Ask for an email and it writes, edits, imports,
 validates or previews a template; ask about the SDK and it installs, mounts,
-scaffolds or diagnoses an integration. One skill, and it decides for itself
-which job a request needs.
+scaffolds, diagnoses or upgrades an integration. One skill, and it decides for
+itself which job a request needs.
 
 ## Install
 
@@ -48,6 +48,10 @@ npx skills update templatical
   codebase, or change one you already have.
 - **Diagnose** — fix an integration that misbehaves, checked against a table
   of verified traps.
+- **Upgrade** — move an integration to a newer release: it reads every
+  changelog entry in between, applies the breaking changes that touch your
+  code, and checks the result with your typecheck, your build and the
+  validator.
 - **Docs** — answer a question about the SDK from the reference
   documentation.
 

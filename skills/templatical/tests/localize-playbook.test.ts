@@ -8,7 +8,7 @@ const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 describe("localization agent path", () => {
   it("routes translation file exchange through the existing strings CLI in its eval", () => {
     const data = JSON.parse(read("evals/evals.json"));
-    const entry = data.evals.find((entry: { id: number }) => entry.id === 30);
+    const entry = data.evals.find((entry: { id: number }) => entry.id === 32);
     expect(entry.expected_output).toContain("template-tools strings export");
     expect(entry.expected_output).toContain("template-tools strings import");
     expect(entry.expected_output).toContain("placeholders unchanged");
@@ -17,7 +17,7 @@ describe("localization agent path", () => {
   });
   it("keeps protected-term fields eligible in the brand-protection eval", () => {
     const data = JSON.parse(read("evals/evals.json"));
-    const entry = data.evals.find((entry: { id: number }) => entry.id === 31);
+    const entry = data.evals.find((entry: { id: number }) => entry.id === 33);
     expect(entry.expected_output).not.toContain(
       "stored translations missing a protected term are excluded",
     );
@@ -185,7 +185,7 @@ describe("localization agent path", () => {
 
   it.each([
     [
-      32,
+      34,
       "default language",
       [
         "localize.md",
@@ -205,7 +205,7 @@ describe("localization agent path", () => {
       ],
     ],
     [
-      33,
+      35,
       "template-tools",
       [
         "cli.md",

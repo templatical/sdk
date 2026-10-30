@@ -35,10 +35,10 @@ function linksIn(src: string): string[] {
 }
 
 describe("the island graph", () => {
-  it("has exactly the eleven entry islands the design names", () => {
+  it("has exactly the twelve entry islands the design names", () => {
     expect(entryIslands()).toEqual([
       "build", "custom-block", "diagnose", "docs", "edit", "export",
-      "import", "integrate", "live", "scaffold", "validate",
+      "import", "integrate", "live", "scaffold", "upgrade", "validate",
     ]);
   });
 
