@@ -5,6 +5,7 @@ import {
   createImageBlock,
   createHtmlBlock,
   createParagraphBlock,
+  createMenuBlock,
   sourceHash,
 } from "@templatical/types";
 import Canvas from "../src/components/Canvas.vue";
@@ -29,6 +30,79 @@ function contentWithTags(value = "Hallo", hash = sourceHash("Hello {{name}}")) {
 }
 const chip = '[data-testid="locale-chip"]';
 describe("merge-tag mismatch badges", () => {
+  it("confirms replacing another current translation before re-translating the block in one undo step", async () => {
+    const content = languageContent();
+    content.blocks = [
+      createMenuBlock({
+        id: "tagged",
+        items: [
+          { id: "a", text: "Hello {{name}}", url: "" },
+          { id: "b", text: "Two", url: "" },
+        ],
+        l10n: {
+          de: {
+            text: {
+              "items.a.text": {
+                value: "Hallo",
+                sourceHash: sourceHash("Hello {{name}}"),
+              },
+              "items.b.text": {
+                value: "Handgeschrieben",
+                sourceHash: sourceHash("Two"),
+              },
+            },
+          },
+        },
+      }),
+    ];
+    const translate = vi.fn(async (request) => ({
+      fields: request.fields.map((field: { id: string }) => ({
+        id: field.id,
+        text: field.id.endsWith("items.a.text") ? 'Hallo <x id="1"/>' : "Zwei",
+      })),
+    }));
+    const { wrapper, editor, history } = await openLanguages({
+      content,
+      translation: { translate },
+    });
+    editor.setActiveLocale("de");
+    await nextTick();
+    const before = JSON.stringify(editor.content.value);
+    await wrapper.get(chip).trigger("click");
+    await wrapper.get('[data-testid="locale-retranslate"]').trigger("click");
+    const popover = () => wrapper.get('[data-testid="locale-popover"]');
+    expect(popover().text()).toContain("Translate all 2 fields again?");
+    expect(popover().text()).toContain(
+      "This replaces the current Deutsch translations, including manual edits. You can undo it.",
+    );
+    expect(translate).not.toHaveBeenCalled();
+    expect(JSON.stringify(editor.content.value)).toBe(before);
+    await popover()
+      .get('[data-testid="translation-confirm-cancel"]')
+      .trigger("click");
+    expect(translate).not.toHaveBeenCalled();
+    expect(popover().text()).not.toContain("Translate all 2 fields again?");
+    await wrapper.get('[data-testid="locale-retranslate"]').trigger("click");
+    expect(popover().get('[data-testid="translation-confirm"]').text()).toBe(
+      "Translate all 2 fields",
+    );
+    await popover().get('[data-testid="translation-confirm"]').trigger("click");
+    await vi.waitFor(() => {
+      expect(translate).toHaveBeenCalledTimes(1);
+      expect(
+        editor.content.value.blocks[0].l10n?.de.text?.["items.b.text"].value,
+      ).toBe("Zwei");
+    });
+    expect(
+      translate.mock.calls[0][0].fields.map(
+        (field: { id: string }) => field.id,
+      ),
+    ).toEqual(["tagged/items.a.text", "tagged/items.b.text"]);
+    history.undo();
+    expect(JSON.stringify(editor.content.value)).toBe(before);
+    expect(history.canUndo.value).toBe(false);
+  });
+
   it("explains an HTML mismatch without offering an ineligible translation", async () => {
     const content = languageContent();
     content.blocks = [

@@ -493,6 +493,61 @@ test.describe("language versions", () => {
     }
   });
 
+  for (const locale of ["de", "ar"]) {
+    test(`keeps a selected short block's own badge uncovered in ${locale} in a narrow canvas`, async ({
+      page,
+      scenePage,
+      editorPage,
+      shadowDom,
+    }) => {
+      await scenePage.goto("languages");
+      await editorPage.waitForReady();
+      await editorPage.dismissOverlays();
+      await mountChipPreview(page, shadowDom, "corners", 1040);
+      const host = page.locator("#language-chip-preview");
+      try {
+        await host.getByTestId("language-menu").click();
+        await host.getByTestId(`language-option-${locale}`).click();
+        const short = host.locator('[data-block-id="corner-short"]');
+        const shortBox = (await short.boundingBox())!;
+        await short.click({ position: { x: shortBox.width / 2, y: 6 } });
+        await expect(short).toHaveClass(/tpl-block--selected/);
+        const badge = short.getByTestId("locale-chip");
+        await badge.hover({ trial: true });
+        expect(
+          await badge.evaluate((element) => {
+            const root = element.getRootNode() as Document | ShadowRoot;
+            const box = element.getBoundingClientRect();
+            // The box's corners lie outside the circular badge's hit area.
+            return [0.2, 0.5, 0.8].every((x) =>
+              [0.2, 0.5, 0.8].every((y) => {
+                const hit = root.elementFromPoint(
+                  box.left + box.width * x,
+                  box.top + box.height * y,
+                );
+                return hit !== null && element.contains(hit);
+              }),
+            );
+          }),
+        ).toBe(true);
+        const bar = await short.locator(".tpl-block-actions").boundingBox();
+        const slot = await short.locator(".tpl-block-badges").boundingBox();
+        expect(bar).not.toBeNull();
+        expect(slot).not.toBeNull();
+        if (locale === "de")
+          expect(bar!.x + bar!.width).toBeLessThanOrEqual(slot!.x - 4);
+        else expect(bar!.x).toBeGreaterThanOrEqual(slot!.x + slot!.width + 4);
+        expect(
+          await host
+            .locator(".tpl-body")
+            .evaluate((pane) => pane.scrollWidth <= pane.clientWidth),
+        ).toBe(true);
+      } finally {
+        await page.evaluate(() => (window as any).__languageChipCleanup?.());
+      }
+    });
+  }
+
   test("keeps the language bar's label and status on one line each in a 768px window", async ({
     page,
     scenePage,

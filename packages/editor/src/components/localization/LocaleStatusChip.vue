@@ -17,6 +17,7 @@ import { plural } from "../../i18n/plural";
 import {
   ghostBtnCompactClass,
   secondaryBtnCompactClass,
+  primaryBtnCompactClass,
 } from "../../constants/styleConstants";
 
 const props = defineProps<{
@@ -35,6 +36,8 @@ const props = defineProps<{
   staleLocales: string[];
   excerpt: string;
   eligibleGaps: boolean;
+  translationCount?: number;
+  replacesCurrent?: boolean;
   editable: boolean;
 }>();
 const editor = inject(EDITOR_KEY, null);
@@ -48,6 +51,9 @@ const { toLocal } = usePopoverPosition();
 const trigger = ref<HTMLButtonElement | null>(null);
 const popover = ref<HTMLElement | null>(null);
 const open = ref(false);
+const confirming = ref(false);
+const retranslate = ref<HTMLButtonElement | null>(null);
+const confirmationCancel = ref<HTMLButtonElement | null>(null);
 let openAnchor: DOMRect | null = null;
 const position = ref({ top: 0, left: 0 });
 const limits = ref({ maxHeight: 0, maxWidth: 0 });
@@ -102,13 +108,19 @@ const canTranslate = computed(
 );
 function close(focus = false) {
   open.value = false;
+  confirming.value = false;
   openAnchor = null;
   if (focus) trigger.value?.focus({ preventScroll: true });
 }
 async function toggle() {
   if (open.value) return close();
+  if (!popoverRoot.value) return;
+  open.value = true;
+  await positionPopover();
+}
+async function positionPopover() {
   const target = popoverRoot.value;
-  if (!target) return;
+  if (!target || !open.value) return;
   const view = target.ownerDocument.defaultView;
   const viewport = view?.visualViewport;
   const viewportTop = viewport?.offsetTop ?? 0;
@@ -135,7 +147,6 @@ async function toggle() {
   const anchor = trigger.value!.getBoundingClientRect();
   openAnchor = anchor;
   position.value = toLocal({ top, left });
-  open.value = true;
   await nextTick();
   if (!open.value || !popover.value) return;
   const popup = popover.value.getBoundingClientRect();
@@ -149,8 +160,17 @@ async function toggle() {
     left: Math.max(left, Math.min(anchor.left, right - width)),
   });
   await nextTick();
-  if (open.value) popover.value?.focus({ preventScroll: true });
+  if (open.value)
+    (confirming.value ? confirmationCancel.value : popover.value)?.focus({
+      preventScroll: true,
+    });
 }
+watch(confirming, async () => {
+  if (!open.value) return;
+  await positionPopover();
+  if (open.value && !confirming.value)
+    retranslate.value?.focus({ preventScroll: true });
+});
 function outside(event: Event) {
   const path = event.composedPath();
   if (!path.includes(trigger.value!) && !path.includes(popover.value!)) close();
@@ -189,6 +209,7 @@ watch(
     () => props.state,
     () => editor?.activeLocale?.value,
     () => editor?.state.template?.id,
+    () => editor?.loadVersion?.value,
   ],
   () => close(),
 );
@@ -225,6 +246,34 @@ function openLanguage(locale: string) {
   editor?.setActiveLocale?.(locale);
   close();
 }
+function translate() {
+  if (!canTranslate.value || translation?.running.value) return;
+  if (props.state === "tags-differ" && props.replacesCurrent) {
+    confirming.value = true;
+    return;
+  }
+  void translation?.translate({
+    only: props.state === "tags-differ" ? "all" : "gaps",
+    blockId: props.blockId,
+  });
+}
+function cancelConfirmation() {
+  confirming.value = false;
+}
+function onEscape() {
+  if (confirming.value) cancelConfirmation();
+  else close(true);
+}
+function confirmTranslation() {
+  if (
+    canTranslate.value &&
+    !translation?.running.value &&
+    props.translationCount
+  ) {
+    confirming.value = false;
+    void translation?.translate({ only: "all", blockId: props.blockId });
+  }
+}
 </script>
 
 <template>
@@ -241,7 +290,7 @@ function openLanguage(locale: string) {
     class="tpl-locale-chip tpl:flex tpl:size-5 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:p-0 tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-chrome-text-muted)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:ring-1 tpl:ring-[var(--tpl-border)] tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)]"
     @click.stop="toggle"
     @keydown.enter.stop.prevent="toggle"
-    @keydown.esc.stop.prevent="close(true)"
+    @keydown.esc.stop.prevent="onEscape"
   >
     <component :is="icon" :size="12" :stroke-width="2" aria-hidden="true" />
   </button>
@@ -250,7 +299,9 @@ function openLanguage(locale: string) {
       :id="id"
       ref="popover"
       role="dialog"
-      :aria-label="label"
+      :aria-label="confirming ? undefined : label"
+      :aria-labelledby="confirming ? `${id}-question` : undefined"
+      :aria-describedby="confirming ? `${id}-warning` : undefined"
       tabindex="-1"
       data-testid="locale-popover"
       class="tpl-locale-popover tpl:absolute tpl:z-[10000] tpl:w-[300px] tpl:overflow-y-auto tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-3 tpl:text-sm tpl:text-[var(--tpl-chrome-text)] tpl:shadow-[var(--tpl-shadow-md)] tpl:outline-none"
@@ -261,146 +312,194 @@ function openLanguage(locale: string) {
         maxWidth: `${limits.maxWidth}px`,
       }"
       @click.stop
-      @keydown.esc.stop.prevent="close(true)"
+      @keydown.esc.stop.prevent="onEscape"
     >
-      <p
-        v-if="labelInPopover"
-        class="tpl:m-0 tpl:mb-2 tpl:text-xs tpl:font-medium"
-      >
-        {{ label }}
-      </p>
-      <p v-if="state === 'missing'" class="tpl:m-0">
-        {{
-          format(t.localization.missingExplanation, {
-            default: defaultLanguage,
-          })
-        }}
-      </p>
-      <template v-else-if="state === 'stale'">
-        <p class="tpl:m-0">
+      <template v-if="confirming">
+        <h3
+          :id="`${id}-question`"
+          class="tpl:m-0 tpl:mb-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+        >
           {{
-            format(t.localization.staleExplanation, {
+            plural(
+              t.localization.translationConfirmation,
+              translationCount ?? 0,
+              uiLocale,
+            )
+          }}
+        </h3>
+        <p
+          :id="`${id}-warning`"
+          class="tpl:m-0 tpl:text-[var(--tpl-text-muted)]"
+        >
+          {{ format(t.localization.translationDescription, { language }) }}
+        </p>
+        <div class="tpl:mt-2 tpl:flex tpl:flex-wrap tpl:justify-end tpl:gap-2">
+          <button
+            ref="confirmationCancel"
+            type="button"
+            data-testid="translation-confirm-cancel"
+            :class="secondaryBtnCompactClass"
+            @click="cancelConfirmation"
+          >
+            {{ t.localization.cancel }}
+          </button>
+          <button
+            type="button"
+            data-testid="translation-confirm"
+            :class="primaryBtnCompactClass"
+            :disabled="
+              !canTranslate || !!translation?.running.value || !translationCount
+            "
+            @click="confirmTranslation"
+          >
+            {{
+              plural(
+                t.localization.translateAllFields,
+                translationCount ?? 0,
+                uiLocale,
+              )
+            }}
+          </button>
+        </div>
+      </template>
+      <template v-else>
+        <p
+          v-if="labelInPopover"
+          class="tpl:m-0 tpl:mb-2 tpl:text-xs tpl:font-medium"
+        >
+          {{ label }}
+        </p>
+        <p v-if="state === 'missing'" class="tpl:m-0">
+          {{
+            format(t.localization.missingExplanation, {
               default: defaultLanguage,
             })
           }}
         </p>
-        <p
-          class="tpl:mt-2 tpl:mb-0 tpl:break-words tpl:text-[var(--tpl-chrome-text-muted)]"
-        >
-          {{ format(t.localization.currentExcerpt, { excerpt }) }}
-        </p>
-      </template>
-      <p v-else-if="state === 'tags-differ'" class="tpl:m-0">
-        {{
-          format(t.localization.tagsDifferExplanation, {
-            default: defaultLanguage,
-          })
-        }}
-      </p>
-      <p v-else-if="state === 'changed'" class="tpl:m-0">
-        {{
-          plural(t.localization.changedProperties, count, uiLocale, {
-            default: defaultLanguage,
-          })
-        }}
-      </p>
-      <p v-else-if="state === 'hidden'" class="tpl:m-0">
-        {{ format(t.localization.hiddenExplanation, { language }) }}
-      </p>
-      <ul v-else class="tpl:m-0 tpl:list-none tpl:p-0">
-        <li
-          v-for="tag in staleLocales"
-          :key="tag"
-          class="tpl:flex tpl:items-center tpl:justify-between tpl:gap-3"
-        >
-          <span>{{ languageName(tag) }}</span>
-          <button
-            type="button"
-            :class="ghostBtnCompactClass"
-            @click="openLanguage(tag)"
-          >
-            {{ t.localization.open }}
-          </button>
-        </li>
-      </ul>
-      <div
-        v-if="editable && state !== 'default-stale'"
-        class="tpl:mt-2 tpl:flex tpl:flex-wrap tpl:gap-1"
-      >
-        <button
-          v-if="
-            canTranslate &&
-            (state === 'missing' ||
-              state === 'stale' ||
-              state === 'tags-differ')
-          "
-          type="button"
-          :data-testid="
-            state === 'missing' ? 'locale-translate' : 'locale-retranslate'
-          "
-          :class="secondaryBtnCompactClass"
-          :disabled="!!translation?.running.value"
-          @click="
-            translation?.translate({
-              only: state === 'tags-differ' ? 'all' : 'gaps',
-              blockId,
-            })
-          "
-        >
-          {{
-            state === "missing"
-              ? t.localization.translate
-              : t.localization.retranslate
-          }}
-        </button>
-        <template v-if="state === 'stale' || state === 'tags-differ'">
-          <button
-            type="button"
-            v-if="state === 'stale'"
-            data-testid="locale-keep"
-            :class="
-              canTranslate ? ghostBtnCompactClass : secondaryBtnCompactClass
-            "
-            @click="keep"
-          >
-            {{ t.localization.keep }}
-          </button>
-          <button
-            type="button"
-            data-testid="locale-use-default"
-            :class="
-              state === 'tags-differ' && !canTranslate
-                ? secondaryBtnCompactClass
-                : ghostBtnCompactClass
-            "
-            @click="reset(state === 'tags-differ' ? (tagsDiffer ?? []) : stale)"
-          >
+        <template v-else-if="state === 'stale'">
+          <p class="tpl:m-0">
             {{
-              format(t.localization.useDefaultLanguage, {
+              format(t.localization.staleExplanation, {
                 default: defaultLanguage,
               })
             }}
-          </button>
+          </p>
+          <p
+            class="tpl:mt-2 tpl:mb-0 tpl:break-words tpl:text-[var(--tpl-chrome-text-muted)]"
+          >
+            {{ format(t.localization.currentExcerpt, { excerpt }) }}
+          </p>
         </template>
-        <button
-          v-if="state === 'changed'"
-          type="button"
-          data-testid="locale-reset"
-          :class="secondaryBtnCompactClass"
-          @click="reset(setPaths)"
+        <p v-else-if="state === 'tags-differ'" class="tpl:m-0">
+          {{
+            format(t.localization.tagsDifferExplanation, {
+              default: defaultLanguage,
+            })
+          }}
+        </p>
+        <p v-else-if="state === 'changed'" class="tpl:m-0">
+          {{
+            plural(t.localization.changedProperties, count, uiLocale, {
+              default: defaultLanguage,
+            })
+          }}
+        </p>
+        <p v-else-if="state === 'hidden'" class="tpl:m-0">
+          {{ format(t.localization.hiddenExplanation, { language }) }}
+        </p>
+        <ul v-else class="tpl:m-0 tpl:list-none tpl:p-0">
+          <li
+            v-for="tag in staleLocales"
+            :key="tag"
+            class="tpl:flex tpl:items-center tpl:justify-between tpl:gap-3"
+          >
+            <span>{{ languageName(tag) }}</span>
+            <button
+              type="button"
+              :class="ghostBtnCompactClass"
+              @click="openLanguage(tag)"
+            >
+              {{ t.localization.open }}
+            </button>
+          </li>
+        </ul>
+        <div
+          v-if="editable && state !== 'default-stale'"
+          class="tpl:mt-2 tpl:flex tpl:flex-wrap tpl:gap-1"
         >
-          {{ t.localization.resetChanges }}
-        </button>
-        <button
-          v-if="state === 'hidden'"
-          type="button"
-          data-testid="locale-show"
-          :class="secondaryBtnCompactClass"
-          @click="show"
-        >
-          {{ t.localization.show }}
-        </button>
-      </div>
+          <button
+            v-if="
+              canTranslate &&
+              (state === 'missing' ||
+                state === 'stale' ||
+                state === 'tags-differ')
+            "
+            type="button"
+            ref="retranslate"
+            :data-testid="
+              state === 'missing' ? 'locale-translate' : 'locale-retranslate'
+            "
+            :class="secondaryBtnCompactClass"
+            :disabled="!!translation?.running.value"
+            @click="translate"
+          >
+            {{
+              state === "missing"
+                ? t.localization.translate
+                : t.localization.retranslate
+            }}
+          </button>
+          <template v-if="state === 'stale' || state === 'tags-differ'">
+            <button
+              type="button"
+              v-if="state === 'stale'"
+              data-testid="locale-keep"
+              :class="
+                canTranslate ? ghostBtnCompactClass : secondaryBtnCompactClass
+              "
+              @click="keep"
+            >
+              {{ t.localization.keep }}
+            </button>
+            <button
+              type="button"
+              data-testid="locale-use-default"
+              :class="
+                state === 'tags-differ' && !canTranslate
+                  ? secondaryBtnCompactClass
+                  : ghostBtnCompactClass
+              "
+              @click="
+                reset(state === 'tags-differ' ? (tagsDiffer ?? []) : stale)
+              "
+            >
+              {{
+                format(t.localization.useDefaultLanguage, {
+                  default: defaultLanguage,
+                })
+              }}
+            </button>
+          </template>
+          <button
+            v-if="state === 'changed'"
+            type="button"
+            data-testid="locale-reset"
+            :class="secondaryBtnCompactClass"
+            @click="reset(setPaths)"
+          >
+            {{ t.localization.resetChanges }}
+          </button>
+          <button
+            v-if="state === 'hidden'"
+            type="button"
+            data-testid="locale-show"
+            :class="secondaryBtnCompactClass"
+            @click="show"
+          >
+            {{ t.localization.show }}
+          </button>
+        </div>
+      </template>
     </div>
   </Teleport>
 </template>

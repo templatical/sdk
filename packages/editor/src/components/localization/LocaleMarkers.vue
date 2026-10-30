@@ -71,7 +71,7 @@ const tagsDiffer = computed(() =>
       : [];
   }),
 );
-const eligibleTranslation = computed(() =>
+const translationStrings = computed(() =>
   editor && locale.value && !ancestorHiddenLocales.value.has(locale.value)
     ? localeStrings(scopedContent.value, locale.value, {
         syntax,
@@ -79,8 +79,16 @@ const eligibleTranslation = computed(() =>
         doNotTranslate: config?.doNotTranslate,
         blockId: props.block.id,
         only: state.value === "tags-differ" ? "all" : "gaps",
-      }).strings.length > 0
-    : false,
+      }).strings
+    : [],
+);
+const replacesCurrent = computed(() =>
+  translationStrings.value.some(({ id }) => {
+    const path = id.slice(props.block.id.length + 1);
+    return (
+      coverage.value.translated.includes(id) && !tagsDiffer.value.includes(path)
+    );
+  }),
 );
 const setPaths = computed(() =>
   Object.keys(layer.value?.set ?? {}).filter((path) => {
@@ -143,7 +151,9 @@ const excerpt = computed(() => {
     :set-paths="setPaths"
     :stale-locales="staleLocales"
     :excerpt="excerpt"
-    :eligible-gaps="eligibleTranslation"
+    :eligible-gaps="translationStrings.length > 0"
+    :translation-count="translationStrings.length"
+    :replaces-current="replacesCurrent"
     :editable="!!locale && config.locales.includes(locale)"
   />
 </template>

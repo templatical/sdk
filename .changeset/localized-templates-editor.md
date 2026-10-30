@@ -9,3 +9,5 @@ Add language versions and translation to the editor. `init({ localization: { loc
 Comments record the language they were written in, show a language badge and filter with **This language**. A layout's own language versions follow the selected language in preview, export and test email. `getLocale()`, `setLocale()`, `onLocaleChange` and `toMjml({ locale })` / `toHtml({ locale })` select versions from the host. `initCloud()` ignores `localization` and `translation` with warnings.
 
 Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.
+
+Ask inside the merge-tag mismatch popover before Re-translate replaces other current translations, keep short blocks' badges and focus rings visible beside their action bar in both text directions and after direction changes, and include the visible gap count and breakdown in the language trigger's accessible name. Name and describe the block confirmation, focus Cancel, and let Escape cancel it before closing the popover.

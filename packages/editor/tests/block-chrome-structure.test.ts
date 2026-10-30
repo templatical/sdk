@@ -491,7 +491,11 @@ describe("chrome tokens survive the email-content override", () => {
   const sectionBlock = read("components/blocks/SectionBlock.vue");
   // The corner badges render in a block's slot, inside a section's content.
   const cornerBadges = [
-    read("components/localization/LocaleStatusChip.vue"),
+    // The popover teleports out of the content override into the editor root.
+    read("components/localization/LocaleStatusChip.vue").replace(
+      /<Teleport\b[^>]*:to="popoverRoot"[^>]*>[\s\S]*?<\/Teleport>/g,
+      "",
+    ),
     read("components/canvas/BlockIssueBadge.vue"),
   ];
 
@@ -560,9 +564,10 @@ describe("chrome tokens survive the email-content override", () => {
   });
 
   it("block chrome never references a shadowed token directly", () => {
+    expect(cornerBadges[0]).toContain('data-testid="locale-chip"');
     // Every reference to these tokens inside BlockWrapper/SectionBlock and the
-    // corner badges is chrome — email content is styled from block data via
-    // inline styles — so any raw usage here is the regression.
+    // inline corner badges inherits the content override, so any raw usage
+    // here is the regression. Teleported popovers use the editor's raw tokens.
     for (const src of [blockWrapper, sectionBlock, ...cornerBadges]) {
       for (const name of [...SHADOWED, "text"]) {
         expect(src).not.toContain(`var(--tpl-${name})`);

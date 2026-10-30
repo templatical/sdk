@@ -21,6 +21,23 @@ import {
 } from "./helpers/localization";
 
 describe("language menu", () => {
+  it("names the wide trigger with its visible count before the gap breakdown and keeps the tag", async () => {
+    const { wrapper, editor } = await openLanguages();
+    editor.setActiveLocale("de");
+    await nextTick();
+    const trigger = wrapper.get('[data-testid="language-menu"]');
+    expect(trigger.get(".tpl-language-name").text()).toBe("Deutsch");
+    expect(trigger.get(".tpl-language-count").text()).toBe("2");
+    expect(trigger.attributes("aria-label")).toBe(
+      "Deutsch 2 (de), 1 missing, 1 out of date",
+    );
+    editor.keepTranslations("title", ["content"]);
+    editor.updateBlock("image", { alt: "Produkt" });
+    await nextTick();
+    expect(trigger.find(".tpl-language-count").exists()).toBe(false);
+    expect(trigger.attributes("aria-label")).toBe("Deutsch (de)");
+  });
+
   it("names the trigger with the language and the tag the compact header shows", async () => {
     const content = languageContent();
     content.settings.locales = ["de", "nl", "ja"];
@@ -31,9 +48,9 @@ describe("language menu", () => {
     const trigger = () => wrapper.get('[data-testid="language-menu"]');
     expect(trigger().attributes("aria-label")).toBe("English (en)");
     for (const [tag, name] of [
-      ["de", "Deutsch (de)"],
-      ["nl", "Nederlands (nl)"],
-      ["ja", "日本語 (ja)"],
+      ["de", "Deutsch 2 (de), 1 missing, 1 out of date"],
+      ["nl", "Nederlands 2 (nl), 2 missing, 0 out of date"],
+      ["ja", "日本語 2 (ja), 2 missing, 0 out of date"],
     ]) {
       editor.setActiveLocale(tag);
       await nextTick();

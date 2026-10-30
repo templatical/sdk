@@ -62,7 +62,7 @@ In code, the same round trip is `localeStrings` → JSON → `applyLocaleStrings
 
 ## Checking a language
 
-The header's language button names the active language; in a language view with gaps it adds a warning icon and the number of gaps, with "{missing} missing, {stale} out of date" in its tooltip. The language bar shows the same counts or **Complete**. A block with a localization state carries an icon badge in its top-right corner (top-left in a right-to-left view); its tooltip and accessible name give the label below. Select the badge, or **Jump to block** on a localization finding in the Issues panel, to open its popover.
+The header's language button names the active language; in a language view with gaps it adds a warning icon and the number of gaps, with "{missing} missing, {stale} out of date" in its tooltip. Its accessible name reads the language name, then the visible gap count, the language tag and the same breakdown; without gaps it stays, for example, "Deutsch (de)". The language bar shows the same counts or **Complete**. A block with a localization state carries an icon badge in its top-right corner (top-left in a right-to-left view); its tooltip and accessible name give the label below. Select the badge, or **Jump to block** on a localization finding in the Issues panel, to open its popover. On a short selected block in a narrow canvas, the action bar sits beside the badge slot, leaving the badges and their focus rings visible.
 
 | Badge label | Meaning | Actions |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ Each translation stores the `sourceHash` of the default value it was written aga
 
 ### Merge tags {#merge-tags}
 
-Keep the default's merge tags, including repeated ones, in each translated field: `localization.merge-tags-differ` compares them as a multiset, and the editor offers the same merge-tag list in every language. A current translation whose tags differ shows **Merge tags differ**. Its **Re-translate**, with a provider, sends every eligible text field of that block; **Use {default}** removes only the mismatched translations. Missing and out-of-date text take priority over this state. The rule is a warning, but CLI validation exits `1` on it, even with `valid: true`; missing and out-of-date translations alone don't change the exit code.
+Keep the default's merge tags, including repeated ones, in each translated field: `localization.merge-tags-differ` compares them as a multiset, and the editor offers the same merge-tag list in every language. A current translation whose tags differ shows **Merge tags differ**. Its **Re-translate**, with a provider, sends every eligible text field of that block. If this would replace another current translation in the block, the popover first asks for confirmation with the field count and explains that manual edits are replaced. Confirming applies the translation as one undo step; without another current translation to replace, Re-translate starts at once. During confirmation, Escape returns to **Re-translate**; a second Escape closes the popover. **Use {default}** removes only the mismatched translations. Missing and out-of-date text take priority over this state. The rule is a warning, but CLI validation exits `1` on it, even with `valid: true`; missing and out-of-date translations alone don't change the exit code.
 
 ## Rendering a language
 

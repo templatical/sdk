@@ -3,6 +3,7 @@ import LocaleMarkers from "../localization/LocaleMarkers.vue";
 import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import type { Block, ViewportSize } from "@templatical/types";
+import { resolveContentDirection } from "@templatical/types";
 import {
   Bookmark,
   Copy,
@@ -18,6 +19,7 @@ import {
   inject,
   nextTick,
   ref,
+  watch,
   watchPostEffect,
 } from "vue";
 import { useEventListener, useResizeObserver } from "@vueuse/core";
@@ -184,13 +186,13 @@ const canSaveAsBlock = computed(
     caps.savedBlocks?.canCreate.value === true,
 );
 
-// The action bar sits to the right of the selected block. Where the canvas pane
-// has no room for it there (a full-width block on a narrow pane), it moves
-// inside the block's right edge, below the corner badges, so it never widens
-// the pane's scroll area or hides under the properties sidebar. A block too
-// short for that keeps the bar centred on itself rather than on the next block.
+// The action bar sits to the right of the selected block, moving inside and
+// below the badges when the pane has no room. On a short block it stays
+// vertically centred and moves past the badge slot toward inline-start in LTR,
+// mirrored in RTL. Its horizontal position is then clamped to the canvas pane.
 const blockElement = ref<HTMLElement | null>(null);
 const actionsElement = ref<HTMLElement | null>(null);
+const badgesElement = ref<HTMLElement | null>(null);
 const actionsStyle = ref({ left: "calc(100% + 8px)", top: "50%" });
 const canvasBody = computed(() =>
   actionsElement.value?.closest<HTMLElement>(".tpl-body"),
@@ -207,7 +209,7 @@ function positionActions(): void {
     ? (pane.getBoundingClientRect().left - box.left) / scale + pane.clientLeft
     : -Infinity;
   const paneRight = pane ? paneLeft + pane.clientWidth : Infinity;
-  const left = Math.max(
+  let left = Math.max(
     paneLeft + 4,
     Math.min(block.offsetWidth + 8, paneRight - actions.offsetWidth - 4),
   );
@@ -220,6 +222,20 @@ function positionActions(): void {
     centre + actions.offsetHeight / 2 <= block.offsetHeight + 8
       ? `${centre}px`
       : "50%";
+  if (left < block.offsetWidth && top === "50%") {
+    const badges = badgesElement.value?.getBoundingClientRect();
+    if (badges?.width) {
+      // Leave the badge slot and its focus rings beside a short block's bar.
+      const rtl = getComputedStyle(block).direction === "rtl";
+      const beside = rtl
+        ? (badges.right - box.left) / scale + 8
+        : (badges.left - box.left) / scale - actions.offsetWidth - 8;
+      left = Math.max(
+        paneLeft + 4,
+        Math.min(beside, paneRight - actions.offsetWidth - 4),
+      );
+    }
+  }
   // Scrolling the pane calls this often; an unchanged position doesn't re-render.
   if (actionsStyle.value.left !== `${left}px` || actionsStyle.value.top !== top)
     actionsStyle.value = { left: `${left}px`, top };
@@ -228,9 +244,12 @@ watchPostEffect(positionActions);
 useResizeObserver(
   computed(() =>
     actionsElement.value
-      ? [blockElement.value, actionsElement.value, canvasBody.value].filter(
-          (element): element is HTMLElement => !!element,
-        )
+      ? [
+          blockElement.value,
+          actionsElement.value,
+          badgesElement.value,
+          canvasBody.value,
+        ].filter((element): element is HTMLElement => !!element)
       : [],
   ),
   positionActions,
@@ -291,9 +310,19 @@ const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
 // `getBlockWrapperStyle` still passed.
 const editor = inject(EDITOR_KEY, null);
 // The editor shares one projection; a standalone wrapper projects its own.
+const localizedDisplay = editor ? useLocalizedDisplay(editor) : null;
 const localizedContent =
-  inject(LOCALIZED_CONTENT_KEY, null) ??
-  (editor ? useLocalizedDisplay(editor).content : null);
+  inject(LOCALIZED_CONTENT_KEY, null) ?? localizedDisplay?.content ?? null;
+watch(
+  [
+    () => editor?.activeLocale?.value,
+    () =>
+      localizedDisplay &&
+      resolveContentDirection(localizedDisplay.settings.value),
+  ],
+  positionActions,
+  { flush: "post" },
+);
 const layout = inject(LAYOUT_KEY, undefined);
 
 const contentStyle = computed(() =>
@@ -373,6 +402,7 @@ function handleConditionToggle(): void {
     <!-- Status badges share the block's top corner (top-left in a
          right-to-left view): lint issues inward, localization at the corner. -->
     <div
+      ref="badgesElement"
       class="tpl-block-badges tpl:absolute tpl:top-1 tpl:inset-e-1 tpl:z-10 tpl:flex tpl:gap-1"
     >
       <BlockIssueBadge :block-id="block.id" />
@@ -405,8 +435,9 @@ function handleConditionToggle(): void {
       aria-hidden="true"
       class="tpl-block-agent-highlight tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
     />
-    <!-- Floating action bar — placed by positionActions(): beside the selected
-         block, or inside its right edge when the canvas pane has no room -->
+    <!-- Floating action bar: beside the block or inside below its badges.
+         Short blocks keep it vertically centred, past the slot toward
+         inline-start in LTR (mirrored in RTL), then clamped to the pane. -->
     <div
       v-if="showActions"
       ref="actionsElement"

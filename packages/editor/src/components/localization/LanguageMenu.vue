@@ -113,6 +113,11 @@ const triggerTitle = computed(() =>
       })
     : languageName(active.value),
 );
+const triggerLabel = computed(() =>
+  gapCount.value
+    ? `${languageName(active.value)} ${gapCount.value} (${active.value}), ${triggerTitle.value}`
+    : `${languageName(active.value)} (${active.value})`,
+);
 const rowClass =
   "tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:border-0 tpl:bg-transparent tpl:px-3 tpl:py-2.5 tpl:text-left tpl:text-xs tpl:transition-colors tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50";
 const surfaceClass =
@@ -354,7 +359,7 @@ onClickOutside(root, () => {
       aria-haspopup="menu"
       :aria-expanded="open"
       :title="triggerTitle"
-      :aria-label="`${languageName(active)} (${active})`"
+      :aria-label="triggerLabel"
       :class="secondaryBtnCompactClass"
       class="tpl-language-trigger"
       style="
