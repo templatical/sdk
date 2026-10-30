@@ -1,20 +1,23 @@
 // Static analysis of a custom block's Liquid template against its field
-// model. The engine options must equal the editor's renderer
-// (packages/editor/src/composables/useBlockRegistry.ts): a template that
-// renders here and fails there, or the reverse, makes every check below lie.
-// tests/custom-block-liquid.test.ts holds the two equal.
+// model. Block output uses the shared @templatical/types Liquid factory,
+// so checks, CLI rendering, the editor and headless callers share one engine.
+// Recipes use their separate, unescaped factory below.
 
-import { ForTag, Liquid, Output, Tag, type Template } from "liquidjs";
+import * as liquidjs from "liquidjs";
+import { createCustomBlockLiquid } from "@templatical/types";
 import type { CustomBlockIssue, CustomBlockWorkingFile } from "./types";
 
-export function createLiquid(): Liquid {
-  // `templates: {}` resolves include/render/layout against an empty in-memory
-  // map, never the disk. Without it, Node's engine reads files relative to
-  // the cwd: a recipe body could carry `.env` to the API host, and a template
-  // would render here while the editor, which has no partials, fails.
-  return new Liquid({
+export function createLiquid(): liquidjs.Liquid {
+  return createCustomBlockLiquid(liquidjs);
+}
+
+/** Request URLs and JSON bodies need their original, non-HTML escaping. */
+export function createRecipeLiquid(): liquidjs.Liquid {
+  return new liquidjs.Liquid({
     strictVariables: false,
     strictFilters: false,
+    // Resolve file tags against an empty map, never the disk: a recipe
+    // body must not be able to carry a local file to the API host.
     templates: {},
   });
 }
@@ -32,7 +35,7 @@ const FILE_TAGS = new Set(["include", "render", "layout"]);
 export const NO_PARTIALS = { partials: false } as const;
 
 /** A tag's child templates, from liquidjs's static-analysis generator. */
-function childTemplates(template: Template): Template[] {
+function childTemplates(template: liquidjs.Template): liquidjs.Template[] {
   if (!template.children) return [];
   const gen = template.children(false, true);
   let step = gen.next();
@@ -41,30 +44,34 @@ function childTemplates(template: Template): Template[] {
 }
 
 /** Every template in the tree, depth-first, nested tags included. */
-function allTemplates(templates: Template[]): Template[] {
+function allTemplates(templates: liquidjs.Template[]): liquidjs.Template[] {
   return templates.flatMap((t) => [t, ...allTemplates(childTemplates(t))]);
 }
 
 /** Every `for` tag in the tree, nested ones included. */
-function forTags(templates: Template[]): ForTag[] {
+function forTags(templates: liquidjs.Template[]): liquidjs.ForTag[] {
   return allTemplates(templates).filter(
-    (t): t is ForTag => t instanceof ForTag,
+    (t): t is liquidjs.ForTag => t instanceof liquidjs.ForTag,
   );
 }
 
 /** Names of the file-loading tags in the tree, each once, in source order. */
-export function fileTags(templates: Template[]): string[] {
+export function fileTags(templates: liquidjs.Template[]): string[] {
   const names = allTemplates(templates)
-    .filter((t): t is Tag => t instanceof Tag && FILE_TAGS.has(t.name))
+    .filter(
+      (t): t is liquidjs.Tag =>
+        t instanceof liquidjs.Tag && FILE_TAGS.has(t.name),
+    )
     .map((t) => t.name);
   return [...new Set(names)];
 }
 
 /** How many `{{ }}` outputs in the tree reach the text without a `json` filter. */
-export function outputsWithoutJson(templates: Template[]): number {
+export function outputsWithoutJson(templates: liquidjs.Template[]): number {
   return allTemplates(templates).filter(
     (t) =>
-      t instanceof Output && !t.value.filters.some((f) => f.name === "json"),
+      t instanceof liquidjs.Output &&
+      !t.value.filters.some((f) => f.name === "json"),
   ).length;
 }
 
@@ -77,7 +84,7 @@ export function fileTagMessage(name: string, where: string): string {
  * The field a loop iterates, when its collection is a bare identifier.
  * `for x in a.b` iterates a property of `a`, not `a`, so it has none.
  */
-function bareCollection(tag: ForTag): string | null {
+function bareCollection(tag: liquidjs.ForTag): string | null {
   const c = tag.collection as {
     variable?: unknown;
     props?: Array<{ content?: unknown }>;
@@ -89,7 +96,7 @@ function bareCollection(tag: ForTag): string | null {
 
 export function checkLiquid(def: CustomBlockWorkingFile): CustomBlockIssue[] {
   const engine = createLiquid();
-  let parsed: Template[];
+  let parsed: liquidjs.Template[];
   try {
     parsed = engine.parse(def.template);
   } catch (err) {

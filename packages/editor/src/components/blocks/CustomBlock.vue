@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sanitizeRichTextHtml } from "../../utils/sanitizeRichTextHtml";
 import CustomBlockIcon from "../CustomBlockIcon.vue";
 import LoadingTrack from "../LoadingTrack.vue";
 import { useI18n } from "../../composables";
@@ -38,6 +39,8 @@ const { t } = useI18n();
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
 const renderedHtml = ref("");
+// Sanitize only the canvas sink; export keeps the template's own HTML/CSS.
+const canvasHtml = computed(() => sanitizeRichTextHtml(renderedHtml.value));
 const hasError = ref(false);
 
 const definition = computed(() =>
@@ -152,7 +155,7 @@ watch(
 
     <div v-else class="tpl:relative">
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-html="renderedHtml" />
+      <div v-html="canvasHtml" />
 
       <!-- Data source CTA overlay -->
       <div

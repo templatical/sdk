@@ -5,7 +5,7 @@ import type {
   CustomBlock,
   CustomBlockDefinition,
 } from "@templatical/types";
-import { createCustomBlock } from "@templatical/types";
+import { createCustomBlock, createCustomBlockLiquid } from "@templatical/types";
 import { type Component, shallowRef, triggerRef } from "vue";
 import { logger } from "../utils/logger";
 
@@ -85,11 +85,8 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
     }
 
     try {
-      const { Liquid } = await import("liquidjs");
-      const engine = new Liquid({
-        strictVariables: false,
-        strictFilters: false,
-      });
+      // The shared factory keeps editor, CLI and headless block output equal.
+      const engine = createCustomBlockLiquid(await import("liquidjs"));
 
       return await engine.parseAndRender(
         definition.template,

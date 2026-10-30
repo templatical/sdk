@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import mjml2html from "mjml";
+import type { CustomBlockWorkingFile } from "../src/custom-block/types";
+import { buildSpecimenTemplate } from "../src/custom-block/specimen";
 import { renderSpecimenMjml, renderStates } from "../src/custom-block/render";
 
 const def = {
@@ -36,5 +38,27 @@ describe("renderSpecimenMjml", () => {
     expect(errors).toEqual([]);
     expect(html).toContain("tplc-badge-cell");
     expect(html).toContain("New New New");
+  });
+});
+
+
+describe("escaped specimen fields", () => {
+  const escapedDef: CustomBlockWorkingFile = {
+    type: 'escaped', name: 'Escaped',
+    fields: [{ key: 'body', label: 'Body', type: 'text', default: '<script>alert(1)</script> & "quoted"' }],
+    template: '<p>{{ body }}</p>',
+  };
+  const expected = '<p>&lt;script&gt;alert(1)&lt;/script&gt; &amp; &#34;quoted&#34;</p>';
+
+  it("escapes field values in renderStates", async () => {
+    const states = await renderStates(escapedDef);
+    expect(states[0].html).toBe(expected);
+  });
+
+  it("preserves escaped HTML in the specimen MJML", async () => {
+    const template = buildSpecimenTemplate(escapedDef);
+    template.blocks = template.blocks.filter((block) => block.type === 'custom');
+    const mjml = await renderSpecimenMjml(escapedDef, template);
+    expect(mjml.match(/<p>[\s\S]*?<\/p>/)?.[0]).toBe(expected);
   });
 });

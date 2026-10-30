@@ -789,6 +789,9 @@ importers:
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
+      liquidjs:
+        specifier: ^10.30.0
+        version: 10.30.0
       mjml:
         specifier: ^5.4.1
         version: 5.4.1(relateurl@0.2.7)(svgo@4.1.0)(terser@5.51.2)(typescript@6.0.3)
@@ -862,6 +865,9 @@ importers:
 
   packages/types:
     devDependencies:
+      liquidjs:
+        specifier: ^10.30.0
+        version: 10.30.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

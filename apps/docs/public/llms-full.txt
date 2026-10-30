@@ -1804,6 +1804,7 @@ interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
+  customBlocks?: CustomBlockDefinition[];
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
   blockRenderers?: BlockRendererMap;
   getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
@@ -1816,37 +1817,34 @@ interface RenderOptions {
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
-| `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
+| `customBlocks` | -- | `CustomBlockDefinition[]` for headless rendering. The last definition per type wins; unknown types use saved `renderedHtml` and `renderedStylesheet`. Requires optional `liquidjs` peer `^10.30.0` when custom blocks are present. See the [Custom blocks guide](/guide/custom-blocks). |
+| `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. The editor passes this through `editor.toMjml()`. Mutually exclusive with `customBlocks`. When neither option is passed, every custom block uses `renderedHtml` (if present). |
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
-| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Editor consumers pass the registry stylesheet. If omitted, each type's `renderedStylesheet` is emitted instead (the copy the editor writes before a render provider or Cloud storage sees the content); when passed, it decides every type and the copies are ignored. |
+| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Mutually exclusive with `customBlocks`. A listed definition decides its type's stylesheet, including emitting none; unknown types use saved `renderedStylesheet`. A passed resolver decides every type and ignores saved copies. |
 | `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${dir}/${platform}.png`, where `dir` is the style, plus `-${tone}` for a `dark` or `light` `iconTone`. See [Social icons](#social-icons) below. |
 
 ### Custom blocks
 
-When the content tree contains custom blocks, the renderer asks the supplied `renderCustomBlock` callback to convert each one to HTML. From the editor:
+Headless callers pass the same definitions they register with the editor:
 
 ```ts
-const mjml = await renderToMjml(editor.getContent(), {
-  renderCustomBlock: editor.renderCustomBlock,
-});
+import { renderToMjml } from '@templatical/renderer';
+import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
+
+export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
+  return renderToMjml(content, { customBlocks: definitions });
+}
 ```
 
-Headless / Node.js consumers (no editor mounted) can provide their own resolver — for example, running the same Liquid template against the block's `fieldValues`:
+For a lower-level resolver, use the shared Liquid factory:
 
 ```ts
-import { Liquid } from 'liquidjs';
-
-const engine = new Liquid();
-const definitionsByType = new Map(/* your CustomBlockDefinition list, keyed by type */);
-
-const mjml = await renderToMjml(content, {
-  async renderCustomBlock(block) {
-    const definition = definitionsByType.get(block.customType);
-    if (!definition) return '';
-    return engine.parseAndRender(definition.template, block.fieldValues);
-  },
-});
+import * as liquidjs from 'liquidjs';
+import { createCustomBlockLiquid } from '@templatical/types';
+const liquid = createCustomBlockLiquid(liquidjs);
 ```
+
+The option's fallback, exact conflicts and missing-peer error, and the factory's fixed options are in the [Custom blocks guide](/guide/custom-blocks). <code v-pre>{{ body | raw }}</code> keeps HTML from an intentional HTML field. Always quote attribute values and validate URL schemes from untrusted sources. Only the editor canvas sanitizes the rendered block; email output keeps the template's HTML.
 
 ### Social icons
 
@@ -2881,7 +2879,21 @@ type ViewportSize = 'desktop' | 'mobile';
 
 ## Factory Functions
 
-All factory functions accept an optional partial override object and return a complete block with a generated ID.
+The block factory functions below accept an optional partial override object and return a complete block with a generated ID. `createCustomBlockLiquid(liquidjs)` is also exported for headless custom-block rendering; see the [Custom blocks guide](/guide/custom-blocks) for its contract and optional liquidjs peer.
+
+The factory's public module shape has no declaration dependency on `liquidjs`. Passing the actual module preserves its `Liquid` instance type:
+
+```ts
+export interface CustomBlockLiquidModule {
+  Liquid: new (...args: any[]) => any;
+  Tag: abstract new (...args: any[]) => any;
+  CycleTag: new (...args: any[]) => any;
+  Value: new (...args: any[]) => any;
+  toValue: (value: any) => any;
+}
+
+export declare function createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>;
+```
 
 ```ts
 import {
@@ -9439,7 +9451,7 @@ const editor = await init({
 
 1. **Block palette** — The `name` and `icon` appear here. Users drag the block from the palette into their template.
 2. **Settings panel** — Each entry in `fields` becomes a form control where users can edit the block's content.
-3. **Editor canvas** — The Liquid `template` renders exactly as defined, with field values populated from the settings panel.
+3. **Editor canvas** — The Liquid `template` renders with HTML-escaped field values from the settings panel; the canvas sanitizes the result.
 
 ::: tip Reordering the palette
 By default a custom block appears in the palette after all built-in blocks. To promote it — or to hide built-in types you don't use — pass the [`paletteBlocks`](/api/editor#customizing-the-block-palette) option and reference your custom block by its `custom:`-prefixed type (e.g. `"custom:testimonial"`).
@@ -9777,6 +9789,40 @@ Liquid treats an empty string as true, and a field the user cleared holds an emp
 
 For the full syntax reference, see the [Liquid documentation](https://liquidjs.com/tags/overview.html).
 
+### Output escaping
+
+<code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output is HTML-escaped by default, including repeatable item fields. Liquid uses these exact replacements:
+
+| Character | Entity |
+| --- | --- |
+| `&` | `&amp;` |
+| `<` | `&lt;` |
+| `>` | `&gt;` |
+| `"` | `&#34;` |
+| `'` | `&#39;` |
+
+For a field intended to contain HTML, use Liquid's built-in `raw` filter:
+
+```liquid
+<div>{{ body | raw }}</div>
+```
+
+An explicit `| escape` on ordinary output escapes the value twice. Remove it when the template already uses default escaping. A `{% capture %}` stores its rendered, already-escaped output; print the captured value with <code v-pre>{{ name | raw }}</code> to avoid escaping it again:
+
+```liquid
+{% capture name %}{{ body }}{% endcapture %}{{ name | raw }}
+```
+
+When a filter produces HTML, escape the field before that filter and put `raw` last. For example, <code v-pre>{{ field | escape | newline_to_br | raw }}</code> keeps field text escaped while allowing the filter's `<br />` markup. `raw` must be last so the engine does not escape the generated HTML after the filter runs.
+
+Use `| raw` only for HTML you intend to render. Always quote attribute values, such as <code v-pre>&lt;a href="{{ url }}"&gt;</code>: escaping protects quoted attributes only. Escaping does not validate URL schemes; validate URL fields from untrusted sources in your integration before rendering email.
+
+The editor canvas also sanitizes each rendered block. It removes `script`, `style`, `iframe`, `object`, `embed`, `link`, `meta`, `base` and `form` elements, all `on*` attributes, `srcdoc`, and unsafe URL schemes. This sanitization applies only to the canvas, including output marked `| raw`; email output keeps the template's HTML. Use the definition's `stylesheet` for CSS that must also appear on the canvas.
+
+A merge tag whose text contains `"` or `'` reaches the output entity-encoded as `&#34;` or `&#39;`. If your ESP needs literal quotes in that field, use `| raw` for it.
+
+**Check it:** Set a text field to `<b>Hello</b>` and render it with <code v-pre>{{ body }}</code>: the canvas shows the literal text `<b>Hello</b>`. Change the template to <code v-pre>{{ body | raw }}</code>: the canvas shows **Hello** in bold.
+
 ## Data sources
 
 Custom blocks become even more powerful when backed by an API data source. Instead of manually filling in every field, a data source fetches external data and populates the block automatically. When the block is added to the canvas (or when the user triggers a refresh), the `onFetch` callback is called and the returned data populates the block's field values.
@@ -9941,7 +9987,7 @@ const pricingTier: CustomBlockDefinition = {
 
 ## Email compatibility tips
 
-Custom block templates are rendered as raw HTML inside the email. Keep these guidelines in mind:
+Custom block templates produce email HTML with HTML-escaped field output by default. Use `| raw` for fields intended to supply HTML. Keep these guidelines in mind:
 
 - **Use inline styles** -- Email clients strip `<style>` blocks. Put all styling in `style` attributes.
 - **Use tables for layout** -- Flexbox and CSS Grid don't work in most email clients (especially Outlook). Use `<table>` for side-by-side layouts.
@@ -9969,28 +10015,28 @@ dataSource: {
 
 ## Rendering outside the editor
 
-`editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) resolve every custom block to HTML before rendering, and the payload carries each block's stylesheet with it, so `renderToMjml(payload.content)` needs no options. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML, so a server that renders a saved template on its own needs the definitions too. Pass `renderCustomBlock` and `getCustomBlockStylesheet` to `renderToMjml`, from a module the editor and the server both import:
+Render saved templates server-side with `renderToMjml(content, { customBlocks: definitions })`. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML. `editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) already resolve every custom block to HTML and carry its stylesheet, so `renderToMjml(payload.content)` needs no options for that payload. Install the optional `liquidjs` peer (`^10.30.0`) in the server project:
 
 ```ts
-import { Liquid } from 'liquidjs';
 import { renderToMjml } from '@templatical/renderer';
-import { testimonial } from './custom-blocks/testimonial';
+import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
 
-const definitions = new Map([[testimonial.type, testimonial]]);
-const liquid = new Liquid();
-
-const mjml = await renderToMjml(content, {
-  renderCustomBlock: async (block) => {
-    const definition = definitions.get(block.customType);
-    return definition
-      ? liquid.parseAndRender(definition.template, block.fieldValues)
-      : '';
-  },
-  getCustomBlockStylesheet: (type) => definitions.get(type)?.stylesheet,
-});
+export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
+  return renderToMjml(content, { customBlocks: definitions });
+}
 ```
 
-Without `renderCustomBlock`, a custom block is left out of the output, and without `getCustomBlockStylesheet` its `stylesheet` is. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
+`customBlocks?: CustomBlockDefinition[]` renders each matching definition's `template` with the block's `fieldValues` and emits its `stylesheet` once per type. The last definition for a duplicate type wins. An unknown type uses the block's saved `renderedHtml` and `renderedStylesheet`; a listed definition without a stylesheet emits none. A Liquid template error rejects `renderToMjml`. Passing `customBlocks` with `renderCustomBlock` throws `TypeError: [Templatical] customBlocks cannot be combined with renderCustomBlock`; with `getCustomBlockStylesheet` it throws `TypeError: [Templatical] customBlocks cannot be combined with getCustomBlockStylesheet`. The renderer imports `liquidjs` only when the content holds a custom block. If that peer is missing, it throws `[Templatical] customBlocks requires the optional liquidjs package.`
+
+For a lower-level resolver, `createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>` creates the same engine and keeps the module's `Liquid` return type:
+
+```ts
+import * as liquidjs from 'liquidjs';
+import { createCustomBlockLiquid } from '@templatical/types';
+const liquid = createCustomBlockLiquid(liquidjs);
+```
+
+Its fixed options are `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, and `templates: {}`. The empty template map makes `{% include %}`, `{% render %}` and `{% layout %}` refuse partial loading from disk or the network. It HTML-escapes <code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output, while a final `| raw` opts an output or echo value out. The optional `liquidjs` peer range is `^10.30.0`: the factory reads liquidjs's `Tag`, `Value` and `CycleTag` internals to implement those tag rules, so callers must stay within that range. Run the factory's exact-output suite with `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
 
 ## In the playground
 

@@ -2,6 +2,7 @@ import type {
   Block,
   ContentDirection,
   CustomBlock,
+  CustomBlockDefinition,
   TemplateContent,
   CustomFont,
   SectionWrapper,
@@ -11,6 +12,7 @@ import {
   applyLayout,
   assertNoSlotInContent,
   assertNoWrapperInContent,
+  createCustomBlockLiquid,
   isCustomBlock,
   isSection,
   isWrapper,
@@ -40,19 +42,18 @@ export interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;
+  /** Headless custom block definitions. The last definition per type wins. */
+  customBlocks?: CustomBlockDefinition[];
   /**
    * Resolves custom blocks to their HTML representation. Called once per
    * custom block in the content tree before MJML rendering. The renderer
-   * has no built-in knowledge of how to render custom blocks; consumers
-   * provide this function.
+   * accepts `customBlocks` for headless rendering; this callback is the
+   * editor's integration path.
    *
    * Editor consumers: pass `editor.renderCustomBlock`.
    *
-   * Headless consumers (Node.js, server, CLI): provide your own resolver,
-   * typically using the same liquid template + field values pipeline as
-   * the editor uses. If omitted, custom blocks fall back to
-   * `block.renderedHtml` (if present) and otherwise are omitted from the
-   * output.
+   * With neither this callback nor `customBlocks`, each custom block uses
+   * `block.renderedHtml` (if present) and is otherwise omitted.
    */
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
   /**
@@ -90,14 +91,12 @@ export interface RenderOptions {
    * Editor consumers: pass a function that reads
    * `blockRegistry.getDefinition(customType)?.stylesheet`.
    *
-   * Headless consumers: provide your own resolver, typically from the same
-   * definitions map used by `renderCustomBlock`. Return `undefined` or `null`
-   * for definitions without a stylesheet — those are skipped.
+   * Headless consumers can pass `customBlocks` instead. A listed definition
+   * decides its type's CSS; no stylesheet means none is emitted.
    *
-   * Without a resolver, each type's `block.renderedStylesheet` is emitted
-   * instead: the copy the editor writes before a render provider or Cloud
-   * storage sees the content. A resolver, when passed, decides every type and
-   * the copies are ignored, so a stale one never overrides a live definition.
+   * Without a resolver or matching definition, each type's saved
+   * `block.renderedStylesheet` is emitted. A resolver decides every type and
+   * ignores saved copies, so a stale one never overrides a live definition.
    */
   getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
   /**
@@ -136,16 +135,32 @@ const BUTTON_FULL_WIDTH_RULE = `.${BUTTON_FULL_WIDTH_CSS_CLASS} a { display: blo
 /**
  * Render template content to an MJML string.
  *
- * The function is async because resolving custom blocks may require
- * asynchronous work (e.g., the editor's liquid renderer dynamically imports
- * `liquidjs`). When the content has no custom blocks or `renderCustomBlock`
- * is omitted, no async work is performed but the function still resolves
- * synchronously — i.e., it always returns a Promise.
+ * With `customBlocks`, this imports the optional `liquidjs` peer only when
+ * the content holds a custom block. The editor uses `renderCustomBlock` via
+ * `toMjml()`; headless callers can pass definitions directly. The function
+ * always returns a Promise.
  */
 export async function renderToMjml(
   content: TemplateContent,
   options?: RenderOptions,
 ): Promise<string> {
+  if (
+    options?.customBlocks !== undefined &&
+    options.renderCustomBlock !== undefined
+  ) {
+    throw new TypeError(
+      "[Templatical] customBlocks cannot be combined with renderCustomBlock",
+    );
+  }
+  if (
+    options?.customBlocks !== undefined &&
+    options.getCustomBlockStylesheet !== undefined
+  ) {
+    throw new TypeError(
+      "[Templatical] customBlocks cannot be combined with getCustomBlockStylesheet",
+    );
+  }
+
   const toRender = options?.layout
     ? applyLayout(options.layout, content)
     : (assertNoSlotInContent(content),
@@ -160,14 +175,22 @@ export async function renderToMjml(
     options?.socialIconsBaseUrl ?? DEFAULT_SOCIAL_ICONS_BASE_URL,
   );
 
-  const customBlockHtml = await resolveCustomBlocks(
-    toRender,
-    options?.renderCustomBlock,
-  );
+  const customBlockHtml =
+    options?.customBlocks !== undefined
+      ? await resolveCustomBlockDefinitions(toRender, options.customBlocks)
+      : await resolveCustomBlocks(toRender, options?.renderCustomBlock);
 
   const customBlockStylesheets = collectCustomBlockStylesheets(
     toRender,
     options?.getCustomBlockStylesheet,
+    options?.customBlocks === undefined
+      ? undefined
+      : new Map(
+          options.customBlocks.map((definition) => [
+            definition.type,
+            definition,
+          ]),
+        ),
   );
 
   const contentDirection = resolveContentDirection(toRender.settings);
@@ -420,6 +443,46 @@ async function resolveCustomBlocks(
   return result;
 }
 
+/** One Liquid engine serves every definition in this render call. Template
+ * errors propagate as callback rejections do. */
+async function resolveCustomBlockDefinitions(
+  content: TemplateContent,
+  definitions: CustomBlockDefinition[],
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  const blocks: CustomBlock[] = [];
+  collectCustomBlocks(content.blocks, blocks);
+  if (blocks.length === 0) return result;
+
+  let liquidjs: typeof import("liquidjs");
+  try {
+    liquidjs = await import("liquidjs");
+  } catch {
+    throw new Error(
+      "[Templatical] customBlocks requires the optional liquidjs package.",
+    );
+  }
+  const liquid = createCustomBlockLiquid(liquidjs);
+  const byType = new Map(
+    definitions.map((definition) => [definition.type, definition]),
+  );
+  const rendered = await Promise.all(
+    blocks.map(async (block) => {
+      const definition = byType.get(block.customType);
+      return definition
+        ? String(
+            await liquid.parseAndRender(definition.template, block.fieldValues),
+          )
+        : undefined;
+    }),
+  );
+  for (let index = 0; index < blocks.length; index++) {
+    const html = rendered[index];
+    if (html !== undefined) result.set(blocks[index].id, html);
+  }
+  return result;
+}
+
 function collectCustomBlocks(blocks: Block[], out: CustomBlock[]): void {
   for (const block of blocks) {
     if (isCustomBlock(block)) {
@@ -451,6 +514,7 @@ function collectCustomBlocks(blocks: Block[], out: CustomBlock[]): void {
 function collectCustomBlockStylesheets(
   content: TemplateContent,
   resolver: RenderOptions["getCustomBlockStylesheet"],
+  definitions?: Map<string, CustomBlockDefinition>,
 ): string[] {
   const customBlocks: CustomBlock[] = [];
   collectCustomBlocks(content.blocks, customBlocks);
@@ -479,9 +543,12 @@ function collectCustomBlockStylesheets(
     }
     seenTypes.add(block.customType);
 
+    const definition = definitions?.get(block.customType);
     const css = resolver
       ? resolver(block.customType)
-      : copies.get(block.customType);
+      : definition
+        ? definition.stylesheet
+        : copies.get(block.customType);
     if (!css) {
       continue;
     }

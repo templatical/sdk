@@ -62,6 +62,25 @@ Write `.templatical/custom-blocks/<type>.json`. It is the definition minus
 
 **Template rules** — the validator enforces most, follow all:
 
+- `{{ }}`, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output is HTML-escaped: `&`, `<`, `>`, `"` and `'` become
+  `&amp;`, `&lt;`, `&gt;`, `&#34;` and `&#39;`. For a field intended to
+  hold HTML, write `{{ body | raw }}`. Repeatable item fields follow the same rule.
+- Remove an explicit `| escape` from ordinary output: default escaping would
+  escape it twice. `{% capture name %}{{ body }}{% endcapture %}` holds already-escaped
+  output; print it with `{{ name | raw }}`.
+- For an HTML-producing filter, use `{{ field | escape | newline_to_br | raw }}`.
+  Escape the field before generating `<br />`; `raw` must be last so the
+  engine does not escape the generated HTML.
+- Always quote attribute values (`<a href="{{ url }}">`); escaping protects
+  quoted attributes only. Validate URL schemes from untrusted sources in the
+  integration before rendering email: escaping does not validate URLs.
+- The editor canvas also sanitizes rendered HTML, including `| raw` output.
+  It removes `script`, `style`, `iframe`, `object`, `embed`, `link`, `meta`,
+  `base` and `form` elements, `on*` attributes, `srcdoc` and unsafe URL schemes.
+  Email output keeps the template's HTML; this sanitization is canvas-only.
+- Merge tags containing `"` or `'` reach output entity-encoded; use `| raw`
+  for such a field when the ESP requires literal quotes.
+
 - Lay out with `<table role="presentation">`, never flex, grid or positioned
   `<div>`s; Outlook draws none of them.
 - Inline styles. Nothing external, no `<style>` in the template — use
@@ -180,26 +199,29 @@ With the user's go-ahead, put it in their codebase following
   editor; the payload carries both, so `renderToMjml(payload.content)` needs
   no options. A server rendering a *saved* template on its own (a scheduled
   send, an API export) gets neither: saved JSON holds field values, not HTML,
-  so without `renderCustomBlock` the block is silently left out, and without
-  `getCustomBlockStylesheet` its media queries are. Ask whether they render on
+  so without a matching definition the block is silently left out, and its
+  media queries need the definition's stylesheet. Ask whether they render on
   a server; if so, keep the definition in a module the server can import too
-  and wire both options where they call `renderToMjml`:
+  and pass it as `customBlocks` to `renderToMjml`. Install the optional
+  `liquidjs` peer in the server project (range in the guide):
 
-      import { Liquid } from "liquidjs";
       import { renderToMjml } from "@templatical/renderer";
-      import { testimonial } from "./custom-blocks/testimonial";
+      import type { CustomBlockDefinition, TemplateContent } from "@templatical/types";
 
-      const definitions = new Map([[testimonial.type, testimonial]]);
-      const liquid = new Liquid();
-      const mjml = await renderToMjml(content, {
-        renderCustomBlock: async (block) => {
-          const definition = definitions.get(block.customType);
-          return definition
-            ? liquid.parseAndRender(definition.template, block.fieldValues)
-            : "";
-        },
-        getCustomBlockStylesheet: (type) => definitions.get(type)?.stylesheet,
-      });
+      export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
+        return renderToMjml(content, { customBlocks: definitions });
+      }
+
+  Unknown types use `renderedHtml` and `renderedStylesheet`; duplicate types
+  use the last definition. A listed definition without a stylesheet emits no
+  saved stylesheet. `customBlocks` cannot be combined with
+  `renderCustomBlock` or `getCustomBlockStylesheet`. A missing `liquidjs`
+  peer throws `[Templatical] customBlocks requires the optional liquidjs package.`
+  For a lower-level resolver, use `createCustomBlockLiquid(liquidjs)` from
+  `@templatical/types`; its fixed options are in the
+  [Custom blocks guide](https://docs.templatical.com/guide/custom-blocks).
+  Data-source recipes use a separate engine without HTML escaping so JSON
+  bodies retain their quotes.
 
   The server renders the saved field values; `dataSource.onFetch` runs only
   in the editor.

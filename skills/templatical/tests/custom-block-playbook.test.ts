@@ -15,10 +15,10 @@ describe("custom-block playbook", () => {
     expect(triage).toMatch(/every email[\s\S]{0,300}init\(\{ layout \}\)[\s\S]{0,200}\[rules\.md\]\(rules\.md\)/);
     expect(triage.indexOf("init({ layout })")).toBeLessThan(triage.indexOf("saved block"));
   });
-  it("wires renderCustomBlock and getCustomBlockStylesheet for server-side rendering", () => {
+  it("passes definitions to the renderer for server-side rendering", () => {
     const handoff = md.slice(md.indexOf("## 6. Handoff"));
-    expect(handoff).toContain("renderCustomBlock");
-    expect(handoff).toContain("getCustomBlockStylesheet");
+    expect(handoff).toContain("renderToMjml(content, { customBlocks: definitions })");
+    expect(handoff).toContain("liquidjs");
     expect(handoff).toMatch(/saved JSON holds field values, not HTML/);
   });
   it("escapes JSON body values with `| json` and keeps templates to one string", () => {

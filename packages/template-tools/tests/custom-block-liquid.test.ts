@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { checkLiquid } from "../src/custom-block/liquid";
+import { checkLiquid, createLiquid, createRecipeLiquid } from "../src/custom-block/liquid";
+import { pricingCardBlock } from "../../../apps/playground/src/templates";
 
 const base = {
   type: "features",
@@ -114,13 +115,38 @@ describe("checkLiquid", () => {
     expect(issues.map((i) => i.ruleId)).toEqual(["liquid.loop-not-repeatable"]);
   });
 
-  it("uses exactly the editor's engine options", () => {
+  it("builds both block engines only through the public factory", () => {
     const editor = readFileSync(resolve(import.meta.dirname,
       "../../editor/src/composables/useBlockRegistry.ts"), "utf8");
-    const mine = readFileSync(resolve(import.meta.dirname, "../src/custom-block/liquid.ts"), "utf8");
-    for (const option of ["strictVariables: false", "strictFilters: false"]) {
-      expect(editor).toContain(option);
-      expect(mine).toContain(option);
-    }
+    const tools = readFileSync(resolve(import.meta.dirname, "../src/custom-block/liquid.ts"), "utf8");
+    const blockFactory = tools.split("export function createLiquid()")[1].split("export function createRecipeLiquid()")[0];
+    expect(editor).toContain('createCustomBlockLiquid(await import("liquidjs"))');
+    expect(editor).not.toMatch(/\bnew Liquid\s*\(/);
+    expect(blockFactory).toContain("createCustomBlockLiquid(liquidjs)");
+    expect(blockFactory).not.toMatch(/\bnew (?:liquidjs\.)?Liquid\s*\(/);
+    expect(tools.match(/\bnew liquidjs\.Liquid\s*\(/g)).toHaveLength(1);
+    expect(tools.split("export function createRecipeLiquid()")[1]).toContain("new liquidjs.Liquid(");
+  });
+});
+
+
+describe("custom block engines", () => {
+  it("createLiquid escapes echo output through the public factory", async () => {
+    expect(await createLiquid().parseAndRender("{% echo v %}", { v: "<script>x</script>" })).toBe("&lt;script&gt;x&lt;/script&gt;");
+  });
+
+  it("renders Pricing Card line breaks without treating field HTML as markup", async () => {
+    const html = await createLiquid().parseAndRender(pricingCardBlock.template, {
+      highlighted: false,
+      accentColor: "#000000",
+      planName: "Plan",
+      price: "$10",
+      features: "a<b>\nc",
+    });
+    expect(html).toContain("a&lt;b&gt;<br />\nc");
+  });
+
+  it("keeps JSON body quotes in the recipe engine", async () => {
+    expect(await createRecipeLiquid().parseAndRender('{"q":{{ value | json }}}', { value: 'A "quote" & <tag>' })).toBe('{"q":"A \\"quote\\" & <tag>"}');
   });
 });

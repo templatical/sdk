@@ -56,18 +56,20 @@ const mjml = await renderToMjml(content, {
 
 ### With custom blocks
 
-The renderer doesn't know how to render custom blocks on its own — you supply a callback. Editor consumers wire this automatically through `editor.toMjml()`. Headless callers provide their own resolver:
+Editor consumers use `editor.toMjml()`. Headless callers pass the registered definitions as `customBlocks`. Install the optional `liquidjs` peer (`^10.30.0`) in the server project:
 
 ```ts
-const mjml = await renderToMjml(content, {
-  async renderCustomBlock(block) {
-    // e.g. run the same liquid template the editor uses, against block.fieldValues
-    return await myLiquidEngine.render(block.customType, block.fieldValues);
-  },
-});
+import { renderToMjml } from '@templatical/renderer';
+import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
+
+export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
+  return renderToMjml(content, { customBlocks: definitions });
+}
 ```
 
-If you don't pass `renderCustomBlock`, the renderer falls back to the block's `renderedHtml` field (if any) and otherwise omits the block from output.
+The [Custom blocks guide](https://docs.templatical.com/guide/custom-blocks) covers the option's fallback, conflicts and missing-peer error. For a lower-level resolver, use `createCustomBlockLiquid(liquidjs)` from `@templatical/types`. Use `{{ body | raw }}` for a field intended to hold HTML. Always quote attribute values and validate URL schemes from untrusted sources. The editor canvas also sanitizes each rendered block; email output keeps the template's HTML.
+
+Without a matching definition or callback, the renderer falls back to `renderedHtml` (if any) and otherwise omits the block.
 
 ## API
 
@@ -77,6 +79,7 @@ Options:
 - `customFonts` — `CustomFont[]` declarations rendered into `<mj-attributes>`
 - `defaultFallbackFont` — fallback when a block doesn't specify a font
 - `allowHtmlBlocks` — pass `false` to strip HTML blocks before render (e.g. for untrusted content)
+- `customBlocks` — `CustomBlockDefinition[]` — render saved blocks from definitions
 - `renderCustomBlock` — `(block: CustomBlock) => Promise<string>` — resolves custom blocks to HTML
 
 ## Documentation
