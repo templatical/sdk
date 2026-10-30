@@ -2,22 +2,20 @@
 name: templatical
 description: >-
   Author Templatical email templates and integrate the Templatical email editor
-  SDK. Use whenever the user wants to create, design, draft, mock up or edit a
+  SDK. Use whenever the user wants to create, design, draft or edit a
   marketing, transactional or newsletter email — for example "make a
-  product-launch email", "design a welcome email", "build an event invite",
-  "draft an order-confirmation email", or "turn this copy into an email
-  template" — even when they don't say "Templatical" or "JSON". Also use it for
-  producing or editing Templatical template JSON that must validate against the
-  block schema, for converting a template out of another email builder, and for
-  opening a live preview in the real Templatical editor and updating it as the
-  user prompts — triggered by intent such as "show it live", "preview it live",
-  "open it in the editor" or "build this in live mode". Also covers the SDK
-  itself (@templatical/editor): embedding, mounting, configuring, theming,
-  extending or troubleshooting an integration, defining or changing a custom
+  product-launch email", "design a welcome email" or "turn this copy into an
+  email template" — even when they don't say "Templatical" or "JSON". Also use
+  it for template JSON that must validate against the block schema, for
+  converting a template out of another email builder, and for a live preview
+  in the real editor that updates as the user prompts ("show it live",
+  "preview it live", "open it in the editor"). Also covers the SDK itself
+  (@templatical/editor): embedding, configuring, theming, extending,
+  troubleshooting or upgrading an integration, defining or changing a custom
   block type (fields + Liquid template, optionally filled from the user's own
-  API), and answering "how do I" / "is it possible" questions about it.
+  API), and "how do I" / "is it possible" questions about it.
 user-invocable: true
-argument-hint: "[build|edit|import|validate|export|live] [integrate|scaffold|custom-block|diagnose|docs] [target]"
+argument-hint: "[build|edit|import|validate|export|live] [integrate|scaffold|custom-block|diagnose|upgrade|docs] [target]"
 license: MIT
 ---
 
@@ -52,6 +50,7 @@ whichever playbook ran.
 | `scaffold` | Write the integration into their repository | [reference/scaffold.md](reference/scaffold.md) |
 | `custom-block` | Define a custom block type, or change one | [reference/custom-block.md](reference/custom-block.md) |
 | `diagnose` | Fix an integration that misbehaves | [reference/diagnose.md](reference/diagnose.md) |
+| `upgrade` | Move an integration to a newer release, breaking changes included | [reference/upgrade.md](reference/upgrade.md) |
 | `docs` | Answer a question from the SDK reference | [reference/docs.md](reference/docs.md) |
 
 Before acting, load the one playbook that owns the request — its row above for
