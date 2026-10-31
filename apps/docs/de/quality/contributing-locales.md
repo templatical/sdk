@@ -10,7 +10,9 @@
 
 6. **Kompatibilitäts-Regelnachrichten** (`src/compatibility/messages/{locale}.ts`) — `message` und `suggestion` pro `compat.*`-Regel, dazu Client-Gruppenbezeichnungen.
 
-Jede Datenmenge spiegelt die Locale-Auswahl des Editors. Der Struktur-, Link- und Zustellbarkeits-Linter haben kein Vague-Text-Dictionary-Pendant — ihre Regeln sind deterministisch und sprachunabhängig, nur der Nachrichtentext muss übersetzt werden.
+7. **Lokalisierungs-Regelnachrichten** (`src/localization/messages/{locale}.ts`) — `message` und `suggestion` für jedes `localization.*`-Issue.
+
+Nachrichtendatensätze können unterschiedliche Locales abdecken; eine nicht gebündelte Sprache fällt auf Englisch zurück. Nur die Barrierefreiheit verwendet Vague-Text-Dictionaries; die übrigen Linter übersetzen ihre Nachrichtentexte ohne Phrasen-Dictionary.
 
 ## Verzeichnisstruktur
 
@@ -44,6 +46,11 @@ packages/quality/src/deliverability/messages/
   en.ts       ← Source of Truth
   de.ts       ← annotiert mit `typeof en`
   index.ts    ← exportiert formatDeliverabilityMessage(), getDeliverabilityMessages()
+
+packages/quality/src/localization/messages/
+  en.ts       ← Source of Truth
+  de.ts       ← annotiert mit `typeof en`
+  index.ts    ← exportiert formatLocalizationMessage(), getLocalizationMessages()
 ```
 
 ## Eine Locale hinzufügen
@@ -142,7 +149,7 @@ const pt: typeof en = {
 export default pt;
 ```
 
-Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES` und `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES` reflektieren die neue Locale automatisch. Keine Registry zu editieren, kein Test zu aktualisieren.
+Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES`, `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES`, `SUPPORTED_COMPATIBILITY_MESSAGE_LOCALES` und `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` reflektieren die neue Locale automatisch. Es ist keine Registry zu editieren. Aktualisieren Sie beim Hinzufügen eines Datensatzes die zugehörigen Locale- und Paritätstests.
 
 ## Phrasen-Richtlinien (Vague-Text-Dictionary)
 
@@ -156,8 +163,17 @@ Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 ## Match-Reihenfolge
 
 - **Vague-Text-Dictionary** — `getDictionary(locale)` liefert eine Vereinigung der Phrasen (und Action-Hints) aller registrierten Locales. Das `locale`-Argument wird der API-Symmetrie wegen akzeptiert, ändert aber aktuell nichts an der zurückgegebenen Menge — eine vage Phrase ist universell vage, und ein Action-Verb in einer beliebigen registrierten Sprache zählt als Link-Ziel-Kontext. Die Erkennung ist by design sprachübergreifend.
-- **Regelnachrichten** — `formatMessage(locale, ruleId, params?)` (Barrierefreiheit), `formatStructureMessage(locale, ruleId, params?)` (Struktur), `formatLinkMessage(locale, ruleId, params?)` (Links) und `formatDeliverabilityMessage(locale, ruleId, params?)` (Zustellbarkeit) lösen das lokalisierte Template über die jeweilige `messages/{locale}.ts`-Datei auf und interpolieren `{name}`-Platzhalter. Alle fünf fallen auf Englisch zurück, wenn die Locale nicht gebündelt ist.
+- **Regelnachrichten** — `formatMessage(locale, ruleId, params?)` (Barrierefreiheit), `formatStructureMessage(locale, ruleId, params?)` (Struktur), `formatLinkMessage(locale, ruleId, params?)` (Links), `formatDeliverabilityMessage(locale, ruleId, params?)` (Zustellbarkeit), `formatCompatibilityMessage(locale, ruleId, params?)` (Kompatibilität) und `formatLocalizationMessage(locale, ruleId, params?)` (Lokalisierung) lösen das lokalisierte Template über die jeweilige `messages/{locale}.ts`-Datei auf und interpolieren `{name}`-Platzhalter. Alle Nachrichtenformatierer fallen auf Englisch zurück, wenn die Locale nicht gebündelt ist.
 
 ### 6. Kompatibilitäts-Regelnachrichten
 
 Übersetzen Sie beide Felder jedes `{ message, suggestion }`-Eintrags in `compatibility/messages/en.ts`. Erhalten Sie `{feature}`, `{unsupported}`, `{partial}`, `{size}`, `{max}` und Platzhalter der Merkmale. Übersetzen Sie Familien-/Plattformnamen und die Restanzahl. Der Formatter liefert `{ message, suggestion }`; die neue Locale-Datei wird über den bestehenden Glob geladen.
+
+
+### 7. Lokalisierungs-Regelnachrichten
+
+Erstellen Sie `localization/messages/<lang>.ts` aus `localization/messages/en.ts`. Verwenden Sie einen Basissprachen-Dateinamen wie `pt.ts`: Die Suche verwendet die kleingeschriebene Basissprache der angeforderten Locale und fällt auf Englisch zurück, wenn deren Map fehlt. Importieren Sie die englische Map als Typ mit `import type en from "./en"`, annotieren Sie die Locale-Map mit `typeof en` und exportieren Sie sie als Default, nach dem Muster von `de.ts`.
+
+Übersetzen Sie `message` und `suggestion` für `localization.untranslated`, `localization.stale` und `localization.merge-tags-differ`. Erhalten Sie jeden `{field}`-Platzhalter in beiden Feldern. `import.meta.glob` lädt die Datei automatisch; es ist kein Registry-Eintrag nötig. `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` enthält die gebündelten Locale-Schlüssel; `getLocalizationMessages` und `formatLocalizationMessage` verwenden die neue Map.
+
+Aktualisieren Sie `tests/localization/messages.test.ts`: Ergänzen Sie die neue Locale in der erwarteten `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES`-Liste und erweitern Sie die Regel-Schlüssel- und Platzhalterparitätstests auf die neue Map; vergleichen Sie `message` und `suggestion` mit Englisch. Die vorhandenen Fälle vergleichen `en` und `de`. Führen Sie danach `pnpm --filter @templatical/quality run typecheck` und `pnpm --filter @templatical/quality run test` aus. Rufen Sie `formatLocalizationMessage` für die neue Locale auf und bestätigen Sie, dass beide Rückgabefelder übersetzt und der `{field}`-Parameter eingesetzt sind.

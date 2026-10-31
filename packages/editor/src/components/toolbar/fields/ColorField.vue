@@ -12,6 +12,7 @@ const props = defineProps<{
   field: CustomBlockColorField;
   modelValue: string;
   readOnly?: boolean;
+  hideLabel?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -32,6 +33,7 @@ const colors = computed(() => resolveFieldColors(props.field, editorColors));
 
 <template>
   <FieldWrapper
+    :hide-label="hideLabel"
     :label="field.label"
     :required="field.required"
     :read-only="readOnly"

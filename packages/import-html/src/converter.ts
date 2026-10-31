@@ -5,6 +5,7 @@ import {
   canonicalFontStack,
   createDefaultTemplateContent,
   createSectionBlock,
+  isLocaleTag,
 } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
 import { readLinkUnderline, resolveCssStyles } from "./css-resolver";
@@ -23,6 +24,39 @@ import {
   readLegacyBackground,
 } from "./style-parser";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
+
+export interface ConvertHtmlOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
+
+/**
+ * The default language: the source's tag, else `defaultLocale`, else
+ * `"en"`. A value that isn't a language tag after `_` → `-` is skipped,
+ * with a warning naming it.
+ */
+function defaultLanguage(
+  declared: string | undefined,
+  defaultLocale: string | undefined,
+  warnings: string[],
+): string {
+  const rejected: string[] = [];
+  let locale = "en";
+  for (const [value, name] of [
+    [declared, "the source's default language"],
+    [defaultLocale, "defaultLocale"],
+  ] as const) {
+    if (!value) continue;
+    const tag = value.replaceAll("_", "-");
+    if (isLocaleTag(tag)) {
+      locale = tag;
+      break;
+    }
+    rejected.push(`Ignored ${name} "${value}": unsupported language tag.`);
+  }
+  for (const message of rejected) warnings.push(`${message} Used "${locale}".`);
+  return locale;
+}
 
 function emptyPadding() {
   return { top: 0, right: 0, bottom: 0, left: 0 };
@@ -263,7 +297,10 @@ function pageImageWarning($: CheerioAPI): string | null {
  * console.log(report.warnings);
  * ```
  */
-export function convertHtmlTemplate(html: string): ImportResult {
+export function convertHtmlTemplate(
+  html: string,
+  options: ConvertHtmlOptions = {},
+): ImportResult {
   if (typeof html !== "string") {
     throw new Error(
       "Invalid HTML template: expected a string. Pass the raw HTML source as a string.",
@@ -286,6 +323,11 @@ export function convertHtmlTemplate(html: string): ImportResult {
   const warnings: string[] = [];
 
   const settings = extractSettings($, linkUnderline);
+  settings.locale = defaultLanguage(
+    $("html").attr("lang")?.trim(),
+    options.defaultLocale,
+    warnings,
+  );
   const pageImage = pageImageWarning($);
   if (pageImage) warnings.push(pageImage);
   const blocks = processBody($, entries, warnings, settings.width);

@@ -3,6 +3,16 @@ export { lintAccessibility, ACCESSIBILITY_RULES } from "./accessibility";
 export { lintStructure, STRUCTURE_RULES } from "./structure";
 export { lintLinks, LINK_RULES } from "./links";
 export { lintDeliverability, DELIVERABILITY_RULES } from "./deliverability";
+export { lintLocalization, LOCALIZATION_RULES } from "./localization";
+export {
+  formatLocalizationMessage,
+  getLocalizationMessages,
+  SUPPORTED_LOCALIZATION_MESSAGE_LOCALES,
+} from "./localization/messages";
+export type {
+  LocalizationMessageMap,
+  LocalizationRuleMessageId,
+} from "./localization/messages";
 export {
   lintCompatibility,
   lintHtmlFragment,
@@ -64,6 +74,7 @@ export type {
   LinksLintOptions,
   LintIssue,
   LintOptions,
+  LocalizationLintOptions,
   LintPatch,
   LintPatchContext,
   LintThresholds,

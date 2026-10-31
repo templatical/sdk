@@ -52,6 +52,8 @@ function fragmentDocument(inner: string, css?: string): string {
 
 /** The start of the HTML importer's page-image warning. */
 const PAGE_IMAGE_WARNING = "The email background image ";
+/** The start of the HTML importer's warning about an invalid `<html lang>`. */
+const DEFAULT_LANGUAGE_WARNING = "Ignored the source's default language ";
 
 /**
  * Run the generic HTML importer on a subtree and keep its blocks.
@@ -59,7 +61,9 @@ const PAGE_IMAGE_WARNING = "The email background image ";
  * section entries are recorded by the caller. A fragment's `<body>` is
  * synthetic, so the page-image warning the HTML importer raises for a `body`
  * background in the caller's CSS is dropped; Stripo reports the page image
- * once, from `es-wrapper`.
+ * once, from `es-wrapper`. A fragment's language is synthetic too (a nested
+ * `<html lang>` merges into it), so Stripo reports the default language once,
+ * from the page.
  */
 export function blocksFromHtml(inner: string, ctx: ConvertCtx): Block[] {
   const result = convertHtmlTemplate(fragmentDocument(inner, ctx.css));
@@ -69,7 +73,9 @@ export function blocksFromHtml(inner: string, ctx: ConvertCtx): Block[] {
   }
   ctx.warnings.push(
     ...result.report.warnings.filter(
-      (warning) => !warning.startsWith(PAGE_IMAGE_WARNING),
+      (warning) =>
+        !warning.startsWith(PAGE_IMAGE_WARNING) &&
+        !warning.startsWith(DEFAULT_LANGUAGE_WARNING),
     ),
   );
   return flattenBlocks(result.content.blocks);

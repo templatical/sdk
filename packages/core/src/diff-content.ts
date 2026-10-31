@@ -1,6 +1,8 @@
 import type {
   Block,
   BlockParent,
+  BlockLocaleLayer,
+  LocalizedText,
   Operation,
   SectionBlock,
   TemplateContent,
@@ -17,14 +19,21 @@ interface Placement {
 type Json = Record<string, unknown>;
 
 const ROOT_KEY = "root";
-const BLOCK_SKIP: ReadonlySet<string> = new Set(["id", "type", "children"]);
+const BLOCK_SKIP: ReadonlySet<string> = new Set([
+  "id",
+  "type",
+  "children",
+  "l10n",
+]);
 const RESIZED_SECTION_SKIP: ReadonlySet<string> = new Set([
   "id",
   "type",
   "children",
   "columns",
+  "l10n",
 ]);
 const NO_SKIP: ReadonlySet<string> = new Set();
+const SETTINGS_SKIP: ReadonlySet<string> = new Set(["locales", "l10n"]);
 
 function containerKey(parent: BlockParent): string {
   return parent === null
@@ -104,6 +113,29 @@ function keyChanges(
   return { set, unset };
 }
 
+/** Changed paths within one language's layer; removed paths reset to the base. */
+function layerChanges(
+  before: BlockLocaleLayer = {},
+  after: BlockLocaleLayer = {},
+): Pick<
+  Extract<Operation, { op: "updateBlockLocale" }>,
+  "text" | "set" | "unset" | "hidden"
+> {
+  const text = keyChanges(before.text ?? {}, after.text ?? {}, NO_SKIP);
+  const set = keyChanges(before.set ?? {}, after.set ?? {}, NO_SKIP);
+  const unset = [...new Set([...text.unset, ...set.unset])];
+  return {
+    ...(Object.keys(text.set).length > 0
+      ? { text: text.set as Record<string, LocalizedText> }
+      : {}),
+    ...(Object.keys(set.set).length > 0 ? { set: set.set } : {}),
+    ...(unset.length > 0 ? { unset } : {}),
+    ...(before.hidden !== after.hidden
+      ? { hidden: after.hidden === true }
+      : {}),
+  };
+}
+
 /**
  * The operations that turn `before` into `after`. Blocks are matched by id, so
  * a drag comes out as a `moveBlock` and a layout change as a `columns` change
@@ -121,6 +153,7 @@ function keyChanges(
  * 5. `columns` shrinkage, once the dropped columns are empty.
  * 6. Deletion of sections whose surviving blocks have moved out.
  * 7. Key changes on blocks, then on settings.
+ * 8. Added locales, block and settings layers, then removed locales.
  *
  * No operation carries `expect`: an ordinary edit applies over anything that
  * doesn't conflict with it, and locks keep two people off one block.
@@ -129,6 +162,11 @@ export function diffContent(
   before: TemplateContent,
   after: TemplateContent,
 ): Operation[] {
+  if (
+    before.settings.locale !== after.settings.locale &&
+    (before.settings.locales?.length || after.settings.locales?.length)
+  )
+    return [{ op: "setContent", content: safeClone(after) }];
   const was = indexBlocks(before.blocks);
   const now = indexBlocks(after.blocks);
   const ops: Operation[] = [];
@@ -303,7 +341,7 @@ export function diffContent(
   const settings = keyChanges(
     before.settings as unknown as Json,
     after.settings as unknown as Json,
-    NO_SKIP,
+    SETTINGS_SKIP,
   );
   if (Object.keys(settings.set).length > 0 || settings.unset.length > 0) {
     ops.push({
@@ -313,5 +351,40 @@ export function diffContent(
     });
   }
 
+  const previousLocales = new Set(before.settings.locales ?? []);
+  const nextLocales = new Set(after.settings.locales ?? []);
+  for (const locale of nextLocales) {
+    if (!previousLocales.has(locale)) ops.push({ op: "addLocale", locale });
+  }
+  for (const [id, placement] of now) {
+    if (!exists(id)) continue;
+    const previous = was.get(id)!.block.l10n ?? {};
+    const next = placement.block.l10n ?? {};
+    for (const locale of new Set([
+      ...Object.keys(previous),
+      ...Object.keys(next),
+    ])) {
+      if (!nextLocales.has(locale)) continue;
+      const changes = layerChanges(previous[locale], next[locale]);
+      if (Object.keys(changes).length > 0) {
+        ops.push({ op: "updateBlockLocale", blockId: id, locale, ...changes });
+      }
+    }
+  }
+  const previous = before.settings.l10n ?? {};
+  const next = after.settings.l10n ?? {};
+  for (const locale of new Set([
+    ...Object.keys(previous),
+    ...Object.keys(next),
+  ])) {
+    if (!nextLocales.has(locale)) continue;
+    const changes = layerChanges(previous[locale], next[locale]);
+    if (Object.keys(changes).length > 0) {
+      ops.push({ op: "updateSettingsLocale", locale, ...changes });
+    }
+  }
+  for (const locale of previousLocales) {
+    if (!nextLocales.has(locale)) ops.push({ op: "removeLocale", locale });
+  }
   return ops;
 }

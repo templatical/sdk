@@ -126,6 +126,8 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 
 `@templatical/editor` ships as a single self-contained ESM bundle: its required editor runtime (Vue, TipTap, vue-draggable-plus, `@templatical/core` and `@templatical/types`) is inlined. You do not install the bundled runtime separately. Quality installs its own `@templatical/types` dependency.
 
+**Keep every `@templatical/*` package on the same version.** They release together under one version number, and a template saved by a newer editor can use fields an older renderer or validator doesn't know.
+
 ## Optional peers
 
 The editor lazy-loads optional packages via dynamic `import()`, gated by feature use. Quality installs by default; renderer and pusher-js remain optional peers:

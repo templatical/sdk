@@ -1,0 +1,67 @@
+{
+  "name": "element-id-set-content-existing",
+  "content": {
+    "blocks": [
+      {
+        "id": "menu",
+        "type": "menu",
+        "items": [
+          {
+            "id": "nav.home",
+            "text": "Home",
+            "url": "https://example.com"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en"
+    }
+  },
+  "ops": [
+    {
+      "op": "setContent",
+      "content": {
+        "blocks": [
+          {
+            "id": "menu",
+            "type": "menu",
+            "items": [
+              {
+                "id": "nav.home",
+                "text": "Start",
+                "url": "https://example.com"
+              }
+            ]
+          }
+        ],
+        "settings": {
+          "width": 640,
+          "locale": "en"
+        }
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "menu",
+          "type": "menu",
+          "items": [
+            {
+              "id": "nav.home",
+              "text": "Start",
+              "url": "https://example.com"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "width": 640,
+        "locale": "en"
+      }
+    }
+  }
+}

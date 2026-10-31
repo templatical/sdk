@@ -1,6 +1,121 @@
 import type en from "./en";
 
 const de: typeof en = {
+  localization: {
+    tagsDiffer: "Merge-Tags unterscheiden sich",
+    tagsDifferExplanation:
+      "Die Merge-Tags stimmen nicht mit dem Text auf {default} überein.",
+    changed: "Geändert in {language}",
+    notTranslatedCount: {
+      one: "{count} nicht übersetzt",
+      other: "{count} nicht übersetzt",
+    },
+    missingExplanation:
+      "Noch nicht übersetzt. Die E-Mail zeigt den Text auf {default}.",
+    staleExplanation: "{default} wurde seit der Übersetzung geändert.",
+    currentExcerpt: "Jetzt: „{excerpt}“",
+    useDefaultLanguage: "{default} verwenden",
+    changedProperties: {
+      one: "{count} Eigenschaft unterscheidet sich von {default}.",
+      other: "{count} Eigenschaften unterscheiden sich von {default}.",
+    },
+    resetChanges: "Änderungen zurücksetzen",
+    staleLanguages: {
+      one: "In {count} Sprache veraltet",
+      other: "In {count} Sprachen veraltet",
+    },
+    open: "Öffnen",
+    resetToDefault: "Auf {default} zurücksetzen",
+    hiddenExplanation: "Dieser Block ist nicht in der E-Mail auf {language}.",
+    editingLanguage: "Bearbeitung: {language}",
+    languageReadOnly: "Schreibgeschützt: {language} ist nicht aktiviert",
+    backToDefault: "Zurück zu {default}",
+    translateFields: {
+      one: "{count} Feld übersetzen",
+      other: "{count} Felder übersetzen",
+    },
+    translationConfirmation: {
+      one: "{count} Feld erneut übersetzen?",
+      other: "Alle {count} Felder erneut übersetzen?",
+    },
+    translateAllFields: {
+      one: "{count} Feld übersetzen",
+      other: "Alle {count} Felder übersetzen",
+    },
+    translationDescription:
+      "Dies ersetzt die aktuellen Übersetzungen für {language}, einschließlich manueller Änderungen. Du kannst dies rückgängig machen.",
+    translatedFields: {
+      one: "{count} Feld übersetzt.",
+      other: "{count} Felder übersetzt.",
+    },
+    translationTagsChanged: {
+      one: "{count} beibehalten, weil sich die Tags geändert haben.",
+      other: "{count} beibehalten, weil sich die Tags geändert haben.",
+    },
+    translationSkippedLocked: {
+      one: "{count} übersprungen, weil sie gerade bearbeitet werden.",
+      other: "{count} übersprungen, weil sie gerade bearbeitet werden.",
+    },
+    translationMissing: {
+      one: "{count} nicht zurückgegeben.",
+      other: "{count} nicht zurückgegeben.",
+    },
+    translationTooLarge: {
+      one: "{count} Feld ist zu lang zum Übersetzen.",
+      other: "{count} Felder sind zu lang zum Übersetzen.",
+    },
+    translationError: "Der Übersetzungsdienst meldet: {message}",
+    defaultRefused:
+      "{language} konnte nicht als Standardsprache festgelegt werden: {reason}",
+    defaultLockedReason: "jemand anderes bearbeitet dieses Template",
+    complete: "Vollständig",
+    gapTooltip: "{missing} fehlen, {stale} veraltet",
+    moreActions: "Weitere Aktionen für {language}",
+    makeDefaultLanguage: "Als Standardsprache festlegen",
+    makeDefault: "Als Standard festlegen",
+    makeDefaultConfirmation: "{language} als Standardsprache festlegen?",
+    removeConfirmation: "{language} entfernen?",
+    removeDescription:
+      "Dadurch werden der Text und die Änderungen für {language} gelöscht. Du kannst dies rückgängig machen.",
+    defaultChanged: "{language} ist jetzt die Standardsprache.",
+    missingCount: { one: "{count} fehlt", other: "{count} fehlen" },
+    staleCount: { one: "{count} veraltet", other: "{count} veraltet" },
+    hiddenBeforeDefault: {
+      one: "Zeige zuerst den {count} in {language} ausgeblendeten Block",
+      other: "Zeige zuerst die {count} in {language} ausgeblendeten Blöcke",
+    },
+    defaultNotEnabled:
+      "Füge {default} zuerst zu den aktivierten Sprachen hinzu",
+    defaultGaps: {
+      one: "{count} Feld hat keinen Text in {language} und behält seinen Text in {default}.",
+      other:
+        "{count} Felder haben keinen Text in {language} und behalten ihren Text in {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} Feld ist noch in {old}.",
+      other: "{count} Felder sind noch in {old}.",
+    },
+    translateAllAgain: "Alles erneut übersetzen…",
+    translate: "Übersetzen",
+    retranslate: "Erneut übersetzen",
+    translating: "{done} von {total} werden übersetzt…",
+    languages: "Sprachen",
+    default: "Standard",
+    notEnabled: "Nicht aktiviert",
+    addLanguage: "Sprache hinzufügen",
+    removeLanguage: "{language} entfernen",
+    cancel: "Abbrechen",
+    notTranslated: "Nicht übersetzt",
+    outOfDate: "Veraltet",
+    keep: "Beibehalten",
+    hidden: "In {language} ausgeblendet",
+    show: "Anzeigen",
+    hide: "In {language} ausblenden",
+    dismiss: "Schließen",
+    structureNotice: "Strukturänderungen gelten für jede Sprache",
+    aiActiveLanguage:
+      "Der KI-Chat bearbeitet {language}. Strukturänderungen gelten für alle Sprachen.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Erstellt mit",
@@ -672,6 +787,7 @@ const de: typeof en = {
     collapsePreview: "Vorschau von {block} zuklappen",
   },
   comments: {
+    filterLanguage: "Diese Sprache",
     button: "Kommentare",
     title: "Kommentare",
     close: "Schließen",

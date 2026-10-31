@@ -11,10 +11,13 @@
 | **[Links](./links/)** | Gefährliche URL-Schemata (`javascript:`), nicht unterstützte Protokolle, fehlerhafte `mailto:` / `tel:`, relative URLs, Staging-/localhost-URLs, die ins Template lecken | überwiegend warning; `link.javascript-protocol` ist error |
 | **[Zustellbarkeit](./deliverability/)** | Abweichender URL-Linktext, URL-Kürzer, IP-Links und bildlastige E-Mails mit wenig Text | warning oder info |
 | **[Kompatibilität](./compatibility/)** | Nicht unterstütztes durchgereichtes HTML und CSS sowie kompilierte Gmail-Größe | warning oder info |
+| **[Lokalisierung](/de/guide/localized-templates)** | Fehlende Übersetzungen, veraltete Quell-Hashes und abweichende Merge-Tags | warning |
 
-Alle fünf Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`); setzen Sie einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
+Alle Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`, `localization.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`, `localization`); setzen Sie einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
 
-**Alles mit einem Aufruf ausführen.** `lintTemplate(content, options?)` ist der einzelne aggregierte Einstiegspunkt — er führt alle fünf Linter aus und liefert die zusammengeführten `LintIssue[]` (zuerst Barrierefreiheit, dann Struktur, dann Links, dann Zustellbarkeit, dann Kompatibilität). Greifen Sie standardmäßig dazu; die einzelnen Linter-Funktionen bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Um eine Kategorie zu überspringen, setzen Sie ihren Schlüssel auf `false`: `lintTemplate(content, { structure: false })`. Siehe [Headless-Nutzung](./headless-usage).
+**Alles mit einem Aufruf ausführen.** `lintTemplate(content, options?)` ist der einzelne aggregierte Einstiegspunkt — er führt alle Linter aus und liefert die zusammengeführten `LintIssue[]` (zuerst Barrierefreiheit, dann Struktur, dann Links, dann Zustellbarkeit, dann Kompatibilität, dann Lokalisierung). Greifen Sie standardmäßig dazu; die einzelnen Linter-Funktionen bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Um eine Kategorie zu überspringen, setzen Sie ihren Schlüssel auf `false`: `lintTemplate(content, { structure: false })`. Siehe [Headless-Nutzung](./headless-usage).
+
+`contentLocale` wählt die geprüfte Version, `locale` die Meldungssprache. Wörterbücher bleiben eine Vereinigung aller Sprachen. Die drei `localization.*`-Regeln stehen unter [Optionen](./options#localization), mit [Fallback, Veraltung und Merge-Tag-Verhalten](/de/guide/localized-templates).
 
 ## Architektur
 
@@ -44,6 +47,8 @@ Alle fünf Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe
   <rect x="230" y="146" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="160" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintCompatibility()</text>
   <text x="320" y="172" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">compat.* rules</text>
+  <rect x="230" y="182" width="180" height="18" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="195" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintLocalization()</text>
   <line x1="410" y1="50" x2="445" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality-de)"/>
   <rect x="450" y="10" width="180" height="80" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="10"/>
   <text x="540" y="36" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600" fill="#1e293b" text-anchor="middle">LintIssue[]</text>

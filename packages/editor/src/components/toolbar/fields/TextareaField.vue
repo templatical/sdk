@@ -8,6 +8,7 @@ defineProps<{
   field: CustomBlockTextareaField;
   modelValue: string;
   readOnly?: boolean;
+  hideLabel?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -22,6 +23,7 @@ const readOnlyTextareaClass =
 
 <template>
   <FieldWrapper
+    :hide-label="hideLabel"
     :label="field.label"
     :required="field.required"
     :read-only="readOnly"

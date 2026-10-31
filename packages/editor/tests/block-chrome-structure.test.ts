@@ -63,7 +63,7 @@ describe("block chrome structure", () => {
     // It may pass display-only options (the resolved background image URL) as
     // a second argument, but the whole result is still what `contentStyle` is.
     expect(blockWrapper).toMatch(
-      /contentStyle\s*=\s*computed\(\(\)\s*=>\s*getBlockWrapperStyle\(\s*props\.block\s*[,)]/,
+      /contentStyle\s*=\s*computed\(\(\)\s*=>\s*getBlockWrapperStyle\(\s*display\.value\s*[,)]/,
     );
     expect(blockWrapper).toMatch(
       /class="tpl-block-content[^"]*"\s+:style="contentStyle"/,
@@ -72,7 +72,9 @@ describe("block chrome structure", () => {
     // across is how `--tpl-doc-paragraph-spacing` came to be computed and then
     // dropped: the control moved the number and the canvas never changed,
     // while the unit test on `getBlockWrapperStyle` still passed.
-    expect(blockWrapper).not.toMatch(/const\s+style:\s*Record<string,\s*string>/);
+    expect(blockWrapper).not.toMatch(
+      /const\s+style:\s*Record<string,\s*string>/,
+    );
     // `.tpl-block` carries no inline style; spacing lives only on the content
     // layer. Guards against reintroducing a wrapper-level spacing style.
     expect(blockWrapper).not.toMatch(/wrapperStyle/);
@@ -135,7 +137,9 @@ describe("block chrome structure", () => {
       expect(layer?.[1]).toMatch(
         /background:\s*var\(--tpl-block-bg-layer,\s*none\)/,
       );
-      expect(layer?.[1]).toMatch(/filter:\s*invert\(1\)\s+hue-rotate\(180deg\)/);
+      expect(layer?.[1]).toMatch(
+        /filter:\s*invert\(1\)\s+hue-rotate\(180deg\)/,
+      );
       expect(layer?.[1]).toMatch(/z-index:\s*-1/);
       expect(layer?.[1]).toMatch(/border-radius:\s*inherit/);
     });
@@ -311,15 +315,15 @@ describe("section drag + cycle defenses", () => {
     expect(blockWrapper).not.toMatch(/draggable="false"/);
   });
 
-  it("`setColumnBlocks` deep-clones each block before writing to state", () => {
-    // vue-draggable-plus's emit can carry a back-reference (e.g. a Sortable
-    // expando on a DOM element) that ends up reachable from state.content.
-    // The deep clone here strips any non-Block fields before the array
-    // lands in editor state, preventing later `history.cloneContent` /
-    // JSON.stringify calls from hitting a cycle. Pair with the
-    // cycle-safe `cloneContent` in @templatical/core/history.ts.
+  it("`setColumnBlocks` delegates insertion cloning to the structural list updater", () => {
+    // Existing blocks move from the shared base tree; incoming display values
+    // never replace them. New palette entries are serialized before insertion,
+    // keeping Sortable's DOM back-references out of state and history.
     expect(sectionBlock).toMatch(
-      /function setColumnBlocks[\s\S]*?JSON\.parse\(JSON\.stringify\(b\)\)[\s\S]*?editor\.updateBlock/,
+      /function setColumnBlocks[\s\S]*?updateBlockList\(editor, blocks, props\.block\.id, colIndex\)/,
+    );
+    expect(read("utils/updateBlockList.ts")).toMatch(
+      /editor\.addBlock\(\s*JSON\.parse\(JSON\.stringify\(moved\)\)/,
     );
   });
 
@@ -485,6 +489,15 @@ describe("chrome tokens survive the email-content override", () => {
   const styles = read("styles/index.css");
   const blockWrapper = read("components/blocks/BlockWrapper.vue");
   const sectionBlock = read("components/blocks/SectionBlock.vue");
+  // The corner badges render in a block's slot, inside a section's content.
+  const cornerBadges = [
+    // The popover teleports out of the content override into the editor root.
+    read("components/localization/LocaleStatusChip.vue").replace(
+      /<Teleport\b[^>]*:to="popoverRoot"[^>]*>[\s\S]*?<\/Teleport>/g,
+      "",
+    ),
+    read("components/canvas/BlockIssueBadge.vue"),
+  ];
 
   /* `.tpl[data-tpl-theme="dark"] .tpl-block-content` re-declares these tokens so
      email content renders light. A section's children render INSIDE that
@@ -545,14 +558,17 @@ describe("chrome tokens survive the email-content override", () => {
     // The whole mechanism depends on the aliases being substituted at `.tpl`.
     // Declaring one inside the override would defeat it.
     expect(overrideBody()).not.toContain("--tpl-chrome-");
-    expect(styles).toContain("--tpl-chrome-bg-elevated: var(--tpl-bg-elevated);");
+    expect(styles).toContain(
+      "--tpl-chrome-bg-elevated: var(--tpl-bg-elevated);",
+    );
   });
 
   it("block chrome never references a shadowed token directly", () => {
-    // Every reference to these tokens inside BlockWrapper/SectionBlock is
-    // chrome — email content is styled from block data via inline styles — so
-    // any raw usage here is the regression.
-    for (const src of [blockWrapper, sectionBlock]) {
+    expect(cornerBadges[0]).toContain('data-testid="locale-chip"');
+    // Every reference to these tokens inside BlockWrapper/SectionBlock and the
+    // inline corner badges inherits the content override, so any raw usage
+    // here is the regression. Teleported popovers use the editor's raw tokens.
+    for (const src of [blockWrapper, sectionBlock, ...cornerBadges]) {
       for (const name of [...SHADOWED, "text"]) {
         expect(src).not.toContain(`var(--tpl-${name})`);
       }
@@ -712,9 +728,7 @@ describe("sidebar drag-during-collapse rect-capture defense", () => {
     // the `@start` flag are that fix. `@start` must not flip `isDragging`:
     // the rail-width guard has to run at `choose`, before mouseleave.
     expect(sidebar).toMatch(/const PALETTE_DRAG_TOLERANCE_PX = 4/);
-    expect(sidebar).toMatch(
-      /:fallback-tolerance="PALETTE_DRAG_TOLERANCE_PX"/,
-    );
+    expect(sidebar).toMatch(/:fallback-tolerance="PALETTE_DRAG_TOLERANCE_PX"/);
     expect(sidebar).toMatch(/@start="handleDragStart"/);
     expect(sidebar).toMatch(/@click="handlePaletteClick\(blockType\)"/);
 
@@ -811,7 +825,9 @@ describe("a resolver owns the display-condition filter", () => {
     // `reset()` would discard the user's hand-hides on a mere view toggle, and
     // would discard them even when the resolve then fails and the *unresolved*
     // template is what renders. Nothing may clear the set on preview enter.
-    expect(core).not.toMatch(/previewMode[\s\S]{0,200}?conditionPreview\.reset/);
+    expect(core).not.toMatch(
+      /previewMode[\s\S]{0,200}?conditionPreview\.reset/,
+    );
   });
 
   it("Canvas and SectionBlock inject the rule instead of re-deriving it", () => {
@@ -823,9 +839,7 @@ describe("a resolver owns the display-condition filter", () => {
         /inject\(APPLIES_CONDITION_FILTER_KEY,\s*null\)/,
       );
       // No local copy of the rule.
-      expect(src, label).not.toMatch(
-        /appliesConditionFilter\s*=\s*computed\(/,
-      );
+      expect(src, label).not.toMatch(/appliesConditionFilter\s*=\s*computed\(/);
       // `?.value` where it runs in script rather than the template.
       expect(src, label).toMatch(
         /appliesConditionFilter(?:\?\.value)? === false \|\|\s*!conditionPreview\?\.isHidden/,
@@ -980,7 +994,9 @@ describe("the email background band comes from one constant", () => {
       resolver.indexOf("export function resolveBlockComponent"),
     );
     // Guard the slice itself, so a rename can't empty it and pass vacuously.
-    expect(body).toContain("fontFamily: resolveFontFamily(settings.fontFamily)");
+    expect(body).toContain(
+      "fontFamily: resolveFontFamily(settings.fontFamily)",
+    );
     expect(body).not.toMatch(/backgroundColor/);
   });
 });

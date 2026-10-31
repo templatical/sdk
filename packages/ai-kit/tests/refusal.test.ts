@@ -247,3 +247,32 @@ describe("engineRefusal lock holders", () => {
     ).toBe("op 1 (moveBlock b-2) was refused: someone is editing this block");
   });
 });
+
+it.each([
+  "addLocale",
+  "removeLocale",
+  "updateBlockLocale",
+  "updateSettingsLocale",
+])(
+  "reports an absent guarded member for %s without treating it as a base-tree value",
+  (op) => {
+    expect(
+      precondition([
+        {
+          op,
+          locale: "de",
+          blockId: "b-1",
+          expect: { text: { content: null } },
+        },
+      ]),
+    ).toBe("op 0's expect failed: text is now unset");
+  },
+);
+
+it("reports an unmet guard on setDefaultLocale without treating it as block data", () => {
+  expect(
+    precondition([
+      { op: "setDefaultLocale", locale: "de", expect: { locale: "en" } },
+    ]),
+  ).toBe("op 0's expect failed: locale is now unset");
+});

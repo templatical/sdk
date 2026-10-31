@@ -405,6 +405,7 @@ export function commentsProviderFor(
       const comment: Comment = {
         id: nextId(),
         body: input.body,
+        locale: input.locale,
         author: { ...PLAYGROUND_USER },
         createdAt: new Date().toISOString(),
         blockId: input.blockId ?? null,

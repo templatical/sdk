@@ -1,20 +1,28 @@
 ---
-description: Reference for LintOptions — disabled, locale, accessibility, structure, links, deliverability, and compatibility fields accepted by lintTemplate and editor lint config.
+description: Reference for LintOptions — disabled, locale, contentLocale, accessibility, structure, links, deliverability, compatibility, and localization fields accepted by lintTemplate and editor lint config.
 ---
 
 # Options
 
-`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintCompatibility` all accept the same `LintOptions` shape. Every field is optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability`, `lintCompatibility`, and `lintLocalization` all accept the same `LintOptions` shape. Every field is optional.
 
 ```ts
 interface LintOptions {
   disabled?: boolean;
   locale?: string;
+  contentLocale?: string;
+  customBlocks?: CustomBlockDefinition[];
+  mergeTagSyntax?: SyntaxPresetName | SyntaxPreset;
   accessibility?: false | AccessibilityLintOptions;
   structure?: false | StructureLintOptions;
   links?: false | LinksLintOptions;
   deliverability?: false | DeliverabilityLintOptions;
   compatibility?: false | CompatibilityLintOptions;
+  localization?: false | LocalizationLintOptions;
+}
+
+interface LocalizationLintOptions {
+  rules?: RuleOverrides;
 }
 
 interface AccessibilityLintOptions {
@@ -72,7 +80,7 @@ When `true`:
 Use this when a tenant has explicitly opted out, or to keep the default editor bundle minimal. There's no soft-disable — `disabled: true` is a complete, irreversible-per-instance shut-off.
 
 ::: tip Disabling every linter individually has the same effect
-The editor treats `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
+The editor treats `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false, localization: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
 :::
 
 ## `locale`
@@ -90,6 +98,7 @@ lintStructure(content, { locale: "de" });
 lintLinks(content, { locale: "de" });
 lintDeliverability(content, { locale: "de" });
 lintCompatibility(content, { locale: "de" });
+lintLocalization(content, { contentLocale: "de", locale: "de" });
 
 // Editor — linter automatically follows the editor locale
 init({ locale: "de" });
@@ -98,12 +107,30 @@ init({ locale: "de" });
 ::: warning Editor mode ignores `lint.locale`
 In editor mode the linter locale is **forced** to the editor's `locale` from `init({ locale })`. Setting `lint.locale` has no effect — it's overwritten on the way through.
 
-Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` / `lintDeliverability(...)` / `lintCompatibility(...)` directly) keep full control.
+Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` / `lintDeliverability(...)` / `lintCompatibility(...)` / `lintLocalization(...)` directly) keep full control.
 :::
 
 ::: tip Vague-text dictionaries are cross-locale
 The dictionary is a union of every registered locale, so a German-locale email with an English `Click here` button still flags `a11y.link-vague-text` / `a11y.button-vague-label`, and a German `Jetzt kaufen` alt on an English-locale linked image still satisfies `a11y.img-linked-no-context`'s action-hint check. The `locale` option doesn't gate matching — it only drives message text.
 :::
+
+## `contentLocale`
+
+Selects the template language version linted by `lintTemplate`, defaulting to `content.settings.locale`. `locale` still selects message language. In the editor, `contentLocale` follows the active template language and `locale` follows the UI. Vague-text dictionaries remain a union across languages; `contentLocale` does not change them. An unknown content locale throws `SdkError` with code `unknown_locale`.
+
+`customBlocks?: CustomBlockDefinition[]` identifies custom `text` and `textarea` fields for localization checks (omitted: no custom text discovery). `mergeTagSyntax?: SyntaxPresetName | SyntaxPreset` selects merge-tag syntax for those checks; it defaults to Liquid.
+
+## `localization`
+
+Enabled by default for non-default versions. Set `localization: false` to suppress these checks, or use `localization.rules` with full rule ids to override severity (`"error"`, `"warning"`, `"info"`, `"off"`). `lintLocalization(content, options?)` and `LOCALIZATION_RULES` are exported for targeted checks; prefer `lintTemplate` to lint the projection and all categories.
+
+| Rule | Default | Meaning |
+| --- | --- | --- |
+| `localization.untranslated` | `warning` | A nonempty default text field has no translation |
+| `localization.stale` | `warning` | A translated field's `sourceHash` no longer matches the default |
+| `localization.merge-tags-differ` | `warning` | The translated text's merge-tag multiset differs from the default |
+
+Hidden blocks and their descendants are excluded. The default language produces no localization findings. See [Missing values](/guide/localized-templates#missing-values), [Out-of-date values](/guide/localized-templates#out-of-date-values) and [Merge tags](/guide/localized-templates#merge-tags). The CLI's `validate --locale` treats a merge-tag mismatch as blocking even at warning severity.
 
 ## `accessibility`
 

@@ -76,6 +76,26 @@ It also accepts the design serialized as a JSON string, for callers that store o
 Pass the design object itself, not Topol's whole API response. Topol's editor hands it to you directly, as the first of four arguments to `onSave` — no envelope to unwrap there. Its REST APIs do wrap it, and which field holds the design depends on the endpoint: the template-retrieval endpoint returns `{ data: { id, name, screenshot_url, definition, html } }`, so use `.data.definition`; the predefined-templates endpoint returns the design under `json`, alongside `html`. Passing either envelope by mistake, as an object or as a JSON string, is recognised — the converter sees a `json` or `definition` key on a root with the wrong shape and names both fields in the error. A root with a different shape altogether — not an object, unparseable JSON, or an object with neither key — still throws, naming what it expected instead. The design is unwrapped explicitly rather than detected automatically, because guessing which field holds it risks importing an envelope's `html` string — output that belongs to `@templatical/import-html`, not this package.
 :::
 
+## Languages {#languages}
+
+The `langs[]` entry with `primary: true` declares the default; otherwise the first entry does. Each source `uid` is mapped to a newly generated block id. `translations[uid].content` becomes text through the existing `mj-text`/`mj-button` conversion. Image `attributes.alt` becomes text; `attributes.href` becomes button `set.url` or image `set.linkUrl`; image `attributes.src` becomes `set.src`.
+
+`translations["mj-preview"].content` supplies the preheader, including the default entry's preview. `mj-subject` is dropped with a warning because the host owns the subject. Translations targeting a skipped block or an HTML fallback are dropped with warnings. Language-conditional section variants are not read.
+
+The mappings follow [Topol's documented language structure](https://docs.topol.io/email-editor/guide/multilingual-templates.html), checked 2026-10-28. Fixtures are built from that documentation, not real multilingual exports.
+
+Codes normalize `_` to `-` and must pass `isLocaleTag`. Unsupported tags are dropped with a warning naming the language. Text entries carry `{ value, sourceHash }`, hashed from the imported default. Enable `init({ localization: { locales } })` with the imported languages to show the Languages menu. Check the result with `template-tools validate imported.json --locale <tag>` and inspect `report.warnings`.
+
+## Options {#options}
+
+`convertTopolTemplate` accepts a second argument of type `ConvertTopolOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
+
+```ts
+export interface ConvertTopolOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Reading the report
 
 Each `report.entries` item describes one source node:

@@ -14,6 +14,7 @@ import {
 } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { registerEditorInstance } from "../utils/activeEditorTracker";
+import { resolveLintOptions } from "../utils/resolveLintOptions";
 import {
   useHistory,
   useHistoryInterceptor,
@@ -48,6 +49,7 @@ import type {
 } from "@templatical/types";
 import {
   applyLayout,
+  resolveLocale,
   deepMergeDefaults,
   getSyntaxTriggerChar,
   hasMergeTagSamples,
@@ -107,6 +109,7 @@ import {
   TEMPLATE_LINT_KEY,
   EDITOR_ROOT_KEY,
   POPOVER_ROOT_KEY,
+  LOCALE_CHIP_OPENERS_KEY,
 } from "../keys";
 import {
   createImageUrlResolver,
@@ -209,6 +212,14 @@ export interface BaseEditorReturn {
     isSaving?: boolean;
   }>;
   content: Ref<TemplateContent>;
+  /** Supplied by localized editors; null selects the default language. */
+  activeLocale?: Ref<string | null>;
+  setActiveLocale?: (locale: string | null) => void;
+  addLocale?: (locale: string) => void;
+  removeLocale?: (locale: string) => void;
+  setBlockHidden?: (blockId: string, hidden: boolean) => void;
+  resetLocaleFields?: (blockId: string, paths?: string[]) => void;
+  keepTranslations?: (blockId: string, paths: string[]) => void;
   selectedBlock: Ref<Block | null>;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   selectBlock: (blockId: string | null) => void;
@@ -231,7 +242,7 @@ export interface BaseEditorReturn {
     targetSectionId?: string,
     columnIndex?: number,
   ) => void;
-  isBlockLocked: (blockId: string) => boolean;
+  isBlockLocked: (blockId: string, structure?: boolean) => boolean;
   markDirty: () => void;
   findBlockLocation: (blockId: string) => {
     targetSectionId?: string;
@@ -640,6 +651,7 @@ export function useEditorCore(
   const editorRoot = options.editorRoot ?? document;
   provide(EDITOR_ROOT_KEY, editorRoot);
   provide(POPOVER_ROOT_KEY, popoverRoot);
+  provide(LOCALE_CHIP_OPENERS_KEY, new Map());
   provide(TRANSLATIONS_KEY, translations);
   provide(EDITOR_KEY, editor);
   provide(HISTORY_KEY, history);
@@ -759,11 +771,19 @@ export function useEditorCore(
     resolvePreview: config.resolvePreview,
     getContent: () => {
       const raw = editor.content.value;
-      return config.layout && editor.state.previewMode
-        ? applyLayout(config.layout, raw)
-        : raw;
+      if (!editor.state.previewMode) return raw;
+      const locale = editor.activeLocale?.value ?? raw.settings.locale ?? "en";
+      const localized = resolveLocale(raw, locale);
+      return config.layout
+        ? applyLayout(
+            resolveLocale(config.layout, locale, { missing: "default" }),
+            localized,
+          )
+        : localized;
     },
     isActive: () => editor.state.previewMode,
+    getLocale: () =>
+      editor.activeLocale?.value ?? editor.content.value.settings.locale,
   });
   provide(PREVIEW_RESOLUTION_KEY, previewResolution);
   provide(RESOLVE_PREVIEW_KEY, config.resolvePreview);
@@ -844,7 +864,15 @@ export function useEditorCore(
     ? null
     : useTemplateLint({
         content: editor.content,
-        options: config.lint ?? {},
+        get options() {
+          return resolveLintOptions({
+            ...config,
+            content: editor.content.value,
+            contentLocale: editor.activeLocale?.value ?? undefined,
+          });
+        },
+        customBlocks: config.customBlocks,
+        mergeTagSyntax,
         updateBlock: editor.updateBlock,
         updateSettings: editor.updateSettings,
         removeBlock: editor.removeBlock,

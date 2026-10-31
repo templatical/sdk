@@ -1,9 +1,43 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import DOMPurify from "dompurify";
+import {
+  HTML_URL_ATTRIBUTES,
+  HTML_FORBIDDEN_ATTRIBUTES,
+  SAFE_LINK_SCHEMES,
+  isSafeUrlAttribute,
+} from "@templatical/types";
 import { sanitizeHtml, sanitizeSvg } from "../src/utils/sanitizeHtml";
 
 describe("sanitizeHtml", () => {
+  it("agrees with the shared attribute policy at the browser insertion boundary", () => {
+    for (const attribute of [
+      ...HTML_URL_ATTRIBUTES,
+      ...HTML_FORBIDDEN_ATTRIBUTES,
+    ])
+      for (const value of [
+        "",
+        "#top",
+        "/relative/path",
+        "{{url}}",
+        ...SAFE_LINK_SCHEMES.map((scheme) => `${scheme}:example`),
+        "data:image/png;base64,AAAA",
+        "data:text/html,x",
+        "javascript:alert(1)",
+        "java\tscript:alert(1)",
+        "file:///tmp/x",
+      ]) {
+        const tag = attribute === "src" ? "img" : "a";
+        const clean = sanitizeHtml(`<${tag} ${attribute}="${value}">`);
+        const container = document.createElement("div");
+        container.innerHTML = clean;
+        expect(
+          container.firstElementChild?.hasAttribute(attribute),
+          `${attribute}=${value}`,
+        ).toBe(isSafeUrlAttribute(attribute, value));
+      }
+  });
+
   it("removes the noscript comment mutation payload", () => {
     const payload =
       "<noscript><!--</noscript><img src=x onerror=window.fire(1)>--></noscript>";

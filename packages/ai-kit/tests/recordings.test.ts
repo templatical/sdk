@@ -9,6 +9,7 @@ import {
 
 const base = {
   templateId: "t-1",
+  locale: null,
   content: AI_EVAL_TEMPLATES.welcome,
   revision: null,
   sessionId: "s-1",

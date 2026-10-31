@@ -2,6 +2,14 @@
 import { describe, expect, it } from "vitest";
 import {
   createParagraphBlock,
+  createImageBlock,
+  createVideoBlock,
+  createMenuBlock,
+  createCountdownBlock,
+  safeClone,
+  OperationError,
+  type Block,
+  type Operation,
   createTitleBlock,
   createButtonBlock,
   createTableBlock,
@@ -30,6 +38,15 @@ const TAGS: MergeTag[] = [
 
 function contentWith(blocks: TemplateContent["blocks"]): TemplateContent {
   return { ...createDefaultTemplateContent(), blocks };
+}
+
+function localizedContentWith(
+  blocks: TemplateContent["blocks"],
+): TemplateContent {
+  const content = contentWith(blocks);
+  content.settings.locales = ["de"];
+  content.settings.preheaderText = "Default preview";
+  return content;
 }
 
 // ---------------------------------------------------------------------------
@@ -420,12 +437,273 @@ describe("normalizeMergeTagMarkup", () => {
   });
 });
 
-
 it("normalizes guarded deletion of an added merge-tag paragraph without changing the input", () => {
   const content = { blocks: [], settings: {} } as never;
-  const block = { id: "p1", type: "paragraph", content: "<p>{{first_name}}</p>" } as const;
-  const ops = [{ op: "deleteBlock", blockId: "p1", expect: { block } }] as const;
-  const normalized = normalizeRemoteOperations(ops as never, content, { tags: [{ value: "{{first_name}}", label: "First name" }] });
-  expect((normalized[0] as unknown as { expect: { block: { content: string } } }).expect.block.content).toContain('data-merge-tag="{{first_name}}"');
+  const block = {
+    id: "p1",
+    type: "paragraph",
+    content: "<p>{{first_name}}</p>",
+  } as const;
+  const ops = [
+    { op: "deleteBlock", blockId: "p1", expect: { block } },
+  ] as const;
+  const normalized = normalizeRemoteOperations(ops as never, content, {
+    tags: [{ value: "{{first_name}}", label: "First name" }],
+  });
+  expect(
+    (normalized[0] as unknown as { expect: { block: { content: string } } })
+      .expect.block.content,
+  ).toContain('data-merge-tag="{{first_name}}"');
   expect(ops[0].expect.block.content).toBe("<p>{{first_name}}</p>");
+});
+
+describe("remote locale merge tags", () => {
+  const text = {
+    content: { value: "<p>Hallo {{first_name}}</p>", sourceHash: "12345678" },
+  };
+  const normalized = {
+    content: {
+      value:
+        '<p>Hallo <span data-merge-tag="{{first_name}}">First Name</span></p>',
+      sourceHash: "12345678",
+    },
+  };
+
+  it("normalizes each updateBlockLocale text value without mutating its source", () => {
+    const op = {
+      op: "updateBlockLocale" as const,
+      blockId: "p1",
+      locale: "de",
+      text,
+    };
+    const ops = [op];
+    const result = normalizeRemoteOperations(
+      ops,
+      localizedContentWith([createParagraphBlock({ id: "p1" })]),
+      { tags: TAGS },
+    );
+    expect(result).toEqual([{ ...op, text: normalized }]);
+    expect(op.text).toEqual(text);
+    expect(
+      normalizeRemoteOperations(
+        result,
+        localizedContentWith([createParagraphBlock({ id: "p1" })]),
+        { tags: TAGS },
+      ),
+    ).toBe(result);
+    expect(() =>
+      normalizeRemoteOperations(result, localizedContentWith([]), {
+        tags: TAGS,
+      }),
+    ).toThrow(OperationError);
+  });
+
+  it("normalizes nested locale text in addBlock and setContent", () => {
+    const child = createParagraphBlock({ id: "p1", l10n: { de: { text } } });
+    const block = createSectionBlock({ children: [[child]] });
+    const ops = [
+      { op: "addBlock" as const, block, parent: null, after: null },
+      { op: "setContent" as const, content: contentWith([block]) },
+    ];
+    const result = normalizeRemoteOperations(ops, contentWith([]), {
+      tags: TAGS,
+    });
+    expect(result[0]).toMatchObject({
+      block: { children: [[{ l10n: { de: { text: normalized } } }]] },
+    });
+    expect(result[1]).toMatchObject({
+      content: {
+        blocks: [{ children: [[{ l10n: { de: { text: normalized } } }]] }],
+      },
+    });
+    expect(child.l10n!.de.text).toEqual(text);
+  });
+});
+
+describe("localized rich-text boundaries (amendment 18)", () => {
+  const value = "  {{first_name}} <br/> &amp;  ";
+  const source = "12345678";
+  const richValue = "<p>Hallo {{first_name}}</p>";
+  const richNormalized =
+    '<p>Hallo <span data-merge-tag="{{first_name}}">First Name</span></p>';
+
+  function plainBlocks(): Block[] {
+    const localized = (block: Block, paths: string[]): Block => ({
+      ...block,
+      l10n: {
+        de: {
+          text: Object.fromEntries(
+            paths.map((path) => [path, { value, sourceHash: source }]),
+          ),
+        },
+      },
+    });
+    return [
+      localized(createImageBlock({ id: "image" }), ["alt"]),
+      localized(createVideoBlock({ id: "video" }), ["alt"]),
+      localized(createButtonBlock({ id: "button" }), ["text"]),
+      localized(
+        createMenuBlock({
+          id: "menu",
+          items: [
+            {
+              id: "item",
+              text: "Menu",
+              url: "https://example.com",
+              openInNewTab: false,
+              bold: false,
+              underline: false,
+            },
+          ],
+        }),
+        ["items.item.text"],
+      ),
+      localized(
+        createTableBlock({
+          id: "table",
+          rows: [{ id: "row", cells: [{ id: "cell", content: "Cell" }] }],
+        }),
+        ["rows.row.cells.cell.content"],
+      ),
+      localized(createCountdownBlock({ id: "countdown" }), [
+        "labelDays",
+        "labelHours",
+        "labelMinutes",
+        "labelSeconds",
+        "expiredMessage",
+      ]),
+    ];
+  }
+
+  it("keeps remote plain-text locale fields and preheader byte-identical", () => {
+    const blocks = plainBlocks();
+    const ops: Operation[] = blocks.map((block) => ({
+      op: "updateBlockLocale",
+      blockId: block.id,
+      locale: "de",
+      text: block.l10n!.de.text,
+    }));
+    ops.push({
+      op: "updateSettingsLocale",
+      locale: "de",
+      text: { preheaderText: { value, sourceHash: source } },
+    });
+    const original = safeClone(ops);
+    const result = normalizeRemoteOperations(
+      ops,
+      localizedContentWith(blocks),
+      {
+        tags: TAGS,
+      },
+    );
+    expect(result).toEqual(original);
+    expect(result).toBe(ops);
+    expect(ops).toEqual(original);
+  });
+
+  it("resolves rich-text types from existing blocks and earlier additions only", () => {
+    const text = { content: { value: richValue, sourceHash: source } };
+    const blocks = [
+      createTitleBlock({ id: "title" }),
+      createParagraphBlock({ id: "paragraph" }),
+      createHtmlBlock({ id: "html" }),
+    ];
+    const added = createSectionBlock({
+      children: [
+        [
+          ...blocks.map((block) => ({ ...block, id: "new-" + block.id })),
+          ...plainBlocks(),
+        ],
+      ],
+    });
+    const ops: Operation[] = [
+      { op: "updateBlockLocale", blockId: "new-title", locale: "de", text },
+      ...blocks.map((block): Operation => ({
+        op: "updateBlockLocale",
+        blockId: block.id,
+        locale: "de",
+        text,
+      })),
+      { op: "addBlock", block: added, parent: null, after: null },
+      ...blocks.map((block): Operation => ({
+        op: "updateBlockLocale",
+        blockId: "new-" + block.id,
+        locale: "de",
+        text,
+      })),
+      ...plainBlocks().map((block): Operation => ({
+        op: "updateBlockLocale",
+        blockId: block.id,
+        locale: "de",
+        text: block.l10n!.de.text,
+      })),
+    ];
+    const original = safeClone(ops);
+    // The pre-add write is now refused instead of silently leaving simulation behind.
+    expect(() =>
+      normalizeRemoteOperations(ops, localizedContentWith(blocks), {
+        tags: TAGS,
+      }),
+    ).toThrow(OperationError);
+    const result = normalizeRemoteOperations(
+      ops.slice(1),
+      localizedContentWith(blocks),
+      {
+        tags: TAGS,
+      },
+    );
+    for (const index of [0, 1, 2, 4, 5, 6]) {
+      expect(result[index]).toMatchObject({
+        text: { content: { value: richNormalized, sourceHash: source } },
+      });
+    }
+    expect(result.slice(7)).toEqual(original.slice(8));
+    expect(ops).toEqual(original);
+  });
+
+  it.each(["addBlock", "setContent"] as const)(
+    "keeps nested plain locale fields byte-identical in %s while normalizing rich content",
+    (kind) => {
+      const plain = plainBlocks();
+      const text = { content: { value: richValue, sourceHash: source } };
+      const rich = [
+        createTitleBlock({ id: "title", l10n: { de: { text } } }),
+        createParagraphBlock({ id: "paragraph", l10n: { de: { text } } }),
+        createHtmlBlock({ id: "html", l10n: { de: { text } } }),
+      ];
+      const section = createSectionBlock({ children: [[...plain, ...rich]] });
+      const content = contentWith([section]);
+      content.settings.l10n = {
+        de: { text: { preheaderText: { value, sourceHash: source } } },
+      };
+      const op: Operation =
+        kind === "addBlock"
+          ? { op: "addBlock", block: section, parent: null, after: null }
+          : { op: "setContent", content };
+      const original = safeClone(op);
+      const result = normalizeRemoteOperations([op], contentWith([]), {
+        tags: TAGS,
+      })[0];
+      const block =
+        result.op === "addBlock"
+          ? result.block
+          : result.op === "setContent"
+            ? result.content.blocks[0]
+            : null;
+      expect(block?.type).toBe("section");
+      if (block?.type !== "section") throw new Error("Expected a section.");
+      expect(block.children[0].slice(0, plain.length)).toEqual(plain);
+      for (const child of block.children[0].slice(plain.length)) {
+        expect(child.l10n!.de.text).toEqual({
+          content: { value: richNormalized, sourceHash: source },
+        });
+      }
+      if (result.op === "setContent") {
+        expect(result.content.settings.l10n).toEqual({
+          de: { text: { preheaderText: { value, sourceHash: source } } },
+        });
+      }
+      expect(op).toEqual(original);
+    },
+  );
 });

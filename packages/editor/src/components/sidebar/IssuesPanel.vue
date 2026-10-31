@@ -27,6 +27,7 @@ import {
   EDITOR_KEY,
   SIZE_CHECK_KEY,
   UI_LOCALE_KEY,
+  LOCALE_CHIP_OPENERS_KEY,
 } from "../../keys";
 import type { LintIssue } from "../../composables/useTemplateLint";
 
@@ -117,6 +118,7 @@ const editor = inject(EDITOR_KEY, null);
 const sizeCheck = inject(SIZE_CHECK_KEY, null);
 const locale = inject(UI_LOCALE_KEY, "en");
 const scrollToBlock = useScrollToBlock();
+const chipOpeners = inject(LOCALE_CHIP_OPENERS_KEY, null);
 
 const sizeAvailable = computed(
   () =>
@@ -364,7 +366,11 @@ function jumpTo(issue: LintIssue): void {
   editor.selectBlock(issue.blockId);
   // Selecting is invisible on its own — on a long template the block sits
   // below the fold and the canvas stays put, so "Jump" appears to do nothing.
-  scrollToBlock(issue.blockId);
+  if (issue.ruleId.startsWith("localization.")) {
+    const blockId = issue.blockId;
+    scrollToBlock(blockId, "auto");
+    void nextTick(() => chipOpeners?.get(blockId)?.());
+  } else scrollToBlock(issue.blockId);
 }
 
 function applyFix(issue: LintIssue): void {

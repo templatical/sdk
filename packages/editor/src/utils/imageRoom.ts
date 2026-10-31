@@ -7,9 +7,11 @@ import type {
 } from "@templatical/types";
 import {
   applyLayout,
+  defaultLocaleOf,
   isSection,
   isWrapper,
   resolveHero,
+  resolveLocale,
   toBorderCss,
 } from "@templatical/types";
 import { getEmailFrameWidth } from "./emailFrameWidth";
@@ -92,10 +94,14 @@ function* bandedBlocks(
 function documentOf(
   content: TemplateContent,
   layout: TemplateContent | undefined,
+  locale = defaultLocaleOf(content),
 ): TemplateContent {
   if (!layout) return content;
   try {
-    return applyLayout(layout, content);
+    return applyLayout(
+      resolveLocale(layout, locale, { missing: "default" }),
+      content,
+    );
   } catch {
     return content;
   }
@@ -113,8 +119,9 @@ export function imageRoom(
   content: TemplateContent,
   blockId: string,
   layout?: TemplateContent,
+  locale?: string,
 ): number | null {
-  const doc = documentOf(content, layout);
+  const doc = documentOf(content, layout, locale);
   for (const { block, bandWidth } of bandedBlocks(
     doc.blocks,
     doc.settings.width,
@@ -151,8 +158,9 @@ export function sectionBandWidth(
   content: TemplateContent,
   sectionId: string,
   layout?: TemplateContent,
+  locale?: string,
 ): number | null {
-  const doc = documentOf(content, layout);
+  const doc = documentOf(content, layout, locale);
   for (const { block, bandWidth } of bandedBlocks(
     doc.blocks,
     doc.settings.width,
@@ -160,6 +168,12 @@ export function sectionBandWidth(
     if (block.id === sectionId) return Math.floor(bandWidth);
   }
   return null;
+}
+
+/** Whether `block` is an applied "match image" hero. */
+export function isMatchImageHero(block: Block): boolean {
+  const hero = isSection(block) ? resolveHero(block) : null;
+  return !!hero?.applied && hero.height === "image";
 }
 
 /**
@@ -172,10 +186,11 @@ export function matchImageBoxWidth(
   block: Block,
   content: TemplateContent | undefined,
   layout?: TemplateContent,
+  locale?: string,
 ): number | undefined {
-  if (!isSection(block)) return undefined;
-  const hero = resolveHero(block);
-  if (!hero?.applied || hero.height !== "image") return undefined;
-  const banded = content ? sectionBandWidth(content, block.id, layout) : null;
+  if (!isMatchImageHero(block)) return undefined;
+  const banded = content
+    ? sectionBandWidth(content, block.id, layout, locale)
+    : null;
   return banded ?? getEmailFrameWidth(content?.settings);
 }

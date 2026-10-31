@@ -46,7 +46,7 @@ await editor.load('tpl_123');
 
 Chat, Fix und Umformulieren erhalten den `content` des Editors nach dem Senden ausstehender Änderungen, die Zusammenarbeitsrevision `revision` (oder `null`), `templateId`, `sessionId` und das erforderliche `mergeTags: { syntax, tags }`. Ohne deklarierte Tags sendet der Editor seine Syntax (standardmäßig `liquid`) und `tags: []`. Fehlender oder `null` gesetzter Kontext ergibt 422. Jeder Aufruf erhält ein `AbortSignal`; Stop bricht ihn ab.
 
-Die Deklarationen oben und die [API-Anfragelimits](/de/api/ai-kit#anfragelimits) definieren jedes Feld. Auf dem Wire verwenden Template-ID und Sitzung Pfad und Header; Rewrite lässt `content` und `revision` weg. Das [Server-Kit](/de/api/ai-kit#server) prüft Merge-Tags auch bei leeren Listen; die Syntax `custom` bleibt ungeprüft.
+Die Deklarationen oben und die [API-Anfragelimits](/de/api/ai-kit#anfragelimits) definieren jedes Feld. Auf dem Wire verwenden Template-ID und Sitzung Pfad und Header; Rewrite lässt `content` und `revision` weg. Das [Server-Kit](/de/api/ai-kit#server) prüft Merge-Tags auch bei leeren Listen; `checkRewrite` prüft bei `custom` Chips und deklarierte Tag-Werte wörtlich.
 
 ### Durchläufe: Chat und Beheben
 
@@ -101,7 +101,7 @@ Die kanonischen Verträge stehen unter [Barrierefreiheit](/de/quality/accessibil
 
 Alle Felder und ihre Nullbarkeit stehen in `AiAltTextRequest` im [Vertrag](#der-vertrag).
 
-Das Bild erreicht das Modell per URL. Der Modellanbieter ruft sie ab; Ihr Backend muss daher Template und Block autorisieren und private oder signierte Medien auflösen. `currentAlt` ist bei leerem Alt-Text oder dekorativen Bildern `null`; `linkHref` stammt aus `linkUrl`. `nearbyText` enthält den nächsten Klartext vor und nach dem Bild in seiner Spalte, ersatzweise in seinem Abschnitt, begrenzt auf 2.000 Codepoints. `locale` ist die Sprache des Templates: ein BCP-47-Tag mit höchstens 35 UTF-16-Einheiten. `image.url` muss `http:` oder `https:` verwenden und ist auf 2.048 UTF-16-Einheiten begrenzt; `currentAlt` und `linkHref` sind jeweils `null` oder höchstens 2.048 Einheiten lang. `blockId` hat 1–200 Einheiten.
+Das Bild erreicht das Modell per URL. Der Modellanbieter ruft sie ab; Ihr Backend muss daher Template und Block autorisieren und private oder signierte Medien auflösen. `currentAlt` ist bei leerem Alt-Text oder dekorativen Bildern `null`; `linkHref` stammt aus `linkUrl`. `nearbyText` enthält den nächsten Klartext vor und nach dem Bild in seiner Spalte, ersatzweise in seinem Abschnitt, begrenzt auf 2.000 Codepoints. `locale` ist die aktive Template-Sprache (die Standardsprache in der Standardansicht): ein BCP-47-Tag mit höchstens 35 UTF-16-Einheiten. `image.url` muss `http:` oder `https:` verwenden und ist auf 2.048 UTF-16-Einheiten begrenzt; `currentAlt` und `linkHref` sind jeweils `null` oder höchstens 2.048 Einheiten lang. `blockId` hat 1–200 Einheiten.
 
 `maxLength` ist der wirksame Accessibility-Lint-Schwellwert `altMaxLength`: eine Ganzzahl von 1 bis 1.000, Standard 125 bei fehlendem oder ungültigem Wert oder deaktiviertem Lint. Gezählt werden UTF-16-Einheiten (`string.length`). Verwenden Sie den Anfragewert mit `checkAltText` in Ihrem Backend. Der Server im [Backend-Leitfaden](/de/guide/bring-your-own-ai#der-server) und `evalAltTextWith` senden bei leerem, mehrzeiligem, HTML-haltigem oder zu langem Alt-Text genau eine Reparaturanfrage. Ist auch die zweite Antwort ungültig, löst die abschließende Prüfung mit `checkAltText` den Fehler `ai_output_invalid` (502) aus.
 
@@ -115,7 +115,7 @@ Wenn mindestens zwei unterschiedliche Bilder Alt-Text-Befunde haben, öffnet **F
 
 `rewrite` erhält das `html` eines Absatzes und ein `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` mit einer `language`), eine `instruction` oder beides. Es streamt den Text für eine Live-Vorschau und liefert das fertige HTML.
 
-Eine gesonderte Funktion für die Übersetzung ganzer Templates gibt es nicht. Auf Anfrage kann der KI-Assistent per Chat in-place übersetzen, als einen Rückgängig-Schritt und auf Best-Effort-Basis, ohne Prüfung der Feldabdeckung oder Merge-Tags. Die Vorgabe **Übersetzen** beim Umformulieren übersetzt einen einzelnen Absatz.
+Feldübersetzung verwendet den unabhängigen [Übersetzungsprovider](/de/backend/translation), mit Lückenauswahl und exakter Platzhalterprüfung. Rewrites Vorgabe **Übersetzen** zielt auf die gewählte `language`, auch aus einer Sprachansicht. `checkRewrite` verlangt die exakte Merge-/Logik-Tag-Multimenge; bei `custom` prüft es Chips und deklarierte Tag-Werte wörtlich.
 
 ### Einstiegsanfragen
 
@@ -127,11 +127,17 @@ Der deterministische Linter meldet konkrete Inhalts-, Client- und Größenbefund
 
 ### Verlauf
 
-`conversation` ist optional. Damit lädt der Chat beim Öffnen gespeicherte Nachrichten; „Undo“ und „Redo“ einer Nachricht rufen Ihr Backend auf. Es antwortet mit anzuwendenden Operationen (`{ operations, replayId }`) oder einem bereits angewendeten Batch (`{ applied: { batchId, revision } }`). Ohne `conversation` bleibt der Chat für die Sitzung im Speicher, und „Undo“ einer Nachricht wendet die eigene Inverse des Durchlaufs an. Hat jemand die betroffenen Blöcke inzwischen geändert, wird dies verweigert.
+`conversation` ist optional. Damit lädt der Chat beim Öffnen gespeicherte Nachrichten; „Undo“ und „Redo“ einer Nachricht rufen Ihr Backend auf. Es antwortet mit anzuwendenden Operationen (`{ operations, replayId }`) oder einem bereits angewendeten Batch (`{ applied: { batchId, revision } }`). Ohne `conversation` bleibt der Chat für die Sitzung im Speicher, und „Undo“ einer Nachricht wendet die eigene Inverse des Durchlaufs an. Eine Inverse auf Blockebene erwartet, was der Durchlauf hinterlassen hat; hat jemand die betroffenen Blöcke inzwischen geändert, wird „Undo“ verweigert. Ein Durchlauf, der das ganze Template ersetzt hat, wird mit einem Snapshot rückgängig gemacht: Mit Zusammenarbeit werden sein „Undo“ und „Redo“ verweigert, außer das Template ist genau so, wie der Durchlauf oder sein letztes „Undo“ oder „Redo“ es hinterlassen hat. So überschreiben sie keine spätere Änderung, die dieser Editor empfangen hat, auch nicht die einer anderen Sitzung, und nicht die Änderung, die eine Ablehnung des Durchlaufs durch das Backend erhalten hat. Einen vom Backend schon angenommenen, aber noch nicht zugestellten Batch fängt die [`setContent`-Regel](/de/backend/collaboration#submit) ab.
 
 Nach Operationen bestätigt der Editor das Ergebnis mit `settleReplay(templateId, messageId, { replayId, direction, applied, sessionId })`. Ändern Sie `undone` erst bei `applied: true`; bei `applied: false` oder ohne Bestätigung bleibt der Zustand erhalten. Jede `replayId` wird nur einmal abgeschlossen; weitere Bestätigungen sind wirkungslos. Ein serverseitig angewendeter Batch (`{ applied }`) wird nicht bestätigt. Schlägt die Bestätigung fehl, erreicht der Fehler `onError`, und die lokale Zeile zeigt weiterhin, was am Template angewendet wurde.
 
 `conversation.list` liefert `AiChatMessage[]` vom ältesten zum neuesten Eintrag. `createdAt` ist ISO 8601; `batches` ist für Benutzernachrichten leer. Für serverseitig angewendete Batches ist `revision` eine Zahl, für im Editor angewendete Batches `null`. `kind` ist `"chat" | "fix"`; Alt-Text-Entwürfe erzeugen keinen Verlauf. Optionale `attachments` enthalten nur Namen und Art auf Benutzernachrichten, keine Dateien.
+
+## KI in Sprachansichten
+
+Chat, Mit KI beheben und Rewrite tragen `locale: string | null`, die aktive Sprache oder `null` in der Standardansicht, wie in [dem Vertrag](#der-vertrag) deklariert. Chat und Fix erhalten die `resolveLocale`-Projektion dieser Sprache; Alt-Text trägt immer eine konkrete Sprache und den projizierten Bildkontext. `AiChatMessage.locale?: string | null` kennzeichnet den Verlauf aus Sprachansichten. Ältere Backends können das Feld ignorieren und erhalten weiterhin projizierten Inhalt.
+
+Der Editor wendet zurückgegebene Operationen mit `mapLocalizedOperations` aus Core wie eine Bearbeitung des Autors in dieser Sprache an: Text und Eigenschaften ändern diese Sprache, Strukturänderungen den gemeinsamen Baum, der Text eines hinzugefügten Blocks wird sein Standardwert, und ein leerer Batch ändert nichts. Die Zuordnungsregeln stehen unter [Lokalisierte Templates](/de/guide/localized-templates#eine-sprache-hinzufugen). In einer Sprachansicht werden `setContent` und `setDefaultLocale` verweigert; die Locale-Operationen stehen unter [Operationen](/de/api/operations#locale-operationen). Mit KI beheben lintet die aktive `contentLocale`, und Mit KI beheben und Alt-Text schreiben behalten ihre üblichen Provider-, Template- und Lint-Voraussetzungen. Das Übersetzen ganzer Sprachen übernimmt der separate [Übersetzungs-Provider](/de/backend/translation).
 
 ## Funktionen steuern
 

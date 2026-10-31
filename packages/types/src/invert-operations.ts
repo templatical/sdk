@@ -1,10 +1,14 @@
 import type { Block } from "./blocks";
 import { safeClone } from "./clone";
+import type { BlockLocaleLayer, LocalizedText } from "./localization";
 import {
   applyOperationsInPlace,
   OperationError,
   type BlockParent,
   type Operation,
+  type LocaleLayerExpect,
+  type UpdateBlockLocaleOperation,
+  type UpdateSettingsLocaleOperation,
 } from "./operations";
 import type { TemplateContent } from "./template";
 
@@ -84,11 +88,129 @@ function restoreKeys(
   return { set: restore, unset: remove, expect };
 }
 
+function layerOf(
+  target: { l10n?: Record<string, BlockLocaleLayer> },
+  locale: string,
+): BlockLocaleLayer {
+  return target.l10n?.[locale] ?? {};
+}
+
+function restoreLocale(
+  previous: BlockLocaleLayer,
+  next: BlockLocaleLayer,
+  paths: string[],
+  hidden: boolean,
+): {
+  unset: string[];
+  text?: Record<string, LocalizedText>;
+  set?: Json;
+  hidden?: boolean;
+  expect: LocaleLayerExpect;
+} {
+  const text: Record<string, LocalizedText> = {};
+  const set: Json = {};
+  const expect: LocaleLayerExpect = {};
+  if (paths.length) {
+    expect.text = {};
+    expect.set = {};
+  }
+  for (const path of paths) {
+    if (previous.text?.[path] !== undefined)
+      text[path] = safeClone(previous.text[path]);
+    if (previous.set && Object.hasOwn(previous.set, path))
+      set[path] = safeClone(previous.set[path]);
+    expect.text![path] = safeClone(next.text?.[path] ?? null);
+    expect.set![path] = safeClone(next.set?.[path] ?? null);
+  }
+  if (hidden) expect.hidden = next.hidden === true;
+  return {
+    unset: paths,
+    ...(Object.keys(text).length ? { text } : {}),
+    ...(Object.keys(set).length ? { set } : {}),
+    ...(hidden ? { hidden: previous.hidden === true } : {}),
+    expect,
+  };
+}
+
+function restoreRemovedLayer(
+  layer: BlockLocaleLayer,
+): Omit<UpdateBlockLocaleOperation, "op" | "blockId" | "locale"> {
+  const paths = [
+    ...new Set([
+      ...Object.keys(layer.text ?? {}),
+      ...Object.keys(layer.set ?? {}),
+    ]),
+  ];
+  const restored = restoreLocale(layer, {}, paths, layer.hidden === true);
+  const { unset: _unset, ...changes } = restored;
+  return changes;
+}
+
+function blocksIn(blocks: Block[]): Block[] {
+  return blocks.flatMap((block) => [
+    block,
+    ...(block.type === "wrapper"
+      ? blocksIn(block.children)
+      : columnsOf(block).flatMap(blocksIn)),
+  ]);
+}
+
+/** Restore paths lost to base pruning only after the base keys exist again. */
+function restorePrunedLayers(
+  state: TemplateContent,
+  op: Operation,
+): Operation[] {
+  const next = safeClone(state);
+  applyOperationsInPlace(next, [op]);
+  const restores: Operation[] = [];
+  const collect = (
+    previous: { l10n?: Record<string, BlockLocaleLayer> },
+    after: { l10n?: Record<string, BlockLocaleLayer> },
+    blockId?: string,
+  ) => {
+    for (const [locale, layer] of Object.entries(previous.l10n ?? {})) {
+      const current = after.l10n?.[locale] ?? {};
+      const paths = [
+        ...new Set([
+          ...Object.keys(layer.text ?? {}).filter(
+            (path) => !Object.hasOwn(current.text ?? {}, path),
+          ),
+          ...Object.keys(layer.set ?? {}).filter(
+            (path) => !Object.hasOwn(current.set ?? {}, path),
+          ),
+        ]),
+      ];
+      if (!paths.length) continue;
+      const changes = restoreLocale(layer, current, paths, false);
+      restores.push(
+        blockId === undefined
+          ? ({
+              op: "updateSettingsLocale",
+              locale,
+              ...changes,
+            } as UpdateSettingsLocaleOperation)
+          : { op: "updateBlockLocale", blockId, locale, ...changes },
+      );
+    }
+  };
+  if (op.op === "updateSettings") collect(state.settings, next.settings);
+  else {
+    const after = new Map(
+      blocksIn(next.blocks).map((block) => [block.id, block]),
+    );
+    for (const block of blocksIn(state.blocks)) {
+      const current = after.get(block.id);
+      if (current) collect(block, current, block.id);
+    }
+  }
+  return restores;
+}
+
 function invertOne(
   state: TemplateContent,
   op: Operation,
   index: number,
-): Operation {
+): Operation | Operation[] {
   switch (op.op) {
     case "addBlock":
       return {
@@ -119,13 +241,16 @@ function invertOne(
       const block = requirePosition(state, op.blockId, index)
         .block as unknown as Json;
       const { set, unset, expect } = restoreKeys(block, op.set, op.unset);
-      return {
-        op: "updateBlock",
-        blockId: op.blockId,
-        ...(Object.keys(set).length > 0 ? { set } : {}),
-        ...(unset.length > 0 ? { unset } : {}),
-        expect,
-      };
+      return [
+        {
+          op: "updateBlock",
+          blockId: op.blockId,
+          ...(Object.keys(set).length > 0 ? { set } : {}),
+          ...(unset.length > 0 ? { unset } : {}),
+          expect,
+        },
+        ...restorePrunedLayers(state, op),
+      ];
     }
     case "updateSettings": {
       const { set, unset, expect } = restoreKeys(
@@ -133,13 +258,90 @@ function invertOne(
         op.set as Json | undefined,
         op.unset,
       );
-      return {
-        op: "updateSettings",
-        ...(Object.keys(set).length > 0 ? { set } : {}),
-        ...(unset.length > 0 ? { unset } : {}),
-        expect,
-      };
+      return [
+        {
+          op: "updateSettings",
+          ...(Object.keys(set).length > 0 ? { set } : {}),
+          ...(unset.length > 0 ? { unset } : {}),
+          expect,
+        },
+        ...restorePrunedLayers(state, op),
+      ];
     }
+    case "addLocale":
+      return { op: "removeLocale", locale: op.locale, expect: { blocks: {} } };
+    case "removeLocale": {
+      const inverse: Operation[] = [
+        {
+          op: "addLocale",
+          locale: op.locale,
+          position: state.settings.locales?.indexOf(op.locale),
+        },
+      ];
+      for (const block of blocksIn(state.blocks)) {
+        const layer = block.l10n?.[op.locale];
+        if (layer)
+          inverse.push({
+            op: "updateBlockLocale",
+            blockId: block.id,
+            locale: op.locale,
+            ...restoreRemovedLayer(layer),
+          });
+      }
+      const layer = state.settings.l10n?.[op.locale];
+      if (layer) {
+        const { hidden: _hidden, ...changes } = restoreRemovedLayer(layer);
+        inverse.push({
+          op: "updateSettingsLocale",
+          locale: op.locale,
+          ...changes,
+        });
+      }
+      return inverse;
+    }
+    case "updateBlockLocale":
+    case "updateSettingsLocale": {
+      const next = safeClone(state);
+      applyOperationsInPlace(next, [op]);
+      const paths = [
+        ...new Set([
+          ...Object.keys(op.text ?? {}),
+          ...Object.keys(op.set ?? {}),
+          ...(op.unset ?? []),
+        ]),
+      ];
+      if (op.op === "updateBlockLocale") {
+        const previous = blocksIn(state.blocks).find(
+          (block) => block.id === op.blockId,
+        )!;
+        const after = blocksIn(next.blocks).find(
+          (block) => block.id === op.blockId,
+        )!;
+        return {
+          op: "updateBlockLocale",
+          blockId: op.blockId,
+          locale: op.locale,
+          ...restoreLocale(
+            layerOf(previous, op.locale),
+            layerOf(after, op.locale),
+            paths,
+            op.hidden !== undefined,
+          ),
+        };
+      }
+      const { hidden: _hidden, ...changes } = restoreLocale(
+        layerOf(state.settings, op.locale),
+        layerOf(next.settings, op.locale),
+        paths,
+        false,
+      );
+      return {
+        op: "updateSettingsLocale",
+        locale: op.locale,
+        ...changes,
+      } as UpdateSettingsLocaleOperation;
+    }
+    case "setDefaultLocale":
     case "setContent":
       return {
         op: "setContent",
@@ -159,8 +361,10 @@ function invertOne(
  * Every inverse that can be guarded is: it expects what its operation left
  * behind, so an undo that a later edit by someone else has overtaken is refused
  * (`precondition_failed`, `anchor_missing`, `block_missing`) instead of
- * overwriting that edit. A `setContent` inverse has no guard; the backend's
- * `locked_by_others` rule is what stops it while others are editing.
+ * overwriting that edit. `setContent` and `setDefaultLocale` restore snapshots
+ * without a guard of their own: the backend's `locked_by_others` rule stops
+ * them while others hold locks, and the collaboration controller skips such a
+ * step once another session's batch has changed the content it applies to.
  *
  * Throws the engine's `OperationError` when `ops` don't apply to `before`.
  */
@@ -171,8 +375,11 @@ export function invertOperations(
   const state = safeClone(before);
   const inverses: Operation[] = [];
   ops.forEach((op, index) => {
-    inverses.push(invertOne(state, op, index));
     try {
+      const inverse = invertOne(state, op, index);
+      inverses.push(
+        ...(Array.isArray(inverse) ? [...inverse].reverse() : [inverse]),
+      );
       applyOperationsInPlace(state, [op]);
     } catch (error) {
       if (!(error instanceof OperationError)) throw error;

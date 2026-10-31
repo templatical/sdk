@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import NumberWithSuffix from "./NumberWithSuffix.vue";
 import LinkToggle from "./LinkToggle.vue";
 import { useI18n } from "../../composables/useI18n";
@@ -11,6 +12,7 @@ import { BORDER_CORNERS } from "@templatical/types";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
+  path?: string;
   modelValue: BorderRadiusValue | undefined;
   label: string;
   /** Prefix for the inputs' `data-testid`s, e.g. `"image"`. */
@@ -92,12 +94,8 @@ function toggleLinked(): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <div class="tpl:mb-2 tpl:flex tpl:items-center tpl:justify-between">
-      <span
-        class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        >{{ label }}</span
-      >
+  <FieldRow :path="path" :label="label">
+    <template #label-actions>
       <LinkToggle
         :linked="linked"
         :link-label="t.blockSettings.linkCorners"
@@ -105,7 +103,7 @@ function toggleLinked(): void {
         :testid="`${testidPrefix}-border-radius-link`"
         @toggle="toggleLinked"
       />
-    </div>
+    </template>
     <NumberWithSuffix
       v-if="linked"
       :model-value="corners.topLeft"
@@ -131,5 +129,5 @@ function toggleLinked(): void {
         />
       </div>
     </div>
-  </div>
+  </FieldRow>
 </template>

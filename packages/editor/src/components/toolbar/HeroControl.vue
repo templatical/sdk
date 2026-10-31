@@ -97,7 +97,12 @@ const sizeUnknown = computed(
  */
 function boxWidth(): number {
   const banded = editor
-    ? sectionBandWidth(editor.content.value, props.section.id, layout)
+    ? sectionBandWidth(
+        editor.content.value,
+        props.section.id,
+        layout,
+        editor.activeLocale?.value ?? undefined,
+      )
     : null;
   return banded ?? getEmailFrameWidth(editor?.state.content.settings);
 }

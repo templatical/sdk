@@ -1,6 +1,119 @@
 import type en from "./en";
 
 const nl: typeof en = {
+  localization: {
+    tagsDiffer: "Samenvoegvelden verschillen",
+    tagsDifferExplanation:
+      "De samenvoegvelden komen niet overeen met de tekst in {default}.",
+    changed: "Gewijzigd in {language}",
+    notTranslatedCount: {
+      one: "{count} niet vertaald",
+      other: "{count} niet vertaald",
+    },
+    missingExplanation:
+      "Nog niet vertaald. De e-mail toont de tekst in {default}.",
+    staleExplanation: "De tekst in {default} is sinds de vertaling gewijzigd.",
+    currentExcerpt: "Nu: “{excerpt}”",
+    useDefaultLanguage: "{default} gebruiken",
+    changedProperties: {
+      one: "{count} eigenschap verschilt van {default}.",
+      other: "{count} eigenschappen verschillen van {default}.",
+    },
+    resetChanges: "Wijzigingen resetten",
+    staleLanguages: {
+      one: "Verouderd in {count} taal",
+      other: "Verouderd in {count} talen",
+    },
+    open: "Openen",
+    resetToDefault: "Resetten naar {default}",
+    hiddenExplanation: "Dit blok staat niet in de e-mail in {language}.",
+    editingLanguage: "{language} bewerken",
+    languageReadOnly: "Alleen-lezen: {language} is niet ingeschakeld",
+    backToDefault: "Terug naar {default}",
+    translateFields: {
+      one: "{count} veld vertalen",
+      other: "{count} velden vertalen",
+    },
+    translationConfirmation: {
+      one: "{count} veld opnieuw vertalen?",
+      other: "Alle {count} velden opnieuw vertalen?",
+    },
+    translateAllFields: {
+      one: "{count} veld vertalen",
+      other: "Alle {count} velden vertalen",
+    },
+    translationDescription:
+      "Dit vervangt de huidige vertalingen in {language}, inclusief handmatige wijzigingen. Je kunt dit ongedaan maken.",
+    translatedFields: {
+      one: "{count} veld vertaald.",
+      other: "{count} velden vertaald.",
+    },
+    translationTagsChanged: {
+      one: "{count} behouden omdat de tags zijn gewijzigd.",
+      other: "{count} behouden omdat de tags zijn gewijzigd.",
+    },
+    translationSkippedLocked: {
+      one: "{count} overgeslagen omdat iemand het bewerkt.",
+      other: "{count} overgeslagen omdat iemand ze bewerkt.",
+    },
+    translationMissing: {
+      one: "{count} niet teruggestuurd.",
+      other: "{count} niet teruggestuurd.",
+    },
+    translationTooLarge: {
+      one: "{count} veld is te lang om te vertalen.",
+      other: "{count} velden zijn te lang om te vertalen.",
+    },
+    translationError: "De vertaaldienst meldt: {message}",
+    defaultRefused: "Kan {language} niet als standaardtaal instellen: {reason}",
+    defaultLockedReason: "iemand anders bewerkt deze template",
+    complete: "Compleet",
+    gapTooltip: "{missing} ontbreken, {stale} verouderd",
+    moreActions: "Meer acties voor {language}",
+    makeDefaultLanguage: "Als standaardtaal instellen",
+    makeDefault: "Als standaard instellen",
+    makeDefaultConfirmation: "{language} als standaardtaal instellen?",
+    removeConfirmation: "{language} verwijderen?",
+    removeDescription:
+      "Dit verwijdert de tekst en wijzigingen in {language}. Je kunt dit ongedaan maken.",
+    defaultChanged: "{language} is nu de standaardtaal.",
+    missingCount: { one: "{count} ontbreekt", other: "{count} ontbreken" },
+    staleCount: { one: "{count} verouderd", other: "{count} verouderd" },
+    hiddenBeforeDefault: {
+      one: "Toon eerst het {count} verborgen blok in {language}",
+      other: "Toon eerst de {count} verborgen blokken in {language}",
+    },
+    defaultNotEnabled: "Voeg eerst {default} toe aan de ingeschakelde talen",
+    defaultGaps: {
+      one: "{count} veld heeft geen tekst in {language} en behoudt de tekst in {default}.",
+      other:
+        "{count} velden hebben geen tekst in {language} en behouden de tekst in {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} veld is nog in {old}.",
+      other: "{count} velden zijn nog in {old}.",
+    },
+    translateAllAgain: "Alles opnieuw vertalen…",
+    translate: "Vertalen",
+    retranslate: "Opnieuw vertalen",
+    translating: "{done} van {total} vertalen…",
+    languages: "Talen",
+    default: "Standaard",
+    notEnabled: "Niet ingeschakeld",
+    addLanguage: "Taal toevoegen",
+    removeLanguage: "{language} verwijderen",
+    cancel: "Annuleren",
+    notTranslated: "Niet vertaald",
+    outOfDate: "Verouderd",
+    keep: "Behouden",
+    hidden: "Verborgen in {language}",
+    show: "Tonen",
+    hide: "Verbergen in {language}",
+    dismiss: "Sluiten",
+    structureNotice: "Structuurwijzigingen gelden voor elke taal",
+    aiActiveLanguage:
+      "De AI-chat bewerkt {language}. Structuurwijzigingen gelden voor alle talen.",
+  },
   footer: {
     poweredBy: "Mogelijk gemaakt door",
   },
@@ -601,6 +714,7 @@ const nl: typeof en = {
     collapsePreview: "Voorbeeld van {block} inklappen",
   },
   comments: {
+    filterLanguage: "Deze taal",
     button: "Opmerkingen",
     title: "Opmerkingen",
     close: "Sluiten",

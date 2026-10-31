@@ -1,5 +1,11 @@
 # Scaffolding a new integration
 
+For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the compatibility rule (no template migration, one version for every `@templatical/*` package) and the `validate --locale` check.
+
+For `translation`, Translate availability, provider errors or tag masking, follow [localize.md](localize.md) and fetch `backend/translation` through [docs.md](docs.md). Check `translation`, `localization` and an enabled non-default language view before changing the backend. Verify mask placeholders and run `runTranslationConformance` for backend conformance; then validate the saved language with `validate --locale de`.
+
+For brand names changing during Translate, use `localization.doNotTranslate` from [providers.md](providers.md) and the [localize.md](localize.md) round trip; pass the same list to both strings helpers. Fetch `backend/translation` for matching and limits, then check that the provider sees a placeholder and the saved field keeps the term.
+
 **Read first:** [failure-modes.md](failure-modes.md)
 **Follows:** [integrate.md](integrate.md), which decides what the mount should
 look like

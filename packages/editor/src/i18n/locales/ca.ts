@@ -1,6 +1,124 @@
 import type en from "./en";
 
 const ca: typeof en = {
+  localization: {
+    tagsDiffer: "Les etiquetes de fusió difereixen",
+    tagsDifferExplanation:
+      "Les etiquetes de fusió no coincideixen amb el text en {default}.",
+    changed: "Canviat en {language}",
+    notTranslatedCount: {
+      one: "{count} sense traduir",
+      other: "{count} sense traduir",
+    },
+    missingExplanation:
+      "Encara no s’ha traduït. El correu mostra el text en {default}.",
+    staleExplanation: "El text en {default} ha canviat des de la traducció.",
+    currentExcerpt: "Ara: «{excerpt}»",
+    useDefaultLanguage: "Utilitza {default}",
+    changedProperties: {
+      one: "{count} propietat difereix de {default}.",
+      other: "{count} propietats difereixen de {default}.",
+    },
+    resetChanges: "Restableix els canvis",
+    staleLanguages: {
+      one: "Desactualitzat en {count} idioma",
+      other: "Desactualitzat en {count} idiomes",
+    },
+    open: "Obre",
+    resetToDefault: "Restableix a {default}",
+    hiddenExplanation: "Aquest bloc no és al correu en {language}.",
+    editingLanguage: "Editant {language}",
+    languageReadOnly: "Només lectura: {language} no està activat",
+    backToDefault: "Torna a {default}",
+    translateFields: {
+      one: "Tradueix {count} camp",
+      other: "Tradueix {count} camps",
+    },
+    translationConfirmation: {
+      one: "Vols tornar a traduir el {count} camp?",
+      other: "Vols tornar a traduir els {count} camps?",
+    },
+    translateAllFields: {
+      one: "Tradueix el {count} camp",
+      other: "Tradueix els {count} camps",
+    },
+    translationDescription:
+      "Això substitueix les traduccions actuals en {language}, incloses les edicions manuals. Ho pots desfer.",
+    translatedFields: {
+      one: "S'ha traduït {count} camp.",
+      other: "S'han traduït {count} camps.",
+    },
+    translationTagsChanged: {
+      one: "Se n'ha mantingut {count} perquè les etiquetes han canviat.",
+      other: "Se n'han mantingut {count} perquè les etiquetes han canviat.",
+    },
+    translationSkippedLocked: {
+      one: "Se n'ha omès {count} perquè algú l'està editant.",
+      other: "Se n'han omès {count} perquè algú els està editant.",
+    },
+    translationMissing: {
+      one: "No s'ha retornat {count} camp.",
+      other: "No s'han retornat {count} camps.",
+    },
+    translationTooLarge: {
+      one: "{count} camp és massa llarg per traduir-lo.",
+      other: "{count} camps són massa llargs per traduir-los.",
+    },
+    translationError: "El servei de traducció ha dit: {message}",
+    defaultRefused:
+      "No s’ha pogut establir {language} com a llengua per defecte: {reason}",
+    defaultLockedReason: "algú altre està editant aquesta plantilla",
+    complete: "Complet",
+    gapTooltip: "{missing} pendents, {stale} desactualitzats",
+    moreActions: "Més accions per a {language}",
+    makeDefaultLanguage: "Estableix com a llengua per defecte",
+    makeDefault: "Estableix per defecte",
+    makeDefaultConfirmation:
+      "Vols establir {language} com a llengua per defecte?",
+    removeConfirmation: "Vols eliminar {language}?",
+    removeDescription:
+      "Això elimina el text i els canvis en {language}. Ho pots desfer.",
+    defaultChanged: "{language} és ara la llengua per defecte.",
+    missingCount: { one: "{count} pendent", other: "{count} pendents" },
+    staleCount: {
+      one: "{count} desactualitzat",
+      other: "{count} desactualitzats",
+    },
+    hiddenBeforeDefault: {
+      one: "Mostra primer el bloc ocult en {language} ({count})",
+      other: "Mostra primer els {count} blocs ocults en {language}",
+    },
+    defaultNotEnabled: "Afegeix primer {default} als idiomes activats",
+    defaultGaps: {
+      one: "{count} camp no té text en {language} i conserva el text en {default}.",
+      other:
+        "{count} camps no tenen text en {language} i conserven el text en {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} camp encara és en {old}.",
+      other: "{count} camps encara són en {old}.",
+    },
+    translateAllAgain: "Torna a traduir-ho tot…",
+    translate: "Tradueix",
+    retranslate: "Torna a traduir",
+    translating: "S’estan traduint {done} de {total}…",
+    languages: "Idiomes",
+    default: "Predeterminat",
+    notEnabled: "No activat",
+    addLanguage: "Afegeix un idioma",
+    removeLanguage: "Elimina {language}",
+    cancel: "Cancel·la",
+    notTranslated: "Sense traduir",
+    outOfDate: "Desactualitzat",
+    keep: "Conserva",
+    hidden: "Amagat en {language}",
+    show: "Mostra",
+    hide: "Amaga en {language}",
+    dismiss: "Tanca",
+    structureNotice: "Els canvis d’estructura s’apliquen a tots els idiomes",
+    aiActiveLanguage:
+      "El xat d’IA edita {language}. Els canvis d’estructura s’apliquen a totes les llengües.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Amb la tecnologia de",
@@ -668,6 +786,7 @@ const ca: typeof en = {
     collapsePreview: "Redueix la vista prèvia de {block}",
   },
   comments: {
+    filterLanguage: "Aquest idioma",
     button: "Comentaris",
     title: "Comentaris",
     close: "Tancar",

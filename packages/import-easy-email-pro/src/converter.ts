@@ -3,6 +3,7 @@ import {
   createDefaultTemplateContent,
   createSectionBlock,
   DEFAULT_TEMPLATE_DEFAULTS,
+  isLocaleTag,
 } from "@templatical/types";
 import type {
   Block,
@@ -32,6 +33,11 @@ import type {
   ImportReportEntry,
   ImportResult,
 } from "./types";
+
+export interface ConvertEasyEmailProOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
 
 const INVALID_MESSAGE =
   "Invalid Easy Email Pro template: expected a page JSON object (EmailTemplate { subject, content } or the page element).";
@@ -91,6 +97,20 @@ const REQUIRED_DEFAULTS = DEFAULT_TEMPLATE_DEFAULTS as Required<
   >
 >;
 
+/** The `defaultLocale` option as a tag, else `"en"` with a warning naming it. */
+function defaultLanguage(
+  value: string | undefined,
+  warnings: string[],
+): string {
+  if (!value) return "en";
+  const locale = value.replaceAll("_", "-");
+  if (isLocaleTag(locale)) return locale;
+  warnings.push(
+    `Ignored defaultLocale "${value}": unsupported language tag. Used "en".`,
+  );
+  return "en";
+}
+
 /**
  * Convert an Easy Email Pro page (or EmailTemplate envelope) into a
  * Templatical template. Accepts a bare `page` element, an
@@ -98,6 +118,7 @@ const REQUIRED_DEFAULTS = DEFAULT_TEMPLATE_DEFAULTS as Required<
  */
 export function convertEasyEmailProTemplate(
   doc: EasyEmailProDocument | EasyEmailProPage | string,
+  options: ConvertEasyEmailProOptions = {},
 ): ImportResult {
   const root: unknown = typeof doc === "string" ? safeParse(doc) : doc;
 
@@ -119,6 +140,7 @@ export function convertEasyEmailProTemplate(
   const resolve = contextFromPage(page);
   const data = isPlainObject(page.data) ? page.data : {};
   const settings = readSettings(page, data, resolve);
+  settings.locale = defaultLanguage(options.defaultLocale, warnings);
   const map: MapContext = { resolve, warnings, contentWidth: settings.width };
 
   const subjectRaw = typeof subject === "string" ? subject.trim() : "";

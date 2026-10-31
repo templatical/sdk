@@ -1,0 +1,127 @@
+{
+  "name": "locale-default-removed-parent",
+  "content": {
+    "blocks": [
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          []
+        ],
+        "styles": {
+          "padding": {
+            "top": 8,
+            "right": 12,
+            "bottom": 8,
+            "left": 12
+          }
+        },
+        "backgroundImage": {
+          "url": "https://example.com/en.png",
+          "size": "cover",
+          "position": {
+            "x": "center",
+            "y": "center"
+          },
+          "repeat": false
+        },
+        "l10n": {
+          "de": {
+            "set": {
+              "backgroundImage": null
+            }
+          },
+          "fr": {
+            "set": {
+              "backgroundImage.url": "https://example.com/fr.png",
+              "backgroundImage.position.x": "left",
+              "styles.backgroundColor": "#dbeafe"
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff",
+      "textColor": "#111111",
+      "fontFamily": "Arial, sans-serif",
+      "linkUnderline": true,
+      "locale": "en",
+      "locales": [
+        "de",
+        "fr"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "s1",
+          "type": "section",
+          "columns": "1",
+          "children": [
+            []
+          ],
+          "styles": {
+            "padding": {
+              "top": 8,
+              "right": 12,
+              "bottom": 8,
+              "left": 12
+            }
+          },
+          "l10n": {
+            "en": {
+              "set": {
+                "backgroundImage": {
+                  "url": "https://example.com/en.png",
+                  "size": "cover",
+                  "position": {
+                    "x": "center",
+                    "y": "center"
+                  },
+                  "repeat": false
+                }
+              }
+            },
+            "fr": {
+              "set": {
+                "backgroundImage": {
+                  "url": "https://example.com/fr.png",
+                  "size": "cover",
+                  "position": {
+                    "x": "left",
+                    "y": "center"
+                  },
+                  "repeat": false
+                },
+                "styles.backgroundColor": "#dbeafe"
+              }
+            }
+          }
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff",
+        "textColor": "#111111",
+        "fontFamily": "Arial, sans-serif",
+        "linkUnderline": true,
+        "locale": "de",
+        "locales": [
+          "en",
+          "fr"
+        ]
+      }
+    }
+  }
+}

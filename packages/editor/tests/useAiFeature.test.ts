@@ -4,6 +4,7 @@ import { effectScope, nextTick, ref, watch } from "vue";
 import { useEditor, useHistory } from "@templatical/core";
 import type {
   AiChatMessage,
+  AiOperationsResult,
   AiProvider,
   AiTurnHandlers,
   CollaborationProvider,
@@ -11,7 +12,7 @@ import type {
   Template,
   TemplateContent,
 } from "@templatical/types";
-import { safeClone, SdkError } from "@templatical/types";
+import { createImageBlock, safeClone, SdkError, sourceHash } from "@templatical/types";
 import {
   AI_BROADCAST_GRACE_MS,
   AI_MISSING_PROVIDER_MESSAGE,
@@ -26,6 +27,8 @@ import { normalizeRemoteOperations } from "../src/utils/normalizeMergeTagMarkup"
 import { createHttpAiProvider } from "../../ai-kit/src/client";
 import { createMockAiProvider } from "../../ai-kit/src/testing";
 import { createReferenceHandler } from "../../ai-kit/tests/helpers/reference-server";
+import { FakeCollaborationServer } from "../../core/tests/helpers/fake-collaboration-server";
+import { AGENT } from "../../core/tests/helpers/collaboration-harness";
 
 const CONTENT = {
   blocks: [
@@ -112,6 +115,21 @@ async function openLocal(
 }
 
 describe("useAiFeature without collaboration", () => {
+  it("reports unexpected normalization errors as failed turns without applying edits", async () => {
+    const error = new Error("Normalizer unavailable");
+    const { ai, editor, history, onError } = await openLocal({
+      chat: chatting(async (on) => { await on.onOperations(greet); }),
+    }, { normalize: () => { throw error; } });
+    const record = vi.spyOn(history, "record");
+    const outcome = await ai.send("Greet");
+    expect(outcome.failed).toBe(true);
+    expect(outcome.operationCount).toBe(0);
+    expect(editor.content.value).toEqual(CONTENT);
+    expect(record).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error);
+    expect(ai.failure.value).toEqual({ error, context: "turn" });
+  });
+
   it.each(["undo", "redo"] as const)(
     "reloads a server-applied stored %s without collaboration",
     async (direction) => {
@@ -350,6 +368,7 @@ describe("useAiFeature without collaboration", () => {
     expect(chat).toHaveBeenCalledWith(
       {
         templateId: "tpl-1",
+        locale: null,
         content: CONTENT,
         revision: null,
         sessionId: expect.any(String),
@@ -444,6 +463,47 @@ describe("useAiFeature without collaboration", () => {
     });
     expect(editor.content.value).toEqual(CONTENT);
   });
+
+  it.each([0, 1])(
+    "answers a real normalization refusal at batch index %s without rejecting chat",
+    async (opIndex) => {
+      let answer: Promise<AiOperationsResult> | undefined;
+      const ops: Operation[] = [
+        ...greet.slice(0, opIndex),
+        {
+          op: "updateBlockLocale",
+          blockId: "gone",
+          locale: "de",
+          text: {
+            content: { value: "Hallo", sourceHash: sourceHash("Hello") },
+          },
+        },
+      ];
+      const { ai, editor, history, onError } = await openLocal({
+        chat: chatting(async (on) => {
+          answer = on.onOperations(ops);
+          await answer;
+        }),
+      });
+      editor.addLocale("de");
+      const before = safeClone(editor.content.value);
+      const record = vi.spyOn(history, "record");
+
+      const outcome = await ai.send("Translate it");
+
+      await expect(answer).resolves.toMatchObject({
+        applied: false,
+        code: "block_missing",
+        opIndex,
+        message: 'No block with id "gone".',
+      });
+      expect(outcome.failed).toBe(false);
+      expect(outcome.operationCount).toBe(0);
+      expect(editor.content.value).toEqual(before);
+      expect(record).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    },
+  );
 
   it("outlines what a turn changed (D42)", async () => {
     const { ai } = await openLocal({
@@ -2511,6 +2571,61 @@ describe("useAiFeature fix round 4", () => {
 });
 
 describe("final fix: replay settlement", () => {
+  it.each(["undo", "redo"] as const)(
+    "settles a stored %s refused by the real normalizer as unapplied",
+    async (direction) => {
+      const operations: Operation[] = [
+        ...greet,
+        {
+          op: "updateBlockLocale",
+          blockId: "gone",
+          locale: "de",
+          text: {
+            content: { value: "Hallo", sourceHash: sourceHash("Hello") },
+          },
+        },
+      ];
+      const replay = vi.fn(async () => ({ operations, replayId: "refused" }));
+      const settleReplay = vi.fn(async () => {});
+      const { ai, editor, history, onError } = await openLocal({
+        conversation: {
+          list: async () => [persistedMessage("persisted", direction === "redo")],
+          clear: false,
+          undo: replay,
+          redo: replay,
+          settleReplay,
+        },
+      });
+      editor.addLocale("de");
+      const before = safeClone(editor.content.value);
+      const record = vi.spyOn(history, "record");
+      ai.open("chat");
+      await settle();
+
+      await (direction === "undo"
+        ? ai.undoMessage("persisted")
+        : ai.redoMessage("persisted"));
+
+      expect(settleReplay).toHaveBeenCalledExactlyOnceWith("tpl-1", "persisted", {
+        replayId: "refused",
+        direction,
+        applied: false,
+        sessionId: expect.any(String),
+      });
+      expect(editor.content.value).toEqual(before);
+      expect(record).not.toHaveBeenCalled();
+      expect(ai.busy.value).toBe(false);
+      expect(ai.messages.value.at(-1)).toMatchObject({
+        undone: direction === "redo",
+        failure: {
+          context: direction,
+          error: { code: "block_missing", opIndex: 1 },
+        },
+      });
+      expect(onError).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it.each([true, false])(
     "settles the actual application result %s inside the lane",
     async (accept) => {
@@ -3304,6 +3419,24 @@ it("keeps author edits made before a buffered server fact starts reconciliation"
   expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Keep this author edit</p>" });
 });
 
+it("detects author edits during a job queued from a component scope that has since stopped", async () => {
+  const applied = deferred<void>();
+  const { ai, editor, reload } = await openLocal({ chat: chatting(async (on) => {
+    await applied.promise;
+    on.onApplied({ batchId: "server", revision: 2, operationCount: 1 });
+  }) }, { reload: async () => {} });
+  const component = effectScope();
+  const turn = component.run(() => ai.send("Server turn"))!;
+  component.stop();
+  await settle();
+  editor.updateBlock("t1", { content: "<p>Author edit during the turn</p>" });
+  applied.resolve();
+  await turn;
+  expect(reload).not.toHaveBeenCalled();
+  expect(ai.keptYourVersion.value).toBe(true);
+  expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Author edit during the turn</p>" });
+});
+
 it("does not count the AI's own applied batches as author edits before reload", async () => {
   const { ai, reload } = await openLocal({ chat: chatting(async (on) => {
     await on.onOperations(greet);
@@ -3393,4 +3526,250 @@ it("keeps the returning A session's messages and replay records after an old New
   expect(ai.messages.value.find((row) => row.id === answer.id)).toMatchObject({ undone: true });
   await ai.send("Publish memory again");
   expect(ai.messages.value.map((row) => row.id)).toContain(answer.id);
+});
+
+describe('AI in language views', () => {
+  it('applies direct fix and bulk-alt requests in a non-default view', async () => {
+    const fixFinding = vi.fn(async (_request, on) => { await on.onOperations(greet); return { messageId: null, text: 'Done' }; });
+    const altText = vi.fn(async () => ({ alt: 'Draft' }));
+    const { ai, editor, history, scope } = await openLocal({ fixFinding, altText });
+    try {
+      editor.addBlock(createImageBlock({ id: 'image', alt: 'Original', src: 'https://example.com/image.png' }));
+      editor.addLocale('de');
+      editor.setActiveLocale('de');
+      const record = vi.spyOn(history, 'record');
+      expect(await ai.fix({ ruleId: 'a11y.vague-link-text', message: 'Fix', blockId: 't1' } as any)).toMatchObject({ operationCount: 1, text: 'Done', failed: false });
+      await ai.applyAltTexts([{ blockId: 'image', alt: 'Draft', decorative: false }]);
+      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hi</p>', l10n: { de: { text: { content: { value: '<p>Hello</p>' } } } } });
+      expect(editor.content.value.blocks[2]).toMatchObject({ alt: 'Original', l10n: { de: { text: { alt: { value: 'Draft' } } } } });
+      expect(fixFinding).toHaveBeenCalledTimes(1);
+      expect(altText).not.toHaveBeenCalled();
+      expect(record).toHaveBeenCalledTimes(2);
+      expect(ai.busy.value).toBe(false);
+      expect(ai.messages.value).toHaveLength(2);
+    } finally { ai.destroy(); scope.stop(); }
+  });
+
+  it('enables fixes and alt text in a non-default view while chat requests and edits that language', async () => {
+    let sent: TemplateContent | undefined;
+    const { ai, editor, scope } = await openLocal({
+      chat: async (request, on) => {
+        sent = request.content;
+        await on.onOperations(greet);
+        return { messageId: null, text: 'Done' };
+      },
+      fixFinding: async () => ({ messageId: null, text: '' }),
+      altText: async () => ({ alt: 'Image' }),
+    });
+    try {
+      editor.addLocale('de');
+      editor.setActiveLocale('de');
+      editor.updateBlock('t1', { content: '<p>Hallo</p>' });
+      await ai.send('Change German');
+      expect(JSON.stringify(sent)).not.toContain('l10n');
+      expect(sent?.settings.locales).toBeUndefined();
+      expect(sent?.blocks[0]).toMatchObject({ content: '<p>Hallo</p>' });
+      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hi</p>', l10n: { de: { text: { content: { value: '<p>Hello</p>' } } } } });
+      expect(ai.has('fixFinding')).toBe(true);
+      expect(ai.has('altText')).toBe(true);
+    } finally { ai.destroy(); scope.stop(); }
+  });
+
+  it('ignores a fix that finishes after the active language changes', async () => {
+    let finish!: () => void;
+    const ready = new Promise<void>((resolve) => { finish = resolve; });
+    let started!: () => void;
+    const entered = new Promise<void>((resolve) => { started = resolve; });
+    const { ai, editor, scope } = await openLocal({ fixFinding: async (_request, on) => {
+      started();
+      await ready;
+      await on.onOperations(greet);
+      return { messageId: null, text: 'Done' };
+    } });
+    try {
+      editor.addLocale('de');
+      const pending = ai.fix({ ruleId: 'a11y.vague-link-text', message: 'Fix', blockId: 't1' } as any);
+      await entered;
+      editor.setActiveLocale('de');
+      finish();
+      await pending;
+      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hi</p>' });
+    } finally { ai.destroy(); scope.stop(); }
+  });
+
+  it('abandons alt text and rewrite results when their starting language changes', async () => {
+    let finish!: () => void;
+    const ready = new Promise<void>((resolve) => { finish = resolve; });
+    let entered = 0;
+    const { ai, editor, scope } = await openLocal({
+      altText: async () => { entered++; await ready; return { alt: 'Draft' }; },
+      rewrite: async (_request, on) => { entered++; await ready; on.onText('Draft'); },
+    });
+    try {
+      editor.content.value.blocks.push({ id: 'image', type: 'image', src: 'https://example.com/a.png', alt: 'Old' } as any);
+      editor.addLocale('de');
+      const alt = ai.draftAltText('image').catch((error) => error);
+      const onText = vi.fn();
+      const rewrite = ai.rewrite({ text: 'Hi', instruction: 'shorten' } as any, onText, new AbortController().signal).catch((error) => error);
+      await vi.waitFor(() => expect(entered).toBe(2));
+      editor.setActiveLocale('de');
+      finish();
+      expect(await alt).toMatchObject({ name: 'AbortError' });
+      expect(await rewrite).toMatchObject({ name: 'AbortError' });
+      expect(onText).not.toHaveBeenCalled();
+    } finally { ai.destroy(); scope.stop(); }
+  });
+});
+
+
+it('abandons a completed rewrite response even when it emitted no text chunks', async () => {
+  let finish!: (value: { html: string }) => void;
+  const response = new Promise<{ html: string }>((resolve) => { finish = resolve; });
+  let entered!: () => void;
+  const ready = new Promise<void>((resolve) => { entered = resolve; });
+  const { ai, editor, scope } = await openLocal({ rewrite: async () => { entered(); return response; } });
+  try {
+    editor.addLocale('de');
+    const pending = ai.rewrite({ html: '<p>Hi</p>', preset: 'shorter', language: null, instruction: null }, () => {}, new AbortController().signal).catch((error) => error);
+    await ready;
+    editor.setActiveLocale('de');
+    finish({ html: '<p>Draft</p>' });
+    expect(await pending).toMatchObject({ name: 'AbortError' });
+  } finally { ai.destroy(); scope.stop(); }
+});
+
+describe("the chat's Undo of a whole-template turn under collaboration", () => {
+  const replacement = {
+    blocks: [{ id: "t1", type: "title", content: "<p>Replaced</p>" }],
+    settings: { width: 640 },
+  } as unknown as TemplateContent;
+  const bob: Operation = {
+    op: "updateBlock",
+    blockId: "t1",
+    set: { content: "<p>Bob</p>" },
+  };
+  const titleOf = (content: TemplateContent) =>
+    (content.blocks.find((block) => block.id === "t1") as { content?: string })
+      ?.content;
+  async function settled() {
+    for (let i = 0; i < 4; i++) await settle();
+  }
+
+  async function open() {
+    const server = new FakeCollaborationServer(safeClone(CONTENT));
+    const scope = effectScope();
+    const value = scope.run(() => {
+      const collaboration = useCollaborationFeature({
+        provider: server.provider("Ada"),
+        loadTemplate: async () => server.template(),
+      });
+      const editor = useEditor({
+        content: safeClone(CONTENT),
+        templates: server.templatesProvider(),
+        lockedBlocks: collaboration.locks,
+      });
+      collaboration.attach(editor);
+      const ai = useAiFeature({
+        provider: {
+          ...off,
+          chat: chatting(async (on) => {
+            await on.onOperations([
+              { op: "setContent", content: safeClone(replacement) },
+            ]);
+          }),
+        } as AiProvider,
+        editor,
+        collaboration,
+        history: () => collaboration.history,
+        reload: null,
+        mergeTags: () => ({ syntax: "liquid", tags: [] }),
+        normalize: (ops) => [...ops],
+        commentsOpen: null,
+      });
+      return { editor, collaboration, ai };
+    })!;
+    await value.editor.load(server.templateId);
+    await settled();
+    const assistant = () =>
+      value.ai.messages.value.find((item) => item.role === "assistant")!;
+    return { ...value, server, scope, assistant };
+  }
+
+  it("refuses Undo once another session changed the template after the turn, keeping that edit", async () => {
+    const { ai, editor, server, scope, assistant } = await open();
+    try {
+      await ai.send("Replace everything");
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(titleOf(server.content)).toBe("<p>Replaced</p>");
+      server.pushAs(AGENT, [bob]);
+      server.deliverAll();
+      await settled();
+      const submits = server.submits;
+      await ai.undoMessage(assistant().id);
+      await settled();
+      expect(server.submits).toBe(submits);
+      expect(assistant()).toMatchObject({
+        undone: false,
+        failure: {
+          context: "undo",
+          error: expect.objectContaining({ code: "precondition_failed" }),
+        },
+      });
+      for (const content of [editor.content.value, server.content])
+        expect(titleOf(content)).toBe("<p>Bob</p>");
+    } finally {
+      scope.stop();
+    }
+  });
+
+  it("offers no working Undo for a turn the backend refused, keeping the other session's edit", async () => {
+    const { ai, editor, server, scope, assistant } = await open();
+    try {
+      // Committed at the backend before the turn's batch, not yet delivered.
+      server.pushAs(AGENT, [bob]);
+      await ai.send("Replace everything");
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(server.submitted.at(-1)?.ops[0].op).toBe("setContent");
+      expect(titleOf(server.content)).toBe("<p>Bob</p>");
+      expect(titleOf(editor.content.value)).toBe("<p>Bob</p>");
+      await ai.undoMessage(assistant().id);
+      await settled();
+      server.deliverAll();
+      await settled();
+      for (const content of [editor.content.value, server.content])
+        expect(titleOf(content)).toBe("<p>Bob</p>");
+      expect(assistant().undone).toBe(false);
+    } finally {
+      scope.stop();
+    }
+  });
+
+  it("still undoes and redoes the turn exactly when nobody else changed the template", async () => {
+    const { ai, editor, server, scope, assistant } = await open();
+    try {
+      await ai.send("Replace everything");
+      await settled();
+      server.deliverAll();
+      await settled();
+      await ai.undoMessage(assistant().id);
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(editor.content.value).toEqual(CONTENT);
+      expect(server.content).toEqual(CONTENT);
+      await ai.redoMessage(assistant().id);
+      await settled();
+      server.deliverAll();
+      await settled();
+      expect(titleOf(editor.content.value)).toBe("<p>Replaced</p>");
+      expect(titleOf(server.content)).toBe("<p>Replaced</p>");
+      expect(assistant().failure).toBeUndefined();
+    } finally {
+      scope.stop();
+    }
+  });
 });

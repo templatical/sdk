@@ -107,6 +107,22 @@ describe("useCollaboration at the edges", () => {
   });
 
   describe("others' locks", () => {
+    it("keeps the latest block for a holder repeated in the join snapshot", async () => {
+      const provider = server.provider("Ada");
+      const join = provider.join.bind(provider);
+      vi.spyOn(provider, "join").mockImplementationOnce(async (...args) => ({
+        ...(await join(...args)),
+        locks: [lock("t1", GRACE), lock("p1", GRACE), lock("d1", LINUS)],
+      }));
+      const a = await openClient(server, "Ada", { provider });
+      expect(a.collaboration.locksOf("t1")).toEqual([]);
+      expect(a.collaboration.locksOf("p1")).toEqual([lock("p1", GRACE)]);
+      expect(a.collaboration.locksOf("d1")).toEqual([lock("d1", LINUS)]);
+      expect(a.editor.isBlockLocked("t1")).toBe(false);
+      expect(a.editor.isBlockLocked("p1")).toBe(true);
+      a.scope.stop();
+    });
+
     it("ignores its own lock when the backend sends it back", async () => {
       const a = await openClient(server, "Ada");
 
@@ -126,10 +142,16 @@ describe("useCollaboration at the edges", () => {
       a.handlers().onLock(lock("b1", GRACE));
       a.handlers().onLock(lock("d1", LINUS));
 
-      expect([...a.collaboration.locks.value.keys()]).toEqual(["b1", "d1"]);
+      expect([...a.collaboration.locks.value.keys()]).toEqual([
+        "b1\u0000",
+        "d1\u0000",
+      ]);
       // The late unlock of the block Grace moved off changes nothing.
       a.handlers().onUnlock("p1", GRACE.sessionId);
-      expect([...a.collaboration.locks.value.keys()]).toEqual(["b1", "d1"]);
+      expect([...a.collaboration.locks.value.keys()]).toEqual([
+        "b1\u0000",
+        "d1\u0000",
+      ]);
     });
 
     it("ignores an unlock from a session that doesn't hold the block", async () => {
@@ -138,7 +160,9 @@ describe("useCollaboration at the edges", () => {
 
       a.handlers().onUnlock("p1", LINUS.sessionId);
 
-      expect(a.collaboration.locks.value.get("p1")?.holder).toEqual(GRACE);
+      expect(a.collaboration.locks.value.get("p1\u0000")?.holder).toEqual(
+        GRACE,
+      );
     });
 
     it("drops the locks of a session that vanishes without letting go", async () => {
@@ -156,7 +180,7 @@ describe("useCollaboration at the edges", () => {
 
       a.handlers().onMembers([member(LINUS)]);
 
-      expect([...a.collaboration.locks.value.keys()]).toEqual(["b1"]);
+      expect([...a.collaboration.locks.value.keys()]).toEqual(["b1\u0000"]);
       expect(a.collaboration.members.value.map((m) => m.name)).toEqual([
         "Linus",
       ]);
@@ -191,8 +215,8 @@ describe("useCollaboration at the edges", () => {
 
       expect(a.collaboration.locks.value).toEqual(
         new Map([
-          ["p1", live],
-          ["b1", lock("b1", LINUS)],
+          ["p1\u0000", live],
+          ["b1\u0000", lock("b1", LINUS)],
         ]),
       );
     });
@@ -217,7 +241,7 @@ describe("useCollaboration at the edges", () => {
       await settle();
 
       expect(a.collaboration.locks.value).toEqual(
-        new Map([["b1", lock("b1", LINUS)]]),
+        new Map([["b1\u0000", lock("b1", LINUS)]]),
       );
     });
   });
@@ -235,7 +259,7 @@ describe("useCollaboration at the edges", () => {
       a.editor.selectBlock("b1");
       await settle();
 
-      expect(release).toHaveBeenCalledWith(server.templateId, "p1");
+      expect(release).toHaveBeenCalledWith(server.templateId, "p1", null);
       expect([...server.locks.keys()]).toEqual(["b1"]);
       expect(a.editor.state.selectedBlockId).toBe(null);
       expect(a.notices).toEqual([
@@ -299,12 +323,14 @@ describe("useCollaboration at the edges", () => {
       await settle();
       joined.open();
       await settle();
-      expect(a.collaboration.locks.value.get("p1")?.holder.name).toBe("Grace");
+      expect(a.collaboration.locks.value.get("p1\u0000")?.holder.name).toBe(
+        "Grace",
+      );
 
       granted.open();
       await settle();
 
-      expect(a.collaboration.locks.value.has("p1")).toBe(false);
+      expect(a.collaboration.locks.value.has("p1\u0000")).toBe(false);
       expect(a.editor.state.selectedBlockId).toBe("p1");
       expect(server.locks.get("p1")?.holder.name).toBe("Ada");
     });
@@ -382,7 +408,9 @@ describe("useCollaboration at the edges", () => {
           holder: expect.objectContaining({ name: "Grace" }),
         },
       ]);
-      expect(a.collaboration.locks.value.get("p1")?.holder.name).toBe("Grace");
+      expect(a.collaboration.locks.value.get("p1\u0000")?.holder.name).toBe(
+        "Grace",
+      );
     });
 
     it("reports a renewal that fails in transit and keeps renewing", async () => {
@@ -500,7 +528,11 @@ describe("useCollaboration at the edges", () => {
       expect(a.collaboration.revision.value).toBe(1);
       expect(ids(a.editor.content.value)).toEqual(["t1", "s1"]);
       expect(a.remote).toEqual([
-        { actor: AGENT, ops: [{ op: "deleteBlock", blockId: "d1" }] },
+        {
+          actor: AGENT,
+          locale: null,
+          ops: [{ op: "deleteBlock", blockId: "d1" }],
+        },
       ]);
     });
 

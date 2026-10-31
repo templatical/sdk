@@ -1,4 +1,11 @@
 import {
+  defaultLocaleOption,
+  localeTag,
+  registerLocales,
+  set,
+  warn,
+} from "./localization";
+import {
   createSectionBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
@@ -52,6 +59,11 @@ function resolveColumnLayout(
     `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to 3.`,
   );
   return "1";
+}
+
+export interface ConvertUnlayerOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
 }
 
 /** Each column's share of the body width, by layout. */
@@ -205,6 +217,43 @@ function processRow(
     ...(backgroundImage ? { backgroundImage } : {}),
   });
 
+  const languages = row.values?._languages as
+    Record<string, UnlayerRow["values"]> | undefined;
+  for (const [code, values] of Object.entries(languages ?? {})) {
+    const locale = localeTag(code, warnings);
+    if (!locale) continue;
+    if (values.backgroundImage?.url !== undefined) {
+      const backgroundImage = {
+        ...row.values?.backgroundImage,
+        ...values.backgroundImage,
+      };
+      if (
+        typeof backgroundImage.url === "string" &&
+        backgroundImage.url.trim() === ""
+      ) {
+        set(section, locale, "backgroundImage", null);
+      } else {
+        const image = resolveRowBackgroundImage(
+          { ...row, values: { ...row.values, ...values, backgroundImage } },
+          settings.width,
+          warnings,
+        );
+        if (image) set(section, locale, "backgroundImage", image);
+        else if (typeof backgroundImage.url !== "string")
+          warn(
+            warnings,
+            `Dropped language "${locale}" key "backgroundImage.url": unreadable translated URL.`,
+          );
+      }
+    }
+    for (const key of Object.keys(values).filter(
+      (key) => key !== "backgroundImage",
+    ))
+      warn(
+        warnings,
+        `Dropped language "${locale}" key "${key}": no language mapping for this format.`,
+      );
+  }
   return [section];
 }
 
@@ -260,6 +309,7 @@ function extractSettings(
  */
 export function convertUnlayerTemplate(
   template: UnlayerTemplate,
+  options: ConvertUnlayerOptions = {},
 ): ImportResult {
   if (!template?.body?.rows) {
     throw new Error(
@@ -274,6 +324,60 @@ export function convertUnlayerTemplate(
   const headers = template.body.headers ?? [];
   const footers = template.body.footers ?? [];
   const settings = extractSettings(template);
+  const defaultLocale = defaultLocaleOption(options.defaultLocale, warnings);
+  settings.locale = defaultLocale ?? "en";
+  const mappedValues = new Set<unknown>();
+  for (const row of [...headers, ...template.body.rows, ...footers]) {
+    mappedValues.add(row.values);
+    for (const column of row.columns ?? []) {
+      for (const element of column.contents ?? [])
+        mappedValues.add(element.values);
+    }
+  }
+  const declaredLocales = new Set<string>();
+  let hasLanguages = false;
+  const scan = (value: unknown, device?: string): void => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => scan(item, device));
+      return;
+    }
+    for (const [key, item] of Object.entries(value)) {
+      if (key === "_languages" && item && typeof item === "object") {
+        hasLanguages = true;
+        if (device)
+          for (const code of Object.keys(item))
+            warn(
+              warnings,
+              `Dropped language "${code}" in device override "${device}": no language mapping for this format.`,
+            );
+        if (!device && mappedValues.has(value)) {
+          for (const code of Object.keys(item)) {
+            const locale = localeTag(code, warnings);
+            if (locale && locale !== settings.locale)
+              declaredLocales.add(locale);
+          }
+        }
+        if (!device && !mappedValues.has(value)) {
+          for (const code of Object.keys(item)) {
+            if (localeTag(code, warnings))
+              warn(
+                warnings,
+                `Dropped language "${code}": no language mapping for this format at this element.`,
+              );
+          }
+        }
+      } else if (key === "_override" && item && typeof item === "object") {
+        for (const [name, override] of Object.entries(item))
+          scan(override, name);
+      } else scan(item, device);
+    }
+  };
+  scan(template);
+  if (hasLanguages && !defaultLocale)
+    warnings.push(
+      'Unlayer JSON declares no default language; assumed "en". Pass defaultLocale to select another language.',
+    );
 
   const pageImage = template.body.values?.backgroundImage?.url;
   if (typeof pageImage === "string" && pageImage.trim()) {
@@ -309,6 +413,11 @@ export function convertUnlayerTemplate(
     blocks,
     settings,
   };
+
+  registerLocales(content);
+  for (const locale of content.settings.locales ?? [])
+    declaredLocales.add(locale);
+  if (declaredLocales.size) content.settings.locales = [...declaredLocales];
 
   const summary = {
     total: entries.length,

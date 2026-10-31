@@ -102,6 +102,14 @@ function keyPaths(file: string): { leaves: Set<string>; objects: Set<string> } {
       stack.pop();
     }
 
+    const inlinePlural = line.match(
+      /^(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$-]*)):\s*\{\s*one:\s*["'`]/,
+    );
+    if (inlinePlural) {
+      const key = inlinePlural[1] ?? inlinePlural[2] ?? inlinePlural[3]!;
+      leaves.add([...stack.map((s) => s.key), key].join("."));
+      continue;
+    }
     const opener = line.match(
       /^(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$-]*)):\s*\{$/,
     );
@@ -123,6 +131,16 @@ function keyPaths(file: string): { leaves: Set<string>; objects: Set<string> } {
       const key = entry[1] ?? entry[2] ?? entry[3]!;
       leaves.add([...stack.map((s) => s.key), key].join("."));
     }
+  }
+
+  // A plural pair is one string entry passed to the plural formatter.
+  for (const path of [...leaves]) {
+    if (!path.endsWith(".one")) continue;
+    const parent = path.slice(0, -4);
+    if (!leaves.has(`${parent}.other`)) continue;
+    leaves.delete(path);
+    leaves.delete(`${parent}.other`);
+    leaves.add(parent);
   }
 
   const objects = new Set<string>();

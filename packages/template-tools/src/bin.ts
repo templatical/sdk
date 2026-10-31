@@ -7,6 +7,7 @@
 
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { SdkError } from "@templatical/types";
 import { parseArgs } from "./cli/args";
 import { note, setJsonMode } from "./cli/output";
 import {
@@ -22,14 +23,17 @@ import { runEdit } from "./cli/commands/edit";
 import { runImport } from "./cli/commands/import";
 import { runCustomBlock } from "./cli/commands/custom-block";
 import { runList, runLive } from "./cli/commands/live";
+import { runStrings } from "./cli/commands/strings";
 
 const USAGE = `templatical <command> [options]
 
-  validate <file> [--html]              structural + quality lint; --html checks compiled size
+  validate <file> [--locale <tag>] [--html]  structural + quality lint; --html checks compiled size
   schema   [--out <file>]               print the block JSON Schema
-  render   <file> [--format mjml|html] [-o <file>]  render to MJML or HTML
+  render   <file> [--locale <tag>] [--format mjml|html] [-o <file>]  render to MJML or HTML
   edit     <file> --op '<json>' | --ops <file>  apply operations, write the result
-  import   <file> [--format <fmt>] | --list-formats  convert a design to Templatical JSON
+  import   <file> [--format <fmt>] [--default-locale <tag>] | --list-formats  convert a design to Templatical JSON
+  strings export <file> --locale <tag>  export missing and stale strings
+  strings import <file> <strings.json>  apply accepted strings; exit 1 on rejections
   live     [--file <f>] [--port <n>] [--cwd <d>] [--no-open]
   live reload | live stop
   custom-block validate <file>          check a custom block definition
@@ -41,6 +45,15 @@ const USAGE = `templatical <command> [options]
 
 Options:
   --json                                machine-readable output on stdout
+  --locale <tag>                        template language for validate/render; required target for strings export
+                                        validate exits 1 on merge-tag mismatches; missing/stale values warn
+  --default-locale <tag>                 import fallback language; source-declared default wins (default: "en")
+  --definitions <file>                   JSON array of custom block definitions for validate/render/strings
+  --do-not-translate <file>              JSON array of protected terms for strings
+  --only gaps|all                       strings export selection (default: gaps)
+  --block <id>                          strings export block filter
+  --syntax <preset>                     strings merge tags: liquid (default), handlebars, mailchimp, ampscript
+  --out <file>                          strings export destination (default: stdout); import destination (default: input)
 `;
 
 export async function main(argv: string[]): Promise<number> {
@@ -58,6 +71,8 @@ export async function main(argv: string[]): Promise<number> {
       return runEdit(args);
     case "import":
       return await runImport(args);
+    case "strings":
+      return runStrings(args);
     case "live":
       return await runLive(args);
     case "list":
@@ -111,6 +126,10 @@ if (isEntryPoint()) {
   main(process.argv.slice(2))
     .then((code) => process.exit(code))
     .catch((err: unknown) => {
+      if (err instanceof SdkError && err.code === "unknown_locale") {
+        note(`${err.code}: ${err.message}`);
+        process.exit(EXIT.invalid);
+      }
       if (err instanceof InvalidTemplateError) {
         note(err.message);
         for (const e of err.errors) note(`  - ${e}`);

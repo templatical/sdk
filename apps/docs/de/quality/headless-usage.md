@@ -2,15 +2,15 @@
 
 `@templatical/quality` ist ausschließlich JSON-basiert und hat keine DOM-Abhängigkeit — dieselben Linter laufen in jedem Node.js-Kontext: CI, Build-Pipelines, serverseitige Validierung, Batch-Jobs.
 
-`lintTemplate(content, options?)` führt jeden Linter aus — Barrierefreiheit, Struktur, Links, Zustellbarkeit und Kompatibilität — und liefert die zusammengeführten `LintIssue[]`. Es ist der empfohlene Einstiegspunkt: ein Aufruf, und jede künftige Linter-Kategorie ist automatisch enthalten.
+`lintTemplate(content, options?)` führt jeden Linter aus — Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität und Lokalisierung — und liefert die zusammengeführten `LintIssue[]`. Nutzen Sie ihn als aggregierten Einstiegspunkt, um jede registrierte Kategorie zu erhalten.
 
 ```ts
 import { lintTemplate } from "@templatical/quality";
 
-const issues = lintTemplate(content); // a11y-, dann structure-, dann link-, dann deliverability-Issues
+const issues = lintTemplate(content); // a11y-, dann structure-, dann link-, dann deliverability-, compatibility- und localization-Issues
 ```
 
-Die einzelnen Linter-Funktionen — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)`, `lintDeliverability(content, options?)`, `lintCompatibility(content, options?)` — liefern dieselbe Struktur und bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Sie können eine Teilmenge auch über `lintTemplate` ausführen, indem Sie Kategorien deaktivieren: `lintTemplate(content, { structure: false, links: false, deliverability: false, compatibility: false })` führt nur die Barrierefreiheit aus.
+Die einzelnen Linter-Funktionen — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)`, `lintDeliverability(content, options?)`, `lintCompatibility(content, options?)`, `lintLocalization(content, options?)` — liefern dieselbe Struktur und bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Sie können eine Teilmenge auch über `lintTemplate` ausführen, indem Sie Kategorien deaktivieren: `lintTemplate(content, { structure: false, links: false, deliverability: false, compatibility: false, localization: false })` führt nur die Barrierefreiheit aus.
 
 ## Vor dem Speichern validieren
 
@@ -126,4 +126,4 @@ for (const { url, blockId, source } of walkUrls(content)) {
 }
 ```
 
-Wenn Ihre Custom-Regel beim Orchestrator mitmachen soll (Schweregrad-Overrides, lokalisierte Nachrichten, das Editor-Issues-Panel), implementieren Sie das `Rule`-Interface — `block` / `template` liefern einen `RuleHit` (`blockId`, optionale `params`, optionaler `fix`), und der Orchestrator kombiniert ihn mit `meta` und dem Nachrichtentemplate der aktiven Locale. Dasselbe `runRules`-Helper-Modul betreibt `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` und `lintCompatibility`, und `lintTemplate` verteilt an alle fünf.
+Wenn Ihre Custom-Regel beim Orchestrator mitmachen soll (Schweregrad-Overrides, lokalisierte Nachrichten, das Editor-Issues-Panel), implementieren Sie das `Rule`-Interface — `block` / `template` liefern einen `RuleHit` (`blockId`, optionale `params`, optionaler `fix`), und der Orchestrator kombiniert ihn mit `meta` und dem Nachrichtentemplate der aktiven Locale. Dasselbe `runRules`-Helper-Modul betreibt `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability` und `lintLocalization`. `lintCompatibility` verwendet einen separaten Scanner: `scanBlock` erfasst Merkmale des verfassten HTML/CSS und der URLs, und `lintScan` wendet die Kompatibilitätsregeln auf diesen Scan an. `lintTemplate` verteilt an alle Kategorien.

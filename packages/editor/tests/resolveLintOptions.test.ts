@@ -1,7 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { resolveLintOptions } from "../src/utils/resolveLintOptions";
+import { createDefaultTemplateContent } from "@templatical/types";
 
 describe("resolveLintOptions", () => {
+  it("keeps UI messages separate from the active template language", () => {
+    expect(
+      resolveLintOptions({
+        locale: "en",
+        contentLocale: "de",
+        lint: { locale: "fr", contentLocale: "es" },
+      }),
+    ).toMatchObject({ locale: "en", contentLocale: "de" });
+  });
+
+  it("defaults the content language to the template settings", () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locale = "de";
+    expect(resolveLintOptions({ locale: "en", content })).toMatchObject({
+      locale: "en",
+      contentLocale: "de",
+    });
+  });
   it("forces editor locale onto the linter options", () => {
     const out = resolveLintOptions({ locale: "de" });
     expect(out.locale).toBe("de");

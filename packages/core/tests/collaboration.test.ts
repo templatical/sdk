@@ -236,6 +236,7 @@ describe("useCollaboration", () => {
             type: "ai",
             sessionId: a.collaboration.sessionId,
           }),
+          locale: null,
           ops: [{ op: "deleteBlock", blockId: "d1" }],
         },
       ]);
@@ -259,6 +260,7 @@ describe("useCollaboration", () => {
       expect(b.remote).toEqual([
         {
           actor: expect.objectContaining({ name: "Ada", type: "user" }),
+          locale: null,
           ops: [{ op: "deleteBlock", blockId: "d1" }],
         },
       ]);
@@ -417,7 +419,9 @@ describe("useCollaboration", () => {
       await settle();
       server.deliverAll();
       await settle();
-      expect(b.collaboration.locks.value.get("t1")?.holder.name).toBe("Ada");
+      expect(b.collaboration.locks.value.get("t1\u0000")?.holder.name).toBe(
+        "Ada",
+      );
 
       a.editor.updateBlock("t1", { content: "Ada's" } as Partial<Block>);
       await vi.advanceTimersByTimeAsync(COLLABORATION_TYPING_DEBOUNCE_MS);
@@ -1103,7 +1107,7 @@ describe("useCollaboration", () => {
 
       await vi.advanceTimersByTimeAsync(COLLABORATION_LOCK_RENEW_MS);
       await settle();
-      expect(renew).toHaveBeenCalledWith(server.templateId, "p1");
+      expect(renew).toHaveBeenCalledWith(server.templateId, "p1", null);
 
       a.editor.selectBlock(null);
       await settle();
@@ -1138,7 +1142,9 @@ describe("useCollaboration", () => {
           holder: expect.objectContaining({ name: "Ada" }),
         },
       ]);
-      expect(c.collaboration.locks.value.get("p1")?.holder.name).toBe("Ada");
+      expect(c.collaboration.locks.value.get("p1\u0000")?.holder.name).toBe(
+        "Ada",
+      );
     });
 
     it("tracks others' locks, and blocks selecting them", async () => {
@@ -1149,6 +1155,7 @@ describe("useCollaboration", () => {
       server.deliverAll();
       await settle();
 
+      expect(b.collaboration.locks.value.has("p1\u0000")).toBe(true);
       b.editor.selectBlock("p1");
       expect(b.editor.state.selectedBlockId).toBe(null);
 
@@ -1156,7 +1163,7 @@ describe("useCollaboration", () => {
       await settle();
       server.deliverAll();
       await settle();
-      expect(b.collaboration.locks.value.has("p1")).toBe(false);
+      expect(b.collaboration.locks.value.has("p1\u0000")).toBe(false);
     });
 
     it("drops the locks of a session that leaves", async () => {
@@ -1168,14 +1175,14 @@ describe("useCollaboration", () => {
       await settle();
       server.deliverAll();
       await settle();
-      expect(b.collaboration.locks.value.has("t1")).toBe(true);
+      expect(b.collaboration.locks.value.has("t1\u0000")).toBe(true);
 
       a.scope.stop();
       await settle();
       server.deliverAll();
       await settle();
 
-      expect(b.collaboration.locks.value.has("t1")).toBe(false);
+      expect(b.collaboration.locks.value.has("t1\u0000")).toBe(false);
       expect(
         b.collaboration.members.value.map((member) => member.name),
       ).toEqual(["Grace"]);
@@ -1405,7 +1412,7 @@ describe("useCollaboration", () => {
         ops,
         expect.objectContaining({ settings: { width: 600 } }),
       );
-      expect(a.remote).toEqual([{ actor: AGENT, ops }]);
+      expect(a.remote).toEqual([{ actor: AGENT, locale: null, ops }]);
     });
 
     it("rewrites the batches a catch-up brings, too", async () => {
@@ -1576,7 +1583,11 @@ describe("useCollaboration", () => {
       );
       expect(ids(a.editor.content.value)).toEqual(["n1"]);
       expect(a.remote).toEqual([
-        { actor: AGENT, ops: [{ op: "setContent", content: REPLACED }] },
+        {
+          actor: AGENT,
+          locale: null,
+          ops: [{ op: "setContent", content: REPLACED }],
+        },
       ]);
     });
 

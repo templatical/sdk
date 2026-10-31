@@ -1,3 +1,4 @@
+import { canMutate } from "./mutation-guard";
 import type { Block, BlockDefaults, BlockType } from "@templatical/types";
 import { cloneBlock, createBlock } from "@templatical/types";
 
@@ -75,6 +76,14 @@ export function useBlockActions(
     columnIndex?: number,
   ): Block {
     const cloned = cloneBlock(block);
+    if (
+      !canMutate(addBlock, "duplicateBlock", [
+        block,
+        targetSectionId,
+        columnIndex,
+      ])
+    )
+      return cloned;
 
     // Insert directly after the source block. Explicit target args win;
     // otherwise, resolve the source's location and bump index by 1. Falls

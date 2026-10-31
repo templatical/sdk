@@ -1,5 +1,5 @@
 ---
-description: MIT-licensed linter for Templatical templates — accessibility, structure, links, deliverability, and compatibility rules via lintTemplate() in the editor or CI.
+description: MIT-licensed linter for Templatical templates — accessibility, structure, links, deliverability, compatibility, and localization rules via lintTemplate() in the editor or CI.
 ---
 
 # Quality
@@ -15,10 +15,13 @@ description: MIT-licensed linter for Templatical templates — accessibility, st
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, relative URLs, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 | **[Deliverability](./deliverability/)** | Mismatched URL-shaped link text, shortener links, IP-address links, and image-led emails with little text | warning or info |
 | **[Compatibility](./compatibility/)** | Client-breaking pass-through HTML and CSS, plus compiled Gmail size | warning or info |
+| **[Localization](/guide/localized-templates)** | Missing translations, stale source hashes and differing merge tags | warning |
 
-All five linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`); set any of them to `false` to disable that linter entirely.
+All linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`, `localization.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`, `localization`); set any of them to `false` to disable that linter entirely.
 
-**Run everything in one call.** `lintTemplate(content, options?)` is the single aggregate entry point — it runs all five linters and returns the merged `LintIssue[]` (accessibility, then structure, then links, then deliverability, then compatibility). Reach for it by default; the per-linter functions stay exported for when you want to run just a subset. To skip a category, set its key to `false`: `lintTemplate(content, { structure: false })`. See [Headless usage](./headless-usage).
+**Run everything in one call.** `lintTemplate(content, options?)` is the single aggregate entry point — it runs all linters and returns the merged `LintIssue[]` (accessibility, then structure, then links, then deliverability, then compatibility, then localization). Reach for it by default; the per-linter functions stay exported for when you want to run just a subset. To skip a category, set its key to `false`: `lintTemplate(content, { structure: false })`. See [Headless usage](./headless-usage).
+
+`contentLocale` selects the version to lint; `locale` selects messages. Dictionaries remain a union across languages. The three `localization.*` rules are listed in [Options](./options#localization), with their [fallback, staleness and merge-tag behavior](/guide/localized-templates).
 
 ## Architecture
 
@@ -35,7 +38,7 @@ All five linters return the same `LintIssue` shape and share the same options su
   <text x="100" y="76" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">from the editor or DB</text>
   <!-- Arrow -->
   <line x1="190" y1="50" x2="225" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
-  <!-- Step 2: Engines (five boxes stacked) -->
+  <!-- Step 2: Linter engines -->
   <rect x="230" y="2" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="16" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintAccessibility()</text>
   <text x="320" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">a11y.* rules</text>
@@ -52,6 +55,8 @@ All five linters return the same `LintIssue` shape and share the same options su
   <rect x="230" y="146" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="160" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintCompatibility()</text>
   <text x="320" y="172" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">compat.* rules</text>
+  <rect x="230" y="182" width="180" height="18" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="195" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintLocalization()</text>
   <line x1="410" y1="50" x2="445" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
   <!-- Step 3: Output -->
   <rect x="450" y="10" width="180" height="80" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="10"/>

@@ -6,6 +6,7 @@ import {
 } from "@templatical/types";
 import {
   computed,
+  watch,
   getCurrentScope,
   inject,
   isRef,
@@ -23,6 +24,7 @@ import {
   type OpenMergeTagTrigger,
 } from "../utils/mergeTagTrigger";
 import { getCaretRect } from "../utils/textFieldCaret";
+import { useLocaleEditable } from "./useLocaleEditable";
 import { usePopoverRoot } from "./usePopoverRoot";
 
 export interface UseMergeTagAutocompleteOptions {
@@ -84,13 +86,18 @@ export function useMergeTagAutocomplete(
   const { elementRef, modelValue, emit, mergeTags, syntax, enabled, onInsert } =
     options;
 
+  const isEditable = useLocaleEditable();
   const triggerChar = getSyntaxTriggerChar(syntax);
   const closingChar = getSyntaxClosingChar(syntax);
   // Reactive: `setMergeTags` can take the list from empty to populated, and a
   // boolean captured here would leave type-ahead dead for the rest of the
   // field's life.
   const available = computed(
-    () => enabled && triggerChar !== null && mergeTags.value.length > 0,
+    () =>
+      isEditable.value &&
+      enabled &&
+      triggerChar !== null &&
+      mergeTags.value.length > 0,
   );
 
   // Resolve the empty-state label the same way the rich-text path does —
@@ -106,6 +113,13 @@ export function useMergeTagAutocomplete(
 
   const popoverRoot = usePopoverRoot();
   const popup = createMergeTagPopup(emptyText, popoverRoot);
+  watch(
+    isEditable,
+    (editable) => {
+      if (!editable) popup.close();
+    },
+    { flush: "sync" },
+  );
 
   let disposed = false;
   if (getCurrentScope()) {
@@ -132,6 +146,7 @@ export function useMergeTagAutocomplete(
     match: OpenMergeTagTrigger,
     tag: MergeTag,
   ): void {
+    if (!isEditable.value) return;
     const value = el.value ?? modelValue();
     // Absorb a matching closer sitting immediately after the caret so
     // `{{fir}}` → pick → `{{first_name}}`, never `{{first_name}}}}`.

@@ -23,14 +23,16 @@ import type {
 } from "../../composables/useAiFeature";
 import { useI18n } from "../../composables/useI18n";
 import { secondaryBtnCompactClass } from "../../constants/styleConstants";
-import { UI_LOCALE_KEY } from "../../keys";
+import { EDITOR_KEY, UI_LOCALE_KEY } from "../../keys";
 import { validateChatAttachments } from "../../utils/aiAttachments";
+import { languageName } from "../../utils/languageName";
 import { aiErrorMessage } from "../../utils/aiErrors";
 
 const props = defineProps<{ feature: UseAiFeatureReturn }>();
 const emit = defineEmits<{ (e: "close"): void }>();
 
 const { t, format } = useI18n();
+const editor = inject(EDITOR_KEY, null);
 const uiLocale = inject(UI_LOCALE_KEY, undefined);
 
 const promptInput = ref("");
@@ -320,6 +322,13 @@ function onKeydown(event: KeyboardEvent): void {
             :key="item.id"
             class="tpl:flex tpl:flex-col tpl:gap-2"
           >
+            <span
+              v-if="typeof item.locale === 'string'"
+              data-testid="ai-chat-language"
+              class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+            >
+              {{ languageName(item.locale) }}
+            </span>
             <div
               v-if="item.role === 'user'"
               data-testid="ai-chat-prompt"
@@ -538,6 +547,17 @@ function onKeydown(event: KeyboardEvent): void {
           <div
             class="tpl-ai-input-wrapper tpl-focus-ring-host tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
           >
+            <p
+              v-if="editor?.activeLocale?.value"
+              data-testid="ai-active-language"
+              class="tpl:text-xs tpl:text-[var(--tpl-chrome-text-dim)]"
+            >
+              {{
+                format(t.localization.aiActiveLanguage, {
+                  language: languageName(editor.activeLocale.value),
+                })
+              }}
+            </p>
             <textarea
               ref="composer"
               v-model="promptInput"

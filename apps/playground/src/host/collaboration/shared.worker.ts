@@ -51,7 +51,12 @@ export type WorkerRequest =
   | {
       id: number;
       method: "acquireLock" | "renewLock" | "releaseLock";
-      args: [templateId: string, who: SessionIdentity, blockId: string];
+      args: [
+        templateId: string,
+        who: SessionIdentity,
+        blockId: string,
+        locale?: string | null,
+      ];
     };
 
 /** How often the worker lets silent sessions and expired locks go. */

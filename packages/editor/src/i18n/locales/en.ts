@@ -1,4 +1,116 @@
 export default {
+  localization: {
+    tagsDiffer: "Merge tags differ",
+    tagsDifferExplanation: "Its merge tags don't match the {default} text.",
+    changed: "Changed in {language}",
+    notTranslatedCount: {
+      one: "{count} not translated",
+      other: "{count} not translated",
+    },
+    missingExplanation:
+      "Not translated yet. The email shows the {default} text.",
+    staleExplanation: "{default} changed since this was translated.",
+    currentExcerpt: "Now: “{excerpt}”",
+    useDefaultLanguage: "Use {default}",
+    changedProperties: {
+      one: "{count} property differs from {default}.",
+      other: "{count} properties differ from {default}.",
+    },
+    resetChanges: "Reset changes",
+    staleLanguages: {
+      one: "Out of date in {count} language",
+      other: "Out of date in {count} languages",
+    },
+    open: "Open",
+    resetToDefault: "Reset to {default}",
+    hiddenExplanation: "This block isn't in the {language} email.",
+    editingLanguage: "Editing {language}",
+    languageReadOnly: "Read-only: {language} isn't enabled",
+    backToDefault: "Back to {default}",
+    translateFields: {
+      one: "Translate {count} field",
+      other: "Translate {count} fields",
+    },
+    translationConfirmation: {
+      one: "Translate all {count} field again?",
+      other: "Translate all {count} fields again?",
+    },
+    translateAllFields: {
+      one: "Translate all {count} field",
+      other: "Translate all {count} fields",
+    },
+    translationDescription:
+      "This replaces the current {language} translations, including manual edits. You can undo it.",
+    translatedFields: {
+      one: "Translated {count} field.",
+      other: "Translated {count} fields.",
+    },
+    translationTagsChanged: {
+      one: "{count} kept because their tags changed.",
+      other: "{count} kept because their tags changed.",
+    },
+    translationSkippedLocked: {
+      one: "{count} skipped because someone is editing them.",
+      other: "{count} skipped because someone is editing them.",
+    },
+    translationMissing: {
+      one: "{count} not returned.",
+      other: "{count} not returned.",
+    },
+    translationTooLarge: {
+      one: "{count} field is too long to translate.",
+      other: "{count} fields are too long to translate.",
+    },
+    translationError: "The translation service said: {message}",
+    defaultRefused: "Couldn't make {language} the default language: {reason}",
+    defaultLockedReason: "someone else is editing this template",
+    complete: "Complete",
+    gapTooltip: "{missing} missing, {stale} out of date",
+    moreActions: "More actions for {language}",
+    makeDefaultLanguage: "Make default language",
+    makeDefault: "Make default",
+    makeDefaultConfirmation: "Make {language} the default language?",
+    removeConfirmation: "Remove {language}?",
+    removeDescription:
+      "This deletes the {language} text and changes. You can undo it.",
+    defaultChanged: "{language} is now the default language.",
+    missingCount: { one: "{count} missing", other: "{count} missing" },
+    staleCount: { one: "{count} out of date", other: "{count} out of date" },
+    hiddenBeforeDefault: {
+      one: "Show the {count} block hidden in {language} first",
+      other: "Show the {count} blocks hidden in {language} first",
+    },
+    defaultNotEnabled: "Add {default} to the enabled languages first",
+    defaultGaps: {
+      one: "{count} field has no {language} text and keeps its {default} text.",
+      other:
+        "{count} fields have no {language} text and keep their {default} text.",
+    },
+    defaultRemaining: {
+      one: "{count} field is still in {old}.",
+      other: "{count} fields are still in {old}.",
+    },
+    translateAllAgain: "Translate everything again…",
+    translate: "Translate",
+    retranslate: "Re-translate",
+    translating: "Translating {done} of {total}…",
+    languages: "Languages",
+    default: "Default",
+    notEnabled: "Not enabled",
+    addLanguage: "Add language",
+    removeLanguage: "Remove {language}",
+    cancel: "Cancel",
+    notTranslated: "Not translated",
+    outOfDate: "Out of date",
+    keep: "Keep",
+    hidden: "Hidden in {language}",
+    show: "Show",
+    hide: "Hide in {language}",
+    dismiss: "Dismiss",
+    structureNotice: "Structure changes apply to every language.",
+    aiActiveLanguage:
+      "AI chat edits {language}. Structure changes apply to every language.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Powered by",
@@ -667,6 +779,7 @@ export default {
     collapsePreview: "Collapse {block} preview",
   },
   comments: {
+    filterLanguage: "This language",
     button: "Comments",
     title: "Comments",
     close: "Close",

@@ -43,6 +43,7 @@ Documentation for SDK version 0.51.1. Every page below is also available as raw 
 - [Internationalization](https://docs.templatical.com/guide/i18n): Configure the editor's UI language with built-in or custom locale support.
 - [Images](https://docs.templatical.com/guide/images): Handle image input, integrate custom media pickers, and configure image block properties.
 - [Layout](https://docs.templatical.com/guide/layout): Pass a JSON shell with one slot. Preview and export wrap the author's email in it. Save does not.
+- [Localized templates](https://docs.templatical.com/guide/localized-templates): Keep language versions of one email in settings.locales and l10n, fill them with Translate through your TranslationProvider, project them with resolveLocale and check or render them with --locale.
 - [Logic Tags](https://docs.templatical.com/guide/logic-tags): Insert and highlight control-flow logic tags in Templatical email templates.
 - [Merge Tags](https://docs.templatical.com/guide/merge-tags): Dynamic content via merge tags in Templatical email templates.
 - [Migration from BeeFree](https://docs.templatical.com/guide/migration-from-beefree): Convert BeeFree email templates to Templatical format using @templatical/import-beefree.
@@ -67,7 +68,7 @@ Documentation for SDK version 0.51.1. Every page below is also available as raw 
 - [Events](https://docs.templatical.com/api/events): Editor event callbacks — onChange, onDirtyChange, onError, and media/merge tag request handlers.
 - [Operations](https://docs.templatical.com/api/operations): The operation vocabulary the editor, the CLI, collaboration backends and Templatical Cloud share.
 - [Renderer](https://docs.templatical.com/api/renderer-typescript): API reference for @templatical/renderer — convert template JSON to MJML.
-- [Template Tools](https://docs.templatical.com/api/template-tools): API reference for @templatical/template-tools — the CLI and library for validating, rendering, editing, importing and previewing Templatical templates and custom blocks outside the editor.
+- [Template Tools](https://docs.templatical.com/api/template-tools): API reference for @templatical/template-tools — the CLI and library for validating, rendering, editing, importing, exchanging language strings and previewing Templatical templates and custom blocks outside the editor.
 - [Types Reference](https://docs.templatical.com/api/types): Complete reference for @templatical/types — shared TypeScript types, block factories, and utilities.
 
 ## Connect your backend
@@ -81,6 +82,7 @@ Documentation for SDK version 0.51.1. Every page below is also available as raw 
 - [Saved Blocks](https://docs.templatical.com/backend/saved-blocks): Let users save reusable groups of blocks and insert them into other templates, backed by your own storage.
 - [Saving & Loading Templates](https://docs.templatical.com/backend/templates): Wire the editor's save/load lifecycle to your own storage — name, save button, autosave and unsaved-changes guard included.
 - [Test Emails](https://docs.templatical.com/backend/test-email): Let users mail themselves the template they're editing, sent through your own infrastructure.
+- [Translation](https://docs.templatical.com/backend/translation): Connect init({ translation }) to a TranslationProvider for masked field translation, or serve POST /templates/{template}/translate with the AI kit and check it with runTranslationConformance.
 - [Version History](https://docs.templatical.com/backend/version-history): Browse, preview and restore a template's past versions — over your own storage, or Templatical Cloud's.
 
 ## Quality
@@ -89,14 +91,14 @@ Documentation for SDK version 0.51.1. Every page below is also available as raw 
 - [Accessibility rule catalog](https://docs.templatical.com/quality/accessibility/rule-catalog): All 21 lintAccessibility rules — alt text, headings, link and button wording, contrast, touch targets, and preheader text — with default severities.
 - [Compatibility linter](https://docs.templatical.com/quality/compatibility/): Check pass-through HTML and CSS against caniemail client support data, and measure compiled HTML for Gmail clipping.
 - [Compatibility rule catalog](https://docs.templatical.com/quality/compatibility/rule-catalog): Client compatibility rule catalog for pass-through HTML, CSS and compiled Gmail size, with caniemail sources and exclusions.
-- [Contributing locales](https://docs.templatical.com/quality/contributing-locales): Add a new locale's rule messages for accessibility, structure, links, deliverability, and compatibility, plus the vague-text dictionaries the accessibility linter alone uses.
+- [Contributing locales](https://docs.templatical.com/quality/contributing-locales): Add a new locale's rule messages for accessibility, structure, links, deliverability, compatibility, and localization, plus the vague-text dictionaries the accessibility linter alone uses.
 - [Deliverability linter](https://docs.templatical.com/quality/deliverability/): lintDeliverability flags mismatched link text, URL shorteners, raw IP links, and image-led emails with little visible text in template JSON.
 - [Deliverability rule catalog](https://docs.templatical.com/quality/deliverability/rule-catalog): The deliverability rule catalog lists the JSON checks for mismatched link text, URL shorteners, raw IP links, and low text, with severities, exclusions, and sources.
 - [Headless usage](https://docs.templatical.com/quality/headless-usage): Run the quality linters headless in Node.js — CI guards, save-time validation, ruleId filtering, and custom rules built with walkBlocks and walkUrls.
-- [Quality](https://docs.templatical.com/quality/): MIT-licensed linter for Templatical templates — accessibility, structure, links, deliverability, and compatibility rules via lintTemplate() in the editor or CI.
+- [Quality](https://docs.templatical.com/quality/): MIT-licensed linter for Templatical templates — accessibility, structure, links, deliverability, compatibility, and localization rules via lintTemplate() in the editor or CI.
 - [Links linter](https://docs.templatical.com/quality/links/): lintLinks flags broken and dangerous template URLs; @templatical/types exports the editor's shared URL-scheme policy for HTML attributes and links.
 - [Link rule catalog](https://docs.templatical.com/quality/links/rule-catalog): All 6 lintLinks rules — javascript-protocol hrefs, unsupported protocols, malformed mailto/tel URIs, localhost-or-staging hosts, and relative URLs — with default severities.
-- [Options](https://docs.templatical.com/quality/options): Reference for LintOptions — disabled, locale, accessibility, structure, links, deliverability, and compatibility fields accepted by lintTemplate and editor lint config.
+- [Options](https://docs.templatical.com/quality/options): Reference for LintOptions — disabled, locale, contentLocale, accessibility, structure, links, deliverability, compatibility, and localization fields accepted by lintTemplate and editor lint config.
 - [Severity & fixes](https://docs.templatical.com/quality/severity-and-fixes): The four-level severity model (error, warning, info, off) shared by every linter, and how auto-fix LintPatch objects apply as undoable edits.
 - [Structure linter](https://docs.templatical.com/quality/structure/): lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, empty sections or columns, heroes that render as regular sections, and background images Outlook can't layer.
 - [Structure rule catalog](https://docs.templatical.com/quality/structure/rule-catalog): All 8 lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, heroes that render as regular sections, and background images Outlook can't layer — with severities and fixes.

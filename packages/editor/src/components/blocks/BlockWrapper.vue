@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import LocaleMarkers from "../localization/LocaleMarkers.vue";
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import type { Block, ViewportSize } from "@templatical/types";
+import { resolveContentDirection } from "@templatical/types";
 import {
   Bookmark,
   Copy,
@@ -10,7 +13,16 @@ import {
   MessageCircle,
   Trash2,
 } from "@lucide/vue";
-import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  nextTick,
+  ref,
+  watch,
+  watchPostEffect,
+} from "vue";
+import { useEventListener, useResizeObserver } from "@vueuse/core";
 import { useResolvedBackgroundUrl } from "../../composables/useImageUrlResolver";
 import {
   backgroundImageHostClass,
@@ -28,12 +40,14 @@ import {
   EDITOR_KEY,
   KEYBOARD_REORDER_KEY,
   LAYOUT_KEY,
+  LOCALIZED_CONTENT_KEY,
 } from "../../keys";
-import { matchImageBoxWidth } from "../../utils/imageRoom";
+import { isMatchImageHero, matchImageBoxWidth } from "../../utils/imageRoom";
 import { readableTextColor } from "../../utils/readableTextColor";
 
 const props = defineProps<{
   block: Block;
+  displayBlock?: Block;
   isSelected: boolean;
   viewport?: ViewportSize;
   previewMode?: boolean;
@@ -51,6 +65,8 @@ const props = defineProps<{
    */
   picked?: boolean;
 }>();
+
+const display = computed(() => props.displayBlock ?? props.block);
 
 const emit = defineEmits<{
   (e: "select"): void;
@@ -119,17 +135,26 @@ function handleDragKeydown(event: KeyboardEvent): void {
 }
 
 const isHiddenOnViewport = computed(() => {
-  if (!props.viewport || !props.block.visibility) {
+  if (!props.viewport || !display.value.visibility) {
     return false;
   }
-  return props.block.visibility[props.viewport] === false;
+  return display.value.visibility[props.viewport] === false;
 });
 
 // In edit mode a viewport-hidden block stays rendered (dimmed + badge) so it
 // remains selectable. In preview mode it must actually disappear to match the
 // exported MJML, which drops it via `@media` + `tpl-hide-*` css-classes.
+const isLocaleHidden = computed(
+  () =>
+    !!(
+      editor?.activeLocale?.value &&
+      props.block.l10n?.[editor.activeLocale.value]?.hidden
+    ),
+);
 const isHiddenInPreview = computed(
-  () => props.previewMode === true && isHiddenOnViewport.value,
+  () =>
+    props.previewMode === true &&
+    (isHiddenOnViewport.value || isLocaleHidden.value),
 );
 
 const hiddenLabel = computed(() => {
@@ -143,7 +168,7 @@ const hiddenLabel = computed(() => {
   return labels[props.viewport] ?? props.viewport;
 });
 
-const hasDisplayCondition = computed(() => !!props.block.displayCondition);
+const hasDisplayCondition = computed(() => !!display.value.displayCondition);
 
 const blockActions = inject(BLOCK_ACTIONS_KEY, null);
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
@@ -161,6 +186,76 @@ const canSaveAsBlock = computed(
     caps.savedBlocks?.canCreate.value === true,
 );
 
+// The action bar sits to the right of the selected block, moving inside and
+// below the badges when the pane has no room. On a short block it stays
+// vertically centred and moves past the badge slot toward inline-start in LTR,
+// mirrored in RTL. Its horizontal position is then clamped to the canvas pane.
+const blockElement = ref<HTMLElement | null>(null);
+const actionsElement = ref<HTMLElement | null>(null);
+const badgesElement = ref<HTMLElement | null>(null);
+const actionsStyle = ref({ left: "calc(100% + 8px)", top: "50%" });
+const canvasBody = computed(() =>
+  actionsElement.value?.closest<HTMLElement>(".tpl-body"),
+);
+function positionActions(): void {
+  const block = blockElement.value;
+  const actions = actionsElement.value;
+  if (!block?.offsetWidth || !actions?.offsetWidth) return;
+  const box = block.getBoundingClientRect();
+  // Client rects carry a host's transform scale; style offsets don't.
+  const scale = box.width / block.offsetWidth || 1;
+  const pane = canvasBody.value;
+  const paneLeft = pane
+    ? (pane.getBoundingClientRect().left - box.left) / scale + pane.clientLeft
+    : -Infinity;
+  const paneRight = pane ? paneLeft + pane.clientWidth : Infinity;
+  let left = Math.max(
+    paneLeft + 4,
+    Math.min(block.offsetWidth + 8, paneRight - actions.offsetWidth - 4),
+  );
+  const centre = Math.max(
+    28 + actions.offsetHeight / 2,
+    block.offsetHeight / 2,
+  );
+  const top =
+    left < block.offsetWidth &&
+    centre + actions.offsetHeight / 2 <= block.offsetHeight + 8
+      ? `${centre}px`
+      : "50%";
+  if (left < block.offsetWidth && top === "50%") {
+    const badges = badgesElement.value?.getBoundingClientRect();
+    if (badges?.width) {
+      // Leave the badge slot and its focus rings beside a short block's bar.
+      const rtl = getComputedStyle(block).direction === "rtl";
+      const beside = rtl
+        ? (badges.right - box.left) / scale + 8
+        : (badges.left - box.left) / scale - actions.offsetWidth - 8;
+      left = Math.max(
+        paneLeft + 4,
+        Math.min(beside, paneRight - actions.offsetWidth - 4),
+      );
+    }
+  }
+  // Scrolling the pane calls this often; an unchanged position doesn't re-render.
+  if (actionsStyle.value.left !== `${left}px` || actionsStyle.value.top !== top)
+    actionsStyle.value = { left: `${left}px`, top };
+}
+watchPostEffect(positionActions);
+useResizeObserver(
+  computed(() =>
+    actionsElement.value
+      ? [
+          blockElement.value,
+          actionsElement.value,
+          badgesElement.value,
+          canvasBody.value,
+        ].filter((element): element is HTMLElement => !!element)
+      : [],
+  ),
+  positionActions,
+);
+useEventListener(canvasBody, "scroll", positionActions, { passive: true });
+
 // The action bar is chrome for editing a single block; during a pick session the
 // canvas is in a different mode and N bars would be noise.
 const showActions = computed(() => props.isSelected && !isPicking.value);
@@ -170,7 +265,7 @@ const blockCommentCount = computed(
 );
 
 // Another collaborator's lock: an outline in their colour and their name, on
-// any block, a section's children included.
+// any block, a section's children included, in the active language view.
 const lock = computed(() => caps.collaboration?.lockOf(props.block.id) ?? null);
 const lockHolderName = computed(() =>
   lock.value?.holder.type === "guest"
@@ -193,11 +288,11 @@ const agentHighlight = computed(
 // `src`; the resolved URL is display-only and never enters the content model.
 // A merge-tag URL is neither resolved nor painted (`null`), as on ImageBlock.
 const sectionBackgroundUrl = useResolvedBackgroundUrl(() =>
-  props.block.type === "section" ? props.block.backgroundImage : undefined,
+  display.value.type === "section" ? display.value.backgroundImage : undefined,
 );
 const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
-  props.block.type === "section"
-    ? props.block.wrapper?.backgroundImage
+  display.value.type === "section"
+    ? display.value.wrapper?.backgroundImage
     : undefined,
 );
 
@@ -214,16 +309,30 @@ const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
 // moved the number and the canvas never changed, while a unit test on
 // `getBlockWrapperStyle` still passed.
 const editor = inject(EDITOR_KEY, null);
+// The editor shares one projection; a standalone wrapper projects its own.
+const localizedDisplay = editor ? useLocalizedDisplay(editor) : null;
+const localizedContent =
+  inject(LOCALIZED_CONTENT_KEY, null) ?? localizedDisplay?.content ?? null;
+watch(
+  [
+    () => editor?.activeLocale?.value,
+    () =>
+      localizedDisplay &&
+      resolveContentDirection(localizedDisplay.settings.value),
+  ],
+  positionActions,
+  { flush: "post" },
+);
 const layout = inject(LAYOUT_KEY, undefined);
 
 const contentStyle = computed(() =>
-  getBlockWrapperStyle(props.block, {
+  getBlockWrapperStyle(display.value, {
     backgroundImageUrl: sectionBackgroundUrl.value,
-    heroBoxWidth: matchImageBoxWidth(
-      props.block,
-      editor?.content.value,
-      layout,
-    ),
+    // Only such a hero reads the projected template; every block reading it
+    // would project the whole template once per block on each edit.
+    heroBoxWidth: isMatchImageHero(display.value)
+      ? matchImageBoxWidth(display.value, localizedContent?.value, layout)
+      : undefined,
   }),
 );
 
@@ -231,7 +340,7 @@ const contentStyle = computed(() =>
 // a band with its own background + padding + radius framing the section's box.
 // `null` for non-wrapped blocks keeps the DOM unchanged (no extra element).
 const sectionWrapperStyle = computed(() =>
-  getSectionWrapperStyle(props.block, {
+  getSectionWrapperStyle(display.value, {
     backgroundImageUrl: wrapperBackgroundUrl.value,
   }),
 );
@@ -276,9 +385,11 @@ function handleConditionToggle(): void {
 <template>
   <div
     v-if="!isHiddenInPreview"
+    ref="blockElement"
     class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow"
     :class="{
       'tpl-block--selected': isSelected,
+      'tpl-block--locale-hidden': isLocaleHidden,
       'tpl-block--picked': picked,
       'tpl-block--idle': !isSelected && !picked,
       'tpl-block--lifted': isLifted,
@@ -288,7 +399,15 @@ function handleConditionToggle(): void {
     :data-tpl-picked="picked || undefined"
     @click="handleClick"
   >
-    <BlockIssueBadge :block-id="block.id" />
+    <!-- Status badges share the block's top corner (top-left in a
+         right-to-left view): lint issues inward, localization at the corner. -->
+    <div
+      ref="badgesElement"
+      class="tpl-block-badges tpl:absolute tpl:top-1 tpl:inset-e-1 tpl:z-10 tpl:flex tpl:gap-1"
+    >
+      <BlockIssueBadge :block-id="block.id" />
+      <LocaleMarkers v-if="!previewMode" :block="block" />
+    </div>
     <div
       v-if="lock"
       data-testid="block-lock"
@@ -316,12 +435,16 @@ function handleConditionToggle(): void {
       aria-hidden="true"
       class="tpl-block-agent-highlight tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
     />
-    <!-- Floating action bar — positioned to the right of selected block -->
+    <!-- Floating action bar: beside the block or inside below its badges.
+         Short blocks keep it vertically centred, past the slot toward
+         inline-start in LTR (mirrored in RTL), then clamped to the pane. -->
     <div
       v-if="showActions"
+      ref="actionsElement"
+      :style="actionsStyle"
       role="toolbar"
       :aria-label="t.blockActions.drag"
-      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
+      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:top-1/2 tpl:z-20 tpl:flex tpl:-translate-y-1/2 tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
     >
       <button
         ref="dragButtonRef"
@@ -436,6 +559,10 @@ function handleConditionToggle(): void {
 </template>
 
 <style scoped>
+.tpl-block--locale-hidden > .tpl-email-surface {
+  opacity: 0.35;
+}
+
 /* Idle — subtle dashed outline so block boundaries are always visible */
 .tpl-block--idle {
   outline: 1.5px dashed color-mix(in srgb, var(--tpl-primary) 30%, transparent);

@@ -131,28 +131,50 @@ describe("block interface fields, optionality and types", () => {
   );
 });
 
-
 describe("public AI and collaboration declarations", () => {
   it("adapter-options.ts retains the adapters' exact option and client types", () => {
     const declarations = (text: string) => {
-      const file = ts.createSourceFile("options.ts", text, ts.ScriptTarget.Latest, true);
-      return new Map(file.statements.flatMap((node) =>
-        ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
-          ? [[node.name.text, stripComments(node.getText(file)).replace(/\s/g, "")]]
-          : [],
-      ));
+      const file = ts.createSourceFile(
+        "options.ts",
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      return new Map(
+        file.statements.flatMap((node) =>
+          ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+            ? [
+                [
+                  node.name.text,
+                  stripComments(node.getText(file)).replace(/\s/g, ""),
+                ],
+              ]
+            : [],
+        ),
+      );
     };
     const documented = declarations(readDocs("snippets/adapter-options.ts"));
     const sources = [
-      ["anthropic", ["StreamParams", "AnthropicAdapterClient", "AnthropicAdapterOptions"]],
-      ["openai", ["CreateParams", "OpenAiAdapterClient", "OpenAiAdapterOptions"]],
+      [
+        "anthropic",
+        ["StreamParams", "AnthropicAdapterClient", "AnthropicAdapterOptions"],
+      ],
+      [
+        "openai",
+        ["CreateParams", "OpenAiAdapterClient", "OpenAiAdapterOptions"],
+      ],
       ["vercel", ["StreamTextParams", "VercelAdapterOptions"]],
     ] as const;
-    expect([...documented.keys()]).toEqual(sources.flatMap(([, names]) => [...names]));
+    expect([...documented.keys()]).toEqual(
+      sources.flatMap(([, names]) => [...names]),
+    );
     for (const [adapter, names] of sources) {
-      const maintained = declarations(readFileSync(
-        join(DOCS, `../../packages/ai-kit/src/adapters/${adapter}.ts`), "utf8",
-      ));
+      const maintained = declarations(
+        readFileSync(
+          join(DOCS, `../../packages/ai-kit/src/adapters/${adapter}.ts`),
+          "utf8",
+        ),
+      );
       for (const name of names) {
         expect(documented.get(name), name).toBe(maintained.get(name));
       }
@@ -164,17 +186,34 @@ describe("public AI and collaboration declarations", () => {
 
   it("model-contract.ts retains the kit's exact model contract", () => {
     const declarations = (text: string) => {
-      const file = ts.createSourceFile("contract.ts", text, ts.ScriptTarget.Latest, true);
-      return new Map(file.statements.flatMap((node) =>
-        ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
-          ? [[node.name.text, stripComments(node.getText(file)).replace(/\s/g, "")]]
-          : [],
-      ));
+      const file = ts.createSourceFile(
+        "contract.ts",
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      return new Map(
+        file.statements.flatMap((node) =>
+          ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+            ? [
+                [
+                  node.name.text,
+                  stripComments(node.getText(file)).replace(/\s/g, ""),
+                ],
+              ]
+            : [],
+        ),
+      );
     };
     const maintained = declarations(
-      readFileSync(join(DOCS, "../../packages/ai-kit/src/server/model.ts"), "utf8"),
+      readFileSync(
+        join(DOCS, "../../packages/ai-kit/src/server/model.ts"),
+        "utf8",
+      ),
     );
-    const documented = declarations(readFileSync(join(DOCS, "snippets/model-contract.ts"), "utf8"));
+    const documented = declarations(
+      readFileSync(join(DOCS, "snippets/model-contract.ts"), "utf8"),
+    );
     expect([...documented.keys()]).toEqual([...maintained.keys()]);
     for (const [name, declaration] of documented) {
       expect(declaration, name).toBe(maintained.get(name));
@@ -191,12 +230,24 @@ describe("public AI and collaboration declarations", () => {
     expect(existsSync(join(DOCS, "snippets", snippet)), snippet).toBe(true);
     const docs = readFileSync(join(DOCS, "snippets", snippet), "utf8");
     const declarations = (text: string) => {
-      const file = ts.createSourceFile("contract.ts", text, ts.ScriptTarget.Latest, true);
-      return new Map(file.statements.flatMap((node) =>
-        ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
-          ? [[node.name.text, stripComments(node.getText(file)).replace(/\s/g, "")]]
-          : [],
-      ));
+      const file = ts.createSourceFile(
+        "contract.ts",
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      return new Map(
+        file.statements.flatMap((node) =>
+          ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+            ? [
+                [
+                  node.name.text,
+                  stripComments(node.getText(file)).replace(/\s/g, ""),
+                ],
+              ]
+            : [],
+        ),
+      );
     };
     const maintained = declarations(readTypes(source));
     const documented = declarations(docs);
@@ -206,9 +257,142 @@ describe("public AI and collaboration declarations", () => {
       expect(declaration, name).toBe(maintained.get(name));
     }
     for (const page of source === "ai.ts"
-      ? ["api/ai-kit.md", "de/api/ai-kit.md", "backend/ai.md", "de/backend/ai.md"]
+      ? [
+          "api/ai-kit.md",
+          "de/api/ai-kit.md",
+          "backend/ai.md",
+          "de/backend/ai.md",
+        ]
       : ["backend/collaboration.md", "de/backend/collaboration.md"]) {
       expect(readDocs(page)).toContain(`<<< @/snippets/${snippet}`);
     }
+  });
+});
+
+describe("public translation declarations", () => {
+  it("translation-contract.ts retains the translation and strings interfaces", () => {
+    const declarations = (text: string) => {
+      const file = ts.createSourceFile(
+        "contract.ts",
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      return new Map(
+        file.statements.flatMap((node) =>
+          ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+            ? [
+                [
+                  node.name.text,
+                  stripComments(node.getText(file)).replace(/\s/g, ""),
+                ],
+              ]
+            : [],
+        ),
+      );
+    };
+    const path = join(DOCS, "snippets/translation-contract.ts");
+    expect(existsSync(path)).toBe(true);
+    const documented = declarations(readFileSync(path, "utf8"));
+    const maintained = declarations(
+      readTypes("translation.ts") + "\n" + readTypes("locale-strings.ts"),
+    );
+    for (const name of [
+      "TranslationProvider",
+      "TranslationRequest",
+      "TranslationField",
+      "TranslationResult",
+      "TranslationErrorCode",
+      "LocaleString",
+    ]) {
+      expect(documented.get(name), name).toBe(maintained.get(name));
+    }
+    for (const page of [
+      "api/types.md",
+      "de/api/types.md",
+      "backend/translation.md",
+      "de/backend/translation.md",
+    ]) {
+      expect(readDocs(page)).toContain(
+        "<<< @/snippets/translation-contract.ts",
+      );
+    }
+  });
+});
+
+describe("public localization declarations", () => {
+  it("localization-contract.ts retains every function's exact parameters and result", () => {
+    const signatures = (text: string) => {
+      const file = ts.createSourceFile(
+        "contract.ts",
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      return new Map(
+        file.statements.flatMap((node) =>
+          ts.isFunctionDeclaration(node) &&
+          node.name &&
+          node.modifiers?.some(
+            (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+          )
+            ? [
+                [
+                  node.name.text,
+                  {
+                    parameters: node.parameters.map((parameter) => ({
+                      name: parameter.name.getText(file),
+                      optional: !!(
+                        parameter.questionToken || parameter.initializer
+                      ),
+                      type: parameter.type
+                        ?.getText(file)
+                        .replace(/\s/g, "")
+                        .replace(/\bJson\b/g, "Record<string,unknown>"),
+                    })),
+                    result: node.type?.getText(file).replace(/\s/g, ""),
+                  },
+                ],
+              ]
+            : [],
+        ),
+      );
+    };
+    // The snippet is the public contract: it declares what the package entry
+    // re-exports from localization.ts, and no engine-internal helper that the
+    // module exports only for operations.ts (such as rebaseDefaultLocale).
+    const entry = ts.createSourceFile(
+      "index.ts",
+      readTypes("index.ts"),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    const published = new Set(
+      entry.statements.flatMap((node) =>
+        ts.isExportDeclaration(node) &&
+        !node.isTypeOnly &&
+        node.moduleSpecifier &&
+        (node.moduleSpecifier as ts.StringLiteral).text === "./localization" &&
+        node.exportClause &&
+        ts.isNamedExports(node.exportClause)
+          ? node.exportClause.elements.map((element) => element.name.text)
+          : [],
+      ),
+    );
+    const source = new Map(
+      [...signatures(readTypes("localization.ts"))].filter(([name]) =>
+        published.has(name),
+      ),
+    );
+    const snippet = signatures(readDocs("snippets/localization-contract.ts"));
+    expect(published).toContain("defaultLocaleGaps");
+    expect(published).not.toContain("rebaseDefaultLocale");
+    expect([...snippet.keys()].sort()).toEqual([...source.keys()].sort());
+    for (const [name, signature] of source)
+      expect.soft(snippet.get(name), name).toEqual(signature);
+    for (const page of ["api/types.md", "de/api/types.md"])
+      expect(readDocs(page)).toContain(
+        "<<< @/snippets/localization-contract.ts",
+      );
   });
 });

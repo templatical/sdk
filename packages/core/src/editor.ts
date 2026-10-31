@@ -1,5 +1,8 @@
 import type {
   Block,
+  BlockLock,
+  BlockLocaleLayer,
+  CustomBlockDefinition,
   Template,
   TemplateContent,
   TemplateDefaults,
@@ -11,18 +14,43 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import {
+  applyOperationsInPlace,
+  defaultLocaleOf,
+  deepEqual,
+  isLocaleTag,
+  localizeBlock,
+  readPath,
+  pruneLocaleOrphans,
+  pruneSettingsLocaleOrphans,
+  resolveLocale,
+  safeClone,
+  sourceHash,
   assertNoSlotInContent,
   assertNoWrapperInContent,
   createDefaultTemplateContent,
-  getColumnCount,
   SdkError,
 } from "@templatical/types";
+import {
+  changedLayer,
+  deriveLayer,
+  deriveSettingsLayer,
+  reconcileStructure,
+  resetLocalizedFields,
+} from "./localized-edit";
+import {
+  canEditStructure,
+  isStructuralMutation,
+  registerMutationGuard,
+  type StructuralMutationContext,
+} from "./mutation-guard";
 import { notifyHandler } from "./error-reporting";
 import {
   computed,
   reactive,
   readonly,
   ref,
+  toRef,
+  watch,
   type DeepReadonly,
   type Ref,
 } from "@vue/reactivity";
@@ -39,6 +67,7 @@ export interface EditorState {
    */
   template: Template | null;
   content: TemplateContent;
+  activeLocale: string | null;
   selectedBlockId: string | null;
   viewport: ViewportSize;
   darkMode: boolean;
@@ -53,6 +82,9 @@ export interface EditorState {
 
 export interface UseEditorOptions {
   content: TemplateContent;
+  localization?: { locales: string[] };
+  onLocaleChange?: (locale: string) => void;
+  onStructureChange?: () => void;
   defaultFontFamily?: string;
   templateDefaults?: TemplateDefaults;
   /**
@@ -60,6 +92,10 @@ export interface UseEditorOptions {
    * editor's own mutators leave it alone.
    */
   lockedBlocks?: Readonly<Ref<ReadonlyMap<string, unknown>>>;
+  /** The language view for property edits and selection; absent or `null` is default. */
+  lockLocale?: Readonly<Ref<string | null>>;
+  /** This editor's session; its own locks never block local edits. */
+  lockSessionId?: string;
   /**
    * Storage backend for the template's save/load lifecycle. Omit it and
    * `create()` / `load()` / `save()` reject — the editor keeps working as a
@@ -79,6 +115,14 @@ export interface UseEditorReturn {
   loadVersion: Readonly<Ref<number>>;
   content: Ref<TemplateContent>;
   selectedBlock: Ref<Block | null>;
+  activeLocale: Ref<string | null>;
+  setActiveLocale: (locale: string | null) => void;
+  addLocale: (locale: string) => void;
+  removeLocale: (locale: string) => void;
+  setBlockHidden: (blockId: string, hidden: boolean) => void;
+  resetLocaleFields: (blockId: string, paths?: string[]) => void;
+  keepTranslations: (blockId: string, paths: string[]) => void;
+  setCustomBlockDefinitions: (defs: readonly CustomBlockDefinition[]) => void;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   selectBlock: (blockId: string | null) => void;
   setViewport: (viewport: ViewportSize) => void;
@@ -158,6 +202,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   const state = reactive<EditorState>({
     template: null,
     content: seedContent,
+    activeLocale: null,
     selectedBlockId: null,
     viewport: "desktop",
     darkMode: false,
@@ -167,6 +212,181 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     isLoading: false,
     uiTheme: "auto",
   });
+  const activeLocale = toRef(state, "activeLocale");
+  let definitions: readonly CustomBlockDefinition[] = [];
+
+  function setActiveLocale(locale: string | null): void {
+    const fallback = defaultLocaleOf(state.content);
+    if (locale === fallback) locale = null;
+    if (locale !== null && !state.content.settings.locales?.includes(locale)) {
+      throw new SdkError(
+        `This template has no "${locale}" version.`,
+        undefined,
+        "unknown_locale",
+      );
+    }
+    activeLocale.value = locale;
+  }
+
+  // The one place that reports the language shown: a view change, a fallback,
+  // and a default that changes under the view (Make default, its undo and
+  // redo, a remote setDefaultLocale) alike. Promoting the version on screen
+  // changes nothing here, so it reports nothing.
+  watch(
+    () => activeLocale.value ?? defaultLocaleOf(state.content),
+    (locale) =>
+      notifyHandler(options.onError, () => options.onLocaleChange?.(locale)),
+  );
+
+  // Also covers remote content replacement and snapshot history navigation.
+  watch(
+    () => state.content.settings.locales?.includes(activeLocale.value ?? ""),
+    () => {
+      if (
+        activeLocale.value &&
+        !state.content.settings.locales?.includes(activeLocale.value)
+      )
+        setActiveLocale(null);
+    },
+  );
+
+  function canEditLocale(): boolean {
+    return (
+      activeLocale.value === null ||
+      options.localization === undefined ||
+      options.localization.locales.includes(activeLocale.value)
+    );
+  }
+
+  function setCustomBlockDefinitions(
+    defs: readonly CustomBlockDefinition[],
+  ): void {
+    definitions = defs;
+  }
+
+  function localeListDraft(
+    method: "addLocale" | "removeLocale",
+    locale: string,
+  ): TemplateContent | null {
+    if (!canEditLocale()) return null;
+    if (
+      method === "addLocale" &&
+      (!isLocaleTag(locale) ||
+        (options.localization &&
+          !options.localization.locales.includes(locale)))
+    ) {
+      throw new SdkError(
+        `Locale "${locale}" is not enabled.`,
+        undefined,
+        "unknown_locale",
+      );
+    }
+    const draft = safeClone(state.content);
+    applyOperationsInPlace(draft, [{ op: method, locale }]);
+    return deepEqual(draft, state.content) ? null : draft;
+  }
+
+  function changeLocaleList(
+    method: "addLocale" | "removeLocale",
+    locale: string,
+  ): void {
+    const draft = localeListDraft(method, locale);
+    if (!draft) return;
+    state.content = draft;
+    touch();
+  }
+
+  function addLocale(locale: string): void {
+    changeLocaleList("addLocale", locale);
+  }
+
+  function removeLocale(locale: string): void {
+    changeLocaleList("removeLocale", locale);
+  }
+
+  function writeLayer(block: Block, layer: BlockLocaleLayer): void {
+    const locale = activeLocale.value!;
+    if (Object.keys(layer).length) {
+      block.l10n = { ...block.l10n, [locale]: layer };
+    } else if (block.l10n) {
+      delete block.l10n[locale];
+      if (!Object.keys(block.l10n).length) delete block.l10n;
+    }
+  }
+
+  type LayerMutation =
+    "setBlockHidden" | "resetLocaleFields" | "keepTranslations";
+
+  function prepareLayerEdit(
+    method: LayerMutation,
+    args: unknown[],
+  ): { block: Block; layer: BlockLocaleLayer } | null {
+    const [blockId, value] = args as [string, boolean | string[] | undefined];
+    if (!activeLocale.value || !canEditLocale() || isBlockLocked(blockId))
+      return null;
+    const block = findBlockById(state.content.blocks, blockId);
+    if (!block) return null;
+    const previous = block.l10n?.[activeLocale.value];
+    const view = localizeBlock(
+      block,
+      activeLocale.value,
+      defaultLocaleOf(state.content),
+    );
+    const before = deriveLayer(block, view, previous, definitions);
+    const restoredAncestors =
+      method === "resetLocaleFields" && Array.isArray(value)
+        ? resetLocalizedFields(block, view, value)
+        : undefined;
+    const layer =
+      method === "resetLocaleFields"
+        ? changedLayer(
+            previous,
+            before,
+            deriveLayer(block, view, previous, definitions, restoredAncestors),
+            block,
+            view,
+            Array.isArray(value) ? value : [],
+          )
+        : safeClone(previous ?? {});
+    if (method === "setBlockHidden") {
+      if (value) layer.hidden = true;
+      else delete layer.hidden;
+    } else if (method === "resetLocaleFields") {
+      if (!value) {
+        delete layer.text;
+        delete layer.set;
+        delete layer.hidden;
+      }
+    } else
+      for (const path of value as string[]) {
+        const text = layer.text?.[path];
+        if (text)
+          text.sourceHash = sourceHash(String(readPath(block, path) ?? ""));
+      }
+    if (layer.text && !Object.keys(layer.text).length) delete layer.text;
+    if (layer.set && !Object.keys(layer.set).length) delete layer.set;
+    return deepEqual(previous ?? {}, layer) ? null : { block, layer };
+  }
+
+  function editLayer(method: LayerMutation, args: unknown[]): void {
+    const prepared = prepareLayerEdit(method, args);
+    if (!prepared) return;
+    writeLayer(prepared.block, prepared.layer);
+    touch();
+  }
+
+  function setBlockHidden(blockId: string, hidden: boolean): void {
+    editLayer("setBlockHidden", [blockId, hidden]);
+  }
+
+  function resetLocaleFields(blockId: string, paths?: string[]): void {
+    editLayer("resetLocaleFields", [blockId, paths]);
+  }
+
+  function keepTranslations(blockId: string, paths: string[]): void {
+    editLayer("keepTranslations", [blockId, paths]);
+  }
+
   const loadVersion = ref(0);
   let loadingRequest = 0;
 
@@ -246,8 +466,28 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     return null;
   }
 
-  function isBlockLocked(blockId: string): boolean {
-    return options.lockedBlocks?.value.has(blockId) ?? false;
+  function isBlockLocked(blockId: string, structure = false): boolean {
+    const locale = activeLocale.value ?? options.lockLocale?.value ?? null;
+    for (const [key, value] of options.lockedBlocks?.value ?? []) {
+      const lock = value as Partial<BlockLock> | null;
+      if (lock?.blockId === undefined) {
+        if (key === blockId) return true;
+        continue;
+      }
+      if (
+        lock.blockId !== blockId ||
+        lock.holder?.sessionId === options.lockSessionId
+      )
+        continue;
+      if (
+        structure ||
+        locale === null ||
+        lock.locale == null ||
+        lock.locale === locale
+      )
+        return true;
+    }
+    return false;
   }
 
   function findBlockLocation(blockId: string): {
@@ -309,21 +549,118 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     }
   }
 
-  function updateBlock(blockId: string, updates: Partial<Block>): void {
-    if (isBlockLocked(blockId)) {
-      return;
-    }
+  function canUpdateBlock(blockId: string, updates: Partial<Block>): boolean {
+    if (!canEditLocale()) return false;
     const block = findBlockById(state.content.blocks, blockId);
-    if (block) {
-      Object.assign(block, updates);
-      touch();
+    if (!block) return false;
+    if ("l10n" in updates)
+      throw new SdkError(
+        "l10n is immutable in updateBlock.",
+        undefined,
+        "invalid_operation",
+      );
+    const next = { ...block, ...updates } as Block;
+    const structural = reconcileStructure(safeClone(block), next, (id) =>
+      findBlockById(state.content.blocks, id),
+    );
+    return !isBlockLocked(blockId, structural);
+  }
+
+  function updateBlock(blockId: string, updates: Partial<Block>): void {
+    if (!canUpdateBlock(blockId, updates)) return;
+    const block = findBlockById(state.content.blocks, blockId);
+    if (!block) return;
+    const locale = activeLocale.value;
+    if (!locale) {
+      if (isBlockLocked(blockId, "children" in updates || "columns" in updates))
+        return;
+      const pruned = pruneLocaleOrphans({ ...block, ...updates } as Block);
+      delete block.l10n;
+      Object.assign(block, pruned);
+    } else {
+      const view = localizeBlock(block, locale, defaultLocaleOf(state.content));
+      const next = { ...view, ...updates } as Block;
+      const base = safeClone(block);
+      const structural = reconcileStructure(base, next, (id) =>
+        findBlockById(state.content.blocks, id),
+      );
+      if (isBlockLocked(blockId, structural)) return;
+      if (structural) options.onStructureChange?.();
+      const pruned = pruneLocaleOrphans(base);
+      delete block.l10n;
+      Object.assign(block, pruned);
+      writeLayer(
+        block,
+        changedLayer(
+          block.l10n?.[locale],
+          deriveLayer(block, view, block.l10n?.[locale], definitions),
+          deriveLayer(block, next, block.l10n?.[locale], definitions),
+          block,
+          next,
+        ),
+      );
+    }
+    touch();
+  }
+
+  function validateSettingsUpdate(updates: Partial<TemplateSettings>): void {
+    if ("locales" in updates || "l10n" in updates)
+      throw new SdkError(
+        "locales and l10n are immutable in updateSettings.",
+        undefined,
+        "invalid_operation",
+      );
+    if (
+      "locale" in updates &&
+      updates.locale !== defaultLocaleOf(state.content) &&
+      state.content.settings.locales?.length
+    ) {
+      throw new SdkError(
+        "The default locale can't change while language versions exist.",
+        undefined,
+        "invalid_operation",
+      );
     }
   }
 
   function updateSettings(updates: Partial<TemplateSettings>): void {
-    state.content.settings = { ...state.content.settings, ...updates };
+    if (!canEditLocale()) return;
+    validateSettingsUpdate(updates);
+    const locale = activeLocale.value;
+    if (!locale)
+      state.content.settings = pruneSettingsLocaleOrphans({
+        ...state.content.settings,
+        ...updates,
+      });
+    else {
+      const settings = state.content.settings;
+      const view = resolveLocale(state.content, locale).settings;
+      const next = { ...view, locale: settings.locale, ...updates };
+      const previous = settings.l10n?.[locale];
+      const layer = changedLayer(
+        previous,
+        deriveSettingsLayer(settings, view, previous),
+        deriveSettingsLayer(settings, next, previous),
+        settings,
+        next,
+      );
+      if (Object.keys(layer).length)
+        settings.l10n = { ...settings.l10n, [locale]: layer };
+      else if (settings.l10n) {
+        delete settings.l10n[locale];
+        if (!Object.keys(settings.l10n).length) delete settings.l10n;
+      }
+    }
     touch();
   }
+
+  const structuralContext: StructuralMutationContext = {
+    canEdit: canEditLocale,
+    content: () => state.content,
+    findBlock: (id) => findBlockById(state.content.blocks, id),
+    findBlockLocation,
+    isBlockLocked,
+  };
 
   function addBlock(
     block: Block,
@@ -331,27 +668,18 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     columnIndex = 0,
     index?: number,
   ): void {
-    const candidate = {
-      settings: state.content.settings,
-      blocks: [block],
-    };
-    assertNoSlotInContent(candidate);
-    assertNoWrapperInContent(candidate);
-    // Sections cannot be nested inside a column — MJML forbids `mj-section`
-    // inside `mj-column`, so the renderer drops them on export (issue #292).
-    // Reject the nest up front rather than lose the content silently later.
-    if (targetSectionId && block.type === "section") {
+    if (
+      !canEditStructure(structuralContext, "addBlock", [
+        block,
+        targetSectionId,
+        columnIndex,
+        index,
+      ])
+    )
       return;
-    }
     if (targetSectionId) {
-      if (isBlockLocked(targetSectionId)) {
-        return;
-      }
       const section = findBlockById(state.content.blocks, targetSectionId);
       if (section && section.type === "section") {
-        if (columnIndex < 0 || columnIndex >= getColumnCount(section.columns)) {
-          return;
-        }
         section.children[columnIndex] = section.children[columnIndex] || [];
         const targetArray = section.children[columnIndex];
         if (index !== undefined && index < targetArray.length) {
@@ -367,13 +695,12 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         state.content.blocks.push(block);
       }
     }
+    if (activeLocale.value) options.onStructureChange?.();
     touch();
   }
 
   function removeBlock(blockId: string): void {
-    if (isBlockLocked(blockId)) {
-      return;
-    }
+    if (!canEditStructure(structuralContext, "removeBlock", [blockId])) return;
     const parent = findBlockParent(state.content.blocks, blockId);
     if (parent) {
       const index = parent.blocks.findIndex((b) => b.id === blockId);
@@ -386,6 +713,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
             state.selectedBlockId = null;
           }
         }
+        if (activeLocale.value) options.onStructureChange?.();
         touch();
       }
     }
@@ -397,34 +725,23 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     targetSectionId?: string,
     columnIndex = 0,
   ): void {
-    if (isBlockLocked(blockId)) {
+    if (
+      !canEditStructure(structuralContext, "moveBlock", [
+        blockId,
+        newIndex,
+        targetSectionId,
+        columnIndex,
+      ])
+    )
       return;
-    }
-    if (targetSectionId && isBlockLocked(targetSectionId)) {
-      return;
-    }
-
-    const parent = findBlockParent(state.content.blocks, blockId);
-    if (!parent) return;
-
-    const oldIndex = parent.blocks.findIndex((b) => b.id === blockId);
-    if (oldIndex === -1) return;
-
-    // Sections cannot be nested inside a column (issue #292) — refuse to move
-    // a section into a section column; MJML would drop it on export.
-    if (targetSectionId && parent.blocks[oldIndex].type === "section") {
-      return;
-    }
-
-    // Resolve target before mutating the source — otherwise an invalid
-    // targetSectionId leaves the block spliced-out and unrecoverable.
+    const parent = findBlockParent(state.content.blocks, blockId)!;
+    const oldIndex = parent.blocks.findIndex((block) => block.id === blockId);
     let targetArray: Block[];
     if (targetSectionId) {
-      const section = findBlockById(state.content.blocks, targetSectionId);
-      if (!section || section.type !== "section") return;
-      if (columnIndex < 0 || columnIndex >= getColumnCount(section.columns)) {
-        return;
-      }
+      const section = findBlockById(
+        state.content.blocks,
+        targetSectionId,
+      ) as Extract<Block, { type: "section" }>;
       section.children[columnIndex] = section.children[columnIndex] || [];
       targetArray = section.children[columnIndex];
     } else {
@@ -434,6 +751,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     const [block] = parent.blocks.splice(oldIndex, 1);
     targetArray.splice(newIndex, 0, block);
 
+    if (activeLocale.value) options.onStructureChange?.();
     touch();
   }
 
@@ -625,11 +943,19 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     return state.template?.id !== undefined;
   }
 
-  return {
+  const editor: UseEditorReturn = {
     state: readonly(state),
     loadVersion: readonly(loadVersion),
     content,
     selectedBlock,
+    activeLocale,
+    setActiveLocale,
+    addLocale,
+    removeLocale,
+    setBlockHidden,
+    resetLocaleFields,
+    keepTranslations,
+    setCustomBlockDefinitions,
     isBlockLocked,
     setContent,
     selectBlock,
@@ -650,4 +976,23 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     save,
     hasTemplate,
   };
+  registerMutationGuard(editor, (method, args) => {
+    if (isStructuralMutation(method))
+      return canEditStructure(structuralContext, method, args);
+    if (!canEditLocale()) return false;
+    if (method === "updateBlock")
+      return canUpdateBlock(args[0] as string, args[1] as Partial<Block>);
+    if (method === "updateSettings")
+      validateSettingsUpdate(args[0] as Partial<TemplateSettings>);
+    if (method === "addLocale" || method === "removeLocale")
+      return localeListDraft(method, args[0] as string) !== null;
+    if (
+      method === "setBlockHidden" ||
+      method === "resetLocaleFields" ||
+      method === "keepTranslations"
+    )
+      return prepareLayerEdit(method, args) !== null;
+    return true;
+  });
+  return editor;
 }

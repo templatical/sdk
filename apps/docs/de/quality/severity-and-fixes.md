@@ -1,6 +1,6 @@
 # Schweregrade & Fixes
 
-Alle Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` und `lintCompatibility` gemeinsam.
+Alle Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability`, `lintCompatibility` und `lintLocalization` gemeinsam.
 
 ## Schweregrad-Modell
 

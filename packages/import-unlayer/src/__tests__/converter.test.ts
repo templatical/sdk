@@ -1,3 +1,4 @@
+import { elementIdIssues } from "@templatical/types";
 import { describe, it, expect } from "vitest";
 import { convertUnlayerTemplate } from "../converter";
 import type {
@@ -262,6 +263,7 @@ describe("convertUnlayerTemplate", () => {
 
   it("emits a section for every row including single-column rows", () => {
     const { content } = convertUnlayerTemplate(template);
+    expect(elementIdIssues(content)).toEqual([]);
     const blocks = content.blocks;
 
     expect(blocks).toHaveLength(5);

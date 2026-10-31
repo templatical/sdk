@@ -52,6 +52,8 @@ interface TemplateSettings {
   fontFamily: string;             // Standard-Schriftfamilie
   preheaderText?: string;         // E-Mail-Preheader-Text
   locale: string;                 // BCP-47-Inhaltssprache; <html lang> (Standard 'en')
+  locales?: string[];             // Weitere Sprachversionen; locale ist der Standard
+  l10n?: Record<string, SettingsLocaleLayer>; // Sprachebenen der Einstellungen
   direction?: ContentDirection;   // 'ltr' | 'rtl'; ungesetzt folgt der Inhaltssprache
 }
 
@@ -92,6 +94,48 @@ type BlockType =
   | 'slot' | 'wrapper';
 ```
 
+## Lokalisierung {#localization}
+
+Sprachversionen ergänzen optionale `BaseBlock.l10n`, `TemplateSettings.locales` und `TemplateSettings.l10n`. Die öffentlichen Deklarationen stammen aus `@templatical/types`; `definitions` ist standardmäßig `[]` zur Erkennung benutzerdefinierter Textfelder.
+
+<<< @/snippets/localization-contract.ts
+
+`readPath` löst Arrayelemente über ihre ID auf und liefert `undefined` für einen nicht auflösbaren Pfad. `writePath` klont den Wert, behandelt `null` als Löschen der Eigenschaft und liefert `false`, wenn das übergeordnete Objekt fehlt. `isSafePath` lehnt leere und Prototyp-Schlüsselsegmente ab. `isLocaleTag` akzeptiert eine Sprache aus 2–3 Buchstaben mit optionalen alphanumerischen Untertags aus 2–8 Zeichen. `defaultLocaleOf` liefert `settings.locale`, mit Fallback auf `en`.
+
+`TRANSLATABLE_FIELDS` listet die Textpfadmuster jedes Blocktyps, wobei `*` eine Element-ID oder bei benutzerdefinierten Blöcken einen Feldschlüssel bezeichnet: `content` von Titel, Absatz und HTML, `alt` von Bild und Video, `text` von Buttons, Countdown-Beschriftungen und `expiredMessage`, `items.*.text` bei Menüs, `rows.*.cells.*.content` bei Tabellen und `fieldValues.*` bei benutzerdefinierten Blöcken. `SETTINGS_TRANSLATABLE_FIELDS` ist `["preheaderText"]`. `translatableFields(block, definitions)` setzt die Muster eines Blocks in konkrete Pfade um und behält nur benutzerdefinierte Felder, deren Definitionstyp `text` oder `textarea` ist. Ein Locale-`text`-Eintrag muss einen dieser Pfade nennen; jede andere Überschreibung gehört in `set`.
+
+`pruneLocaleOrphans(block: Block): Block` entfernt rekursiv nicht mehr auflösbare Textpfade und Set-Pfade ohne auflösbares Elternobjekt. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` wendet dieselbe Regel auf Einstellungen an. Beide sind rein und lassen leere Lokalisierungsfelder weg. `isStructuralLocalePath(block: Block, path: string, value?: unknown): boolean` erkennt Sektionsspalten, vollständige integrierte Listen und Element-IDs, die Locale-Overrides nicht ersetzen dürfen. Für die Prüfung eines vollständigen Elementersatzes den vorgesehenen `set`-Wert übergeben: Die ID muss unverändert bleiben, und eine Tabellenzeile muss ihre Zell-IDs in derselben Reihenfolge behalten. Custom-Overrides unter `fieldValues.*` sind ausgenommen.
+
+`elementIdIssues(content: TemplateContent): { path: string; id: string }[]` meldet IDs von Menüeinträgen, Social-Icons, Tabellenzeilen und Tabellenzellen mit `.` oder `/` in Tiefensuche, einschließlich Abschnittsspalten und Layout-Wrappern. Der Helfer ist rein; Pfade verwenden Array-Indizes, etwa `blocks[2].items[0].id`. `validateTemplate` meldet jedes Problem als `<path>: Element id "<id>" must not contain "." or "/".`; `addBlock`, `updateBlock` und `setContent` lehnen eine solche ID, die sie einführen (in einem neuen Block oder neu in ihrem Block), mit `invalid_operation` und der `blockId` des zugehörigen Blocks ab; eine ID, die ihr Block schon hat, bleibt bearbeitbar.
+
+`sourceHash` ist FNV-1a 32-Bit über UTF-8-Bytes, als acht kleingeschriebene Hexadezimalziffern: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projiziert einen Block ohne Rekursion oder Ausfiltern ausgeblendeter Blöcke. `resolveLocale(content, locale, options?: { missing?: "throw" | "default" })` projiziert ein vollständiges Template oder Layout einschließlich Wrapper-Kindern, entfernt ausgeblendete Blöcke rekursiv und entfernt Lokalisierungsfelder. Ohne `missing` oder mit `missing: "throw"` wirft eine unbekannte Version `unknown_locale`. Mit `missing: "default"` wird die Standardsprache des Dokuments projiziert und dessen Standard-`settings.locale` beibehalten. Bekannte Versionen bleiben unverändert. Beide Helfer sind rein.
+
+`localeCoverage` liefert Feld-IDs (`<blockId>/<path>` oder `settings/<path>`) in Dokumentreihenfolge, Einstellungen zuletzt. Fehlende nichtleere Standardwerte stehen in `missing`, Text mit geändertem `sourceHash` in `stale`, aktueller Text in `translated`. Ausgeblendete Blöcke und ihre Nachfahren sind ausgeschlossen. Benutzerdefinierte Definitionen erkennen `text`- und `textarea`-Felder. Verwenden Sie die Abdeckung für eine Nichtstandardversion; sie projiziert oder validiert keine Locale.
+
+`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` und `updateSettingsLocale` erweitern `Operation`. `addLocale.position` ist standardmäßig das Ende; Entfernen kann mit `expect` die gesamte Ebene prüfen. Updates wenden `unset`, `text`, `set`, dann Block-`hidden` an und verwenden die verschachtelte Form `LocaleLayerExpect`. Siehe [Lokalisierte Templates](/de/guide/localized-templates) für Bearbeitung, Feldpfade, Fallback und die Upgrade-Regel.
+
+## Übersetzung {#translation}
+
+`TranslationProvider` ist der unabhängige Vertrag für `init({ translation })`. `TranslationRequest`, `TranslationField`, `TranslationResult`, `TranslationErrorCode` und `LocaleString` sowie reine Helfer und Aufrufgrenzen werden aus `@templatical/types` exportiert:
+
+<<< @/snippets/translation-contract.ts
+
+`TRANSLATION_MAX_FIELDS = 50` und `TRANSLATION_MAX_CHARS = 20_000` begrenzen jeden Aufruf. `TRANSLATABLE_HTML_FIELDS` ist `{ title: ["content"], paragraph: ["content"] }`; jedes andere geeignete Feld ist `text`. HTML-Blöcke bleiben von Hand übersetzbar und werden von `localeStrings` ausgelassen.
+
+`maskTags(text, syntax, format, options?: { doNotTranslate?: readonly string[] })` maskiert ganze Chips nur in HTML und rohe Value-/Logik-Tags in beiden Formaten. Text-Tokens sind `<x id="n"/>`, Attribut-Tokens `__xn__`; beide teilen IDs ab 1 pro Feld in Quellreihenfolge. `unmaskTags(text, tokens)` stellt ursprüngliche Bytes nur bei exakter ID-Multimenge wieder her, andernfalls folgt `null`.
+
+Übergeben Sie dasselbe `doNotTranslate?: readonly string[]` an `maskTags`, `localeStrings` und `applyLocaleStrings`, um konfigurierte Begriffe in Text und HTML-Attributwerten zu schützen. Begriffe werden getrimmt, unter Beachtung der Groß- und Kleinschreibung als ganze Wörter erkannt (Unicode-Buchstaben, Zahlen und `_` sind Wortzeichen), längste zuerst und ohne Überlappung; Tags und Chips haben Vorrang. Begriffe teilen die ID-Folge der Tags; die exakte Prüfung stellt jedes Vorkommen Byte für Byte wieder her oder lehnt es als `tags_changed` ab. Standardmäßig gibt es keine Begriffe. Siehe [Übersetzungsmaskierung](/de/backend/translation#provider-vertrag) für Limits und Editor-Konfiguration.
+
+`localeStrings` verlangt explizit `only: "gaps" | "all"`; der Editor verwendet standardmäßig Lücken. Leere Standardwerte, überdeckende `set`-Überschreibungen und ausgeblendete Blöcke werden ausgelassen. `blockId` beschränkt die Auswahl auf diesen Block. Vorhandene Übersetzungen werden mit Quell-IDs maskiert. Allein die Abdeckung bestimmt Lücken (fehlend und veraltet) oder alle Felder (auch aktuelle). Lassen sich gespeicherte Tags oder geschützte Begriffe nicht mit den Tokens der aktuellen Quelle maskieren, enthält das Feld weiterhin den maskierten aktuellen Standard und `sourceHash`, jedoch kein `text`; die Übersetzung beginnt bei diesem aktuellen Standard. `sourceHash` stammt vom unmaskierten Standardwert zum Extraktionszeitpunkt.
+
+`applyLocaleStrings` liefert Operationen, ohne sie anzuwenden: eine `updateBlockLocale` pro Block und höchstens eine `updateSettingsLocale`. Jede Übersetzung erhält den übergebenen Extraktionshash, keinen beim Anwenden neu berechneten Hash; ein veralteter Eintrag aus `localeStrings`, dessen `text` die gespeicherte Übersetzung ist, wird daher aktuell, wenn er unverändert angewendet wird. Überlappende `set`-Überschreibungen werden mit dem flachsten Pfad zuerst projiziert; tiefere Pfade haben Vorrang. Ablehnungsgründe sind `tags_changed`, `unknown_field` und `not_translatable`. Die Helfer bereinigen HTML nicht. Siehe [JSON-Rundlauf](/de/guide/localized-templates#translating) und [Provider-Vertrag](/de/backend/translation).
+
+## HTML-URL-Richtlinie
+
+`SAFE_LINK_SCHEMES` enthält die vom Editor akzeptierten Schemata. `DANGEROUS_SCRIPT_SCHEMES` enthält die vom Link-Linter gemeldeten Schemata für Skripte oder beliebige Nutzdaten. `normalizeUrlForSchemeCheck(value: string): string` entfernt Tab, LF und CR, führende Zeichen U+0000–U+0020 und nachgestellte Leerraumzeichen. `extractUrlScheme(value: string): string | null` liefert das normalisierte Schema in Kleinbuchstaben oder `null` für relative URLs und Fragmente. `DATA_IMAGE_SRC_PATTERN` erkennt die in `src` akzeptierten Bilddaten-MIME-Typen. `isSafeHtmlUrl(value: string, attribute: string): boolean` wendet diese gemeinsame URL-Wertrichtlinie an.
+
+`isSafeUrlAttribute(name: string, value: string): boolean` wendet `isSafeHtmlUrl` auf `HTML_URL_ATTRIBUTES` an, die gemeinsame Menge des Sanitizer-Hooks im Editor: `href`, `xlink:href`, `background`, `poster` und `src`. Übergeben Sie den Wert mit dekodierten Zeichenreferenzen, so wie ein Browser ihn liest; Attributnamen werden ohne Beachtung der Groß- und Kleinschreibung verglichen. Nach der Normalisierung akzeptieren diese Attribute einen leeren Wert, eine URL ohne Schema, ein `#`-Fragment oder die Schemata `http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp` und `cid`. Nur `src` akzeptiert zusätzlich eine `data:image/`-URL vom Typ `png`, `jpeg`, `jpg`, `gif`, `webp` oder `svg+xml`, gefolgt von `;`. Andere Schemata ergeben `false`. Die gemeinsame Menge `HTML_FORBIDDEN_ATTRIBUTES` aus der Sanitizer-Konfiguration (`srcdoc`, `ping`, `formaction` und `action`) ergibt immer `false`, auch bei leeren Werten oder HTTPS-Werten. Andere Attribute ergeben `true`. Der DOMPurify-Sanitizer des Editors und `template-tools strings import` verwenden diese gemeinsame Richtlinie; der Helfer validiert keine Tags, `on*`-Handler oder weiteren DOMPurify-Regeln. Diese prüfen Aufrufer getrennt.
+
 ## Basistypen
 
 ### BaseBlock
@@ -105,6 +149,7 @@ interface BaseBlock {
   styles: BlockStyles;
   visibility?: BlockVisibility;
   displayCondition?: DisplayCondition;
+  l10n?: Record<string, BlockLocaleLayer>;
 }
 ```
 
@@ -730,7 +775,7 @@ unsubscribe(); // Listener entfernen
 
 ## Operationen und Zusammenarbeit
 
-`Operation` und seine sechs Varianten, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` und `getColumnCount` beschreibt die [Operations-Referenz](/de/api/operations). Der Collaboration-Vertrag — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` und `CollaborationRemoteChange` — steht unter [Zusammenarbeit](/de/backend/collaboration). `Template` trägt `revision` und `locks` für einen Speicher, der zusammenarbeitet.
+`Operation`, einschließlich der Locale-Operationen, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` und `getColumnCount` beschreibt die [Operations-Referenz](/de/api/operations). Der Collaboration-Vertrag — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` und `CollaborationRemoteChange` — steht unter [Zusammenarbeit](/de/backend/collaboration). `Template` trägt `revision` und `locks` für einen Speicher, der zusammenarbeitet.
 
 ## KI
 

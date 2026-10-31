@@ -1,5 +1,6 @@
 import {
   computed,
+  getCurrentScope,
   ref,
   shallowRef,
   toRaw,
@@ -7,7 +8,10 @@ import {
   type ComputedRef,
   type Ref,
 } from "vue";
-import type { UseHistoryReturn } from "@templatical/core";
+import {
+  mapLocalizedOperations,
+  type UseHistoryReturn,
+} from "@templatical/core";
 import type {
   AiChatMessage,
   AiFeatureName,
@@ -21,12 +25,16 @@ import type {
   AiTurnHandlers,
   AiTurnResult,
   Block,
+  CustomBlockDefinition,
   Operation,
   TemplateContent,
 } from "@templatical/types";
 import {
+  defaultLocaleOf,
+  resolveLocale,
   applyOperationsInPlace,
   CollaborationConflict,
+  deepEqual,
   invertOperations,
   OperationError,
   safeClone,
@@ -70,6 +78,7 @@ export interface AiChatItem {
   id: string;
   role: "user" | "assistant";
   kind: AiMessageKind;
+  locale?: string | null;
   text: string;
   attachments: { name: string; kind: "image" | "pdf" }[];
   /** Operations this turn changed, client- and server-applied together. */
@@ -105,6 +114,7 @@ export interface AiFeatureEditor {
   /** Committed create/load version from core; metadata edits leave it alone. */
   loadVersion?: Readonly<Ref<number>>;
   content: Ref<TemplateContent>;
+  activeLocale?: Ref<string | null>;
   selectBlock: (blockId: string | null) => void;
   markDirty: () => void;
 }
@@ -127,6 +137,9 @@ export interface UseAiFeatureOptions {
   ) => Operation[];
   /** The comments panel's state: AI panels and comments are exclusive (D18). */
   commentsOpen: Ref<boolean> | null;
+  localization?: { locales: string[] };
+  customBlockDefinitions?: () => readonly CustomBlockDefinition[];
+  onStructureChange?: () => void;
   altMaxLength?: () => number;
   onError?: (error: Error) => void;
 }
@@ -138,6 +151,19 @@ interface TurnRecord {
   redo: Operation[] | null;
   serverApplied: boolean;
   batchIds: Set<string>;
+  /**
+   * Under collaboration, the content the turn's last batch, or its last Undo
+   * or Redo, left; `null` once another change landed between its batches. A
+   * whole-template snapshot in the inverse applies only on exactly this
+   * content, so it can't overwrite an edit made since, including another
+   * session's edit that a refusal of the turn kept.
+   */
+  view?: TemplateContent | null;
+}
+
+/** The current content, for a turn record's `view`. */
+function snapshotOf(content: TemplateContent): TemplateContent {
+  return safeClone(toRaw(content));
 }
 
 interface Memory {
@@ -153,8 +179,27 @@ interface Memory {
 
 const isAbort = (error: unknown): boolean =>
   error instanceof Error && error.name === "AbortError";
-const asError = (error: unknown): Error =>
-  error instanceof Error ? error : new Error(String(error));
+function asError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (typeof error !== "object" || error === null)
+    return new Error(String(error));
+  const shaped = error as {
+    message?: unknown;
+    code?: unknown;
+    statusCode?: unknown;
+    details?: unknown;
+  };
+  return Object.assign(
+    new Error(
+      typeof shaped.message === "string" ? shaped.message : String(error),
+    ),
+    typeof shaped.code === "string" ? { code: shaped.code } : {},
+    typeof shaped.statusCode === "number"
+      ? { statusCode: shaped.statusCode }
+      : {},
+    shaped.details === undefined ? {} : { details: shaped.details },
+  );
+}
 const sum = (message: AiChatMessage) =>
   message.batches.reduce((total, batch) => total + batch.operationCount, 0);
 
@@ -252,6 +297,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   let destroyed = false;
   let authorVersion = 0;
   let applyingAi = false;
+  let pendingJobs = 0;
+  let stopAuthorWatch: (() => void) | null = null;
+  // Watchers made later (from `enqueue` and a job's end) belong to this
+  // composable, not to whichever component's setup queued the job.
+  const ownerScope = getCurrentScope();
   type LaneKind =
     "turn" | "replay" | "clear" | "history" | "read" | "reconcile";
   interface Session {
@@ -322,6 +372,20 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     () =>
       currentSession.value !== null && !destroyed && templateId.value !== null,
   );
+  let localeVersion = 0;
+  const stopLocaleWatch = editor.activeLocale
+    ? watch(
+        editor.activeLocale,
+        () => {
+          localeVersion++;
+        },
+        { flush: "sync" },
+      )
+    : () => {};
+  function checkLocale(version: number): void {
+    if (version !== localeVersion)
+      throw new DOMException("The language changed.", "AbortError");
+  }
   const has = (feature: AiFeatureName): boolean =>
     feature === "chatAttachments"
       ? isAvailable.value &&
@@ -392,12 +456,14 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           } finally {
             scope.active = null;
             scope.busy.value = false;
+            if (--pendingJobs === 0) watchAuthorEdits();
             pump(scope);
           }
           resolve(result);
         },
       };
       scope.queue.push(job);
+      if (pendingJobs++ === 0) watchAuthorEdits();
       pump(scope);
     });
   }
@@ -533,7 +599,13 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   }
 
   function requestBase(id: string): AiRequestBase {
-    const content = safeClone(toRaw(editor.content.value));
+    const raw = toRaw(editor.content.value);
+    const locale = editor.activeLocale?.value ?? null;
+    const content = resolveLocale(raw, locale ?? defaultLocaleOf(raw));
+    // Projection supplies an implicit English locale; older templates keep
+    // their original settings shape at the AI boundary (LD11).
+    if (locale === null && raw.settings.locale === undefined)
+      delete (content.settings as Partial<TemplateContent["settings"]>).locale;
     if (
       new TextEncoder().encode(JSON.stringify(content)).length >
       AI_CONTENT_MAX_BYTES
@@ -545,6 +617,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       );
     return {
       templateId: id,
+      locale,
       content,
       revision: collaboration ? collaboration.core.revision.value : null,
       sessionId: collaboration ? collaboration.core.sessionId : localSessionId,
@@ -562,12 +635,20 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
 
   // --- Applying edits (D6, D7, D8) ---------------------------------------------
 
-  function applyOps(
+  function applySharedOps(
     ops: Operation[],
     turn: string,
     scope: Session,
   ): AiOperationsResult {
-    const normalized = options.normalize(ops, toRaw(editor.content.value));
+    if (ops.length === 0) return { applied: true, inverse: [] };
+    let normalized: Operation[];
+    try {
+      normalized = options.normalize(ops, toRaw(editor.content.value));
+    } catch (error) {
+      if (error instanceof OperationError) return refusalOf(error);
+      throw error;
+    }
+    if (normalized.length === 0) return { applied: true, inverse: [] };
     const summary = summarizeAgentEdit(normalized);
     if (collaboration) {
       const result = collaboration.core.applyOperations(normalized, {
@@ -603,6 +684,48 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     }
     if (!summary.templateUpdated) outline(scope, summary.blockIds);
     return { applied: true, inverse };
+  }
+
+  function applyModelOps(
+    ops: Operation[],
+    turn: string,
+    scope: Session,
+    locale: string | null,
+  ): AiOperationsResult {
+    let mapped = ops;
+    try {
+      if (locale !== null) {
+        if (
+          options.localization &&
+          !options.localization.locales.includes(locale)
+        )
+          throw new OperationError(
+            "invalid_operation",
+            0,
+            `Locale "${locale}" is not enabled.`,
+          );
+        mapped = mapLocalizedOperations(
+          toRaw(editor.content.value),
+          locale,
+          ops,
+          options.customBlockDefinitions?.(),
+        );
+      }
+    } catch (error) {
+      if (error instanceof OperationError) return refusalOf(error);
+      throw error;
+    }
+    const result = applySharedOps(mapped, turn, scope);
+    if (
+      result.applied &&
+      result.inverse.length > 0 &&
+      locale !== null &&
+      mapped.some((op) =>
+        ["addBlock", "moveBlock", "deleteBlock", "updateBlock"].includes(op.op),
+      )
+    )
+      options.onStructureChange?.();
+    return result;
   }
 
   function followRevision(revision: number, scope: Session): void {
@@ -691,6 +814,8 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     ) => Promise<AiTurnResult>,
     attachments: File[] = [],
   ): Promise<AiTurnOutcome> {
+    const startingLocale = localeVersion;
+    const locale = editor.activeLocale?.value ?? null;
     const scope = scopeOf();
     if (
       !scope ||
@@ -771,9 +896,19 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           },
           onOperations: async (ops) => {
             check(job);
-            const result = applyOps(ops, turn, scope);
-            if (result.applied) {
+            checkLocale(startingLocale);
+            const before = collaboration
+              ? snapshotOf(editor.content.value)
+              : null;
+            const result = applyModelOps(ops, turn, scope, locale);
+            if (result.applied && result.inverse.length > 0) {
               record.inverse = [...result.inverse, ...record.inverse];
+              if (collaboration)
+                record.view =
+                  record.view === undefined ||
+                  (record.view !== null && deepEqual(record.view, before))
+                    ? snapshotOf(editor.content.value)
+                    : null;
               operationCount += ops.length;
               update({ operationCount });
             }
@@ -806,6 +941,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           try {
             await readHistory(job);
             check(job);
+            checkLocale(startingLocale);
             scope.failure.value = null;
             scope.failedPrompt.value = null;
             scope.failedAttachments.value = [];
@@ -817,6 +953,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
                 id: userKey,
                 role: "user",
                 kind,
+                locale,
                 text: userText,
                 attachments: attachments.map((file) => ({
                   name: file.name,
@@ -833,6 +970,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
                 id: key,
                 role: "assistant",
                 kind,
+                locale,
                 text: "",
                 attachments: [],
                 operationCount: 0,
@@ -846,6 +984,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             scope.messages.value = saved.items;
             await abortable(settle(scope), job.controller.signal);
             check(job);
+            checkLocale(startingLocale);
             const result = await abortable(
               call(requestBase(scope.id), handlers, controller.signal),
               controller.signal,
@@ -996,10 +1135,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             if (!isCurrent(scope)) return;
             if ("operations" in answer) {
               if (job.controller.signal.aborted) return;
-              const result = applyOps(
+              const result = applyModelOps(
                 answer.operations,
                 `${direction}:${id}:${crypto.randomUUID()}`,
                 scope,
+                item.locale ?? null,
               );
               if (result.applied) {
                 patch(scope, id, {
@@ -1053,7 +1193,19 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             const ops = direction === "undo" ? record?.inverse : record?.redo;
             if (!record || record.serverApplied || !ops || ops.length === 0)
               return;
-            const result = applyOps(
+            // A snapshot carries no guard of its own: it applies only on the
+            // content the turn (or its last replay) left.
+            if (
+              collaboration &&
+              ops.some((op) => op.op === "setContent") &&
+              (!record.view ||
+                !deepEqual(record.view, toRaw(editor.content.value)))
+            )
+              throw new CollaborationConflict(
+                `The template changed since this message's changes, so ${direction === "undo" ? "undoing" : "redoing"} them would overwrite that.`,
+                { code: "precondition_failed" },
+              );
+            const result = applySharedOps(
               ops,
               `${direction}:${id}:${crypto.randomUUID()}`,
               scope,
@@ -1065,6 +1217,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
               });
             if (direction === "undo") record.redo = result.inverse;
             else record.inverse = result.inverse;
+            if (collaboration) record.view = snapshotOf(editor.content.value);
           }
           patch(scope, id, {
             undone: direction === "undo",
@@ -1089,6 +1242,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       id: message.id,
       role: message.role,
       kind: message.kind,
+      locale: message.locale,
       text: message.text,
       attachments: message.attachments ?? [],
       operationCount: sum(message),
@@ -1320,7 +1474,33 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     panel.value = null;
   }
 
+  /**
+   * Content changes outside an AI application are the author's. A job
+   * snapshots `authorVersion` and compares it later (`reloadCurrent`), so
+   * while a job is queued or running each change is checked as it happens.
+   * Between jobs every change is the author's, and the first one is enough to
+   * make an earlier snapshot differ (a late-applied batch reconciles against
+   * its turn's snapshot), so an idle editor walks the content at most twice.
+   */
+  function watchAuthorEdits(): void {
+    if (destroyed) return;
+    stopAuthorWatch?.();
+    const idle = pendingJobs === 0;
+    const create = () =>
+      watch(
+        editor.content,
+        () => {
+          if (!applyingAi && !currentSession.value?.committingReload)
+            authorVersion++;
+        },
+        { deep: true, flush: "sync", once: idle },
+      );
+    stopAuthorWatch = ownerScope?.active ? ownerScope.run(create)! : create();
+  }
+  watchAuthorEdits();
+
   const watchers: (() => void)[] = [
+    () => stopAuthorWatch?.(),
     watch(
       () => editor.state.isDirty,
       (dirty, previous) => {
@@ -1330,14 +1510,6 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           keptYourVersion.value = false;
       },
       { flush: "sync" },
-    ),
-    watch(
-      editor.content,
-      () => {
-        if (!applyingAi && !currentSession.value?.committingReload)
-          authorVersion++;
-      },
-      { deep: true, flush: "sync" },
     ),
   ];
   if (options.commentsOpen) {
@@ -1372,6 +1544,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     blockId: string,
     signal?: AbortSignal,
   ): Promise<string> {
+    const startingLocale = localeVersion;
     const scope = scopeOf();
     const altText = provider.altText;
     const controller = new AbortController();
@@ -1385,7 +1558,10 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           403,
           "feature_unavailable",
         );
-      const context = aiImageContext(editor.content.value, blockId);
+      const raw = toRaw(editor.content.value);
+      const locale = editor.activeLocale?.value ?? null;
+      const content = resolveLocale(raw, locale ?? defaultLocaleOf(raw));
+      const context = aiImageContext(content, blockId);
       if (!context)
         throw new SdkError(
           "The image is no longer available.",
@@ -1407,7 +1583,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             blockId,
             image: { url },
             ...rest,
-            locale: editor.content.value.settings.locale,
+            locale: locale ?? raw.settings.locale,
             maxLength: options.altMaxLength?.() ?? DEFAULT_ALT_MAX_LENGTH,
           },
           controller.signal,
@@ -1415,6 +1591,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
         controller.signal,
       );
       controller.signal.throwIfAborted();
+      checkLocale(startingLocale);
       if (!isCurrent(scope))
         throw new DOMException("The template changed.", "AbortError");
       return answer.alt;
@@ -1435,15 +1612,19 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       expect?: AiImageSnapshot;
     }>,
   ): Promise<void> {
+    const startingLocale = localeVersion;
     const scope = scopeOf();
     if (!scope || entries.length === 0) return Promise.resolve();
+    const locale = editor.activeLocale?.value ?? null;
+    const raw = toRaw(editor.content.value);
+    const content = resolveLocale(raw, locale ?? defaultLocaleOf(raw));
     const ops: Operation[] = entries.map(
       ({ blockId, alt, decorative, expect }) => ({
         op: "updateBlock",
         blockId,
         expect: {
           ...(expect ??
-            aiImageSnapshot(editor.content.value, blockId) ?? {
+            aiImageSnapshot(content, blockId) ?? {
               src: null,
               alt: null,
               decorative: null,
@@ -1458,10 +1639,16 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       async (job) => {
         try {
           check(job);
+          checkLocale(startingLocale);
           const turn = crypto.randomUUID();
           for (let start = 0; start < ops.length; start += 100) {
             check(job);
-            const result = applyOps(ops.slice(start, start + 100), turn, scope);
+            const result = applyModelOps(
+              ops.slice(start, start + 100),
+              turn,
+              scope,
+              locale,
+            );
             if (!result.applied)
               throw new CollaborationConflict(result.message, {
                 code: result.code,
@@ -1569,6 +1756,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     undoMessage: (id) => replay(id, "undo"),
     redoMessage: (id) => replay(id, "redo"),
     rewrite: (input, onText, signal) => {
+      const startingLocale = localeVersion;
       const scope = scopeOf();
       const rewrite = provider.rewrite;
       if (!scope || typeof rewrite !== "function")
@@ -1582,12 +1770,14 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           try {
             signal.throwIfAborted();
             check(job);
-            return await abortable(
+            checkLocale(startingLocale);
+            const answer = await abortable(
               rewrite(
                 { ...requestBase(scope.id), ...input },
                 {
                   onText: (text) => {
                     check(job);
+                    checkLocale(startingLocale);
                     onText(text);
                   },
                 },
@@ -1595,6 +1785,8 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
               ),
               job.controller.signal,
             );
+            checkLocale(startingLocale);
+            return answer;
           } catch (error) {
             report(error);
             throw error;
@@ -1615,6 +1807,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       const scope = currentSession.value;
       if (scope) abandon(scope);
       currentSession.value = null;
+      stopLocaleWatch();
       for (const unwatch of watchers) unwatch();
       watchers.length = 0;
     },

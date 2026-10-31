@@ -1,0 +1,78 @@
+{
+  "name": "element-id-set-content-locked",
+  "content": {
+    "blocks": [
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ]
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en"
+    }
+  },
+  "locks": [
+    {
+      "blockId": "p1",
+      "sessionId": "other"
+    }
+  ],
+  "session": "me",
+  "ops": [
+    {
+      "op": "setContent",
+      "content": {
+        "blocks": [
+          {
+            "id": "s1",
+            "type": "section",
+            "columns": "1",
+            "children": [
+              [
+                {
+                  "id": "p1",
+                  "type": "paragraph",
+                  "content": "Left"
+                }
+              ]
+            ]
+          },
+          {
+            "id": "menu",
+            "type": "menu",
+            "items": [
+              {
+                "id": "a.b",
+                "text": "Shop",
+                "url": "https://example.com/shop"
+              }
+            ]
+          }
+        ],
+        "settings": {
+          "width": 600,
+          "locale": "en"
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "menu",
+      "message": "Element id \"a.b\" must not contain \".\" or \"/\"."
+    }
+  }
+}

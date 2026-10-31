@@ -1,15 +1,13 @@
 import DOMPurify from "dompurify";
-import { SAFE_LINK_SCHEMES, isSafeHtmlUrl } from "@templatical/types";
+import {
+  SAFE_LINK_SCHEMES,
+  HTML_URL_ATTRIBUTES,
+  HTML_FORBIDDEN_ATTRIBUTES,
+  isSafeHtmlUrl,
+} from "@templatical/types";
 
-const URL_ATTRIBUTES = new Set([
-  "href",
-  "xlink:href",
-  "background",
-  "poster",
-  "src",
-]);
-
-const FORBID_ATTRIBUTES = ["srcdoc", "ping", "formaction", "action"];
+const URL_ATTRIBUTES = new Set<string>(HTML_URL_ATTRIBUTES);
+const FORBID_ATTRIBUTES = [...HTML_FORBIDDEN_ATTRIBUTES];
 
 // DOMPurify applies this to URL-bearing attributes beyond our explicit hook.
 // Build the scheme portion from the shared policy. The suffix accepts relative

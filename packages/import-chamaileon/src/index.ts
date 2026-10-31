@@ -1,3 +1,4 @@
+export type { ConvertChamaileonOptions } from "./converter";
 export { convertChamaileonTemplate } from "./converter";
 export type {
   ImportResult,

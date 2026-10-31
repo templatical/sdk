@@ -52,6 +52,8 @@ const mjml = await renderToMjml(templateContent);
 
 ```ts
 interface RenderOptions {
+  locale?: string;
+  layout?: TemplateContent;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
@@ -65,6 +67,8 @@ interface RenderOptions {
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `locale` | `settings.locale` | Selects the template version; an unknown version rejects with `unknown_locale`. |
+| `layout` | -- | Embedder-owned shell with exactly one slot. May carry its own `settings.locales`, block `l10n` and `settings.l10n`, including wrapper children. It is projected for the requested language with `missing: "default"` before composition; a language the layout lacks uses its default. See [Layout](/guide/layout). |
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
@@ -73,6 +77,8 @@ interface RenderOptions {
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Mutually exclusive with `customBlocks`. A listed definition decides its type's stylesheet, including emitting none; unknown types use saved `renderedStylesheet`. A passed resolver decides every type and ignores saved copies. |
 | `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${dir}/${platform}.png`, where `dir` is the style, plus `-${tone}` for a `dark` or `light` `iconTone`. See [Social icons](#social-icons) below. |
+
+`locale?: string` selects a template language version; omission renders `settings.locale`, the default. Unknown versions reject with `SdkError` code `unknown_locale`. Projection removes hidden blocks, applies text and overrides, and sets MJML `lang` and `dir`. See [Localized templates](/guide/localized-templates#rendering-a-language).
 
 ### Custom blocks
 

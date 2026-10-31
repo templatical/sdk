@@ -437,6 +437,23 @@ describe("editor bundle topology", () => {
     }
   });
 
+  it("loads the language menu only through a dynamic import", () => {
+    const chunks = allFiles.filter((file) =>
+      /\/LanguageMenu-[^/]+\.js$/.test(file),
+    );
+    expect(chunks).toHaveLength(1);
+    const reachable = new Set<string>();
+    const walk = (file: string) => {
+      if (reachable.has(file)) return;
+      reachable.add(file);
+      for (const specifier of extractImports(readFileSync(file, "utf8"))) {
+        if (specifier.startsWith("./")) walk(join(DIST, specifier));
+      }
+    };
+    walk(join(DIST, "templatical-editor.js"));
+    expect(reachable.has(chunks[0])).toBe(false);
+  });
+
   it("ships the AI header button in the entry's static-import closure", () => {
     // Lazy, it rendered one chunk fetch after the rest of the header (OI-245).
     // It is the only AI component every editor pays for; the panels above stay

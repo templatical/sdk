@@ -4,7 +4,10 @@ import type {
 } from "@templatical/types";
 
 /** A member of `TemplateSettings` — the vocabulary `templateSettings.fields` speaks. */
-export type TemplateSettingsField = keyof TemplateSettings;
+export type TemplateSettingsField = Exclude<
+  keyof TemplateSettings,
+  "locales" | "l10n"
+>;
 
 /** The cards `TemplateSettings.vue` groups those fields into. */
 export type TemplateSettingsCard =

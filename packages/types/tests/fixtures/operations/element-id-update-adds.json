@@ -1,0 +1,50 @@
+{
+  "name": "element-id-update-adds",
+  "content": {
+    "blocks": [
+      {
+        "id": "menu",
+        "type": "menu",
+        "items": [
+          {
+            "id": "nav.home",
+            "text": "Home",
+            "url": "https://example.com"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "menu",
+      "set": {
+        "items": [
+          {
+            "id": "nav.home",
+            "text": "Home",
+            "url": "https://example.com"
+          },
+          {
+            "id": "a.b",
+            "text": "Shop",
+            "url": "https://example.com/shop"
+          }
+        ]
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "menu",
+      "message": "Element id \"a.b\" must not contain \".\" or \"/\"."
+    }
+  }
+}

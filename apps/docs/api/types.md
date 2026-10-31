@@ -52,6 +52,8 @@ interface TemplateSettings {
   fontFamily: string;             // Default font family
   preheaderText?: string;         // Email preheader text
   locale: string;                 // BCP-47 content language; <html lang> (default 'en')
+  locales?: string[];             // Other language versions; the default is locale
+  l10n?: Record<string, SettingsLocaleLayer>; // Per-language settings layers
   direction?: ContentDirection;   // 'ltr' | 'rtl'; unset follows the content language
 }
 
@@ -92,6 +94,48 @@ type BlockType =
   | 'slot' | 'wrapper';
 ```
 
+## Localization {#localization}
+
+Language versions add optional `BaseBlock.l10n`, `TemplateSettings.locales` and `TemplateSettings.l10n`. The public declarations below are from `@templatical/types`; `definitions` defaults to `[]` for custom text-field discovery.
+
+<<< @/snippets/localization-contract.ts
+
+`readPath` resolves array elements by id and returns `undefined` for an unresolved path. `writePath` clones the value, treats `null` as property deletion and returns `false` when the parent cannot resolve. `isSafePath` rejects empty and prototype-key segments. `isLocaleTag` accepts a 2–3 letter language followed by optional 2–8 character alphanumeric subtags. `defaultLocaleOf` returns `settings.locale`, falling back to `en`.
+
+`TRANSLATABLE_FIELDS` lists each block type's text path patterns, where `*` is an element id or, for custom blocks, a field key: title, paragraph and HTML `content`, image and video `alt`, button `text`, countdown labels and `expiredMessage`, menu `items.*.text`, table `rows.*.cells.*.content` and custom `fieldValues.*`. `SETTINGS_TRANSLATABLE_FIELDS` is `["preheaderText"]`. `translatableFields(block, definitions)` expands one block's patterns into concrete paths and keeps only custom fields whose definition type is `text` or `textarea`. A locale `text` entry must name one of these paths; every other override goes in `set`.
+
+`pruneLocaleOrphans(block: Block): Block` recursively removes text paths that no longer resolve and set paths whose parent no longer resolves. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` applies the same rule to settings. Both are pure and omit empty localization members. `isStructuralLocalePath(block: Block, path: string, value?: unknown): boolean` identifies section columns, whole built-in lists and element ids that locale overrides must not replace. Pass the proposed `set` value to check a whole-element replacement: its id must stay unchanged, and a table row must retain its cell ids in the same order. Custom `fieldValues.*` overrides are exempt.
+
+`elementIdIssues(content: TemplateContent): { path: string; id: string }[]` reports menu item, social icon, table row and table cell ids containing `.` or `/`, depth first, including section columns and layout wrappers. It is pure; paths use array indices, for example `blocks[2].items[0].id`. `validateTemplate` reports each issue as `<path>: Element id "<id>" must not contain "." or "/".`; `addBlock`, `updateBlock` and `setContent` refuse one they introduce (on a new block, or new on its block) with `invalid_operation` and the carrying block's `blockId`; an id already on its block stays editable.
+
+`sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale(content, locale, options?: { missing?: "throw" | "default" })` projects a complete template or layout, including wrapper children, drops hidden blocks recursively and strips localization fields. Omitted `missing` or `missing: "throw"` throws `unknown_locale` for a version the document lacks. With `missing: "default"`, an unknown version projects the document's default and keeps its default `settings.locale`. Known versions are unaffected. Both helpers are pure.
+
+`localeCoverage` returns field ids (`<blockId>/<path>` or `settings/<path>`) in document order, settings last. Missing nonempty defaults go in `missing`; text with a changed `sourceHash` goes in `stale`; current text goes in `translated`. Hidden blocks and their descendants are excluded. Pass custom definitions to discover `text` and `textarea` fields. Use coverage for a non-default version; it does not project or validate a locale for you.
+
+`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` and `updateSettingsLocale` join `Operation`. `addLocale.position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
+
+## Translation {#translation}
+
+`TranslationProvider` is the independent `init({ translation })` contract. `TranslationRequest`, `TranslationField`, `TranslationResult`, `TranslationErrorCode` and `LocaleString`, plus the pure helpers and call bounds, are exported from `@templatical/types`:
+
+<<< @/snippets/translation-contract.ts
+
+`TRANSLATION_MAX_FIELDS = 50` and `TRANSLATION_MAX_CHARS = 20_000` cap each call. `TRANSLATABLE_HTML_FIELDS` is `{ title: ["content"], paragraph: ["content"] }`; every other eligible field is `text`. HTML blocks remain manually translatable and are excluded from `localeStrings`.
+
+`maskTags(text, syntax, format, options?: { doNotTranslate?: readonly string[] })` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
+
+Pass the same `doNotTranslate?: readonly string[]` to `maskTags`, `localeStrings` and `applyLocaleStrings` to protect configured terms in text and HTML attribute values. Terms are trimmed, case-sensitive whole words (Unicode letters, numbers and `_` are word characters), matched longest first without overlaps; tags and chips take precedence. Terms share the tags’ id sequence, and the exact check restores each occurrence byte for byte or rejects it as `tags_changed`. The option defaults to no terms. See [translation masking](/backend/translation#provider-contract) for limits and the editor configuration.
+
+`localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides and hidden blocks. `blockId` limits selection to that block. Existing translations are masked with source ids. Coverage alone selects gaps (missing and stale) or all fields (also current). If stored tags or protected terms cannot be masked with the current source's tokens, the field still includes its masked current default and `sourceHash`, with `text` omitted; translation starts from that current default. It returns extraction-time `sourceHash` values from unmasked defaults.
+
+`applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time, so an out-of-date entry from `localeStrings`, whose `text` is its stored translation, becomes current when applied unchanged. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
+
+## HTML URL policy
+
+`SAFE_LINK_SCHEMES` lists the schemes accepted by the editor. `DANGEROUS_SCRIPT_SCHEMES` lists the script-capable or arbitrary-payload schemes reported by the link linter. `normalizeUrlForSchemeCheck(value: string): string` removes tab, LF and CR, leading U+0000–U+0020 characters and trailing whitespace. `extractUrlScheme(value: string): string | null` returns the normalized lower-case scheme, or `null` for a relative URL or fragment. `DATA_IMAGE_SRC_PATTERN` matches the image data MIME types accepted in `src`. `isSafeHtmlUrl(value: string, attribute: string): boolean` applies this shared URL-value policy.
+
+`isSafeUrlAttribute(name: string, value: string): boolean` applies `isSafeHtmlUrl` to `HTML_URL_ATTRIBUTES`, the editor sanitizer hook's shared set: `href`, `xlink:href`, `background`, `poster` and `src`. Pass the value with character references decoded, as a browser reads it; attribute names are case-insensitive. After normalization, these attributes accept an empty value, a URL without a scheme, a `#` fragment or the schemes `http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp` and `cid`. Only `src` also accepts a `data:image/` URL of type `png`, `jpeg`, `jpg`, `gif`, `webp` or `svg+xml` followed by `;`. Other schemes return `false`. The sanitizer config's shared `HTML_FORBIDDEN_ATTRIBUTES` set (`srcdoc`, `ping`, `formaction` and `action`) always returns `false`, including for empty or HTTPS values. Other attributes return `true`. The editor's DOMPurify sanitizer and `template-tools strings import` use this shared policy; the helper does not validate tags, `on*` handlers or other DOMPurify rules, which callers must check separately.
+
 ## Base Types
 
 ### BaseBlock
@@ -105,6 +149,7 @@ interface BaseBlock {
   styles: BlockStyles;
   visibility?: BlockVisibility;
   displayCondition?: DisplayCondition;
+  l10n?: Record<string, BlockLocaleLayer>;
 }
 ```
 
@@ -730,7 +775,7 @@ unsubscribe(); // Remove listener
 
 ## Operations and collaboration
 
-`Operation` and its six members, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
+`Operation`, including the locale operations, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
 
 ## AI
 

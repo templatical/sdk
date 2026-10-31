@@ -1,3 +1,4 @@
+export type { ConvertEasyEmailProOptions } from "./converter";
 export { convertEasyEmailProTemplate } from "./converter";
 export type {
   ImportResult,

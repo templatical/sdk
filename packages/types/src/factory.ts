@@ -350,23 +350,76 @@ export function createBlock(
   }
 }
 
+function remapL10n(
+  block: Record<string, unknown>,
+  ids: Map<string, Map<string, string>>,
+): void {
+  const l10n = block.l10n as
+    | Record<
+        string,
+        { text?: Record<string, unknown>; set?: Record<string, unknown> }
+      >
+    | undefined;
+  if (!l10n || ids.size === 0) return;
+  // Scope each id to its original array path; cells in separate rows may
+  // reuse an id. Walk the clone's new ids while retaining the old path.
+  const rename = (path: string) => {
+    let current: unknown = block;
+    let parentPath = "";
+    return path
+      .split(".")
+      .map((segment) => {
+        const renamed = Array.isArray(current)
+          ? (ids.get(parentPath)?.get(segment) ?? segment)
+          : segment;
+        current = Array.isArray(current)
+          ? current.find((item) => (item as { id?: string }).id === renamed)
+          : (current as Record<string, unknown> | undefined)?.[segment];
+        parentPath = parentPath ? `${parentPath}.${segment}` : segment;
+        return renamed;
+      })
+      .join(".");
+  };
+  for (const layer of Object.values(l10n)) {
+    for (const kind of ["text", "set"] as const) {
+      const entries = layer[kind];
+      if (entries)
+        layer[kind] = Object.fromEntries(
+          Object.entries(entries).map(([k, v]) => [rename(k), v]),
+        );
+    }
+  }
+}
+
 export function cloneBlock(block: Block): Block {
   const cloned = JSON.parse(JSON.stringify(block)) as Block;
   cloned.id = generateId();
+  const ids = new Map<string, Map<string, string>>();
+  const remint = (element: { id: string }, parentPath: string): string => {
+    const oldId = element.id;
+    element.id = generateId();
+    let scoped = ids.get(parentPath);
+    if (!scoped) {
+      scoped = new Map();
+      ids.set(parentPath, scoped);
+    }
+    scoped.set(oldId, element.id);
+    return oldId;
+  };
 
   if (cloned.type === "table") {
     for (const row of cloned.rows) {
-      row.id = generateId();
-      for (const cell of row.cells) cell.id = generateId();
+      const oldRowId = remint(row, "rows");
+      for (const cell of row.cells) remint(cell, `rows.${oldRowId}.cells`);
     }
   }
 
   if (cloned.type === "menu") {
-    for (const item of cloned.items) item.id = generateId();
+    for (const item of cloned.items) remint(item, "items");
   }
 
   if (cloned.type === "social") {
-    for (const icon of cloned.icons) icon.id = generateId();
+    for (const icon of cloned.icons) remint(icon, "icons");
   }
 
   if (cloned.type === "section") {
@@ -379,5 +432,6 @@ export function cloneBlock(block: Block): Block {
     cloned.children = cloned.children.map((c) => cloneBlock(c));
   }
 
+  remapL10n(cloned as unknown as Record<string, unknown>, ids);
   return cloned;
 }

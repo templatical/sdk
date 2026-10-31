@@ -52,6 +52,8 @@ const mjml = await renderToMjml(templateContent);
 
 ```ts
 interface RenderOptions {
+  locale?: string;
+  layout?: TemplateContent;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // Standard: true
@@ -65,6 +67,8 @@ interface RenderOptions {
 
 | Option | Default | Beschreibung |
 |--------|---------|-------------|
+| `locale` | `settings.locale` | Wählt die Template-Version; eine unbekannte Version lehnt mit `unknown_locale` ab. |
+| `layout` | -- | Vom Integrator bereitgestellter Rahmen mit genau einem Slot. Darf eigene `settings.locales`, Block-`l10n` und `settings.l10n` enthalten, auch in Wrapper-Kindern. Vor dem Zusammensetzen wird es mit `missing: "default"` für die angefragte Sprache projiziert; fehlt diese dem Layout, gilt dessen Standardsprache. Siehe [Layout](/de/guide/layout). |
 | `customFonts` | `[]` | Definitionen benutzerdefinierter Schriftarten für `<mj-font>`-Deklarationen in der gerenderten Ausgabe |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Stack, der an eine benutzerdefinierte Schriftart ohne eigenen `fallback` oder an eine einzelne, nicht eingebaute Schriftfamilie angehängt wird. Ein vollständiger Stack wird unverändert ausgegeben. |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
@@ -73,6 +77,8 @@ interface RenderOptions {
 | `blockRenderers` | `{}` | Typbezogene Renderer-Overrides, keyed nach `block.type`. Ein Countdown-GIF-Backend nutzt dies. Ein Override übernimmt die Prüfung auf „auf allen Viewports ausgeblendet“. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Nicht mit `customBlocks` kombinierbar. Eine gelistete Definition entscheidet über das Stylesheet ihres Typs, auch wenn keines ausgegeben wird; unbekannte Typen verwenden gespeichertes `renderedStylesheet`. Ein übergebener Resolver entscheidet für jeden Typ und ignoriert gespeicherte Kopien. |
 | `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${dir}/${platform}.png` aufgelöst, wobei `dir` der Stil ist, bei einem `iconTone` von `dark` oder `light` gefolgt von `-${tone}`. Siehe [Social-Media-Icons](#social-media-icons) unten. |
+
+`locale?: string` wählt eine Template-Sprachversion; ohne Angabe wird `settings.locale`, der Standard, gerendert. Unbekannte Versionen lehnen mit `SdkError`-Code `unknown_locale` ab. Die Projektion entfernt ausgeblendete Blöcke, wendet Text und Überschreibungen an und setzt MJML-`lang` und `dir`. Siehe [Lokalisierte Templates](/de/guide/localized-templates#eine-sprache-rendern).
 
 ### Benutzerdefinierte Blöcke
 

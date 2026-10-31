@@ -77,6 +77,13 @@
     "SectionBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -161,6 +168,48 @@
         "type"
       ],
       "additionalProperties": false
+    },
+    "BlockLocaleLayer": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/LocalizedText"
+          },
+          "description": "Translated text, by field path."
+        },
+        "set": {
+          "type": "object",
+          "additionalProperties": {},
+          "description": "Any other property overridden for this language, by field path."
+        },
+        "hidden": {
+          "type": "boolean",
+          "const": true,
+          "description": "The block is left out of this language."
+        }
+      },
+      "additionalProperties": false,
+      "description": "One language's layer on a block. Members are omitted when empty."
+    },
+    "LocalizedText": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "sourceHash": {
+          "type": "string",
+          "description": "`sourceHash(defaultValue)` when the value was written or kept."
+        }
+      },
+      "required": [
+        "value",
+        "sourceHash"
+      ],
+      "additionalProperties": false,
+      "description": "A translated text value and the hash of the default value it was written against."
     },
     "BlockStyles": {
       "type": "object",
@@ -449,6 +498,13 @@
     "TitleBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -532,6 +588,13 @@
     "ParagraphBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -590,6 +653,13 @@
     "ImageBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -700,6 +770,13 @@
     "ButtonBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -810,6 +887,13 @@
     "DividerBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -898,6 +982,13 @@
     "VideoBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -991,6 +1082,13 @@
     "SocialIconsBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1144,6 +1242,13 @@
     "SpacerBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1198,6 +1303,13 @@
     "HtmlBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1252,6 +1364,13 @@
     "MenuBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1379,6 +1498,13 @@
     "TableBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1510,6 +1636,13 @@
     "CountdownBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1644,6 +1777,13 @@
     "CustomBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1713,6 +1853,13 @@
     "SlotBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1764,6 +1911,13 @@
     "WrapperBlock": {
       "type": "object",
       "properties": {
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BlockLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "id": {
           "type": "string"
         },
@@ -1857,6 +2011,20 @@
           "type": "string",
           "description": "BCP-47 language code for the rendered email's `<html lang>`. Drives screen-reader pronunciation. Default `'en'` via `DEFAULT_TEMPLATE_DEFAULTS`."
         },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Other language versions; the default is `locale`."
+        },
+        "l10n": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/SettingsLocaleLayer"
+          },
+          "description": "Per-language layers, keyed by BCP 47 tag; see `resolveLocale`."
+        },
         "direction": {
           "$ref": "#/definitions/ContentDirection",
           "description": "Writing direction of the delivered email: the canvas `dir` and the rendered `<mjml dir>`. Independent of the editor chrome (`init({ locale })`). Optional: when unset, `resolveContentDirection` falls through to the content language (`ar` / `he` / `fa` / … → `\"rtl\"`, otherwise `\"ltr\"`). An explicit `\"ltr\"` on an Arabic template is a stated decision, not a missing value."
@@ -1871,6 +2039,23 @@
         "locale"
       ],
       "additionalProperties": false
+    },
+    "SettingsLocaleLayer": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/LocalizedText"
+          }
+        },
+        "set": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "additionalProperties": false,
+      "description": "One language's layer on the template settings."
     },
     "ContentDirection": {
       "type": "string",

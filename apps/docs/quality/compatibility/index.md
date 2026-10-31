@@ -28,7 +28,7 @@ const fragmentIssues = lintHtmlFragment('<div style="display:flex">Hi</div>', {
 });
 ```
 
-`lintTemplate` runs compatibility last, after accessibility, structure, links and deliverability. Set `compatibility: false` to disable the category, or set a rule to `"off"` in `compatibility.rules`. `compatibility.thresholds.maxHtmlBytes` defaults to `92_160` bytes (90 KiB). Every category must be `false` to prevent the editor's optional quality chunk from loading.
+`lintTemplate` runs compatibility after accessibility, structure, links and deliverability, then runs localization. Set `compatibility: false` to disable the category, or set a rule to `"off"` in `compatibility.rules`. `compatibility.thresholds.maxHtmlBytes` defaults to `92_160` bytes (90 KiB). Every category, including `localization`, must be `false` to prevent the editor's optional quality chunk from loading; use `localization: false` alongside the other category flags.
 
 `lintCompiledHtml(html, options?)` measures UTF-8 bytes and flags `compat.gmail-clipping` only when the compiled HTML exceeds that threshold. Google does not publish a clipping threshold; community tests in [email-bugs#41](https://github.com/hteumeuleu/email-bugs/issues/41) show Gmail clipping at **about 102 KB**, and sometimes earlier once a sending service adds its markup. The default margin allows for tracking links added by sending services. Quality never renders or compiles HTML itself:
 

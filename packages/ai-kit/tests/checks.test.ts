@@ -14,11 +14,11 @@ const tags = {
 };
 
 describe("checkRewrite", () => {
-  it("drops code fences and accepts the input's and declared tags", () => {
+  it("drops code fences and preserves the input's exact tags", () => {
     expect(
       checkRewrite(
         "```html\n<p>Hey {{first_name}}, {{order_id}}</p>\n```",
-        '<p>Hi <span data-merge-tag="{{order_id}}" data-label="Order">Order</span></p>',
+        '<p>Hi {{first_name}} <span data-merge-tag="{{order_id}}" data-label="Order">Order</span></p>',
         tags,
       ),
     ).toEqual({ ok: true, html: "<p>Hey {{first_name}}, {{order_id}}</p>" });
@@ -183,10 +183,100 @@ describe("buildAltTextRepairRequest", () => {
   });
 });
 
-
 it("refuses an invented rewrite tag when no merge tags are declared", () => {
-  expect(checkRewrite("<p>{{x}}</p>", "<p>Hi</p>", { syntax: "liquid", tags: [] })).toEqual({
+  expect(
+    checkRewrite("<p>{{x}}</p>", "<p>Hi</p>", { syntax: "liquid", tags: [] }),
+  ).toEqual({
     ok: false,
     reason: "Your rewrite used merge tags that don't exist: {{x}}.",
   });
 });
+
+describe("Rewrite's exact merge-tag multiset", () => {
+  it.each([
+    ["<p>Hi</p>", "<p>{{first_name}}</p>"],
+    ["<p>{{first_name}} {{first_name}}</p>", "<p>{{first_name}}</p>"],
+    ["<p>{{first_name}}</p>", "<p>Hi</p>"],
+    ["<p>{{first_name}}</p>", "<p>{{first_name}} {{first_name}}</p>"],
+    ["<p>Hi</p>", "<p>{% if customer %}Hi{% endif %}</p>"],
+    [
+      "<p>{{first_name}}</p>",
+      '<p><span data-logic-merge-tag="{% if customer %}">If</span>{{first_name}}</p>',
+    ],
+  ])(
+    "rejects lost, duplicated or introduced occurrences %#",
+    (output, input) => {
+      expect(checkRewrite(output, input, tags).ok).toBe(false);
+    },
+  );
+  it("counts custom chips and declared literal values, excluding chip labels", () => {
+    const custom = {
+      syntax: "custom" as const,
+      tags: [{ value: "[[name]]", label: "Name" }],
+    };
+    const input =
+      '<p><span data-merge-tag="[[name]]">[[name]]</span><span data-logic-merge-tag="[IF]">Condition</span></p>';
+    expect(checkRewrite("<p>[[name]]</p>", input, custom).ok).toBe(false);
+    expect(
+      checkRewrite(
+        '<p><span data-logic-merge-tag="[IF]">Other</span>[[name]]</p>',
+        input,
+        custom,
+      ).ok,
+    ).toBe(true);
+    expect(
+      checkRewrite("<p>[[name]] [[name]]</p>", "<p>[[name]]</p>", custom).ok,
+    ).toBe(false);
+  });
+});
+
+it("counts a chip's value once without reading tag-shaped text in its label", () => {
+  expect(
+    checkRewrite(
+      '<p><span data-merge-tag="{{first_name}}">{{label_only}}</span></p>',
+      '<p><span data-merge-tag="{{first_name}}">First</span></p>',
+      tags,
+    ),
+  ).toEqual({
+    ok: true,
+    html: '<p><span data-merge-tag="{{first_name}}">{{label_only}}</span></p>',
+  });
+});
+
+it("preserves a custom chip's undeclared value when the model returns its bare value", () => {
+  expect(
+    checkRewrite(
+      "<p>Hi [[legacy]]</p>",
+      '<p>Hi <span data-merge-tag="[[legacy]]">Legacy</span></p>',
+      { syntax: "custom", tags: [] },
+    ),
+  ).toEqual({ ok: true, html: "<p>Hi [[legacy]]</p>" });
+});
+
+it.each([
+  {
+    syntax: "liquid" as const,
+    prefix: "{{fi",
+    suffix: "rst}}",
+    first: "{{first}}",
+    name: "{{name}}",
+  },
+  {
+    syntax: "custom" as const,
+    prefix: "[[fi",
+    suffix: "rst]]",
+    first: "[[first]]",
+    name: "[[name]]",
+  },
+])(
+  "does not join text across a chip into an allowed raw tag for $syntax",
+  ({ syntax, prefix, suffix, first, name }) => {
+    expect(
+      checkRewrite(
+        `<p>${first} ${name}</p>`,
+        `<p>${prefix}<span data-merge-tag="${name}">Name</span>${suffix}</p>`,
+        { syntax, tags: [{ value: first, label: "First" }] },
+      ).ok,
+    ).toBe(false);
+  },
+);

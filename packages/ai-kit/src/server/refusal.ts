@@ -84,6 +84,12 @@ function currentValues(
         : null;
     case "deleteBlock":
       return location ? { block: location.block } : null;
+    case "setDefaultLocale":
+    case "addLocale":
+    case "removeLocale":
+    case "updateBlockLocale":
+    case "updateSettingsLocale":
+      return {};
     default:
       return null;
   }

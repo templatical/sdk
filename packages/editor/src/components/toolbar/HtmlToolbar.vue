@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import { useI18n } from "../../composables/useI18n";
-import { labelClass, monoTextareaClass } from "../../constants/styleConstants";
+import { monoTextareaClass } from "../../constants/styleConstants";
 import type { HtmlBlock } from "@templatical/types";
 import { Info } from "@lucide/vue";
 
@@ -16,8 +17,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.html.content }}</label>
+  <FieldRow :label="t.html.content" class="tpl:mb-3.5" path="content">
     <textarea
       :value="block.content"
       :placeholder="'<div>...</div>'"
@@ -35,5 +35,5 @@ const { t } = useI18n();
       <Info :size="12" class="tpl:mt-0.5 tpl:shrink-0" />
       {{ t.html.sanitizationHint }}
     </p>
-  </div>
+  </FieldRow>
 </template>

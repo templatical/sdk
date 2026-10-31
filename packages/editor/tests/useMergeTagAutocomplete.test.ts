@@ -5,12 +5,27 @@
 // stubbed, matching mergeTagSuggestionRenderer.test.ts) and asserts the real
 // open/close/select effects — not source patterns.
 
-import { describe, expect, it, vi, beforeEach, type InjectionKey } from "vitest";
-import { shallowRef, createApp, defineComponent, h, ref } from "vue";
+import {
+  describe,
+  expect,
+  it,
+  vi,
+  beforeEach,
+  type InjectionKey,
+} from "vitest";
+import {
+  shallowRef,
+  createApp,
+  defineComponent,
+  h,
+  ref,
+  nextTick,
+  type Ref,
+} from "vue";
 import type { MergeTag } from "@templatical/types";
 import { SYNTAX_PRESETS } from "@templatical/types";
 import { useMergeTagAutocomplete } from "../src/composables/useMergeTagAutocomplete";
-import { POPOVER_ROOT_KEY } from "../src/keys";
+import { EDITOR_KEY, LOCALIZATION_KEY, POPOVER_ROOT_KEY } from "../src/keys";
 
 vi.mock("../src/components/MergeTagSuggestionList.vue", () => ({
   default: { name: "MergeTagSuggestionListStub", render: () => null },
@@ -52,6 +67,7 @@ interface SetupOpts {
   tags?: MergeTag[];
   syntax?: (typeof SYNTAX_PRESETS)[keyof typeof SYNTAX_PRESETS];
   enabled?: boolean;
+  activeLocale?: Ref<string | null>;
 }
 
 function setupDriver(opts: SetupOpts = {}) {
@@ -83,7 +99,15 @@ function setupDriver(opts: SetupOpts = {}) {
         enabled: opts.enabled ?? true,
         onInsert,
       }),
-    { [POPOVER_ROOT_KEY as symbol]: ref(popoverContainer) },
+    {
+      [POPOVER_ROOT_KEY as symbol]: ref(popoverContainer),
+      ...(opts.activeLocale
+        ? {
+            [EDITOR_KEY as symbol]: { activeLocale: opts.activeLocale },
+            [LOCALIZATION_KEY as symbol]: { locales: ["ar"] },
+          }
+        : {}),
+    },
   );
 
   return { app, driver: result, input, emit, onInsert, popoverContainer };
@@ -350,4 +374,30 @@ describe("useMergeTagAutocomplete — disposal", () => {
     driver.refresh();
     expect(popupEl()).toBeNull();
   });
+});
+
+it("closes native-field suggestions on read-only transitions and permits reopening", async () => {
+  const activeLocale = ref<string | null>("ar");
+  const { app, driver, emit } = setupDriver({
+    value: "{{fir",
+    caret: 5,
+    activeLocale,
+  });
+  try {
+    driver.refresh();
+    expect(driver.isOpen()).toBe(true);
+    activeLocale.value = "fr";
+    await nextTick();
+    expect(driver.isOpen()).toBe(false);
+    expect(driver.handleKeydown(key("Enter"))).toBe(false);
+    expect(emit).not.toHaveBeenCalled();
+    activeLocale.value = "ar";
+    await nextTick();
+    driver.refresh();
+    expect(driver.isOpen()).toBe(true);
+    driver.handleKeydown(key("Enter"));
+    expect(emit).toHaveBeenCalledWith("{{first_name}}");
+  } finally {
+    app.unmount();
+  }
 });

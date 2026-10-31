@@ -34,6 +34,42 @@ Cloud share:
 | `updateSettings` | `{"op":"updateSettings","set":{…},"unset":["…"]}` |
 | `setContent` | `{"op":"setContent","content":{…}}` — a full replacement, not a scoped change |
 
+The SDK also supports `addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` and
+`updateSettingsLocale` for language versions. Their paths, guards and locks
+are documented in [Operations](https://docs.templatical.com/api/operations).
+Follow [localize.md](localize.md) for adding versions, writing values and checking
+`validate --locale`; the [Localized templates guide](https://docs.templatical.com/guide/localized-templates)
+covers the editor workflow. Keep every `@templatical/*` package that reads the
+template on one version before writing localized content. Check an SDK batch
+with the shared operation fixtures, then run `template-tools validate` on
+the resulting template.
+
+To make an existing German version the default language:
+
+```
+npx -y @templatical/template-tools@0.51.1 edit .templatical/<name>.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
+```
+
+German's values become the base and the old default becomes a version. A
+block hidden in German refuses it with `invalid_operation`: list them with
+`localeHiddenBlocks(content, "de")` and show them first. Fields without German
+text keep the old default's value, and the old default keeps no copy of them:
+translate them into German first, until `defaultLocaleGaps(content, "de")`
+returns `[]` ([localize.md](localize.md)); an empty default isn't a gap. HTML
+blocks aren't sent by Translate or `strings export`:
+translate HTML blocks by hand in the German view.
+Without code, the CLI checks the same: the refusal names only the number of
+hidden blocks (exit 2, nothing written), so list them with
+`jq '[.. | objects | select(.l10n?.de?.hidden == true) | .id]' .templatical/<name>.json`
+and show each with `{"op":"updateBlockLocale","blockId":"<id>","locale":"de","hidden":false}`.
+`validate .templatical/<name>.json --locale de --json` then reports every gap as
+`localization.untranslated`, and
+`strings export .templatical/<name>.json --locale de --out strings.de.json`
+exports them, except HTML blocks, with any out-of-date fields, for
+`strings import`. After the change,
+`validate --locale en` lists the gaps left; a field German translated to the English text keeps a current entry.
+`updateSettings` refuses to change `settings.locale` while versions exist.
+
 An agent connected to a template through Templatical Cloud's hosted MCP server
 edits with this same vocabulary through the server's `edit_template` tool, so
 the shapes and rules here hold there too.

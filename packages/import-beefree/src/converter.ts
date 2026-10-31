@@ -1,4 +1,11 @@
 import {
+  defaultLocaleOption,
+  localeTag,
+  registerLocales,
+  text,
+  warn,
+} from "./localization";
+import {
   canonicalFontStack,
   createSectionBlock,
   createDefaultTemplateContent,
@@ -27,6 +34,11 @@ import {
   parseColor,
   readBeefreeBackgroundImage,
 } from "./style-parser";
+
+export interface ConvertBeeFreeOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
 
 /**
  * Determines the Templatical ColumnLayout from BeeFree column grid values.
@@ -290,6 +302,7 @@ function extractSettings(
  */
 export function convertBeeFreeTemplate(
   template: BeeFreeTemplate,
+  options: ConvertBeeFreeOptions = {},
 ): ImportResult {
   // Validate structure
   if (!template?.page?.rows) {
@@ -312,6 +325,37 @@ export function convertBeeFreeTemplate(
 
   // Rows are measured against the width the imported template renders at.
   const settings = extractSettings(template);
+  const declared =
+    template.page.body?.language?.value ??
+    template.page.language?.value ??
+    template.language?.value;
+  settings.locale =
+    (declared ? localeTag(declared, warnings) : null) ??
+    defaultLocaleOption(options.defaultLocale, warnings) ??
+    "en";
+  const meta = template.head?.meta;
+  if (typeof meta?.preheader === "string")
+    settings.preheaderText = meta.preheader;
+  for (const [code, values] of Object.entries(meta?.translations ?? {})) {
+    const locale = localeTag(code, warnings);
+    if (!locale) continue;
+    for (const key of Object.keys(values)) {
+      if (key === "preheader" && typeof values.preheader === "string") {
+        text(
+          settings,
+          locale,
+          "preheaderText",
+          settings.preheaderText,
+          values.preheader,
+        );
+      } else {
+        warn(
+          warnings,
+          `Dropped language "${locale}" metadata "${key}": ${["subject", "title", "description"].includes(key) ? "the host owns this field" : "no language mapping for this format"}.`,
+        );
+      }
+    }
+  }
 
   // Process rows
   for (const row of template.page.rows) {
@@ -325,6 +369,8 @@ export function convertBeeFreeTemplate(
     blocks,
     settings,
   };
+
+  registerLocales(content);
 
   // Build report summary
   const summary = {

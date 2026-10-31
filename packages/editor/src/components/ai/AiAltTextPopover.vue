@@ -9,6 +9,7 @@ import {
   watch,
 } from "vue";
 import { AI_FEATURE_KEY, EDITOR_KEY, UI_LOCALE_KEY } from "../../keys";
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import { aiErrorMessage } from "../../utils/aiErrors";
 import { aiImageSnapshot, sameAiImage } from "../../utils/aiImageContext";
@@ -21,8 +22,9 @@ const emit = defineEmits<{
 }>();
 const ai = inject(AI_FEATURE_KEY, null);
 const editor = inject(EDITOR_KEY, null);
-const captured = editor
-  ? aiImageSnapshot(editor.content.value, props.blockId)
+const localized = editor ? useLocalizedDisplay(editor) : null;
+const captured = localized
+  ? aiImageSnapshot(localized.content.value, props.blockId)
   : null;
 const refused = ref(false);
 const stale = computed(
@@ -30,7 +32,7 @@ const stale = computed(
     refused.value ||
     (editor !== null &&
       !sameAiImage(
-        aiImageSnapshot(editor.content.value, props.blockId),
+        aiImageSnapshot(localized!.content.value, props.blockId),
         captured,
       )),
 );
@@ -59,6 +61,7 @@ function close(): void {
   emit("close");
 }
 if (ai) watch(ai.templateSession, close, { flush: "sync" });
+if (editor?.activeLocale) watch(editor.activeLocale, close, { flush: "sync" });
 onMounted(async () => {
   emit("drafting", controller);
   try {
@@ -81,7 +84,14 @@ onUnmounted(() => {
   emit("drafting", null);
 });
 async function apply(decorative: boolean): Promise<void> {
-  if (!ai || applying.value || drafting.value || ai.busy.value || stale.value)
+  if (
+    closed ||
+    !ai ||
+    applying.value ||
+    drafting.value ||
+    ai.busy.value ||
+    stale.value
+  )
     return;
   applying.value = true;
   try {

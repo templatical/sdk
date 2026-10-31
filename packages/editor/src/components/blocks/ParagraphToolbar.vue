@@ -56,6 +56,7 @@ const props = defineProps<{
   editor: Editor | null;
   toolbarPosition: { top: number; left: number };
   isLoading: boolean;
+  isEditable?: boolean;
   canRequestMergeTag: boolean;
   canInsertLogicTag: boolean;
 }>();
@@ -103,6 +104,7 @@ const letterSpacingOptions = LETTER_SPACING_OPTIONS.map((value) => ({
 }));
 
 function insertEmoji(emoji: string): void {
+  if (props.isEditable === false) return;
   props.editor?.chain().focus().insertContent(emoji).run();
 }
 
@@ -136,6 +138,7 @@ function linkColorAttr(): string {
 // Set (or clear, when empty) the color of the current selection. On a link the
 // whole link is recolored (extendMarkRange) so it doesn't split into segments.
 function setColor(color: string): void {
+  if (props.isEditable === false) return;
   const chain = props.editor?.chain().focus();
   if (!chain) return;
   if (isLinkSelection()) {
@@ -205,6 +208,7 @@ function getCurrentHighlight(): string {
 }
 
 function setHighlight(color: string): void {
+  if (props.isEditable === false) return;
   const chain = props.editor?.chain().focus();
   if (color) chain?.setHighlight({ color }).run();
   else chain?.unsetHighlight().run();
@@ -226,198 +230,206 @@ function setHighlight(color: string): void {
         flexDirection: 'column',
       }"
     >
-      <template v-if="!isLoading && editor">
-        <!-- Row 1: Font family, Font size, Text color, Bold/Italic/Underline/Strikethrough -->
-        <div class="tpl:flex tpl:items-center tpl:gap-1">
-          <ToolbarSelect
-            :model-value="fontSelectValue(textStyleAttr('fontFamily'))"
-            :options="
-              withCurrentFont(fontFamilies, textStyleAttr('fontFamily'))
-            "
-            :label="t.paragraphEditor.fontFamily"
-            :placeholder="t.paragraphEditor.defaultFont"
-            width-class="tpl:w-32"
-            @update:model-value="setFontFamily"
-          />
-          <ToolbarSelect
-            :model-value="textStyleAttr('fontSize')"
-            :options="FONT_SIZE_OPTIONS"
-            :label="t.paragraphEditor.fontSize"
-            :placeholder="t.paragraphEditor.defaultSize"
-            width-class="tpl:w-20"
-            @update:model-value="setFontSize"
-          />
-          <ToolbarSeparator />
-          <ColorPicker
-            swatch-only
-            size="sm"
-            data-testid="text-color-picker"
-            :model-value="explicitTextColor()"
-            :seed-color="effectiveTextColor()"
-            :aria-label="t.paragraphEditor.textColor"
-            @update:model-value="setColor"
-          />
-          <ColorPicker
-            swatch-only
-            size="sm"
-            data-testid="highlight-color-picker"
-            :model-value="getCurrentHighlight()"
-            :seed-color="DEFAULT_HIGHLIGHT_COLOR"
-            :aria-label="t.paragraphEditor.highlightColor"
-            @update:model-value="setHighlight"
-          />
-          <ToolbarSeparator />
-          <ToolbarIconButton
-            :icon="Bold"
-            :label="t.paragraphEditor.bold"
-            :active="editor.isActive('bold')"
-            :stroke-width="2.5"
-            @click="editor.chain().focus().toggleBold().run()"
-          />
-          <ToolbarIconButton
-            :icon="Italic"
-            :label="t.paragraphEditor.italic"
-            :active="editor.isActive('italic')"
-            @click="editor.chain().focus().toggleItalic().run()"
-          />
-          <ToolbarIconButton
-            :icon="Underline"
-            :label="t.paragraphEditor.underline"
-            :active="editor.isActive('underline')"
-            @click="editor.chain().focus().toggleUnderline().run()"
-          />
-          <ToolbarIconButton
-            :icon="Strikethrough"
-            :label="t.paragraphEditor.strikethrough"
-            :active="editor.isActive('strike')"
-            @click="editor.chain().focus().toggleStrike().run()"
-          />
-          <ToolbarSeparator />
-          <ToolbarIconButton
-            :icon="Subscript"
-            :label="t.paragraphEditor.subscript"
-            :active="editor.isActive('subscript')"
-            @click="editor.chain().focus().toggleSubscript().run()"
-          />
-          <ToolbarIconButton
-            :icon="Superscript"
-            :label="t.paragraphEditor.superscript"
-            :active="editor.isActive('superscript')"
-            @click="editor.chain().focus().toggleSuperscript().run()"
-          />
-          <ToolbarSeparator />
-          <ToolbarIconButton
-            :icon="Link"
-            :label="t.paragraphEditor.addLink"
-            :active="editor.isActive('link')"
-            @click="emit('open-link-dialog')"
-          />
-        </div>
-        <!-- Row 2: Lists, Alignment, LH, LS, Clear, Emoji, Merge tags -->
-        <div class="tpl:flex tpl:items-center tpl:gap-1">
-          <ToolbarIconButton
-            :icon="List"
-            :label="t.paragraphEditor.bulletList"
-            :active="editor.isActive('bulletList')"
-            @click="editor.chain().focus().toggleBulletList().run()"
-          />
-          <ToolbarIconButton
-            :icon="ListOrdered"
-            :label="t.paragraphEditor.numberedList"
-            :active="editor.isActive('orderedList')"
-            @click="editor.chain().focus().toggleOrderedList().run()"
-          />
-          <ToolbarSeparator />
-          <ToolbarIconButton
-            :icon="AlignLeft"
-            :label="t.paragraphEditor.alignLeft"
-            :active="editor.isActive({ textAlign: 'left' })"
-            @click="editor.chain().focus().setTextAlign('left').run()"
-          />
-          <ToolbarIconButton
-            :icon="AlignCenter"
-            :label="t.paragraphEditor.alignCenter"
-            :active="editor.isActive({ textAlign: 'center' })"
-            @click="editor.chain().focus().setTextAlign('center').run()"
-          />
-          <ToolbarIconButton
-            :icon="AlignRight"
-            :label="t.paragraphEditor.alignRight"
-            :active="editor.isActive({ textAlign: 'right' })"
-            @click="editor.chain().focus().setTextAlign('right').run()"
-          />
-          <ToolbarIconButton
-            :icon="AlignJustify"
-            :label="t.paragraphEditor.alignJustify"
-            :active="editor.isActive({ textAlign: 'justify' })"
-            @click="editor.chain().focus().setTextAlign('justify').run()"
-          />
-          <ToolbarSeparator />
-          <ToolbarSelect
-            :model-value="getCurrentLineHeight()"
-            :options="LINE_HEIGHT_OPTIONS"
-            :label="t.paragraphEditor.lineHeight"
-            :placeholder="t.paragraphEditor.lineHeightShort"
-            width-class="tpl:w-16"
-            @update:model-value="setLineHeight"
-          />
-          <ToolbarSelect
-            :model-value="textStyleAttr('letterSpacing')"
-            :options="letterSpacingOptions"
-            :label="t.paragraphEditor.letterSpacing"
-            :placeholder="t.paragraphEditor.letterSpacingShort"
-            width-class="tpl:w-20"
-            @update:model-value="setLetterSpacing"
-          />
-          <ToolbarSeparator />
-          <ToolbarIconButton
-            :icon="RemoveFormatting"
-            :label="t.paragraphEditor.clearFormatting"
-            @click="editor.chain().focus().clearNodes().unsetAllMarks().run()"
-          />
-          <ToolbarSeparator />
-          <EmojiPickerDropdown @insert="insertEmoji" />
-          <template v-if="canRequestMergeTag">
+      <fieldset
+        :disabled="isEditable === false"
+        :inert="isEditable === false"
+        class="tpl:contents"
+      >
+        <template v-if="!isLoading && editor">
+          <!-- Row 1: Font family, Font size, Text color, Bold/Italic/Underline/Strikethrough -->
+          <div class="tpl:flex tpl:items-center tpl:gap-1">
+            <ToolbarSelect
+              :model-value="fontSelectValue(textStyleAttr('fontFamily'))"
+              :options="
+                withCurrentFont(fontFamilies, textStyleAttr('fontFamily'))
+              "
+              :label="t.paragraphEditor.fontFamily"
+              :placeholder="t.paragraphEditor.defaultFont"
+              width-class="tpl:w-32"
+              @update:model-value="setFontFamily"
+            />
+            <ToolbarSelect
+              :model-value="textStyleAttr('fontSize')"
+              :options="FONT_SIZE_OPTIONS"
+              :label="t.paragraphEditor.fontSize"
+              :placeholder="t.paragraphEditor.defaultSize"
+              width-class="tpl:w-20"
+              @update:model-value="setFontSize"
+            />
             <ToolbarSeparator />
-            <button
-              type="button"
-              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
-              :aria-label="t.mergeTag.insert"
-              :title="t.mergeTag.insert"
-              @click="emit('add-merge-tag')"
-            >
-              <ScanLine :size="16" :stroke-width="2" />
-              {{ t.mergeTag.insertShort }}
-            </button>
-          </template>
-          <template v-if="canInsertLogicTag">
+            <ColorPicker
+              swatch-only
+              :disabled="isEditable === false"
+              size="sm"
+              data-testid="text-color-picker"
+              :model-value="explicitTextColor()"
+              :seed-color="effectiveTextColor()"
+              :aria-label="t.paragraphEditor.textColor"
+              @update:model-value="setColor"
+            />
+            <ColorPicker
+              swatch-only
+              :disabled="isEditable === false"
+              size="sm"
+              data-testid="highlight-color-picker"
+              :model-value="getCurrentHighlight()"
+              :seed-color="DEFAULT_HIGHLIGHT_COLOR"
+              :aria-label="t.paragraphEditor.highlightColor"
+              @update:model-value="setHighlight"
+            />
             <ToolbarSeparator />
-            <button
-              type="button"
-              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
-              :aria-label="t.logicTag.insert"
-              :title="t.logicTag.insert"
-              data-testid="insert-logic-button"
-              @click="emit('add-logic-tag')"
-            >
-              <Braces :size="16" :stroke-width="2" />
-              {{ t.logicTag.insertShort }}
-            </button>
-          </template>
-          <template v-if="canRewriteWithAi">
+            <ToolbarIconButton
+              :icon="Bold"
+              :label="t.paragraphEditor.bold"
+              :active="editor.isActive('bold')"
+              :stroke-width="2.5"
+              @click="editor.chain().focus().toggleBold().run()"
+            />
+            <ToolbarIconButton
+              :icon="Italic"
+              :label="t.paragraphEditor.italic"
+              :active="editor.isActive('italic')"
+              @click="editor.chain().focus().toggleItalic().run()"
+            />
+            <ToolbarIconButton
+              :icon="Underline"
+              :label="t.paragraphEditor.underline"
+              :active="editor.isActive('underline')"
+              @click="editor.chain().focus().toggleUnderline().run()"
+            />
+            <ToolbarIconButton
+              :icon="Strikethrough"
+              :label="t.paragraphEditor.strikethrough"
+              :active="editor.isActive('strike')"
+              @click="editor.chain().focus().toggleStrike().run()"
+            />
             <ToolbarSeparator />
-            <AiRewriteMenu :editor="editor" />
-          </template>
-        </div>
-      </template>
-      <template v-else>
-        <div
-          class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
-        >
-          <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
-          {{ t.errors.editorLoading }}
-        </div>
-      </template>
+            <ToolbarIconButton
+              :icon="Subscript"
+              :label="t.paragraphEditor.subscript"
+              :active="editor.isActive('subscript')"
+              @click="editor.chain().focus().toggleSubscript().run()"
+            />
+            <ToolbarIconButton
+              :icon="Superscript"
+              :label="t.paragraphEditor.superscript"
+              :active="editor.isActive('superscript')"
+              @click="editor.chain().focus().toggleSuperscript().run()"
+            />
+            <ToolbarSeparator />
+            <ToolbarIconButton
+              :icon="Link"
+              :label="t.paragraphEditor.addLink"
+              :active="editor.isActive('link')"
+              @click="emit('open-link-dialog')"
+            />
+          </div>
+          <!-- Row 2: Lists, Alignment, LH, LS, Clear, Emoji, Merge tags -->
+          <div class="tpl:flex tpl:items-center tpl:gap-1">
+            <ToolbarIconButton
+              :icon="List"
+              :label="t.paragraphEditor.bulletList"
+              :active="editor.isActive('bulletList')"
+              @click="editor.chain().focus().toggleBulletList().run()"
+            />
+            <ToolbarIconButton
+              :icon="ListOrdered"
+              :label="t.paragraphEditor.numberedList"
+              :active="editor.isActive('orderedList')"
+              @click="editor.chain().focus().toggleOrderedList().run()"
+            />
+            <ToolbarSeparator />
+            <ToolbarIconButton
+              :icon="AlignLeft"
+              :label="t.paragraphEditor.alignLeft"
+              :active="editor.isActive({ textAlign: 'left' })"
+              @click="editor.chain().focus().setTextAlign('left').run()"
+            />
+            <ToolbarIconButton
+              :icon="AlignCenter"
+              :label="t.paragraphEditor.alignCenter"
+              :active="editor.isActive({ textAlign: 'center' })"
+              @click="editor.chain().focus().setTextAlign('center').run()"
+            />
+            <ToolbarIconButton
+              :icon="AlignRight"
+              :label="t.paragraphEditor.alignRight"
+              :active="editor.isActive({ textAlign: 'right' })"
+              @click="editor.chain().focus().setTextAlign('right').run()"
+            />
+            <ToolbarIconButton
+              :icon="AlignJustify"
+              :label="t.paragraphEditor.alignJustify"
+              :active="editor.isActive({ textAlign: 'justify' })"
+              @click="editor.chain().focus().setTextAlign('justify').run()"
+            />
+            <ToolbarSeparator />
+            <ToolbarSelect
+              :model-value="getCurrentLineHeight()"
+              :options="LINE_HEIGHT_OPTIONS"
+              :label="t.paragraphEditor.lineHeight"
+              :placeholder="t.paragraphEditor.lineHeightShort"
+              width-class="tpl:w-16"
+              @update:model-value="setLineHeight"
+            />
+            <ToolbarSelect
+              :model-value="textStyleAttr('letterSpacing')"
+              :options="letterSpacingOptions"
+              :label="t.paragraphEditor.letterSpacing"
+              :placeholder="t.paragraphEditor.letterSpacingShort"
+              width-class="tpl:w-20"
+              @update:model-value="setLetterSpacing"
+            />
+            <ToolbarSeparator />
+            <ToolbarIconButton
+              :icon="RemoveFormatting"
+              :label="t.paragraphEditor.clearFormatting"
+              @click="editor.chain().focus().clearNodes().unsetAllMarks().run()"
+            />
+            <ToolbarSeparator />
+            <EmojiPickerDropdown @insert="insertEmoji" />
+            <template v-if="canRequestMergeTag">
+              <ToolbarSeparator />
+              <button
+                type="button"
+                class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
+                :aria-label="t.mergeTag.insert"
+                :title="t.mergeTag.insert"
+                @click="emit('add-merge-tag')"
+              >
+                <ScanLine :size="16" :stroke-width="2" />
+                {{ t.mergeTag.insertShort }}
+              </button>
+            </template>
+            <template v-if="canInsertLogicTag">
+              <ToolbarSeparator />
+              <button
+                type="button"
+                class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
+                :aria-label="t.logicTag.insert"
+                :title="t.logicTag.insert"
+                data-testid="insert-logic-button"
+                @click="emit('add-logic-tag')"
+              >
+                <Braces :size="16" :stroke-width="2" />
+                {{ t.logicTag.insertShort }}
+              </button>
+            </template>
+            <template v-if="canRewriteWithAi">
+              <ToolbarSeparator />
+              <AiRewriteMenu :editor="editor" />
+            </template>
+          </div>
+        </template>
+        <template v-else>
+          <div
+            class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+          >
+            <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
+            {{ t.errors.editorLoading }}
+          </div>
+        </template>
+      </fieldset>
     </div>
   </Teleport>
 </template>

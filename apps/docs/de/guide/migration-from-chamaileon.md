@@ -74,6 +74,18 @@ Es akzeptiert das Dokument auch als serialisierten JSON-String, für Aufrufer, d
 E-Mail-JSON 2.0 bis 4.1 wird nach einem Schlüssel-Normalisierer akzeptiert. Kebab-Case-Styles (`background-color`) und CamelCase (`backgroundColor`) sind dieselbe Eigenschaft, zwei Versionen. Inline-Farbobjekte `{ reference, default }` werden auf `default` aufgelöst, oder auf den passenden Eintrag in `variables[]`, wenn `default` fehlt. Der `reference`-Name ist ein Design-Token, kein Empfängerfeld, und wird daher nicht als Merge-Tag gespeichert.
 :::
 
+## Optionen {#options}
+
+`convertChamaileonTemplate` akzeptiert als zweites Argument `ConvertChamaileonOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert. Eine deklarierte Standardsprache oder ein `defaultLocale`, das danach kein Sprach-Tag ist, etwa ein Platzhalter <code v-pre>{{lang}}</code>, wird mit einem `report.warnings`-Eintrag ignoriert, der den Wert nennt; dann gilt der nächste gültige Wert oder `"en"`.
+
+Dieses JSON-Format liefert dem Importer keine Standardsprache. Übergeben Sie die vom Host konfigurierte Sprache als `defaultLocale`.
+
+```ts
+export interface ConvertChamaileonOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Bericht
 
 Jeder Eintrag in `report.entries` beschreibt einen erzeugten Block:

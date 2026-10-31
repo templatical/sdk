@@ -11,6 +11,7 @@ const props = defineProps<{
   field: CustomBlockRepeatableField;
   modelValue: Record<string, unknown>[];
   readOnly?: boolean;
+  hideLabel?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -62,6 +63,7 @@ function updateItemField(index: number, key: string, value: unknown): void {
 
 <template>
   <FieldWrapper
+    :hide-label="hideLabel"
     :label="field.label"
     :required="field.required"
     :read-only="readOnly"

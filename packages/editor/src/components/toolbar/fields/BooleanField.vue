@@ -8,6 +8,8 @@ defineProps<{
   field: CustomBlockBooleanField;
   modelValue: boolean;
   readOnly?: boolean;
+  hideLabel?: boolean;
+  controlId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -23,6 +25,8 @@ const { t } = useI18n();
     :title="readOnly ? t.customBlocks.dataSource.readOnlyTooltip : undefined"
   >
     <ToggleSwitch
+      :hide-label="hideLabel"
+      :control-id="controlId"
       class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
       :model-value="modelValue"
       :label="field.label"

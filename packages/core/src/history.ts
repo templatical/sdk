@@ -17,6 +17,7 @@ export interface UseHistoryReturn {
   recordDebounced: (blockId: string) => void;
   clear: () => void;
   destroy: () => void;
+  flushDebounce?: () => void;
 }
 
 interface DebouncedSnapshot {
@@ -152,5 +153,6 @@ export function useHistory(options: UseHistoryOptions): UseHistoryReturn {
     recordDebounced,
     clear,
     destroy,
+    flushDebounce: flushPendingDebounce,
   };
 }

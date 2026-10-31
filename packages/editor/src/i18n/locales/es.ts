@@ -1,6 +1,124 @@
 import type en from "./en";
 
 const es: typeof en = {
+  localization: {
+    tagsDiffer: "Las etiquetas de combinación difieren",
+    tagsDifferExplanation:
+      "Sus etiquetas de combinación no coinciden con el texto en {default}.",
+    changed: "Cambiado en {language}",
+    notTranslatedCount: {
+      one: "{count} sin traducir",
+      other: "{count} sin traducir",
+    },
+    missingExplanation:
+      "Aún no se ha traducido. El correo muestra el texto en {default}.",
+    staleExplanation: "El texto en {default} ha cambiado desde la traducción.",
+    currentExcerpt: "Ahora: «{excerpt}»",
+    useDefaultLanguage: "Usar {default}",
+    changedProperties: {
+      one: "{count} propiedad difiere de {default}.",
+      other: "{count} propiedades difieren de {default}.",
+    },
+    resetChanges: "Restablecer cambios",
+    staleLanguages: {
+      one: "Desactualizado en {count} idioma",
+      other: "Desactualizado en {count} idiomas",
+    },
+    open: "Abrir",
+    resetToDefault: "Restablecer a {default}",
+    hiddenExplanation: "Este bloque no está en el correo en {language}.",
+    editingLanguage: "Editando {language}",
+    languageReadOnly: "Solo lectura: {language} no está habilitado",
+    backToDefault: "Volver a {default}",
+    translateFields: {
+      one: "Traducir {count} campo",
+      other: "Traducir {count} campos",
+    },
+    translationConfirmation: {
+      one: "¿Volver a traducir el {count} campo?",
+      other: "¿Volver a traducir los {count} campos?",
+    },
+    translateAllFields: {
+      one: "Traducir el {count} campo",
+      other: "Traducir los {count} campos",
+    },
+    translationDescription:
+      "Esto sustituye las traducciones actuales en {language}, incluidas las ediciones manuales. Puedes deshacerlo.",
+    translatedFields: {
+      one: "Se ha traducido {count} campo.",
+      other: "Se han traducido {count} campos.",
+    },
+    translationTagsChanged: {
+      one: "Se ha conservado {count} porque sus etiquetas han cambiado.",
+      other: "Se han conservado {count} porque sus etiquetas han cambiado.",
+    },
+    translationSkippedLocked: {
+      one: "Se ha omitido {count} porque alguien lo está editando.",
+      other: "Se han omitido {count} porque alguien los está editando.",
+    },
+    translationMissing: {
+      one: "No se ha devuelto {count} campo.",
+      other: "No se han devuelto {count} campos.",
+    },
+    translationTooLarge: {
+      one: "{count} campo es demasiado largo para traducirlo.",
+      other: "{count} campos son demasiado largos para traducirlos.",
+    },
+    translationError: "El servicio de traducción ha dicho: {message}",
+    defaultRefused:
+      "No se pudo establecer {language} como idioma predeterminado: {reason}",
+    defaultLockedReason: "otra persona está editando esta plantilla",
+    complete: "Completo",
+    gapTooltip: "{missing} pendientes, {stale} desactualizados",
+    moreActions: "Más acciones para {language}",
+    makeDefaultLanguage: "Establecer como idioma predeterminado",
+    makeDefault: "Establecer como predeterminado",
+    makeDefaultConfirmation:
+      "¿Establecer {language} como idioma predeterminado?",
+    removeConfirmation: "¿Eliminar {language}?",
+    removeDescription:
+      "Esto elimina el texto y los cambios en {language}. Puedes deshacerlo.",
+    defaultChanged: "{language} es ahora el idioma predeterminado.",
+    missingCount: { one: "{count} pendiente", other: "{count} pendientes" },
+    staleCount: {
+      one: "{count} desactualizado",
+      other: "{count} desactualizados",
+    },
+    hiddenBeforeDefault: {
+      one: "Muestra primero el bloque oculto en {language} ({count})",
+      other: "Muestra primero los {count} bloques ocultos en {language}",
+    },
+    defaultNotEnabled: "Añade primero {default} a los idiomas habilitados",
+    defaultGaps: {
+      one: "{count} campo no tiene texto en {language} y conserva su texto en {default}.",
+      other:
+        "{count} campos no tienen texto en {language} y conservan su texto en {default}.",
+    },
+    defaultRemaining: {
+      one: "{count} campo sigue en {old}.",
+      other: "{count} campos siguen en {old}.",
+    },
+    translateAllAgain: "Volver a traducir todo…",
+    translate: "Traducir",
+    retranslate: "Volver a traducir",
+    translating: "Traduciendo {done} de {total}…",
+    languages: "Idiomas",
+    default: "Predeterminado",
+    notEnabled: "No habilitado",
+    addLanguage: "Añadir idioma",
+    removeLanguage: "Eliminar {language}",
+    cancel: "Cancelar",
+    notTranslated: "Sin traducir",
+    outOfDate: "Desactualizado",
+    keep: "Conservar",
+    hidden: "Oculto en {language}",
+    show: "Mostrar",
+    hide: "Ocultar en {language}",
+    dismiss: "Cerrar",
+    structureNotice: "Los cambios de estructura se aplican a todos los idiomas",
+    aiActiveLanguage:
+      "El chat de IA edita {language}. Los cambios de estructura se aplican a todos los idiomas.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Con la tecnología de",
@@ -667,6 +785,7 @@ const es: typeof en = {
     collapsePreview: "Contraer la vista previa de {block}",
   },
   comments: {
+    filterLanguage: "Este idioma",
     button: "Comentarios",
     title: "Comentarios",
     close: "Cerrar",

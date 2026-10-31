@@ -1,0 +1,13 @@
+---
+"@templatical/editor": minor
+---
+
+Add language versions and translation to the editor. `init({ localization: { locales, doNotTranslate? } })` turns on the **Languages** menu: add a language, make a version the default language (one undo step; disabled while the current default isn't in `localization.locales`) or remove it. A language bar under the header shows the version being edited, its missing and out-of-date counts, **Translate {count} fields**, **Translate everything again…** and **Back to {default}**. A status badge on each block's top corner shows hidden, missing, out-of-date, differing merge tags or changed properties, with a popover for Show, Translate, Re-translate, Keep, Use default and Reset changes; a localization finding's jump in Issues opens it. The settings panel marks translated or overridden fields with a language pill and a per-field reset.
+
+`init({ translation })` takes a `TranslationProvider`. Translate sends the gaps or every eligible field, masks merge tags, logic tags and the `doNotTranslate` terms (at most 500, each 1–100 characters after trimming; `init` rejects any other list), applies what passes the exact check as one undo step and reports the rest. A single field over the 20,000-unit request cap isn't sent: the run stops there and reports "1 field is too long to translate." A `translation` value without a `translate` function rejects `init()`. AI chat, Fix with AI, Rewrite and Write alt text edit the active language. With collaboration, the in-memory chat's Undo and Redo of a turn that replaced the whole template are refused once this editor has seen the template change since; the backend's `setContent` rule catches a batch it hasn't delivered yet.
+
+Comments record the language they were written in, show a language badge and filter with **This language**. A layout's own language versions follow the selected language in preview, export and test email. `getLocale()`, `setLocale()`, `onLocaleChange` and `toMjml({ locale })` / `toHtml({ locale })` select versions from the host.
+
+Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.
+
+Ask inside the merge-tag mismatch popover before Re-translate replaces other current translations, keep short blocks' badges and focus rings visible beside their action bar in both text directions and after direction changes, and include the visible gap count and breakdown in the language trigger's accessible name. Name and describe the block confirmation, focus Cancel, and let Escape cancel it before closing the popover.

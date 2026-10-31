@@ -152,6 +152,51 @@ describe("useCollaborationFeature", () => {
     expect(feature.people.value).toEqual([]);
   });
 
+  it("answers lockOf per language and follows the active lock locale", async () => {
+    const de: BlockLock = {
+      blockId: "p1",
+      locale: "de",
+      holder: GRACE,
+      expiresAt: "",
+    };
+    const fr: BlockLock = {
+      blockId: "p1",
+      locale: "fr",
+      holder: GUEST,
+      expiresAt: "",
+    };
+    const { feature } = await open({ locks: [de, fr] });
+    expect(feature.capability.lockOf("p1", "de")).toEqual(de);
+    expect(feature.capability.lockOf("p1", "fr")).toEqual(fr);
+    expect(feature.capability.lockOf("p1", "es")).toBe(null);
+    expect(feature.capability.lockOf("p1", null)).toEqual(de);
+    expect(feature.capability.lockOf("t1", "de")).toBe(null);
+    feature.core.setLockLocale("es");
+    expect(feature.capability.lockOf("p1")).toBe(null);
+    const base: BlockLock = { blockId: "t1", holder: GRACE, expiresAt: "" };
+    const other = await open({ locks: [base] });
+    expect(other.feature.capability.lockOf("t1", "de")).toEqual(base);
+  });
+
+  it("summarizes all locale operations without undefined block ids", () => {
+    for (const op of [
+      { op: "addLocale", locale: "de" },
+      { op: "removeLocale", locale: "de" },
+      { op: "updateSettingsLocale", locale: "de", set: { direction: "rtl" } },
+    ] as Operation[]) {
+      expect(summarizeAgentEdit([op])).toEqual({
+        blockIds: [],
+        settings: true,
+        templateUpdated: false,
+      });
+    }
+    expect(
+      summarizeAgentEdit([
+        { op: "updateBlockLocale", blockId: "t1", locale: "de", hidden: true },
+      ]),
+    ).toEqual({ blockIds: ["t1"], settings: false, templateUpdated: false });
+  });
+
   it("answers lockOf from others' locks", async () => {
     const lock = {
       blockId: "p1",
@@ -508,6 +553,7 @@ describe("useCollaborationFeature — agents' edits", () => {
 
     expect(onRemoteChange).toHaveBeenCalledWith({
       actor: CLAUDE,
+      locale: null,
       ops: [editTitle],
     });
   });

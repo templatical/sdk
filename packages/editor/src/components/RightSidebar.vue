@@ -83,9 +83,9 @@ function tabStyle(tab: Tab): Record<string, string> {
 }
 
 watch(
-  () => props.selectedBlock,
-  (newBlock) => {
-    if (newBlock) {
+  () => props.selectedBlock?.id,
+  (blockId) => {
+    if (blockId) {
       activeTab.value = "content";
     }
   },

@@ -271,6 +271,7 @@ export function createHttpAiProviderWithFetch(
     chat: on("chat")
       ? (req, handlers, signal) => {
           const body = {
+            locale: req.locale,
             message: req.message,
             selectedBlockId: req.selectedBlockId,
             mergeTags: req.mergeTags,
@@ -280,6 +281,10 @@ export function createHttpAiProviderWithFetch(
           if (req.attachments.length === 0)
             return turn("generate", req, { json: body }, handlers, signal);
           const form = new FormData();
+          form.set(
+            AI_GENERATE_FIELDS.locale,
+            JSON.stringify(req.locale ?? null),
+          );
           form.set(AI_GENERATE_FIELDS.message, req.message);
           if (req.selectedBlockId !== null)
             form.set(AI_GENERATE_FIELDS.selectedBlockId, req.selectedBlockId);
@@ -303,6 +308,7 @@ export function createHttpAiProviderWithFetch(
             req,
             {
               json: {
+                locale: req.locale,
                 finding: req.finding,
                 mergeTags: req.mergeTags,
                 content: req.content,
@@ -320,6 +326,7 @@ export function createHttpAiProviderWithFetch(
             req.templateId,
             {
               json: {
+                locale: req.locale,
                 html: req.html,
                 preset: req.preset,
                 language: req.language,

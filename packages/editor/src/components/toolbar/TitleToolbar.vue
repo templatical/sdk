@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
-import { inputClass, labelClass } from "../../constants/styleConstants";
+import { inputClass } from "../../constants/styleConstants";
 import type { TitleBlock } from "@templatical/types";
 import { AlignCenter, AlignLeft, AlignRight } from "@lucide/vue";
 import { fontSelectValue } from "../../utils/withCurrentFont";
@@ -24,8 +25,7 @@ function updateField(field: string, value: unknown): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.title.level }}</label>
+  <FieldRow :label="t.title.level" class="tpl:mb-3.5" path="level">
     <select
       :class="inputClass"
       :value="block.level"
@@ -38,9 +38,8 @@ function updateField(field: string, value: unknown): void {
       <option :value="3">{{ t.title.heading3 }}</option>
       <option :value="4">{{ t.title.heading4 }}</option>
     </select>
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.title.fontFamily }}</label>
+  </FieldRow>
+  <FieldRow :label="t.title.fontFamily" class="tpl:mb-3.5" path="fontFamily">
     <select
       :class="inputClass"
       :value="fontSelectValue(block.fontFamily)"
@@ -60,16 +59,14 @@ function updateField(field: string, value: unknown): void {
         {{ font.label }}
       </option>
     </select>
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.title.color }}</label>
+  </FieldRow>
+  <FieldRow :label="t.title.color" class="tpl:mb-3.5" path="color">
     <ColorPicker
       :model-value="block.color ?? ''"
       @update:model-value="updateField('color', $event || undefined)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.title.align }}</label>
+  </FieldRow>
+  <FieldRow :label="t.title.align" class="tpl:mb-3.5" path="textAlign">
     <SlidingPillSelect
       :options="[
         { value: 'left', label: t.title.alignLeft, icon: AlignLeft },
@@ -79,5 +76,5 @@ function updateField(field: string, value: unknown): void {
       :model-value="block.textAlign"
       @update:model-value="updateField('textAlign', $event)"
     />
-  </div>
+  </FieldRow>
 </template>

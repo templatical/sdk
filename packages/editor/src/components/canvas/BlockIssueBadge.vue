@@ -2,14 +2,19 @@
 import { computed, inject } from "vue";
 import { CircleAlert, TriangleAlert } from "@lucide/vue";
 import { useI18n } from "../../composables/useI18n";
-import { TEMPLATE_LINT_KEY } from "../../keys";
+import { EDITOR_KEY, TEMPLATE_LINT_KEY } from "../../keys";
 
 const props = defineProps<{ blockId: string }>();
 const { t } = useI18n();
 const lint = inject(TEMPLATE_LINT_KEY, null);
+const editor = inject(EDITOR_KEY, null);
 
 const blockIssues = computed(() =>
-  (lint?.issues.value ?? []).filter((i) => i.blockId === props.blockId),
+  (lint?.issues.value ?? []).filter(
+    (i) =>
+      i.blockId === props.blockId &&
+      !(editor?.activeLocale?.value && i.ruleId.startsWith("localization.")),
+  ),
 );
 
 const severity = computed<"error" | "warning" | null>(() => {
@@ -26,7 +31,7 @@ const tooltip = computed(() =>
 <template>
   <span
     v-if="severity"
-    class="tpl:absolute tpl:top-1 tpl:right-1 tpl:z-10 tpl:flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:ring-1 tpl:ring-[var(--tpl-border)]"
+    class="tpl-block-issue-badge tpl:flex tpl:size-5 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:ring-1 tpl:ring-[var(--tpl-border)]"
     :class="
       severity === 'error'
         ? 'tpl:text-[var(--tpl-danger)]'

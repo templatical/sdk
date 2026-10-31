@@ -1,6 +1,116 @@
 import type en from "./en";
 
 const translations: typeof en = {
+  localization: {
+    tagsDiffer: "差し込み項目が異なります",
+    tagsDifferExplanation: "差し込み項目が{default}のテキストと一致しません。",
+    changed: "{language}で変更済み",
+    notTranslatedCount: { one: "{count}件未翻訳", other: "{count}件未翻訳" },
+    missingExplanation:
+      "まだ翻訳されていません。メールには{default}のテキストが表示されます。",
+    staleExplanation: "翻訳後に{default}のテキストが変更されました。",
+    currentExcerpt: "現在：「{excerpt}」",
+    useDefaultLanguage: "{default}を使用",
+    changedProperties: {
+      one: "{count}個のプロパティが{default}と異なります。",
+      other: "{count}個のプロパティが{default}と異なります。",
+    },
+    resetChanges: "変更をリセット",
+    staleLanguages: {
+      one: "{count}言語で更新が必要",
+      other: "{count}言語で更新が必要",
+    },
+    open: "開く",
+    resetToDefault: "{default}にリセット",
+    hiddenExplanation: "このブロックは{language}のメールに含まれません。",
+    editingLanguage: "{language}を編集中",
+    languageReadOnly: "読み取り専用：{language}は有効ではありません",
+    backToDefault: "{default}に戻る",
+    translateFields: {
+      one: "{count}件のフィールドを翻訳",
+      other: "{count}件のフィールドを翻訳",
+    },
+    translationConfirmation: {
+      one: "全{count}件のフィールドを再翻訳しますか？",
+      other: "全{count}件のフィールドを再翻訳しますか？",
+    },
+    translateAllFields: {
+      one: "全{count}件のフィールドを翻訳",
+      other: "全{count}件のフィールドを翻訳",
+    },
+    translationDescription:
+      "手動編集を含む現在の{language}の翻訳を置き換えます。この操作は元に戻せます。",
+    translatedFields: {
+      one: "{count}件のフィールドを翻訳しました。",
+      other: "{count}件のフィールドを翻訳しました。",
+    },
+    translationTagsChanged: {
+      one: "タグが変更されたため{count}件を保持しました。",
+      other: "タグが変更されたため{count}件を保持しました。",
+    },
+    translationSkippedLocked: {
+      one: "他の人が編集中のため{count}件をスキップしました。",
+      other: "他の人が編集中のため{count}件をスキップしました。",
+    },
+    translationMissing: {
+      one: "{count}件が返されませんでした。",
+      other: "{count}件が返されませんでした。",
+    },
+    translationTooLarge: {
+      one: "{count}件のフィールドは長すぎて翻訳できません。",
+      other: "{count}件のフィールドは長すぎて翻訳できません。",
+    },
+    translationError: "翻訳サービスからのメッセージ：{message}",
+    defaultRefused:
+      "{language}をデフォルト言語に設定できませんでした: {reason}",
+    defaultLockedReason: "他のユーザーがこのテンプレートを編集中です",
+    complete: "完了",
+    gapTooltip: "未翻訳 {missing} 件、古い翻訳 {stale} 件",
+    moreActions: "{language}のその他の操作",
+    makeDefaultLanguage: "デフォルト言語に設定",
+    makeDefault: "デフォルトに設定",
+    makeDefaultConfirmation: "{language}をデフォルト言語にしますか？",
+    removeConfirmation: "{language}を削除しますか？",
+    removeDescription:
+      "{language}のテキストと変更を削除します。元に戻すことができます。",
+    defaultChanged: "デフォルト言語を{language}に設定しました。",
+    missingCount: { one: "未翻訳 {count} 件", other: "未翻訳 {count} 件" },
+    staleCount: { one: "古い翻訳 {count} 件", other: "古い翻訳 {count} 件" },
+    hiddenBeforeDefault: {
+      one: "まず{language}で非表示の{count}個のブロックを表示してください",
+      other: "まず{language}で非表示の{count}個のブロックを表示してください",
+    },
+    defaultNotEnabled: "まず{default}を有効な言語に追加してください",
+    defaultGaps: {
+      one: "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。",
+      other:
+        "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。",
+    },
+    defaultRemaining: {
+      one: "{count}個のフィールドはまだ{old}のままです。",
+      other: "{count}個のフィールドはまだ{old}のままです。",
+    },
+    translateAllAgain: "すべて再翻訳…",
+    translate: "翻訳",
+    retranslate: "再翻訳",
+    translating: "{total}件中{done}件を翻訳中…",
+    languages: "言語",
+    default: "デフォルト",
+    notEnabled: "未有効化",
+    addLanguage: "言語を追加",
+    removeLanguage: "{language}を削除",
+    cancel: "キャンセル",
+    notTranslated: "未翻訳",
+    outOfDate: "更新が必要",
+    keep: "維持",
+    hidden: "{language}では非表示",
+    show: "表示",
+    hide: "{language}で非表示",
+    dismiss: "閉じる",
+    structureNotice: "構造の変更はすべての言語に適用されます",
+    aiActiveLanguage:
+      "AIチャットは{language}を編集します。構造の変更はすべての言語に適用されます。",
+  },
   footer: {
     poweredBy: "提供元:",
   },
@@ -586,6 +696,7 @@ const translations: typeof en = {
     collapsePreview: "{block} のプレビューを折りたたむ",
   },
   comments: {
+    filterLanguage: "この言語",
     button: "コメント",
     title: "コメント",
     close: "閉じる",

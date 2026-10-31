@@ -299,14 +299,16 @@ describe("the committed artifacts", () => {
 
   it("excludes the changelog from the full corpus, which is most of the bytes", () => {
     const { full } = buildOutputs();
-    // The changelog is ~27% of the English tree and answers no "how do I"
-    // question; public/changelog.json already serves it machine-readably. The
-    // cap sits well below the corpus with the changelog (about 1.2 million
-    // characters on 2026-10-25) and leaves room to grow: 850,000 had 65
-    // characters left after the AI pages (OI-228). The SDK's cloud branch uses
-    // the same value.
+    // Release history belongs in public/changelog.json, not the task corpus.
+    // Check the excluded content itself so ordinary docs growth needs no
+    // absolute size cap or periodic threshold changes.
+    const changelog = readFileSync(join(DOCS, "changelog.md"), "utf8");
+    const releaseHeadings = changelog.match(/^## \d+\.\d+\.\d+\S*$/gm) ?? [];
+    expect(releaseHeadings.length).toBeGreaterThan(0);
     expect(full).not.toContain("Version Packages");
-    expect(full.length).toBeLessThan(900_000);
+    for (const heading of releaseHeadings) {
+      expect(full).not.toContain(heading);
+    }
   });
 
   it("shows a page's entry with exactly one heading, not the body's own leading H1 too", () => {

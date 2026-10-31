@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputGroupInputClass,
   inputSuffixClass,
-  labelClass,
 } from "../../constants/styleConstants";
 import type { DividerBlock } from "@templatical/types";
 
@@ -25,8 +25,7 @@ function updateField(field: string, value: unknown): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.divider.style }}</label>
+  <FieldRow :label="t.divider.style" class="tpl:mb-3.5" path="lineStyle">
     <SlidingPillSelect
       :options="[
         { value: 'solid', label: t.divider.solid },
@@ -36,16 +35,14 @@ function updateField(field: string, value: unknown): void {
       :model-value="block.lineStyle"
       @update:model-value="updateField('lineStyle', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.divider.color }}</label>
+  </FieldRow>
+  <FieldRow :label="t.divider.color" class="tpl:mb-3.5" path="color">
     <ColorPicker
       :model-value="block.color"
       @update:model-value="updateField('color', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.divider.thickness }}</label>
+  </FieldRow>
+  <FieldRow :label="t.divider.thickness" class="tpl:mb-3.5" path="thickness">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"
@@ -62,5 +59,5 @@ function updateField(field: string, value: unknown): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
-  </div>
+  </FieldRow>
 </template>

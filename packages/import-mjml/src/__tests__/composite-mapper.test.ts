@@ -1,3 +1,7 @@
+import {
+  elementIdIssues,
+  createDefaultTemplateContent,
+} from "@templatical/types";
 import { load } from "cheerio";
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
@@ -69,6 +73,9 @@ describe("mj-social", () => {
       "mj-social",
     );
     const block = result.block as SocialIconsBlock;
+    expect(
+      elementIdIssues({ ...createDefaultTemplateContent(), blocks: [block] }),
+    ).toEqual([]);
 
     expect(block.type).toBe("social");
     expect(block.align).toBe("left");

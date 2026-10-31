@@ -22,14 +22,14 @@ import { useEditorRoot } from "./useEditorRoot";
  */
 export function useScrollToBlock(
   root: Document | ShadowRoot = useEditorRoot(),
-): (blockId: string) => void {
-  return (blockId: string) => {
+): (blockId: string, behavior?: ScrollBehavior) => void {
+  return (blockId: string, behavior?: ScrollBehavior) => {
     void nextTick(() => {
       const target = root.querySelector(`[data-block-id="${blockId}"]`);
       if (!target) return;
       target.scrollIntoView({
         block: "nearest",
-        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        behavior: behavior ?? (prefersReducedMotion() ? "auto" : "smooth"),
       });
     });
   };

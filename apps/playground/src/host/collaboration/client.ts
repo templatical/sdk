@@ -113,7 +113,7 @@ export function createSharedCollaboration(options: {
       case "lock":
         return handler.onLock(event.lock);
       case "unlock":
-        return handler.onUnlock(event.blockId, event.sessionId);
+        return handler.onUnlock(event.blockId, event.sessionId, event.locale);
       case "members":
         return handler.onMembers(event.members);
     }
@@ -176,12 +176,12 @@ export function createSharedCollaboration(options: {
       call("submit", templateId, me(), batch),
     operationsAfter: async (templateId, revision) =>
       call<OperationsAfterResult>("operationsAfter", templateId, revision),
-    acquireLock: async (templateId, blockId) =>
-      call("acquireLock", templateId, me(), blockId),
-    renewLock: async (templateId, blockId) =>
-      call("renewLock", templateId, me(), blockId),
-    releaseLock: async (templateId, blockId) =>
-      call("releaseLock", templateId, me(), blockId),
+    acquireLock: async (templateId, blockId, locale) =>
+      call("acquireLock", templateId, me(), blockId, locale ?? null),
+    renewLock: async (templateId, blockId, locale) =>
+      call("renewLock", templateId, me(), blockId, locale ?? null),
+    releaseLock: async (templateId, blockId, locale) =>
+      call("releaseLock", templateId, me(), blockId, locale ?? null),
   };
 
   const templates: TemplatesProvider = {

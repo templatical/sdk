@@ -72,14 +72,17 @@ describe("getTagAttrValue", () => {
   describe("entity decoding", () => {
     it("decodes an angle-bracket tag value (#548)", () => {
       expect(
-        getTagAttrValue(' data-merge-tag="&lt;% $email %&gt;"', "data-merge-tag"),
+        getTagAttrValue(
+          ' data-merge-tag="&lt;% $email %&gt;"',
+          "data-merge-tag",
+        ),
       ).toBe("<% $email %>");
     });
 
-    it("decodes the named entities an HTML serializer emits", () => {
+    it("decodes supported named references and leaves other names literal", () => {
       expect(getTagAttrValue(' x="a &amp; b"', "x")).toBe("a & b");
       expect(getTagAttrValue(' x="say &quot;hi&quot;"', "x")).toBe('say "hi"');
-      expect(getTagAttrValue(" x=\"it&apos;s\"", "x")).toBe("it's");
+      expect(getTagAttrValue(' x="it&apos;s"', "x")).toBe("it's");
       expect(getTagAttrValue(' x="a&nbsp;b"', "x")).toBe("a b");
     });
 

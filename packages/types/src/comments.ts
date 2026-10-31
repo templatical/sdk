@@ -21,6 +21,8 @@ export interface Comment {
   /** Store-assigned. The editor never generates one. */
   id: string;
   body: string;
+  /** The view's language tag. Absent or null on legacy comments, which use the current default. */
+  locale?: string | null;
   author: CommentAuthor;
   /** ISO 8601. */
   createdAt: string;
@@ -48,6 +50,8 @@ export interface Comment {
 /** What {@link CommentsProvider.create} is asked to store. */
 export interface CommentInput {
   body: string;
+  /** The editor always sends the active view's tag, including the default's. */
+  locale?: string;
   /** Omitted for a template-level comment. */
   blockId?: string;
   /** Omitted for a thread root. */

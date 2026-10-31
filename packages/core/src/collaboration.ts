@@ -34,6 +34,7 @@ import {
   type DeepReadonly,
   type Ref,
 } from "@vue/reactivity";
+import type { UseEditorReturn } from "./editor";
 import { diffContent } from "./diff-content";
 
 /** Typing into one block is sent this long after the last keystroke. */
@@ -104,13 +105,13 @@ export interface CollaborationRemoteResync {
 
 /** How {@link UseCollaborationReturn.applyOperations} sends a batch. */
 export interface CollaborationApplyOptions {
-  /** Sent as the batch's `origin`: an AI turn produced it (BY9). */
-  origin: "ai";
+  /** Sent as the batch's `origin` when an AI turn produced it; absent for the session's own edits. */
+  origin?: "ai";
   /**
-   * The turn the batch belongs to. Batches of one turn share an undo step
-   * while that step is the newest one.
+   * The AI turn the batch belongs to; absent for the session's own edits.
+   * Batches of one defined turn share the newest undo step.
    */
-  turn: string;
+  turn?: string;
 }
 
 /** What {@link UseCollaborationReturn.applyOperations} answers. */
@@ -158,8 +159,12 @@ export interface UseCollaborationReturn {
   readonly sessionId: string;
   /** Everyone with the template open, this session included; empty without presence. */
   members: Readonly<Ref<readonly CollaborationMember[]>>;
-  /** Blocks other sessions hold, by block id. */
+  /** Blocks other sessions hold, keyed by `${blockId}\u0000${locale ?? ""}`. */
   locks: Readonly<Ref<ReadonlyMap<string, BlockLock>>>;
+  locksOf: (blockId: string) => BlockLock[];
+  /** The selected language for lock requests; `null` is the default view. */
+  lockLocale: Readonly<Ref<string | null>>;
+  setLockLocale: (locale: string | null) => void;
   /** `null` before a realtime join, and for a backend without realtime. */
   connection: Readonly<Ref<CollaborationConnectionState | null>>;
   /** The last revision this session confirmed. */
@@ -184,10 +189,10 @@ export interface UseCollaborationReturn {
   /** Whether the block exists in the content the backend confirmed. */
   hasConfirmedBlock: (blockId: string) => boolean;
   /**
-   * Apply a batch this editor was handed (an AI turn's) as this session's
-   * own: checked against the view with this session's locks, put on the
-   * canvas, sent with its `origin`, and undone with the rest of its turn. A
-   * refusal changes nothing and sends nothing.
+   * Apply an explicit batch as this session's edit, checking its locks first.
+   * Own edits have a separate undo step and no wire origin. AI batches carry
+   * their origin and share an undo step within a defined turn. A local refusal
+   * changes nothing and sends nothing.
    */
   applyOperations: (
     ops: Operation[],
@@ -200,6 +205,19 @@ interface HistoryEntry {
   ops: Operation[];
   /** The AI turn whose batches this step undoes, if it is one. */
   turn?: string;
+  /**
+   * The view `ops` apply to, kept when they restore a `setContent` snapshot.
+   * A snapshot can't expect what it overwrites, so the step is refused once
+   * the view differs: another session's batch landed in between.
+   */
+  view?: TemplateContent;
+}
+
+/** `entry` guarded for `view` when it restores a snapshot. */
+function guarded(entry: HistoryEntry, view: TemplateContent): HistoryEntry {
+  if (entry.ops.some((op) => op.op === "setContent")) entry.view = view;
+  else delete entry.view;
+  return entry;
 }
 
 interface PendingBatch {
@@ -213,6 +231,18 @@ interface PendingBatch {
   sent: boolean;
   /** Set once the backend confirms it. */
   revision: number | null;
+  /**
+   * The revision of the first attempt, sent again on every retry: a retry
+   * must not claim a base it wasn't built on, or a snapshot passes the
+   * backend's rule over a batch that landed during the delay.
+   */
+  baseRevision?: number;
+  /**
+   * The view a batch holding a `setContent` was built on. Replayed over any
+   * other view, the snapshot would overwrite a batch it never saw, so it is
+   * dropped instead; the backend refuses it for the same reason.
+   */
+  base?: TemplateContent;
 }
 
 interface Session {
@@ -279,8 +309,17 @@ function isCoalescible(ops: readonly Operation[]): boolean {
   if (ops.length === 1 && ops[0].op === "updateSettings") return true;
   const first = ops[0];
   return (
-    first.op === "updateBlock" &&
-    ops.every((op) => op.op === "updateBlock" && op.blockId === first.blockId)
+    (first.op === "updateBlock" &&
+      ops.every(
+        (op) => op.op === "updateBlock" && op.blockId === first.blockId,
+      )) ||
+    (first.op === "updateBlockLocale" &&
+      ops.every(
+        (op) =>
+          op.op === "updateBlockLocale" &&
+          op.blockId === first.blockId &&
+          op.locale === first.locale,
+      ))
   );
 }
 
@@ -332,6 +371,10 @@ export function useCollaboration(
 
   const members = shallowRef<readonly CollaborationMember[]>([]);
   const locks = shallowRef<ReadonlyMap<string, BlockLock>>(new Map());
+  const provisionalLocks = new WeakSet<BlockLock>();
+  const liveLockVersions = new WeakMap<BlockLock, number>();
+  let liveLockVersion = 0;
+  const lockLocale = ref<string | null>(null);
   const connection = ref<CollaborationConnectionState | null>(null);
   const revision = ref(0);
   const historyVersion = ref(0);
@@ -340,6 +383,8 @@ export function useCollaboration(
   let active: Session | null = null;
   let suspended = false;
   let writing = false;
+  /** True while `rebuild` replays: `pump` holds batches until it ends. */
+  let rebuilding = false;
   let captureQueued = false;
   let typingTimer: ReturnType<typeof setTimeout> | null = null;
   let typingSince = 0;
@@ -348,8 +393,16 @@ export function useCollaboration(
   const stopWatching: (() => void)[] = [];
 
   // Locks: `wanted` follows the selection, `held` is what the backend granted.
-  let wanted: { templateId: string; blockId: string } | null = null;
-  let held: { templateId: string; blockId: string } | null = null;
+  let wanted: {
+    templateId: string;
+    blockId: string;
+    locale: string | null;
+  } | null = null;
+  let held: {
+    templateId: string;
+    blockId: string;
+    locale: string | null;
+  } | null = null;
   let lockQueue: Promise<void> = Promise.resolve();
   let renewTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -381,6 +434,7 @@ export function useCollaboration(
       locks: [...locks.value.values()].map((lock) => ({
         blockId: lock.blockId,
         sessionId: lock.holder.sessionId,
+        locale: lock.locale,
       })),
       session: sessionId,
     };
@@ -488,7 +542,14 @@ export function useCollaboration(
       const holder =
         error.blockId === undefined
           ? undefined
-          : locks.value.get(error.blockId)?.holder;
+          : locksOf(error.blockId).find((lock) => {
+              const op = proposed[error.opIndex];
+              return (
+                op.op !== "updateBlockLocale" ||
+                lock.locale == null ||
+                lock.locale === op.locale
+              );
+            })?.holder;
       notify({
         type: "editRefused",
         code: error.code,
@@ -516,33 +577,49 @@ export function useCollaboration(
         return;
       }
     }
-    const entry: HistoryEntry = { ops: invertOperations(session.view, ops) };
+    const entry = guarded({ ops: invertOperations(session.view, ops) }, next);
     pushCapped(session.undo, entry);
     session.redo = [];
     bumpHistory();
+    const base = session.view;
     session.view = next;
-    enqueue(session, ops, "edit", entry);
+    enqueue(session, ops, "edit", entry, base);
   }
 
+  /** Queue `ops`, built on `base`, as one or more batches and send them. */
   function enqueue(
     session: Session,
     ops: Operation[],
     origin: PendingBatch["origin"],
     entry: HistoryEntry | null,
+    base: TemplateContent,
   ): void {
     const group = { dropped: false };
     let offset = 0;
+    let chunkBase: TemplateContent | null = base;
     do {
+      const chunk = ops.slice(offset, offset + MAX_BATCH_OPS);
       session.pending.push({
         batchId: crypto.randomUUID(),
-        ops: ops.slice(offset, offset + MAX_BATCH_OPS),
+        ops: chunk,
         origin,
         entry,
         group,
         sent: false,
         revision: null,
+        ...(chunkBase && chunk.some((op) => op.op === "setContent")
+          ? { base: chunkBase }
+          : {}),
       });
       offset += MAX_BATCH_OPS;
+      // A later chunk with a snapshot is built on this one's result.
+      if (chunkBase && ops.slice(offset).some((op) => op.op === "setContent")) {
+        try {
+          chunkBase = applyOperations(chunkBase, chunk);
+        } catch {
+          chunkBase = null;
+        }
+      }
     } while (offset < ops.length);
     pump(session);
   }
@@ -550,7 +627,8 @@ export function useCollaboration(
   // --- Sending ---------------------------------------------------------------
 
   function pump(session: Session): void {
-    if (session.inFlight) return;
+    // A batch captured mid-rebuild is checked by the replay before it goes.
+    if (session.inFlight || rebuilding) return;
     const next = session.pending.find((batch) => !batch.sent);
     if (!next) {
       settleWaiters(session);
@@ -565,7 +643,7 @@ export function useCollaboration(
     provider
       .submit(session.templateId, {
         batchId: batch.batchId,
-        baseRevision: session.revision,
+        baseRevision: (batch.baseRevision ??= session.revision),
         ops: batch.ops,
         ...(batch.origin === "ai" ? { origin: "ai" as const } : {}),
       })
@@ -750,7 +828,14 @@ export function useCollaboration(
     if (session !== active) return;
     for (const batch of applied) {
       try {
-        options.onRemoteChange?.({ actor: batch.actor, ops: batch.ops });
+        options.onRemoteChange?.({
+          actor: batch.actor,
+          ops: batch.ops,
+          locale:
+            batch.ops.find(
+              (op) => op.op !== "setDefaultLocale" && "locale" in op,
+            )?.locale ?? null,
+        });
       } catch (error) {
         reportError(error);
       }
@@ -759,33 +844,53 @@ export function useCollaboration(
 
   /** Recompute the view from `confirmed`, replaying what is still pending. */
   function rebuild(session: Session): void {
+    const outer = !rebuilding;
+    rebuilding = true;
+    try {
+      replay(session);
+    } finally {
+      if (outer) rebuilding = false;
+    }
+    if (outer) pump(session);
+  }
+
+  /** `rebuild`'s work, with sending held until it ends. */
+  function replay(session: Session): void {
     // Typing not sent yet becomes a batch first, so the canvas holds nothing
-    // the replay below doesn't know about.
+    // the replay below doesn't know about. It isn't sent yet: built on the
+    // old view, it is checked like any other pending batch.
     if (session === active) flush();
     let view = session.confirmed;
     for (let index = 0; index < session.pending.length; index++) {
       const batch = session.pending[index];
-      try {
-        view = applyOperations(view, batch.ops);
-      } catch (error) {
-        if (batch.sent) {
-          // The backend decides this one; it will almost certainly refuse it.
+      let code: CollaborationConflictCode;
+      if (batch.base && !deepEqual(batch.base, view)) {
+        // A snapshot over a base that moved would overwrite what moved it.
+        code = "precondition_failed";
+      } else {
+        try {
+          view = applyOperations(view, batch.ops);
           continue;
-        }
-        if (dropRefusedGroup(session, batch)) {
-          const code =
+        } catch (error) {
+          code =
             error instanceof OperationError ? error.code : "invalid_operation";
-          notify(
-            batch.origin === "edit" || batch.origin === "ai"
-              ? { type: "editRefused", code }
-              : { type: "undoSkipped", code },
-            session,
-          );
         }
-        // Earlier pending chunks of that group may already be in this view.
-        view = session.confirmed;
-        index = -1;
       }
+      if (batch.sent) {
+        // The backend decides this one; it will almost certainly refuse it.
+        continue;
+      }
+      if (dropRefusedGroup(session, batch)) {
+        notify(
+          batch.origin === "edit" || batch.origin === "ai"
+            ? { type: "editRefused", code }
+            : { type: "undoSkipped", code },
+          session,
+        );
+      }
+      // Earlier pending chunks of that group may already be in this view.
+      view = session.confirmed;
+      index = -1;
     }
     session.view = view;
     settleWaiters(session);
@@ -881,8 +986,8 @@ export function useCollaboration(
       onLock: (lock) => {
         if (live()) setLock(lock);
       },
-      onUnlock: (blockId, holderSession) => {
-        if (live()) removeLock(blockId, holderSession);
+      onUnlock: (blockId, holderSession, locale) => {
+        if (live()) removeLock(blockId, holderSession, locale);
       },
       onMembers: (next) => {
         if (live()) setMembers(next);
@@ -894,6 +999,7 @@ export function useCollaboration(
   }
 
   function join(session: Session, refresh: boolean): void {
+    const locksAtJoin = liveLockVersion;
     provider.join(session.templateId, { sessionId }, handlersFor(session)).then(
       (joined) => {
         if (session.retired || session !== active) {
@@ -901,7 +1007,7 @@ export function useCollaboration(
           return;
         }
         session.leave = joined.leave;
-        replaceLocks(joined.locks, !refresh);
+        replaceLocks(joined.locks, !refresh, locksAtJoin);
         setMembers(joined.members);
         if (joined.members.length > 0) connection.value = "connected";
         if (joined.revision > session.revision) void catchUp();
@@ -982,16 +1088,49 @@ export function useCollaboration(
 
   // --- Locks -----------------------------------------------------------------
 
-  function setLock(lock: BlockLock): void {
+  function lockKey(blockId: string, locale?: string | null): string {
+    return `${blockId}\u0000${locale ?? ""}`;
+  }
+
+  function lockConflicts(
+    lock: BlockLock,
+    blockId: string,
+    locale?: string | null,
+  ): boolean {
+    return (
+      lock.blockId === blockId &&
+      (locale == null || lock.locale == null || lock.locale === locale)
+    );
+  }
+
+  function locksOf(blockId: string): BlockLock[] {
+    return [...locks.value.values()].filter((lock) => lock.blockId === blockId);
+  }
+
+  function setLockLocale(locale: string | null): void {
+    if (locale === lockLocale.value) return;
+    flush();
+    lockLocale.value = locale;
+    onSelection(editor?.state.selectedBlockId ?? null);
+  }
+
+  function setLock(lock: BlockLock, provisional = false): void {
     if (lock.holder.sessionId === sessionId) return;
+    if (provisional) provisionalLocks.add(lock);
+    else liveLockVersions.set(lock, ++liveLockVersion);
     const next = new Map(
       [...locks.value].filter(
         ([, existing]) => existing.holder.sessionId !== lock.holder.sessionId,
       ),
     );
-    next.set(lock.blockId, lock);
+    next.set(lockKey(lock.blockId, lock.locale), lock);
     locks.value = next;
-    if (editor?.state.selectedBlockId === lock.blockId) {
+    if (
+      editor?.state.selectedBlockId === lock.blockId &&
+      (lockLocale.value === null ||
+        lock.locale == null ||
+        lock.locale === lockLocale.value)
+    ) {
       editor.selectBlock(null);
       notify({
         type: "selectionRefused",
@@ -1001,19 +1140,51 @@ export function useCollaboration(
     }
   }
 
-  function removeLock(blockId: string, holderSession: string): void {
-    if (locks.value.get(blockId)?.holder.sessionId !== holderSession) return;
-    const next = new Map(locks.value);
-    next.delete(blockId);
-    locks.value = next;
+  function removeLock(
+    blockId: string,
+    holderSession: string,
+    locale?: string | null,
+  ): void {
+    const key = lockKey(blockId, locale);
+    const next = new Map(
+      [...locks.value].filter(
+        ([existingKey, lock]) =>
+          lock.holder.sessionId !== holderSession ||
+          (existingKey !== key &&
+            !(lock.blockId === blockId && provisionalLocks.has(lock))),
+      ),
+    );
+    if (next.size !== locks.value.size) locks.value = next;
   }
 
-  function replaceLocks(list: readonly BlockLock[], merge: boolean): void {
-    const next = merge ? new Map(locks.value) : new Map<string, BlockLock>();
+  function replaceLocks(
+    list: readonly BlockLock[],
+    merge: boolean,
+    locksAtJoin: number,
+  ): void {
+    const next = new Map(
+      [...locks.value].filter(
+        ([, lock]) =>
+          !provisionalLocks.has(lock) &&
+          (merge || (liveLockVersions.get(lock) ?? 0) > locksAtJoin),
+      ),
+    );
+    const live = [...next.values()];
     for (const lock of list) {
       if (lock.holder.sessionId === sessionId) continue;
-      if (merge && next.has(lock.blockId)) continue;
-      next.set(lock.blockId, lock);
+      if (
+        live.some(
+          (existing) =>
+            existing.holder.sessionId === lock.holder.sessionId ||
+            lockConflicts(existing, lock.blockId, lock.locale),
+        )
+      )
+        continue;
+      for (const [key, existing] of next) {
+        if (existing.holder.sessionId === lock.holder.sessionId)
+          next.delete(key);
+      }
+      next.set(lockKey(lock.blockId, lock.locale), lock);
     }
     locks.value = next;
   }
@@ -1043,27 +1214,41 @@ export function useCollaboration(
   function reconcileLock(): void {
     if (!locking) return;
     queueLock(async () => {
-      if (held && (wanted === null || held.templateId !== wanted.templateId)) {
+      if (
+        held &&
+        (wanted === null ||
+          held.templateId !== wanted.templateId ||
+          held.locale !== wanted.locale)
+      ) {
         // Acquiring another block on the same template releases this one on
         // the backend, so only release explicitly when nothing replaces it.
         const releasing = held;
         held = null;
         stopRenewing();
-        await provider.releaseLock!(releasing.templateId, releasing.blockId);
+        await provider.releaseLock!(
+          releasing.templateId,
+          releasing.blockId,
+          releasing.locale,
+        );
       }
       const target = wanted;
       if (
         !target ||
         (held?.templateId === target.templateId &&
-          held.blockId === target.blockId)
+          held.blockId === target.blockId &&
+          held.locale === target.locale)
       ) {
         return;
       }
       try {
-        await provider.acquireLock!(target.templateId, target.blockId);
+        const granted = await provider.acquireLock!(
+          target.templateId,
+          target.blockId,
+          target.locale,
+        );
         held = target;
         startRenewing();
-        forgetLock(target.blockId);
+        forgetLock(granted.blockId, granted.locale ?? null);
       } catch (error) {
         if (held?.templateId === target.templateId) {
           // Refused: the previous block is still this session's on the backend.
@@ -1073,6 +1258,7 @@ export function useCollaboration(
           await provider.releaseLock!(
             releasing.templateId,
             releasing.blockId,
+            releasing.locale,
           ).catch(() => {});
         }
         if (wanted !== target) return;
@@ -1081,11 +1267,13 @@ export function useCollaboration(
     });
   }
 
-  function forgetLock(blockId: string): void {
-    if (!locks.value.has(blockId)) return;
-    const next = new Map(locks.value);
-    next.delete(blockId);
-    locks.value = next;
+  function forgetLock(blockId: string, locale: string | null): void {
+    const next = new Map(
+      [...locks.value].filter(
+        ([, lock]) => !lockConflicts(lock, blockId, locale),
+      ),
+    );
+    if (next.size !== locks.value.size) locks.value = next;
   }
 
   function refuseSelection(blockId: string, error: unknown): void {
@@ -1094,8 +1282,8 @@ export function useCollaboration(
       wanted = null;
       const holder = refusalHolder(error);
       if (holder) {
-        // Records the holder, deselects and says who it is.
-        setLock({ blockId, holder, expiresAt: "" });
+        // A refusal names the holder, but does not tell us their lock's locale.
+        setLock({ blockId, holder, expiresAt: "" }, true);
       } else if (editor?.state.selectedBlockId === blockId) {
         editor.selectBlock(null);
       }
@@ -1115,7 +1303,11 @@ export function useCollaboration(
         const current = held;
         if (!current) return;
         try {
-          await provider.renewLock!(current.templateId, current.blockId);
+          await provider.renewLock!(
+            current.templateId,
+            current.blockId,
+            current.locale,
+          );
         } catch (error) {
           if (refusalCode(error) === "lock_lost") {
             held = null;
@@ -1139,7 +1331,9 @@ export function useCollaboration(
   function onSelection(blockId: string | null): void {
     flush();
     if (!active) return;
-    wanted = blockId ? { templateId: active.templateId, blockId } : null;
+    wanted = blockId
+      ? { templateId: active.templateId, blockId, locale: lockLocale.value }
+      : null;
     reconcileLock();
   }
 
@@ -1147,7 +1341,11 @@ export function useCollaboration(
   function onPageHide(): void {
     flush();
     if (held && locking) {
-      void provider.releaseLock!(held.templateId, held.blockId).catch(() => {});
+      void provider.releaseLock!(
+        held.templateId,
+        held.blockId,
+        held.locale,
+      ).catch(() => {});
       held = null;
       stopRenewing();
     }
@@ -1164,6 +1362,10 @@ export function useCollaboration(
     const entry = (direction === "undo" ? session.undo : session.redo).pop();
     if (!entry) return;
     bumpHistory();
+    if (entry.view && !deepEqual(entry.view, session.view)) {
+      notify({ type: "undoSkipped", code: "precondition_failed" });
+      return;
+    }
     let next: TemplateContent;
     try {
       next = applyOperations(session.view, entry.ops, lockContext());
@@ -1172,14 +1374,16 @@ export function useCollaboration(
       notify({ type: "undoSkipped", code: error.code });
       return;
     }
-    const counter: HistoryEntry = {
-      ops: invertOperations(session.view, entry.ops),
-    };
+    const counter = guarded(
+      { ops: invertOperations(session.view, entry.ops) },
+      next,
+    );
     pushCapped(direction === "undo" ? session.redo : session.undo, counter);
+    const base = session.view;
     session.view = next;
     renderView(next);
     editor?.markDirty();
-    enqueue(session, entry.ops, direction, counter);
+    enqueue(session, entry.ops, direction, counter, base);
   }
 
   function applyFromTurn(
@@ -1197,6 +1401,15 @@ export function useCollaboration(
         ),
       };
     }
+    // Refusing an own edit must leave pending typing and its history untouched.
+    if (options.origin === undefined) {
+      try {
+        applyOperations(editor.content.value, ops, lockContext());
+      } catch (error) {
+        if (error instanceof OperationError) return { applied: false, error };
+        throw error;
+      }
+    }
     // Typing not sent yet becomes its own batch, and its own undo step, first.
     flush();
     let next: TemplateContent;
@@ -1210,22 +1423,40 @@ export function useCollaboration(
     }
     const top = session.undo.at(-1);
     let entry: HistoryEntry;
-    if (top && top.turn === options.turn) {
-      // Undoing the turn undoes this batch first, then the earlier ones.
+    if (
+      options.origin === "ai" &&
+      options.turn !== undefined &&
+      top &&
+      top.turn === options.turn
+    ) {
+      // Undoing the turn undoes this batch first, then the earlier ones. A
+      // snapshot guard another session's batch has already overtaken stays as
+      // it is: re-guarding it on this batch's view would let Undo through.
+      const overtaken =
+        top.view !== undefined && !deepEqual(top.view, session.view);
       top.ops = [...inverse, ...top.ops];
-      entry = top;
+      entry = overtaken ? top : guarded(top, next);
     } else {
-      entry = { ops: inverse, turn: options.turn };
+      entry = guarded(
+        {
+          ops: inverse,
+          ...(options.origin === "ai" && options.turn !== undefined
+            ? { turn: options.turn }
+            : {}),
+        },
+        next,
+      );
       pushCapped(session.undo, entry);
     }
     session.redo = [];
     bumpHistory();
+    const base = session.view;
     session.view = next;
     renderView(next);
     editor.markDirty();
     // Like an edit, a batch the backend refuses takes its undo entry back.
     // If it joined a turn, that turn's whole local undo entry goes.
-    enqueue(session, ops, options.origin, entry);
+    enqueue(session, ops, options.origin ?? "edit", entry, base);
     return { applied: true, inverse };
   }
 
@@ -1233,6 +1464,55 @@ export function useCollaboration(
 
   function attach(target: CollaborationEditor): void {
     editor = target;
+    // A snapshot cannot distinguish which sibling was dragged in an adjacent
+    // swap. Capture the explicit move before the queued snapshot diff can pick
+    // its neighbour and conflict with that neighbour's lock instead.
+    const structural = target as CollaborationEditor &
+      Partial<Pick<UseEditorReturn, "moveBlock" | "findBlockLocation">>;
+    if (structural.moveBlock && structural.findBlockLocation) {
+      const original = structural.moveBlock;
+      const move: UseEditorReturn["moveBlock"] = (...args) => {
+        const session = active;
+        const capturing =
+          session &&
+          !suspended &&
+          !writing &&
+          !target.state.isLoading &&
+          target.state.template?.id === session.templateId;
+        if (capturing) capture(true);
+        original(...args);
+        if (!capturing || deepEqual(session.view, target.content.value)) return;
+        const location = structural.findBlockLocation!(args[0]);
+        if (!location) return;
+        const parent = location.targetSectionId
+          ? {
+              sectionId: location.targetSectionId,
+              column: location.columnIndex ?? 0,
+            }
+          : null;
+        const section = parent
+          ? target.content.value.blocks.find(
+              (block) => block.id === parent.sectionId,
+            )
+          : undefined;
+        const list =
+          parent && section?.type === "section"
+            ? section.children[parent.column]
+            : target.content.value.blocks;
+        commit(session, [
+          {
+            op: "moveBlock",
+            blockId: args[0],
+            parent,
+            after: list[location.index - 1]?.id ?? null,
+          },
+        ]);
+      };
+      structural.moveBlock = move;
+      stopWatching.push(() => {
+        if (structural.moveBlock === move) structural.moveBlock = original;
+      });
+    }
     stopWatching.push(
       watch(
         () => target.state.template,
@@ -1294,6 +1574,9 @@ export function useCollaboration(
     sessionId,
     members,
     locks,
+    locksOf,
+    lockLocale,
+    setLockLocale,
     connection,
     revision,
     canUndo,

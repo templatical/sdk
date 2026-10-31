@@ -15,6 +15,7 @@ import {
   writeTemplateFile,
 } from "../io";
 import { resolveOptional } from "../resolve-optional";
+import { isLocaleTag } from "@templatical/types";
 import { WORKING_DIR } from "../../live/index";
 
 interface FormatSpec {
@@ -303,6 +304,16 @@ export async function runImport(args: ParsedArgs): Promise<number> {
 
   const file = args.positional[0];
   if (!file) throw new UsageError("import needs a source file.");
+  // The importers normalize `_` to `-`, so `de_AT` is accepted as they are.
+  const defaultLocale = flagValue(args, "default-locale");
+  if (
+    args.flags["default-locale"] !== undefined &&
+    !isLocaleTag(defaultLocale?.replaceAll("_", "-") ?? "")
+  ) {
+    throw new UsageError(
+      `--default-locale needs a language tag such as en or de-AT${defaultLocale === undefined ? "" : `, not "${defaultLocale}"`}.`,
+    );
+  }
   const path = resolveFrom(file, cwd);
 
   let source: string;
@@ -351,10 +362,13 @@ export async function runImport(args: ParsedArgs): Promise<number> {
     // broken converter rather than a missing file.
     const unpacked = unpackStripoSource(source);
     const css = unpacked.css ?? siblingCss(path, source);
-    ({ content, report } = convert(unpacked.html, css ? { css } : undefined));
+    ({ content, report } = convert(unpacked.html, {
+      ...(css ? { css } : {}),
+      defaultLocale,
+    }));
   } else {
     const input = spec.input === "json" ? JSON.parse(source) : source;
-    ({ content, report } = convert(input));
+    ({ content, report } = convert(input, { defaultLocale }));
   }
 
   const outName = flagValue(args, "out") ?? basename(path, extname(path));

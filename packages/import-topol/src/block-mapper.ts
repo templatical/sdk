@@ -23,6 +23,7 @@ import { selectorDefault, tagDefault, type GlobalStyle } from "./global-style";
 import type { ImportReportEntry, TopolNode } from "./types";
 
 export interface MapContext {
+  uidMap?: Map<string, { node: TopolNode; block: Block | null }>;
   style: GlobalStyle;
   /** The rendered width of the column holding this node, for `width: "full"`. */
   columnWidth: number;

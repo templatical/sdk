@@ -54,11 +54,14 @@ describe("documented validate exit-code contract", () => {
       .soft(
         src.includes(
           german
-            ? "Warnungen und Info-Meldungen ändern den Exit-Code nie"
-            : "Warnings and info never change the exit code",
+            ? "Warnungen und Info-Meldungen sind Hinweise, außer `localization.merge-tags-differ`: Diese Regel verursacht Exit-Code 1"
+            : "Warnings and info are advisory except for `localization.merge-tags-differ`, which causes exit 1",
         ),
       )
       .toBe(true);
+    expect.soft(rows.find(([code]) => code === EXIT.invalid)?.[1]).toContain(
+      "localization.merge-tags-differ",
+    );
     expect
       .soft(
         src.includes(

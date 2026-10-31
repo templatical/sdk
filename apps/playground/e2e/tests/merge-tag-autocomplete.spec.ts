@@ -396,18 +396,25 @@ test.describe("Merge tag autocomplete", () => {
     const popup = page.locator(SELECTORS.mergeTagSuggestionPopup);
     await expect(popup).toBeVisible();
 
-    const popupBox = await popup.boundingBox();
-    expect(popupBox).not.toBeNull();
-
     const viewport = page.viewportSize();
     expect(viewport).not.toBeNull();
-    const popupBottom = (popupBox?.y ?? 0) + (popupBox?.height ?? 0);
+    const height = viewport?.height ?? 0;
 
-    // Bug: popup currently always renders BELOW the caret with no flip,
-    // so on a short viewport it clips off-screen. Asserting the popup
-    // stays fully on-screen is the reproduction.
-    expect(popupBottom).toBeLessThanOrEqual((viewport?.height ?? 0) + 1);
-    expect(popupBox?.y ?? -1).toBeGreaterThanOrEqual(0);
+    // The popup opens with an empty list, which fits below the caret, and
+    // flips once it measures the full list on the next frame. Wait for the
+    // list, then for the flipped position: at full height, a popup left
+    // below the caret overflows the viewport and fails the poll.
+    await expect(popup.getByRole("option").first()).toBeVisible();
+    await expect
+      .poll(
+        async () => {
+          // Pixels the popup sits outside the viewport, above or below.
+          const box = (await popup.boundingBox())!;
+          return Math.max(0, -box.y, box.y + box.height - height);
+        },
+        { intervals: [50, 100, 200, 500], timeout: 2000 },
+      )
+      .toBeLessThanOrEqual(1);
   });
 
   test("popup positions correctly when an ancestor of the editor has a transform", async ({

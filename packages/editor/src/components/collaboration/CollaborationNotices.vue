@@ -5,6 +5,7 @@ import type {
   CollaborationNoticeView,
   UseCollaborationFeatureReturn,
 } from "../../composables/useCollaborationFeature";
+import { TONE_STYLES } from "../../constants/noticeTones";
 import { useI18n } from "../../composables/useI18n";
 
 const props = defineProps<{
@@ -31,18 +32,6 @@ const tone = computed(() =>
     ? "info"
     : "warning",
 );
-const TONE_STYLES = {
-  warning: {
-    backgroundColor: "var(--tpl-warning-light)",
-    color: "var(--tpl-text)",
-    border: "1px solid var(--tpl-warning)",
-  },
-  info: {
-    backgroundColor: "var(--tpl-secondary-light)",
-    color: "var(--tpl-text)",
-    border: "1px solid var(--tpl-secondary)",
-  },
-} as const;
 
 function nameOf(person: { name?: string; isGuest?: boolean }): string {
   return person.isGuest || !person.name ? t.collaboration.guest : person.name;
@@ -101,43 +90,39 @@ function message(view: CollaborationNoticeView): string {
 
 <template>
   <div
-    class="tpl:pointer-events-none tpl:absolute tpl:top-16 tpl:left-1/2 tpl:z-[60] tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
+    v-if="isReconnecting"
+    data-testid="collaboration-notice"
+    data-kind="reconnecting"
+    data-tone="warning"
+    role="status"
+    aria-live="polite"
+    class="tpl:pointer-events-auto tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-[var(--tpl-shadow-lg)]"
+    :style="TONE_STYLES.warning"
   >
-    <div
-      v-if="isReconnecting"
-      data-testid="collaboration-notice"
-      data-kind="reconnecting"
-      data-tone="warning"
-      role="status"
-      aria-live="polite"
-      class="tpl:pointer-events-auto tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-[var(--tpl-shadow-lg)]"
-      :style="TONE_STYLES.warning"
-    >
-      {{ t.collaboration.reconnectingNotice }}
-    </div>
-    <!-- `message()` is interpolated, never `v-html`: an agent's name comes
+    {{ t.collaboration.reconnectingNotice }}
+  </div>
+  <!-- `message()` is interpolated, never `v-html`: an agent's name comes
          from its own registration and is untrusted text. -->
-    <div
-      v-if="notice"
-      :key="notice.id"
-      data-testid="collaboration-notice"
-      :data-kind="notice.kind"
-      :data-tone="tone"
-      role="status"
-      aria-live="polite"
-      class="tpl:pointer-events-auto tpl:flex tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-[var(--tpl-shadow-lg)]"
-      :style="TONE_STYLES[tone]"
+  <div
+    v-if="notice"
+    :key="notice.id"
+    data-testid="collaboration-notice"
+    :data-kind="notice.kind"
+    :data-tone="tone"
+    role="status"
+    aria-live="polite"
+    class="tpl:pointer-events-auto tpl:flex tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-[var(--tpl-shadow-lg)]"
+    :style="TONE_STYLES[tone]"
+  >
+    <span>{{ message(notice) }}</span>
+    <button
+      type="button"
+      class="tpl:flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded tpl:text-[var(--tpl-text-muted)] tpl:hover:text-[var(--tpl-text)]"
+      :aria-label="t.collaboration.dismiss"
+      :title="t.collaboration.dismiss"
+      @click="feature.dismissNotice(notice.id)"
     >
-      <span>{{ message(notice) }}</span>
-      <button
-        type="button"
-        class="tpl:flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded tpl:text-[var(--tpl-text-muted)] tpl:hover:text-[var(--tpl-text)]"
-        :aria-label="t.collaboration.dismiss"
-        :title="t.collaboration.dismiss"
-        @click="feature.dismissNotice(notice.id)"
-      >
-        <X :size="14" :stroke-width="2" aria-hidden="true" />
-      </button>
-    </div>
+      <X :size="14" :stroke-width="2" aria-hidden="true" />
+    </button>
   </div>
 </template>

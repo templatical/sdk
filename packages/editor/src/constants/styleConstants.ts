@@ -149,6 +149,10 @@ export const dangerBtnCompactClass = `${btnBase} ${btnDangerSkin} ${btnSizeCompa
 /** Compact only: the one caller is canvas chrome, at the header's 38px. */
 export const warningBtnCompactClass = `${btnBase} ${btnWarningSkin} ${btnSizeCompact}`;
 export const ghostBtnClass = `${btnBase} ${btnGhostSkin} ${btnSizeDefault}`;
+export const ghostBtnCompactClass = `${btnBase} ${btnGhostSkin} ${btnSizeCompact}`;
+
+export const chromePillClass =
+  "tpl:rounded-[var(--tpl-radius-sm)] tpl:bg-[var(--tpl-bg-active)] tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:text-[var(--tpl-text-muted)]";
 
 // Rich text toolbar presets
 export const FONT_SIZE_OPTIONS = [

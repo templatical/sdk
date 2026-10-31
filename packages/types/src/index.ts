@@ -172,16 +172,22 @@ export type { EditorUser } from "./user";
 // Operations (vocabulary v2) and the engine that applies them
 export type {
   AddBlockOperation,
+  AddLocaleOperation,
   BlockParent,
   DeleteBlockOperation,
+  LocaleLayerExpect,
   MoveBlockOperation,
   Operation,
   OperationContext,
   OperationErrorCode,
   OperationLock,
+  RemoveLocaleOperation,
   SetContentOperation,
+  SetDefaultLocaleOperation,
   UpdateBlockOperation,
+  UpdateBlockLocaleOperation,
   UpdateSettingsOperation,
+  UpdateSettingsLocaleOperation,
 } from "./operations";
 export {
   applyOperations,
@@ -232,6 +238,34 @@ export {
 
 // Template
 export type { TemplateContent, TemplateSettings } from "./template";
+
+// Localization
+export type {
+  LocalizedText,
+  BlockLocaleLayer,
+  SettingsLocaleLayer,
+  LocaleCoverage,
+} from "./localization";
+export {
+  TRANSLATABLE_FIELDS,
+  SETTINGS_TRANSLATABLE_FIELDS,
+  isSafePath,
+  isLocaleTag,
+  readPath,
+  writePath,
+  translatableFields,
+  isTranslatablePath,
+  isStructuralLocalePath,
+  sourceHash,
+  localizeBlock,
+  pruneLocaleOrphans,
+  pruneSettingsLocaleOrphans,
+  defaultLocaleOf,
+  resolveLocale,
+  localeCoverage,
+  localeHiddenBlocks,
+  defaultLocaleGaps,
+} from "./localization";
 export { createDefaultTemplateContent } from "./template";
 export type { ContentDirection } from "./direction";
 export {
@@ -239,6 +273,24 @@ export {
   isRtlLanguageTag,
   resolveContentDirection,
 } from "./direction";
+
+// Translation
+export type {
+  TranslationProvider,
+  TranslationRequest,
+  TranslationField,
+  TranslationResult,
+  TranslationErrorCode,
+} from "./translation";
+export { TRANSLATION_MAX_FIELDS, TRANSLATION_MAX_CHARS } from "./translation";
+export type { LocaleString } from "./locale-strings";
+export {
+  TRANSLATABLE_HTML_FIELDS,
+  maskTags,
+  unmaskTags,
+  localeStrings,
+  applyLocaleStrings,
+} from "./locale-strings";
 
 // Defaults
 export type { BlockDefaults, TemplateDefaults } from "./defaults";
@@ -323,11 +375,18 @@ export {
   SAFE_LINK_SCHEMES,
   DANGEROUS_SCRIPT_SCHEMES,
   DATA_IMAGE_SRC_PATTERN,
+  HTML_URL_ATTRIBUTES,
+  HTML_FORBIDDEN_ATTRIBUTES,
   normalizeUrlForSchemeCheck,
   extractUrlScheme,
   isSafeHtmlUrl,
+  isSafeUrlAttribute,
 } from "./url-policy";
-export { findOpenTagEnd, getTagAttrValue } from "./html-scan";
+export {
+  decodeHtmlEntities,
+  findOpenTagEnd,
+  getTagAttrValue,
+} from "./html-scan";
 export { fillEmptyParagraphs, isBlankRichText } from "./rich-text";
 export type { FontFamily } from "./fonts";
 export {
@@ -343,6 +402,11 @@ export {
 } from "./fonts";
 
 // Merge tags
+export {
+  convertMergeTagsToValues,
+  replaceMergeTagSpans,
+  scanMergeTagSpans,
+} from "./merge-tag-html";
 export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 export {
   containsMergeTag,
@@ -449,3 +513,5 @@ export type {
   UserConfig,
   WebSocketServerConfig,
 } from "./cloud";
+
+export { elementIdIssues } from "./element-ids";

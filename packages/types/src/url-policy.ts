@@ -38,6 +38,23 @@ export function extractUrlScheme(value: string): string | null {
 export const DATA_IMAGE_SRC_PATTERN =
   /^data:image\/(png|jpe?g|gif|webp|svg\+xml);/i;
 
+/** URL-bearing attributes checked by the editor's HTML and SVG sanitizer hook. */
+export const HTML_URL_ATTRIBUTES = Object.freeze([
+  "href",
+  "xlink:href",
+  "background",
+  "poster",
+  "src",
+] as const);
+
+/** Attributes removed regardless of value by the HTML and SVG sanitizer config. */
+export const HTML_FORBIDDEN_ATTRIBUTES = Object.freeze([
+  "srcdoc",
+  "ping",
+  "formaction",
+  "action",
+] as const);
+
 /** URL rule for HTML attributes at the editor's browser insertion boundary. */
 export function isSafeHtmlUrl(value: string, attribute: string): boolean {
   const normalized = normalizeUrlForSchemeCheck(value);
@@ -46,5 +63,20 @@ export function isSafeHtmlUrl(value: string, attribute: string): boolean {
   if (SAFE_LINK_SCHEMES.some((safe) => safe === scheme)) return true;
   return (
     attribute.toLowerCase() === "src" && DATA_IMAGE_SRC_PATTERN.test(normalized)
+  );
+}
+
+/**
+ * Apply the editor's URL hook and forbidden-attribute policy. Pass character
+ * references decoded, as a browser reads them. Other attributes return true;
+ * callers must check tags and on* handlers separately.
+ */
+export function isSafeUrlAttribute(name: string, value: string): boolean {
+  const attribute = name.toLowerCase();
+  if (HTML_FORBIDDEN_ATTRIBUTES.some((forbidden) => forbidden === attribute))
+    return false;
+  return (
+    !HTML_URL_ATTRIBUTES.some((urlAttribute) => urlAttribute === attribute) ||
+    isSafeHtmlUrl(value, attribute)
   );
 }

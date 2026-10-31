@@ -8,12 +8,16 @@ import {
   createBackgroundImage,
   createDefaultTemplateContent,
   createSectionBlock,
+  createSlotBlock,
+  createWrapperBlock,
+  localizeBlock,
   type SectionBlock,
 } from "@templatical/types";
 import BlockWrapper from "../src/components/blocks/BlockWrapper.vue";
 import { createImageUrlResolver } from "../src/composables/useImageUrlResolver";
 import {
   EDITOR_KEY,
+  LAYOUT_KEY,
   IMAGE_URL_RESOLVER_KEY,
   MERGE_TAG_SYNTAX_KEY,
 } from "../src/keys";
@@ -183,3 +187,69 @@ describe("BlockWrapper hero box", () => {
     expect(style).not.toContain("aspect-ratio");
   });
 });
+
+it.each(["width", "padding", "width with layout"])(
+  "sizes a hero from localized %s",
+  (kind) => {
+    const hero = createSectionBlock({
+      id: "localized-hero",
+      backgroundImage: {
+        ...createBackgroundImage("hero.jpg"),
+        naturalWidth: 1200,
+        naturalHeight: 800,
+      },
+      hero: { height: "image", verticalAlign: "middle" },
+      ...(kind === "padding"
+        ? {
+            wrapper: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+            l10n: {
+              de: {
+                set: {
+                  "wrapper.padding.left": 60,
+                  "wrapper.padding.right": 60,
+                },
+              },
+            },
+          }
+        : {}),
+    });
+    const content = createDefaultTemplateContent();
+    content.settings.locale = "en";
+    content.settings.locales = ["de"];
+    if (kind !== "padding")
+      content.settings.l10n = { de: { set: { width: 800 } } };
+    content.blocks = [hero];
+    const before = JSON.stringify(content);
+    const editor = useEditor({ content });
+    editor.setActiveLocale("de");
+    const layout =
+      kind === "width with layout"
+        ? {
+            ...createDefaultTemplateContent(),
+            blocks: [
+              createWrapperBlock({
+                styles: { padding: { top: 0, right: 20, bottom: 0, left: 20 } },
+                children: [createSlotBlock()],
+              }),
+            ],
+          }
+        : undefined;
+    const wrapper = mountEditor(BlockWrapper, {
+      props: {
+        block: hero,
+        displayBlock: localizeBlock(hero, "de", "en"),
+        isSelected: false,
+        viewport: "desktop",
+        previewMode: false,
+      },
+      slots: { default: () => h("div", "child") },
+      provides: { [EDITOR_KEY]: editor, [LAYOUT_KEY]: layout },
+    } as never);
+    const height =
+      kind === "padding" ? 320 : kind === "width with layout" ? 507 : 533;
+    expect(wrapper.get(".tpl-block-content").attributes("style")).toContain(
+      `min-height: ${height}px`,
+    );
+    expect(JSON.stringify(editor.content.value)).toBe(before);
+  },
+);
