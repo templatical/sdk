@@ -2203,7 +2203,7 @@ Both commands work on a language version, never on the template’s default lang
 Use the same syntax, definitions and protected terms on both commands. The masking and exact placeholder check are the [translation contract](/backend/translation#provider-contract): `<x id="n"/>` in text and `__xn__` in HTML attributes, sharing one id sequence per field. Import checks placeholders, restores the original bytes, then rejects unsafe markup as `unsafe_html`:
 
 - **`html` strings:** allowed tags are `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (including merge/logic chips). Any `on*` attribute is refused, and so is a string that ends inside a tag. A comment, CDATA section, declaration or processing instruction is refused unless the field’s default contains the same one byte for byte; browsers end a CDATA section in HTML at its first `>`.
-- **URL attributes in `html` strings** follow the editor’s rich-text sanitizer. Character references are decoded, tab, LF and CR are removed and leading control characters and spaces are stripped, as a browser does. `href`, `xlink:href`, `formaction`, `action`, `ping`, `background` and `poster` must then be relative, a `#` fragment, or use `http:`, `https:`, `mailto:`, `tel:`, `ftp:`, `ftps:`, `sms:`, `xmpp:` or `cid:`. `src` may also be a `data:image/` URL for PNG, JPEG, GIF, WebP or SVG, with the type followed by `;` (for example `data:image/png;base64,…`). Any other scheme is refused, including `javascript:`, `vbscript:`, `data:` and `file:`.
+- **URL attributes in `html` strings** follow the editor sanitizer (`sanitizeHtml`). Only `href`, `xlink:href`, `background`, `poster` and `src`, from `HTML_URL_ATTRIBUTES`, are checked as URLs. Character references are decoded, tab, LF and CR are removed, leading control characters and spaces are stripped, and trailing whitespace is removed, as a browser does. These attributes may be empty, relative, a `#` fragment, or use `http:`, `https:`, `mailto:`, `tel:`, `ftp:`, `ftps:`, `sms:`, `xmpp:` or `cid:`. Only `src` may also be a `data:image/` URL of type `png`, `jpeg`, `jpg`, `gif`, `webp` or `svg+xml` followed by `;` (for example `data:image/png;base64,…`). Any other scheme is refused, including `javascript:`, `vbscript:`, `data:` and `file:`. `srcdoc`, `ping`, `formaction` and `action`, from `HTML_FORBIDDEN_ATTRIBUTES`, are always refused, even when empty or using `https:`. Tags and `on*` handlers are checked separately.
 - **`text`-format strings,** custom-block `text` and `textarea` fields included: every tag, comment, CDATA section and declaration must also be in the field’s default, byte for byte. A string that ends inside a tag counts as a tag.
 
 Import rejection reasons are `stale` (the current default’s hash changed), `tags_changed` (placeholders or restored tags/terms differ), `unknown_field`, `not_translatable` and `unsafe_html`. Accepted strings are validated and written even when others are rejected. Rejections leave those fields’ stored values intact. Import exits `0` when nothing is rejected, `1` otherwise. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr, and the default language exits `1` with a message on stderr, both without a result document. Missing arguments, unreadable/invalid strings files, a strings file from another default language or invalid definitions/term files exit `2`.
@@ -2783,7 +2783,11 @@ Pass the same `doNotTranslate?: readonly string[]` to `maskTags`, `localeStrings
 
 `applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time, so an out-of-date entry from `localeStrings`, whose `text` is its stored translation, becomes current when applied unchanged. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
 
-`isSafeUrlAttribute(name: string, value: string): boolean` is the URL policy that the editor's rich-text sanitizer and `template-tools strings import` apply to returned HTML. Pass the attribute value with character references decoded, as a browser reads it; the name is compared case-insensitively. An attribute that holds no URL returns `true`. For `href`, `xlink:href`, `formaction`, `action`, `ping`, `background` and `poster`, it removes tab, LF and CR, strips leading control characters and spaces, and then accepts an empty value, a URL without a scheme, a `#` fragment, or the schemes `http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp` and `cid`. `src` also accepts a `data:image/` URL of type `png`, `jpeg`, `jpg`, `gif`, `webp` or `svg+xml` followed by `;`. Every other scheme, including `javascript:`, `vbscript:`, `data:` and `file:`, returns `false`. It doesn't check tags or `on*` attributes; refuse those separately.
+## HTML URL policy
+
+`SAFE_LINK_SCHEMES` lists the schemes accepted by the editor. `DANGEROUS_SCRIPT_SCHEMES` lists the script-capable or arbitrary-payload schemes reported by the link linter. `normalizeUrlForSchemeCheck(value: string): string` removes tab, LF and CR, leading U+0000–U+0020 characters and trailing whitespace. `extractUrlScheme(value: string): string | null` returns the normalized lower-case scheme, or `null` for a relative URL or fragment. `DATA_IMAGE_SRC_PATTERN` matches the image data MIME types accepted in `src`. `isSafeHtmlUrl(value: string, attribute: string): boolean` applies this shared URL-value policy.
+
+`isSafeUrlAttribute(name: string, value: string): boolean` applies `isSafeHtmlUrl` to `HTML_URL_ATTRIBUTES`, the editor sanitizer hook's shared set: `href`, `xlink:href`, `background`, `poster` and `src`. Pass the value with character references decoded, as a browser reads it; attribute names are case-insensitive. After normalization, these attributes accept an empty value, a URL without a scheme, a `#` fragment or the schemes `http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp` and `cid`. Only `src` also accepts a `data:image/` URL of type `png`, `jpeg`, `jpg`, `gif`, `webp` or `svg+xml` followed by `;`. Other schemes return `false`. The sanitizer config's shared `HTML_FORBIDDEN_ATTRIBUTES` set (`srcdoc`, `ping`, `formaction` and `action`) always returns `false`, including for empty or HTTPS values. Other attributes return `true`. The editor's DOMPurify sanitizer and `template-tools strings import` use this shared policy; the helper does not validate tags, `on*` handlers or other DOMPurify rules, which callers must check separately.
 
 ## Base Types
 
@@ -6151,7 +6155,7 @@ export declare function applyLocaleStrings(
 
 Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides and hidden blocks are excluded too.
 
-The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids. If their tags no longer match, the old translation is not sent and the field is translated from the current default. `localeStrings` retains its masked current source and `sourceHash`, omitting `text`; coverage alone selects gaps or all fields. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
+The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids. If their tags no longer match, the old translation is not sent and the field is translated from the current default. `localeStrings` retains its masked current source and `sourceHash`, omitting `text`; coverage alone selects gaps or all fields. Returned HTML goes through the editor’s DOMPurify-based `sanitizeHtml` with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
 
 `localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. In `html` fields, terms match the decoded text: numeric references, the HTML 4.01 named references, `&apos;` and the uppercase aliases `&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;` and `&REG;` are decoded before matching, so `&apos;` matches a term's `'`. Other named references stay as written, and reference names are case-exact (`&Amp;` stays literal). In `text` fields, terms match the text as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. An extra literal occurrence of a term is plain text: with `["Cloud"]`, the source `Templatical Cloud stores cloud files` masks to `Templatical <x id="1"/> stores cloud files`, and the German `Templatical <x id="1"/> speichert Cloud-Dateien` is accepted, because every placeholder returns exactly once. `TranslationRequest` is unchanged.
 
@@ -17415,7 +17419,7 @@ Source: https://docs.templatical.com/quality/links/
 
 Email URLs are a long-tail bug source:
 
-- A `javascript:` href slips into a template from an import; the render-time sanitizer drops it for safety, but the author never finds out the link is broken until a recipient complains.
+- A `javascript:` href slips into a template from an import; the render-time sanitizer drops it from live HTML, but the author never finds out the link is broken until a recipient complains.
 - A staging URL ships to production because nobody diffed the JSON before send.
 - A malformed `mailto:` makes "Contact us" silently dead.
 - A `tel:` with letters in it doesn't dial anywhere.
@@ -17429,20 +17433,41 @@ These aren't content-quality issues (different audience from a11y) and they aren
 The editor already ships two URL-scheme defenses:
 
 - **`useRichTextLinkDialog.normalizeLinkUrl`** — the rich-text link dialog rejects URLs outside its safe-scheme allowlist (`http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp`, `cid`) at insert time. A path (`/contact`, `./x`, `?ref=1`) is stored as typed and `//host` becomes `https://host`; `link.relative-url` then flags the path.
-- **`sanitizeRichTextHtml`** — a render-time scrubber strips `javascript:` / `vbscript:` / `file:` (and other unsafe-scheme) `href` / `src` / `formaction` values from `paragraph.content` / `title.content` / `html.content` before they reach `v-html`.
+- **`sanitizeHtml`** — the editor sanitizes `paragraph.content`, `title.content`, and custom-block canvas HTML with DOMPurify before live insertion. Custom blocks are sanitized after Liquid rendering on the canvas; their export HTML is unchanged. Raw HTML blocks remain in a script-disabled sandbox.
 
-Those are **security boundaries** — they prevent XSS by silently dropping dangerous values. `lintLinks` is an **authoring tool**: it surfaces the same values so the author can fix the JSON rather than have it stripped at render.
+These boundaries drop disallowed values before inserting live HTML. `lintLinks` reports those values to the author so they can correct the JSON.
 
 The two layers complement each other:
 
-| Source of a `javascript:` link | `normalizeLinkUrl` | `sanitizeRichTextHtml` | `lintLinks` |
+| Source of a `javascript:` link | `normalizeLinkUrl` | `sanitizeHtml` | `lintLinks` |
 |---|---|---|---|
 | User typing in the rich-text link dialog | ✅ blocks at insert | n/a (never reaches content) | n/a |
 | Imported BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon / Easy Email Pro JSON | ❌ bypasses dialog | ✅ stripped at render | ✅ surfaces to author |
 | Programmatic `setContent()` with bad anchor | ❌ | ✅ stripped at render | ✅ surfaces to author |
-| `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (structured fields, not HTML) | ❌ | ❌ sanitizer only scans rich-text HTML | ✅ surfaces to author |
+| `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (structured fields, not HTML) | ❌ | ❌ sanitizer handles live rich text and custom-block canvas HTML, not structured fields | ✅ surfaces to author |
 
 So `lintLinks` is the **only authoring-time signal** for unsafe URLs in structured fields, and the **only feedback channel** when a stripped value would otherwise vanish silently from rich-text imports.
+
+## Shared URL scheme policy
+
+`@templatical/types` exports the editor's isomorphic URL policy. `SAFE_LINK_SCHEMES` is the frozen array `['http', 'https', 'mailto', 'tel', 'ftp', 'ftps', 'sms', 'xmpp', 'cid']`; `DANGEROUS_SCRIPT_SCHEMES` is the frozen array `['javascript', 'data', 'vbscript']`.
+
+| Export | Contract |
+|---|---|
+| `normalizeUrlForSchemeCheck(value: string): string` | Removes tab, LF and CR anywhere, then leading C0 controls and spaces and trailing whitespace before a scheme check. |
+| `extractUrlScheme(value: string): string \| null` | Returns a lower-case scheme, or `null` for a relative or fragment URL. |
+| `DATA_IMAGE_SRC_PATTERN` | Matches only `data:image/(png\|jpe?g\|gif\|webp\|svg+xml);` at the start of a value. |
+| `isSafeHtmlUrl(value: string, attribute: string): boolean` | Allows relative and fragment URLs and the safe-link schemes. Image data is allowed only when `attribute` is `src`. It checks the scheme, not the full URL syntax. |
+
+```ts
+import { extractUrlScheme, isSafeHtmlUrl } from "@templatical/types";
+
+console.log(extractUrlScheme("java\tscript:alert(1)")); // "javascript"
+console.log(isSafeHtmlUrl("data:image/png;base64,AA", "src")); // true
+console.log(isSafeHtmlUrl("data:image/png;base64,AA", "href")); // false
+```
+
+Check it: `pnpm --dir packages/types exec vitest run tests/url-policy.test.ts`. This policy governs the editor's live rich-text HTML, custom-block canvas HTML, and link dialog; it does not sanitize exported HTML blocks or replace the quality linter's email-client rules.
 
 ## API
 
@@ -17528,7 +17553,7 @@ The 6 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/ru
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `link.javascript-protocol` | error | — | Href starts with `javascript:` (or whitespace-padded / case-bypass variants like ` JaVaScRiPt:`). The editor's `sanitizeRichTextHtml` already strips these from rich-text content at render so they can't execute, and the rich-text link dialog blocks insertion — but values from imported JSON, programmatic API calls, or structured fields (`button.url`, `image.linkUrl`, `menu.items[].url`, `social.icons[].url`) sit in the template silently. This rule surfaces them at authoring time so the JSON gets fixed, not just rendered around. |
+| `link.javascript-protocol` | error | — | Href starts with `javascript:` (or whitespace-padded / case-bypass variants like ` JaVaScRiPt:`). The editor drops these href values from live rich text and rendered custom-block canvas HTML through `sanitizeHtml`; the rich-text link dialog blocks insertion. Values from imported JSON, programmatic API calls, or structured fields (`button.url`, `image.linkUrl`, `menu.items[].url`, `social.icons[].url`) can remain in the template. This rule reports them at authoring time so the JSON can be corrected. |
 
 ## Unsupported protocols
 

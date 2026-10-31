@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import {
   TITLE_FONT_WEIGHT,
@@ -82,7 +82,7 @@ describe("TitleBlock canvas rendering", () => {
     });
     const styled = wrapper.find('[style*="color"]');
     const style = styled.attributes("style") ?? "";
-    expect(style).toContain("color: #ff0000");
+    expect(style).toContain("color: rgb(255, 0, 0)");
     expect(style).toContain("text-align: center");
   });
 

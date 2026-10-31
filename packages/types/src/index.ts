@@ -372,12 +372,22 @@ export { EventEmitter } from "./events";
 // Utilities
 export { safeClone } from "./clone";
 export {
+  SAFE_LINK_SCHEMES,
+  DANGEROUS_SCRIPT_SCHEMES,
+  DATA_IMAGE_SRC_PATTERN,
+  HTML_URL_ATTRIBUTES,
+  HTML_FORBIDDEN_ATTRIBUTES,
+  normalizeUrlForSchemeCheck,
+  extractUrlScheme,
+  isSafeHtmlUrl,
+  isSafeUrlAttribute,
+} from "./url-policy";
+export {
   decodeHtmlEntities,
   findOpenTagEnd,
   getTagAttrValue,
 } from "./html-scan";
 export { fillEmptyParagraphs, isBlankRichText } from "./rich-text";
-export { isSafeUrlAttribute } from "./safe-url";
 export type { FontFamily } from "./fonts";
 export {
   BUILT_IN_FONT_STACKS,

@@ -112,12 +112,7 @@ describe("translation documentation", () => {
       ])
         expect.soft(page).toContain(term);
       // Masking, limits and the DeepL settings live on the contract page only.
-      for (const term of [
-        "__xn__",
-        "tag_handling=",
-        "UTF-16",
-        "sanitizeRichTextHtml",
-      ])
+      for (const term of ["__xn__", "tag_handling=", "UTF-16", "sanitizeHtml"])
         expect.soft(page, term).not.toContain(term);
       expect(page).toMatch(/^## (Limits|Grenzen)/m);
     },
@@ -179,7 +174,7 @@ describe("translation documentation", () => {
     "%sapi/types gives isSafeUrlAttribute's exact signature and every attribute and scheme it allows",
     (prefix) => {
       const source = readFileSync(
-        join(DOCS, "../../packages/types/src/safe-url.ts"),
+        join(DOCS, "../../packages/types/src/url-policy.ts"),
         "utf8",
       );
       const signature = source.match(
@@ -192,21 +187,15 @@ describe("translation documentation", () => {
         .split("\n")
         .find((line) => line.startsWith(`\`${signature}\``));
       expect(paragraph).toBeDefined();
-      const members = (name: string) =>
-        [
-          ...(
-            source.match(
-              new RegExp(`const ${name} = new Set\\(\\[([^\\]]*)\\]`),
-            )?.[1] ?? ""
-          ).matchAll(/"([^"]+)"/g),
-        ].map((match) => match[1]);
       const allowed = [
-        ...members("SAFE_URL_SCHEMES"),
-        ...members("URL_ATTRIBUTES"),
+        ...types.SAFE_LINK_SCHEMES,
+        ...types.HTML_URL_ATTRIBUTES,
       ];
       expect(allowed).toContain("cid");
       expect(allowed).toContain("poster");
       for (const value of allowed)
+        expect.soft(paragraph, value).toContain(`\`${value}\``);
+      for (const value of types.HTML_FORBIDDEN_ATTRIBUTES)
         expect.soft(paragraph, value).toContain(`\`${value}\``);
     },
   );

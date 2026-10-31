@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
 import { computed, nextTick, ref } from "vue";
@@ -90,17 +90,48 @@ describe("CustomBlock canvas", () => {
   });
 
   it("sanitizes raw field HTML at the canvas sink", async () => {
-    const def = definition({ template: '<div>{{ title | raw }}</div>' });
+    const def = definition({ template: "<div>{{ title | raw }}</div>" });
     const registry = useBlockRegistry();
     registry.registerCustom(def, CustomBlock);
     const { wrapper } = mountCustom(def, {
-      fieldValues: { title: '<img src="x" onerror="window.__x=1"><a href="javascript:alert(1)">Link</a>' },
-      render: (block) => registry.renderCustomBlock({ ...createCustomBlock(def), ...block }),
+      fieldValues: {
+        title:
+          '<img src="x" onerror="window.__x=1"><a href="javascript:alert(1)">Link</a>',
+      },
+      render: (block) =>
+        registry.renderCustomBlock({ ...createCustomBlock(def), ...block }),
     });
-    await vi.waitFor(() => expect(wrapper.find('img').exists()).toBe(true));
-    expect(wrapper.find('img').attributes()).toEqual({ src: 'x' });
-    expect(wrapper.find('a').attributes()).toEqual({});
-    expect(wrapper.find('a').text()).toBe('Link');
+    await vi.waitFor(() => expect(wrapper.find("img").exists()).toBe(true));
+    expect(wrapper.find("img").attributes()).toEqual({ src: "x" });
+    expect(wrapper.find("a").attributes()).toEqual({});
+    expect(wrapper.find("a").text()).toBe("Link");
+    wrapper.unmount();
+  });
+
+  it("sanitizes a raw advisory field only on the canvas and keeps table and SVG markup", async () => {
+    const payload =
+      "<noscript><!--</noscript><img src=x onerror=window.fire(1)>--></noscript>";
+    const def = definition({
+      template:
+        '<div><table><tbody><tr><td>Cell</td></tr></tbody></table><svg viewBox="0 0 10 10"><path d="M0 0L10 10"></path></svg>{{ title | raw }}</div>',
+    });
+    const registry = useBlockRegistry();
+    registry.registerCustom(def, CustomBlock);
+    const block = createCustomBlock(def);
+    block.fieldValues.title = payload;
+    expect(await registry.renderCustomBlock(block)).toContain(payload);
+
+    const { wrapper } = mountCustom(def, {
+      fieldValues: { title: payload },
+      render: (value) =>
+        registry.renderCustomBlock({ ...createCustomBlock(def), ...value }),
+    });
+    await vi.waitFor(() =>
+      expect(wrapper.find("table td").text()).toBe("Cell"),
+    );
+    expect(wrapper.find("img").exists()).toBe(false);
+    expect(wrapper.html()).not.toContain("onerror");
+    expect(wrapper.find("svg path").attributes("d")).toBe("M0 0L10 10");
     wrapper.unmount();
   });
 
@@ -111,11 +142,14 @@ describe("CustomBlock canvas", () => {
     const title = '<script>alert(1)</script> & "quoted"';
     const { wrapper } = mountCustom(def, {
       fieldValues: { title },
-      render: (block) => registry.renderCustomBlock({ ...createCustomBlock(def), ...block }),
+      render: (block) =>
+        registry.renderCustomBlock({ ...createCustomBlock(def), ...block }),
     });
     await vi.waitFor(() => expect(wrapper.text()).toBe(title));
-    expect(wrapper.find('script').exists()).toBe(false);
-    expect(wrapper.findAll('div').at(-1)!.element.innerHTML).toBe('&lt;script&gt;alert(1)&lt;/script&gt; &amp; "quoted"');
+    expect(wrapper.find("script").exists()).toBe(false);
+    expect(wrapper.findAll("div").at(-1)!.element.innerHTML).toBe(
+      '&lt;script&gt;alert(1)&lt;/script&gt; &amp; "quoted"',
+    );
     wrapper.unmount();
   });
 

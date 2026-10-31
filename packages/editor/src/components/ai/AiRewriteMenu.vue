@@ -28,7 +28,7 @@ import {
   rewriteLanguageOptions,
 } from "../../utils/aiRewritePreview";
 import { normalizeMergeTagsInHtml } from "../../utils/normalizeMergeTagMarkup";
-import { sanitizeRichTextHtml } from "../../utils/sanitizeRichTextHtml";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 /**
  * Rewrite with AI, in the paragraph text toolbar: a preset or the user's own
@@ -70,7 +70,7 @@ let generation = 0;
 const result = computed(() =>
   raw.value === null
     ? null
-    : sanitizeRichTextHtml(
+    : sanitizeHtml(
         normalizeMergeTagsInHtml(raw.value, mergeTags.value, syntax),
       ),
 );

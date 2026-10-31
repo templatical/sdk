@@ -1,6 +1,10 @@
 import type { Editor } from "@tiptap/core";
 import type { SyntaxPreset } from "@templatical/types";
-import { SYNTAX_PRESETS } from "@templatical/types";
+import {
+  SAFE_LINK_SCHEMES,
+  SYNTAX_PRESETS,
+  extractUrlScheme,
+} from "@templatical/types";
 import { ref, type Ref, type ShallowRef } from "vue";
 import { useFocusTrap } from "./useFocusTrap";
 import { sanitizeLinkColor } from "../utils/linkColorExtension";
@@ -71,17 +75,6 @@ export function useRichTextLinkDialog(
   // Allowlist mirroring @tiptap/extension-link defaults so URLs persisted
   // via the dialog can't smuggle in javascript:/data:/vbscript: payloads
   // that bypass TipTap's apply-time filter on JSON load.
-  const SAFE_SCHEMES = new Set([
-    "http",
-    "https",
-    "mailto",
-    "tel",
-    "ftp",
-    "ftps",
-    "sms",
-    "xmpp",
-    "cid",
-  ]);
 
   // Root-relative, `./` / `../` relative, or query-only.
   const RELATIVE_PATH = /^(?:\/|\.{1,2}\/|\?)/;
@@ -102,9 +95,9 @@ export function useRichTextLinkDialog(
     // A path has no host to complete. It is stored as typed, like button and
     // image URLs, and the quality linter's `link.relative-url` rule flags it.
     if (RELATIVE_PATH.test(trimmed)) return trimmed;
-    const schemeMatch = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
-    if (schemeMatch) {
-      return SAFE_SCHEMES.has(schemeMatch[1].toLowerCase()) ? trimmed : null;
+    const scheme = extractUrlScheme(trimmed);
+    if (scheme) {
+      return SAFE_LINK_SCHEMES.some((safe) => safe === scheme) ? trimmed : null;
     }
     // A URL that opens with a merge tag is completed by the sending system,
     // not by us: the tag can already carry its own scheme, so prefixing

@@ -89,6 +89,9 @@ export default defineConfig({
                     if (id.includes('htmlparser2')) {
                         return 'htmlparser';
                     }
+                    if (id.includes('dompurify')) {
+                        return 'dompurify';
+                    }
                     if (
                         id.includes('vue-draggable-plus') ||
                         id.includes('sortablejs')

@@ -1,4 +1,12 @@
 import { describe, expect, it } from "vitest";
+import {
+  HTML_URL_ATTRIBUTES,
+  HTML_FORBIDDEN_ATTRIBUTES,
+  SAFE_LINK_SCHEMES,
+  isSafeHtmlUrl,
+  isSafeUrlAttribute,
+} from "@templatical/types";
+import { isSafeTranslationHtml } from "../src/cli/html-safety";
 
 describe("translation HTML safety", () => {
   it.each(["</table>", "</mj-text>", "<p>x</div>"])(
@@ -76,6 +84,42 @@ describe("translation HTML safety: comment-like markup", () => {
 });
 
 describe("translation HTML safety: URL attributes", () => {
+  it("uses the shared URL rule and attribute sets for strings import", () => {
+    for (const name of [...HTML_URL_ATTRIBUTES, ...HTML_FORBIDDEN_ATTRIBUTES])
+      for (const value of [
+        "",
+        "#top",
+        "/relative/path",
+        "{{url}}",
+        ...SAFE_LINK_SCHEMES.map((scheme) => `${scheme}:example`),
+        "data:image/png;base64,AAAA",
+        "data:text/html,x",
+        "javascript:alert(1)",
+        "java\tscript:alert(1)",
+        "file:///tmp/x",
+      ]) {
+        const allowed =
+          HTML_URL_ATTRIBUTES.some((attribute) => attribute === name) &&
+          isSafeHtmlUrl(value, name);
+        expect(isSafeUrlAttribute(name, value), `${name}=${value}`).toBe(
+          allowed,
+        );
+        expect(
+          isSafeTranslationHtml(`<span ${name}="${value}">x</span>`),
+          `${name}=${value}`,
+        ).toBe(allowed);
+      }
+  });
+
+  it.each(["ping", "formaction", "action", "srcdoc"])(
+    "rejects forbidden %s even with a safe URL",
+    (name) => {
+      expect(
+        isSafeTranslationHtml(`<span ${name}="https://x.test">x</span>`),
+      ).toBe(false);
+    },
+  );
+
   it.each([
     '<a href="java\tscript:alert(1)">x</a>',
     '<a href="java&#9;script:alert(1)">x</a>',

@@ -96,9 +96,7 @@ describe("link.javascript-protocol", () => {
   it("fires on social.icons[i].url", () => {
     const content = createDefaultTemplateContent();
     const social = createSocialIconsBlock({
-      icons: [
-        { id: "i1", platform: "facebook", url: "javascript:alert(1)" },
-      ],
+      icons: [{ id: "i1", platform: "facebook", url: "javascript:alert(1)" }],
     });
     content.blocks = [social];
     const issues = lintLinks(content).filter(
@@ -119,9 +117,35 @@ describe("link.javascript-protocol", () => {
     expect(issues).toHaveLength(2);
   });
 
+  it("catches embedded browser-stripped controls and leading C0 controls", () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createButtonBlock({ url: "java\tscript:alert(1)" }),
+      createButtonBlock({ url: "\u0001data:text/html,x" }),
+    ];
+    const issues = lintLinks(content).filter(
+      (i) => i.ruleId === "link.javascript-protocol",
+    );
+    expect(issues.map((i) => i.message)).toEqual([
+      expect.stringContaining('"javascript:"'),
+      expect.stringContaining('"data:"'),
+    ]);
+  });
+
+  it("retains the conservative warning for Unicode-spaced scheme text", () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [createButtonBlock({ url: "java\u00a0script:alert(1)" })];
+    const issues = lintLinks(content).filter(
+      (i) => i.ruleId === "link.javascript-protocol",
+    );
+    expect(issues).toHaveLength(1);
+  });
+
   it("also fires on `data:` URLs (incomplete-scheme-check defense)", () => {
     const content = createDefaultTemplateContent();
-    const a = createButtonBlock({ url: "data:text/html,<script>alert(1)</script>" });
+    const a = createButtonBlock({
+      url: "data:text/html,<script>alert(1)</script>",
+    });
     const b = createButtonBlock({
       url: "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
     });

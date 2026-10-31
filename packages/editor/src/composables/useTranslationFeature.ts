@@ -32,7 +32,7 @@ import {
   type TranslationResult,
 } from "@templatical/types";
 import type { UseCollaborationFeatureReturn } from "./useCollaborationFeature";
-import { sanitizeRichTextHtml } from "../utils/sanitizeRichTextHtml";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
 
 export interface TranslationRunResult {
   translated: number;
@@ -110,7 +110,7 @@ function sanitizeTranslation(text: string): string {
     /<x id="\d+"\s*\/>|<x id="\d+"><\/x>|__x\d+__/g,
     (token) => `${prefix}${placeholders.push(token)}-end`,
   );
-  let clean = sanitizeRichTextHtml(protectedText);
+  let clean = sanitizeHtml(protectedText);
   placeholders.forEach((token, index) => {
     clean = clean.replaceAll(`${prefix}${index + 1}-end`, token);
   });

@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { effectScope, nextTick } from "vue";
 import { useEditor, useHistory } from "@templatical/core";
@@ -433,7 +433,7 @@ describe("translation runs", () => {
       },
     };
     (seed.blocks[1] as any).content =
-      '<p>Hello <span data-merge-tag="{{name}}">Name</span> <a href="{{url}}">Link</a></p>';
+      '<p>Hello <span class="merge-tag" data-merge-tag="{{name}}" contenteditable="false">Name</span> <span data-logic-merge-tag="{% endif %}" contenteditable="false">ENDIF</span> <a href="{{url}}">Link</a></p>';
     const { feature, editor } = open(
       {
         translate: async (request) => ({
@@ -461,7 +461,7 @@ describe("translation runs", () => {
       "<p>Alt {{name}}</p>",
     );
     expect(editor.content.value.blocks[1].l10n?.de.text?.content.value).toBe(
-      '<p>Hallo <span data-merge-tag="{{name}}">Name</span> <a href="{{url}}">Link</a></p>',
+      '<p>Hallo <span class="merge-tag" data-merge-tag="{{name}}" contenteditable="false">Name</span> <span data-logic-merge-tag="{% endif %}" contenteditable="false">ENDIF</span> <a href="{{url}}">Link</a></p>',
     );
   });
 

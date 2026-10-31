@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 import { resolve } from "node:path";
 import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -281,7 +281,7 @@ describe("localization API", () => {
     expect(
       (wrapper.find(".tpl-canvas-bg").element as HTMLElement).style
         .backgroundColor,
-    ).toBe("#123456");
+    ).toBe("rgb(18, 52, 86)");
   });
 
   it.each(["drag", "resize", "cross-section"])(
@@ -394,7 +394,9 @@ describe("localized merge-tag load normalization", () => {
     seed.settings.locales = ["de", "fr"];
     const normalized = normalizeContentForConfig(seed, undefined);
     const title = normalized.blocks[0] as any;
-    expect(title.l10n.de.text.content.sourceHash).toBe(sourceHash(title.content));
+    expect(title.l10n.de.text.content.sourceHash).toBe(
+      sourceHash(title.content),
+    );
     expect(title.l10n.de.text.content.value).toContain("data-merge-tag");
     expect(title.l10n.fr.text.content.sourceHash).toBe("old");
     expect(seed.blocks[0]).toMatchObject({ content: "<p>Hello {{name}}</p>" });
