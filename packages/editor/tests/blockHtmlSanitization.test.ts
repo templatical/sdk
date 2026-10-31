@@ -1,5 +1,5 @@
 import { shallowRef } from "vue";
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import { SYNTAX_PRESETS } from "@templatical/types";

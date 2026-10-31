@@ -13,7 +13,7 @@ import {
 } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { usePopoverPosition } from "./usePopoverPosition";
-import { sanitizeRichTextHtml } from "../utils/sanitizeRichTextHtml";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
 
 export interface UseEditableTextBlockReturn {
   isEditing: Ref<boolean>;
@@ -58,7 +58,7 @@ export function useEditableTextBlock(
   // email. The stored content keeps TipTap's `<p></p>`.
   const resolvedContent = computed(() =>
     fillEmptyParagraphs(
-      sanitizeRichTextHtml(
+      sanitizeHtml(
         resolveHtmlLogicMergeTagLabels(withResolvedDataTags.value, syntax),
       ),
     ),

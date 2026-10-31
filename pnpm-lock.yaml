@@ -528,6 +528,9 @@ importers:
       '@vueuse/core':
         specifier: ^15.0.0
         version: 15.0.0(vue@3.5.44(typescript@6.0.3))
+      dompurify:
+        specifier: ^3.4.17
+        version: 3.4.17
       es-module-lexer:
         specifier: ^3.0.4
         version: 3.0.4
@@ -2034,6 +2037,9 @@ packages:
   '@types/sortablejs@1.15.9':
     resolution: {integrity: sha512-7HP+rZGE2p886PKV9c9OJzLBI6BBJu1O7lJGYnPyG3fS4/duUCcngkNCjsLwIMV+WMqANe3tt4irrXHSIe68OQ==}
 
+  '@types/trusted-types@2.0.7':
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
@@ -2702,6 +2708,9 @@ packages:
   domhandler@6.0.1:
     resolution: {integrity: sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==}
     engines: {node: '>=20.19.0'}
+
+  dompurify@3.4.17:
+    resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
 
   domutils@2.8.0:
     resolution: {integrity: sha512-w96Cjofp72M5IIhpjgobBimYEfoPjx1Vx0BSX9P30WBdZW2WIKU0T1Bd0kz2eNZ9ikjKgHbEyKx8BB6H1L3h3A==}
@@ -5723,6 +5732,9 @@ snapshots:
 
   '@types/sortablejs@1.15.9': {}
 
+  '@types/trusted-types@2.0.7':
+    optional: true
+
   '@types/unist@3.0.3': {}
 
   '@types/web-bluetooth@0.0.21': {}
@@ -6426,6 +6438,10 @@ snapshots:
   domhandler@6.0.1:
     dependencies:
       domelementtype: 3.0.0
+
+  dompurify@3.4.17:
+    optionalDependencies:
+      '@types/trusted-types': 2.0.7
 
   domutils@2.8.0:
     dependencies:

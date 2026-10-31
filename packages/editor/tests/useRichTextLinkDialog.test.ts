@@ -366,6 +366,20 @@ describe("useRichTextLinkDialog", () => {
       expect(chain.setLink).not.toHaveBeenCalled();
     });
 
+    it("rejects browser-normalized script schemes", () => {
+      for (const url of [
+        "java\tscript:alert(1)",
+        "java\nscript:alert(1)",
+        "\u0001javascript:alert(1)",
+      ]) {
+        const editor = createMockEditor();
+        const result = useRichTextLinkDialog(editor);
+        result.linkUrl.value = url;
+        result.insertLink();
+        expect(editor.value._chain.setLink).not.toHaveBeenCalled();
+      }
+    });
+
     it("preserves ftp: and ftps: URLs", () => {
       const editor = createMockEditor();
       const result = useRichTextLinkDialog(editor);

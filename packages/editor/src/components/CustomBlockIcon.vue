@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Box } from "@lucide/vue";
 import { computed } from "vue";
+import { sanitizeSvg } from "../utils/sanitizeHtml";
 
 const props = defineProps<{
   icon?: string;
@@ -22,6 +23,9 @@ const isUrl = computed(
     !isSvg.value &&
     (props.icon.startsWith("http") || props.icon.startsWith("/")),
 );
+const safeSvg = computed(() =>
+  isSvg.value ? sanitizeSvg(props.icon ?? "") : "",
+);
 </script>
 
 <template>
@@ -30,7 +34,7 @@ const isUrl = computed(
     v-if="isSvg"
     class="tpl:inline-flex tpl:items-center tpl:justify-center"
     :style="{ width: `${iconSize}px`, height: `${iconSize}px` }"
-    v-html="icon"
+    v-html="safeSvg"
   />
   <!-- eslint-enable vue/no-v-html -->
   <img

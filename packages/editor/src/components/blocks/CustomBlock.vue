@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { sanitizeRichTextHtml } from "../../utils/sanitizeRichTextHtml";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 import CustomBlockIcon from "../CustomBlockIcon.vue";
 import LoadingTrack from "../LoadingTrack.vue";
 import { useI18n } from "../../composables";
@@ -40,7 +40,7 @@ const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
 const renderedHtml = ref("");
 // Sanitize only the canvas sink; export keeps the template's own HTML/CSS.
-const canvasHtml = computed(() => sanitizeRichTextHtml(renderedHtml.value));
+const canvasHtml = computed(() => sanitizeHtml(renderedHtml.value));
 const hasError = ref(false);
 
 const definition = computed(() =>

@@ -1,5 +1,6 @@
 import type { Rule, RuleHit, RuleMeta } from "../../types";
 import { walkUrls } from "../../url-walker";
+import { DANGEROUS_SCRIPT_SCHEMES, extractUrlScheme } from "@templatical/types";
 
 export const meta: RuleMeta = {
   id: "link.javascript-protocol",
@@ -18,28 +19,23 @@ export const meta: RuleMeta = {
  * severity overrides; the message is parameterized so users see the actual
  * matched protocol.
  */
-export const DANGEROUS_SCRIPT_PROTOCOLS = [
-  "javascript",
-  "data",
-  "vbscript",
-] as const;
+export const DANGEROUS_SCRIPT_PROTOCOLS = DANGEROUS_SCRIPT_SCHEMES;
 
 type DangerousProtocol = (typeof DANGEROUS_SCRIPT_PROTOCOLS)[number];
 
 /**
- * Match dangerous-script schemes even when the value is whitespace-padded or
- * mixed-case. Mirrors what HTML attribute parsers see at insert time —
- * leading whitespace (spaces, tabs, newlines) is stripped before scheme
- * parsing, and unicode-percent-encoded whitespace inside the scheme is
- * rejected by browsers, so a literal-strip is sufficient.
+ * Match dangerous-script schemes after the shared browser-style URL
+ * normalization, including embedded tab/LF/CR and leading C0 controls. Keep
+ * the rule's older conservative Unicode-whitespace warning for authoring.
  */
 function matchDangerousProtocol(url: string): DangerousProtocol | null {
-  if (!url) return null;
-  const stripped = url.replace(/\s+/g, "");
-  for (const proto of DANGEROUS_SCRIPT_PROTOCOLS) {
-    if (new RegExp(`^${proto}:`, "i").test(stripped)) return proto;
-  }
-  return null;
+  const scheme = extractUrlScheme(url);
+  const legacyScheme = extractUrlScheme(url.replace(/\s+/g, ""));
+  return (
+    DANGEROUS_SCRIPT_PROTOCOLS.find(
+      (proto) => proto === scheme || proto === legacyScheme,
+    ) ?? null
+  );
 }
 
 export const javascriptProtocol: Rule = {
