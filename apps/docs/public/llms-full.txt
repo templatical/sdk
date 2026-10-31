@@ -16138,7 +16138,7 @@ Source: https://docs.templatical.com/quality/links/
 
 Email URLs are a long-tail bug source:
 
-- A `javascript:` href slips into a template from an import; the render-time sanitizer drops it for safety, but the author never finds out the link is broken until a recipient complains.
+- A `javascript:` href slips into a template from an import; the render-time sanitizer drops it from live HTML, but the author never finds out the link is broken until a recipient complains.
 - A staging URL ships to production because nobody diffed the JSON before send.
 - A malformed `mailto:` makes "Contact us" silently dead.
 - A `tel:` with letters in it doesn't dial anywhere.
@@ -16152,20 +16152,41 @@ These aren't content-quality issues (different audience from a11y) and they aren
 The editor already ships two URL-scheme defenses:
 
 - **`useRichTextLinkDialog.normalizeLinkUrl`** — the rich-text link dialog rejects URLs outside its safe-scheme allowlist (`http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp`, `cid`) at insert time. A path (`/contact`, `./x`, `?ref=1`) is stored as typed and `//host` becomes `https://host`; `link.relative-url` then flags the path.
-- **`sanitizeRichTextHtml`** — a render-time scrubber strips `javascript:` / `vbscript:` / `file:` (and other unsafe-scheme) `href` / `src` / `formaction` values from `paragraph.content` / `title.content` / `html.content` before they reach `v-html`.
+- **`sanitizeHtml`** — the editor sanitizes `paragraph.content`, `title.content`, and custom-block canvas HTML with DOMPurify before live insertion. Custom blocks are sanitized after Liquid rendering on the canvas; their export HTML is unchanged. Raw HTML blocks remain in a script-disabled sandbox.
 
-Those are **security boundaries** — they prevent XSS by silently dropping dangerous values. `lintLinks` is an **authoring tool**: it surfaces the same values so the author can fix the JSON rather than have it stripped at render.
+These boundaries drop disallowed values before inserting live HTML. `lintLinks` reports those values to the author so they can correct the JSON.
 
 The two layers complement each other:
 
-| Source of a `javascript:` link | `normalizeLinkUrl` | `sanitizeRichTextHtml` | `lintLinks` |
+| Source of a `javascript:` link | `normalizeLinkUrl` | `sanitizeHtml` | `lintLinks` |
 |---|---|---|---|
 | User typing in the rich-text link dialog | ✅ blocks at insert | n/a (never reaches content) | n/a |
 | Imported BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon / Easy Email Pro JSON | ❌ bypasses dialog | ✅ stripped at render | ✅ surfaces to author |
 | Programmatic `setContent()` with bad anchor | ❌ | ✅ stripped at render | ✅ surfaces to author |
-| `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (structured fields, not HTML) | ❌ | ❌ sanitizer only scans rich-text HTML | ✅ surfaces to author |
+| `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (structured fields, not HTML) | ❌ | ❌ sanitizer handles live rich text and custom-block canvas HTML, not structured fields | ✅ surfaces to author |
 
 So `lintLinks` is the **only authoring-time signal** for unsafe URLs in structured fields, and the **only feedback channel** when a stripped value would otherwise vanish silently from rich-text imports.
+
+## Shared URL scheme policy
+
+`@templatical/types` exports the editor's isomorphic URL policy. `SAFE_LINK_SCHEMES` is the frozen array `['http', 'https', 'mailto', 'tel', 'ftp', 'ftps', 'sms', 'xmpp', 'cid']`; `DANGEROUS_SCRIPT_SCHEMES` is the frozen array `['javascript', 'data', 'vbscript']`.
+
+| Export | Contract |
+|---|---|
+| `normalizeUrlForSchemeCheck(value: string): string` | Removes tab, LF and CR anywhere, then leading C0 controls and spaces and trailing whitespace before a scheme check. |
+| `extractUrlScheme(value: string): string \| null` | Returns a lower-case scheme, or `null` for a relative or fragment URL. |
+| `DATA_IMAGE_SRC_PATTERN` | Matches only `data:image/(png\|jpe?g\|gif\|webp\|svg+xml);` at the start of a value. |
+| `isSafeHtmlUrl(value: string, attribute: string): boolean` | Allows relative and fragment URLs and the safe-link schemes. Image data is allowed only when `attribute` is `src`. It checks the scheme, not the full URL syntax. |
+
+```ts
+import { extractUrlScheme, isSafeHtmlUrl } from "@templatical/types";
+
+console.log(extractUrlScheme("java\tscript:alert(1)")); // "javascript"
+console.log(isSafeHtmlUrl("data:image/png;base64,AA", "src")); // true
+console.log(isSafeHtmlUrl("data:image/png;base64,AA", "href")); // false
+```
+
+Check it: `pnpm --dir packages/types exec vitest run tests/url-policy.test.ts`. This policy governs the editor's live rich-text HTML, custom-block canvas HTML, and link dialog; it does not sanitize exported HTML blocks or replace the quality linter's email-client rules.
 
 ## API
 
@@ -16251,7 +16272,7 @@ The 6 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/ru
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `link.javascript-protocol` | error | — | Href starts with `javascript:` (or whitespace-padded / case-bypass variants like ` JaVaScRiPt:`). The editor's `sanitizeRichTextHtml` already strips these from rich-text content at render so they can't execute, and the rich-text link dialog blocks insertion — but values from imported JSON, programmatic API calls, or structured fields (`button.url`, `image.linkUrl`, `menu.items[].url`, `social.icons[].url`) sit in the template silently. This rule surfaces them at authoring time so the JSON gets fixed, not just rendered around. |
+| `link.javascript-protocol` | error | — | Href starts with `javascript:` (or whitespace-padded / case-bypass variants like ` JaVaScRiPt:`). The editor drops these href values from live rich text and rendered custom-block canvas HTML through `sanitizeHtml`; the rich-text link dialog blocks insertion. Values from imported JSON, programmatic API calls, or structured fields (`button.url`, `image.linkUrl`, `menu.items[].url`, `social.icons[].url`) can remain in the template. This rule reports them at authoring time so the JSON can be corrected. |
 
 ## Unsupported protocols
 

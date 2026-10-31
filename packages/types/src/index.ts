@@ -319,6 +319,14 @@ export { EventEmitter } from "./events";
 
 // Utilities
 export { safeClone } from "./clone";
+export {
+  SAFE_LINK_SCHEMES,
+  DANGEROUS_SCRIPT_SCHEMES,
+  DATA_IMAGE_SRC_PATTERN,
+  normalizeUrlForSchemeCheck,
+  extractUrlScheme,
+  isSafeHtmlUrl,
+} from "./url-policy";
 export { findOpenTagEnd, getTagAttrValue } from "./html-scan";
 export { fillEmptyParagraphs, isBlankRichText } from "./rich-text";
 export type { FontFamily } from "./fonts";

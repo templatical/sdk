@@ -6,7 +6,7 @@
 
 E-Mail-URLs sind eine Langschwanz-Fehlerquelle:
 
-- Ein `javascript:`-Href schleicht sich aus einem Import in ein Template; der Render-Sanitizer entfernt ihn aus Sicherheitsgründen, aber der Autor erfährt nie, dass der Link kaputt ist.
+- Ein `javascript:`-Href schleicht sich aus einem Import in ein Template; der Render-Sanitizer entfernt ihn aus dem Live-HTML, aber der Autor erfährt nie, dass der Link kaputt ist.
 - Eine Staging-URL geht in Produktion, weil niemand das JSON vor dem Versand diff't.
 - Ein fehlerhafter `mailto:` macht „Contact us" stillschweigend tot.
 - Ein `tel:` mit Buchstaben drin wählt nirgendwohin.
@@ -20,20 +20,41 @@ Das sind keine Inhalts-Qualitätsprobleme (andere Zielgruppe als a11y) und keine
 Der Editor liefert bereits zwei URL-Schema-Verteidigungen:
 
 - **`useRichTextLinkDialog.normalizeLinkUrl`** — der Rich-Text-Link-Dialog weist URLs außerhalb seiner Safe-Scheme-Allowlist (`http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp`, `cid`) beim Einfügen zurück. Ein Pfad (`/contact`, `./x`, `?ref=1`) wird wie eingegeben gespeichert und `//host` wird zu `https://host`; `link.relative-url` meldet den Pfad anschließend.
-- **`sanitizeRichTextHtml`** — ein Render-Scrubber entfernt `javascript:` / `vbscript:` / `file:` (und weitere unsichere) `href` / `src` / `formaction`-Werte aus `paragraph.content` / `title.content` / `html.content`, bevor sie `v-html` erreichen.
+- **`sanitizeHtml`** — der Editor bereinigt `paragraph.content`, `title.content` und das Canvas-HTML von Custom Blocks mit DOMPurify vor dem Einfügen. Custom Blocks werden nach dem Liquid-Rendering nur im Canvas bereinigt; ihr Export-HTML bleibt unverändert. Rohe HTML-Blöcke bleiben in einer skriptfreien Sandbox.
 
-Das sind **Sicherheitsgrenzen** — sie verhindern XSS, indem sie gefährliche Werte stillschweigend entfernen. `lintLinks` ist ein **Authoring-Werkzeug**: es macht dieselben Werte sichtbar, damit der Autor das JSON korrigieren kann statt nur den Render-Pfad zu reparieren.
+Diese Grenzen entfernen nicht erlaubte Werte vor dem Einfügen von HTML ins Canvas. `lintLinks` meldet diese Werte, damit der Autor das JSON korrigieren kann.
 
 Die zwei Ebenen ergänzen sich:
 
-| Quelle eines `javascript:`-Links | `normalizeLinkUrl` | `sanitizeRichTextHtml` | `lintLinks` |
+| Quelle eines `javascript:`-Links | `normalizeLinkUrl` | `sanitizeHtml` | `lintLinks` |
 |---|---|---|---|
 | Nutzer tippt im Rich-Text-Link-Dialog | ✅ beim Einfügen blockiert | n/a (erreicht den Inhalt nie) | n/a |
 | Importiertes BeeFree- / Unlayer- / HTML- / MJML- / Topol- / Stripo- / Chamaileon- / Easy-Email-Pro-JSON | ❌ umgeht den Dialog | ✅ beim Rendern entfernt | ✅ zeigt dem Autor an |
 | Programmatisches `setContent()` mit fehlerhaftem Anker | ❌ | ✅ beim Rendern entfernt | ✅ zeigt dem Autor an |
-| `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (strukturierte Felder, kein HTML) | ❌ | ❌ Sanitizer scannt nur Rich-Text-HTML | ✅ zeigt dem Autor an |
+| `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (strukturierte Felder, kein HTML) | ❌ | ❌ Sanitizer bereinigt Live-Rich-Text und Custom-Block-HTML im Canvas, keine strukturierten Felder | ✅ zeigt dem Autor an |
 
 `lintLinks` ist also das **einzige Authoring-Signal** für unsichere URLs in strukturierten Feldern und der **einzige Feedback-Kanal**, wenn ein entfernter Wert sonst lautlos aus Rich-Text-Importen verschwinden würde.
+
+## Gemeinsame URL-Schema-Richtlinie
+
+`@templatical/types` exportiert die isomorphe URL-Richtlinie des Editors. `SAFE_LINK_SCHEMES` ist das eingefrorene Array `['http', 'https', 'mailto', 'tel', 'ftp', 'ftps', 'sms', 'xmpp', 'cid']`; `DANGEROUS_SCRIPT_SCHEMES` ist das eingefrorene Array `['javascript', 'data', 'vbscript']`.
+
+| Export | Vertrag |
+|---|---|
+| `normalizeUrlForSchemeCheck(value: string): string` | Entfernt Tab, LF und CR an jeder Stelle, dann führende C0-Steuerzeichen und Leerzeichen sowie abschließenden Whitespace vor der Schemaprüfung. |
+| `extractUrlScheme(value: string): string \| null` | Gibt ein kleingeschriebenes Schema zurück oder `null` für eine relative URL oder einen Fragment-Link. |
+| `DATA_IMAGE_SRC_PATTERN` | Matcht nur `data:image/(png\|jpe?g\|gif\|webp\|svg+xml);` am Anfang eines Werts. |
+| `isSafeHtmlUrl(value: string, attribute: string): boolean` | Erlaubt relative URLs und Fragment-Links sowie die sicheren Link-Schemata. Bild-Daten sind nur erlaubt, wenn `attribute` gleich `src` ist. Die Funktion prüft das Schema, nicht die vollständige URL-Syntax. |
+
+```ts
+import { extractUrlScheme, isSafeHtmlUrl } from "@templatical/types";
+
+console.log(extractUrlScheme("java\tscript:alert(1)")); // "javascript"
+console.log(isSafeHtmlUrl("data:image/png;base64,AA", "src")); // true
+console.log(isSafeHtmlUrl("data:image/png;base64,AA", "href")); // false
+```
+
+Prüfung: `pnpm --dir packages/types exec vitest run tests/url-policy.test.ts`. Diese Richtlinie gilt für Rich-Text-HTML und Custom-Block-HTML im Editor-Canvas sowie den Link-Dialog. Sie bereinigt keine exportierten HTML-Blöcke und ersetzt nicht die E-Mail-Client-Regeln des Quality-Linters.
 
 ## API
 

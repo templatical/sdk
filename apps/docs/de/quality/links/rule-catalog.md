@@ -6,7 +6,7 @@ Die 6 Regeln, die `lintLinks` ausliefert. Jede Regel lebt in `packages/quality/s
 
 | Regel | Standard-Schweregrad | Auto-Fix | Was sie prüft |
 |---|---|---|---|
-| `link.javascript-protocol` | error | — | Href beginnt mit `javascript:` (oder Whitespace-/Case-Bypass-Varianten wie ` JaVaScRiPt:`). `sanitizeRichTextHtml` entfernt diese bereits beim Render aus Rich-Text-Inhalten, sodass sie nicht ausgeführt werden, und der Link-Dialog blockiert das Einfügen — aber Werte aus importiertem JSON, programmatischen API-Aufrufen oder strukturierten Feldern (`button.url`, `image.linkUrl`, `menu.items[].url`, `social.icons[].url`) liegen still im Template. Diese Regel macht sie zur Authoring-Zeit sichtbar, damit das JSON korrigiert wird und nicht nur der Render-Pfad. |
+| `link.javascript-protocol` | error | — | Href beginnt mit `javascript:` (oder Whitespace-/Case-Bypass-Varianten wie ` JaVaScRiPt:`). Der Editor entfernt diese Href-Werte aus Live-Rich-Text und gerendertem Custom-Block-HTML im Canvas über `sanitizeHtml`; der Rich-Text-Link-Dialog blockiert das Einfügen. Werte aus importiertem JSON, programmatischen API-Aufrufen oder strukturierten Feldern (`button.url`, `image.linkUrl`, `menu.items[].url`, `social.icons[].url`) können im Template verbleiben. Diese Regel meldet sie zur Authoring-Zeit, damit das JSON korrigiert werden kann. |
 
 ## Nicht unterstützte Protokolle
 
