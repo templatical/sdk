@@ -1,5 +1,13 @@
 # @templatical/import-easy-email-pro
 
+## 0.52.0
+
+### Patch Changes
+
+- Updated dependencies [9881028]
+- Updated dependencies [72d142d]
+  - @templatical/types@0.52.0
+
 ## 0.51.1
 
 ### Patch Changes

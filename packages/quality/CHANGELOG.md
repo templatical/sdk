@@ -1,5 +1,14 @@
 # @templatical/quality
 
+## 0.52.0
+
+### Patch Changes
+
+- 72d142d: The editor sanitizes live rich-text HTML, custom-block canvas HTML, and inline SVG icons with DOMPurify. Custom-block export HTML is unchanged. URL attribute checks use a shared scheme policy from `@templatical/types`; the link dialog and `@templatical/quality` use the same scheme parsing. Unsupported DOM environments display escaped text.
+- Updated dependencies [9881028]
+- Updated dependencies [72d142d]
+  - @templatical/types@0.52.0
+
 ## 0.51.1
 
 ### Patch Changes
