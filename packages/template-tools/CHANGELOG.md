@@ -1,5 +1,31 @@
 # @templatical/template-tools
 
+## 0.52.0
+
+### Minor Changes
+
+- 9881028: Custom block fields are HTML-escaped in templates
+
+  `{{ }}`, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output in a custom block's template is now HTML-escaped: `&`, `<`, `>`, `"` and `'` become `&amp;`, `&lt;`, `&gt;`, `&#34;` and `&#39;`. To keep HTML from a field, write `{{ field | raw }}`. Remove explicit `| escape` from ordinary output; print captured output with `{{ name | raw }}`; and use `{{ field | escape | newline_to_br | raw }}` for HTML-producing filters. The editor canvas also sanitizes each rendered custom block. `@templatical/types` now exports `createCustomBlockLiquid(liquidjs)` so headless resolvers use the editor's engine. Recipe URLs percent-encode field values and JSON bodies remain unescaped; use `{{ key | json }}` to quote a JSON value.
+
+  `@templatical/renderer` now accepts `customBlocks: CustomBlockDefinition[]` so headless callers render saved blocks with definitions directly. `@templatical/template-tools` uses this option for specimen MJML rendering.
+
+### Patch Changes
+
+- Updated dependencies [9881028]
+- Updated dependencies [72d142d]
+  - @templatical/renderer@0.52.0
+  - @templatical/types@0.52.0
+  - @templatical/quality@0.52.0
+  - @templatical/import-html@0.52.0
+  - @templatical/import-mjml@0.52.0
+  - @templatical/import-beefree@0.52.0
+  - @templatical/import-chamaileon@0.52.0
+  - @templatical/import-easy-email-pro@0.52.0
+  - @templatical/import-stripo@0.52.0
+  - @templatical/import-topol@0.52.0
+  - @templatical/import-unlayer@0.52.0
+
 ## 0.51.1
 
 ### Patch Changes

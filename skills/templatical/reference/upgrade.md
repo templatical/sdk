@@ -131,7 +131,7 @@ finding about the content, not the upgrade: report it with its `suggestion`, as
    incomplete.
 2. **A stored template through the target's validator:**
    ```
-   npx -y @templatical/template-tools@0.51.1 validate <file> --json
+   npx -y @templatical/template-tools@0.52.0 validate <file> --json
    ```
    Use a template the app actually stores: an export from their database, a
    fixture or seed file, or `editor.getContent()` saved to a file. Act on the
