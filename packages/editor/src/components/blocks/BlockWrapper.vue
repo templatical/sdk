@@ -186,21 +186,40 @@ const canSaveAsBlock = computed(
     caps.savedBlocks?.canCreate.value === true,
 );
 
-// The action bar sits to the right of the selected block, moving inside and
-// below the badges when the pane has no room. On a short block it stays
-// vertically centred and moves past the badge slot toward inline-start in LTR,
-// mirrored in RTL. Its horizontal position is then clamped to the canvas pane.
+// The action bar is chrome for editing a single block; during a pick session the
+// canvas is in a different mode and N bars would be noise.
+const showActions = computed(() => props.isSelected && !isPicking.value);
+
+const blockCommentCount = computed(
+  () => caps.comments?.getBlockCount(props.block.id) ?? 0,
+);
+
+// The action bar sits right of the selected block and the comment pill past its
+// badge corner (top-right in LTR, top-left in RTL). The canvas pane scrolls, so
+// whatever crosses its edge is clipped under the properties panel. Without room
+// the pill joins the corner row, and the bar moves inside below the measured row
+// of comment, lint and locale badges, clamped to both pane edges. A block too
+// short for that keeps the bar vertically centred, left of the row in LTR and
+// right of it in RTL. Beside a short LTR block, the bar starts below the pill.
 const blockElement = ref<HTMLElement | null>(null);
 const actionsElement = ref<HTMLElement | null>(null);
 const badgesElement = ref<HTMLElement | null>(null);
+const commentElement = ref<HTMLElement | null>(null);
 const actionsStyle = ref({ left: "calc(100% + 8px)", top: "50%" });
-const canvasBody = computed(() =>
-  actionsElement.value?.closest<HTMLElement>(".tpl-body"),
+const commentInBadges = ref(false);
+// Only blocks showing a bar or a pill measure, listen and observe.
+const chromeElement = computed(
+  () => actionsElement.value ?? commentElement.value,
 );
-function positionActions(): void {
-  const block = blockElement.value;
+const canvasBody = computed(() =>
+  chromeElement.value?.closest<HTMLElement>(".tpl-body"),
+);
+function positionChrome(): void {
+  const inBadges = commentInBadges.value;
   const actions = actionsElement.value;
-  if (!block?.offsetWidth || !actions?.offsetWidth) return;
+  const comment = commentElement.value;
+  const block = blockElement.value;
+  if ((!actions && !comment) || !block?.offsetWidth) return;
   const box = block.getBoundingClientRect();
   // Client rects carry a host's transform scale; style offsets don't.
   const scale = box.width / block.offsetWidth || 1;
@@ -209,27 +228,58 @@ function positionActions(): void {
     ? (pane.getBoundingClientRect().left - box.left) / scale + pane.clientLeft
     : -Infinity;
   const paneRight = pane ? paneLeft + pane.clientWidth : Infinity;
+  const rtl = getComputedStyle(block).direction === "rtl";
+  if (comment?.offsetWidth) {
+    // Past the badge corner, the pill starts 4 px outside the block. Leave
+    // another 4 px before the pane edge, on the left in RTL.
+    const pillLeft = rtl ? -4 - comment.offsetWidth : block.offsetWidth + 4;
+    const fits =
+      pillLeft >= paneLeft + 4 &&
+      pillLeft + comment.offsetWidth + 4 <= paneRight;
+    if (inBadges === fits) {
+      commentInBadges.value = !fits;
+      // The bar steps around the row once it renders with the pill moved. An
+      // effect doesn't re-run for its own writes, so this one can't wait on it.
+      void nextTick(positionChrome);
+      return;
+    }
+  }
+  if (!actions?.offsetWidth) return;
   let left = Math.max(
     paneLeft + 4,
     Math.min(block.offsetWidth + 8, paneRight - actions.offsetWidth - 4),
   );
+  const badges = badgesElement.value;
+  // Measure the whole row, including the locale badge and the taller pill.
+  const belowBadges = Math.max(
+    28,
+    badges?.offsetHeight ? badges.offsetTop + badges.offsetHeight + 4 : 0,
+  );
   const centre = Math.max(
-    28 + actions.offsetHeight / 2,
+    belowBadges + actions.offsetHeight / 2,
     block.offsetHeight / 2,
   );
-  const top =
+  let top =
     left < block.offsetWidth &&
     centre + actions.offsetHeight / 2 <= block.offsetHeight + 8
       ? `${centre}px`
       : "50%";
+  if (left >= block.offsetWidth && comment?.offsetWidth && !inBadges && !rtl) {
+    // Beside a short block the centred bar would cover the pill past its
+    // corner, so it starts below the pill instead. In RTL the exterior pill
+    // is on the opposite side of the block and needs no vertical clearance.
+    const pillBottom =
+      (comment.getBoundingClientRect().bottom - box.top) / scale;
+    const clear = pillBottom + 4 + actions.offsetHeight / 2;
+    if (clear > block.offsetHeight / 2) top = `${clear}px`;
+  }
   if (left < block.offsetWidth && top === "50%") {
-    const badges = badgesElement.value?.getBoundingClientRect();
-    if (badges?.width) {
-      // Leave the badge slot and its focus rings beside a short block's bar.
-      const rtl = getComputedStyle(block).direction === "rtl";
+    const row = badges?.getBoundingClientRect();
+    if (row?.width) {
+      // Leave the badge row and its focus rings clear of a short block's bar.
       const beside = rtl
-        ? (badges.right - box.left) / scale + 8
-        : (badges.left - box.left) / scale - actions.offsetWidth - 8;
+        ? (row.right - box.left) / scale + 8
+        : (row.left - box.left) / scale - actions.offsetWidth - 8;
       left = Math.max(
         paneLeft + 4,
         Math.min(beside, paneRight - actions.offsetWidth - 4),
@@ -240,29 +290,22 @@ function positionActions(): void {
   if (actionsStyle.value.left !== `${left}px` || actionsStyle.value.top !== top)
     actionsStyle.value = { left: `${left}px`, top };
 }
-watchPostEffect(positionActions);
+watchPostEffect(positionChrome);
 useResizeObserver(
   computed(() =>
-    actionsElement.value
+    chromeElement.value
       ? [
           blockElement.value,
           actionsElement.value,
           badgesElement.value,
+          commentElement.value,
           canvasBody.value,
         ].filter((element): element is HTMLElement => !!element)
       : [],
   ),
-  positionActions,
+  positionChrome,
 );
-useEventListener(canvasBody, "scroll", positionActions, { passive: true });
-
-// The action bar is chrome for editing a single block; during a pick session the
-// canvas is in a different mode and N bars would be noise.
-const showActions = computed(() => props.isSelected && !isPicking.value);
-
-const blockCommentCount = computed(
-  () => caps.comments?.getBlockCount(props.block.id) ?? 0,
-);
+useEventListener(canvasBody, "scroll", positionChrome, { passive: true });
 
 // Another collaborator's lock: an outline in their colour and their name, on
 // any block, a section's children included, in the active language view.
@@ -313,6 +356,7 @@ const editor = inject(EDITOR_KEY, null);
 const localizedDisplay = editor ? useLocalizedDisplay(editor) : null;
 const localizedContent =
   inject(LOCALIZED_CONTENT_KEY, null) ?? localizedDisplay?.content ?? null;
+// Re-measure after the canvas applies the active language's projected `dir`.
 watch(
   [
     () => editor?.activeLocale?.value,
@@ -320,7 +364,7 @@ watch(
       localizedDisplay &&
       resolveContentDirection(localizedDisplay.settings.value),
   ],
-  positionActions,
+  positionChrome,
   { flush: "post" },
 );
 const layout = inject(LAYOUT_KEY, undefined);
@@ -399,12 +443,30 @@ function handleConditionToggle(): void {
     :data-tpl-picked="picked || undefined"
     @click="handleClick"
   >
-    <!-- Status badges share the block's top corner (top-left in a
-         right-to-left view): lint issues inward, localization at the corner. -->
+    <!-- Status badges share the top-right corner (top-left in RTL). From
+         inward to corner: comment pill, lint, locale. The pill sits past the
+         corner while it fits, then joins the row the action bar measures. -->
     <div
       ref="badgesElement"
       class="tpl-block-badges tpl:absolute tpl:top-1 tpl:inset-e-1 tpl:z-10 tpl:flex tpl:gap-1"
     >
+      <button
+        v-if="blockCommentCount > 0 && !isHiddenOnViewport"
+        ref="commentElement"
+        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-chrome-primary-light)] tpl:text-[var(--tpl-primary)]"
+        :class="
+          commentInBadges
+            ? undefined
+            : 'tpl:absolute tpl:-top-2 tpl:inset-s-full tpl:ms-2'
+        "
+        :aria-label="
+          format(t.blockActions.comments, { count: String(blockCommentCount) })
+        "
+        @click.stop="caps.comments?.openForBlock(block.id)"
+      >
+        <MessageCircle :size="12" :stroke-width="2.5" />
+        {{ blockCommentCount }}
+      </button>
       <BlockIssueBadge :block-id="block.id" />
       <LocaleMarkers v-if="!previewMode" :block="block" />
     </div>
@@ -435,9 +497,9 @@ function handleConditionToggle(): void {
       aria-hidden="true"
       class="tpl-block-agent-highlight tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
     />
-    <!-- Floating action bar: beside the block or inside below its badges.
-         Short blocks keep it vertically centred, past the slot toward
-         inline-start in LTR (mirrored in RTL), then clamped to the pane. -->
+    <!-- Floating action bar: beside the block or inside below the badge row.
+         On a short block, left of the row in LTR and right of it in RTL,
+         clamped to the pane. Placed by positionChrome. -->
     <div
       v-if="showActions"
       ref="actionsElement"
@@ -510,22 +572,6 @@ function handleConditionToggle(): void {
         @click.stop="handleConditionToggle"
       >
         <Filter :size="12" :stroke-width="2" />
-      </button>
-    </div>
-    <!-- Comment count indicator -->
-    <div
-      v-if="blockCommentCount > 0 && !isHiddenOnViewport"
-      class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:z-[5] tpl:translate-x-full"
-    >
-      <button
-        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-chrome-primary-light)] tpl:text-[var(--tpl-primary)]"
-        :aria-label="
-          format(t.blockActions.comments, { count: String(blockCommentCount) })
-        "
-        @click.stop="caps.comments?.openForBlock(block.id)"
-      >
-        <MessageCircle :size="12" :stroke-width="2.5" />
-        {{ blockCommentCount }}
       </button>
     </div>
     <!-- Email content — the section's wrapper frame when it has one, then

@@ -22,6 +22,6 @@
     "@types/mjml": "~5.4.2",
     "@types/node": "^26.6.5",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.13"
+    "vue-tsc": "^3.3.14"
   }
 }

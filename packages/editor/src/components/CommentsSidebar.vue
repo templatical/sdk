@@ -404,6 +404,7 @@ defineExpose({ filterByBlock, focusNewComment });
           class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
           :class="filterMode === 'block' ? 'tpl-comment-filter--active' : ''"
           :aria-pressed="filterMode === 'block'"
+          data-testid="comments-filter-block"
           @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
         >
           {{ t.comments.filterBlock }}

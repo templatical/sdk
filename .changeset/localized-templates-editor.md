@@ -10,4 +10,4 @@ Comments record the language they were written in, show a language badge and fil
 
 Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.
 
-Ask inside the merge-tag mismatch popover before Re-translate replaces other current translations, keep short blocks' badges and focus rings visible beside their action bar in both text directions and after direction changes, and include the visible gap count and breakdown in the language trigger's accessible name. Name and describe the block confirmation, focus Cancel, and let Escape cancel it before closing the popover.
+Ask inside the merge-tag mismatch popover before Re-translate replaces other current translations, place the language badge in the corner slot and mirror the badge row and short-block action bar offset in right-to-left views, and include the visible gap count and breakdown in the language trigger's accessible name. Name and describe the block confirmation, focus Cancel, and let Escape cancel it before closing the popover.
