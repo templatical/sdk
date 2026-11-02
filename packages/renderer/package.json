@@ -9,7 +9,7 @@
   "devDependencies": {
     "@jsquash/oxipng": "^2.3.0",
     "@resvg/resvg-js": "^2.6.2",
-    "liquidjs": "^10.30.0",
+    "liquidjs": "^10.30.1",
     "mjml": "^5.4.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
@@ -36,7 +36,7 @@
   "license": "MIT",
   "module": "./dist/index.js",
   "peerDependencies": {
-    "liquidjs": "^10.30.0"
+    "liquidjs": "^10.30.1"
   },
   "peerDependenciesMeta": {
     "liquidjs": {

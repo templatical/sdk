@@ -56,7 +56,7 @@ const mjml = await renderToMjml(content, {
 
 ### With custom blocks
 
-Editor consumers use `editor.toMjml()`. Headless callers pass the registered definitions as `customBlocks`. Install the optional `liquidjs` peer (`^10.30.0`) in the server project:
+Editor consumers use `editor.toMjml()`. Headless callers pass the registered definitions as `customBlocks`. Install the optional `liquidjs` peer (`^10.30.1`) in the server project:
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
