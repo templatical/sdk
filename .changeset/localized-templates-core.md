@@ -9,3 +9,5 @@ Route language-view edits into locale layers, emit locale operations from collab
 `mapLocalizedOperations` maps AI edits of a language projection into text translations, property overrides and shared structure changes; an added block's text becomes its default value, and it refuses `setContent` and `setDefaultLocale` in a language view. `CollaborationApplyOptions.origin` and `.turn` are optional: a batch without `origin` is the session's own edit with its own undo step and no wire origin, and only batches of one defined AI turn share an undo step. Translation batches use the ordinary edit and history path.
 
 Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.
+
+`editor.createSetDefaultLocaleOperation(locale)` builds a default-language operation with registered custom text-field paths for deterministic replay. The Make-default flow preserves current copies of the former default's untranslated text in one undo step.

@@ -3,6 +3,7 @@ import type {
   BlockLock,
   BlockLocaleLayer,
   CustomBlockDefinition,
+  SetDefaultLocaleOperation,
   Template,
   TemplateContent,
   TemplateDefaults,
@@ -28,6 +29,7 @@ import {
   assertNoSlotInContent,
   assertNoWrapperInContent,
   createDefaultTemplateContent,
+  createSetDefaultLocaleOperation as buildSetDefaultLocaleOperation,
   SdkError,
 } from "@templatical/types";
 import {
@@ -123,6 +125,10 @@ export interface UseEditorReturn {
   resetLocaleFields: (blockId: string, paths?: string[]) => void;
   keepTranslations: (blockId: string, paths: string[]) => void;
   setCustomBlockDefinitions: (defs: readonly CustomBlockDefinition[]) => void;
+  /** Captures registered custom text paths for deterministic default-language replay. Pure. */
+  createSetDefaultLocaleOperation: (
+    locale: string,
+  ) => SetDefaultLocaleOperation;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   selectBlock: (blockId: string | null) => void;
   setViewport: (viewport: ViewportSize) => void;
@@ -262,6 +268,12 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     defs: readonly CustomBlockDefinition[],
   ): void {
     definitions = defs;
+  }
+
+  function createSetDefaultLocaleOperation(
+    locale: string,
+  ): SetDefaultLocaleOperation {
+    return buildSetDefaultLocaleOperation(state.content, locale, definitions);
   }
 
   function localeListDraft(
@@ -956,6 +968,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     resetLocaleFields,
     keepTranslations,
     setCustomBlockDefinitions,
+    createSetDefaultLocaleOperation,
     isBlockLocked,
     setContent,
     selectBlock,

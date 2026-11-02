@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CollaborationConflict,
+  localeCoverage,
+  resolveLocale,
+  sourceHash,
+  createCustomBlock,
   safeClone,
   type Operation,
 } from "@templatical/types";
@@ -38,6 +42,116 @@ describe("explicit own-edit batches", () => {
     return client;
   }
   const op = { op: "setDefaultLocale", locale: "de" } as Operation;
+  it("captures registered custom text paths and replays them identically in a peer without definitions", async () => {
+    const definition = {
+      type: "card",
+      name: "Card",
+      template: "",
+      fields: [
+        { key: "headline", label: "Headline", type: "text" as const },
+        { key: "body", label: "Body", type: "textarea" as const },
+        { key: "color", label: "Color", type: "color" as const },
+      ],
+    };
+    server.content.blocks.push({
+      ...createCustomBlock(definition),
+      id: "custom",
+      fieldValues: {
+        headline: "English heading",
+        body: "English body",
+        color: "#123456",
+      },
+    });
+    const before = safeClone(server.content);
+    const a = await open("Ada");
+    const b = await open("Grace");
+    a.editor.setCustomBlockDefinitions([definition]);
+    expect(a.editor.createSetDefaultLocaleOperation).toBeTypeOf("function");
+    const captured = a.editor.createSetDefaultLocaleOperation("de");
+    expect(captured).toEqual({
+      op: "setDefaultLocale",
+      locale: "de",
+      customTextFields: {
+        custom: ["fieldValues.headline", "fieldValues.body"],
+      },
+    });
+    expect(a.collaboration.applyOperations([captured], {}).applied).toBe(true);
+    await sync();
+    expect(server.submitted.at(-1)?.ops).toEqual([captured]);
+    for (const content of [
+      a.editor.content.value,
+      b.editor.content.value,
+      server.content,
+    ]) {
+      expect(content.blocks.at(-1)?.l10n?.en.text).toEqual({
+        "fieldValues.headline": {
+          value: "English heading",
+          sourceHash: sourceHash("English heading"),
+        },
+        "fieldValues.body": {
+          value: "English body",
+          sourceHash: sourceHash("English body"),
+        },
+      });
+      expect(content).toEqual(a.editor.content.value);
+    }
+    a.collaboration.undo();
+    await sync();
+    expect(a.collaboration.canUndo.value).toBe(false);
+    for (const content of [
+      a.editor.content.value,
+      b.editor.content.value,
+      server.content,
+    ])
+      expect(content).toEqual(before);
+  });
+  it("converges on current old-default gap text, restores it in one undo, and later marks it stale", async () => {
+    const before = safeClone(server.content);
+    const a = await open("Ada");
+    const b = await open("Grace");
+    expect(a.collaboration.applyOperations([op], {}).applied).toBe(true);
+    await sync();
+    for (const content of [
+      a.editor.content.value,
+      b.editor.content.value,
+      server.content,
+    ]) {
+      expect(content.blocks[0].l10n?.en.text?.content).toEqual({
+        value: "Hi",
+        sourceHash: sourceHash("Hi"),
+      });
+      expect(localeCoverage(content, "en").missing).toEqual([]);
+      expect(localeCoverage(content, "en").stale).toEqual([]);
+    }
+    expect(a.editor.content.value).toEqual(b.editor.content.value);
+    expect(a.editor.content.value).toEqual(server.content);
+    a.collaboration.undo();
+    await sync();
+    expect(a.collaboration.canUndo.value).toBe(false);
+    for (const content of [
+      a.editor.content.value,
+      b.editor.content.value,
+      server.content,
+    ])
+      expect(content).toEqual(before);
+    a.collaboration.redo();
+    await sync();
+    server.pushAs(AGENT, [
+      { op: "updateBlock", blockId: "t1", set: { content: "Hallo" } },
+    ]);
+    await sync();
+    for (const content of [
+      a.editor.content.value,
+      b.editor.content.value,
+      server.content,
+    ]) {
+      expect(resolveLocale(content, "en").blocks[0]).toMatchObject({
+        content: "Hi",
+      });
+      expect(localeCoverage(content, "en").stale).toEqual(["t1/content"]);
+      expect(localeCoverage(content, "en").missing).toEqual([]);
+    }
+  });
   it("sends the explicit operation without origin, records an undo step and reports a template-level remote change", async () => {
     const a = await open("Ada");
     const b = await open("Grace");

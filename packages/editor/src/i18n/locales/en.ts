@@ -82,9 +82,9 @@ export default {
     },
     defaultNotEnabled: "Add {default} to the enabled languages first",
     defaultGaps: {
-      one: "{count} field has no {language} text and keeps its {default} text.",
+      one: "{count} field has no {language} text and keeps its {default} text. Translate it first. {default} keeps a copy; later {language} edits mark it out of date.",
       other:
-        "{count} fields have no {language} text and keep their {default} text.",
+        "{count} fields have no {language} text and keep their {default} text. Translate them first. {default} keeps a copy; later {language} edits mark it out of date.",
     },
     defaultRemaining: {
       one: "{count} field is still in {old}.",

@@ -287,7 +287,7 @@ function confirmTranslation() {
     :aria-expanded="open"
     :aria-controls="open ? id : undefined"
     aria-haspopup="dialog"
-    class="tpl-locale-chip tpl:flex tpl:size-5 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:p-0 tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-chrome-text-muted)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:ring-1 tpl:ring-[var(--tpl-border)] tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)]"
+    class="tpl-locale-chip tpl:flex tpl:size-5 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:p-0 tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-chrome-text-muted)] tpl:ring-1 tpl:ring-[var(--tpl-border)] tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:hover:shadow-[var(--tpl-shadow-sm)] tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)] tpl:hover:focus-visible:shadow-[var(--tpl-ring),var(--tpl-shadow-sm)]"
     @click.stop="toggle"
     @keydown.enter.stop.prevent="toggle"
     @keydown.esc.stop.prevent="onEscape"

@@ -59,7 +59,17 @@
         {
           "id": "gap",
           "type": "title",
-          "content": "Missing"
+          "content": "Missing",
+          "l10n": {
+            "en": {
+              "text": {
+                "content": {
+                  "value": "Missing",
+                  "sourceHash": "3d94d6a7"
+                }
+              }
+            }
+          }
         }
       ],
       "settings": {

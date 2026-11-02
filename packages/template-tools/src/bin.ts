@@ -48,7 +48,7 @@ Options:
   --locale <tag>                        template language for validate/render; required target for strings export
                                         validate exits 1 on merge-tag mismatches; missing/stale values warn
   --default-locale <tag>                 import fallback language; source-declared default wins (default: "en")
-  --definitions <file>                   JSON array of custom block definitions for validate/render/strings
+  --definitions <file>                   JSON array of custom block definitions for validate/render/edit/strings
   --do-not-translate <file>              JSON array of protected terms for strings
   --only gaps|all                       strings export selection (default: gaps)
   --block <id>                          strings export block filter

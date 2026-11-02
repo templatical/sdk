@@ -78,7 +78,7 @@ describe("localization finish review", () => {
       "tpl:size-5",
       "tpl:rounded-full",
       "tpl:bg-[var(--tpl-bg)]",
-      "tpl:shadow-[var(--tpl-shadow-sm)]",
+      "tpl:hover:shadow-[var(--tpl-shadow-sm)]",
       "tpl:ring-1",
       "tpl:ring-[var(--tpl-border)]",
     ]) {

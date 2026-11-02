@@ -1,6 +1,9 @@
 import { createApp, h, onUnmounted, provide, ref } from "vue";
 import { useEditor } from "../../../../packages/core/src/index";
-import { createDefaultTemplateContent } from "../../../../packages/types/src/index";
+import {
+  createDefaultTemplateContent,
+  createTitleBlock,
+} from "../../../../packages/types/src/index";
 import EditorHeader from "../../../../packages/editor/src/components/EditorHeader.vue";
 import { useEditorCore } from "../../../../packages/editor/src/composables/useEditorCore";
 import { useFonts } from "../../../../packages/editor/src/composables/useFonts";
@@ -14,7 +17,11 @@ import css from "../../../../packages/editor/src/styles/index.css?inline";
 
 type HeaderProps = InstanceType<typeof EditorHeader>["$props"];
 
-export async function mountCrowdedHeader(shadowDom: boolean, width?: number) {
+export async function mountCrowdedHeader(
+  shadowDom: boolean,
+  width?: number,
+  features: "all" | "minimum" = "all",
+) {
   const host = document.createElement("div");
   host.dataset.testid = "language-header-harness";
   host.style.cssText =
@@ -32,6 +39,10 @@ export async function mountCrowdedHeader(shadowDom: boolean, width?: number) {
   const popover = document.createElement("div");
   root.appendChild(popover);
   const content = createDefaultTemplateContent();
+  // Give alternate languages a real gap count beside their natural name.
+  content.blocks = [
+    createTitleBlock({ content: "Header translation fixture" }),
+  ];
   content.settings.locale = "en";
   content.settings.locales = ["de", "zh-Hant-HK"];
   const translations = await loadTranslations("en");
@@ -67,7 +78,16 @@ export async function mountCrowdedHeader(shadowDom: boolean, width?: number) {
         core,
         showTemplateName: true,
         localization: { locales: ["de", "zh-Hant-HK"] },
-        ...headerFeatures(),
+        ...(features === "all"
+          ? headerFeatures()
+          : {
+              templates: null,
+              versionHistory: null,
+              comments: null,
+              collaboration: null,
+              ai: null,
+              testEmail: null,
+            }),
       } satisfies HeaderProps;
       return () => h(EditorHeader, props);
     },

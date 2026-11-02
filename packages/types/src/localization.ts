@@ -522,22 +522,11 @@ export function defaultLocaleGaps(
     return [];
   const gaps: string[] = [];
   const collect = (id: string, target: Json, paths: readonly string[]) => {
-    const layer = (
-      target.l10n as Record<string, BlockLocaleLayer> | undefined
-    )?.[locale];
-    for (const path of paths) {
-      const value = readPath(target, path);
-      // An empty default has no text to keep, as in localeCoverage.
-      if (typeof value !== "string" || value === "" || layer?.text?.[path])
-        continue;
-      const overridden = Object.keys(layer?.set ?? {}).some(
-        (key) =>
-          (path === key || path.startsWith(`${key}.`)) &&
-          (!key.includes(".") ||
-            readPath(target, key.slice(0, key.lastIndexOf("."))) !== undefined),
-      );
-      if (!overridden) gaps.push(`${id}/${path}`);
-    }
+    gaps.push(
+      ...defaultLocaleGapPaths(target, locale, paths).map(
+        (path) => `${id}/${path}`,
+      ),
+    );
   };
   const walk = (blocks: Block[]) => {
     for (const block of blocks) {
@@ -559,16 +548,45 @@ export function defaultLocaleGaps(
   return gaps;
 }
 
+function defaultLocaleGapPaths(
+  target: Json,
+  locale: string,
+  paths: readonly string[],
+): string[] {
+  const layer = (target.l10n as Record<string, BlockLocaleLayer> | undefined)?.[
+    locale
+  ];
+  return paths.filter((path) => {
+    const value = readPath(target, path);
+    // An empty default has no text to keep, as in localeCoverage.
+    if (typeof value !== "string" || value === "" || layer?.text?.[path])
+      return false;
+    return !Object.keys(layer?.set ?? {}).some(
+      (key) =>
+        (path === key || path.startsWith(`${key}.`)) &&
+        (!key.includes(".") ||
+          readPath(target, key.slice(0, key.lastIndexOf("."))) !== undefined),
+    );
+  });
+}
+
 /** Promote a language's layers to the base. Membership and visibility are checked by the engine. */
 export function rebaseDefaultLocale(
   content: TemplateContent,
   locale: string,
+  customTextFields: Readonly<Record<string, readonly string[]>> = {},
 ): TemplateContent {
   const previous = defaultLocaleOf(content);
   const rebase = <T extends { l10n?: Record<string, BlockLocaleLayer> }>(
     target: T,
     textPath: (path: string) => boolean,
+    textPaths: readonly string[],
   ): T => {
+    const gapPaths = defaultLocaleGapPaths(
+      target as unknown as Json,
+      locale,
+      textPaths,
+    );
     const layers = safeClone(target.l10n ?? {});
     const promoted = layers[locale] ?? {};
     const next = safeClone(target) as T & Json;
@@ -583,15 +601,16 @@ export function rebaseDefaultLocale(
     const paths = new Set([
       ...Object.keys(promoted.set ?? {}),
       ...Object.keys(promoted.text ?? {}),
+      ...gapPaths,
     ]);
     for (const path of paths) {
       const before = readPath(target, path);
       const after = readPath(next, path);
       if (deepEqual(before, after)) {
-        // Text translated to the old default's own value stays a current
-        // translation, so the old default doesn't read it as missing.
+        // Keep the former default current even when the new default has no
+        // translation and inherits this value unchanged.
         if (
-          promoted.text?.[path] &&
+          (promoted.text?.[path] || gapPaths.includes(path)) &&
           textPath(path) &&
           typeof before === "string" &&
           before !== ""
@@ -678,14 +697,28 @@ export function rebaseDefaultLocale(
   };
   const walk = (blocks: Block[]): Block[] =>
     blocks.map((block) => {
-      // Custom field definitions are not part of an operation's context;
-      // existing text entries identify their translatable paths.
-      const next = rebase(block, (path) =>
+      // Captured paths travel with the operation; prior text entries still
+      // identify custom text when the caller has no definitions.
+      const textPaths =
         block.type === "custom"
-          ? Object.values(block.l10n ?? {}).some((layer) =>
-              Object.hasOwn(layer.text ?? {}, path),
-            )
-          : isTranslatablePath(block.type, path),
+          ? [
+              ...new Set([
+                ...(Object.hasOwn(customTextFields, block.id)
+                  ? customTextFields[block.id]!
+                  : []),
+                ...Object.values(block.l10n ?? {}).flatMap((layer) =>
+                  Object.keys(layer.text ?? {}),
+                ),
+              ]),
+            ]
+          : translatableFields(block);
+      const next = rebase(
+        block,
+        (path) =>
+          block.type === "custom"
+            ? textPaths.includes(path)
+            : isTranslatablePath(block.type, path),
+        textPaths,
       );
       if (
         block.type === "custom" &&
@@ -697,8 +730,10 @@ export function rebaseDefaultLocale(
       else if (next.type === "wrapper") next.children = walk(next.children);
       return next;
     });
-  const settings = rebase(content.settings, (path) =>
-    SETTINGS_TRANSLATABLE_FIELDS.includes(path),
+  const settings = rebase(
+    content.settings,
+    (path) => SETTINGS_TRANSLATABLE_FIELDS.includes(path),
+    SETTINGS_TRANSLATABLE_FIELDS,
   );
   settings.locale = locale;
   settings.locales = content.settings.locales!.map((tag) =>

@@ -90,9 +90,9 @@ const ca: typeof en = {
     },
     defaultNotEnabled: "Afegeix primer {default} als idiomes activats",
     defaultGaps: {
-      one: "{count} camp no té text en {language} i conserva el text en {default}.",
+      one: "{count} camp no té text en {language} i conserva el text en {default}. Traduïu-lo primer. {default} en conserva una còpia; els canvis posteriors en {language} la marquen com a desactualitzada.",
       other:
-        "{count} camps no tenen text en {language} i conserven el text en {default}.",
+        "{count} camps no tenen text en {language} i conserven el text en {default}. Traduïu-los primer. {default} en conserva una còpia; els canvis posteriors en {language} la marquen com a desactualitzada.",
     },
     defaultRemaining: {
       one: "{count} camp encara és en {old}.",

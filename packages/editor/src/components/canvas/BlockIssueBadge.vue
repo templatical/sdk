@@ -31,7 +31,7 @@ const tooltip = computed(() =>
 <template>
   <span
     v-if="severity"
-    class="tpl-block-issue-badge tpl:flex tpl:size-5 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:ring-1 tpl:ring-[var(--tpl-border)]"
+    class="tpl-block-issue-badge tpl:flex tpl:size-5 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-[var(--tpl-bg)] tpl:ring-1 tpl:ring-[var(--tpl-border)] tpl:hover:shadow-[var(--tpl-shadow-sm)]"
     :class="
       severity === 'error'
         ? 'tpl:text-[var(--tpl-danger)]'

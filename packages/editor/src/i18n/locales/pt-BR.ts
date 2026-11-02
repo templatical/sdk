@@ -89,9 +89,9 @@ const ptBR: typeof en = {
     },
     defaultNotEnabled: "Adicione primeiro {default} aos idiomas habilitados",
     defaultGaps: {
-      one: "{count} campo não tem texto em {language} e mantém o texto em {default}.",
+      one: "{count} campo não tem texto em {language} e mantém o texto em {default}. Traduza-o primeiro. {default} mantém uma cópia; edições posteriores em {language} a marcam como desatualizada.",
       other:
-        "{count} campos não têm texto em {language} e mantêm o texto em {default}.",
+        "{count} campos não têm texto em {language} e mantêm o texto em {default}. Traduza-os primeiro. {default} mantém uma cópia; edições posteriores em {language} a marcam como desatualizada.",
     },
     defaultRemaining: {
       one: "{count} campo ainda está em {old}.",

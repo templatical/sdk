@@ -87,9 +87,9 @@ const de: typeof en = {
     defaultNotEnabled:
       "Füge {default} zuerst zu den aktivierten Sprachen hinzu",
     defaultGaps: {
-      one: "{count} Feld hat keinen Text in {language} und behält seinen Text in {default}.",
+      one: "{count} Feld hat keinen Text in {language} und behält seinen Text in {default}. Übersetzen Sie es zuerst. {default} behält eine Kopie; spätere Änderungen in {language} markieren sie als veraltet.",
       other:
-        "{count} Felder haben keinen Text in {language} und behalten ihren Text in {default}.",
+        "{count} Felder haben keinen Text in {language} und behalten ihren Text in {default}. Übersetzen Sie sie zuerst. {default} behält eine Kopie; spätere Änderungen in {language} markieren sie als veraltet.",
     },
     defaultRemaining: {
       one: "{count} Feld ist noch in {old}.",

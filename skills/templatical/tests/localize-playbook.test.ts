@@ -132,7 +132,7 @@ describe("localization agent path", () => {
       "providers.md",
       "maskTags",
       "unmaskTags",
-      "the old default keeps no copy of them",
+      "the old default keeps its own current copy",
       "before the change",
       "`locked_by_others`",
       "unless that hash equals the promoted value",
@@ -143,7 +143,7 @@ describe("localization agent path", () => {
       "drop `text` from stale entries",
       "jq '[.. | objects | select(.l10n?.de?.hidden == true) | .id]' template.json",
       "validate template.json --locale de --json` reports every gap",
-      "validate template.json --locale en --json` lists the remaining gaps",
+      "validate template.json --locale en --json` no longer lists those fields",
     ])
       expect.soft(source, term).toContain(term);
     expect(source).not.toContain("translate them in the new default");
@@ -159,7 +159,7 @@ describe("localization agent path", () => {
       `edit .templatical/<name>.json --op '{"op":"setDefaultLocale","locale":"de"}' --json`,
     );
     expect(edit).toContain("localeHiddenBlocks");
-    expect(edit).toContain("the old default keeps no copy of them");
+    expect(edit).toContain("the old default keeps its own current copy");
     expect(edit).toContain("translate HTML blocks by hand");
     expect(edit).toContain(
       "jq '[.. | objects | select(.l10n?.de?.hidden == true) | .id]' .templatical/<name>.json",
@@ -198,7 +198,10 @@ describe("localization agent path", () => {
         "validate --locale en",
         "one undo step",
         "before the change",
-        "keeps no copy",
+        "keeps its own current copy",
+        "out of date",
+        "nothing flags",
+        "HTML blocks by hand",
         "locked_by_others",
         "translated from exactly the promoted German text",
         "settings.locales contains en",

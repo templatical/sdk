@@ -90,9 +90,9 @@ const es: typeof en = {
     },
     defaultNotEnabled: "Añade primero {default} a los idiomas habilitados",
     defaultGaps: {
-      one: "{count} campo no tiene texto en {language} y conserva su texto en {default}.",
+      one: "{count} campo no tiene texto en {language} y conserva su texto en {default}. Tradúzcalo primero. {default} guarda una copia; los cambios posteriores en {language} la marcan como desactualizada.",
       other:
-        "{count} campos no tienen texto en {language} y conservan su texto en {default}.",
+        "{count} campos no tienen texto en {language} y conservan su texto en {default}. Tradúzcalos primero. {default} guarda una copia; los cambios posteriores en {language} la marcan como desactualizada.",
     },
     defaultRemaining: {
       one: "{count} campo sigue en {old}.",

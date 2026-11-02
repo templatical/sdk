@@ -1,5 +1,6 @@
 import { elementIdIssues } from "./element-ids";
 import type { Block } from "./blocks";
+import type { CustomBlockDefinition } from "./custom-blocks";
 import { safeClone } from "./clone";
 import { deepEqual } from "./deep-equal";
 import {
@@ -14,6 +15,7 @@ import {
   pruneLocaleOrphans,
   pruneSettingsLocaleOrphans,
   SETTINGS_TRANSLATABLE_FIELDS,
+  translatableFields,
   type BlockLocaleLayer,
   type LocalizedText,
   type SettingsLocaleLayer,
@@ -113,6 +115,46 @@ export interface SetDefaultLocaleOperation {
   op: "setDefaultLocale";
   /** A language already in `settings.locales`. */
   locale: string;
+  /**
+   * Custom block ids mapped to their registered text/textarea
+   * `fieldValues.<key>` paths. Paths must resolve to strings on existing custom
+   * blocks; `__proto__`, `constructor` and `prototype` are forbidden map keys.
+   * Captured in the operation so replay needs no field definitions;
+   * omitted means only existing custom text entries identify text fields.
+   */
+  customTextFields?: Record<string, string[]>;
+}
+
+/**
+ * Capture a default-language change with custom text paths from definitions. Pure.
+ * Throws `invalid_operation` at index 0 if a captured custom block id is a
+ * forbidden metadata key (`__proto__`, `constructor` or `prototype`).
+ */
+export function createSetDefaultLocaleOperation(
+  content: TemplateContent,
+  locale: string,
+  definitions: readonly CustomBlockDefinition[] = [],
+): SetDefaultLocaleOperation {
+  const customTextFields = Object.fromEntries(
+    blocksIn(content.blocks).flatMap((block) => {
+      if (block.type !== "custom") return [];
+      const paths = translatableFields(
+        block as unknown as Block,
+        definitions,
+      ).filter((path) => typeof readPath(block, path) === "string");
+      if (
+        paths.length &&
+        FORBIDDEN_CUSTOM_TEXT_FIELDS_KEYS.has(block.id as string)
+      )
+        fail("invalid_operation", 0, CUSTOM_TEXT_FIELDS_ERROR);
+      return paths.length ? [[block.id as string, paths]] : [];
+    }),
+  );
+  return {
+    op: "setDefaultLocale",
+    locale,
+    ...(Object.keys(customTextFields).length ? { customTextFields } : {}),
+  };
 }
 
 export interface LocaleLayerExpect {
@@ -311,6 +353,13 @@ const SETTINGS_LOCALE_IMMUTABLE_KEYS: ReadonlySet<string> = new Set([
   "locales",
   "l10n",
 ]);
+const FORBIDDEN_CUSTOM_TEXT_FIELDS_KEYS: ReadonlySet<string> = new Set([
+  "__proto__",
+  "constructor",
+  "prototype",
+]);
+const CUSTOM_TEXT_FIELDS_ERROR =
+  "customTextFields must map existing custom block ids to lists of string fieldValues paths.";
 
 function fail(
   code: OperationErrorCode,
@@ -1470,7 +1519,35 @@ function setDefaultLocale(
       "Other sessions hold locks on this template.",
       held.blockId,
     );
-  const next = rebaseDefaultLocale(content, locale);
+  const customTextFields = op.customTextFields;
+  if (customTextFields !== undefined) {
+    const blocks = blocksIn(content.blocks);
+    if (
+      !isRecord(customTextFields) ||
+      Object.getOwnPropertyNames(customTextFields).some((id) => {
+        if (FORBIDDEN_CUSTOM_TEXT_FIELDS_KEYS.has(id)) return true;
+        const paths = customTextFields[id];
+        const block = blocks.find((candidate) => candidate.id === id);
+        return (
+          block?.type !== "custom" ||
+          !Array.isArray(paths) ||
+          paths.some(
+            (path) =>
+              typeof path !== "string" ||
+              !isSafePath(path) ||
+              !isTranslatablePath("custom", path) ||
+              typeof readPath(block, path) !== "string",
+          )
+        );
+      })
+    )
+      fail("invalid_operation", index, CUSTOM_TEXT_FIELDS_ERROR);
+  }
+  const next = rebaseDefaultLocale(
+    content,
+    locale,
+    op.customTextFields as Record<string, string[]> | undefined,
+  );
   content.blocks = next.blocks;
   content.settings = next.settings;
 }

@@ -11,3 +11,7 @@ Comments record the language they were written in, show a language badge and fil
 Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.
 
 Ask inside the merge-tag mismatch popover before Re-translate replaces other current translations, place the language badge in the corner slot and mirror the badge row and short-block action bar offset in right-to-left views, and include the visible gap count and breakdown in the language trigger's accessible name. Name and describe the block confirmation, focus Cancel, and let Escape cancel it before closing the popover.
+
+Compact the header only when its full labels and groups exceed its measured container space. Coalesce size and content invalidations per animation frame; size-only changes reuse the recorded full-label width, while changed content, language or feature labels and inherited text metrics trigger a new full measurement. An inert text probe detects inherited base-size, root-size and already-loaded font changes; full-mode control overflow also invalidates the width. Return to full only when that layout fits. The layout uses the same owned styles in light and shadow DOM mounts.
+
+Keep block issue and language status badges flat at rest, with their existing fill and border ring. Hover adds the small shadow; the language badge retains its keyboard focus halo alongside that shadow.

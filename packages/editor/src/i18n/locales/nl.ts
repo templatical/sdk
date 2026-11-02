@@ -85,9 +85,9 @@ const nl: typeof en = {
     },
     defaultNotEnabled: "Voeg eerst {default} toe aan de ingeschakelde talen",
     defaultGaps: {
-      one: "{count} veld heeft geen tekst in {language} en behoudt de tekst in {default}.",
+      one: "{count} veld heeft geen tekst in {language} en behoudt de tekst in {default}. Vertaal het eerst. {default} bewaart een kopie; latere wijzigingen in {language} markeren die als verouderd.",
       other:
-        "{count} velden hebben geen tekst in {language} en behouden de tekst in {default}.",
+        "{count} velden hebben geen tekst in {language} en behouden de tekst in {default}. Vertaal ze eerst. {default} bewaart een kopie; latere wijzigingen in {language} markeren die als verouderd.",
     },
     defaultRemaining: {
       one: "{count} veld is nog in {old}.",

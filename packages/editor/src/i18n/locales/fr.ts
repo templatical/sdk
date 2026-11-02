@@ -86,9 +86,9 @@ const fr: typeof en = {
     },
     defaultNotEnabled: "Ajoutez d’abord {default} aux langues activées",
     defaultGaps: {
-      one: "{count} champ n’a pas de texte en {language} et conserve son texte en {default}.",
+      one: "{count} champ n’a pas de texte en {language} et conserve son texte en {default}. Traduisez-le d’abord. {default} en garde une copie ; les modifications ultérieures en {language} la marquent comme obsolète.",
       other:
-        "{count} champs n’ont pas de texte en {language} et conservent leur texte en {default}.",
+        "{count} champs n’ont pas de texte en {language} et conservent leur texte en {default}. Traduisez-les d’abord. {default} en garde une copie ; les modifications ultérieures en {language} la marquent comme obsolète.",
     },
     defaultRemaining: {
       one: "{count} champ est encore en {old}.",

@@ -191,6 +191,7 @@ export type {
 } from "./operations";
 export {
   applyOperations,
+  createSetDefaultLocaleOperation,
   applyOperationsInPlace,
   getColumnCount,
   OperationError,

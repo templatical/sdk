@@ -18,7 +18,13 @@ export interface UseLocaleActionsReturn {
 }
 
 interface UseLocaleActionsOptions {
-  editor: Pick<UseEditorReturn, "content" | "setActiveLocale" | "markDirty">;
+  editor: Pick<
+    UseEditorReturn,
+    | "content"
+    | "setActiveLocale"
+    | "markDirty"
+    | "createSetDefaultLocaleOperation"
+  >;
   history: () => Pick<UseHistoryReturn, "record">;
   collaboration?: {
     core: Pick<UseCollaborationReturn, "applyOperations">;
@@ -31,17 +37,18 @@ export function useLocaleActions(
   const { editor } = options;
   return {
     setDefaultLocale(locale) {
-      const ops: Operation[] = [{ op: "setDefaultLocale", locale }];
+      let ops: Operation[];
+      try {
+        ops = [editor.createSetDefaultLocaleOperation(locale)];
+        if (!options.collaboration) invertOperations(editor.content.value, ops);
+      } catch (error) {
+        if (error instanceof OperationError) return { applied: false, error };
+        throw error;
+      }
       if (options.collaboration) {
         const result = options.collaboration.core.applyOperations(ops, {});
         if (!result.applied) return result;
       } else {
-        try {
-          invertOperations(editor.content.value, ops);
-        } catch (error) {
-          if (error instanceof OperationError) return { applied: false, error };
-          throw error;
-        }
         options.history().record();
         applyOperationsInPlace(editor.content.value, ops);
         editor.markDirty();

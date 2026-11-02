@@ -207,7 +207,7 @@ describe("re-review and run-2 guidance", () => {
         ],
         "api/operations.md": [
           "whose `baseRevision` isn't the current revision",
-          "the old default keeps it as a current `text` entry",
+          "stays as a current `text` entry in the old default's layer",
         ],
         "api/editor.md": [
           "or a loaded or restored template whose default differs",
@@ -224,7 +224,7 @@ describe("re-review and run-2 guidance", () => {
           "Labels name each language in itself",
           "Selecting a block there still takes its lock for that language",
           "`addBlock` checks no locks",
-          "keeps a current English entry",
+          "both gaps and text German translated to the English value keep current English entries",
         ],
       },
     ],
@@ -240,7 +240,7 @@ describe("re-review and run-2 guidance", () => {
         ],
         "api/operations.md": [
           "dessen `baseRevision` nicht die aktuelle Revision ist",
-          "behält die bisherige Standardsprache ihn als aktuellen `text`-Eintrag",
+          "bleibt als aktueller `text`-Eintrag in der Ebene der bisherigen Standardsprache",
         ],
         "api/editor.md": [
           "oder ein geladenes oder wiederhergestelltes Template mit anderer Standardsprache",
@@ -257,7 +257,7 @@ describe("re-review and run-2 guidance", () => {
           "Beschriftungen nennen jede Sprache in ihrer eigenen Sprache",
           "Wer dort einen Block auswählt, nimmt trotzdem seine Sperre für diese Sprache",
           "`addBlock` prüft keine Sperren",
-          "behält einen aktuellen englischen Eintrag",
+          "Sowohl Lücken als auch Text, den die deutsche Version gleich übersetzt hat, behalten aktuelle englische Einträge",
         ],
       },
     ],
@@ -296,8 +296,8 @@ describe("re-review and run-2 guidance", () => {
       [skill("localize"), "Labels name each language in itself"],
       [skill("localize"), "including a read-only **Not enabled** view"],
       [skill("localize"), "`addBlock` checks no locks"],
-      [skill("localize"), "keeps a current entry"],
-      [skill("edit"), "keeps a current entry"],
+      [skill("localize"), "the old default keeps its own current copy"],
+      [skill("edit"), "the old default keeps its own current copy"],
       [skill("cli"), "followed by `;` (for example `data:image/png;base64,…`)"],
       [read(".changeset/localized-templates-types.md"), "followed by `;`"],
       [

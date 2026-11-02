@@ -349,7 +349,7 @@ onClickOutside(root, () => {
 <template>
   <div
     ref="root"
-    class="tpl:relative tpl:min-w-0 tpl:shrink"
+    class="tpl-language-control tpl:relative tpl:min-w-0 tpl:shrink-0"
     @keydown="navigate"
   >
     <button
@@ -362,16 +362,9 @@ onClickOutside(root, () => {
       :aria-label="triggerLabel"
       :class="secondaryBtnCompactClass"
       class="tpl-language-trigger"
-      style="
-        max-width: calc(9 * var(--tpl-base-size));
-        min-width: 0;
-        width: 100%;
-      "
       @click="toggle"
     >
-      <span class="tpl-language-name tpl:truncate">{{
-        languageName(active)
-      }}</span>
+      <span class="tpl-language-name">{{ languageName(active) }}</span>
       <span class="tpl-language-tag tpl:truncate" aria-hidden="true">{{
         active
       }}</span>

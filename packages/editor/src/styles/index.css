@@ -1143,67 +1143,76 @@
     display: none;
 }
 
-/* Keep the crowded header compact through tablet widths. This belongs to the
-   owned sheet so standalone shadow-mounted headers receive it as well. */
-@container tpl-header (max-width: 1024px) {
-  .tpl-header {
+.tpl-header-identity {
+    min-width: 24px;
+    flex-shrink: 1;
+}
+
+.tpl-header-timestamp {
+    max-width: 100%;
+}
+
+/* Measured full-label overflow drives compaction in light and shadow roots. */
+.tpl-header[data-compact="true"] {
     grid-template-columns: minmax(0, 1fr) auto auto;
     padding-inline: 8px;
     column-gap: 8px;
-  }
-  .tpl-header-left,
-  .tpl-header-right {
+}
+.tpl-header[data-compact="true"] .tpl-header-left,
+.tpl-header[data-compact="true"] .tpl-header-right {
     min-width: 0;
     gap: 4px;
-  }
-  .tpl-header-center {
+}
+.tpl-header[data-compact="true"] .tpl-header-center {
     gap: 4px;
-  }
-  /* Sized by the name itself (capped by its own 260px and the 100% rule
-     above); it gives way only when the header has no room left. */
-  .tpl-header-identity {
+}
+/* Sized by the name itself (capped by its own 260px and the 100% rule
+   above); it gives way only when the header has no room left. */
+.tpl-header[data-compact="true"] .tpl-header-identity {
     flex: 0 1 auto;
     min-width: 24px;
     max-width: none;
     padding-bottom: 0;
-  }
-  .tpl-header-timestamp,
-  .tpl-header-label,
-  .tpl-header-comment-count,
-  .tpl-language-name,
-  .tpl-language-count,
-  .tpl-language-chevron {
+}
+.tpl-header[data-compact="true"] .tpl-header-timestamp,
+.tpl-header[data-compact="true"] .tpl-header-label,
+.tpl-header[data-compact="true"] .tpl-header-comment-count,
+.tpl-header[data-compact="true"] .tpl-language-name,
+.tpl-header[data-compact="true"] .tpl-language-count,
+.tpl-header[data-compact="true"] .tpl-language-chevron {
     display: none;
-  }
-  .tpl-header-left .tpl-language-tag {
+}
+.tpl-header[data-compact="true"] .tpl-header-left .tpl-language-tag {
     display: inline;
-  }
-  .tpl-language-trigger {
+}
+.tpl-header[data-compact="true"] .tpl-language-control {
+    flex-shrink: 1;
+}
+.tpl-header[data-compact="true"] .tpl-language-trigger {
     width: 100% !important;
     max-width: 72px !important;
     padding-inline: 6px;
     gap: 4px;
-  }
-  .tpl-header-center [role="radio"] {
+}
+.tpl-header[data-compact="true"] .tpl-header-center [role="radio"] {
     padding-inline: 6px;
-  }
-  [data-testid="version-history"] {
+}
+.tpl-header[data-compact="true"] [data-testid="version-history"] {
     gap: 0;
-  }
-  [data-testid="version-history-toggle"] {
+}
+.tpl-header[data-compact="true"] [data-testid="version-history-toggle"] {
     padding-inline: 4px;
-  }
-  .tpl-header-right > button {
+}
+.tpl-header[data-compact="true"] .tpl-header-right > button {
     min-width: 32px;
     padding-inline: 7px;
     gap: 0;
-  }
-  .tpl-header-save-status {
+}
+.tpl-header[data-compact="true"] .tpl-header-save-status {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
 }

@@ -101,7 +101,7 @@ Ohne `--out` gibt Export die Strings-Datei selbst aus, auch mit `--json`. Mit `-
 
 ### Definitionen
 
-`validate`, `render` und `strings` akzeptieren `--definitions <file>`, ein JSON-Array von [`CustomBlockDefinition`](/de/guide/custom-blocks#customblockdefinition). Jeder Eintrag wird mit `validateCustomBlockDefinition` geprüft; ungültige Eingaben ergeben Exit `2`. Benutzerdefinierte Übersetzungen umfassen `text`- und `textarea`-Felder. Liquid ist eine feste Abhängigkeit; die HTML-Kompilierung benötigt weiterhin das optionale Paket `mjml`. Definitionen liefern sowohl benutzerdefiniertes Rendering als auch CSS jedes Typs für `render` und `validate --html`.
+`validate`, `render`, `edit` und `strings` akzeptieren `--definitions <file>`, ein JSON-Array von [`CustomBlockDefinition`](/de/guide/custom-blocks#customblockdefinition). Jeder Eintrag wird mit `validateCustomBlockDefinition` geprüft; ungültige Eingaben ergeben Exit `2`. Benutzerdefinierte Übersetzungen umfassen `text`- und `textarea`-Felder. Liquid ist eine feste Abhängigkeit; die HTML-Kompilierung benötigt weiterhin das optionale Paket `mjml`. Definitionen liefern sowohl benutzerdefiniertes Rendering als auch CSS jedes Typs für `render` und `validate --html`.
 
 ### `edit <file> --op '<json>'` oder `--ops <file>`
 
@@ -113,6 +113,8 @@ npx -y @templatical/template-tools edit emails/welcome.json \
 Eine Operation über `--op '<json>'`, oder ein Batch über `--ops <file>`, das auf ein JSON-Array derselben Form zeigt — nie beides. Die Operationen sind das Vokabular, das Editor, Collaboration-Backends und Templatical Cloud teilen — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings` und `setContent` —, beschrieben in der [Operations-Referenz](/de/api/operations). Eine Operation in der alten Form `{ "operation", "data" }` wird mit einem Hinweis auf die neue abgelehnt.
 
 Ein Batch wird der Reihe nach und alles-oder-nichts angewendet: Die erste abgelehnte Operation stoppt den ganzen Batch, es wird nichts geschrieben, und der Fehler nennt die Operation, ihren Code und den Grund (`Operation 2 (updateBlock) was refused: block_missing — …`). Selbst wenn jede Operation eines Batches erfolgreich ist, wird das Ergebnis vor dem Schreiben noch einmal strukturell validiert — eine Abfolge, die ein ungültiges Dokument erzeugt, wird abgelehnt, und die Datei bleibt unangetastet. Bei Erfolg überschreibt `edit` `<file>` direkt; es gibt kein `--out`.
+
+Übergeben Sie `--definitions definitions.json`, wenn Sie eine Sprache mit benutzerdefinierten `text`- oder `textarea`-Feldern zum Standard machen. `edit` erfasst deren Pfade in `setDefaultLocale.customTextFields`, sodass die bisherige Standardsprache aktuelle Kopien unübersetzter benutzerdefinierter Felder behält. Vorhandene Metadaten bleiben erhalten, und jede Operation verwendet das Ergebnis der vorherigen Operationen. Das Ergebnis wird vor dem Schreiben mit diesen Definitionen validiert.
 
 ### `import <file> [--format <fmt>] [--default-locale <tag>] [--out <name>]` oder `import --list-formats`
 

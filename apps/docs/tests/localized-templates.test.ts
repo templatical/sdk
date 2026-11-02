@@ -389,7 +389,10 @@ describe("localized template guide", () => {
       "guide/localized-templates.md",
       {
         "## Default language": [
-          "English keeps no copy of those fields",
+          "English keeps its own current copy of those fields",
+          "a later German edit marks English out of date",
+          "nothing flags that the German base still contains English text",
+          "no longer lists those fields",
           'until `defaultLocaleGaps(content, "de")` returns `[]`',
           "translate HTML blocks by hand in the German view",
           "unless that hash equals the promoted German value, in which case it becomes current",
@@ -419,7 +422,10 @@ describe("localized template guide", () => {
       "de/guide/localized-templates.md",
       {
         "## Standardsprache": [
-          "Englisch behält für diese Felder keine eigene Kopie",
+          "Englisch behält für diese Felder eine eigene aktuelle Kopie",
+          "eine spätere deutsche Bearbeitung markiert Englisch als veraltet",
+          "kein Hinweis mehr, dass die deutsche Basis noch englischen Text enthält",
+          "listet diese Felder nicht mehr",
           'bis `defaultLocaleGaps(content, "de")` `[]` liefert',
           "Übersetzen Sie HTML-Blöcke von Hand in der deutschen Ansicht",
           "außer dieser Hash entspricht dem übernommenen deutschen Wert, dann wird er aktuell",

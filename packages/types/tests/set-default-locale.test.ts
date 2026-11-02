@@ -3,18 +3,23 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   applyOperations,
+  applyOperationsInPlace,
+  createSetDefaultLocaleOperation,
   resolveLocale,
   invertOperations,
   defaultLocaleGaps,
   localeCoverage,
   createDefaultTemplateContent,
   createTitleBlock,
+  createHtmlBlock,
   createImageBlock,
   createCustomBlock,
   createMenuBlock,
   sourceHash,
   safeClone,
   type Operation,
+  type SetDefaultLocaleOperation,
+  type CustomBlockDefinition,
   type TemplateContent,
 } from "../src";
 
@@ -95,10 +100,22 @@ describe("setDefaultLocale", () => {
       en: { text: { content: text("Hello", "Hello") } },
     });
   });
-  it("keeps gaps at the former base without an old-default entry", () => {
+  it("keeps gap text at the former base as a current old-default entry and inverts exactly", () => {
     const before = seed();
     before.blocks.push(createTitleBlock({ id: "gap", content: "Missing" }));
-    expect(roundTrip(before).blocks[1]).toEqual(before.blocks[1]);
+    const after = roundTrip(before);
+    expect(after.blocks[1]).toEqual({
+      ...before.blocks[1],
+      l10n: { en: { text: { content: text("Missing", "Missing") } } },
+    });
+    expect(localeCoverage(after, "en")).toEqual({
+      missing: [],
+      stale: [],
+      translated: ["t1/content", "gap/content"],
+    });
+    expect(
+      JSON.stringify(applyOperations(after, invertOperations(before, [op]))),
+    ).toBe(JSON.stringify(before));
   });
   it.each([
     ["current", "Hello", "Hallo", false],
@@ -343,19 +360,426 @@ it("keeps text the new default translated to the same value as a current entry o
   );
 });
 
-it("still leaves no old-default entry for a gap field the new default had no text for", () => {
+it("keeps an old-default gap value when the new base later changes and marks it stale", () => {
   const before = seed();
   before.blocks.push(createTitleBlock({ id: "gap", content: "Gap" }));
   const after = roundTrip(before);
-  expect(after.blocks[1]).not.toHaveProperty("l10n");
-  expect(localeCoverage(after, "en").missing).toEqual(["gap/content"]);
+  const edited = applyOperations(after, [
+    { op: "updateBlock", blockId: "gap", set: { content: "German now" } },
+  ]);
+  expect(resolveLocale(edited, "en").blocks[1]).toMatchObject({
+    content: "Gap",
+  });
+  expect(edited.blocks[1].l10n?.en.text?.content).toEqual(text("Gap", "Gap"));
+  expect(localeCoverage(edited, "en")).toEqual({
+    missing: [],
+    stale: ["gap/content"],
+    translated: ["t1/content"],
+  });
 });
+
+it("preserves missing preheader and HTML text as current old-default entries", () => {
+  const before = seed();
+  before.settings.preheaderText = "English preview";
+  before.blocks.push(
+    createHtmlBlock({ id: "html", content: "<p>English HTML</p>" }),
+  );
+  expect(defaultLocaleGaps(before, "de")).toEqual([
+    "html/content",
+    "settings/preheaderText",
+  ]);
+  const after = roundTrip(before);
+  expect(after.settings.preheaderText).toBe("English preview");
+  expect(after.settings.l10n?.en.text?.preheaderText).toEqual(
+    text("English preview", "English preview"),
+  );
+  expect(after.blocks[1]).toMatchObject({
+    content: "<p>English HTML</p>",
+    l10n: {
+      en: {
+        text: { content: text("<p>English HTML</p>", "<p>English HTML</p>") },
+      },
+    },
+  });
+  expect(localeCoverage(after, "en").missing).toEqual([]);
+  expect(localeCoverage(after, "en").stale).toEqual([]);
+  const edited = applyOperations(after, [
+    { op: "updateSettings", set: { preheaderText: "Deutsche Vorschau" } },
+    {
+      op: "updateBlock",
+      blockId: "html",
+      set: { content: "<p>Deutsches HTML</p>" },
+    },
+  ]);
+  const english = resolveLocale(edited, "en");
+  expect(english.settings.preheaderText).toBe("English preview");
+  expect(english.blocks[1]).toMatchObject({ content: "<p>English HTML</p>" });
+  expect(localeCoverage(edited, "en")).toEqual({
+    missing: [],
+    stale: ["html/content", "settings/preheaderText"],
+    translated: ["t1/content"],
+  });
+});
+
+it("replays custom text and textarea gaps from captured metadata without definitions and inverts exactly", () => {
+  const definitions: CustomBlockDefinition[] = [
+    {
+      type: "card",
+      name: "Card",
+      template: "",
+      fields: [
+        { key: "headline", type: "text", label: "Headline" },
+        { key: "body", type: "textarea", label: "Body" },
+        { key: "empty", type: "text", label: "Empty" },
+        { key: "color", type: "color", label: "Color" },
+      ],
+    },
+  ];
+  const before = seed();
+  before.blocks = [
+    {
+      ...createCustomBlock(definitions[0]),
+      id: "custom",
+      fieldValues: {
+        headline: "English heading",
+        body: "English body",
+        empty: "",
+        color: "#123456",
+      },
+      renderedHtml: "<p>English heading</p>",
+    },
+  ];
+  expect(defaultLocaleGaps(before, "de", definitions)).toEqual([
+    "custom/fieldValues.headline",
+    "custom/fieldValues.body",
+  ]);
+  const captured = JSON.parse(
+    JSON.stringify({
+      op: "setDefaultLocale",
+      locale: "de",
+      customTextFields: {
+        custom: [
+          "fieldValues.headline",
+          "fieldValues.body",
+          "fieldValues.empty",
+        ],
+      },
+    }),
+  ) as Operation;
+  const after = applyOperations(before, [captured]);
+  expect(after.blocks[0]).toMatchObject({
+    fieldValues: {
+      headline: "English heading",
+      body: "English body",
+      empty: "",
+      color: "#123456",
+    },
+    renderedHtml: "<p>English heading</p>",
+    l10n: {
+      en: {
+        text: {
+          "fieldValues.headline": text("English heading", "English heading"),
+          "fieldValues.body": text("English body", "English body"),
+        },
+      },
+    },
+  });
+  expect(after.blocks[0].l10n?.en.text).not.toHaveProperty("fieldValues.empty");
+  expect(after.blocks[0].l10n?.en.text).not.toHaveProperty("fieldValues.color");
+  expect(localeCoverage(after, "en", definitions)).toEqual({
+    missing: [],
+    stale: [],
+    translated: ["custom/fieldValues.headline", "custom/fieldValues.body"],
+  });
+  expect(
+    JSON.stringify(
+      applyOperations(after, invertOperations(before, [captured])),
+    ),
+  ).toBe(JSON.stringify(before));
+  const edited = applyOperations(after, [
+    {
+      op: "updateBlock",
+      blockId: "custom",
+      set: {
+        fieldValues: {
+          headline: "Deutsche Überschrift",
+          body: "Deutscher Text",
+          empty: "",
+          color: "#123456",
+        },
+      },
+    },
+  ]);
+  expect(resolveLocale(edited, "en").blocks[0]).toMatchObject({
+    fieldValues: { headline: "English heading", body: "English body" },
+  });
+  expect(localeCoverage(edited, "en", definitions).stale).toEqual([
+    "custom/fieldValues.headline",
+    "custom/fieldValues.body",
+  ]);
+});
+
+it.each(
+  [
+    null,
+    [],
+    { custom: "fieldValues.headline" },
+    { custom: [42] },
+    { custom: ["fieldValues.missing"] },
+    { custom: ["fieldValues.count"] },
+    { custom: ["styles.padding.top"] },
+    { custom: ["fieldValues.__proto__"] },
+    { custom: ["fieldValues.constructor"] },
+    { custom: ["fieldValues.headline.nested"] },
+    { absent: ["fieldValues.headline"] },
+    { t1: ["content"] },
+  ].map((customTextFields) => ({ customTextFields })),
+)(
+  "refuses malformed custom text metadata without changing content: $customTextFields",
+  ({ customTextFields }) => {
+    const before = seed();
+    before.blocks.push({
+      ...createCustomBlock({
+        type: "card",
+        name: "Card",
+        template: "",
+        fields: [],
+      }),
+      id: "custom",
+      fieldValues: { headline: "English", count: 2 },
+    });
+    const original = safeClone(before);
+    expect(() =>
+      applyOperations(before, [
+        {
+          ...op,
+          customTextFields,
+        } as unknown as Operation,
+      ]),
+    ).toThrowError(
+      expect.objectContaining({ code: "invalid_operation", opIndex: 0 }),
+    );
+    expect(before).toEqual(original);
+  },
+);
+
+it("does not infer custom text for a block id inherited from Object.prototype", () => {
+  const before = seed();
+  before.blocks = [
+    {
+      ...createCustomBlock({
+        type: "card",
+        name: "Card",
+        template: "",
+        fields: [],
+      }),
+      id: "constructor",
+      fieldValues: { label: "English" },
+    },
+  ];
+  const after = roundTrip(before);
+  expect(after.blocks[0]).toEqual(before.blocks[0]);
+});
+
+describe("reserved custom metadata keys", () => {
+  const definition: CustomBlockDefinition = {
+    type: "card",
+    name: "Card",
+    template: "",
+    fields: [
+      { key: "label", label: "Label", type: "text", default: "English" },
+    ],
+  };
+  function customSeed(id: string) {
+    const before = seed();
+    before.blocks = [{ ...createCustomBlock(definition), id }];
+    return before;
+  }
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses the own %s metadata key even when that custom block exists",
+    (id) => {
+      const before = customSeed(id);
+      const bytes = JSON.stringify(before);
+      const operation = JSON.parse(
+        `{"op":"setDefaultLocale","locale":"de","customTextFields":{"${id}":["fieldValues.label"]}}`,
+      ) as SetDefaultLocaleOperation;
+      expect(Object.hasOwn(operation.customTextFields!, id)).toBe(true);
+      expect(() => applyOperationsInPlace(before, [operation])).toThrowError(
+        expect.objectContaining({
+          code: "invalid_operation",
+          opIndex: 0,
+          message:
+            "customTextFields must map existing custom block ids to lists of string fieldValues paths.",
+        }),
+      );
+      expect(JSON.stringify(before)).toBe(bytes);
+    },
+  );
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a non-enumerable own %s metadata key before replay reads it",
+    (id) => {
+      const before = customSeed(id);
+      const bytes = JSON.stringify(before);
+      const operation = JSON.parse(
+        `{"op":"setDefaultLocale","locale":"de","customTextFields":{"${id}":["fieldValues.label"]}}`,
+      ) as SetDefaultLocaleOperation;
+      Object.defineProperty(operation.customTextFields!, id, {
+        enumerable: false,
+      });
+      expect(Object.hasOwn(operation.customTextFields!, id)).toBe(true);
+      expect(Object.keys(operation.customTextFields!)).toEqual([]);
+      expect(() => applyOperationsInPlace(before, [operation])).toThrowError(
+        expect.objectContaining({
+          code: "invalid_operation",
+          opIndex: 0,
+          message:
+            "customTextFields must map existing custom block ids to lists of string fieldValues paths.",
+        }),
+      );
+      expect(JSON.stringify(before)).toBe(bytes);
+    },
+  );
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses to capture metadata for the reserved custom block id %s",
+    (id) => {
+      const before = customSeed(id);
+      const bytes = JSON.stringify(before);
+      expect(() =>
+        createSetDefaultLocaleOperation(before, "de", [definition]),
+      ).toThrowError(
+        expect.objectContaining({
+          code: "invalid_operation",
+          opIndex: 0,
+          message:
+            "customTextFields must map existing custom block ids to lists of string fieldValues paths.",
+        }),
+      );
+      expect(JSON.stringify(before)).toBe(bytes);
+    },
+  );
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "does not read inherited %s metadata as custom text paths",
+    (id) => {
+      const before = customSeed(id);
+      const customTextFields = Object.create(
+        JSON.parse(`{"${id}":["fieldValues.label"]}`),
+      );
+      expect(Object.hasOwn(customTextFields, id)).toBe(false);
+      const after = applyOperations(before, [
+        { op: "setDefaultLocale", locale: "de", customTextFields },
+      ]);
+      expect(after.blocks[0]).toEqual(before.blocks[0]);
+    },
+  );
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "omits uncaptured text metadata for the reserved custom block id %s",
+    (id) => {
+      const before = customSeed(id);
+      const bytes = JSON.stringify(before);
+      const operation = createSetDefaultLocaleOperation(before, "de");
+      expect(operation).toEqual({ op: "setDefaultLocale", locale: "de" });
+      expect(applyOperations(before, [operation]).blocks[0]).toEqual(
+        before.blocks[0],
+      );
+      expect(JSON.stringify(before)).toBe(bytes);
+    },
+  );
+});
+
+it("preserves a known custom text gap from another language without metadata", () => {
+  const before = seed();
+  before.blocks = [
+    {
+      ...createCustomBlock({
+        type: "card",
+        name: "Card",
+        template: "",
+        fields: [],
+      }),
+      id: "custom",
+      fieldValues: { headline: "English", variant: "wide" },
+      l10n: {
+        fr: { text: { "fieldValues.headline": text("Français", "English") } },
+      },
+    },
+  ];
+  const after = roundTrip(before);
+  expect(after.blocks[0].l10n?.en).toEqual({
+    text: { "fieldValues.headline": text("English", "English") },
+  });
+  expect(after.blocks[0].l10n?.fr).toEqual(before.blocks[0].l10n?.fr);
+  const edited = applyOperations(after, [
+    {
+      op: "updateBlock",
+      blockId: "custom",
+      set: { fieldValues: { headline: "Deutsch", variant: "wide" } },
+    },
+  ]);
+  expect(resolveLocale(edited, "en").blocks[0]).toMatchObject({
+    fieldValues: { headline: "English", variant: "wide" },
+  });
+});
+
+it.each([
+  {
+    scenario: "membership",
+    locale: "es",
+    hidden: false,
+    locks: [],
+    code: "invalid_operation",
+    message: '"es" is not a language version of this template.',
+  },
+  {
+    scenario: "visibility",
+    locale: "de",
+    hidden: true,
+    locks: [],
+    code: "invalid_operation",
+    message:
+      '1 blocks are hidden in "de". Show them before making it the default.',
+  },
+  {
+    scenario: "lock",
+    locale: "de",
+    hidden: false,
+    locks: [{ blockId: "t1", sessionId: "other" }],
+    code: "locked_by_others",
+    message: "Other sessions hold locks on this template.",
+  },
+])(
+  "checks existing $scenario refusals before malformed custom metadata",
+  ({ locale, hidden, locks, code, message }) => {
+    const before = seed();
+    if (hidden) before.blocks[0].l10n!.de.hidden = true;
+    const original = safeClone(before);
+    expect(() =>
+      applyOperations(
+        before,
+        [
+          {
+            op: "setDefaultLocale",
+            locale,
+            customTextFields: null,
+          } as unknown as Operation,
+        ],
+        { locks },
+      ),
+    ).toThrowError(expect.objectContaining({ code, message, opIndex: 0 }));
+    expect(before).toEqual(original);
+  },
+);
 
 it("skips empty defaults, as coverage does, so the gap list can reach []", () => {
   const before = seed();
   before.blocks.push(createImageBlock({ id: "empty", alt: "" }));
   expect(defaultLocaleGaps(before, "de")).toEqual([]);
   expect(localeCoverage(before, "de").missing).toEqual([]);
+  expect(roundTrip(before).blocks[1]).not.toHaveProperty("l10n");
   before.blocks.push(createImageBlock({ id: "decorative", alt: "Photo" }));
   expect(defaultLocaleGaps(before, "de")).toEqual(["decorative/alt"]);
 });

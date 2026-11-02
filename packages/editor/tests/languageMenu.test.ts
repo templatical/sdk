@@ -108,15 +108,15 @@ describe("language menu", () => {
       expect(document.querySelectorAll(`[id="${id}"]`)).toHaveLength(1);
   });
 
-  it("bases the language-button cap on editor sizing with an 8px host root", async () => {
+  it("keeps the full language trigger uncapped with an 8px host root", async () => {
     const previous = document.documentElement.style.fontSize;
     document.documentElement.style.fontSize = "8px";
     try {
       const { wrapper } = await openLanguages();
       const button = wrapper.get('[data-testid="language-menu"]')
         .element as HTMLButtonElement;
-      expect(button.style.maxWidth).not.toMatch(/rem/);
-      expect(button.style.maxWidth).toContain("var(--tpl-base-size)");
+      expect(["", "none"]).toContain(button.style.maxWidth);
+      expect(button.style.width).not.toBe("100%");
     } finally {
       document.documentElement.style.fontSize = previous;
     }
@@ -436,7 +436,7 @@ describe("language menu", () => {
     expect(wrapper.find('[data-testid="locale-chip"]').exists()).toBe(false);
   });
 
-  it("keeps a long native name bounded in the left group and leaves centre controls interactive", async () => {
+  it("allows a long native name and its count their natural full width while centre controls stay interactive", async () => {
     const content = languageContent();
     content.settings.locales = ["de", "zh-Hant-HK"];
     const { wrapper: editorWrapper, editor } = await openLanguages({
@@ -466,7 +466,14 @@ describe("language menu", () => {
     const centre = wrapper.get(".tpl-header-center").html();
     await chooseLanguage(wrapper, "zh-Hant-HK");
     const menu = wrapper.get('.tpl-header-left [data-testid="language-menu"]');
-    expect(menu.attributes("style")).toContain("max-width");
+    const style = (menu.element as HTMLElement).style;
+    expect(["", "none"]).toContain(style.maxWidth);
+    expect(style.width).not.toBe("100%");
+    expect(menu.get(".tpl-language-name").classes()).not.toContain(
+      "tpl:truncate",
+    );
+    expect(menu.get(".tpl-language-name").text()).toContain("中文");
+    expect(menu.get(".tpl-language-count").text()).toBe("2");
     expect(wrapper.get(".tpl-header-center").html()).toBe(centre);
     await wrapper.get(".tpl-preview-toggle").trigger("click");
     expect(editor.state.previewMode).toBe(true);

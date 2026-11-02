@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, shallowRef } from "vue";
+import { useHeaderFit } from "../composables/useHeaderFit";
 import { LoaderCircle, MessageCircle, Save, Send } from "@lucide/vue";
 
 import type {
@@ -57,6 +58,10 @@ const CollaboratorBar = defineAsyncComponent(
  * configured at all" and a fully-wired Cloud session. Nothing in this file knows
  * that Cloud exists.
  */
+const containerElement = shallowRef<HTMLElement | null>(null);
+const headerElement = shallowRef<HTMLElement | null>(null);
+const { compact, fullWidth } = useHeaderFit(containerElement, headerElement);
+
 defineProps<{
   editor: BaseEditorReturn;
   localization?: { locales: string[] };
@@ -121,9 +126,13 @@ defineProps<{
        identical surface behind it and a backdrop blur has nothing to blur,
        which costs a compositing layer to render exactly `--tpl-bg`. -->
   <div
+    ref="containerElement"
     class="tpl-header-container tpl:absolute tpl:inset-x-0 tpl:top-0 tpl:z-50 tpl:h-14"
   >
     <header
+      ref="headerElement"
+      :data-compact="compact"
+      :data-full-width="fullWidth"
       class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] tpl:items-center tpl:px-4 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:border-b tpl:border-[var(--tpl-border)]"
     >
       <!-- Left: the template's identity — the inline-editable name, and under it
@@ -132,13 +141,13 @@ defineProps<{
          leading above its text, while the timestamp carries nothing below its
          own. Centring the boxes therefore puts all of that lead at the top and
          reads as a misaligned pair. Only when both render — either alone is
-         already centred on its own box. `min-w-[200px]` matches the right column
-         so the centre controls are actually centred. Nothing renders before a
+         already centred on its own box. Equal side tracks keep the view controls
+         centred; measured content decides when to compact. Nothing renders before a
          template exists; there is neither a name nor a write time yet. The stack
          is gated as a whole so an empty one cannot add a `gap-2.5` before the
          cloud extras. -->
       <div
-        class="tpl-header-left tpl:flex tpl:min-w-[200px] tpl:items-center tpl:gap-2.5"
+        class="tpl-header-left tpl:flex tpl:min-w-0 tpl:items-center tpl:gap-2.5"
       >
         <div
           v-if="
@@ -245,7 +254,7 @@ defineProps<{
          at the edge of its track at common widths, so anything added here
          overflows onto the centre rather than fitting. -->
       <div
-        class="tpl-header-right tpl:flex tpl:min-w-[200px] tpl:items-center tpl:justify-end tpl:gap-3"
+        class="tpl-header-right tpl:flex tpl:min-w-0 tpl:items-center tpl:justify-end tpl:gap-3"
       >
         <!-- Gated on a provider that can actually save. Without one the editor
            never learns that a save completed, so the badge could only ever read

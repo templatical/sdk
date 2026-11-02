@@ -101,7 +101,7 @@ Without `--out`, export prints the strings file itself, including with `--json`.
 
 ### Definitions
 
-`validate`, `render` and `strings` accept `--definitions <file>`, a JSON array of [`CustomBlockDefinition`](/guide/custom-blocks#customblockdefinition). Every entry is checked with `validateCustomBlockDefinition`; invalid input exits `2`. Custom translations cover `text` and `textarea` fields. Liquid is bundled as a hard dependency; HTML compilation still needs the optional `mjml` package. Definitions supply both custom rendering and each type’s CSS for `render` and `validate --html`.
+`validate`, `render`, `edit` and `strings` accept `--definitions <file>`, a JSON array of [`CustomBlockDefinition`](/guide/custom-blocks#customblockdefinition). Every entry is checked with `validateCustomBlockDefinition`; invalid input exits `2`. Custom translations cover `text` and `textarea` fields. Liquid is bundled as a hard dependency; HTML compilation still needs the optional `mjml` package. Definitions supply both custom rendering and each type’s CSS for `render` and `validate --html`.
 
 ### `edit <file> --op '<json>'` or `--ops <file>`
 
@@ -113,6 +113,8 @@ npx -y @templatical/template-tools edit emails/welcome.json \
 One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. The operations are the vocabulary the editor, collaboration backends and Templatical Cloud share — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings` and `setContent` — described in the [Operations reference](/api/operations). An operation in the old `{ "operation", "data" }` form is refused with a pointer to the new one.
 
 A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
+
+Pass `--definitions definitions.json` when promoting a language with custom `text` or `textarea` fields. `edit` captures their paths in `setDefaultLocale.customTextFields`, so the former default retains current copies of untranslated custom fields. Existing metadata is retained, and each operation uses the preceding operations' result. The result is validated with those definitions before writing.
 
 ### `import <file> [--format <fmt>] [--default-locale <tag>] [--out <name>]` or `import --list-formats`
 

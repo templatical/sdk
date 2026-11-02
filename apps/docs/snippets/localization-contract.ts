@@ -140,4 +140,6 @@ export interface SetDefaultLocaleOperation {
   op: "setDefaultLocale";
   /** A language already in `settings.locales`. */
   locale: string;
+  /** Custom block ids mapped to registered text/textarea field paths, captured for replay. */
+  customTextFields?: Record<string, string[]>;
 }

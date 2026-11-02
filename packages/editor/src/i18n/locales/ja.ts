@@ -82,9 +82,9 @@ const translations: typeof en = {
     },
     defaultNotEnabled: "まず{default}を有効な言語に追加してください",
     defaultGaps: {
-      one: "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。",
+      one: "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。先に翻訳してください。{default}にはコピーが残り、その後{language}で編集するとコピーは古い翻訳として表示されます。",
       other:
-        "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。",
+        "{count}個のフィールドに{language}のテキストがないため、{default}のテキストを保持します。先に翻訳してください。{default}にはコピーが残り、その後{language}で編集するとコピーは古い翻訳として表示されます。",
     },
     defaultRemaining: {
       one: "{count}個のフィールドはまだ{old}のままです。",

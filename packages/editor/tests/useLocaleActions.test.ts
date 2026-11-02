@@ -6,6 +6,7 @@ import {
   applyOperationsInPlace,
   createDefaultTemplateContent,
   createTitleBlock,
+  createCustomBlock,
   OperationError,
   safeClone,
 } from "@templatical/types";
@@ -48,6 +49,82 @@ function open(onLocaleChange?: (locale: string) => void) {
   return { ...value, scope };
 }
 describe("useLocaleActions", () => {
+  it.each(["__proto__", "constructor", "prototype"])(
+    "returns a normal refusal for the reserved custom metadata id %s without changing state",
+    (id) => {
+      const { editor, history } = open();
+      const definition = {
+        type: "card",
+        name: "Card",
+        template: "",
+        fields: [
+          {
+            key: "label",
+            label: "Label",
+            type: "text" as const,
+            default: "English",
+          },
+        ],
+      };
+      editor.content.value.blocks = [{ ...createCustomBlock(definition), id }];
+      editor.setCustomBlockDefinitions([definition]);
+      editor.setActiveLocale("fr");
+      history.record();
+      editor.content.value.settings.width = 640;
+      history.undo();
+      const before = JSON.stringify(editor.content.value);
+      const dirty = editor.state.isDirty;
+      const actions = useLocaleActions({ editor, history: () => history });
+      expect(actions.setDefaultLocale("de")).toMatchObject({
+        applied: false,
+        error: {
+          code: "invalid_operation",
+          opIndex: 0,
+          message:
+            "customTextFields must map existing custom block ids to lists of string fieldValues paths.",
+        },
+      });
+      expect(JSON.stringify(editor.content.value)).toBe(before);
+      expect(editor.activeLocale.value).toBe("fr");
+      expect(editor.state.isDirty).toBe(dirty);
+      expect(history.canUndo.value).toBe(false);
+      expect(history.canRedo.value).toBe(true);
+    },
+  );
+
+  it("keeps a clean editor clean when reserved custom metadata cannot be captured", () => {
+    const { editor, history } = open();
+    const definition = {
+      type: "card",
+      name: "Card",
+      template: "",
+      fields: [
+        {
+          key: "label",
+          label: "Label",
+          type: "text" as const,
+          default: "English",
+        },
+      ],
+    };
+    editor.content.value.blocks = [
+      { ...createCustomBlock(definition), id: "constructor" },
+    ];
+    editor.setCustomBlockDefinitions([definition]);
+    const before = JSON.stringify(editor.content.value);
+    expect(editor.state.isDirty).toBe(false);
+    const actions = useLocaleActions({ editor, history: () => history });
+    expect(actions.setDefaultLocale("de")).toMatchObject({
+      applied: false,
+      error: { code: "invalid_operation" },
+    });
+    expect(editor.state.isDirty).toBe(false);
+    expect(JSON.stringify(editor.content.value)).toBe(before);
+    expect(editor.activeLocale.value).toBe(null);
+    expect(history.canUndo.value).toBe(false);
+    expect(history.canRedo.value).toBe(false);
+  });
+
   it("makes the default in one undo step and moves the active view", () => {
     const { editor, history } = open();
     editor.setActiveLocale("fr");

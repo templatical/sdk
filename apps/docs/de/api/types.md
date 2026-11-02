@@ -114,6 +114,8 @@ Sprachversionen ergänzen optionale `BaseBlock.l10n`, `TemplateSettings.locales`
 
 `addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` und `updateSettingsLocale` erweitern `Operation`. `addLocale.position` ist standardmäßig das Ende; Entfernen kann mit `expect` die gesamte Ebene prüfen. Updates wenden `unset`, `text`, `set`, dann Block-`hidden` an und verwenden die verschachtelte Form `LocaleLayerExpect`. Siehe [Lokalisierte Templates](/de/guide/localized-templates) für Bearbeitung, Feldpfade, Fallback und die Upgrade-Regel.
 
+`SetDefaultLocaleOperation.customTextFields?: Record<string, string[]>` enthält registrierte benutzerdefinierte `text`-/`textarea`-Pfade nach Block-ID. Erstellen Sie die Operation mit `createSetDefaultLocaleOperation(content: TemplateContent, locale: string, definitions?: readonly CustomBlockDefinition[]): SetDefaultLocaleOperation` (`definitions` ist standardmäßig `[]`) und senden Sie sie unverändert an andere Sitzungen. Siehe [Standardsprache](/de/api/operations#standardsprache) für Validierung und Verhalten ohne Definitionen.
+
 ## Übersetzung {#translation}
 
 `TranslationProvider` ist der unabhängige Vertrag für `init({ translation })`. `TranslationRequest`, `TranslationField`, `TranslationResult`, `TranslationErrorCode` und `LocaleString` sowie reine Helfer und Aufrufgrenzen werden aus `@templatical/types` exportiert:

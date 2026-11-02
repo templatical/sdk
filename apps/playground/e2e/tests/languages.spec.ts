@@ -1185,12 +1185,8 @@ test.describe("language versions", () => {
     );
   });
 
-  // At the default 1280 × 720 the header is compact and the trigger shows
-  // the tag; at 1600 px it has room for the name.
-  for (const { width, label } of [
-    { width: 1280, label: "de" },
-    { width: 1600, label: "Deutsch" },
-  ]) {
+  // Label visibility follows the actual header's full-label requirement.
+  for (const width of [1280, 1600]) {
     test(`makes German the default after showing its hidden block and reports gaps at ${width}px`, async ({
       page,
       scenePage,
@@ -1226,7 +1222,14 @@ test.describe("language versions", () => {
       // only visible text, and its accessible name contains both.
       const trigger = page.getByTestId("language-menu");
       await expect(trigger).toHaveAccessibleName("Deutsch (de)");
-      await expect(trigger).toHaveText(label, { useInnerText: true });
+      const header = page.locator(".tpl-header");
+      const required = Number(await header.getAttribute("data-full-width"));
+      expect(required).toBeGreaterThan(0);
+      const compact = (await header.boundingBox())!.width < required;
+      await expect(header).toHaveAttribute("data-compact", String(compact));
+      await expect(trigger).toHaveText(compact ? "de" : "Deutsch", {
+        useInnerText: true,
+      });
       await expect(trigger.locator(".tpl-language-count")).toHaveCount(0);
       await page
         .getByTestId("locale-notice")
