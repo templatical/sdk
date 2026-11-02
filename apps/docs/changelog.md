@@ -15,6 +15,35 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.52.1
+
+<time datetime="2026-11-02">2026-11-02</time>
+
+### Fixes and improvements
+
+**Custom-block `{% cycle %}` output is HTML-escaped once with liquidjs 10.30.1**
+
+`@templatical/editor` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+liquidjs 10.30.1 applies `outputEscape` to `{% echo %}` and `{% cycle %}` itself. `createCustomBlockLiquid` also registered its own escaping `cycle` tag, so with 10.30.1 every `{% cycle %}` value in a custom-block template was escaped twice (`<b>` rendered as `&amp;lt;b&amp;gt;`) by `renderToMjml(content, { customBlocks })` and by `templatical custom-block`. Their `^10.30.0` range admits 10.30.1, so fresh installs already resolved it. The editor bundles its own liquidjs and was not affected.
+
+`createCustomBlockLiquid` now registers no tags of its own and relies on liquidjs's `outputEscape` for `{{ }}`, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}`.
+
+- The optional `liquidjs` peer range of `@templatical/types` and `@templatical/renderer` is now `^10.30.1`. With 10.30.0, `{% echo %}` and `{% cycle %}` print their values unescaped, so upgrade `liquidjs` to `^10.30.1` in the project that renders custom blocks.
+- A final `| raw` on a cycle candidate (`{% cycle body | raw, other %}`) opts that value out of escaping.
+- Falsy cycle candidates print as stock liquidjs prints them: `{% cycle 0, 1 %}` renders `0`, then `1`.
+- `CustomBlockLiquidModule` requires only `Liquid`; passing the whole `liquidjs` module works as before.
+
+**The block action bar and comment-count pill stay inside the canvas pane**
+
+`@templatical/editor`
+
+The canvas pane scrolls, so the action bar to the right of a selected block was clipped under the properties panel whenever the pane had less room beside the block than the bar's width plus 8px. With a 600px template, Delete was cut off below an editor width of about 1230px with `savedBlocks` configured, since its bookmark button makes the bar 30px wider, and below about 1170px without it. Opening the comments or AI panel narrows the pane by another 360px (#1052).
+
+The bar now measures the pane. It stays 8px right of the block while it fits; otherwise it moves inside the block's right edge, below the corner badges, and stays within the pane. On a block too short for that, it stays vertically centred, to the left of the badges.
+
+The comment-count pill follows the same rule. It stays 4px past the block's top-right corner while it fits, and otherwise joins the corner badge row, inward of the lint badge. It is now a child of `.tpl-block-badges`. Beside a short block, the action bar starts below the pill instead of covering it.
+
 ## 0.52.0
 
 <time datetime="2026-10-31">2026-10-31</time>
