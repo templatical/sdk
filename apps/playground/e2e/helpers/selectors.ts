@@ -48,6 +48,7 @@ export const SELECTORS = {
   blockSelected: ".tpl-block--selected",
   blockActions: ".tpl-block-actions",
   blockDeleteBtn: ".tpl-block-delete-btn",
+  blockBadges: ".tpl-block-badges",
   blockDragHandle: ".tpl-block-btn",
 
   // Sidebar
@@ -107,6 +108,8 @@ export const SELECTORS = {
   commentsSidebar: '[data-testid="comments-sidebar"]',
   commentsFilterAll: '[data-testid="comments-filter-all"]',
   commentsFilterUnresolved: '[data-testid="comments-filter-unresolved"]',
+  commentsFilterBlock: '[data-testid="comments-filter-block"]',
+  commentIndicator: ".tpl-comment-indicator",
   commentThread: '[data-testid="comment-thread"]',
   commentsInput: '[data-testid="comments-input"]',
   commentsSend: '[data-testid="comments-send"]',

@@ -10,7 +10,15 @@ import {
   MessageCircle,
   Trash2,
 } from "@lucide/vue";
-import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  nextTick,
+  ref,
+  watchPostEffect,
+} from "vue";
+import { useEventListener, useResizeObserver } from "@vueuse/core";
 import { useResolvedBackgroundUrl } from "../../composables/useImageUrlResolver";
 import {
   backgroundImageHostClass,
@@ -169,6 +177,110 @@ const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
 
+// The action bar sits right of the selected block and the comment pill past its
+// top-right corner. The canvas pane scrolls, so whatever crosses its edge is
+// clipped under the properties panel. Without room the pill joins the corner
+// badge row, and the bar moves inside the block below that row, clamped to the
+// pane. On a block too short for that, the bar stays vertically centred, left of
+// the row. Beside a short block, the bar starts below the pill.
+const blockElement = ref<HTMLElement | null>(null);
+const actionsElement = ref<HTMLElement | null>(null);
+const badgesElement = ref<HTMLElement | null>(null);
+const commentElement = ref<HTMLElement | null>(null);
+const actionsStyle = ref({ left: "calc(100% + 8px)", top: "50%" });
+const commentInBadges = ref(false);
+// Only blocks showing a bar or a pill measure, listen and observe.
+const chromeElement = computed(
+  () => actionsElement.value ?? commentElement.value,
+);
+const canvasBody = computed(() =>
+  chromeElement.value?.closest<HTMLElement>(".tpl-body"),
+);
+function positionChrome(): void {
+  const inBadges = commentInBadges.value;
+  const actions = actionsElement.value;
+  const comment = commentElement.value;
+  const block = blockElement.value;
+  if ((!actions && !comment) || !block?.offsetWidth) return;
+  const box = block.getBoundingClientRect();
+  // Client rects carry a host's transform scale; style offsets don't.
+  const scale = box.width / block.offsetWidth || 1;
+  const pane = canvasBody.value;
+  const paneLeft = pane
+    ? (pane.getBoundingClientRect().left - box.left) / scale + pane.clientLeft
+    : -Infinity;
+  const paneRight = pane ? paneLeft + pane.clientWidth : Infinity;
+  if (comment?.offsetWidth) {
+    // Past the corner the pill spans 4 px to 4 px + its width right of the block.
+    const fits = block.offsetWidth + 4 + comment.offsetWidth + 4 <= paneRight;
+    if (inBadges === fits) {
+      commentInBadges.value = !fits;
+      // The bar steps around the row once it renders with the pill moved. An
+      // effect doesn't re-run for its own writes, so this one can't wait on it.
+      void nextTick(positionChrome);
+      return;
+    }
+  }
+  if (!actions?.offsetWidth) return;
+  let left = Math.max(
+    paneLeft + 4,
+    Math.min(block.offsetWidth + 8, paneRight - actions.offsetWidth - 4),
+  );
+  const badges = badgesElement.value;
+  // The lint badge alone ends at 24 px; the pill is 4 px taller.
+  const belowBadges = Math.max(
+    28,
+    badges?.offsetHeight ? badges.offsetTop + badges.offsetHeight + 4 : 0,
+  );
+  const centre = Math.max(
+    belowBadges + actions.offsetHeight / 2,
+    block.offsetHeight / 2,
+  );
+  let top =
+    left < block.offsetWidth &&
+    centre + actions.offsetHeight / 2 <= block.offsetHeight + 8
+      ? `${centre}px`
+      : "50%";
+  if (left >= block.offsetWidth && comment?.offsetWidth && !inBadges) {
+    // Beside a short block the centred bar would cover the pill past its
+    // corner, so it starts below the pill instead.
+    const pillBottom =
+      (comment.getBoundingClientRect().bottom - box.top) / scale;
+    const clear = pillBottom + 4 + actions.offsetHeight / 2;
+    if (clear > block.offsetHeight / 2) top = `${clear}px`;
+  }
+  if (left < block.offsetWidth && top === "50%") {
+    const row = badges?.getBoundingClientRect();
+    if (row?.width) {
+      // Leave the badge row and its focus rings clear of a short block's bar.
+      const beside = (row.left - box.left) / scale - actions.offsetWidth - 8;
+      left = Math.max(
+        paneLeft + 4,
+        Math.min(beside, paneRight - actions.offsetWidth - 4),
+      );
+    }
+  }
+  // Scrolling the pane calls this often; an unchanged position doesn't re-render.
+  if (actionsStyle.value.left !== `${left}px` || actionsStyle.value.top !== top)
+    actionsStyle.value = { left: `${left}px`, top };
+}
+watchPostEffect(positionChrome);
+useResizeObserver(
+  computed(() =>
+    chromeElement.value
+      ? [
+          blockElement.value,
+          actionsElement.value,
+          badgesElement.value,
+          commentElement.value,
+          canvasBody.value,
+        ].filter((element): element is HTMLElement => !!element)
+      : [],
+  ),
+  positionChrome,
+);
+useEventListener(canvasBody, "scroll", positionChrome, { passive: true });
+
 // Another collaborator's lock: an outline in their colour and their name, on
 // any block, a section's children included.
 const lock = computed(() => caps.collaboration?.lockOf(props.block.id) ?? null);
@@ -276,6 +388,7 @@ function handleConditionToggle(): void {
 <template>
   <div
     v-if="!isHiddenInPreview"
+    ref="blockElement"
     class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow"
     :class="{
       'tpl-block--selected': isSelected,
@@ -288,7 +401,32 @@ function handleConditionToggle(): void {
     :data-tpl-picked="picked || undefined"
     @click="handleClick"
   >
-    <BlockIssueBadge :block-id="block.id" />
+    <!-- Status badges share the block's top-right corner. The comment pill
+         sits past the corner while the pane has room and joins this row when
+         it hasn't, so the action bar steps around it. -->
+    <div
+      ref="badgesElement"
+      class="tpl-block-badges tpl:absolute tpl:top-1 tpl:right-1 tpl:z-10 tpl:flex tpl:gap-1"
+    >
+      <button
+        v-if="blockCommentCount > 0 && !isHiddenOnViewport"
+        ref="commentElement"
+        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-chrome-primary-light)] tpl:text-[var(--tpl-primary)]"
+        :class="
+          commentInBadges
+            ? undefined
+            : 'tpl:absolute tpl:-top-2 tpl:left-full tpl:ml-2'
+        "
+        :aria-label="
+          format(t.blockActions.comments, { count: String(blockCommentCount) })
+        "
+        @click.stop="caps.comments?.openForBlock(block.id)"
+      >
+        <MessageCircle :size="12" :stroke-width="2.5" />
+        {{ blockCommentCount }}
+      </button>
+      <BlockIssueBadge :block-id="block.id" />
+    </div>
     <div
       v-if="lock"
       data-testid="block-lock"
@@ -316,12 +454,15 @@ function handleConditionToggle(): void {
       aria-hidden="true"
       class="tpl-block-agent-highlight tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
     />
-    <!-- Floating action bar — positioned to the right of selected block -->
+    <!-- Floating action bar: beside the block, or inside it below the badge
+         row when the pane has no room. Placed by positionChrome. -->
     <div
       v-if="showActions"
+      ref="actionsElement"
+      :style="actionsStyle"
       role="toolbar"
       :aria-label="t.blockActions.drag"
-      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
+      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:top-1/2 tpl:z-20 tpl:flex tpl:-translate-y-1/2 tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
     >
       <button
         ref="dragButtonRef"
@@ -387,22 +528,6 @@ function handleConditionToggle(): void {
         @click.stop="handleConditionToggle"
       >
         <Filter :size="12" :stroke-width="2" />
-      </button>
-    </div>
-    <!-- Comment count indicator -->
-    <div
-      v-if="blockCommentCount > 0 && !isHiddenOnViewport"
-      class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:z-[5] tpl:translate-x-full"
-    >
-      <button
-        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-chrome-primary-light)] tpl:text-[var(--tpl-primary)]"
-        :aria-label="
-          format(t.blockActions.comments, { count: String(blockCommentCount) })
-        "
-        @click.stop="caps.comments?.openForBlock(block.id)"
-      >
-        <MessageCircle :size="12" :stroke-width="2.5" />
-        {{ blockCommentCount }}
       </button>
     </div>
     <!-- Email content — the section's wrapper frame when it has one, then
