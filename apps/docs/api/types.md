@@ -617,10 +617,6 @@ The factory's public module shape has no declaration dependency on `liquidjs`. P
 ```ts
 export interface CustomBlockLiquidModule {
   Liquid: new (...args: any[]) => any;
-  Tag: abstract new (...args: any[]) => any;
-  CycleTag: new (...args: any[]) => any;
-  Value: new (...args: any[]) => any;
-  toValue: (value: any) => any;
 }
 
 export declare function createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>;

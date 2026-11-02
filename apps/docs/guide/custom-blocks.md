@@ -647,7 +647,7 @@ dataSource: {
 
 ## Rendering outside the editor
 
-Render saved templates server-side with `renderToMjml(content, { customBlocks: definitions })`. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML. `editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) already resolve every custom block to HTML and carry its stylesheet, so `renderToMjml(payload.content)` needs no options for that payload. Install the optional `liquidjs` peer (`^10.30.0`) in the server project:
+Render saved templates server-side with `renderToMjml(content, { customBlocks: definitions })`. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML. `editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) already resolve every custom block to HTML and carry its stylesheet, so `renderToMjml(payload.content)` needs no options for that payload. Install the optional `liquidjs` peer (`^10.30.1`) in the server project:
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
@@ -668,7 +668,7 @@ import { createCustomBlockLiquid } from '@templatical/types';
 const liquid = createCustomBlockLiquid(liquidjs);
 ```
 
-Its fixed options are `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, and `templates: {}`. The empty template map makes `{% include %}`, `{% render %}` and `{% layout %}` refuse partial loading from disk or the network. It HTML-escapes <code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output, while a final `| raw` opts an output or echo value out. The optional `liquidjs` peer range is `^10.30.0`: the factory reads liquidjs's `Tag`, `Value` and `CycleTag` internals to implement those tag rules, so callers must stay within that range. Run the factory's exact-output suite with `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
+Its fixed options are `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, and `templates: {}`. The empty template map makes `{% include %}`, `{% render %}` and `{% layout %}` refuse partial loading from disk or the network. It HTML-escapes <code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output, while a final `| raw` on an output, an echo value or a cycle candidate opts that value out. The optional `liquidjs` peer range is `^10.30.1`, the first release that applies `outputEscape` to `{% echo %}` and `{% cycle %}`; with 10.30.0 those two tags print their values unescaped. Run the factory's exact-output suite with `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
 
 ## In the playground
 

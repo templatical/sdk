@@ -21,6 +21,7 @@ describe("createCustomBlockLiquid", () => {
     ["cycle", "{% cycle v %}", "&lt;script&gt;x&lt;/script&gt;"],
     ["raw output", "{{ v | raw }}", "<script>x</script>"],
     ["raw echo", "{% echo v | raw %}", "<script>x</script>"],
+    ["raw cycle", "{% cycle v | raw %}", "<script>x</script>"],
   ])("renders %s with exact HTML output", async (_name, template, expected) => {
     expect(await createEngine().parseAndRender(template, { v: "<script>x</script>" })).toBe(expected);
   });
@@ -29,10 +30,10 @@ describe("createCustomBlockLiquid", () => {
     expect(await createEngine().parseAndRender("{{ v }}", { v: '&<>"\'' })).toBe("&amp;&lt;&gt;&#34;&#39;");
   });
 
-  it("preserves falsy cycle candidates exactly as stock liquidjs", async () => {
+  it("prints falsy cycle candidates exactly as stock liquidjs", async () => {
     const template = "{% cycle 0, 1 %}|{% cycle 0, 1 %}|{% cycle 0, 1 %}|{% cycle 0, 1 %};{% cycle false, 'x' %}|{% cycle false, 'x' %}|{% cycle false, 'x' %}";
     const stock = await new liquidjs.Liquid({ outputEscape: "escape", templates: {} }).parseAndRender(template);
-    expect(stock).toBe("|1||1;|x|");
+    expect(stock).toBe("0|1|0|1;false|x|false");
     expect(await createEngine().parseAndRender(template)).toBe(stock);
   });
 
