@@ -29,6 +29,7 @@ import {
 } from "../../utils/imageNaturalSize";
 
 const props = defineProps<{
+  hideLabel?: boolean;
   modelValue: BackgroundImage | undefined;
   testidPrefix: string;
   /**
@@ -162,7 +163,9 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
 <template>
   <div class="tpl:space-y-3.5">
     <div>
-      <label :class="labelClass">{{ t.blockSettings.backgroundImage }}</label>
+      <label v-if="!hideLabel" :class="labelClass">{{
+        t.blockSettings.backgroundImage
+      }}</label>
       <div
         ref="dropZoneRef"
         class="tpl:relative"

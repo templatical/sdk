@@ -353,3 +353,100 @@ describe("expect values a typed caller wouldn't send", () => {
     });
   });
 });
+
+describe.each([
+  ["updateBlockLocale", "content", "content"],
+  ["updateSettingsLocale", "direction", "preheaderText"],
+] as const)("%s values from TypeScript callers", (op, setPath, textPath) => {
+  const localized = {
+    blocks: [{ id: "t1", type: "title", content: "Hi" }],
+    settings: {
+      width: 600,
+      locale: "en",
+      locales: ["de"],
+      direction: "ltr",
+      preheaderText: "Hello",
+    },
+  } as unknown as TemplateContent;
+
+  it.each([
+    ["an undefined override", { set: { [setPath]: undefined } }],
+    [
+      "an undefined override next to a defined one",
+      { set: { width: 640, [setPath]: undefined } },
+    ],
+    ["an undefined text entry", { text: { [textPath]: undefined } }],
+    ["a text entry with the old hash member", { text: { [textPath]: { value: "Hallo", source: "67eb44ba" } } }],
+    [
+      "a text entry missing value",
+      { text: { [textPath]: { sourceHash: "67eb44ba" } } },
+    ],
+    [
+      "a text entry missing sourceHash",
+      { text: { [textPath]: { value: "Hallo" } } },
+    ],
+    [
+      "an undefined text value",
+      { text: { [textPath]: { value: undefined, sourceHash: "67eb44ba" } } },
+    ],
+    [
+      "an undefined text sourceHash",
+      { text: { [textPath]: { value: "Hallo", sourceHash: undefined } } },
+    ],
+    [
+      "a non-string text value",
+      { text: { [textPath]: { value: 42, sourceHash: "67eb44ba" } } },
+    ],
+    [
+      "a non-string text sourceHash",
+      { text: { [textPath]: { value: "Hallo", sourceHash: 42 } } },
+    ],
+  ])("refuses %s with the original batch index", (_label, change) => {
+    const before = JSON.stringify(localized);
+    expect(
+      refusal(localized, [
+        { op: "updateSettings", set: { width: 640 } },
+        {
+          op,
+          locale: "de",
+          ...(op === "updateBlockLocale" ? { blockId: "t1" } : {}),
+          ...change,
+        },
+      ]),
+    ).toEqual({
+      code: "invalid_operation",
+      opIndex: 1,
+      message:
+        "A locale update needs text, set, unset or a block's boolean hidden.",
+    });
+    expect(JSON.stringify(localized)).toBe(before);
+  });
+});
+
+describe("locale operations naming a prototype key", () => {
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses %s as a locale and leaves Object.prototype alone",
+    (locale) => {
+      const content = {
+        blocks: [{ id: "t1", type: "title", content: "Hi" }],
+        settings: { width: 600, locale: "en", locales: [locale] },
+      } as unknown as TemplateContent;
+      expect(
+        refusal(content, [
+          { op: "updateBlockLocale", blockId: "t1", locale, hidden: true },
+        ]),
+      ).toEqual({
+        code: "invalid_operation",
+        opIndex: 0,
+        message: "locale must be a language tag.",
+      });
+      expect(
+        refusal(content, [
+          { op: "updateSettingsLocale", locale, set: { direction: "rtl" } },
+        ]).code,
+      ).toBe("invalid_operation");
+      expect(({} as Record<string, unknown>).hidden).toBeUndefined();
+      expect(({} as Record<string, unknown>).set).toBeUndefined();
+    },
+  );
+});

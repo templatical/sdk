@@ -4,8 +4,9 @@ import type {
   AiMergeTags,
   AiRewritePreset,
   TemplateContent,
+  TranslationRequest,
 } from "@templatical/types";
-import { SdkError } from "@templatical/types";
+import { isLocaleTag, SdkError } from "@templatical/types";
 import {
   AI_GENERATE_FIELDS,
   AI_ERROR_MESSAGES,
@@ -26,6 +27,7 @@ interface Base {
 
 export type AiWireRequest = Base &
   (
+    | { route: "translate"; body: TranslationRequest }
     | { route: "generate"; body: AiGenerateBody }
     | { route: "fixFinding"; body: AiFixFindingBody }
     | { route: "rewriteText"; body: AiRewriteBody }
@@ -194,6 +196,12 @@ export async function readAiRequest(
     invalid("The session id must be at most 200 characters.");
 
   switch (match.route) {
+    case "translate":
+      return {
+        ...base,
+        route: "translate",
+        body: await readTranslationRequest(request),
+      };
     case "conversationMessages":
     case "clearConversation":
       return { ...base, route: match.route };
@@ -249,6 +257,7 @@ export async function readAiRequest(
       }
     };
     body = {
+      locale: json(AI_GENERATE_FIELDS.locale),
       message: form.get(AI_GENERATE_FIELDS.message),
       selectedBlockId: form.get(AI_GENERATE_FIELDS.selectedBlockId),
       revision: form.get(AI_GENERATE_FIELDS.revision),
@@ -356,6 +365,7 @@ export async function readAiRequest(
         ...base,
         route: "generate",
         body: {
+          locale: locale(body.locale),
           message,
           attachments,
           selectedBlockId:
@@ -373,6 +383,7 @@ export async function readAiRequest(
         ...base,
         route: "fixFinding",
         body: {
+          locale: locale(body.locale),
           finding: finding(body.finding),
           mergeTags: mergeTags(body.mergeTags),
           content: content(body.content),
@@ -412,6 +423,7 @@ export async function readAiRequest(
         ...base,
         route: "rewriteText",
         body: {
+          locale: locale(body.locale),
           html,
           preset: preset as AiRewritePreset | null,
           language,
@@ -421,4 +433,65 @@ export async function readAiRequest(
       };
     }
   }
+}
+
+function locale(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (!isLocaleTag(value)) invalid("locale must be a BCP 47 tag.");
+  return value;
+}
+
+/** Validate a translation body, including direct calls to `translateFields`. */
+export function checkTranslationRequest(value: unknown): TranslationRequest {
+  if (!isRecord(value)) invalid("Send a JSON object.");
+  if (
+    value.templateId !== null &&
+    (typeof value.templateId !== "string" || value.templateId === "")
+  )
+    invalid("templateId must be a non-empty string or null.");
+  for (const key of ["sourceLocale", "targetLocale"] as const) {
+    if (locale(value[key]) === null) invalid(`${key} must be a BCP 47 tag.`);
+  }
+  if (!Array.isArray(value.fields) || value.fields.length === 0)
+    invalid("fields must be a non-empty array.");
+  if (value.fields.length > AI_LIMITS.translationMaxFields)
+    throw new SdkError(
+      AI_ERROR_MESSAGES.content_too_large,
+      413,
+      "content_too_large",
+    );
+  const ids = new Set<string>();
+  let chars = 0;
+  for (const field of value.fields) {
+    if (
+      !isRecord(field) ||
+      typeof field.id !== "string" ||
+      field.id === "" ||
+      ids.has(field.id) ||
+      (field.format !== "html" && field.format !== "text") ||
+      typeof field.text !== "string"
+    )
+      invalid(
+        "Each field must have a unique non-empty id, html or text format, and string text.",
+      );
+    ids.add(field.id);
+    chars += field.text.length;
+  }
+  if (chars > AI_LIMITS.translationMaxChars)
+    throw new SdkError(
+      AI_ERROR_MESSAGES.content_too_large,
+      413,
+      "content_too_large",
+    );
+  return value as unknown as TranslationRequest;
+}
+
+/** Read the JSON translation body and enforce the translation call limits. */
+export async function readTranslationRequest(
+  request: Request,
+): Promise<TranslationRequest> {
+  const body: unknown = await request
+    .json()
+    .catch(() => invalid("Send a JSON body."));
+  return checkTranslationRequest(body);
 }

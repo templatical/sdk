@@ -106,7 +106,8 @@ describe("lintTemplate", () => {
       "deliverability.low-text",
     ]);
     expect(isLintFullyDisabled({ ...threeOff, deliverability: false })).toBe(false);
-    expect(isLintFullyDisabled({ ...threeOff, deliverability: false, compatibility: false })).toBe(true);
+    expect(isLintFullyDisabled({ ...threeOff, deliverability: false, compatibility: false })).toBe(false);
+    expect(isLintFullyDisabled({ ...threeOff, deliverability: false, compatibility: false, localization: false })).toBe(true);
     expect(isLintFullyDisabled({ disabled: true })).toBe(true);
     expect(lintTemplate(content, { deliverability: false }).some((issue) =>
       issue.ruleId.startsWith("deliverability."),

@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`locale rendering > preserves the current single-language output and rejects unknown locales 1`] = `
+"<mjml lang="en" dir="ltr">
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Arial, sans-serif" />
+      <mj-text font-size="14px" color="#1a1a1a" />
+      <mj-section padding="0" />
+      <mj-column padding="0" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .tpl-rich-text-8 p { margin: 0 0 8px; }
+      .tpl-rich-text-8 p:last-child { margin-bottom: 0; }
+      .tpl-rich-text ul, .tpl-rich-text ol { margin: 8px 0; padding-left: 24px; }
+      .tpl-rich-text li { margin: 4px 0; }
+      .tpl-button-full a { display: block !important; }
+    </mj-style>
+    <mj-style>
+      a { color: inherit; text-decoration: underline; }
+      @media only screen and (max-width: 480px) {
+        .tpl-hide-mobile { display: none !important; mso-hide: all !important; }
+      }
+      @media only screen and (min-width: 481px) {
+        .tpl-hide-desktop { display: none !important; mso-hide: all !important; }
+      }
+    </mj-style>
+  </mj-head>
+  <mj-body width="600px" background-color="#ffffff">
+<mj-section>
+  <mj-column>
+<mj-text
+  line-height="1.5"
+  padding="10px 10px 10px 10px" css-class="tpl-rich-text tpl-rich-text-8"
+>Existing email</mj-text>
+  </mj-column>
+</mj-section>
+  </mj-body>
+</mjml>"
+`;

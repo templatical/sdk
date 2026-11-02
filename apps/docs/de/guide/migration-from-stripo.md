@@ -77,6 +77,19 @@ const editor = await init({
 
 Nicht erkanntes HTML (keine Stripo-Klassenattribute) läuft durch `@templatical/import-html`; der Bericht enthält eine Warnung, die diesen Fallback benennt.
 
+## Optionen {#options}
+
+`convertStripoTemplate` akzeptiert als zweites Argument `ConvertStripoOptions`. `defaultLocale?: string` setzt `settings.locale`, wenn die Quelle keine Standardsprache angibt; andernfalls gilt `"en"`. Eine deklarierte Standardsprache hat Vorrang. Sprachcodes werden von `_` nach `-` normalisiert. Eine deklarierte Standardsprache oder ein `defaultLocale`, das danach kein Sprach-Tag ist, etwa ein Platzhalter <code v-pre>{{lang}}</code>, wird mit einem `report.warnings`-Eintrag ignoriert, der den Wert nennt; dann gilt der nächste gültige Wert oder `"en"`.
+
+`ConvertStripoOptions` behält außerdem `css?: string` für den Plugin-Speicher. HTML `<html lang>` deklariert die Standardsprache.
+
+```ts
+export interface ConvertStripoOptions {
+  defaultLocale?: string;
+  css?: string;
+}
+```
+
 ## Den Bericht lesen
 
 Jeder Eintrag in `report.entries` beschreibt ein Quellelement:

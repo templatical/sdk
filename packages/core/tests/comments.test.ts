@@ -132,6 +132,33 @@ describe("useComments", () => {
   });
 
   describe("create", () => {
+    it("passes the language to the provider and keeps it on roots and replies", async () => {
+      const { comments, provider } = setup({
+        create: vi.fn(async (_templateId, input) =>
+          comment(input.parentId ? "r-de" : "c-en", input),
+        ),
+      });
+
+      await comments.create({ body: "Root", locale: "en" });
+      await comments.create({
+        body: "Antwort",
+        parentId: "c-en",
+        locale: "de",
+      });
+
+      expect(provider.create).toHaveBeenNthCalledWith(1, "tpl-1", {
+        body: "Root",
+        locale: "en",
+      });
+      expect(provider.create).toHaveBeenNthCalledWith(2, "tpl-1", {
+        body: "Antwort",
+        parentId: "c-en",
+        locale: "de",
+      });
+      expect(comments.find("c-en")?.locale).toBe("en");
+      expect(comments.find("r-de")?.locale).toBe("de");
+    });
+
     it("appends a root and fires a created event", async () => {
       const onCreated = vi.fn();
       const created = comment("c-9");
@@ -660,6 +687,25 @@ describe("useCommentListener", () => {
     });
     return { comments, provider, scope, templateId };
   }
+
+  it("keeps each subscribed root and reply's language", () => {
+    let emit!: (change: CommentChange) => void;
+    const { comments, scope } = listen((_templateId, onChange) => {
+      emit = onChange;
+      return () => {};
+    });
+    try {
+      emit({ type: "created", comment: comment("c-en", { locale: "en" }) });
+      emit({
+        type: "created",
+        comment: comment("r-de", { parentId: "c-en", locale: "de" }),
+      });
+      expect(comments.find("c-en")?.locale).toBe("en");
+      expect(comments.find("r-de")?.locale).toBe("de");
+    } finally {
+      scope.stop();
+    }
+  });
 
   it("does nothing at all when the provider has no subscribe", () => {
     // Realtime is separable: comments without it work identically.

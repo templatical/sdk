@@ -1,3 +1,7 @@
+import {
+  elementIdIssues,
+  createDefaultTemplateContent,
+} from "@templatical/types";
 import { describe, expect, it } from "vitest";
 import { convertLeaf, isLeafType } from "../block-mapper";
 import { contextFromPage } from "../normalize";
@@ -520,6 +524,9 @@ describe("convertLeaf", () => {
       ],
     });
     const menu = blocks[0] as MenuBlock;
+    expect(
+      elementIdIssues({ ...createDefaultTemplateContent(), blocks: [menu] }),
+    ).toEqual([]);
     expect(menu.type).toBe("menu");
     expect(menu.items).toHaveLength(2);
     expect(menu.items[0].text).toBe("Home");

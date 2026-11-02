@@ -1,5 +1,6 @@
 import type { BackgroundImage } from "./background-image";
 import type { SectionHero } from "./hero";
+import type { BlockLocaleLayer } from "./localization";
 
 export interface SpacingValue {
   top: number;
@@ -164,6 +165,8 @@ export interface BlockVisibility {
 }
 
 export interface BaseBlock {
+  /** Per-language layers, keyed by BCP 47 tag; see `resolveLocale`. */
+  l10n?: Record<string, BlockLocaleLayer>;
   id: string;
   type: string;
   styles: BlockStyles;

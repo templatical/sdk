@@ -177,18 +177,27 @@ Sie können die Einstellungen des Inhalts auf das Layout kopieren und `backgroun
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
-import { applyLayout } from '@templatical/types';
+import { applyLayout, resolveLocale } from '@templatical/types';
 
 const mjml = await renderToMjml(content, { layout });
 const composed = applyLayout(layout, content);
+
+// One language version of a localized template, as renderToMjml composes it:
+const germanMjml = await renderToMjml(content, { layout, locale: 'de' });
+const german = applyLayout(
+  resolveLocale(layout, 'de', { missing: 'default' }),
+  resolveLocale(content, 'de'),
+);
 ```
 
 Vorschau, `toMjml` und `toHtml` setzen zuerst zusammen, dann optional `resolvePreview`:
 
 ```
-base = applyLayout(layout, content)
+base = applyLayout(resolveLocale(layout, locale, { missing: "default" }), resolveLocale(content, locale))
 if (resolvePreview) base = await resolvePreview({ content: base, recipient })
 ```
+
+`locale` ist in der Vorschau die aktive Sprache, sonst die Option `locale` von `toMjml` / `toHtml`, standardmäßig die Standardsprache des Templates. Layout und Template werden getrennt projiziert, das Layout mit `missing: "default"`: Seine Standardsprache muss nicht der des Templates entsprechen, und eine Sprache, die dem Layout fehlt, nutzt die Standardsprache des Layouts. Siehe [Lokalisierte Templates](/de/guide/localized-templates#layouts).
 
 Die Bearbeitungsleinwand nimmt diesen Pfad nie. Das Zusammensetzen des Layouts ist synchron.
 

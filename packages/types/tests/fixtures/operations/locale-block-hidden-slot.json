@@ -1,0 +1,45 @@
+{
+  "name": "locale-block-hidden-slot",
+  "content": {
+    "blocks": [
+      {
+        "id": "card",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "slot",
+            "type": "slot"
+          },
+          {
+            "id": "footer",
+            "type": "title",
+            "content": "Footer"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlockLocale",
+      "blockId": "slot",
+      "locale": "de",
+      "hidden": true
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "slot",
+      "message": "A layout's slot block, and any block that contains it, can't be hidden."
+    }
+  }
+}

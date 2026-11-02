@@ -1,0 +1,65 @@
+{
+  "name": "locale-default",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hello",
+        "l10n": {
+          "de": {
+            "text": {
+              "content": {
+                "value": "Hallo",
+                "sourceHash": "f55c314b"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de",
+        "fr"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hallo",
+          "l10n": {
+            "en": {
+              "text": {
+                "content": {
+                  "value": "Hello",
+                  "sourceHash": "9f02b107"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "de",
+        "locales": [
+          "en",
+          "fr"
+        ]
+      }
+    }
+  }
+}

@@ -52,12 +52,12 @@ export async function mountScene(
     }
   }
   const testHooks = window as {
-    __tplPlaygroundGetMjml?: () => Promise<string>;
+    __tplPlaygroundGetMjml?: (options?: { locale?: string }) => Promise<string>;
     __tplPlaygroundGetHtml?: () => Promise<string>;
     __tplPlaygroundSetMergeTags?: (tags: MergeTag[]) => void;
   };
-  testHooks.__tplPlaygroundGetMjml = () =>
-    editor.toMjml?.() ?? Promise.resolve("");
+  testHooks.__tplPlaygroundGetMjml = (options) =>
+    editor.toMjml?.(options) ?? Promise.resolve("");
   testHooks.__tplPlaygroundGetHtml = () =>
     editor.toHtml?.() ?? Promise.resolve("");
   testHooks.__tplPlaygroundSetMergeTags = (tags) => editor.setMergeTags(tags);

@@ -10,6 +10,10 @@ import type {
   Operation,
   TemplateContent,
 } from "@templatical/types";
+import {
+  TRANSLATION_MAX_CHARS,
+  TRANSLATION_MAX_FIELDS,
+} from "@templatical/types";
 
 /** Sent as {@link AI_WIRE_HEADER} on every request and response. */
 export const AI_WIRE_VERSION = "1";
@@ -18,6 +22,7 @@ export const AI_WIRE_HEADER = "Templatical-AI-Wire";
 export const AI_SESSION_HEADER = "X-Templatical-Session";
 
 export type AiRouteName =
+  | "translate"
   | "generate"
   | "fixFinding"
   | "rewriteText"
@@ -36,6 +41,7 @@ export interface AiRoute {
 
 /** The wire's routes (A1 §4). */
 export const AI_ROUTES: Readonly<Record<AiRouteName, AiRoute>> = {
+  translate: { method: "POST", path: "/templates/{template}/translate" },
   generate: { method: "POST", path: "/templates/{template}/ai/generate" },
   fixFinding: { method: "POST", path: "/templates/{template}/ai/fix-finding" },
   rewriteText: {
@@ -174,6 +180,7 @@ export type AiWireEvent =
 export type AiAltTextBody = Omit<AiAltTextRequest, "templateId" | "sessionId">;
 
 export interface AiGenerateBody {
+  locale?: string | null;
   attachments: AiChatAttachment[];
   message: string;
   selectedBlockId: string | null;
@@ -183,6 +190,7 @@ export interface AiGenerateBody {
 }
 
 export interface AiFixFindingBody {
+  locale?: string | null;
   finding: AiFixFinding;
   mergeTags: AiMergeTags;
   content: TemplateContent;
@@ -190,6 +198,7 @@ export interface AiFixFindingBody {
 }
 
 export interface AiRewriteBody {
+  locale?: string | null;
   html: string;
   preset: AiRewritePreset | null;
   language: string | null;
@@ -199,6 +208,7 @@ export interface AiRewriteBody {
 
 /** The multipart fields of generate; mergeTags and content are JSON strings. */
 export const AI_GENERATE_FIELDS = {
+  locale: "locale",
   message: "message",
   selectedBlockId: "selectedBlockId",
   mergeTags: "mergeTags",
@@ -232,6 +242,7 @@ export const AI_ERROR_STATUS: Readonly<Record<string, number>> = {
   content_too_large: 413,
   ai_output_invalid: 422,
   ai_provider_error: 502,
+  translation_failed: 502,
   not_found: 404,
   block_exists: 409,
   block_missing: 409,
@@ -264,4 +275,6 @@ export const AI_LIMITS = {
   instructionMaxChars: 500,
   mergeTagsMax: 500,
   opsPerBatchMax: 100,
+  translationMaxFields: TRANSLATION_MAX_FIELDS,
+  translationMaxChars: TRANSLATION_MAX_CHARS,
 } as const;

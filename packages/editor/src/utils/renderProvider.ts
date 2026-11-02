@@ -6,6 +6,8 @@ import type {
   TemplateContent,
 } from "@templatical/types";
 import {
+  defaultLocaleOf,
+  resolveLocale,
   applyLayout,
   assertNoSlotInContent,
   assertNoWrapperInContent,
@@ -72,10 +74,21 @@ export interface RenderPayloadSource {
  */
 export async function buildRenderPayload(
   source: RenderPayloadSource,
+  options?: { locale?: string },
 ): Promise<RenderPayload> {
   const raw = safeClone(source.getContent());
+  const locale = options?.locale ?? defaultLocaleOf(raw);
+  const localized =
+    options?.locale !== undefined || raw.settings?.locales?.length
+      ? resolveLocale(raw, locale)
+      : raw;
   const layout = source.getLayout?.();
-  const content = layout ? applyLayout(layout, raw) : raw;
+  const content = layout
+    ? applyLayout(
+        resolveLocale(layout, locale, { missing: "default" }),
+        localized,
+      )
+    : localized;
   if (!layout) {
     assertNoSlotInContent(content);
     assertNoWrapperInContent(content);
@@ -92,18 +105,18 @@ export async function buildRenderPayload(
 export interface RenderMethodsSource {
   /** The consumer's backend, when `render` was configured. */
   provider?: RenderProvider | null;
-  buildPayload: () => Promise<RenderPayload>;
+  buildPayload: (options?: { locale?: string }) => Promise<RenderPayload>;
   /**
    * Render MJML with the bundled `@templatical/renderer`. Expected to reject with
    * the "install @templatical/renderer" error when the optional peer is absent —
    * that rejection *is* the `toMjml()` chain's final `throw`.
    */
-  renderLocalMjml: () => Promise<string>;
+  renderLocalMjml: (options?: { locale?: string }) => Promise<string>;
 }
 
 export interface RenderMethods {
-  toMjml(): Promise<string>;
-  toHtml(): Promise<string>;
+  toMjml(options?: { locale?: string }): Promise<string>;
+  toHtml(options?: { locale?: string }): Promise<string>;
   /** Whether the provider can produce sending-ready HTML without guessing. */
   canRenderHtml(): boolean;
   /**
@@ -145,28 +158,28 @@ export interface RenderMethods {
 export function createRenderMethods(
   source: RenderMethodsSource,
 ): RenderMethods {
-  async function toMjml(): Promise<string> {
+  async function toMjml(options?: { locale?: string }): Promise<string> {
     const provider = source.provider;
     // Bound rather than narrowed in place: the call sits behind an `await`, and a
     // bound reference cannot be re-read as undefined afterwards.
     const providerToMjml = provider?.toMjml?.bind(provider);
     if (providerToMjml) {
-      return providerToMjml(await source.buildPayload());
+      return providerToMjml(await source.buildPayload(options));
     }
-    return source.renderLocalMjml();
+    return source.renderLocalMjml(options);
   }
 
-  async function toHtml(): Promise<string> {
+  async function toHtml(options?: { locale?: string }): Promise<string> {
     const provider = source.provider;
 
     const providerToHtml = provider?.toHtml?.bind(provider);
     if (providerToHtml) {
-      return providerToHtml(await source.buildPayload());
+      return providerToHtml(await source.buildPayload(options));
     }
 
     const compileMjml = provider?.compileMjml?.bind(provider);
     if (compileMjml) {
-      return compileMjml(await toMjml());
+      return compileMjml(await toMjml(options));
     }
 
     throw new Error(

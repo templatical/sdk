@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import FieldRow from "./toolbar/FieldRow.vue";
 import { useI18n } from "../composables/useI18n";
 import { Lock, LockOpen, Minus, Plus } from "@lucide/vue";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
+  path?: string;
   modelValue: SpacingValue;
   label: string;
 }>();
@@ -93,13 +95,7 @@ const inputClass =
 </script>
 
 <template>
-  <div class="spacing-control">
-    <label
-      class="tpl:mb-2 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-    >
-      {{ label }}
-    </label>
-
+  <FieldRow class="spacing-control" :path="path" :label="label">
     <div class="tpl:flex tpl:flex-col tpl:items-center tpl:gap-1.5">
       <!-- Top -->
       <div class="tpl:flex tpl:items-center">
@@ -246,7 +242,7 @@ const inputClass =
         </button>
       </div>
     </div>
-  </div>
+  </FieldRow>
 </template>
 
 <style scoped>

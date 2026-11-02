@@ -1126,3 +1126,93 @@
         animation: tpl-spin 1s linear infinite;
     }
 }
+
+.tpl-header-container {
+    container-type: inline-size;
+    container-name: tpl-header;
+}
+
+/* Identity text must shrink with its track instead of covering adjacent controls. */
+.tpl-header-identity [data-testid="template-name"],
+.tpl-header-identity [data-testid="template-name-input"] {
+    max-width: 100%;
+}
+
+/* The compact header shows a language's tag instead of its name. */
+.tpl-language-tag {
+    display: none;
+}
+
+.tpl-header-identity {
+    min-width: 24px;
+    flex-shrink: 1;
+}
+
+.tpl-header-timestamp {
+    max-width: 100%;
+}
+
+/* Measured full-label overflow drives compaction in light and shadow roots. */
+.tpl-header[data-compact="true"] {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    padding-inline: 8px;
+    column-gap: 8px;
+}
+.tpl-header[data-compact="true"] .tpl-header-left,
+.tpl-header[data-compact="true"] .tpl-header-right {
+    min-width: 0;
+    gap: 4px;
+}
+.tpl-header[data-compact="true"] .tpl-header-center {
+    gap: 4px;
+}
+/* Sized by the name itself (capped by its own 260px and the 100% rule
+   above); it gives way only when the header has no room left. */
+.tpl-header[data-compact="true"] .tpl-header-identity {
+    flex: 0 1 auto;
+    min-width: 24px;
+    max-width: none;
+    padding-bottom: 0;
+}
+.tpl-header[data-compact="true"] .tpl-header-timestamp,
+.tpl-header[data-compact="true"] .tpl-header-label,
+.tpl-header[data-compact="true"] .tpl-header-comment-count,
+.tpl-header[data-compact="true"] .tpl-language-name,
+.tpl-header[data-compact="true"] .tpl-language-count,
+.tpl-header[data-compact="true"] .tpl-language-chevron {
+    display: none;
+}
+.tpl-header[data-compact="true"] .tpl-header-left .tpl-language-tag {
+    display: inline;
+}
+.tpl-header[data-compact="true"] .tpl-language-control {
+    flex-shrink: 1;
+}
+.tpl-header[data-compact="true"] .tpl-language-trigger {
+    width: 100% !important;
+    max-width: 72px !important;
+    padding-inline: 6px;
+    gap: 4px;
+}
+.tpl-header[data-compact="true"] .tpl-header-center [role="radio"] {
+    padding-inline: 6px;
+}
+.tpl-header[data-compact="true"] [data-testid="version-history"] {
+    gap: 0;
+}
+.tpl-header[data-compact="true"] [data-testid="version-history-toggle"] {
+    padding-inline: 4px;
+}
+.tpl-header[data-compact="true"] .tpl-header-right > button {
+    min-width: 32px;
+    padding-inline: 7px;
+    gap: 0;
+}
+.tpl-header[data-compact="true"] .tpl-header-save-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}

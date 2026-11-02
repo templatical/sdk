@@ -1,14 +1,19 @@
+export type BeeFreeTranslations = Record<string, Record<string, unknown>>;
+
 /**
  * BeeFree JSON type definitions.
  * Based on the BeeFree export format used by the BEE Plugin / BEE Pro editor.
  */
 
 export interface BeeFreeTemplate {
+  head?: { meta?: { preheader?: string; translations?: BeeFreeTranslations } };
+  language?: { label?: string; value: string };
   page: BeeFreeePage;
   comments?: Record<string, unknown>;
 }
 
 export interface BeeFreeePage {
+  language?: { label?: string; value: string };
   title?: string;
   description?: string;
   rows: BeeFreeeRow[];
@@ -16,6 +21,7 @@ export interface BeeFreeePage {
 }
 
 export interface BeeFreeeBody {
+  language?: { label?: string; value: string };
   type?: string;
   webFonts?: BeeFreeeWebFont[];
   content?: {
@@ -57,6 +63,7 @@ export interface BeeFreeeColumn {
 }
 
 export interface BeeFreeeModule {
+  translations?: BeeFreeTranslations;
   type: string;
   locked?: boolean;
   uuid?: string;
@@ -82,18 +89,21 @@ export interface BeeFreeeModuleDescriptor {
 }
 
 export interface BeeFreeeTextContent {
+  translations?: BeeFreeTranslations;
   style?: Record<string, string>;
   computedStyle?: Record<string, string>;
   html: string;
 }
 
 export interface BeeFreeeHeadingContent {
+  translations?: BeeFreeTranslations;
   title?: string;
   text?: string;
   style?: Record<string, string>;
 }
 
 export interface BeeFreeeImageContent {
+  translations?: BeeFreeTranslations;
   src: string;
   href?: string;
   alt?: string;
@@ -104,6 +114,7 @@ export interface BeeFreeeImageContent {
 }
 
 export interface BeeFreeeButtonContent {
+  translations?: BeeFreeTranslations;
   label: string;
   href?: string;
   style?: Record<string, string>;
@@ -139,6 +150,8 @@ export interface BeeFreeeSocialIcon {
 }
 
 export interface BeeFreeeVideoContent {
+  thumbAlt?: string;
+  translations?: BeeFreeTranslations;
   src: string;
   thumbnail?: string;
   alt?: string;
@@ -146,6 +159,7 @@ export interface BeeFreeeVideoContent {
 }
 
 export interface BeeFreeeMenuContent {
+  translations?: BeeFreeTranslations;
   items: BeeFreeeMenuItem[];
   separator?: string;
   separatorColor?: string;

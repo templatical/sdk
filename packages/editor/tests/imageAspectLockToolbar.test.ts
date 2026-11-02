@@ -5,6 +5,9 @@ import { flushPromises, type VueWrapper } from "@vue/test-utils";
 import {
   createDefaultTemplateContent,
   createImageBlock,
+  createSlotBlock,
+  createWrapperBlock,
+  localizeBlock,
 } from "@templatical/types";
 import type { ImageBlock } from "@templatical/types";
 import ImageToolbar from "../src/components/toolbar/ImageToolbar.vue";
@@ -13,6 +16,7 @@ import en from "../src/i18n/locales/en";
 import fr from "../src/i18n/locales/fr";
 import {
   EDITOR_KEY,
+  LAYOUT_KEY,
   ON_REQUEST_MEDIA_KEY,
   TRANSLATIONS_KEY,
 } from "../src/keys";
@@ -223,3 +227,57 @@ describe("ImageToolbar aspect-ratio lock", () => {
     );
   });
 });
+
+it.each(["width", "padding", "width with layout"])(
+  "uses localized %s for aspect-lock room",
+  async (kind) => {
+    const block = banner({
+      naturalWidth: 1200,
+      naturalHeight: 600,
+      ...(kind === "padding"
+        ? {
+            l10n: {
+              de: {
+                set: {
+                  "styles.padding.left": 100,
+                  "styles.padding.right": 100,
+                },
+              },
+            },
+          }
+        : {}),
+    });
+    const content = createDefaultTemplateContent();
+    content.settings.locale = "en";
+    content.settings.locales = ["de"];
+    if (kind !== "padding")
+      content.settings.l10n = { de: { set: { width: 800 } } };
+    content.blocks = [block];
+    const before = JSON.stringify(content);
+    const layout =
+      kind === "width with layout"
+        ? {
+            ...createDefaultTemplateContent(),
+            blocks: [
+              createWrapperBlock({
+                styles: { padding: { top: 0, right: 60, bottom: 0, left: 60 } },
+                children: [createSlotBlock()],
+              }),
+            ],
+          }
+        : undefined;
+    const wrapper = mountIt(localizeBlock(block, "de", "en") as ImageBlock, {
+      [EDITOR_KEY]: { content: ref(content), activeLocale: ref("de") },
+      [LAYOUT_KEY]: layout,
+    });
+    await lockedHeight(wrapper).setValue(kind === "padding" ? "250" : "350");
+    expect(updates(wrapper)).toStrictEqual([
+      { width: kind === "width" ? 700 : "full", height: undefined },
+    ]);
+    if (kind !== "width")
+      expect(
+        wrapper.find('[data-testid="image-height-capped"]').text(),
+      ).toContain(kind === "padding" ? "200px tall" : "330px tall");
+    expect(JSON.stringify(content)).toBe(before);
+  },
+);

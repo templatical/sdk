@@ -89,6 +89,7 @@ Die Präsenzanzeige der Zusammenarbeit braucht denselben Wert. Eine Kopie im Kom
 interface Comment {
   id: string;
   body: string;
+  locale?: string | null;
   author: { id: string; name: string };
   createdAt: string;
   updatedAt?: string;
@@ -101,6 +102,7 @@ interface Comment {
 
 interface CommentInput {
   body: string;
+  locale?: string;
   blockId?: string;   // fehlt bei einem Template-Kommentar
   parentId?: string;  // fehlt bei einer Thread-Wurzel
 }
@@ -128,6 +130,14 @@ Eine Ebene. Ein Thread-Wurzelkommentar trägt `replies`; eine Antwort nie. Tiefe
 ### `updatedAt`
 
 Vorhanden bedeutet bearbeitet — das Panel zeigt eine *(bearbeitet)*-Markierung. Setzen Sie es bei einer Bearbeitung, **nicht beim Anlegen**: Ein Speicher, der es zusammen mit `createdAt` setzt, markiert jeden Kommentar als bearbeitet.
+
+### `locale`
+
+Der Editor sendet bei jedem neuen Kommentar und jeder Antwort `CommentInput.locale`: den Sprach-Tag der aktiven Ansicht, einschließlich der Standardsprache (zum Beispiel `"en"` oder `"de"`). Eine Antwort verwendet die Sprache ihrer Ansicht, auch wenn ihr Elternkommentar in einer anderen Sprache verfasst wurde.
+
+Ihr Kommentar-Backend muss den Tag speichern und als `Comment.locale` bei `create`, `list` und `subscribe` zurückgeben, auch für Antworten. Fehlt der Tag oder ist er `null`, stammt der Kommentar aus der Zeit vor dieser Funktion und zählt zur aktuellen Standardsprache des Templates. Explizite Tags behalten ihre Bedeutung, wenn sich die Standardsprache ändert.
+
+Zur Prüfung erstellen Sie einen Kommentar und eine Antwort in jeder Sprachansicht und lesen die Liste erneut: Beide müssen den gesendeten Sprach-Tag behalten. Über `subscribe` empfangene Kommentare behalten ihren Tag ebenfalls.
 
 ### `setResolved`
 
@@ -244,7 +254,7 @@ await comments.load();
 comments.comments.value;                    // Comment[] — Thread-Wurzeln mit Antworten
 comments.unresolvedCount.value;             // number
 comments.commentCountByBlock.value;         // Map<string, number>
-await comments.create({ body: 'Sieht gut aus' });
+await comments.create({ body: 'Sieht gut aus', locale: 'en' });
 await comments.setResolved('c_1', true);
 ```
 

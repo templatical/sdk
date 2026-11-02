@@ -58,7 +58,7 @@ Container that arranges blocks into columns.
 
 <!-- BEGIN GENERATED FIELDS: section -->
 **Required** — `columns` (ColumnLayout), `children` (Block[][]).
-**Optional** — `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `hero` (SectionHero), `wrapper` (SectionWrapper).
+**Optional** — `l10n` (object), `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `hero` (SectionHero), `wrapper` (SectionWrapper).
 <!-- END GENERATED FIELDS: section -->
 
 - `columns` is one of `"1"`, `"2"`, `"3"`, `"2-1"`, `"1-2"`.
@@ -104,12 +104,14 @@ renderer drops it on export.
 
 <!-- BEGIN GENERATED FIELDS: spacer -->
 **Required** — `height` (int).
+**Optional** — `l10n` (object).
 <!-- END GENERATED FIELDS: spacer -->
 
 ### divider
 
 <!-- BEGIN GENERATED FIELDS: divider -->
 **Required** — `lineStyle` ("solid" | "dashed" | "dotted"), `color` (string), `thickness` (int), `width` (int | "full" | DividerPercentWidth).
+**Optional** — `l10n` (object).
 <!-- END GENERATED FIELDS: divider -->
 
 `width` is `"full"` (the column), a pixel number, or a percentage of the column
@@ -122,7 +124,7 @@ pixel width does not shrink on a phone.
 
 <!-- BEGIN GENERATED FIELDS: title -->
 **Required** — `content` (string), `level` (HeadingLevel), `textAlign` ("left" | "center" | "right").
-**Optional** — `color` (string), `fontFamily` (string).
+**Optional** — `l10n` (object), `color` (string), `fontFamily` (string).
 <!-- END GENERATED FIELDS: title -->
 
 - `content` is the heading text; inline HTML is allowed.
@@ -135,7 +137,7 @@ pixel width does not shrink on a phone.
 
 <!-- BEGIN GENERATED FIELDS: paragraph -->
 **Required** — `content` (string).
-**Optional** — `paragraphSpacing` (int).
+**Optional** — `l10n` (object), `paragraphSpacing` (int).
 <!-- END GENERATED FIELDS: paragraph -->
 
 - `content` supports `<b>`, `<i>`, `<a href>`, `<br>`, `<ul>`, `<ol>`.
@@ -149,7 +151,7 @@ Horizontal nav row of links.
 
 <!-- BEGIN GENERATED FIELDS: menu -->
 **Required** — `items` (MenuItemData[]), `fontSize` (int), `textAlign` ("left" | "center" | "right"), `separator` (string), `separatorColor` (string), `spacing` (int).
-**Optional** — `fontFamily` (string), `color` (string), `linkColor` (string).
+**Optional** — `l10n` (object), `fontFamily` (string), `color` (string), `linkColor` (string).
 <!-- END GENERATED FIELDS: menu -->
 
 - `items` — each is `{ id, text, url, openInNewTab: bool, bold: bool,
@@ -160,7 +162,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: table -->
 **Required** — `rows` (TableRowData[]), `hasHeaderRow` (bool), `borderColor` (string), `borderWidth` (int), `cellPadding` (int), `fontSize` (int), `textAlign` ("left" | "center" | "right").
-**Optional** — `headerBackgroundColor` (string), `fontFamily` (string), `color` (string).
+**Optional** — `l10n` (object), `headerBackgroundColor` (string), `fontFamily` (string), `color` (string).
 <!-- END GENERATED FIELDS: table -->
 
 - `rows` — each is `{ id, cells: [{ id, content }] }`. Cell `content` is
@@ -180,7 +182,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: image -->
 **Required** — `src` (string), `alt` (string), `width` (int | "full"), `align` ("left" | "center" | "right").
-**Optional** — `height` (int), `naturalWidth` (int), `naturalHeight` (int), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
+**Optional** — `l10n` (object), `height` (int), `naturalWidth` (int), `naturalHeight` (int), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
 <!-- END GENERATED FIELDS: image -->
 
 - `alt` — write meaningful alt text.
@@ -210,7 +212,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: button -->
 **Required** — `text` (string), `url` (string), `backgroundColor` (string), `textColor` (string), `borderRadius` (BorderRadiusValue), `fontSize` (int), `buttonPadding` (SpacingValue), `align` ("left" | "center" | "right").
-**Optional** — `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `width` (int | "full").
+**Optional** — `l10n` (object), `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `width` (int | "full").
 <!-- END GENERATED FIELDS: button -->
 
 - `buttonPadding` is `{ top, right, bottom, left }`.
@@ -229,7 +231,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: social -->
 **Required** — `icons` (SocialIcon[]), `iconStyle` (SocialIconStyle), `iconSize` (SocialIconSize), `spacing` (int), `align` ("left" | "center" | "right").
-**Optional** — `iconTone` (SocialIconTone).
+**Optional** — `l10n` (object), `iconTone` (SocialIconTone).
 <!-- END GENERATED FIELDS: social -->
 
 - `icons` — each is `{ id, platform, url }`.
@@ -253,7 +255,7 @@ Renders as a thumbnail with a play button linking to the video.
 
 <!-- BEGIN GENERATED FIELDS: video -->
 **Required** — `url` (string), `thumbnailUrl` (string), `alt` (string), `width` (int | "full"), `align` ("left" | "center" | "right").
-**Optional** — `openInNewTab` (bool), `height` (int), `placeholderUrl` (string).
+**Optional** — `l10n` (object), `openInNewTab` (bool), `height` (int), `placeholderUrl` (string).
 <!-- END GENERATED FIELDS: video -->
 
 - `height` — same aspect-ratio caveat as `image`.
@@ -269,6 +271,7 @@ Its markup passes through MJML unchanged. Follow the [pass-through rules](rules.
 
 <!-- BEGIN GENERATED FIELDS: html -->
 **Required** — `content` (string).
+**Optional** — `l10n` (object).
 <!-- END GENERATED FIELDS: html -->
 
 ## Merge tags

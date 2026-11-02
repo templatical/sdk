@@ -177,18 +177,27 @@ You can copy the content settings onto the layout and override `backgroundColor`
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
-import { applyLayout } from '@templatical/types';
+import { applyLayout, resolveLocale } from '@templatical/types';
 
 const mjml = await renderToMjml(content, { layout });
 const composed = applyLayout(layout, content);
+
+// One language version of a localized template, as renderToMjml composes it:
+const germanMjml = await renderToMjml(content, { layout, locale: 'de' });
+const german = applyLayout(
+  resolveLocale(layout, 'de', { missing: 'default' }),
+  resolveLocale(content, 'de'),
+);
 ```
 
 Preview, `toMjml`, and `toHtml` compose first, then optionally `resolvePreview`:
 
 ```
-base = applyLayout(layout, content)
+base = applyLayout(resolveLocale(layout, locale, { missing: "default" }), resolveLocale(content, locale))
 if (resolvePreview) base = await resolvePreview({ content: base, recipient })
 ```
+
+`locale` is the active language in preview, or the `locale` option of `toMjml` / `toHtml`, which defaults to the template's default language. Layout and template are projected separately, the layout with `missing: "default"`: its default language needn't match the template's, and a language the layout lacks uses the layout's default. See [Localized templates](/guide/localized-templates#layouts).
 
 The editing canvas never takes this path. Layout compose is synchronous.
 

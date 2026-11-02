@@ -21,6 +21,7 @@ import {
   checkRewrite,
   editingInstructions,
   readAiRequest,
+  translateFields,
   rewriteInstructions,
   runEditingTurn,
   type AiModelAdapter,
@@ -131,6 +132,18 @@ export function createReferenceHandler(
     conversations.set(read.template, history);
 
     switch (read.route) {
+      case "translate":
+        try {
+          return aiJsonResponse(
+            await translateFields({
+              request: read.body,
+              model,
+              signal: request.signal,
+            }),
+          );
+        } catch (error) {
+          return aiErrorResponse(error);
+        }
       case "generate":
       case "fixFinding": {
         const turn = read;
@@ -148,6 +161,7 @@ export function createReferenceHandler(
         return aiEventStream(async (stream) => {
           const result = await runEditingTurn({
             request: {
+              locale: turn.body.locale,
               content: turn.body.content,
               revision: turn.body.revision,
               mergeTags: turn.body.mergeTags,

@@ -15,6 +15,7 @@ import type {
   BlockDefaults,
   CustomBlockDefinition,
   DisplayCondition,
+  LocaleCoverage,
   LogicPair,
   LogicTag,
   MergeTag,
@@ -42,6 +43,18 @@ import type { OnRequestMedia } from "./index";
 export const TRANSLATIONS_KEY: InjectionKey<Translations> =
   Symbol("translations");
 
+export const LOCALE_CHIP_OPENERS_KEY: InjectionKey<Map<string, () => void>> =
+  Symbol("localeChipOpeners");
+
+export const LOCALIZATION_KEY: InjectionKey<
+  { locales: string[]; doNotTranslate?: string[] } | undefined
+> = Symbol("localization");
+
+/** Languages in which an ancestor section excludes its descendants. */
+export const ANCESTOR_HIDDEN_LOCALES_KEY: InjectionKey<
+  ComputedRef<ReadonlySet<string>>
+> = Symbol("ancestorHiddenLocales");
+
 export const EDITOR_KEY: InjectionKey<BaseEditorReturn> = Symbol("editor");
 
 /**
@@ -50,6 +63,31 @@ export const EDITOR_KEY: InjectionKey<BaseEditorReturn> = Symbol("editor");
  */
 export const AI_FEATURE_KEY: InjectionKey<UseAiFeatureReturn> =
   Symbol("aiFeature");
+
+export const TRANSLATION_FEATURE_KEY: InjectionKey<
+  import("./composables/useTranslationFeature").UseTranslationFeatureReturn
+> = Symbol("translationFeature");
+
+/**
+ * The active language view's coverage, `null` in the default view. One pass
+ * per change serves the header trigger, the language bar and its Translate
+ * counts. Provided by `Editor.vue`.
+ */
+export const ACTIVE_LOCALE_COVERAGE_KEY: InjectionKey<
+  ComputedRef<LocaleCoverage | null>
+> = Symbol("activeLocaleCoverage");
+
+/**
+ * The active language's projection of the whole template, one per change for
+ * the few readers that need all of it (a "match image" hero's band width).
+ * Provided by `Editor.vue`.
+ */
+export const LOCALIZED_CONTENT_KEY: InjectionKey<ComputedRef<TemplateContent>> =
+  Symbol("localizedContent");
+
+export const LOCALE_ACTIONS_KEY: InjectionKey<
+  import("./composables/useLocaleActions").UseLocaleActionsReturn
+> = Symbol("localeActions");
 
 export const HISTORY_KEY: InjectionKey<UseHistoryReturn> = Symbol("history");
 

@@ -32,7 +32,7 @@ const { t } = useI18n();
 <template>
   <div
     v-if="visible"
-    class="tpl-preview-banner tpl:absolute tpl:top-14 tpl:right-0 tpl:left-0 tpl:z-40 tpl:flex tpl:items-center tpl:justify-center tpl:gap-4 tpl:px-4 tpl:py-3 tpl:bg-[var(--tpl-primary-light)] tpl:border-b tpl:border-[var(--tpl-primary)]"
+    class="tpl-preview-banner tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-4 tpl:px-4 tpl:py-3 tpl:bg-[var(--tpl-primary-light)] tpl:border-b tpl:border-[var(--tpl-primary)]"
     data-testid="version-preview-banner"
     role="status"
   >

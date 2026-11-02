@@ -1,0 +1,51 @@
+{
+  "name": "element-id-update-locked",
+  "content": {
+    "blocks": [
+      {
+        "id": "menu",
+        "type": "menu",
+        "items": [
+          {
+            "id": "nav.home",
+            "text": "Home",
+            "url": "https://example.com"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en"
+    }
+  },
+  "locks": [
+    {
+      "blockId": "menu",
+      "sessionId": "other"
+    }
+  ],
+  "session": "me",
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "menu",
+      "set": {
+        "items": [
+          {
+            "id": "a.b",
+            "text": "Shop",
+            "url": "https://example.com/shop"
+          }
+        ]
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "lock_held",
+      "opIndex": 0,
+      "blockId": "menu"
+    }
+  }
+}

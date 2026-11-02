@@ -51,8 +51,7 @@ const selectedLabel = (select: Locator) =>
 function titleFontSelect(page: Page): Locator {
   return page
     .locator(SELECTORS.rightSidebar)
-    .locator("label", { hasText: "Font Family" })
-    .locator("xpath=following-sibling::select");
+    .locator('[data-locale-path="fontFamily"] select');
 }
 
 test.describe("font picker with an unlisted font", () => {

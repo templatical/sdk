@@ -1,5 +1,5 @@
 ---
-description: Add a new locale's rule messages for accessibility, structure, links, deliverability, and compatibility, plus the vague-text dictionaries the accessibility linter alone uses.
+description: Add a new locale's rule messages for accessibility, structure, links, deliverability, compatibility, and localization, plus the vague-text dictionaries the accessibility linter alone uses.
 ---
 
 # Contributing locales
@@ -14,7 +14,9 @@ description: Add a new locale's rule messages for accessibility, structure, link
 
 6. **Compatibility rule messages** (`src/compatibility/messages/{locale}.ts`) — `message` and `suggestion` for each `compat.*` rule, plus client grouping labels.
 
-Each set mirrors the editor's locale set. The structure, link, and deliverability linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
+7. **Localization rule messages** (`src/localization/messages/{locale}.ts`) — `message` and `suggestion` for each `localization.*` issue.
+
+Message datasets can cover different locales; an unbundled language falls back to English. Only accessibility uses vague-text dictionaries; the other linters translate their message text without a phrase dictionary.
 
 ## File layout
 
@@ -48,6 +50,11 @@ packages/quality/src/deliverability/messages/
   en.ts       ← source of truth
   de.ts       ← annotated `typeof en`
   index.ts    ← exports formatDeliverabilityMessage(), getDeliverabilityMessages()
+
+packages/quality/src/localization/messages/
+  en.ts       ← source of truth
+  de.ts       ← annotated `typeof en`
+  index.ts    ← exports formatLocalizationMessage(), getLocalizationMessages()
 ```
 
 ## Adding a locale
@@ -146,7 +153,7 @@ const pt: typeof en = {
 export default pt;
 ```
 
-That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES`, and `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
+That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES`, `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES`, `SUPPORTED_COMPATIBILITY_MESSAGE_LOCALES`, and `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit is needed. Update the corresponding locale and parity tests when adding a dataset.
 
 ## Phrase guidelines (vague-text dictionary)
 
@@ -160,8 +167,17 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 ## Match order
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
-- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), and `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All five fall back to English when the locale isn't bundled.
+- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability), `formatCompatibilityMessage(locale, ruleId, params?)` (compatibility) and `formatLocalizationMessage(locale, ruleId, params?)` (localization) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All fall back to English when the locale isn't bundled.
 
 ### 6. Compatibility rule messages
 
 Translate both fields of each `{ message, suggestion }` entry in `compatibility/messages/en.ts`. Preserve `{feature}`, `{unsupported}`, `{partial}`, `{size}`, `{max}`, and the feature placeholders. Keep family/platform labels and the `more` count localized. The formatter returns `{ message, suggestion }`; add the locale file to the existing glob layout.
+
+
+### 7. Localization rule messages
+
+Create `localization/messages/<lang>.ts` from `localization/messages/en.ts`. Use a base-language filename such as `pt.ts`: lookup lowercases the requested locale’s base language and falls back to English when that map is absent. Import the English map as a type with `import type en from "./en"`, annotate the locale map with `typeof en`, and export it as default, following `de.ts`.
+
+Translate both `message` and `suggestion` for `localization.untranslated`, `localization.stale`, and `localization.merge-tags-differ`. Preserve every `{field}` placeholder in both fields. `import.meta.glob` loads the file automatically; no registry edit is needed. `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` exposes the bundled locale keys; `getLocalizationMessages` and `formatLocalizationMessage` use the new map.
+
+Update `tests/localization/messages.test.ts`: include the added locale in the expected `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` list and extend rule-key and placeholder parity checks to the new map, comparing both `message` and `suggestion` with English. The current cases compare `en` and `de`. Then run `pnpm --filter @templatical/quality run typecheck` and `pnpm --filter @templatical/quality run test`. Call `formatLocalizationMessage` for the new locale and verify that both returned fields are translated and the `{field}` parameter is substituted.

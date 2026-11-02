@@ -27,6 +27,7 @@ describe("the wire", () => {
         ]),
       ),
     ).toEqual({
+      translate: "POST /templates/{template}/translate",
       generate: "POST /templates/{template}/ai/generate",
       fixFinding: "POST /templates/{template}/ai/fix-finding",
       rewriteText: "POST /templates/{template}/ai/rewrite-text",
@@ -95,6 +96,8 @@ describe("the wire", () => {
       instructionMaxChars: 500,
       mergeTagsMax: 500,
       opsPerBatchMax: 100,
+      translationMaxFields: 50,
+      translationMaxChars: 20_000,
     });
   });
 });

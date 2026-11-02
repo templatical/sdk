@@ -51,7 +51,7 @@ Sie bauen kein kundenfacings Produkt — Sie brauchen ein kontrolliertes Werkzeu
 
 **Templatical passt, weil:**
 - Vollständig selbst hostbar. Das SDK hat keine zwingende Cloud-Abhängigkeit.
-- Mehrsprachig (Englisch, Deutsch, Portugiesisch, Spanisch, Katalanisch, Französisch, Niederländisch, Japanisch) out of the box, mit einem klaren Weg, weitere Locales für internationale Teams hinzuzufügen.
+- UI in 8 Sprachen und Sprachversionen eines Templates: englische, deutsche, portugiesische, spanische, katalanische, französische, niederländische und japanische UI sowie optionale [Template-Sprachversionen](/de/guide/localized-templates).
 - TypeScript-strict end-to-end, was die Anbindung an bestehende interne Tools und Codegen-Pipelines vereinfacht.
 
 **Typisches Setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) im internen Portal, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) in Job-Runnern oder der Sende-Pipeline.

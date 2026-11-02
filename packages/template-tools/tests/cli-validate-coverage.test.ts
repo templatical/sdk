@@ -97,9 +97,27 @@ describe("validate command output paths", () => {
     });
   });
 
-  it("reports a lint failure and exits 1 for an error-severity issue", async () => {
+  it("reports a lint tool failure and exits 2 without a result", async () => {
     vi.mocked(runQualityLint).mockReturnValue({
       error: "rule engine failed",
+      issues: [],
+    });
+    expect(await runValidate(parseArgs(["validate", file]))).toBe(2);
+    expect(diagnostics.join("")).toContain(
+      "Quality lint could not run: rule engine failed",
+    );
+    expect(output).toEqual([]);
+  });
+
+  it("treats a defined empty lint error as a tool failure", async () => {
+    vi.mocked(runQualityLint).mockReturnValue({ error: "", issues: [] });
+    expect(await runValidate(parseArgs(["validate", file]))).toBe(2);
+    expect(diagnostics.join("")).toContain("Quality lint could not run:");
+    expect(output).toEqual([]);
+  });
+
+  it("exits 1 for an error-severity issue", async () => {
+    vi.mocked(runQualityLint).mockReturnValue({
       issues: [
         {
           blockId: "bad",
@@ -113,9 +131,6 @@ describe("validate command output paths", () => {
     });
 
     expect(await runValidate(parseArgs(["validate", file]))).toBe(1);
-    expect(diagnostics.join("")).toContain(
-      "Quality lint could not run: rule engine failed",
-    );
     expect(output.join("")).toContain(
       "[error] structure.empty-section: Empty section.",
     );

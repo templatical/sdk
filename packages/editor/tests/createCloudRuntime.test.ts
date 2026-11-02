@@ -367,7 +367,9 @@ describe("bootstrapCloud — providers handed to init()", () => {
 
     const resolver = vi.mocked(preRenderCustomBlocks).mock.calls[0][1];
     expect(resolver.renderCustomBlock).toBe(core.registry.renderCustomBlock);
-    expect(resolver.getCustomBlockStylesheet("banner")).toBe(".tplc-banner-a {}");
+    expect(resolver.getCustomBlockStylesheet("banner")).toBe(
+      ".tplc-banner-a {}",
+    );
     expect(resolver.getCustomBlockStylesheet("other")).toBe(undefined);
   });
 
@@ -1612,4 +1614,120 @@ describe("bootstrapCloud — versionHistory events", () => {
     expect(message).not.toContain("initCloud ignores");
     warn.mockRestore();
   });
+});
+
+it("warns that the Cloud editor does not support language versions", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  try {
+    await bootstrap({ localization: { locales: ["de"] } });
+    expect(warn.mock.calls.flat().join(" ")).toContain(
+      "initCloud ignores `localization`; the Cloud editor does not support language versions.",
+    );
+  } finally {
+    warn.mockRestore();
+  }
+});
+
+it("integrated initCloud ignores localization and edits the default view", async () => {
+  const { createDefaultTemplateContent, createTitleBlock, sourceHash } =
+    await import("@templatical/types");
+  const { initCloud } = await import("../src/index");
+  const { EDITOR_KEY } = await import("../src/keys");
+  const { nextTick } = await import("vue");
+  const content = createDefaultTemplateContent();
+  content.settings.locales = ["de"];
+  content.blocks = [
+    createTitleBlock({
+      id: "t1",
+      content: "<p>Hello</p>",
+      l10n: {
+        de: {
+          text: {
+            content: {
+              value: "<p>Hallo</p>",
+              sourceHash: sourceHash("<p>Hello</p>"),
+            },
+          },
+        },
+      },
+    }),
+  ];
+  vi.mocked(usePlanConfig).mockReturnValueOnce({
+    config: ref(null),
+    fetchConfig: vi.fn().mockResolvedValue(undefined),
+    hasFeature: vi.fn(() => false),
+  } as any);
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  let instance: Awaited<ReturnType<typeof initCloud>> | undefined;
+  try {
+    const config = {
+      container,
+      shadowDom: false,
+      content,
+      auth: { url: "https://example.test/auth" },
+      localization: { locales: ["de"] },
+      templates: { autoSave: false },
+      savedBlocks: false,
+      comments: false,
+      media: false,
+      smallScreenNotice: false,
+    } satisfies Parameters<typeof initCloud>[0] & {
+      localization: { locales: string[] };
+    };
+    instance = await initCloud(config);
+    await nextTick();
+    expect(warn.mock.calls.flat().join(" ")).toContain(
+      "initCloud ignores `localization`; the Cloud editor does not support language versions.",
+    );
+    expect(instance.getLocale()).toBe("en");
+    expect(() => instance!.setLocale("de")).toThrow(
+      expect.objectContaining({ code: "unknown_locale" }),
+    );
+    expect(
+      container.querySelector('[data-testid="locale-switcher"]'),
+    ).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll("button")).some((button) =>
+        /^(Deutsch|German|Add language|Remove language)/.test(
+          button.textContent?.trim() ?? "",
+        ),
+      ),
+    ).toBe(false);
+    const canvas = container.querySelector(".tpl-canvas") as HTMLElement;
+    expect(canvas.lang).toBe("en");
+    expect(canvas.textContent).toContain("Hello");
+    expect(canvas.textContent).not.toContain("Hallo");
+    const editor = (canvas as any).__vueParentComponent.provides[
+      EDITOR_KEY as symbol
+    ];
+    editor.updateBlock("t1", { content: "<p>Updated default</p>" });
+    await nextTick();
+    expect(canvas.textContent).toContain("Updated default");
+    expect(instance.getContent().blocks[0]).toMatchObject({
+      content: "<p>Updated default</p>",
+      l10n: content.blocks[0].l10n,
+    });
+    expect(instance.getLocale()).toBe("en");
+  } finally {
+    instance?.unmount();
+    container.remove();
+    warn.mockRestore();
+  }
+});
+
+it("warns and ignores a translation provider in initCloud", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const translate = vi.fn();
+  try {
+    const { providers } = await bootstrap({ translation: { translate } });
+    expect(warn.mock.calls.flat().join(" ")).toContain(
+      "initCloud ignores `translation`; the Cloud editor does not support translation.",
+    );
+    expect(providers).not.toHaveProperty("translation");
+    expect(translate).not.toHaveBeenCalled();
+  } finally {
+    warn.mockRestore();
+  }
 });

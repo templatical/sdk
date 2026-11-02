@@ -1,6 +1,7 @@
 import {
   createDefaultTemplateContent,
   DEFAULT_TEMPLATE_DEFAULTS,
+  isLocaleTag,
 } from "@templatical/types";
 import type {
   Block,
@@ -29,6 +30,11 @@ import type {
   ImportResult,
 } from "./types";
 
+export interface ConvertChamaileonOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
+
 const INVALID_MESSAGE =
   "Invalid Chamaileon template: expected the document JSON object from getDocument().";
 const WRONG_BODY_MESSAGE =
@@ -54,6 +60,20 @@ const REQUIRED_DEFAULTS = DEFAULT_TEMPLATE_DEFAULTS as Required<
   >
 >;
 
+/** The `defaultLocale` option as a tag, else `"en"` with a warning naming it. */
+function defaultLanguage(
+  value: string | undefined,
+  warnings: string[],
+): string {
+  if (!value) return "en";
+  const locale = value.replaceAll("_", "-");
+  if (isLocaleTag(locale)) return locale;
+  warnings.push(
+    `Ignored defaultLocale "${value}": unsupported language tag. Used "en".`,
+  );
+  return "en";
+}
+
 /**
  * Convert a Chamaileon `getDocument()` tree into a Templatical template.
  *
@@ -70,6 +90,7 @@ const REQUIRED_DEFAULTS = DEFAULT_TEMPLATE_DEFAULTS as Required<
  */
 export function convertChamaileonTemplate(
   doc: ChamaileonDocument | string,
+  options: ConvertChamaileonOptions = {},
 ): ImportResult {
   const root: unknown = typeof doc === "string" ? safeParse(doc) : doc;
 
@@ -158,6 +179,7 @@ export function convertChamaileonTemplate(
     settings: {
       ...defaults.settings,
       width,
+      locale: defaultLanguage(options.defaultLocale, warnings),
       backgroundColor,
       ...(previewRaw ? { preheaderText: previewRaw } : {}),
     },

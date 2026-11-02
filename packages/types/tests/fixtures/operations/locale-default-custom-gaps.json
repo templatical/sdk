@@ -1,0 +1,66 @@
+{
+  "name": "locale-default-custom-gaps",
+  "content": {
+    "blocks": [
+      {
+        "id": "custom",
+        "type": "custom",
+        "customType": "card",
+        "fieldValues": {
+          "headline": "English heading",
+          "body": "English body",
+          "empty": "",
+          "color": "#123456"
+        },
+        "renderedHtml": "<p>English heading</p>"
+      }
+    ],
+    "settings": { "width": 600, "locale": "en", "locales": ["de"] }
+  },
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de",
+      "customTextFields": {
+        "custom": [
+          "fieldValues.headline",
+          "fieldValues.body",
+          "fieldValues.empty"
+        ]
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "custom",
+          "type": "custom",
+          "customType": "card",
+          "fieldValues": {
+            "headline": "English heading",
+            "body": "English body",
+            "empty": "",
+            "color": "#123456"
+          },
+          "renderedHtml": "<p>English heading</p>",
+          "l10n": {
+            "en": {
+              "text": {
+                "fieldValues.headline": {
+                  "value": "English heading",
+                  "sourceHash": "ef9d8d09"
+                },
+                "fieldValues.body": {
+                  "value": "English body",
+                  "sourceHash": "2bbf1171"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "settings": { "width": 600, "locale": "de", "locales": ["en"] }
+    }
+  }
+}

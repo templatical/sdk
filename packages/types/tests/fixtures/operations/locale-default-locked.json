@@ -1,0 +1,52 @@
+{
+  "name": "locale-default-locked",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hello",
+        "l10n": {
+          "de": {
+            "text": {
+              "content": {
+                "value": "Hallo",
+                "sourceHash": "f55c314b"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de",
+        "fr"
+      ]
+    }
+  },
+  "locks": [
+    {
+      "blockId": "t1",
+      "sessionId": "other",
+      "locale": "fr"
+    }
+  ],
+  "session": "me",
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "locked_by_others",
+      "opIndex": 0,
+      "blockId": "t1",
+      "message": "Other sessions hold locks on this template."
+    }
+  }
+}

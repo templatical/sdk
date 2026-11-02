@@ -24,6 +24,7 @@ import type {
   RenderProvider,
   SavedBlocksProvider,
   TestEmailProvider,
+  TranslationProvider,
   Template,
   TemplateContent,
   TemplateDefaults,
@@ -35,6 +36,9 @@ import type {
   ResolvePreview,
 } from "@templatical/types";
 import {
+  defaultLocaleOf,
+  isLocaleTag,
+  SdkError,
   assertNoSlotInContent,
   assertNoWrapperInContent,
   createDefaultTemplateContent,
@@ -93,6 +97,11 @@ import editorStylesInline, { ownedStyleRoots } from "virtual:editor-css";
 // ---------------------------------------------------------------------------
 
 export interface TemplaticalEditorConfig {
+  /** Enabled template languages. Versions are added by the author. */
+  localization?: { locales: string[]; doNotTranslate?: string[] };
+  /** Translation backend for enabled language versions. */
+  translation?: TranslationProvider;
+  onLocaleChange?: (locale: string) => void;
   /**
    * Where to mount the editor — a CSS selector or an `HTMLElement`.
    *
@@ -735,6 +744,8 @@ export type OnRequestMedia = (
 
 interface TemplaticalEditorBase {
   getContent(): TemplateContent;
+  getLocale(): string;
+  setLocale(locale: string): void;
   setContent(content: TemplateContent): void;
   /**
    * Insert a block where a click on a palette item would put it: below the
@@ -788,7 +799,7 @@ interface TemplaticalEditorBase {
    * i.e. no provider method *and* the optional `@templatical/renderer` peer isn't
    * installed.
    */
-  toMjml(): Promise<string>;
+  toMjml(options?: { locale?: string }): Promise<string>;
   /**
    * Render the current template to sending-ready HTML.
    *
@@ -797,7 +808,7 @@ interface TemplaticalEditorBase {
    * compiler, so with no `render` provider this always rejects, and the error says
    * which method to add.
    */
-  toHtml(): Promise<string>;
+  toHtml(options?: { locale?: string }): Promise<string>;
 }
 
 export interface TemplaticalEditor extends TemplaticalEditorBase {
@@ -1166,6 +1177,34 @@ export async function init(
   // config, which may be frozen. A key reassigned on that object after this call
   // does not reach the editor.
   const prepared = { ...config };
+  if (
+    prepared.translation !== undefined &&
+    (prepared.translation === null ||
+      typeof prepared.translation !== "object" ||
+      typeof prepared.translation.translate !== "function")
+  )
+    throw new SdkError(
+      "translation must be an object with a translate function.",
+    );
+  for (const locale of prepared.localization?.locales ?? []) {
+    if (!isLocaleTag(locale))
+      throw new SdkError(`Invalid localization locale "${locale}".`);
+  }
+  const terms = prepared.localization?.doNotTranslate;
+  if (
+    terms !== undefined &&
+    (!Array.isArray(terms) ||
+      terms.length > 500 ||
+      terms.some(
+        (term) =>
+          typeof term !== "string" ||
+          term.trim().length < 1 ||
+          term.trim().length > 100,
+      ))
+  )
+    throw new SdkError(
+      "localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.",
+    );
   prepareLayoutAndContent(prepared);
   return mountEditor(prepared, claimContainer(prepared.container));
 }
@@ -1303,6 +1342,25 @@ function createEditorInstance({
           ),
       );
     },
+    getLocale() {
+      return (
+        editorRef.value?.getLocale() ?? defaultLocaleOf(instance.getContent())
+      );
+    },
+    setLocale(locale: string) {
+      const content = instance.getContent();
+      if (
+        locale !== defaultLocaleOf(content) &&
+        (!config.localization || !content.settings.locales?.includes(locale))
+      ) {
+        throw new SdkError(
+          `This template has no "${locale}" version.`,
+          undefined,
+          "unknown_locale",
+        );
+      }
+      editorRef.value?.setLocale(locale);
+    },
     setContent(content: TemplateContent) {
       // Normalized once and used for both writes: `getContent()` falls back to
       // `config.content` before mount, so a raw write-back here would hand back
@@ -1393,8 +1451,8 @@ function createEditorInstance({
       }
       return editorRef.value.getCustomBlockStylesheet(customType);
     },
-    toMjml: () => render.toMjml(),
-    toHtml: () => render.toHtml(),
+    toMjml: (options) => render.toMjml(options),
+    toHtml: (options) => render.toHtml(options),
   };
 
   // Both methods resolve per call, so a provider added later in the config — or a
@@ -1403,27 +1461,33 @@ function createEditorInstance({
   // payload builder read the editor's live content.
   const render = createRenderMethods({
     provider: config.render,
-    buildPayload: () =>
-      buildRenderPayload({
-        getContent: () => instance.getContent(),
-        renderCustomBlock: (block: CustomBlock) =>
-          instance.renderCustomBlock(block),
-        getCustomBlockStylesheet: (customType: string) =>
-          instance.getCustomBlockStylesheet(customType),
-        getFonts: () => resolveRenderFonts(fontsManager),
-        getLayout: () => config.layout,
-      }),
-    renderLocalMjml: () =>
-      toMjmlForInstance({
-        getContent: () => instance.getContent(),
-        renderCustomBlock: (block: CustomBlock) =>
-          instance.renderCustomBlock(block),
-        getCustomBlockStylesheet: (customType: string) =>
-          instance.getCustomBlockStylesheet(customType),
-        getFonts: () => resolveRenderFonts(fontsManager),
-        socialIconsBaseUrl: config.socialIconsBaseUrl,
-        getLayout: () => config.layout,
-      }),
+    buildPayload: (options) =>
+      buildRenderPayload(
+        {
+          getContent: () => instance.getContent(),
+          renderCustomBlock: (block: CustomBlock) =>
+            instance.renderCustomBlock(block),
+          getCustomBlockStylesheet: (customType: string) =>
+            instance.getCustomBlockStylesheet(customType),
+          getFonts: () => resolveRenderFonts(fontsManager),
+          getLayout: () => config.layout,
+        },
+        options,
+      ),
+    renderLocalMjml: (options) =>
+      toMjmlForInstance(
+        {
+          getContent: () => instance.getContent(),
+          renderCustomBlock: (block: CustomBlock) =>
+            instance.renderCustomBlock(block),
+          getCustomBlockStylesheet: (customType: string) =>
+            instance.getCustomBlockStylesheet(customType),
+          getFonts: () => resolveRenderFonts(fontsManager),
+          socialIconsBaseUrl: config.socialIconsBaseUrl,
+          getLayout: () => config.layout,
+        },
+        ...(options ? ([options] as const) : []),
+      ),
   });
 
   return { instance, render };

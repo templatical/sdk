@@ -30,6 +30,7 @@ export { useHistoryInterceptor } from "./history-interceptor";
 // Collaboration: operations from content diffs, their inverses, and the
 // controller that runs a session over a CollaborationProvider.
 export { diffContent } from "./diff-content";
+export { mapLocalizedOperations } from "./localized-operations";
 // `invertOperations` lives in @templatical/types (MIT) so the AI kit can return
 // inverses; core re-exports it for its own callers.
 export { invertOperations } from "@templatical/types";

@@ -1,0 +1,1 @@
+{"blocks":[{"id":"copy","type":"paragraph","content":"<span data-merge-tag=\"{{name}}\" onclick=\"bad()\">Name</span>","styles":{"padding":{"top":10,"right":10,"bottom":10,"left":10}}}],"settings":{"width":600,"backgroundColor":"#ffffff","textColor":"#1a1a1a","linkUnderline":true,"fontFamily":"Arial","locale":"en","locales":["de"]}}

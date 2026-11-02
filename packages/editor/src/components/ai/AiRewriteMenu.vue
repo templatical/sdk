@@ -6,7 +6,7 @@ import {
   type AiRewritePreset,
 } from "@templatical/types";
 import { Languages, Sparkles, Square, WandSparkles, X } from "@lucide/vue";
-import { computed, inject, onBeforeUnmount, ref } from "vue";
+import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import ToolbarSelect from "../toolbar/ToolbarSelect.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
@@ -15,6 +15,7 @@ import {
 } from "../../constants/styleConstants";
 import {
   AI_FEATURE_KEY,
+  EDITOR_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
   NO_MERGE_TAGS,
@@ -44,6 +45,7 @@ const feature = requireInject(AI_FEATURE_KEY, "AiRewriteMenu");
 const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
 const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const uiLocale = inject(UI_LOCALE_KEY, undefined);
+const templateEditor = inject(EDITOR_KEY, null);
 
 const PRESETS: Exclude<AiRewritePreset, "translate">[] = [
   "shorten",
@@ -162,6 +164,8 @@ function replace(): void {
   close();
 }
 
+if (templateEditor?.activeLocale)
+  watch(templateEditor.activeLocale, close, { flush: "sync" });
 onBeforeUnmount(stop);
 </script>
 

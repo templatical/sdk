@@ -53,6 +53,8 @@ whichever playbook ran.
 | `upgrade` | Move an integration to a newer release, breaking changes included | [reference/upgrade.md](reference/upgrade.md) |
 | `docs` | Answer a question from the SDK reference | [reference/docs.md](reference/docs.md) |
 
+For language versions of one template, consult [reference/localize.md](reference/localize.md): adding languages, writing text and overrides, locale-aware collaboration, validation and rendering. This applies to template authoring and SDK localization questions.
+
 Before acting, load the one playbook that owns the request — its row above for
 an explicit or clearly implied mode, otherwise the default from the
 discrimination. Load one, not several; each playbook names what it consults.

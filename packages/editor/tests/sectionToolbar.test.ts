@@ -211,12 +211,12 @@ describe("SectionToolbar stack-on-mobile toggle", () => {
     createSectionBlock({ columns: "2", stackOnMobile });
 
   // The wrapper toggle is always present; target the stack toggle by its
-  // label text so the two don't get confused.
+  // accessible name so the two don't get confused.
   const stackToggle = (wrapper: ReturnType<typeof mountToolbar>) => {
-    const label = wrapper
-      .findAll("label")
-      .find((l) => l.text().includes(en.section.stackOnMobile));
-    return label?.find('button[role="switch"]');
+    const toggle = wrapper.find(
+      `button[role="switch"][aria-label="${en.section.stackOnMobile}"]`,
+    );
+    return toggle.exists() ? toggle : undefined;
   };
 
   it("is not rendered for a single-column section", () => {

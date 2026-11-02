@@ -12,6 +12,7 @@ const props = defineProps<{
   field: CustomBlockImageField;
   modelValue: string;
   readOnly?: boolean;
+  hideLabel?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -31,6 +32,7 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
 
 <template>
   <FieldWrapper
+    :hide-label="hideLabel"
     :label="field.label"
     :required="field.required"
     :read-only="readOnly"

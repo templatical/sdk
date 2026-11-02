@@ -18,10 +18,24 @@ import type {
   TemplateContent,
   UiTheme,
 } from "@templatical/types";
-import { cloneBlock, safeClone } from "@templatical/types";
+import {
+  cloneBlock,
+  defaultLocaleOf,
+  defaultLocaleGaps,
+  safeClone,
+} from "@templatical/types";
 // Type-only, so no cloud module is statically reachable from the OSS entry —
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
+import NoticeStack from "./components/NoticeStack.vue";
+import type { LocaleNotice } from "./components/localization/LocaleNotices.vue";
+import LanguageBar from "./components/localization/LanguageBar.vue";
+import { useLocaleActions } from "./composables/useLocaleActions";
+import { useTranslationFeature } from "./composables/useTranslationFeature";
+import {
+  useActiveLocaleCoverage,
+  useLocalizedDisplay,
+} from "./composables/useLocalizedDisplay";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCollaborationFeature } from "./composables/useCollaborationFeature";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
@@ -49,7 +63,15 @@ import {
 import type { Translations } from "./i18n";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
-import { AI_FEATURE_KEY, SIZE_CHECK_KEY } from "./keys";
+import {
+  ACTIVE_LOCALE_COVERAGE_KEY,
+  AI_FEATURE_KEY,
+  SIZE_CHECK_KEY,
+  LOCALIZATION_KEY,
+  LOCALE_ACTIONS_KEY,
+  LOCALIZED_CONTENT_KEY,
+  TRANSLATION_FEATURE_KEY,
+} from "./keys";
 
 import { RotateCcw } from "@lucide/vue";
 import { warningBtnCompactClass } from "./constants/styleConstants";
@@ -176,7 +198,14 @@ const templatesProvider =
     : normalizedTemplates;
 
 // --- Core editor state ---
+const structureNotice = ref(0);
+provide(LOCALIZATION_KEY, props.config.localization);
 const editor = useEditor({
+  localization: props.config.localization ?? { locales: [] },
+  onLocaleChange: props.config.onLocaleChange,
+  onStructureChange: () => {
+    structureNotice.value++;
+  },
   content: props.config.content!,
   // Seeds a *new* template's body font when no `content` was supplied. Only the
   // deleted Cloud core passed this, so `init({ fonts: { defaultFont } })` never
@@ -190,8 +219,20 @@ const editor = useEditor({
   onError: props.config.onError,
   // Blocks other collaborators hold: they can't be selected here.
   lockedBlocks: collaboration?.locks,
+  lockLocale: collaboration?.core.lockLocale,
+  lockSessionId: collaboration?.core.sessionId,
 });
 
+const localized = useLocalizedDisplay(editor);
+provide(LOCALIZED_CONTENT_KEY, localized.content);
+editor.setCustomBlockDefinitions(props.config.customBlocks ?? []);
+if (collaboration) {
+  watch(
+    editor.activeLocale,
+    (locale) => collaboration.core.setLockLocale(locale),
+    { flush: "sync" },
+  );
+}
 collaboration?.attach(editor);
 
 const cloudAttachment = props.cloud ? props.cloud.attach({ editor }) : null;
@@ -335,6 +376,11 @@ const ai = props.config.ai
   ? useAiFeature({
       provider: props.config.ai,
       editor,
+      localization: props.config.localization ?? { locales: [] },
+      customBlockDefinitions: () => props.config.customBlocks ?? [],
+      onStructureChange: () => {
+        structureNotice.value++;
+      },
       collaboration,
       history: () => core.history,
       reload: templates
@@ -351,6 +397,69 @@ const ai = props.config.ai
   : null;
 if (ai) provide(AI_FEATURE_KEY, ai);
 
+// One coverage pass per change in a language view, shared by the header
+// trigger, the language bar and its Translate counts.
+const activeCoverage = useActiveLocaleCoverage(
+  editor,
+  props.config.customBlocks ?? [],
+);
+provide(ACTIVE_LOCALE_COVERAGE_KEY, activeCoverage);
+
+const translation = props.config.translation
+  ? useTranslationFeature({
+      provider: props.config.translation,
+      editor,
+      localization: props.config.localization,
+      collaboration,
+      history: () => core.history,
+      definitions: () => props.config.customBlocks ?? [],
+      syntax: () => core.mergeTagSyntax,
+      coverage: () => activeCoverage.value,
+    })
+  : null;
+if (translation) provide(TRANSLATION_FEATURE_KEY, translation);
+const localeNotice = ref<LocaleNotice | null>(null);
+watch(
+  [() => editor.state.template?.id ?? null, editor.loadVersion],
+  () => {
+    localeNotice.value = null;
+  },
+  { flush: "sync" },
+);
+// Undo (or any other change) that moves the default away from the notice's
+// language makes the notice untrue.
+watch(
+  () => defaultLocaleOf(editor.content.value),
+  (current) => {
+    if (localeNotice.value && localeNotice.value.language !== current)
+      localeNotice.value = null;
+  },
+  { flush: "sync" },
+);
+const localeActions = useLocaleActions({
+  editor,
+  history: () => core.history,
+  collaboration,
+});
+provide(LOCALE_ACTIONS_KEY, {
+  setDefaultLocale(locale) {
+    const notice = {
+      language: locale,
+      old: defaultLocaleOf(editor.content.value),
+      count: defaultLocaleGaps(
+        editor.content.value,
+        locale,
+        props.config.customBlocks,
+      ).length,
+    };
+    const result = localeActions.setDefaultLocale(locale);
+    if (result.applied) localeNotice.value = notice;
+    return result;
+  },
+});
+const LocaleNotices = defineAsyncComponent(
+  () => import("./components/localization/LocaleNotices.vue"),
+);
 // Lazy: an editor without a collaboration provider never downloads it.
 const CollaborationNotices = defineAsyncComponent(
   () => import("./components/collaboration/CollaborationNotices.vue"),
@@ -492,6 +601,12 @@ const core = useEditorCore({
 });
 
 const rightSidebarTab = ref<RightSidebarTab>("content");
+watch(
+  () => editor.state.template?.id,
+  () => {
+    if (editor.selectedBlock.value) rightSidebarTab.value = "content";
+  },
+);
 
 // Cloud's setup-time wiring that needs `core`: the lint save-gate (reads
 // `core.templateLint`) and the capability entries Cloud contributes — mutated
@@ -582,6 +697,26 @@ const bodyInsetClass = computed(() => {
     : "tpl:left-12 tpl:right-[320px]";
 });
 
+// Both bands participate in flow; wrapping and async banner loads resize one box.
+const topChrome = ref<HTMLElement | null>(null);
+const topChromeHeight = ref(0);
+const contentInsetStyle = computed(() => ({
+  top: `calc(3.5 * var(--tpl-base-size) + ${topChromeHeight.value}px)`,
+}));
+let topChromeObserver: ResizeObserver | undefined;
+onMounted(() => {
+  topChromeHeight.value = topChrome.value?.offsetHeight ?? 0;
+  if (topChrome.value && typeof ResizeObserver !== "undefined") {
+    topChromeObserver = new ResizeObserver(([entry]) => {
+      if (entry)
+        topChromeHeight.value =
+          entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+    });
+    topChromeObserver.observe(topChrome.value);
+  }
+});
+onUnmounted(() => topChromeObserver?.disconnect());
+
 // --- Small-screen gate (#235) ---
 // Below ~768px the three-pane chrome can't lay out usably; show a notice
 // instead. Opt out with `config.smallScreenNotice: false`.
@@ -610,6 +745,9 @@ const templateLifecycle = templates ?? editor;
 const scrollToBlock = useScrollToBlock(core.editorRoot);
 
 defineExpose({
+  getLocale: () =>
+    editor.activeLocale.value ?? defaultLocaleOf(editor.content.value),
+  setLocale: (locale: string) => editor.setActiveLocale(locale),
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
   insertBlock: (block: Block): string | null => {
@@ -671,6 +809,7 @@ defineExpose({
            markup covers "no providers at all" and a fully-wired Cloud session. -->
       <EditorHeader
         :editor="editor"
+        :localization="props.config.localization"
         :core="core"
         :templates="templates"
         :show-template-name="config.templates?.nameField !== false"
@@ -689,16 +828,18 @@ defineExpose({
       </EditorHeader>
 
       <!-- Left sidebar — absolute, below header -->
-      <Sidebar v-show="!editor.state.previewMode" />
+      <Sidebar v-show="!editor.state.previewMode" :style="contentInsetStyle" />
 
       <!-- Canvas area — absolute, fills remaining space -->
       <div
         class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:bg-[var(--tpl-canvas-bg)]"
-        style="transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
-        :class="[
-          bodyInsetClass,
-          versionHistory?.isPreviewing.value ? 'tpl:top-[104px]' : 'tpl:top-14',
-        ]"
+        style="
+          transition:
+            left var(--tpl-transition),
+            right var(--tpl-transition);
+        "
+        :style="contentInsetStyle"
+        :class="bodyInsetClass"
       >
         <!-- Preview chrome, floated over the canvas.
 
@@ -808,8 +949,14 @@ defineExpose({
       <RightSidebar
         v-show="!editor.state.previewMode"
         v-model:tab="rightSidebarTab"
-        :selected-block="editor.selectedBlock.value"
-        :settings="editor.content.value.settings"
+        :style="contentInsetStyle"
+        style="transition-property: right"
+        :selected-block="
+          editor.selectedBlock.value
+            ? localized.displayBlock(editor.selectedBlock.value)
+            : null
+        "
+        :settings="localized.settings.value"
         :shifted-left="rightPanelOpen"
         @update-block="
           (updates) =>
@@ -831,6 +978,23 @@ defineExpose({
         "
         @update-settings="(updates) => editor.updateSettings(updates)"
       />
+
+      <div
+        ref="topChrome"
+        class="tpl-top-chrome tpl:absolute tpl:top-14 tpl:right-0 tpl:left-0 tpl:z-40"
+      >
+        <VersionHistoryPanels
+          v-if="versionHistory?.isAvailable.value"
+          :feature="versionHistory"
+        />
+        <LanguageBar
+          v-if="config.localization"
+          :editor="editor"
+          :locales="config.localization.locales"
+          :feature="translation"
+          :change="structureNotice"
+        />
+      </div>
     </div>
 
     <!-- Popover mount — Teleport target for toolbars, link dialog, modals.
@@ -886,15 +1050,14 @@ defineExpose({
 
     <!-- Collaboration notices: a refused selection or edit, a skipped undo,
          a refused replace, reconnecting. -->
-    <CollaborationNotices v-if="collaboration" :feature="collaboration" />
-
-    <!-- Version-history chrome outside the header (the preview banner). Only
-         mounted when a provider is configured; the banner's chunk loads the
-         first time a version is previewed. -->
-    <VersionHistoryPanels
-      v-if="versionHistory?.isAvailable.value"
-      :feature="versionHistory"
-    />
+    <NoticeStack v-if="collaboration || localeNotice">
+      <CollaborationNotices v-if="collaboration" :feature="collaboration" />
+      <LocaleNotices
+        v-if="localeNotice"
+        :notice="localeNotice"
+        @dismiss="localeNotice = null"
+      />
+    </NoticeStack>
 
     <!-- Cloud sidebars, modals and overlays. One lazy wrapper, mounted only
          under `initCloud()`; an OSS consumer downloads none of it. -->

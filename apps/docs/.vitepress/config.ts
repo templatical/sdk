@@ -102,6 +102,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Guide",
       items: [
+        { text: "Localized templates", link: "/guide/localized-templates" },
         { text: "Merge Tags", link: "/guide/merge-tags" },
         { text: "Logic Tags", link: "/guide/logic-tags" },
         { text: "Preview Rendering", link: "/guide/preview-rendering" },
@@ -155,6 +156,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Test Emails", link: "/backend/test-email" },
         { text: "Rendering & Export", link: "/backend/render" },
         { text: "AI", link: "/backend/ai" },
+        { text: "Translation", link: "/backend/translation" },
       ],
     },
     {
@@ -311,6 +313,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Anleitung",
       items: [
+        { text: "Lokalisierte Templates", link: "/de/guide/localized-templates" },
         { text: "Merge-Tags", link: "/de/guide/merge-tags" },
         { text: "Logik-Tags", link: "/de/guide/logic-tags" },
         {
@@ -370,6 +373,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Test-E-Mails", link: "/de/backend/test-email" },
         { text: "Rendering & Export", link: "/de/backend/render" },
         { text: "KI", link: "/de/backend/ai" },
+        { text: "Übersetzung", link: "/de/backend/translation" },
       ],
     },
     {

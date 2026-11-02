@@ -91,7 +91,9 @@ async function compileExportHtml(): Promise<void> {
   exportHtmlError.value = "";
   exportHtmlMjmlErrors.value = [];
   try {
-    exportHtml.value = await props.editor.toHtml();
+    exportHtml.value = await props.editor.toHtml({
+      locale: props.editor.getLocale(),
+    });
     exportHtmlMjmlErrors.value = [...getLastMjmlWarnings()];
   } catch (e) {
     exportHtmlError.value = e instanceof Error ? e.message : String(e);
@@ -117,7 +119,9 @@ async function populate(): Promise<void> {
   exportHtmlError.value = "";
   exportHtmlMjmlErrors.value = [];
   exportJson.value = JSON.stringify(props.editor.getContent(), null, 2);
-  exportMjml.value = await props.editor.toMjml();
+  exportMjml.value = await props.editor.toMjml({
+    locale: props.editor.getLocale(),
+  });
   void compileExportHtml();
 }
 

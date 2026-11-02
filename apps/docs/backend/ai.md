@@ -46,7 +46,7 @@ await editor.load('tpl_123');
 
 Chat, fix and rewrite receive the editor's `content` after pending edits are sent, its collaboration `revision` (or `null`), `templateId`, `sessionId` and required `mergeTags: { syntax, tags }`. With no declared tags, the editor sends its syntax (`liquid` by default) and `tags: []`. Missing or `null` context returns 422. Every call receives an `AbortSignal`; Stop aborts it.
 
-The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `custom` syntax is unchecked.
+The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `checkRewrite` checks chips and declared tag values literally for `custom` syntax.
 
 ### Turns: chat and fix
 
@@ -101,7 +101,7 @@ The canonical contracts are [Accessibility](/quality/accessibility/), the [acces
 
 Every field and its nullability are in `AiAltTextRequest` in [the contract](#the-contract).
 
-The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the template's locale: a BCP 47 tag of at most 35 UTF-16 units. `image.url` must use `http:` or `https:` and is at most 2,048 UTF-16 units; `currentAlt` and `linkHref` are each `null` or at most 2,048 units. `blockId` is 1–200 units.
+The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the active template language (the default in the default view): a BCP 47 tag of at most 35 UTF-16 units. `image.url` must use `http:` or `https:` and is at most 2,048 UTF-16 units; `currentAlt` and `linkHref` are each `null` or at most 2,048 units. `blockId` is 1–200 units.
 
 `maxLength` is the effective accessibility lint `altMaxLength` threshold: an integer from 1 to 1,000, default 125 when absent, invalid or lint is disabled. It counts UTF-16 units (`string.length`). Use the request's value with `checkAltText` on your backend. The server in the [backend guide](/guide/bring-your-own-ai#the-server) and `evalAltTextWith` make one repair retry for empty, multiline, HTML or over-long alt text. If the second answer is invalid, the final `checkAltText` raises `ai_output_invalid` (502).
 
@@ -115,7 +115,7 @@ When at least two distinct images have alt-text findings, **Write missing alt te
 
 `rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML.
 
-Whole-template translation is not a separate feature. On request, the AI assistant can translate through chat and edit in place as one undo step, on a best-effort basis, with no field-coverage or merge-tag check. Rewrite's **Translate** preset translates one paragraph.
+Field translation uses the independent [translation provider](/backend/translation), with gaps-only selection and exact placeholder checks. Rewrite’s **Translate** preset targets its chosen `language`, including from a language view. `checkRewrite` requires the exact merge and logic tag multiset; for `custom` syntax it checks chips and declared tag values literally.
 
 ### Chat starters
 
@@ -127,11 +127,17 @@ Deterministic lint reports specific content, client and size findings. It does n
 
 ### History
 
-`conversation` is optional. With it, the chat loads the stored messages when it opens, and each message's Undo and Redo call your backend, which answers the operations to apply (`{ operations, replayId }`) or a batch it applied (`{ applied: { batchId, revision } }`). Without it, the chat lives in memory for the session, and a message's Undo applies the turn's own inverse, refused when someone changed those blocks since.
+`conversation` is optional. With it, the chat loads the stored messages when it opens, and each message's Undo and Redo call your backend, which answers the operations to apply (`{ operations, replayId }`) or a batch it applied (`{ applied: { batchId, revision } }`). Without it, the chat lives in memory for the session, and a message's Undo applies the turn's own inverse. A block-level inverse expects what the turn left, so that Undo is refused when someone changed those blocks since. A turn that replaced the whole template is undone by a snapshot: with collaboration, its Undo and Redo are refused unless the template is exactly as the turn, or its last Undo or Redo, left it, so they don't overwrite a later edit this editor has received, another session's included, nor the edit a backend refusal of the turn kept. A batch your backend committed but hasn't delivered yet is caught by the [`setContent` rule](/backend/collaboration#submit).
 
 After applying or refusing operations, the editor calls `settleReplay(templateId, messageId, { replayId, direction, applied, sessionId })`. Change `undone` only on `applied: true`; with `applied: false`, or no settlement, keep the message's state. Settle each `replayId` once; later settlements are no-ops. A server-applied `{ applied }` answer is never settled. A settlement failure reaches `onError`, and the local row keeps the direction actually applied to the template.
 
 `conversation.list` returns `AiChatMessage[]` oldest first. `createdAt` is ISO 8601; `batches` is empty for user messages. A server-applied batch has a numeric `revision`; an editor-applied batch has `revision: null`. `kind` is `"chat" | "fix"`; alt-text drafts create no history. Optional user-message `attachments` retain only names and kinds, never files.
+
+## AI in language views
+
+Chat, Fix with AI and Rewrite carry `locale: string | null`, the active language or `null` in the default view, as declared in [the contract](#the-contract). Chat and Fix receive that language's `resolveLocale` projection; alt text always carries a concrete language and the projected image context. `AiChatMessage.locale?: string | null` labels language-view history. Older backends may ignore the field and still receive projected content.
+
+The editor applies returned operations as an author's edit in that language, with core's `mapLocalizedOperations`: text and properties change that language, structure changes the shared tree, an added block's text becomes its default value, and an empty batch changes nothing. The routing rules are in [Localized templates](/guide/localized-templates#adding-a-language). In a language view, `setContent` and `setDefaultLocale` are refused; [Operations](/api/operations#locale-operations) has the locale operations. Fix with AI lints the active `contentLocale`, and Fix with AI and Write alt text keep their usual provider, loaded-template and lint gates. Translating whole languages is the separate [translation provider](/backend/translation).
 
 ## Controlling features
 

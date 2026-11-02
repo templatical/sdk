@@ -34,6 +34,7 @@ import { Check, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
 import {
   applyLayout,
+  resolveLocale,
   hasMergeTagSamples,
   type ViewportSize,
 } from "@templatical/types";
@@ -85,9 +86,19 @@ const previewResolution = usePreviewResolution({
   resolvePreview: resolvePreviewHook ?? undefined,
   getContent: () => {
     const raw = editor?.content.value ?? { blocks: [], settings: {} as never };
-    return layout && props.visible ? applyLayout(layout, raw) : raw;
+    if (!props.visible) return raw;
+    const locale = editor?.activeLocale?.value ?? raw.settings.locale ?? "en";
+    const localized = resolveLocale(raw, locale);
+    return layout
+      ? applyLayout(
+          resolveLocale(layout, locale, { missing: "default" }),
+          localized,
+        )
+      : localized;
   },
   isActive: () => props.visible,
+  getLocale: () =>
+    editor?.activeLocale?.value ?? editor?.content.value.settings.locale,
   getRecipient: () => recipient.value || undefined,
 });
 

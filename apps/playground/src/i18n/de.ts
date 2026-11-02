@@ -127,6 +127,12 @@ export default {
         "Wählen Sie über `locale` eine Sprache: Die Oberfläche des Editors und hineingezogene Blöcke folgen ihr.",
       note: "Sprache wählen",
     },
+    languages: {
+      title: "Sprachen",
+      seeIt:
+        "Wechseln Sie zu Deutsch: Text und Hero-Bild ändern sich, ein Block wird zum Geisterblock, und „Keep“ entfernt die Veraltet-Markierung. Fügen Sie Französisch hinzu oder wählen Sie Arabisch für Inhalte von rechts nach links.",
+      note: "Templatesprache wechseln",
+    },
     "shadow-dom-off": {
       title: "Shadow DOM aus",
       seeIt:

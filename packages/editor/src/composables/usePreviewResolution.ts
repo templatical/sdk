@@ -45,6 +45,8 @@ export interface UsePreviewResolutionOptions {
   isActive: () => boolean;
   /** The recipient to resolve for, when the surface has one. */
   getRecipient?: () => string | undefined;
+  /** Active template language; switching it invalidates cached and pending results. */
+  getLocale?: () => string | null | undefined;
 }
 
 export interface UsePreviewResolutionReturn {
@@ -174,8 +176,20 @@ export function usePreviewResolution(
   // *not* watching content: re-resolving on every edit would mean a backend
   // request per keystroke burst.
   watch(
-    () => [options.isActive(), options.getRecipient?.()] as const,
-    ([active]) => {
+    () =>
+      [
+        options.isActive(),
+        options.getRecipient?.(),
+        options.getLocale?.(),
+      ] as const,
+    ([active, , locale], previous) => {
+      if (previous && locale !== previous[2]) {
+        clearTimer();
+        token++;
+        resolved.value = null;
+        isResolving.value = false;
+        hasFailed.value = false;
+      }
       if (!active) {
         // Leaving a preview cancels an in-flight resolve and drops the result,
         // so reopening resolves fresh rather than showing stale data.
@@ -188,7 +202,7 @@ export function usePreviewResolution(
       }
       schedule();
     },
-    { immediate: true },
+    { immediate: true, flush: "sync" },
   );
 
   onScopeDispose(() => {

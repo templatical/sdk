@@ -1,5 +1,10 @@
 import type { Operation, TemplateContent } from "@templatical/types";
-import { applyOperations, OperationError } from "@templatical/types";
+import {
+  applyOperationsInPlace,
+  createSetDefaultLocaleOperation,
+  OperationError,
+  safeClone,
+} from "@templatical/types";
 import { flagValue, type ParsedArgs } from "../args";
 import { emit } from "../output";
 import {
@@ -10,6 +15,7 @@ import {
   writeTemplateFile,
 } from "../io";
 import { validateTemplate } from "../../index";
+import { readDefinitions } from "../definitions";
 
 function parseOperations(args: ParsedArgs, cwd: string): unknown[] {
   const inline = flagValue(args, "op");
@@ -64,23 +70,32 @@ export function runEdit(args: ParsedArgs): number {
     );
   }
   const before = readTemplateFile(file, cwd) as TemplateContent;
+  const definitions = readDefinitions(args, cwd);
 
   // All or nothing: the engine throws at the first refused operation and
   // nothing is written. A working file has one writer, so there are no locks.
-  let content: TemplateContent;
+  const content = safeClone(before);
+  let opIndex = 0;
   try {
-    content = applyOperations(before, operations as Operation[]);
+    for (const raw of operations as Operation[]) {
+      const op =
+        raw?.op === "setDefaultLocale" && raw.customTextFields === undefined
+          ? createSetDefaultLocaleOperation(content, raw.locale, definitions)
+          : raw;
+      applyOperationsInPlace(content, [op]);
+      opIndex++;
+    }
   } catch (error) {
     if (!(error instanceof OperationError)) throw error;
-    const refused = operations[error.opIndex] as { op?: unknown } | undefined;
+    const refused = operations[opIndex] as { op?: unknown } | undefined;
     throw new UsageError(
-      `Operation ${error.opIndex + 1} (${String(refused?.op)}) was refused: ${error.code} — ${error.message}`,
+      `Operation ${opIndex + 1} (${String(refused?.op)}) was refused: ${error.code} — ${error.message}`,
     );
   }
 
   // An operation can produce a structurally invalid document, so validate
   // before writing: the working file must always be valid.
-  const { valid, errors } = validateTemplate(content);
+  const { valid, errors } = validateTemplate(content, definitions);
   if (!valid) {
     throw new InvalidTemplateError(
       `The edited template is not structurally valid (${errors.length} error(s)); ${file} was not written.`,

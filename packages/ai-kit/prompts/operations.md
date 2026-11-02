@@ -72,7 +72,7 @@ A refused batch throws an `OperationError` with `code` and `opIndex`, the 0-base
 | `anchor_missing` | The `after` block isn't in the target container | 409 |
 | `precondition_failed` | `expect` doesn't hold | 409 |
 | `lock_held` | Another session holds the block | 409 |
-| `locked_by_others` | Another session holds a lock, for `setContent` | 409 |
+| `locked_by_others` | Another session holds a lock, for `setContent` or a change of the default language | 409 |
 | `invalid_operation` | The operation is malformed or can never apply | 422 |
 
 ### Which error wins
@@ -87,6 +87,8 @@ When one operation breaks several rules, the first failing check decides:
 6. The target container: `block_missing` for a missing parent section; `invalid_operation` for a parent that isn't a section or a column out of range.
 7. The anchor (`anchor_missing`).
 8. The change itself (`invalid_operation`): a layout that would drop columns that still hold blocks.
+
+Element ids containing `.` or `/` are refused only where an operation adds one, and the check sits at a different step per operation: `addBlock` checks them with its shape (step 1), and checks no locks at all; `updateBlock` checks them as the change itself (step 8), after locks and preconditions; `setContent` checks them after its shape and before locks. The shared fixtures pin each case.
 
 ## Applying operations
 

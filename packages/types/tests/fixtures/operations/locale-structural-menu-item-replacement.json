@@ -1,0 +1,44 @@
+{
+  "name": "refuses locale structural override menu-item-replacement",
+  "content": {
+    "blocks": [
+      {
+        "id": "block",
+        "type": "menu",
+        "items": [
+          {
+            "id": "item",
+            "text": "Home",
+            "url": "/"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "locale": "en",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlockLocale",
+      "blockId": "block",
+      "locale": "de",
+      "set": {
+        "items.item": {
+          "id": "other",
+          "text": "Home",
+          "url": "/"
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0
+    }
+  }
+}

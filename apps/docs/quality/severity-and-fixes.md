@@ -4,7 +4,7 @@ description: The four-level severity model (error, warning, info, off) shared by
 
 # Severity & fixes
 
-Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintCompatibility` together.
+Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability`, `lintCompatibility`, and `lintLocalization` together.
 
 ## Severity model
 

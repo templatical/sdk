@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import type { UseAiFeatureReturn } from "../../composables/useAiFeature";
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import { EDITOR_KEY, UI_LOCALE_KEY } from "../../keys";
 import { aiErrorMessage } from "../../utils/aiErrors";
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ close: [] }>();
 const editor = inject(EDITOR_KEY, null);
+const localized = editor ? useLocalizedDisplay(editor) : null;
 const locale = inject(UI_LOCALE_KEY, "en");
 const { t, format } = useI18n();
 interface Row {
@@ -33,9 +35,11 @@ const rows = ref<Row[]>(
   props.blockIds.map((blockId) => ({
     blockId,
     src: editor
-      ? (aiImageSnapshot(editor.content.value, blockId)?.src ?? "")
+      ? (aiImageSnapshot(localized!.content.value, blockId)?.src ?? "")
       : "",
-    snapshot: editor ? aiImageSnapshot(editor.content.value, blockId) : null,
+    snapshot: editor
+      ? aiImageSnapshot(localized!.content.value, blockId)
+      : null,
     text: "",
     decorative: false,
     accepted: false,
@@ -129,12 +133,12 @@ async function draft(row: Row, controller: AbortController): Promise<void> {
 }
 if (editor) {
   watch(
-    editor.content,
+    localized!.content,
     () => {
       for (const row of rows.value) {
         if (
           !sameAiImage(
-            aiImageSnapshot(editor.content.value, row.blockId),
+            aiImageSnapshot(localized!.content.value, row.blockId),
             row.snapshot,
           )
         ) {
@@ -162,6 +166,7 @@ watch(
     props.feature.templateId,
     props.feature.isAvailable,
     () => editor?.loadVersion?.value,
+    () => editor?.activeLocale?.value,
   ],
   close,
   { flush: "sync" },

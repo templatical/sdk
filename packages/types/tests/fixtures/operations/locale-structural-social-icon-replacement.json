@@ -1,0 +1,44 @@
+{
+  "name": "refuses locale structural override social-icon-replacement",
+  "content": {
+    "blocks": [
+      {
+        "id": "block",
+        "type": "social",
+        "icons": [
+          {
+            "id": "icon",
+            "platform": "facebook",
+            "url": "/"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "locale": "en",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlockLocale",
+      "blockId": "block",
+      "locale": "de",
+      "set": {
+        "icons.icon": {
+          "id": "other",
+          "platform": "facebook",
+          "url": "/"
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0
+    }
+  }
+}

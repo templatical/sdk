@@ -36,3 +36,5 @@ export type {
 } from "./eval-set";
 export { createStandInEditor } from "./stand-in-editor";
 export type { StandInEditor } from "./stand-in-editor";
+export { createMockTranslationProvider } from "./mock-translation-provider";
+export { runTranslationConformance } from "./translation-conformance";

@@ -1,3 +1,7 @@
+import {
+  elementIdIssues,
+  createDefaultTemplateContent,
+} from "@templatical/types";
 import { describe, expect, it } from "vitest";
 import { convertSocial } from "../social-mapper";
 import type { MapContext } from "../block-mapper";
@@ -27,6 +31,9 @@ describe("convertSocial", () => {
       ctx(),
     );
     const b = block as SocialIconsBlock;
+    expect(
+      elementIdIssues({ ...createDefaultTemplateContent(), blocks: [b] }),
+    ).toEqual([]);
     expect(b.icons.map((i) => i.platform)).toEqual(["facebook", "twitter"]);
     expect(b.icons[0].url).toBe("https://facebook.com/a");
     expect(entry.status).toBe("approximated"); // 40 is not 24/32/48

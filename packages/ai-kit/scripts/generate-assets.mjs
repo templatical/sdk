@@ -1,6 +1,6 @@
 // Writes the package's generated assets:
 //
-// - prompts/operations.md, a byte copy of apps/docs/api/operations.md: the
+// - prompts/operations.md, apps/docs/api/operations.md without locale operations: the
 //   operation vocabulary the editing prompt teaches (Cloud's MCP server serves
 //   the same file);
 // - src/generated/assets.ts, every prompt and schema file as a string
@@ -31,17 +31,29 @@ const read = (rel) => readFileSync(join(pkg, rel), "utf8");
 const prompt = (rel) => read(rel).replace(/\n$/, "");
 const json = (rel) => JSON.parse(read(rel));
 
+/** The locale operations are documented but aren't part of the AI contract. */
+export function stripLocaleOperations(source) {
+  return source.replace(
+    /<!-- locale-operations:start -->[\s\S]*?<!-- locale-operations:end -->\n\n?/g,
+    "",
+  );
+}
+
+const operationsGuide = () =>
+  stripLocaleOperations(readFileSync(OPERATIONS_SOURCE, "utf8"));
+
 /** The constants, in the order the module declares them. */
 function constants() {
   return [
     ["EDITING_RULES", prompt("prompts/editing.md")],
-    ["OPERATIONS_GUIDE", readFileSync(OPERATIONS_SOURCE, "utf8")],
+    ["OPERATIONS_GUIDE", operationsGuide()],
     ["TEMPLATE_CONTENT_SCHEMA", read("schema/template-content.schema.json")],
     ["CHAT_REQUEST", prompt("prompts/chat.md")],
     ["FIX_REQUEST", prompt("prompts/fix.md")],
     ["CHAT_ATTACHMENTS", prompt("prompts/chat-attachments.md")],
     ["ALT_TEXT_INSTRUCTIONS", prompt("prompts/alt-text.md")],
     ["REWRITE_INSTRUCTIONS", prompt("prompts/rewrite.md")],
+    ["TRANSLATE_INSTRUCTIONS", prompt("prompts/translate.md")],
   ];
 }
 
@@ -67,7 +79,7 @@ export async function buildAssetsModule() {
 }
 
 if (process.argv[1] === import.meta.filename) {
-  const operations = readFileSync(OPERATIONS_SOURCE, "utf8");
+  const operations = operationsGuide();
   const module = await buildAssetsModule();
   if (process.argv.includes("--check")) {
     const stale = [

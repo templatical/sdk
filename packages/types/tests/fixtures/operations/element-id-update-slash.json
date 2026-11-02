@@ -1,0 +1,36 @@
+{
+  "name": "element-id-update-slash",
+  "content": {
+    "blocks": [
+      {
+        "id": "table",
+        "type": "table",
+        "rows": []
+      }
+    ],
+    "settings": {
+      "locale": "en"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "table",
+      "set": {
+        "rows": [
+          {
+            "id": "r/1",
+            "cells": []
+          }
+        ]
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "blockId": "table"
+    }
+  }
+}

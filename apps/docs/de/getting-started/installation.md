@@ -126,6 +126,8 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 
 Der Editor bündelt Vue, TipTap, `@templatical/core` und `@templatical/types` in seinem JavaScript. Quality benötigt zusätzlich `@templatical/types` als eigene Laufzeitabhängigkeit.
 
+**Halten Sie alle `@templatical/*`-Pakete auf derselben Version.** Sie erscheinen gemeinsam unter einer Versionsnummer, und ein Template, das ein neuerer Editor gespeichert hat, kann Felder enthalten, die ein älterer Renderer oder Validator nicht kennt.
+
 ## Optionale Peers
 
 Der Editor lädt optionale Pakete per dynamischem `import()`, abhängig vom genutzten Feature. Quality wird standardmäßig installiert; Renderer und pusher-js bleiben optionale Peers:

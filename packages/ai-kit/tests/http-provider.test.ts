@@ -24,6 +24,7 @@ afterEach(() => vi.unstubAllGlobals());
 const content = { blocks: [], settings: { width: 600 } } as never;
 const base = {
   templateId: "t-1",
+  locale: null,
   content,
   revision: 4,
   sessionId: "s-1",
@@ -173,6 +174,7 @@ describe("createHttpAiProvider: turns", () => {
     expect(seen[0].headers.get("Authorization")).toBe("Bearer t0k");
     expect(seen[0].headers.get("Accept")).toBe("text/event-stream");
     expect(seen[0].body).toEqual({
+      locale: null,
       message: "Hi",
       selectedBlockId: "b-1",
       mergeTags: { syntax: "liquid", tags: [] },
@@ -360,6 +362,7 @@ describe("createHttpAiProvider: turns", () => {
       "https://api.example.com/ai/templates/t-1/ai/fix-finding",
     );
     expect(seen[0].body).toEqual({
+      locale: null,
       finding,
       mergeTags: base.mergeTags,
       content: { blocks: [], settings: { width: 600 } },
@@ -394,6 +397,7 @@ describe("createHttpAiProvider: one-shot features", () => {
     expect(result).toEqual({ html: "<p>Hey</p>" });
     expect(onText.mock.calls).toEqual([["<p>Hey"], ["</p>"]]);
     expect(seen[0].body).toEqual({
+      locale: null,
       html: "<p>Hi</p>",
       preset: "friendlier",
       language: null,
@@ -741,6 +745,7 @@ describe("chat attachment transport", () => {
     expect(seen[0].headers.get("Content-Type")).toBe(null);
     const form = seen[0].body as FormData;
     expect([...form.keys()]).toEqual([
+      "locale",
       "message",
       "selectedBlockId",
       "mergeTags",
@@ -764,7 +769,7 @@ describe("chat attachment transport", () => {
       "pdf",
     ]);
   });
-  it("keeps the JSON body byte-identical without attachments", async () => {
+  it("sends the JSON body with locale without attachments", async () => {
     let raw: unknown;
     vi.stubGlobal(
       "fetch",
@@ -779,7 +784,7 @@ describe("chat attachment transport", () => {
       new AbortController().signal,
     );
     expect(raw).toBe(
-      '{"message":"Hi","selectedBlockId":"b-1","mergeTags":{"syntax":"liquid","tags":[]},"content":{"blocks":[],"settings":{"width":600}},"revision":4}',
+      '{"locale":null,"message":"Hi","selectedBlockId":"b-1","mergeTags":{"syntax":"liquid","tags":[]},"content":{"blocks":[],"settings":{"width":600}},"revision":4}',
     );
   });
   it.each([

@@ -187,6 +187,23 @@ describe("docs playground links", () => {
   const ids = sceneIds();
   const pages = walkMarkdown(DOCS);
 
+  it("links the localized templates guide to Languages in both languages", () => {
+    expect(sceneDocs().get("languages")).toBe("/guide/localized-templates");
+    for (const locale of ["en", "de"] as const) {
+      const src = readDocs(pageFor("/guide/localized-templates", locale));
+      const home = headingsOf(src).find(
+        (heading) =>
+          heading.level === 2 && heading.text === PLAYGROUND_SECTION[locale],
+      );
+      expect(home, locale).toBeDefined();
+      const [start, end] = sectionLines(src, home!);
+      expect(
+        linkLines(src, "languages").some((line) => line > start && line < end),
+        locale,
+      ).toBe(true);
+    }
+  });
+
   it("discovers kebab-case scene ids from the playground registry sources", () => {
     expect(ids.has("minimum")).toBe(true);
     expect(ids.has("example-launchpad-launch")).toBe(true);

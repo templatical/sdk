@@ -128,6 +128,7 @@ describe("editor global DOM-reference audit", () => {
       "components/blocks/ParagraphToolbar.vue",
       "components/blocks/RichTextLinkDialog.vue",
       "components/blocks/TitleEditor.vue",
+      "components/localization/LocaleStatusChip.vue",
     ]);
   });
 

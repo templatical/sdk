@@ -16,6 +16,7 @@ export function isLintFullyDisabled(options: LintOptions | undefined): boolean {
     options.structure === false &&
     options.links === false &&
     options.deliverability === false &&
-    options.compatibility === false
+    options.compatibility === false &&
+    options.localization === false
   );
 }

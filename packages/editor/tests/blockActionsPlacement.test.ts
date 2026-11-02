@@ -1,9 +1,21 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { computed, nextTick } from "vue";
-import { createImageBlock } from "@templatical/types";
+import { computed, defineComponent, h, nextTick, ref } from "vue";
+import {
+  createImageBlock,
+  createParagraphBlock,
+  createSectionBlock,
+  resolveContentDirection,
+} from "@templatical/types";
 import BlockWrapper from "../src/components/blocks/BlockWrapper.vue";
-import { CAPABILITIES_KEY } from "../src/keys";
+import { useLocalizedDisplay } from "../src/composables/useLocalizedDisplay";
+import {
+  CAPABILITIES_KEY,
+  EDITOR_KEY,
+  LOCALIZATION_KEY,
+  TEMPLATE_LINT_KEY,
+} from "../src/keys";
+import { languageContent } from "./helpers/localization";
 import { mountEditor } from "./helpers/mount";
 
 /**
@@ -34,6 +46,9 @@ function layout(
     badgeWidth = 0,
     badgeHeight = badgeWidth ? 20 : 0,
     actionsWidth = 98,
+    rtl = false,
+    blockWidth = 600,
+    blockLeft = 316,
   }: {
     scale?: number;
     scrollbar?: number;
@@ -41,6 +56,9 @@ function layout(
     badgeWidth?: number;
     badgeHeight?: number;
     actionsWidth?: number;
+    rtl?: boolean;
+    blockWidth?: number;
+    blockLeft?: number;
   } = {},
 ) {
   const css: Record<
@@ -48,10 +66,10 @@ function layout(
     { left: number; top?: number; width: number; height: number }
   > = {
     pane: { left: 288, width, height: 600 },
-    block: { left: 316, width: 600, height: blockHeight },
+    block: { left: blockLeft, width: blockWidth, height: blockHeight },
     actions: { left: 0, width: actionsWidth, height: 38 },
     badges: {
-      left: 316 + 600 - 4 - badgeWidth,
+      left: blockLeft + (rtl ? 4 : blockWidth - 4 - badgeWidth),
       top: 4,
       width: badgeWidth,
       height: badgeHeight,
@@ -67,7 +85,15 @@ function layout(
         : element.classList.contains("tpl-block-actions")
           ? css.actions
           : element.classList.contains("tpl-block-badges")
-            ? css.badges
+            ? {
+                ...css.badges,
+                left:
+                  element.closest("[dir]")?.getAttribute("dir") === "rtl"
+                    ? blockLeft + 4
+                    : element.closest("[dir]")
+                      ? blockLeft + blockWidth - 4 - badgeWidth
+                      : css.badges.left,
+              }
             : element.classList.contains("tpl-comment-indicator")
               ? css.pill
               : null;
@@ -151,6 +177,89 @@ async function settle(): Promise<void> {
 }
 
 describe("selected block actions", () => {
+  it("repositions a selected short nested block with both badges when language or projected direction changes", async () => {
+    const pane = document.createElement("div");
+    pane.className = "tpl-body";
+    document.body.append(pane);
+    layout(pane, 244, { blockHeight: 20, badgeWidth: 44, blockWidth: 200 });
+    const child = createParagraphBlock({ id: "short", content: "Hello" });
+    const content = ref(languageContent());
+    content.value.settings.direction = "auto";
+    content.value.settings.locales = ["de", "ar"];
+    content.value.blocks = [createSectionBlock({ children: [[child]] })];
+    const editor = {
+      content,
+      activeLocale: ref("de"),
+      state: { template: null },
+    };
+    const { settings } = useLocalizedDisplay(editor);
+    const direction = computed(() => resolveContentDirection(settings.value));
+    const Parent = defineComponent({
+      setup: () => () =>
+        h(
+          "div",
+          { dir: direction.value, style: { direction: direction.value } },
+          [h(BlockWrapper, { block: child, isSelected: true, nested: true })],
+        ),
+    });
+    const wrapper = mountEditor(Parent, {
+      attachTo: pane,
+      provides: {
+        [EDITOR_KEY]: editor,
+        [LOCALIZATION_KEY]: { locales: ["de", "ar"] },
+        [TEMPLATE_LINT_KEY]: {
+          issues: ref([
+            {
+              blockId: "short",
+              severity: "warning",
+              ruleId: "links.relative-url",
+            },
+          ]),
+        },
+      },
+    });
+    try {
+      await vi.dynamicImportSettled();
+      await nextTick();
+      const selected = wrapper.get('[data-block-id="short"]');
+      const toolbar = selected.get(".tpl-block-actions").element as HTMLElement;
+      expect(selected.get(".tpl-block-badges").element.children).toHaveLength(
+        2,
+      );
+      expect(toolbar.style.left).toBe("46px");
+      for (const [locale, explicitDirection, expectedDirection, left] of [
+        ["ar", "auto", "rtl", "56px"],
+        ["de", "auto", "ltr", "46px"],
+        ["de", "rtl", "rtl", "56px"],
+        ["de", "ltr", "ltr", "46px"],
+      ] as const) {
+        editor.activeLocale.value = locale;
+        content.value.settings.direction = explicitDirection;
+        await nextTick();
+        await nextTick();
+        expect(getComputedStyle(selected.element).direction).toBe(
+          expectedDirection,
+        );
+        expect(selected.classes()).toContain("tpl-block--selected");
+        expect(selected.get(".tpl-block-actions").element).toBe(toolbar);
+        expect(selected.get(".tpl-block-badges").element.children).toHaveLength(
+          2,
+        );
+        expect((selected.element as HTMLElement).offsetWidth).toBe(200);
+        expect(
+          selected.get(".tpl-block-badges").element.getBoundingClientRect()
+            .width,
+        ).toBe(44);
+        expect(toolbar.offsetWidth).toBe(98);
+        expect(toolbar.style.top).toBe("50%");
+        expect(toolbar.style.left).toBe(left);
+      }
+    } finally {
+      wrapper.unmount();
+      pane.remove();
+    }
+  });
+
   it.each([
     {
       pane: 1000,
@@ -233,15 +342,22 @@ describe("selected block actions", () => {
     },
   );
 
-  it.each([{ scale: 1 }, { scale: 0.5 }])(
-    "clears a short block's badge slot at scale $scale",
-    async ({ scale }) => {
+  it.each([
+    { direction: "ltr", scale: 1, left: "446px" },
+    { direction: "rtl", scale: 1, left: "56px" },
+    { direction: "ltr", scale: 0.5, left: "446px" },
+    { direction: "rtl", scale: 0.5, left: "56px" },
+  ])(
+    "clears a short block's badge slot in $direction at scale $scale",
+    async ({ direction, scale, left }) => {
       const pane = makePane();
+      pane.style.direction = direction;
       layout(pane, 656, {
         scale,
         scrollbar: 15,
         blockHeight: 20,
         badgeWidth: 44,
+        rtl: direction === "rtl",
       });
       const wrapper = mountEditor(BlockWrapper, {
         attachTo: pane,
@@ -252,9 +368,113 @@ describe("selected block actions", () => {
         const toolbar = wrapper.get(".tpl-block-actions")
           .element as HTMLElement;
         expect(toolbar.style.top).toBe("50%");
-        expect(toolbar.style.left).toBe("446px");
-        // 8 px clear of the slot, which starts at 600 - 4 - 44 = 552.
-        expect(446 + 98).toBeLessThanOrEqual(552 - 8);
+        expect(toolbar.style.left).toBe(left);
+        const x = Number.parseFloat(toolbar.style.left);
+        if (direction === "ltr") expect(x + 98).toBeLessThanOrEqual(552 - 8);
+        else expect(x).toBeGreaterThanOrEqual(48 + 8);
+        expect(28 + x).toBeGreaterThanOrEqual(4);
+        expect(28 + x + 98).toBeLessThanOrEqual(656 - 15 - 4);
+        expect(toolbar.classList).toContain("tpl:z-20");
+      } finally {
+        wrapper.unmount();
+        pane.remove();
+      }
+    },
+  );
+
+  it.each([
+    { direction: "ltr", height: 20, left: "10px", top: "50%" },
+    { direction: "rtl", height: 20, left: "92px", top: "50%" },
+    { direction: "ltr", height: 80, left: "114px", top: "51px" },
+    { direction: "rtl", height: 80, left: "114px", top: "51px" },
+  ])(
+    "clears the comment, lint and locale row in $direction on a $height px block",
+    async ({ direction, height, left, top }) => {
+      const pane = makePane();
+      pane.style.direction = direction;
+      layout(pane, 244, {
+        blockWidth: 200,
+        blockHeight: height,
+        badgeWidth: 80,
+        badgeHeight: 24,
+        rtl: direction === "rtl",
+      });
+      const block = createParagraphBlock({ id: "short", content: "Hello" });
+      const content = ref(languageContent());
+      content.value.blocks = [block];
+      const wrapper = mountEditor(BlockWrapper, {
+        attachTo: pane,
+        props: { block, isSelected: true },
+        provides: {
+          [EDITOR_KEY]: {
+            content,
+            activeLocale: ref("de"),
+            state: { template: null },
+          },
+          [LOCALIZATION_KEY]: { locales: ["de", "ar"] },
+          [TEMPLATE_LINT_KEY]: {
+            issues: ref([
+              {
+                blockId: "short",
+                severity: "warning",
+                ruleId: "links.relative-url",
+              },
+            ]),
+          },
+          [CAPABILITIES_KEY]: capabilities({ comments: 3 }),
+        },
+      });
+      try {
+        await vi.dynamicImportSettled();
+        await settle();
+        const row = wrapper.get(".tpl-block-badges");
+        const pill = wrapper.get(".tpl-comment-indicator");
+        expect([...row.element.children]).toEqual([
+          pill.element,
+          wrapper.get(".tpl-block-issue-badge").element,
+          wrapper.get('[data-testid="locale-chip"]').element,
+        ]);
+        expect(pill.classes()).not.toContain("tpl:absolute");
+        const toolbar = wrapper.get(".tpl-block-actions")
+          .element as HTMLElement;
+        expect(toolbar.style.left).toBe(left);
+        expect(toolbar.style.top).toBe(top);
+        expect(28 + Number.parseFloat(left)).toBeGreaterThanOrEqual(4);
+        expect(28 + Number.parseFloat(left) + 98).toBeLessThanOrEqual(244 - 4);
+      } finally {
+        wrapper.unmount();
+        pane.remove();
+      }
+    },
+  );
+
+  it.each([
+    { direction: "ltr", width: 244, badgeWidth: 120, left: "-24px" },
+    { direction: "rtl", width: 160, badgeWidth: 44, left: "30px" },
+  ])(
+    "clamps the short-block fallback to the pane in $direction",
+    async ({ direction, width, badgeWidth, left }) => {
+      const pane = makePane();
+      pane.style.direction = direction;
+      layout(pane, width, {
+        blockWidth: 200,
+        blockHeight: 20,
+        badgeWidth,
+        rtl: direction === "rtl",
+      });
+      const wrapper = mountEditor(BlockWrapper, {
+        attachTo: pane,
+        props: { block: createImageBlock(), isSelected: true },
+      });
+      try {
+        await settle();
+        const toolbar = wrapper.get(".tpl-block-actions")
+          .element as HTMLElement;
+        expect(toolbar.style.left).toBe(left);
+        expect(toolbar.style.top).toBe("50%");
+        const x = Number.parseFloat(left);
+        expect(28 + x).toBeGreaterThanOrEqual(4);
+        expect(28 + x + 98).toBeLessThanOrEqual(width - 4);
       } finally {
         wrapper.unmount();
         pane.remove();
@@ -370,34 +590,136 @@ describe("action bar beside the comment pill", () => {
     { height: 40, top: "43px" },
     // Centred, the bar already starts below the pill.
     { height: 120, top: "50%" },
-  ])(
-    "starts below the pill on a $height px block",
-    async ({ height, top }) => {
-      const pane = makePane();
-      layout(pane, 1000, { blockHeight: height });
-      const wrapper = mountEditor(BlockWrapper, {
-        attachTo: pane,
-        props: { block: createImageBlock(), isSelected: true },
-        provides: { [CAPABILITIES_KEY]: capabilities({ comments: 3 }) },
-      });
-      try {
-        await settle();
-        expect(wrapper.get(".tpl-comment-indicator").classes()).toContain(
-          "tpl:absolute",
-        );
-        const toolbar = wrapper.get(".tpl-block-actions")
-          .element as HTMLElement;
-        expect(toolbar.style.left).toBe("608px");
-        expect(toolbar.style.top).toBe(top);
-      } finally {
-        wrapper.unmount();
-        pane.remove();
-      }
-    },
-  );
+  ])("starts below the pill on a $height px block", async ({ height, top }) => {
+    const pane = makePane();
+    layout(pane, 1000, { blockHeight: height });
+    const wrapper = mountEditor(BlockWrapper, {
+      attachTo: pane,
+      props: { block: createImageBlock(), isSelected: true },
+      provides: { [CAPABILITIES_KEY]: capabilities({ comments: 3 }) },
+    });
+    try {
+      await settle();
+      expect(wrapper.get(".tpl-comment-indicator").classes()).toContain(
+        "tpl:absolute",
+      );
+      const toolbar = wrapper.get(".tpl-block-actions").element as HTMLElement;
+      expect(toolbar.style.left).toBe("608px");
+      expect(toolbar.style.top).toBe(top);
+    } finally {
+      wrapper.unmount();
+      pane.remove();
+    }
+  });
 });
 
 describe("comment-count pill", () => {
+  it("repositions a comment-only block after the language or projected direction updates", async () => {
+    const pane = makePane();
+    layout(pane, 1000);
+    const block = createImageBlock();
+    const content = ref(languageContent());
+    content.value.settings.direction = "auto";
+    content.value.settings.locales = ["de", "ar"];
+    const editor = {
+      content,
+      activeLocale: ref("de"),
+      state: { template: null },
+    };
+    const { settings } = useLocalizedDisplay(editor);
+    const direction = computed(() => resolveContentDirection(settings.value));
+    const Parent = defineComponent({
+      setup: () => () =>
+        h(
+          "div",
+          { dir: direction.value, style: { direction: direction.value } },
+          [h(BlockWrapper, { block, isSelected: false })],
+        ),
+    });
+    const wrapper = mountEditor(Parent, {
+      attachTo: pane,
+      provides: {
+        [EDITOR_KEY]: editor,
+        [CAPABILITIES_KEY]: capabilities({ comments: 3 }),
+      },
+    });
+    try {
+      await settle();
+      const pill = wrapper.get(".tpl-comment-indicator");
+      expect(pill.classes()).toContain("tpl:absolute");
+      for (const [locale, explicitDirection, expectedDirection, outside] of [
+        ["ar", "auto", "rtl", false],
+        ["de", "auto", "ltr", true],
+        ["de", "rtl", "rtl", false],
+        ["de", "ltr", "ltr", true],
+      ] as const) {
+        editor.activeLocale.value = locale;
+        content.value.settings.direction = explicitDirection;
+        await settle();
+        expect(getComputedStyle(pill.element).direction).toBe(
+          expectedDirection,
+        );
+        expect(wrapper.get(".tpl-comment-indicator").element).toBe(
+          pill.element,
+        );
+        expect(pill.classes().includes("tpl:absolute")).toBe(outside);
+        expect(wrapper.find(".tpl-block-actions").exists()).toBe(false);
+      }
+    } finally {
+      wrapper.unmount();
+      pane.remove();
+    }
+  });
+
+  it("keeps the wide-pane RTL bar centred with the exterior pill on the other side", async () => {
+    const pane = makePane();
+    pane.style.direction = "rtl";
+    layout(pane, 1000, { rtl: true, blockLeft: 400, blockHeight: 40 });
+    const wrapper = mountEditor(BlockWrapper, {
+      attachTo: pane,
+      props: { block: createImageBlock(), isSelected: true },
+      provides: { [CAPABILITIES_KEY]: capabilities({ comments: 3 }) },
+    });
+    try {
+      await settle();
+      expect(wrapper.get(".tpl-comment-indicator").classes()).toContain(
+        "tpl:absolute",
+      );
+      const toolbar = wrapper.get(".tpl-block-actions").element as HTMLElement;
+      expect(toolbar.style.left).toBe("608px");
+      expect(toolbar.style.top).toBe("50%");
+    } finally {
+      wrapper.unmount();
+      pane.remove();
+    }
+  });
+
+  it("uses the left corner's available room in RTL and returns outside when it fits", async () => {
+    const pane = makePane();
+    pane.style.direction = "rtl";
+    layout(pane, 1000, { rtl: true });
+    const wrapper = mountEditor(BlockWrapper, {
+      attachTo: pane,
+      props: { block: createImageBlock(), isSelected: false },
+      provides: { [CAPABILITIES_KEY]: capabilities({ comments: 3 }) },
+    });
+    try {
+      await settle();
+      const pill = wrapper.get(".tpl-comment-indicator");
+      // Plenty of room on the right cannot make the pill fit on the left.
+      expect(pill.classes()).not.toContain("tpl:absolute");
+      layout(pane, 1000, { rtl: true, blockLeft: 400 });
+      pane.dispatchEvent(new Event("scroll"));
+      await settle();
+      expect(pill.classes()).toContain("tpl:absolute");
+      for (const name of ["tpl:inset-s-full", "tpl:ms-2"])
+        expect(pill.classes()).toContain(name);
+    } finally {
+      wrapper.unmount();
+      pane.remove();
+    }
+  });
+
   it("sits outside the block's top-right corner while the pane has room", async () => {
     const pane = makePane();
     layout(pane, 1000);
@@ -412,7 +734,7 @@ describe("comment-count pill", () => {
       expect(pill.text()).toBe("3");
       // Out of the badge row's flow, past the corner.
       expect(pill.classes()).toContain("tpl:absolute");
-      expect(pill.classes()).toContain("tpl:left-full");
+      expect(pill.classes()).toContain("tpl:inset-s-full");
       expect(pill.element.parentElement?.classList).toContain(
         "tpl-block-badges",
       );
@@ -450,9 +772,9 @@ describe("comment-count pill", () => {
 
       await wrapper.setProps({ isSelected: true });
       await settle();
-      expect(
-        wrapper.get(".tpl-comment-indicator").classes(),
-      ).not.toContain("tpl:absolute");
+      expect(wrapper.get(".tpl-comment-indicator").classes()).not.toContain(
+        "tpl:absolute",
+      );
     } finally {
       wrapper.unmount();
       pane.remove();
@@ -494,9 +816,7 @@ describe("comment-count pill", () => {
     try {
       await settle();
       expect(wrapper.find(".tpl-comment-indicator").exists()).toBe(false);
-      expect(wrapper.get(".tpl-block-badges").element.children).toHaveLength(
-        0,
-      );
+      expect(wrapper.get(".tpl-block-badges").element.children).toHaveLength(0);
     } finally {
       wrapper.unmount();
       pane.remove();

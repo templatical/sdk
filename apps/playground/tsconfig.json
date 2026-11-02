@@ -7,24 +7,47 @@
     "paths": {
       "@/*": ["./src/*"],
       "@templatical/types": ["../../packages/types/src/index.ts"],
-      "@templatical/ai-kit/client": ["../../packages/ai-kit/src/client/index.ts"],
-      "@templatical/ai-kit/testing": ["../../packages/ai-kit/src/testing/index.ts"],
+      "@templatical/ai-kit/client": [
+        "../../packages/ai-kit/src/client/index.ts"
+      ],
+      "@templatical/ai-kit/testing": [
+        "../../packages/ai-kit/src/testing/index.ts"
+      ],
       "@templatical/ai-kit": ["../../packages/ai-kit/src/index.ts"],
       "@templatical/core": ["../../packages/core/src/index.ts"],
       "@templatical/core/cloud": ["../../packages/core/src/cloud/index.ts"],
-      "@templatical/media-library": ["../../packages/media-library/src/index.ts"],
+      "@templatical/media-library": [
+        "../../packages/media-library/src/index.ts"
+      ],
       "@templatical/editor": ["../../packages/editor/src/index.ts"],
       "@templatical/renderer": ["../../packages/renderer/src/index.ts"],
       "@templatical/quality": ["../../packages/quality/src/index.ts"],
-      "@templatical/import-beefree": ["../../packages/import-beefree/src/index.ts"],
-      "@templatical/import-unlayer": ["../../packages/import-unlayer/src/index.ts"],
+      "@templatical/import-beefree": [
+        "../../packages/import-beefree/src/index.ts"
+      ],
+      "@templatical/import-unlayer": [
+        "../../packages/import-unlayer/src/index.ts"
+      ],
       "@templatical/import-html": ["../../packages/import-html/src/index.ts"],
       "@templatical/import-mjml": ["../../packages/import-mjml/src/index.ts"],
       "@templatical/import-topol": ["../../packages/import-topol/src/index.ts"],
-      "@templatical/import-stripo": ["../../packages/import-stripo/src/index.ts"],
-      "@templatical/import-chamaileon": ["../../packages/import-chamaileon/src/index.ts"],
-      "@templatical/import-easy-email-pro": ["../../packages/import-easy-email-pro/src/index.ts"]
+      "@templatical/import-stripo": [
+        "../../packages/import-stripo/src/index.ts"
+      ],
+      "@templatical/import-chamaileon": [
+        "../../packages/import-chamaileon/src/index.ts"
+      ],
+      "@templatical/import-easy-email-pro": [
+        "../../packages/import-easy-email-pro/src/index.ts"
+      ]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "src/env.d.ts", "tests/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "src/env.d.ts",
+    "tests/**/*.ts",
+    "e2e/helpers/localization-header.ts",
+    "e2e/tests/language-header.spec.ts"
+  ]
 }

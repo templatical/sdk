@@ -129,6 +129,12 @@ export default {
         "Pick a language from `locale`: the editor's chrome and the blocks you drag in follow it.",
       note: "pick a language",
     },
+    languages: {
+      title: "Languages",
+      seeIt:
+        "Switch to Deutsch: text and the hero image change, a block becomes a ghost, and Keep clears the stale marker. Add French or select Arabic for right-to-left content.",
+      note: "switch template language",
+    },
     "shadow-dom-off": {
       title: "Shadow DOM off",
       seeIt:

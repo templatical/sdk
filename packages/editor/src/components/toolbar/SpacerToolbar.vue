@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputGroupInputClass,
   inputSuffixClass,
-  labelClass,
 } from "../../constants/styleConstants";
 import type { SpacerBlock } from "@templatical/types";
 
@@ -19,8 +19,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.spacer.height }}</label>
+  <FieldRow :label="t.spacer.height" class="tpl:mb-3.5" path="height">
     <div class="tpl:flex tpl:items-stretch">
       <input
         type="number"
@@ -48,5 +47,5 @@ const { t } = useI18n();
         })
       "
     />
-  </div>
+  </FieldRow>
 </template>

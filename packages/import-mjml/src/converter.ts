@@ -20,6 +20,11 @@ import { extractSettings } from "./head-parser";
 import { buildHero, buildSection, buildWrapper } from "./section-builder";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
+export interface ConvertMjmlOptions {
+  /** Used when the source declares no default language. */
+  defaultLocale?: string;
+}
+
 const EMPTY_DOCUMENT_WARNING =
   "No convertible content was found in the MJML. Check that the document has an <mj-body> with at least one <mj-section>.";
 
@@ -113,7 +118,10 @@ function walkBody(
  * console.log(report.warnings);
  * ```
  */
-export function convertMjmlTemplate(mjml: string): ImportResult {
+export function convertMjmlTemplate(
+  mjml: string,
+  options: ConvertMjmlOptions = {},
+): ImportResult {
   if (typeof mjml !== "string") {
     throw new Error(
       "Invalid MJML template: expected a string. Pass the raw MJML source as a string.",
@@ -152,7 +160,7 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
   const entries: ImportReportEntry[] = [];
   const warnings: string[] = [];
 
-  const settings = extractSettings($, cascade, warnings);
+  const settings = extractSettings($, cascade, warnings, options.defaultLocale);
 
   const $body = findByTag($, "mj-body").first();
   const ctx: ConvertContext = {

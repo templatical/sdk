@@ -7,7 +7,7 @@ import type {
   AiRequestBase,
   TemplateContent,
 } from "@templatical/types";
-import { safeClone } from "@templatical/types";
+import { resolveLocale, safeClone } from "@templatical/types";
 import {
   AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   AI_EVAL_MERGE_TAGS,
@@ -28,6 +28,8 @@ export interface AiConformanceReport {
 }
 
 export interface AiConformanceOptions {
+  /** Active language for the probes; null for the default view. */
+  locale?: string | null;
   /** The template the suite edits; the test set's welcome email by default. */
   content?: TemplateContent;
   templateId?: string;
@@ -136,8 +138,18 @@ export async function runAiProviderConformance(
   const timeoutMs = options.timeoutMs ?? 5000;
   const callTimeoutMs = Math.min(options.callTimeoutMs ?? timeoutMs, timeoutMs);
   const templateId = options.templateId ?? "conformance";
+  const locale = options.locale ?? null;
+  const content = safeClone(options.content ?? AI_EVAL_TEMPLATES.welcome);
+  if (
+    locale !== null &&
+    locale !== (content.settings.locale ?? "en") &&
+    !content.settings.locales?.includes(locale)
+  ) {
+    // The default fixture has no versions; an empty version uses its fallback text.
+    content.settings.locales = [...(content.settings.locales ?? []), locale];
+  }
   const editor = createStandInEditor(
-    options.content ?? AI_EVAL_TEMPLATES.welcome,
+    locale === null ? content : resolveLocale(content, locale),
     options.mergeTags ?? AI_EVAL_MERGE_TAGS,
   );
   const errors: unknown[] = [];
@@ -146,6 +158,7 @@ export async function runAiProviderConformance(
   > = {};
   const base = (): AiRequestBase => ({
     templateId,
+    locale,
     content: safeClone(editor.content),
     revision: null,
     sessionId: editor.sessionId,
@@ -563,7 +576,7 @@ export async function runAiProviderConformance(
       currentAlt: null,
       linkHref: null,
       nearbyText: "Explore our email editor.",
-      locale: editor.content.settings.locale ?? "en",
+      locale: options.locale ?? editor.content.settings.locale ?? "en",
       maxLength: 125,
     };
     probes.altText = (signal) => altText(request, signal);

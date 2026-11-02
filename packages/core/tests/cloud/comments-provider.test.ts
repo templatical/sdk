@@ -197,6 +197,25 @@ describe("createCloudCommentsProvider", () => {
   });
 
   describe("write payloads", () => {
+    it.each(["en", "de"])(
+      "omits the %s language from Cloud create requests",
+      async (locale) => {
+        vi.mocked(ApiClient.prototype.createComment).mockResolvedValue(
+          record(),
+        );
+        const { provider } = setup();
+        if (!provider.create)
+          throw new Error("Cloud comments must be writable");
+
+        await provider.create("tmpl-1", { body: "hi", locale });
+
+        const payload = vi.mocked(ApiClient.prototype.createComment).mock
+          .calls[0][1];
+        expect(payload).not.toHaveProperty("locale");
+        expect(payload.body).toBe("hi");
+      },
+    );
+
     it("signs create with the JWT's user, not with anything the caller passed", async () => {
       vi.mocked(ApiClient.prototype.createComment).mockResolvedValue(
         record({ id: "c-new" }),

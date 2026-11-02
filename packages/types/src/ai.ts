@@ -33,6 +33,8 @@ export interface AiMergeTags {
 
 /** What every AI request carries. */
 export interface AiRequestBase {
+  /** The active language; `null` in the default view. */
+  locale: string | null;
   templateId: string;
   /**
    * The template as the editor has it, after it sent its pending edits. A
@@ -191,6 +193,8 @@ export interface AiMessageBatch {
 
 /** One message of a template's AI conversation. */
 export interface AiChatMessage {
+  /** The active language; `null` in the default view. Absent in older history. */
+  locale?: string | null;
   id: string;
   role: "user" | "assistant";
   kind: AiMessageKind;

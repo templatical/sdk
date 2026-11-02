@@ -5,7 +5,9 @@ import { join } from "node:path";
 import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
 import { runEdit } from "../src/cli/commands/edit";
+import { validateTemplate } from "../src/validate";
 import { InvalidTemplateError, UsageError } from "../src/cli/io";
+import { localeCoverage, resolveLocale, sourceHash } from "@templatical/types";
 
 const pad = { top: 0, right: 0, bottom: 0, left: 0 };
 // Every required property is present deliberately — `edit` validates before it
@@ -84,7 +86,12 @@ describe("edit command", () => {
       ops,
       JSON.stringify([
         { op: "updateBlock", blockId: "title_1", set: { content: "One" } },
-        { op: "moveBlock", blockId: "title_1", parent: null, after: "button_1" },
+        {
+          op: "moveBlock",
+          blockId: "title_1",
+          parent: null,
+          after: "button_1",
+        },
         { op: "updateBlock", blockId: "title_1", set: { content: "Two" } },
       ]),
     );
@@ -118,14 +125,26 @@ describe("edit command", () => {
       ...BASE,
       blocks: [
         ...BASE.blocks,
-        { id: "sec_1", type: "section", columns: "1", children: [[]], styles: { padding: pad } },
+        {
+          id: "sec_1",
+          type: "section",
+          columns: "1",
+          children: [[]],
+          styles: { padding: pad },
+        },
       ],
     };
     writeFileSync(file, `${JSON.stringify(withSection, null, 2)}\n`, "utf8");
     const before = readFileSync(file, "utf8");
     const op = JSON.stringify({
       op: "addBlock",
-      block: { id: "sec_2", type: "section", columns: "1", children: [[]], styles: { padding: pad } },
+      block: {
+        id: "sec_2",
+        type: "section",
+        columns: "1",
+        children: [[]],
+        styles: { padding: pad },
+      },
       parent: { sectionId: "sec_1", column: 0 },
       after: null,
     });
@@ -191,7 +210,11 @@ describe("edit command", () => {
     writeFileSync(
       ops,
       JSON.stringify([
-        { op: "updateBlock", blockId: "title_1", set: { content: "Should not apply" } },
+        {
+          op: "updateBlock",
+          blockId: "title_1",
+          set: { content: "Should not apply" },
+        },
       ]),
     );
     expect(() =>
@@ -199,4 +222,188 @@ describe("edit command", () => {
     ).toThrow(/not both/);
     expect(readFileSync(file, "utf8")).toBe(before);
   });
+});
+
+it("edits the default language with an explicit operation and validates removed optional fields", () => {
+  const before = {
+    ...BASE,
+    settings: {
+      ...BASE.settings,
+      locales: ["de", "fr"],
+      preheaderText: "Hello",
+      l10n: {
+        de: { set: { preheaderText: null } },
+        fr: {
+          text: { preheaderText: { value: "Bonjour", sourceHash: "f55c314b" } },
+        },
+      },
+    },
+  };
+  writeFileSync(file, JSON.stringify(before));
+  expect(
+    runEdit(
+      parseArgs([
+        "edit",
+        file,
+        "--op",
+        '{"op":"setDefaultLocale","locale":"de"}',
+      ]),
+    ),
+  ).toBe(0);
+  expect(read().settings).toMatchObject({
+    locale: "de",
+    locales: ["en", "fr"],
+    l10n: {
+      en: { set: { preheaderText: "Hello" } },
+      fr: { set: { preheaderText: "Bonjour" } },
+    },
+  });
+  expect(read().settings).not.toHaveProperty("preheaderText");
+  expect(read().blocks[0].l10n?.en.text?.content).toEqual({
+    value: "Hello",
+    sourceHash: sourceHash("Hello"),
+  });
+  expect(localeCoverage(read(), "en").missing).toEqual([]);
+  expect(validateTemplate(read()).valid).toBe(true);
+  expect(
+    runEdit(
+      parseArgs([
+        "edit",
+        file,
+        "--op",
+        '{"op":"updateBlock","blockId":"title_1","set":{"content":"Hallo"}}',
+      ]),
+    ),
+  ).toBe(0);
+  expect(resolveLocale(read(), "en").blocks[0]).toMatchObject({
+    content: "Hello",
+  });
+  expect(localeCoverage(read(), "en").stale).toEqual(["title_1/content"]);
+});
+
+it("uses edit --definitions to preserve only custom text and textarea when making the default", () => {
+  const definitions = join(dir, "definitions.json");
+  writeFileSync(
+    definitions,
+    JSON.stringify([
+      {
+        type: "card",
+        name: "Card",
+        template: "<p>{{ headline }}</p><p>{{ body }}</p>",
+        fields: [
+          { key: "headline", label: "Headline", type: "text" },
+          { key: "body", label: "Body", type: "textarea" },
+          { key: "color", label: "Color", type: "color" },
+        ],
+      },
+    ]),
+  );
+  writeFileSync(
+    file,
+    JSON.stringify({
+      ...BASE,
+      settings: { ...BASE.settings, locales: ["de"] },
+      blocks: [
+        {
+          id: "custom",
+          type: "custom",
+          customType: "card",
+          fieldValues: {
+            headline: "English title",
+            body: "English body",
+            color: "#123456",
+          },
+          renderedHtml: "<p>English title</p>",
+          styles: { padding: pad },
+        },
+      ],
+    }),
+  );
+  expect(
+    runEdit(
+      parseArgs([
+        "edit",
+        file,
+        "--op",
+        '{"op":"setDefaultLocale","locale":"de"}',
+        "--definitions",
+        definitions,
+      ]),
+    ),
+  ).toBe(0);
+  expect(read().blocks[0].l10n?.en.text).toEqual({
+    "fieldValues.headline": {
+      value: "English title",
+      sourceHash: sourceHash("English title"),
+    },
+    "fieldValues.body": {
+      value: "English body",
+      sourceHash: sourceHash("English body"),
+    },
+  });
+  expect(
+    validateTemplate(read(), JSON.parse(readFileSync(definitions, "utf8")))
+      .valid,
+  ).toBe(true);
+});
+
+it("keeps explicit custom text paths when edit --definitions would capture another field", () => {
+  const definitions = join(dir, "definitions.json");
+  writeFileSync(
+    definitions,
+    JSON.stringify([
+      {
+        type: "card",
+        name: "Card",
+        template: "<p>{{ headline }}</p><p>{{ body }}</p>",
+        fields: [
+          { key: "headline", label: "Headline", type: "text" },
+          { key: "body", label: "Body", type: "textarea" },
+        ],
+      },
+    ]),
+  );
+  writeFileSync(
+    file,
+    JSON.stringify({
+      ...BASE,
+      settings: { ...BASE.settings, locales: ["de"] },
+      blocks: [
+        {
+          id: "custom",
+          type: "custom",
+          customType: "card",
+          fieldValues: { headline: "English title", body: "English body" },
+          styles: { padding: pad },
+        },
+      ],
+    }),
+  );
+  expect(
+    runEdit(
+      parseArgs([
+        "edit",
+        file,
+        "--op",
+        JSON.stringify({
+          op: "setDefaultLocale",
+          locale: "de",
+          customTextFields: { custom: ["fieldValues.headline"] },
+        }),
+        "--definitions",
+        definitions,
+      ]),
+    ),
+  ).toBe(0);
+  expect(read().blocks[0].l10n?.en.text).toEqual({
+    "fieldValues.headline": {
+      value: "English title",
+      sourceHash: sourceHash("English title"),
+    },
+  });
+  expect(read().blocks[0].fieldValues).toEqual({
+    headline: "English title",
+    body: "English body",
+  });
+  expect(read().settings).toMatchObject({ locale: "de", locales: ["en"] });
 });

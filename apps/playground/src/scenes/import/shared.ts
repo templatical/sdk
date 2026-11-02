@@ -45,6 +45,18 @@ export function makeImportScene(spec: {
   convertFn: string;
   sourceExpr: string;
 }): Scene {
+  const snippet = (
+    localized: boolean,
+  ) => `import { ${spec.convertFn} } from "${spec.pkg}";
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+
+const { content } = ${spec.convertFn}(${spec.sourceExpr});
+
+const editor = await init({
+  container: document.getElementById("editor"),
+  content,${localized ? '\n  localization: { locales: ["en-US", "es-ES"] },' : ""}
+});`;
   return {
     id: spec.id,
     title: spec.title,
@@ -54,16 +66,14 @@ export function makeImportScene(spec: {
     group: "import",
     docs: spec.docs,
     content: () => createDefaultTemplateContent(),
-    config: () => ({}),
-    snippet: `import { ${spec.convertFn} } from "${spec.pkg}";
-import { init } from "@templatical/editor";
-import "@templatical/editor/style.css";
-
-const { content } = ${spec.convertFn}(${spec.sourceExpr});
-
-const editor = await init({
-  container: document.getElementById("editor"),
-  content,
-});`,
+    config: ({ search }) =>
+      search.has("localization")
+        ? { localization: { locales: ["en-US", "es-ES"] } }
+        : {},
+    variants: [
+      { name: "With language versions", query: { localization: "1" } },
+    ],
+    snippet: snippet(false),
+    snippetFor: ({ search }) => snippet(search.has("localization")),
   };
 }

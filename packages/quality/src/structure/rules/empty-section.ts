@@ -24,6 +24,7 @@ export const emptySection: Rule = {
       blockId: section.id,
       fix: {
         description: "Remove the empty section",
+        removesBlock: true,
         apply: (ctx) => {
           ctx.removeBlock(section.id);
         },

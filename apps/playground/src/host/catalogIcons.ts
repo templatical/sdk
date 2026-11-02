@@ -34,6 +34,7 @@ export const SCENE_ICONS: Record<string, Component> = {
   theming: Paintbrush,
   layout: LayoutTemplate,
   i18n: Languages,
+  languages: Languages,
   "shadow-dom-off": AppWindow,
   issues: CircleAlert,
   "custom-blocks": Puzzle,

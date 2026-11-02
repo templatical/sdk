@@ -28,7 +28,7 @@ const fragmentIssues = lintHtmlFragment('<div style="display:flex">Hi</div>', {
 });
 ```
 
-`lintTemplate` führt die Kompatibilitätsregeln nach Barrierefreiheit, Struktur, Links und Zustellbarkeit aus. Mit `compatibility: false` deaktivieren Sie die Kategorie, mit `"off"` in `compatibility.rules` eine einzelne Regel. `compatibility.thresholds.maxHtmlBytes` ist standardmäßig `92_160` Byte (90 KiB). Nur wenn alle fünf Kategorien auf `false` stehen, lädt der Editor den optionalen Quality-Chunk nicht.
+`lintTemplate` führt die Kompatibilitätsregeln nach Barrierefreiheit, Struktur, Links und Zustellbarkeit aus, gefolgt von Lokalisierung. Mit `compatibility: false` deaktivieren Sie die Kategorie, mit `"off"` in `compatibility.rules` eine einzelne Regel. `compatibility.thresholds.maxHtmlBytes` ist standardmäßig `92_160` Byte (90 KiB). Nur wenn alle Kategorien einschließlich `localization` auf `false` stehen, lädt der Editor den optionalen Quality-Chunk nicht; ergänzen Sie `localization: false` zu den übrigen Kategorie-Flags.
 
 `lintCompiledHtml(html, options?)` misst UTF-8-Bytes und meldet `compat.gmail-clipping` erst oberhalb dieser Grenze. Google veröffentlicht keinen Grenzwert für das Kürzen; Community-Tests in [email-bugs#41](https://github.com/hteumeuleu/email-bugs/issues/41) zeigen, dass Gmail bei **etwa 102 KB** kürzt, manchmal schon früher, wenn ein Versanddienst eigenes Markup ergänzt. Der Abstand berücksichtigt Tracking-Links von Versanddiensten. Quality rendert und kompiliert selbst kein HTML:
 

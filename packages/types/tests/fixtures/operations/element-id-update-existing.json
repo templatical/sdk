@@ -1,0 +1,53 @@
+{
+  "name": "element-id-update-existing",
+  "content": {
+    "blocks": [
+      {
+        "id": "menu",
+        "type": "menu",
+        "items": [
+          {
+            "id": "nav.home",
+            "text": "Home",
+            "url": "https://example.com"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "menu",
+      "set": {
+        "color": "#ff0000"
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "menu",
+          "type": "menu",
+          "items": [
+            {
+              "id": "nav.home",
+              "text": "Home",
+              "url": "https://example.com"
+            }
+          ],
+          "color": "#ff0000"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en"
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "name": "locale-default-equal-text",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Sable",
+        "l10n": {
+          "de": {
+            "text": {
+              "content": {
+                "value": "Sable",
+                "sourceHash": "ba652276"
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "t2",
+        "type": "title",
+        "content": "Hello",
+        "l10n": {
+          "de": {
+            "text": {
+              "content": {
+                "value": "Hallo",
+                "sourceHash": "f55c314b"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Sable",
+          "l10n": {
+            "en": {
+              "text": {
+                "content": {
+                  "value": "Sable",
+                  "sourceHash": "ba652276"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "t2",
+          "type": "title",
+          "content": "Hallo",
+          "l10n": {
+            "en": {
+              "text": {
+                "content": {
+                  "value": "Hello",
+                  "sourceHash": "9f02b107"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "de",
+        "locales": [
+          "en"
+        ]
+      }
+    }
+  }
+}

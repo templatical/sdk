@@ -1,0 +1,108 @@
+{
+  "name": "locale-add-block-with-l10n",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          [
+            {
+              "id": "m1",
+              "type": "menu",
+              "items": [
+                {
+                  "id": "i1",
+                  "text": "Shop",
+                  "url": "https://example.com/shop"
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff",
+      "locale": "en",
+      "preheaderText": "Hello there",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "p9",
+        "type": "paragraph",
+        "content": "Hey",
+        "l10n": {
+          "de": {
+            "hidden": true
+          }
+        }
+      },
+      "parent": null,
+      "after": "t1"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hi"
+        },
+        {
+          "id": "p9",
+          "type": "paragraph",
+          "content": "Hey",
+          "l10n": {
+            "de": {
+              "hidden": true
+            }
+          }
+        },
+        {
+          "id": "s1",
+          "type": "section",
+          "columns": "1",
+          "children": [
+            [
+              {
+                "id": "m1",
+                "type": "menu",
+                "items": [
+                  {
+                    "id": "i1",
+                    "text": "Shop",
+                    "url": "https://example.com/shop"
+                  }
+                ]
+              }
+            ]
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff",
+        "locale": "en",
+        "preheaderText": "Hello there",
+        "locales": [
+          "de"
+        ]
+      }
+    }
+  }
+}

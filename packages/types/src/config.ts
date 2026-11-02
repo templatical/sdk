@@ -63,7 +63,7 @@ export interface TemplateSettingsConfig {
    *
    * - `true` / omitted — every setting is editable (the default).
    * - `false` — none; the Settings tab itself stops rendering.
-   * - `Array<keyof TemplateSettings>` — an allowlist of settings to keep
+   * - `Array<Exclude<keyof TemplateSettings, "locales" | "l10n">>` — an allowlist of settings to keep
    *   (`['width', 'backgroundColor', 'fontFamily']`). A card renders when at
    *   least one of its settings survives, so hiding `locale` removes the
    *   Language card and hiding `preheaderText` removes the Preheader card. An
@@ -80,7 +80,7 @@ export interface TemplateSettingsConfig {
    * `getContent()`. Set the values you hide from the content you hand the
    * editor — `init({ content })`, or your own `templates.load`.
    */
-  fields?: boolean | Array<keyof TemplateSettings>;
+  fields?: boolean | Array<Exclude<keyof TemplateSettings, "locales" | "l10n">>;
 }
 
 export interface ExportResult {
@@ -294,6 +294,7 @@ export type SdkErrorCode =
   | "ai_turn_running"
   | "ai_output_invalid"
   | "ai_provider_error"
+  | "unknown_locale"
   | (string & {});
 
 export class SdkError extends Error {

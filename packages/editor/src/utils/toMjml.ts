@@ -80,6 +80,7 @@ export async function tryLoadRenderer(): Promise<
 
 export async function toMjmlForInstance(
   instance: ToMjmlSource,
+  options?: { locale?: string },
 ): Promise<string> {
   const renderer = await tryLoadRenderer();
   if (!renderer) {
@@ -91,6 +92,7 @@ export async function toMjmlForInstance(
   const fonts = instance.getFonts?.();
   const layout = instance.getLayout?.();
   return renderer.renderToMjml(instance.getContent(), {
+    ...(options?.locale !== undefined ? { locale: options.locale } : {}),
     renderCustomBlock: instance.renderCustomBlock,
     // Only pass through when the source actually provides a resolver, so a
     // caller that doesn't care about stylesheets sees an options shape (and MJML

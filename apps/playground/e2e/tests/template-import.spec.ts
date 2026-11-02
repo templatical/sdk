@@ -176,6 +176,25 @@ test.describe("Template import", () => {
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
+  test("imports the multilingual BeeFree sample and opens Español", async ({
+    scenePage,
+    editorPage,
+    page,
+  }) => {
+    await scenePage.goto("import-beefree", { localization: "1" });
+    await page.locator(SELECTORS.importSample).click();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.getByTestId("language-menu").click();
+    const spanish = page.getByTestId("language-option-es-ES");
+    await expect(spanish).toContainText("Español");
+    await spanish.click();
+    await expect(page.getByTestId("language-menu")).toContainText("Español");
+    await expect(page.locator(SELECTORS.canvasWrapper)).toContainText(
+      "Presentamos Launchpad v2.0",
+    );
+  });
+
   test("imports an Unlayer template and renders converted blocks", async ({
     scenePage,
     editorPage,

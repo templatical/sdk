@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
+import { languageName } from "../../utils/languageName";
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
@@ -7,7 +9,6 @@ import CollapsibleSection from "./CollapsibleSection.vue";
 import HeroControl from "./HeroControl.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
-  labelClass,
   monoTextareaClass,
   primaryBtnClass,
 } from "../../constants/styleConstants";
@@ -21,6 +22,8 @@ import { computed, inject, reactive, ref, watch, type Component } from "vue";
 import {
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
+  EDITOR_KEY,
+  LOCALIZATION_KEY,
 } from "../../keys";
 
 type SectionKey = "spacing" | "bg" | "display" | "condition";
@@ -35,7 +38,17 @@ const emit = defineEmits<{
   (e: "update", updates: Partial<Block>): void;
 }>();
 
-const { t } = useI18n();
+const { t, format } = useI18n();
+const editor = inject(EDITOR_KEY, null);
+const localization = inject(LOCALIZATION_KEY, undefined);
+const activeLocale = computed(() => editor?.activeLocale?.value);
+const localeHidden = computed(
+  () =>
+    !!(
+      activeLocale.value &&
+      editor?.selectedBlock?.value?.l10n?.[activeLocale.value]?.hidden
+    ),
+);
 
 const displayConditions = inject(DISPLAY_CONDITIONS_KEY, []);
 const allowCustomConditions = inject(ALLOW_CUSTOM_CONDITIONS_KEY, false);
@@ -82,32 +95,39 @@ function startCustomCondition(): void {
 }
 
 function applyCustomCondition(): void {
-  if (!customBefore.value.trim()) return;
+  const before = customBefore.value.trim();
+  const after = customAfter.value.trim();
+  if (!before) return;
   emit("update", {
     displayCondition: {
       label: t.blockSettings.customCondition,
-      before: customBefore.value.trim(),
-      after: customAfter.value.trim(),
+      before,
+      after,
     },
   });
   customConditionMode.value = false;
-  customBefore.value = "";
-  customAfter.value = "";
+  customBefore.value = before;
+  customAfter.value = after;
 }
 
 watch(
-  () => props.block.displayCondition,
-  (condition) => {
-    if (!condition) {
+  [
+    () => editor?.state?.template?.id,
+    () => props.block.id,
+    () => props.block.displayCondition?.label,
+    () => props.block.displayCondition?.before,
+    () => props.block.displayCondition?.after,
+  ],
+  () => {
+    const condition = props.block.displayCondition;
+    if (!condition || !isCustomCondition.value) {
       customConditionMode.value = false;
       customBefore.value = "";
       customAfter.value = "";
       return;
     }
-    if (isCustomCondition.value) {
-      customBefore.value = condition.before;
-      customAfter.value = condition.after ?? "";
-    }
+    customBefore.value = condition.before;
+    customAfter.value = condition.after ?? "";
   },
   { immediate: true },
 );
@@ -158,6 +178,7 @@ function toggleVisibility(key: VisibilityKey): void {
       @toggle="toggleSection('spacing')"
     >
       <SpacingControl
+        path="styles.padding"
         :label="t.blockSettings.padding"
         :model-value="block.styles.padding"
         @update:model-value="updateStyle('padding', $event)"
@@ -170,28 +191,33 @@ function toggleVisibility(key: VisibilityKey): void {
       header-test-id="block-settings-background"
       @toggle="toggleSection('bg')"
     >
-      <label :class="labelClass">{{ t.blockSettings.color }}</label>
-      <ColorPicker
-        :model-value="block.styles.backgroundColor ?? ''"
-        allow-transparent
-        @update:model-value="updateStyle('backgroundColor', $event)"
-      />
+      <FieldRow path="styles.backgroundColor" :label="t.blockSettings.color"
+        ><ColorPicker
+          :model-value="block.styles.backgroundColor ?? ''"
+          allow-transparent
+          @update:model-value="updateStyle('backgroundColor', $event)"
+      /></FieldRow>
       <!-- Only sections take an image here: MJML has no background-url on
            columns or content elements. -->
-      <BackgroundImageControl
+      <FieldRow
         v-if="block.type === 'section'"
-        class="tpl:mt-3.5"
-        :model-value="block.backgroundImage"
-        testid-prefix="section"
-        measure
-        :hero-mode="heroApplied"
-        @update:model-value="emit('update', { backgroundImage: $event })"
-      />
-      <HeroControl
+        path="backgroundImage"
+        :label="t.blockSettings.backgroundImage"
+        ><BackgroundImageControl
+          hide-label
+          class="tpl:mt-3.5"
+          :model-value="block.backgroundImage"
+          testid-prefix="section"
+          measure
+          :hero-mode="heroApplied"
+          @update:model-value="emit('update', { backgroundImage: $event })"
+      /></FieldRow>
+      <FieldRow
         v-if="block.type === 'section'"
-        :section="block"
-        @update="emit('update', $event)"
-      />
+        path="hero"
+        :label="t.blocks.hero"
+        ><HeroControl :section="block" @update="emit('update', $event)"
+      /></FieldRow>
     </CollapsibleSection>
 
     <CollapsibleSection
@@ -201,18 +227,37 @@ function toggleVisibility(key: VisibilityKey): void {
     >
       <div class="tpl:space-y-2">
         <ToggleSwitch
+          v-if="activeLocale && localization"
+          data-testid="locale-hide"
+          :disabled="!localization.locales.includes(activeLocale)"
+          :model-value="localeHidden"
+          :label="
+            format(t.localization.hide, {
+              language: languageName(activeLocale),
+            })
+          "
+          @update:model-value="editor?.setBlockHidden?.(block.id, $event)"
+        />
+        <FieldRow
           v-for="item in VISIBILITY_ITEMS"
           :key="item.key"
-          class="tpl:text-xs tpl:text-[var(--tpl-text)]"
-          :model-value="isVisible(item.key)"
+          :path="`visibility.${item.key}`"
           :label="t.blockSettings[item.labelKey]"
-          @update:model-value="toggleVisibility(item.key)"
-        >
-          <span class="tpl:flex tpl:items-center tpl:gap-2">
-            <component :is="item.icon" :size="14" :stroke-width="1.5" />
-            {{ t.blockSettings[item.labelKey] }}
-          </span>
-        </ToggleSwitch>
+          ><template #label
+            ><span class="tpl:flex tpl:items-center tpl:gap-2">
+              <component :is="item.icon" :size="14" :stroke-width="1.5" />
+              {{ t.blockSettings[item.labelKey] }}
+            </span></template
+          ><template #label-actions="{ controlId }"
+            ><ToggleSwitch
+              :control-id="controlId"
+              hide-label
+              class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+              :model-value="isVisible(item.key)"
+              :label="t.blockSettings[item.labelKey]"
+              @update:model-value="toggleVisibility(item.key)"
+            ></ToggleSwitch></template
+        ></FieldRow>
       </div>
     </CollapsibleSection>
 
@@ -224,68 +269,72 @@ function toggleVisibility(key: VisibilityKey): void {
       @toggle="toggleSection('condition')"
     >
       <div class="tpl:space-y-2">
-        <select
-          data-testid="display-condition-select"
-          class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
-          :class="
-            block.displayCondition
-              ? 'tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-text)]'
-              : 'tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]'
-          "
-          :value="
-            customConditionMode || isCustomCondition
-              ? '__custom__'
-              : (block.displayCondition?.label ?? '')
-          "
-          @change="
-            (e: Event) => {
-              const label = (e.target as HTMLSelectElement).value;
-              if (label === '__custom__') {
-                startCustomCondition();
-                return;
+        <FieldRow
+          path="displayCondition"
+          :label="t.blockSettings.displayCondition"
+          ><select
+            data-testid="display-condition-select"
+            class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
+            :class="
+              block.displayCondition
+                ? 'tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-text)]'
+                : 'tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]'
+            "
+            :value="
+              customConditionMode || isCustomCondition
+                ? '__custom__'
+                : (block.displayCondition?.label ?? '')
+            "
+            @change="
+              (e: Event) => {
+                const label = (e.target as HTMLSelectElement).value;
+                if (label === '__custom__') {
+                  startCustomCondition();
+                  return;
+                }
+                customConditionMode = false;
+                if (!label) {
+                  emit('update', { displayCondition: undefined });
+                  return;
+                }
+                const condition = displayConditions.find(
+                  (c) => c.label === label,
+                );
+                if (condition) {
+                  emit('update', { displayCondition: condition });
+                }
               }
-              customConditionMode = false;
-              if (!label) {
-                emit('update', { displayCondition: undefined });
-                return;
-              }
-              const condition = displayConditions.find(
-                (c) => c.label === label,
-              );
-              if (condition) {
-                emit('update', { displayCondition: condition });
-              }
-            }
-          "
-        >
-          <option value="">{{ t.blockSettings.noCondition }}</option>
-          <template
-            v-for="(conditions, group) in groupedDisplayConditions"
-            :key="group"
+            "
           >
-            <optgroup v-if="group" :label="String(group)">
-              <option
-                v-for="condition in conditions"
-                :key="condition.label"
-                :value="condition.label"
-              >
-                {{ condition.label }}
-              </option>
-            </optgroup>
-            <template v-else>
-              <option
-                v-for="condition in conditions"
-                :key="condition.label"
-                :value="condition.label"
-              >
-                {{ condition.label }}
-              </option>
+            <option value="">{{ t.blockSettings.noCondition }}</option>
+            <template
+              v-for="(conditions, group) in groupedDisplayConditions"
+              :key="group"
+            >
+              <optgroup v-if="group" :label="String(group)">
+                <option
+                  v-for="condition in conditions"
+                  :key="condition.label"
+                  :value="condition.label"
+                >
+                  {{ condition.label }}
+                </option>
+              </optgroup>
+              <template v-else>
+                <option
+                  v-for="condition in conditions"
+                  :key="condition.label"
+                  :value="condition.label"
+                >
+                  {{ condition.label }}
+                </option>
+              </template>
             </template>
-          </template>
-          <option v-if="allowCustomConditions" value="__custom__">
-            {{ t.blockSettings.customCondition }}
-          </option>
-        </select>
+            <option v-if="allowCustomConditions" value="__custom__">
+              {{ t.blockSettings.customCondition }}
+            </option>
+          </select></FieldRow
+        >
 
         <template v-if="customConditionMode || isCustomCondition">
           <div class="tpl:space-y-2">

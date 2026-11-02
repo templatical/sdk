@@ -11,6 +11,9 @@ Give the editor a collaboration provider and several people can edit one templat
 import { init } from '@templatical/editor';
 
 let sessionId = '';
+const lockUrl = (templateId: string, blockId: string, locale?: string | null) =>
+  `/api/templates/${templateId}/locks/${blockId}` +
+  (locale ? `?locale=${encodeURIComponent(locale)}` : '');
 
 const editor = await init({
   container: '#editor',
@@ -31,19 +34,19 @@ const editor = await init({
       api(`/api/templates/${templateId}/operations?after=${revision}`, {
         headers: { 'X-Session-Id': sessionId },
       }),
-    acquireLock: (templateId, blockId) =>
+    acquireLock: (templateId, blockId, locale) =>
       api(`/api/templates/${templateId}/locks`, {
         method: 'POST',
         headers: { 'X-Session-Id': sessionId },
-        body: JSON.stringify({ blockId }),
+        body: JSON.stringify({ blockId, locale: locale ?? null }),
       }),
-    renewLock: (templateId, blockId) =>
-      api(`/api/templates/${templateId}/locks/${blockId}`, {
+    renewLock: (templateId, blockId, locale) =>
+      api(lockUrl(templateId, blockId, locale), {
         method: 'PUT',
         headers: { 'X-Session-Id': sessionId },
       }),
-    releaseLock: async (templateId, blockId) => {
-      await fetch(`/api/templates/${templateId}/locks/${blockId}`, {
+    releaseLock: async (templateId, blockId, locale) => {
+      await fetch(lockUrl(templateId, blockId, locale), {
         method: 'DELETE',
         headers: { 'X-Session-Id': sessionId },
         keepalive: true,
@@ -63,12 +66,12 @@ The backend combines `X-Session-Id` with the authenticated user to identify the 
 
 - **Sends every edit as operations.** The editor compares the canvas with what it last sent and turns the difference into a batch: a drag becomes a `moveBlock`, typing an `updateBlock`. Typing into one block waits for a 300 ms pause, at most a second; everything else goes at once. One batch is in flight at a time, so a session's batches arrive in order, and a batch that fails in transit is sent again with the same `batchId`.
 - **Applies everyone's batches in revision order.** Batches from other sessions are buffered and applied strictly by revision, with this session's unconfirmed edits replayed on top. A gap that isn't filled within a second is fetched with `operationsAfter`.
-- **Locks the selected block.** Selecting a block takes its lock; another session's locked block shows its holder's name and colour and can't be selected. Locks renew every 10 seconds and are released on deselect, on loading another template and when the page closes.
+- **Locks the selected block.** Selecting a block takes its lock in the active view's language: `locale: null` in the default view, and the version's tag in a language view, including a read-only **Not enabled** version, whose viewer holds the lock but can't edit. Another session's lock on the block stops the selection, showing its holder's name and colour, when either lock is `null` or both are in the same language. Locks renew every 10 seconds and are released on deselect, on loading another template and when the page closes.
 - **Shows who is here.** The header shows one avatar per person: a user's sessions in several tabs count once, and each guest counts on their own.
 - **Turns merge tags in arriving batches into tags.** A batch from another session — an agent's, another editor's, a server's — has the bare tokens in its titles and paragraphs converted as it arrives, the way [loaded content](/guide/merge-tags#tokens-in-loaded-content) is, and nothing is sent back for it. Arriving batches apply without their `expect`: your backend checked those against its own copy.
 - **Shows agents' edits.** A batch whose actor has `type: 'mcp'` shows a notice naming `actor.client` and `actor.name` ("Claude for Ada changed 3 blocks") and outlines the blocks it changed for 2 seconds. A re-sync whose `actor` has `type: 'mcp'` shows "Claude for Ada updated the template", with no outline. Batches and re-syncs from one agent within 2 seconds share a notice. Agents need no presence and take no locks.
 - **Shows the AI's edits.** A batch with `actor.type: 'ai'` shows "AI (for Ada) changed 3 blocks" and outlines the changed blocks. A re-sync shows a template-update notice without its own block outline. The requesting session sees only a batch's outline, with no notice. An [AI provider](/backend/ai)'s operations reach your backend as this user's batches with `origin: 'ai'`.
-- **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. Other people's edits never enter your undo history.
+- **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. A step that restores a whole-template snapshot (the undo of a content replacement or of Make default) can't name what it expects, so it is skipped once this editor has received another session's batch after it; a batch your backend committed but hasn't delivered yet is caught by the `setContent` rule in [`submit`](#submit). Other people's edits never enter your undo history.
 - **Saves only renames.** Content reaches your backend through `submit`, so `templates.save` receives only a new name, after the editor's batches are confirmed. Autosave keeps working: it settles the batches and renames if needed.
 - **Tells the user** when a selection or an edit was refused, when an undo step was skipped, when a version can't be restored because others hold locks, and while the connection is down.
 
@@ -86,7 +89,7 @@ Called when a template is loaded, with this editor's session id (a UUID the edit
 
 ### `submit`
 
-Apply the batch's operations to the template, in order and all or nothing, then answer with the revision it produced. `baseRevision` is the last revision the editor had confirmed; batches are applied to the current content whatever it is, which is what the operations' sibling anchors and preconditions are for. A `batchId` you have already applied answers with that batch's revision and applies nothing, because the editor resends after a failure in transit. Send the batch to every other session with `onBatch`, with its revision and actor.
+Apply the batch's operations to the template, in order and all or nothing, then answer with the revision it produced. `baseRevision` is the last revision the editor had confirmed; batches are applied to the current content whatever it is, which is what the operations' sibling anchors and preconditions are for. A batch that contains a `setContent` is the exception: refuse it with `409` and `precondition_failed` when its `baseRevision` isn't the current revision, because a whole-content replacement built on an older revision would overwrite batches its sender never saw. The editor then drops it: an undo or redo step is skipped with a notice, and any other edit is reported as not saved. It also drops such a batch itself, before sending it, when another session's batch reaches it first. A `batchId` you have already applied answers with that batch's revision and applies nothing, because the editor resends after a failure in transit. Check a repeated `batchId` first, as the sample below does, then the `setContent` rule: a resent snapshot keeps the `baseRevision` of its first attempt, so one that already landed answers with its revision, not `409`. Send the batch to every other session with `onBatch`, with its revision and actor.
 
 ### `operationsAfter`
 
@@ -95,6 +98,10 @@ Answer with every batch after `revision`, in order. When you no longer have them
 ### Locks
 
 `acquireLock` grants the lock or refuses with `lock_held` and the holder; `renewLock` extends it or refuses with `lock_lost`; `releaseLock` lets it go and never fails. Send `onLock` and `onUnlock` to the other sessions. The three methods are optional together: without them the editor takes no locks.
+
+`BlockLock.locale?: string | null` distinguishes language locks; absence means `null`, the default language and structure. The signatures are `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` and `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Forward locale to the backend and through `onLock` / `onUnlock(blockId, sessionId, locale?)`.
+
+`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. `updateBlock`, `moveBlock` and `deleteBlock` on X conflict with every other session's lock on X, and a move or delete also with locks on the blocks inside X; `addBlock` checks no locks. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#compatibility). Refuse `acquireLock` on (X, `locale`) with `lock_held` and the holder when another owner holds a lock on X and either lock's locale is `null` or both are equal; otherwise grant it, store its `locale`, and renew and release it by block and locale.
 
 ### Refusals
 
@@ -123,18 +130,22 @@ When a batch carries `origin: 'ai'`, broadcast it with `actor.type: 'ai'`, the s
 import { applyOperations, OperationError } from '@templatical/types';
 
 app.post('/api/templates/:id/operations', async (req, res) => {
-  const { batchId, ops } = req.body;
+  const { batchId, baseRevision, ops } = req.body;
   const sessionId = req.get('X-Session-Id') ?? null; // however you identify it
   const template = await db.templates.lockForUpdate(req.params.id);
 
   const known = await db.batches.find(template.id, batchId);
   if (known) return res.json({ revision: known.revision });
 
+  if (ops.some((op) => op.op === 'setContent') && baseRevision !== template.revision) {
+    return res.status(409).json({ message: 'The template changed since this replacement was made.', code: 'precondition_failed' });
+  }
+
   const locks = await db.locks.unexpired(template.id);
   let content;
   try {
     content = applyOperations(template.content, ops, {
-      locks: locks.map((lock) => ({ blockId: lock.blockId, sessionId: lock.owner })),
+      locks: locks.map((lock) => ({ blockId: lock.blockId, sessionId: lock.owner, locale: lock.locale ?? null })),
       session: sessionId ? ownerOf(req.user, sessionId) : null,
     });
   } catch (error) {
@@ -175,7 +186,9 @@ A backend without a realtime channel can still collaborate in order: `join` answ
 
 ## Events
 
-`init({ onRemoteChange })` is called with `{ actor, ops }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
+`init({ onRemoteChange })` is called with `{ actor, ops, locale }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
+
+`locale: string | null` reports the first locale operation's language in a remote batch, excluding `setDefaultLocale`, otherwise `null`. A `setDefaultLocale` batch reports `null` because it changes the template's default.
 
 ## In the playground
 

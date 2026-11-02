@@ -5,7 +5,7 @@
 
 Optional config keys, each a plain object of methods: `templates`,
 `versionHistory`, `comments`, `savedBlocks`, `media`, `testEmail`, `render`,
-`collaboration`, `ai`. Most keys stand alone; `collaboration` requires `templates`. A feature is absent until its key
+`collaboration`, `ai`, `translation`. Most keys stand alone; `collaboration` requires `templates`. A feature is absent until its key
 is passed, not merely disabled: no half-rendered panel, no dead button.
 
 **On the storage providers (`templates`, `versionHistory`, `comments`,
@@ -27,7 +27,7 @@ backend as an operation through `submit`, so `templates.save` receives only
 renames, and undo sends inverse operations the backend may refuse. The
 backend applies operations with `applyOperations` from `@templatical/types`
 and owns a lock by session id and user identity together. `onRemoteChange`
-reports another session's edits.
+reports another session's edits, including `locale: string | null` (the first locale operation's language, otherwise null). `BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` default to null for structure and the default language. `acquireLock`, `renewLock` and `releaseLock` accept `locale?: string | null` after `templateId, blockId`; forward it to the backend. Different language locks on one block may coexist; a null lock conflicts with all languages. Only `updateBlockLocale` uses a language lock; `updateBlock`, `moveBlock` and `deleteBlock` conflict with every other session's lock on that block; `addBlock` checks no locks. The backend refuses a batch with a `setContent` whose `baseRevision` isn't the current revision with `409` and `precondition_failed`, checked after a repeated `batchId` (a resend keeps its first `baseRevision`), so a snapshot undo can't overwrite a batch the editor hasn't received yet.
 
 `ai` brings your own AI backend: one `false | fn` member per feature
 (`chat`, `fixFinding`, `rewrite`, `altText`), plus
@@ -47,9 +47,18 @@ button is the absent key, not a bug. `useSavedBlocks` / `useVersionHistory` /
 mounted**. They are not how you attach a provider to an editor that is
 already up.
 
+`localization: { locales: string[]; doNotTranslate?: string[] }` enables template language versions in `init()`. Existing templates need no migration and configuration writes nothing; authors add versions in Languages, and stored versions outside this list stay read-only (Not enabled). See [localize.md](localize.md).
+`localization.doNotTranslate?: string[]` protects brand names during Translate. At most 500 terms, each 1–100 characters after trimming; invalid lists reject in `init()` with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive, longest first, whole words (Unicode letters, numbers and `_` are word characters), without overlap, in text and HTML attribute values. Tags and chips take precedence. Each term gets a placeholder in the field's shared id sequence; the exact check restores its bytes or keeps the old field with `tags_changed`. No `TranslationRequest` change. Headless callers pass the same `doNotTranslate?: readonly string[]` to `localeStrings` and `applyLocaleStrings`, or to `maskTags`' optional fourth argument. Fetch `backend/translation` through [docs.md](docs.md) for the full masking contract. Check a field containing the configured term: the provider receives its placeholder and the saved translation keeps the original term.
+
+`getLocale(): string` returns the active template language, initially the template default.
+`setLocale(locale: string): void` selects the default or an existing version; an unknown version throws `SdkError` with code `unknown_locale`.
+`onLocaleChange?: (locale: string) => void` receives the language the canvas shows (`getLocale()`) whenever it changes: a selected version, a fallback to the default, or a new default while the default is shown (Make default, its undo or redo, another session's `setDefaultLocale`, or a loaded or restored template whose default differs).
+
 Full contracts and Cloud as one implementation of each: [docs.md](docs.md) →
 the `backend/` pages.
 
 Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. The three first-party adapters accept these files; an adapter of your own that doesn't sets `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.
 
 Fix with AI and Write alt text require `@templatical/quality` installed and lint on. With quality missing or lint off (`lint.disabled: true`), neither action appears. They also need a loaded template, their callable provider member and a matching finding. The AI assistant itself needs `chat` and a loaded template, independent of quality.
+
+`translation: TranslationProvider` is independent of `ai`: its required `translate(request, signal): Promise<TranslationResult>` translates masked fields. Translate needs `localization` and an enabled non-default language view; no loaded template is required (`templateId: null` without one). Without the key there is no Translate UI, and a value without a `translate` function rejects `init()` with `SdkError` (`translation must be an object with a translate function.`). `createHttpTranslationProvider({ url, headers?, fetch? })` uses `/templates/{template}/translate`, with `_` for no template. Follow [localize.md](localize.md), fetch `backend/translation` through [docs.md](docs.md), preserve mask placeholders and check the backend with `runTranslationConformance`. Provider errors use string codes `rate_limited`, `limit_reached`, `content_too_large` or `translation_failed`; `AbortError` means cancellation. Keep model or translation-service keys on the backend.

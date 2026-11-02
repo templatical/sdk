@@ -26,5 +26,26 @@ const FILES: Record<ImportKind, string> = {
 export async function loadImportSample(kind: ImportKind): Promise<string> {
   const load = SAMPLES[FILES[kind]];
   if (!load) throw new Error(`No sample email for ${kind}`);
-  return load();
+  const source = await load();
+  if (kind !== "beefree") return source;
+  const template = JSON.parse(source);
+  template.page.body.language = { label: "English", value: "en-US" };
+  for (const row of template.page.rows) {
+    for (const column of row.columns) {
+      for (const module of column.modules) {
+        const heading = module.descriptor.heading;
+        if (heading?.text?.includes("Introducing Launchpad v2.0")) {
+          heading.translations = {
+            "es-ES": {
+              text: heading.text.replace(
+                "Introducing Launchpad v2.0",
+                "Presentamos Launchpad v2.0",
+              ),
+            },
+          };
+        }
+      }
+    }
+  }
+  return JSON.stringify(template);
 }

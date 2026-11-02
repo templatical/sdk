@@ -1,3 +1,4 @@
+import { elementIdIssues } from "@templatical/types";
 import { describe, expect, it } from "vitest";
 import { convertStripoTemplate } from "../converter";
 import type { Block, SectionBlock } from "@templatical/types";
@@ -152,6 +153,7 @@ describe("compiled pipeline", () => {
 
   it("maps a multi-item es-menu to one menu block, not columns", () => {
     const { content, report } = convertStripoTemplate(navMenu);
+    expect(elementIdIssues(content)).toEqual([]);
     const menus = content.blocks
       .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
       .filter((b) => b.type === "menu");

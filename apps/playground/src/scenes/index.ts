@@ -4,6 +4,7 @@ import { displayConditions } from "./author/display-conditions";
 import { fonts } from "./author/fonts";
 import { i18n } from "./author/i18n";
 import { issues } from "./author/issues";
+import { languages } from "./author/languages";
 import { layout } from "./author/layout";
 import { logicTags } from "./author/logic-tags";
 import { mediaOnRequest } from "./author/media-on-request";
@@ -58,6 +59,7 @@ export const SCENES: readonly Scene[] = [
   theming,
   layout,
   i18n,
+  languages,
   shadowDomOff,
   issues,
   customBlocks,

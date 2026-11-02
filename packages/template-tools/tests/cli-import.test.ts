@@ -186,6 +186,68 @@ describe("import command", () => {
     expect(readFileSync(out.file, "utf8")).toContain('"blocks"');
   });
 
+  it("passes --default-locale to the importer", async () => {
+    const src = join(dir, "german.html");
+    writeFileSync(src, "<p>Hallo</p>", "utf8");
+    setJsonMode(true);
+    expect(
+      await runImport(
+        parseArgs([
+          "import",
+          src,
+          "--default-locale",
+          "de",
+          "--cwd",
+          dir,
+          "--json",
+        ]),
+      ),
+    ).toBe(0);
+    const out = JSON.parse(stdout.join(""));
+    expect(JSON.parse(readFileSync(out.file, "utf8")).settings.locale).toBe(
+      "de",
+    );
+  });
+
+  it.each(["{{lang}}", "not a tag", ""])(
+    "refuses --default-locale %j as misuse and writes nothing",
+    async (value) => {
+      const src = join(dir, "german.html");
+      writeFileSync(src, "<p>Hallo</p>", "utf8");
+      const run = runImport(
+        parseArgs(["import", src, `--default-locale=${value}`, "--cwd", dir]),
+      );
+      await expect(run).rejects.toThrow(UsageError);
+      await expect(run).rejects.toThrow(
+        `--default-locale needs a language tag such as en or de-AT, not "${value}".`,
+      );
+      expect(stdout.join("")).toBe("");
+    },
+  );
+
+  it("accepts --default-locale with an underscore, as the importers do", async () => {
+    const src = join(dir, "german.html");
+    writeFileSync(src, "<p>Hallo</p>", "utf8");
+    setJsonMode(true);
+    expect(
+      await runImport(
+        parseArgs([
+          "import",
+          src,
+          "--default-locale",
+          "de_AT",
+          "--cwd",
+          dir,
+          "--json",
+        ]),
+      ),
+    ).toBe(0);
+    const out = JSON.parse(stdout.join(""));
+    expect(JSON.parse(readFileSync(out.file, "utf8")).settings.locale).toBe(
+      "de-AT",
+    );
+  });
+
   it("refuses an undetectable source and asks for --format", async () => {
     const src = join(dir, "mystery.json");
     writeFileSync(src, JSON.stringify({ nope: true }), "utf8");

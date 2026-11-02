@@ -1,5 +1,5 @@
 import { isImage } from "@templatical/types";
-import type { Rule, RuleMeta } from "../../types";
+import type { LintPatchContext, Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.img-decorative-needs-empty-alt",
@@ -18,7 +18,8 @@ export const imgDecorativeNeedsEmptyAlt: Rule = {
       blockId: block.id,
       fix: {
         description: "Clear alt text",
-        apply: (ctx) => ctx.updateBlock(block.id, { alt: "" }),
+        apply: (ctx: Omit<LintPatchContext, "removeBlock">) =>
+          ctx.updateBlock(block.id, { alt: "" }),
       },
     };
   },

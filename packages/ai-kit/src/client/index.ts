@@ -8,3 +8,4 @@ export {
   errorFromResponse,
   parseRetryAfter,
 } from "./errors";
+export { createHttpTranslationProvider } from "./http-translation-provider";

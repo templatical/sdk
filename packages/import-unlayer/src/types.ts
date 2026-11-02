@@ -182,6 +182,7 @@ export interface UnlayerContentValues {
   hideDesktop?: boolean;
   // text / heading
   text?: string;
+  textJson?: unknown;
   headingType?: string;
   // image
   src?: UnlayerImageSrc;

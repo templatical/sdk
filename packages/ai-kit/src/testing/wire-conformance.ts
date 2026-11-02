@@ -23,6 +23,8 @@ import {
 } from "./eval-set";
 
 export interface AiWireConformanceOptions {
+  /** Active language for the probes; de by default, null for the default view. */
+  locale?: string | null;
   baseUrl: string;
   features?: HttpAiFeatures;
   headers?:
@@ -269,6 +271,7 @@ export async function runAiWireConformance(
     ),
     {
       templateId,
+      locale: options.locale === undefined ? "de" : options.locale,
       altTextImageUrl:
         options.altTextImageUrl ?? AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
       ...(options.timeoutMs !== undefined

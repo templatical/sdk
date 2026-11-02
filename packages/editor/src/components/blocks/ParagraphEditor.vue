@@ -5,7 +5,8 @@ import {
   resolveContentDirection,
   type ParagraphBlock as ParagraphBlockType,
 } from "@templatical/types";
-import { inject } from "vue";
+import { computed, inject } from "vue";
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { EDITOR_KEY } from "../../keys";
 import ParagraphToolbar from "./ParagraphToolbar.vue";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
@@ -23,17 +24,21 @@ const emit = defineEmits<{
 
 const popoverRoot = usePopoverRoot();
 const emailEditor = inject(EDITOR_KEY, null);
-const defaultAlignment =
-  resolveContentDirection(
-    emailEditor?.content?.value?.settings ?? { locale: "en" },
-  ) === "rtl"
+const localized = emailEditor?.content
+  ? useLocalizedDisplay(emailEditor)
+  : null;
+const defaultAlignment = computed(() =>
+  resolveContentDirection(localized?.settings.value ?? { locale: "en" }) ===
+  "rtl"
     ? "right"
-    : "left";
+    : "left",
+);
 
 const {
   editor,
   EditorContent,
   isLoading,
+  isEditable,
   initError,
   retry,
   showLinkDialog,
@@ -125,9 +130,36 @@ const {
             rel: "noopener noreferrer",
           },
         }),
-        TextAlign.configure({
-          types: ["paragraph"],
-          defaultAlignment,
+        TextAlign.extend({
+          addOptions() {
+            return {
+              ...this.parent!(),
+              types: ["paragraph"],
+              defaultAlignment: defaultAlignment.value,
+            };
+          },
+          addGlobalAttributes() {
+            return [
+              {
+                types: this.options.types,
+                attributes: {
+                  textAlign: {
+                    // Absence inherits the localized direction, even after a switch.
+                    default: null,
+                    parseHTML: (element) =>
+                      this.options.alignments.includes(element.style.textAlign)
+                        ? element.style.textAlign
+                        : null,
+                    renderHTML: (attributes) =>
+                      attributes.textAlign !== defaultAlignment.value &&
+                      this.options.alignments.includes(attributes.textAlign)
+                        ? { style: `text-align: ${attributes.textAlign}` }
+                        : {},
+                  },
+                },
+              },
+            ];
+          },
         }),
         TextStyle,
         Color,
@@ -168,6 +200,7 @@ const {
       :editor="editor"
       :toolbar-position="toolbarPosition"
       :is-loading="isLoading"
+      :is-editable="isEditable"
       :can-request-merge-tag="canRequestMergeTag"
       :can-insert-logic-tag="canInsertLogicTag"
       @open-link-dialog="openLinkDialog"

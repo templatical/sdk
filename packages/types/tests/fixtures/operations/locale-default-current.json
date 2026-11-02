@@ -1,0 +1,43 @@
+{
+  "name": "locale-default-current",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hello",
+        "l10n": {
+          "de": {
+            "text": {
+              "content": {
+                "value": "Hallo",
+                "sourceHash": "f55c314b"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de",
+        "fr"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "en"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "message": "\"en\" is not a language version of this template."
+    }
+  }
+}

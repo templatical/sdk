@@ -1,3 +1,4 @@
+import { localeTag, text, warn } from "./localization";
 import {
   canonicalFontStack,
   createTitleBlock,
@@ -568,7 +569,7 @@ function convertVideo(descriptor: BeeFreeeModuleDescriptor): Block {
   return createVideoBlock({
     url: video.src || "",
     thumbnailUrl: video.thumbnail || "",
-    alt: video.alt || "",
+    alt: video.thumbAlt ?? video.alt ?? "",
     width: parsePxValue(video.style?.width) || 600,
     height: parsePxValue(video.style?.height) || undefined,
     align: toAlign(video.style?.["text-align"], "center"),
@@ -678,7 +679,7 @@ function convertHtmlFallback(module: BeeFreeeModule): Block {
  * Converts a single BeeFree module to a Templatical block.
  * Returns the block and a report entry.
  */
-export function convertModule(
+function convertModuleBase(
   module: BeeFreeeModule,
   warnings: string[],
   context: ModuleContext = {},
@@ -772,4 +773,118 @@ export function convertModule(
       ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
     },
   };
+}
+
+export function convertModule(
+  module: BeeFreeeModule,
+  warnings: string[],
+  context: ModuleContext = {},
+): { block: Block; entry: ImportReportEntry } {
+  const result = convertModuleBase(module, warnings, context);
+  const { block } = result;
+  const descriptor = module.descriptor;
+  const payloads = [
+    ["heading", descriptor.heading],
+    ["text", descriptor.text],
+    ["paragraph", descriptor.paragraph],
+    ["list", descriptor.list],
+    ["button", descriptor.button],
+    ["image", descriptor.image],
+    ["video", descriptor.video],
+    ["menu", descriptor.menu],
+  ] as const;
+  const active = payloads.find(([, payload]) => payload !== undefined);
+  const sources = [
+    module.translations,
+    ...payloads.map(([, payload]) => payload?.translations),
+  ];
+  for (const translations of sources) {
+    for (const [code, values] of Object.entries(translations ?? {})) {
+      const locale = localeTag(code, warnings);
+      if (!locale) continue;
+      if (result.entry.status === "html-fallback" || block.type === "html") {
+        warn(
+          warnings,
+          `Dropped language "${locale}" on module "${module.type}": target converted to HTML fallback.`,
+        );
+        continue;
+      }
+      const key = active?.[0];
+      const field =
+        block.type === "title"
+          ? "text"
+          : block.type === "paragraph"
+            ? "html"
+            : block.type === "button"
+              ? "label"
+              : block.type === "image"
+                ? "alt"
+                : block.type === "video"
+                  ? "thumbAlt"
+                  : block.type === "menu"
+                    ? "items"
+                    : undefined;
+      for (const unknown of Object.keys(values).filter(
+        (name) => name !== field,
+      )) {
+        warn(
+          warnings,
+          `Dropped language "${locale}" key "${unknown}": no language mapping for this format.`,
+        );
+      }
+      if (!field || values[field] === undefined) continue;
+      if (block.type === "menu" && Array.isArray(values.items)) {
+        if (values.items.length !== block.items.length) {
+          warn(
+            warnings,
+            `Dropped language "${locale}" menu translation: item count differs from the source.`,
+          );
+          continue;
+        }
+        values.items.forEach((item: { text?: unknown }, index: number) => {
+          for (const key of Object.keys(item ?? {}).filter(
+            (key) => key !== "text",
+          )) {
+            warn(
+              warnings,
+              `Dropped language "${locale}" key "${key}": no language mapping for this format.`,
+            );
+          }
+          if (typeof item?.text === "string")
+            text(
+              block,
+              locale,
+              `items.${block.items[index].id}.text`,
+              block.items[index].text,
+              item.text,
+            );
+        });
+      } else if (key && typeof values[field] === "string") {
+        const translated = convertModuleBase(
+          {
+            ...module,
+            descriptor: {
+              ...descriptor,
+              [key]: { ...descriptor[key], [field]: values[field] },
+            },
+          },
+          [],
+          context,
+        ).block;
+        if (
+          (block.type === "title" || block.type === "paragraph") &&
+          (translated.type === "title" || translated.type === "paragraph")
+        )
+          text(block, locale, "content", block.content, translated.content);
+        if (block.type === "button" && translated.type === "button")
+          text(block, locale, "text", block.text, translated.text);
+        if (
+          (block.type === "image" || block.type === "video") &&
+          (translated.type === "image" || translated.type === "video")
+        )
+          text(block, locale, "alt", block.alt, translated.alt ?? "");
+      }
+    }
+  }
+  return result;
 }

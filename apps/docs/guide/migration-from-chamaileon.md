@@ -74,6 +74,18 @@ Pass the persist document from `getDocument()`. That object is `{ body, variable
 Email JSON 2.0 through 4.1 is accepted after a key normalizer. Kebab-case styles (`background-color`) and camelCase (`backgroundColor`) are the same property, two versions. Inline `{ reference, default }` colour objects resolve to `default`, or to the matching `variables[]` entry when `default` is missing. The `reference` name is a design token, not a recipient field, so it is not stored as a merge tag.
 :::
 
+## Options {#options}
+
+`convertChamaileonTemplate` accepts a second argument of type `ConvertChamaileonOptions`. `defaultLocale?: string` supplies `settings.locale` when the source declares no default language; the fallback is `"en"`. A declared default wins. Locale codes normalize `_` to `-`. A declared default or `defaultLocale` that still isn't a language tag, such as a templated <code v-pre>{{lang}}</code>, is ignored with a `report.warnings` entry naming it, and the next valid value or `"en"` applies.
+
+This JSON format supplies no default language to the importer. Pass the language configured by the host as `defaultLocale`.
+
+```ts
+export interface ConvertChamaileonOptions {
+  defaultLocale?: string;
+}
+```
+
 ## Report
 
 Each `report.entries` item describes one produced block:

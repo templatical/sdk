@@ -149,6 +149,7 @@ export function createCloudCommentsProvider(
         await api.createComment(
           templateId,
           {
+            // Cloud's comments API does not store language tags yet.
             body: input.body,
             blockId: input.blockId,
             parentId: input.parentId,

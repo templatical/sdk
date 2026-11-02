@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { X } from "@lucide/vue";
 import { useI18n } from "../composables/useI18n";
+import { useLocaleEditable } from "../composables/useLocaleEditable";
 import { usePopoverRoot } from "../composables/usePopoverRoot";
 import { usePopoverPosition } from "../composables/usePopoverPosition";
 import { colorTextClass } from "../constants/styleConstants";
@@ -68,6 +69,9 @@ const props = withDefaults(
   },
 );
 
+const localeEditable = useLocaleEditable();
+const isDisabled = computed(() => props.disabled || !localeEditable.value);
+
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
 }>();
@@ -75,6 +79,13 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const open = ref(false);
+watch(
+  isDisabled,
+  (disabled) => {
+    if (disabled) open.value = false;
+  },
+  { flush: "sync" },
+);
 const popoverRef = ref<HTMLElement>();
 const swatchRef = ref<HTMLElement>();
 
@@ -116,7 +127,7 @@ const seed = computed(() => {
 // The clear (×) sits inside whichever hex field is active — the inline field in
 // full mode, or the popover field in swatch-only mode — shown only when a value
 // is set. Not gated on swatchOnly: each field renders only in its own mode.
-const showClear = computed(() => !props.disabled && !isUnset.value);
+const showClear = computed(() => !isDisabled.value && !isUnset.value);
 
 // Color palette: a per-instance `presets`/`allowCustom` prop wins over the
 // injected editor-wide `colors` config, per property. Default keeps the picker
@@ -153,6 +164,7 @@ function isPresetSelected(preset: string): boolean {
   );
 }
 function selectPreset(preset: string): void {
+  if (isDisabled.value) return;
   emit("update:modelValue", preset);
 }
 
@@ -223,15 +235,18 @@ function onPresetGridKeydown(e: KeyboardEvent): void {
 }
 
 function onPickerChange(e: Event): void {
+  if (isDisabled.value) return;
   pickerTouched.value = true;
   emit("update:modelValue", (e as CustomEvent).detail.value);
 }
 
 function onPickerPointerDown(): void {
+  if (isDisabled.value) return;
   pickerTouched.value = false;
 }
 
 function onPickerPointerUp(): void {
+  if (isDisabled.value) return;
   // A deliberate pick equal to the seed fires no `color-changed`; commit it.
   if (!pickerTouched.value && isUnset.value) {
     emit("update:modelValue", seed.value);
@@ -239,14 +254,17 @@ function onPickerPointerUp(): void {
 }
 
 function onTextInput(e: Event): void {
+  if (isDisabled.value) return;
   emit("update:modelValue", (e.target as HTMLInputElement).value);
 }
 
 function clear(): void {
+  if (isDisabled.value) return;
   emit("update:modelValue", "");
 }
 
 function selectTransparent(): void {
+  if (isDisabled.value) return;
   emit("update:modelValue", "transparent");
 }
 
@@ -263,7 +281,7 @@ const tplUiTheme = inject(UI_THEME_KEY, null);
 const popoverPosition = ref({ top: 0, left: 0 });
 
 function toggleOpen(): void {
-  if (props.disabled) return;
+  if (isDisabled.value) return;
   if (!open.value) {
     const rect = swatchRef.value?.getBoundingClientRect();
     if (rect) {
@@ -286,22 +304,22 @@ function toggleOpen(): void {
   <div
     :class="[
       'tpl:flex tpl:items-center tpl:gap-2 tpl:relative',
-      disabled && 'tpl:opacity-60 tpl:cursor-not-allowed',
+      isDisabled && 'tpl:opacity-60 tpl:cursor-not-allowed',
     ]"
   >
     <button
       ref="swatchRef"
       type="button"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :aria-label="ariaLabel || t.colorPicker.pickColor"
       :title="ariaLabel || undefined"
       :aria-expanded="open"
       :class="[
         'tpl:shrink-0 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-0.5 tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]',
-        disabled ? 'tpl:cursor-not-allowed' : 'tpl:cursor-pointer',
+        isDisabled ? 'tpl:cursor-not-allowed' : 'tpl:cursor-pointer',
         open
           ? 'tpl:border-[var(--tpl-primary)] tpl:shadow-[var(--tpl-ring)]'
-          : !disabled && 'tpl:hover:border-[var(--tpl-text-dim)]',
+          : !isDisabled && 'tpl:hover:border-[var(--tpl-text-dim)]',
         size === 'sm' ? 'tpl:size-8' : 'tpl:size-10',
       ]"
       @click="toggleOpen"
@@ -326,7 +344,7 @@ function toggleOpen(): void {
         :style="showClear ? { paddingRight: '2.25rem' } : undefined"
         :value="displayValue"
         :placeholder="placeholder || t.colorPicker.notSet"
-        :disabled="disabled"
+        :disabled="isDisabled"
         :aria-label="t.colorPicker.hexValue"
         @input="onTextInput"
       />
@@ -460,7 +478,7 @@ function toggleOpen(): void {
               :style="showClear ? { paddingRight: '2.25rem' } : undefined"
               :value="displayValue"
               :placeholder="placeholder || t.colorPicker.notSet"
-              :disabled="disabled"
+              :disabled="isDisabled"
               :aria-label="t.colorPicker.hexValue"
               @change="onTextInput"
               @keydown.enter.prevent="

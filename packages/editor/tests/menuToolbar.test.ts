@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { createMenuBlock } from '@templatical/types';
 import type { MenuBlock } from '@templatical/types';
 import MenuToolbar from '../src/components/toolbar/MenuToolbar.vue';
+import MergeTagInput from '../src/components/MergeTagInput.vue';
+import ToggleSwitch from '../src/components/ToggleSwitch.vue';
+import ColorPicker from '../src/components/ColorPicker.vue';
 import { mountEditor } from './helpers/mount';
 
 function mountIt(block: MenuBlock) {
@@ -19,6 +22,26 @@ function blockWithItems(items: any[]): MenuBlock {
 }
 
 describe('MenuToolbar CRUD', () => {
+  it('edits an item URL, flags and colour without changing its sibling or source', async () => {
+    const block = blockWithItems([
+      { id: 'a', text: 'Home', url: '/', bold: false, underline: false, openInNewTab: false },
+      { id: 'b', text: 'About', url: '/about', bold: false, underline: false, openInNewTab: false },
+    ]);
+    const wrapper = mountIt(block);
+    wrapper.findAllComponents(MergeTagInput)[0].vm.$emit('update:modelValue', '/de');
+    wrapper.findAllComponents(ToggleSwitch)[0].vm.$emit('update:modelValue', true);
+    wrapper.findAllComponents(ColorPicker)[0].vm.$emit('update:modelValue', '#123456');
+    const updates = wrapper.emitted('update')!.map(([update]) => update as Partial<MenuBlock>);
+    expect(updates.map((update) => update.items![0])).toEqual([
+      { ...block.items[0], url: '/de' },
+      { ...block.items[0], openInNewTab: true },
+      { ...block.items[0], color: '#123456' },
+    ]);
+    for (const update of updates) expect(update.items![1]).toEqual(block.items[1]);
+    expect(block.items[0]).toEqual({ id: 'a', text: 'Home', url: '/', bold: false, underline: false, openInNewTab: false });
+    wrapper.unmount();
+  });
+
   it('renders a text input for every existing menu item', () => {
     const block = blockWithItems([
       { id: 'a', text: 'Home', url: '/', openInNewTab: false, bold: false, underline: false },

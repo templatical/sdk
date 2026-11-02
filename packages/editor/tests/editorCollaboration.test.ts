@@ -166,7 +166,7 @@ describe("Editor.vue with a collaboration provider", () => {
       ),
     );
 
-    expect(provider.acquireLock).toHaveBeenCalledWith("tpl-1", title.id);
+    expect(provider.acquireLock).toHaveBeenCalledWith("tpl-1", title.id, null);
     expect(wrapper.get('[data-kind="selectionRefused"]').text()).toContain(
       "Guest is editing this block.",
     );

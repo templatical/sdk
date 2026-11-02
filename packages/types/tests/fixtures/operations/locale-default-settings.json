@@ -1,0 +1,111 @@
+{
+  "name": "locale-default-settings",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hello",
+        "l10n": {
+          "de": {
+            "text": {
+              "content": {
+                "value": "Hallo",
+                "sourceHash": "f55c314b"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de",
+        "fr"
+      ],
+      "preheaderText": "Hello",
+      "direction": "ltr",
+      "l10n": {
+        "de": {
+          "text": {
+            "preheaderText": {
+              "value": "Hallo",
+              "sourceHash": "f55c314b"
+            }
+          },
+          "set": {
+            "direction": "rtl"
+          }
+        },
+        "fr": {
+          "text": {
+            "preheaderText": {
+              "value": "Bonjour",
+              "sourceHash": "f55c314b"
+            }
+          }
+        }
+      }
+    }
+  },
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hallo",
+          "l10n": {
+            "en": {
+              "text": {
+                "content": {
+                  "value": "Hello",
+                  "sourceHash": "9f02b107"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "de",
+        "locales": [
+          "en",
+          "fr"
+        ],
+        "preheaderText": "Hallo",
+        "direction": "rtl",
+        "l10n": {
+          "en": {
+            "text": {
+              "preheaderText": {
+                "value": "Hello",
+                "sourceHash": "9f02b107"
+              }
+            },
+            "set": {
+              "direction": "ltr"
+            }
+          },
+          "fr": {
+            "text": {
+              "preheaderText": {
+                "value": "Bonjour",
+                "sourceHash": "9f02b107"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

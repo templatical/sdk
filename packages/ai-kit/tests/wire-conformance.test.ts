@@ -247,6 +247,7 @@ it("settles reference-server replay only once, after editor acceptance", async (
   const turn = await (ai.chat as Function)(
     {
       templateId: "settlement",
+      locale: null,
       content,
       revision: null,
       sessionId: "s",

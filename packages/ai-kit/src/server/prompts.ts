@@ -49,6 +49,7 @@ function describeMergeTags(mergeTags: AiMergeTags): string {
 }
 
 export interface EditingPromptInput {
+  locale?: string | null;
   content: TemplateContent;
   revision?: number | null;
   mergeTags: AiMergeTags;
@@ -68,6 +69,7 @@ export function buildEditingPrompt(input: EditingPromptInput): string {
       ? ""
       : ` (revision ${input.revision})`;
   return [
+    ...(input.locale ? [activeLanguageLine(input.locale), ""] : []),
     "# Merge tags",
     describeMergeTags(input.mergeTags),
     "",
@@ -108,6 +110,7 @@ export function buildFixRequest(finding: AiFixFinding): string {
 }
 
 export interface RewritePromptInput {
+  locale?: string | null;
   html: string;
   preset: AiRewritePreset | null;
   language: string | null;
@@ -134,7 +137,7 @@ export function buildRewritePrompt(input: RewritePromptInput): string {
   if (instruction !== "") {
     parts.push(input.preset === null ? instruction : `Also: ${instruction}`);
   }
-  return `Instruction: ${parts.join(" ")}\n\nText:\n${flattenMergeTags(input.html)}`;
+  return `${input.locale ? activeLanguageLine(input.locale, input.preset !== "translate") + "\n\n" : ""}Instruction: ${parts.join(" ")}\n\nText:\n${flattenMergeTags(input.html)}`;
 }
 
 /** Build a plain-text request with the image attached by URL. */
@@ -143,9 +146,10 @@ export function buildAltTextRequest(request: AiAltTextRequest): {
   messages: AiModelMessage[];
 } {
   return {
-    system: fill(ALT_TEXT_INSTRUCTIONS, {
-      maxLength: String(request.maxLength),
-    }),
+    system:
+      fill(ALT_TEXT_INSTRUCTIONS, {
+        maxLength: String(request.maxLength),
+      }) + (request.locale ? `\n\n${activeLanguageLine(request.locale)}` : ""),
     messages: [
       {
         role: "user",
@@ -159,4 +163,20 @@ export function buildAltTextRequest(request: AiAltTextRequest): {
       },
     ],
   };
+}
+
+/** English language names keep model prompts independent of the host's UI locale. */
+export function languageName(locale: string): string {
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "language" }).of(locale) ?? locale
+    );
+  } catch {
+    return locale;
+  }
+}
+
+function activeLanguageLine(locale: string, write = true): string {
+  const context = `Active language: ${languageName(locale)} (${locale}).`;
+  return write ? `${context} Write in this language.` : context;
 }

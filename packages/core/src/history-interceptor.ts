@@ -1,3 +1,5 @@
+import { canMutate, inheritMutationGuard } from "./mutation-guard";
+import { watch, type Ref } from "@vue/reactivity";
 import type { Block, TemplateSettings } from "@templatical/types";
 import type { UseHistoryReturn } from "./history";
 
@@ -23,6 +25,12 @@ export interface HistoryInterceptorEditor {
   updateBlock: (blockId: string, updates: Partial<Block>) => void;
   updateSettings: (updates: Partial<TemplateSettings>) => void;
   isBlockLocked: (blockId: string) => boolean;
+  activeLocale?: Ref<string | null>;
+  addLocale?: (locale: string) => void;
+  removeLocale?: (locale: string) => void;
+  setBlockHidden?: (blockId: string, hidden: boolean) => void;
+  resetLocaleFields?: (blockId: string, paths?: string[]) => void;
+  keepTranslations?: (blockId: string, paths: string[]) => void;
 }
 
 /**
@@ -36,6 +44,31 @@ export function useHistoryInterceptor(
   editor: HistoryInterceptorEditor,
   history: UseHistoryReturn,
 ): void {
+  if (editor.activeLocale)
+    watch(editor.activeLocale, () => history.flushDebounce?.());
+  for (const key of [
+    "addLocale",
+    "removeLocale",
+    "setBlockHidden",
+    "resetLocaleFields",
+    "keepTranslations",
+  ] as const) {
+    const original = editor[key];
+    if (!original) continue;
+    Object.assign(editor, {
+      [key]: (...args: unknown[]) => {
+        if (!canMutate(editor, key, args)) return;
+        if (
+          !["addLocale", "removeLocale"].includes(key) &&
+          editor.isBlockLocked(args[0] as string)
+        )
+          return;
+        history.record();
+        (original as (...values: unknown[]) => void)(...args);
+      },
+    });
+    inheritMutationGuard(original, editor[key]!);
+  }
   const originalAddBlock = editor.addBlock;
   const originalRemoveBlock = editor.removeBlock;
   const originalMoveBlock = editor.moveBlock;
@@ -46,33 +79,45 @@ export function useHistoryInterceptor(
   // block or section), otherwise the undo stack fills with snapshots that
   // are identical to current state and undo silently does nothing.
   editor.addBlock = (block, targetSectionId?, columnIndex?, index?) => {
-    if (targetSectionId && editor.isBlockLocked(targetSectionId)) {
+    if (
+      !canMutate(editor, "addBlock", [
+        block,
+        targetSectionId,
+        columnIndex,
+        index,
+      ])
+    )
       return;
-    }
     history.record();
     originalAddBlock(block, targetSectionId, columnIndex, index);
   };
 
   editor.removeBlock = (blockId) => {
-    if (editor.isBlockLocked(blockId)) {
-      return;
-    }
+    if (!canMutate(editor, "removeBlock", [blockId])) return;
     history.record();
     originalRemoveBlock(blockId);
   };
 
   editor.moveBlock = (blockId, newIndex, targetSectionId?, columnIndex?) => {
-    if (editor.isBlockLocked(blockId)) {
+    if (
+      !canMutate(editor, "moveBlock", [
+        blockId,
+        newIndex,
+        targetSectionId,
+        columnIndex,
+      ])
+    )
       return;
-    }
-    if (targetSectionId && editor.isBlockLocked(targetSectionId)) {
-      return;
-    }
     history.record();
     originalMoveBlock(blockId, newIndex, targetSectionId, columnIndex);
   };
 
+  inheritMutationGuard(originalAddBlock, editor.addBlock);
+  inheritMutationGuard(originalRemoveBlock, editor.removeBlock);
+  inheritMutationGuard(originalMoveBlock, editor.moveBlock);
+
   editor.updateBlock = (blockId, updates) => {
+    if (!canMutate(editor, "updateBlock", [blockId, updates])) return;
     if (editor.isBlockLocked(blockId)) {
       return;
     }
@@ -81,7 +126,10 @@ export function useHistoryInterceptor(
   };
 
   editor.updateSettings = (updates) => {
+    if (!canMutate(editor, "updateSettings", [updates])) return;
     history.record();
     originalUpdateSettings(updates);
   };
+  inheritMutationGuard(originalUpdateBlock, editor.updateBlock);
+  inheritMutationGuard(originalUpdateSettings, editor.updateSettings);
 }

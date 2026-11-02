@@ -49,7 +49,7 @@ The complete provider declarations from `@templatical/types` cover requests, res
 | Attachments | [Chat attachments](#chat-attachments) gives MIME types, file-name and byte limits |
 | Operation batch | 1–100 operations in order; a turn's batches form one undo step |
 
-`mergeTags` always carries the editor's syntax (`liquid` by default), including an empty tag list. `readAiRequest` refuses missing or `null` context with status 422 and message `mergeTags must be { syntax, tags } with at most 500 tags.` The editing session and `checkRewrite` reject invented tags even when the declared list is empty; tags already in the input remain allowed. `custom` syntax is unchecked because its patterns are not sent to the backend.
+`mergeTags` always carries the editor's syntax (`liquid` by default), including an empty tag list. `readAiRequest` refuses missing or `null` context with status 422 and message `mergeTags must be { syntax, tags } with at most 500 tags.` The editing session and `checkRewrite` reject invented tags even when the declared list is empty; tags already in the input remain allowed. `checkRewrite` checks chips and declared tag values literally for `custom`; custom regex patterns are not sent to the backend.
 
 ## Client
 
@@ -190,7 +190,7 @@ export type AiModelAttachment =
 
 `AiChatRequest.attachments` is always present: `[]` without files, otherwise `{ file: Blob, kind: "image" | "pdf", name: string }[]`. `AiProvider.chatAttachments: false | true` is a flag: `true` means the `chat` function accepts attachments; it has no effect when `chat` is `false`. The HTTP provider enables it by default when chat is on; `features: { chatAttachments: false }` disables it.
 
-Without attachments the HTTP client keeps the JSON body unchanged. With attachments, `AI_GENERATE_FIELDS` names `message`, `selectedBlockId`, `mergeTags`, `content`, `revision`, and repeated `attachment` file parts. `message` and `selectedBlockId` are text; `mergeTags` and `content` are JSON strings; `revision` is a number as text. Absent `selectedBlockId` and `revision` become `null`. Multipart with no file parts is valid. JSON bodies always parse to `attachments: []`.
+Without attachments the HTTP client sends JSON including `locale`. With attachments, `AI_GENERATE_FIELDS` names `locale`, `message`, `selectedBlockId`, `mergeTags`, `content`, `revision`, and repeated `attachment` file parts. `message` and `selectedBlockId` are text; `locale`, `mergeTags` and `content` are JSON strings; `revision` is a number as text. Absent `selectedBlockId` and `revision` become `null`. Multipart with no file parts is valid. JSON bodies always parse to `attachments: []`. Multipart `locale` is a JSON string such as `"de"`, or `null` for the default view. Omitted `locale` is accepted as `null` for older clients.
 
 `readAiRequest` accepts MIME types `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `application/pdf`. It refuses, never truncates, with status 422 and no code, in this order:
 
@@ -333,6 +333,14 @@ Without `runAltText`, alt-text cases are skipped; without `lintCheck`, cases wit
 
 The [conformance suites](#testing) check non-empty alt text within `maxLength`, abort handling and `altText: false`.
 
+## Translation {#translation}
+
+The independent translation contract does not need `AiProvider`. Import `createHttpTranslationProvider({ url, headers?, fetch? })` from `@templatical/ai-kit/client`; it returns `TranslationProvider`. Import `translateFields({ request, model, signal? })` and `readTranslationRequest(request)` from `@templatical/ai-kit/server`. The server validates call bounds, collects model text with no tools, repairs once and returns passing fields or `translation_failed` when none pass. It does not sanitize HTML.
+
+`createMockTranslationProvider({ translations?, delayMs? })` and `runTranslationConformance(provider, options?: { locale?: string })` are exported from `@templatical/ai-kit/testing`. Records are keyed by target locale then field id; absent records get a target-language prefix. Conformance checks exact placeholders, allowed HTML tag names, partial results, `content_too_large` and aborts. See [Translation](/backend/translation) for exact types, the CI-run server handler and the runnable conformance check.
+
+AI requests also carry the active `locale` (`null` in the default view); alt text always uses a concrete language. `content` is the projection in chat/Fix, and history's `AiChatMessage.locale` is optional for older entries. Rewrite's Translate preset uses its chosen target language. `checkRewrite` requires the exact merge and logic tag multiset, including chips and declared tag values for `custom`. See [language-aware AI](/backend/ai#ai-in-language-views).
+
 ## Files
 
 `@templatical/ai-kit/adapters/anthropic`, `@templatical/ai-kit/adapters/openai` and `@templatical/ai-kit/adapters/vercel` are the first-party model adapter entry points.
@@ -345,9 +353,10 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, alt text, Un
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }`, or multipart with repeated `attachment` parts | SSE |
-| `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
-| `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
+| `POST /templates/{template}/translate` | JSON `TranslationRequest` | JSON `TranslationResult`; `Templatical-AI-Wire: 1` |
+| `POST /templates/{t}/ai/generate` | JSON `{ locale, message, selectedBlockId, mergeTags, content, revision }`, or multipart with repeated `attachment` parts | SSE |
+| `POST /templates/{t}/ai/fix-finding` | JSON `{ locale, finding, mergeTags, content, revision }` | SSE |
+| `POST /templates/{t}/ai/rewrite-text` | JSON `{ locale, html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
 | `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |

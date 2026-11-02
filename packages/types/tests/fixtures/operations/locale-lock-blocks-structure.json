@@ -1,0 +1,65 @@
+{
+  "name": "locale-lock-blocks-structure",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          [
+            {
+              "id": "m1",
+              "type": "menu",
+              "items": [
+                {
+                  "id": "i1",
+                  "text": "Shop",
+                  "url": "https://example.com/shop"
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff",
+      "locale": "en",
+      "preheaderText": "Hello there",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "locks": [
+    {
+      "blockId": "t1",
+      "sessionId": "B",
+      "locale": "de"
+    }
+  ],
+  "session": "A",
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "t1",
+      "set": {
+        "content": "Yo"
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "lock_held",
+      "opIndex": 0,
+      "blockId": "t1"
+    }
+  }
+}

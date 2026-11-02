@@ -15,8 +15,6 @@ import en from "../src/i18n/locales/en";
  *  - `save: false` hides the Save button **and** the status indicator, and makes
  *    the name read-only — there is nowhere for a change to go;
  *  - Save is last in the right column, because it is the primary action;
- *  - the left column carries `min-w-[200px]`, or the centre controls aren't
- *    actually centred against the right column's matching width.
  */
 const SRC = join(import.meta.dirname, "..", "src");
 const editorSource = readFileSync(join(SRC, "Editor.vue"), "utf8");
@@ -37,15 +35,6 @@ describe("EditorHeader templates surface", () => {
   describe("left column — the template name", () => {
     it("renders the inline name field", () => {
       expect(headerSource()).toContain("<TemplateNameField");
-    });
-
-    it("carries min-w-[200px] so the centre column is centred", () => {
-      const left = headerSource().slice(
-        headerSource().indexOf("tpl-header-left"),
-        headerSource().indexOf("tpl-header-center") + 1 ||
-          headerSource().indexOf("<TemplateNameField"),
-      );
-      expect(left).toContain("tpl:min-w-[200px]");
     });
 
     it("renders only with an available provider and a loaded template", () => {

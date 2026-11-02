@@ -244,7 +244,7 @@ describe("useTemplateLint", () => {
     expect(mock.lintTemplate).not.toHaveBeenCalled();
   });
 
-  it("does not start lint when every per-tool key is false", async () => {
+  it("starts lint when localization is the only enabled category", async () => {
     const mock = await setupQualityMock();
     const useTemplateLint = await loadComposable();
 
@@ -266,7 +266,7 @@ describe("useTemplateLint", () => {
     await new Promise((r) => setTimeout(r, 0));
     await nextTick();
 
-    expect(mock.lintTemplate).not.toHaveBeenCalled();
+    expect(mock.lintTemplate).toHaveBeenCalledTimes(1);
   });
 
   it("starts lint when only the original three categories are false", async () => {
@@ -343,7 +343,7 @@ describe("isLintFullyDisabled", () => {
     expect(isLintFullyDisabled({ disabled: true })).toBe(true);
   });
 
-  it("returns true only when all five tool keys are false", async () => {
+  it("returns false when localization is still enabled", async () => {
     const { isLintFullyDisabled } =
       await import("../src/composables/useTemplateLint");
     expect(
@@ -354,7 +354,7 @@ describe("isLintFullyDisabled", () => {
         deliverability: false,
         compatibility: false,
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("returns false when only the original three tool keys are false", async () => {
@@ -376,4 +376,36 @@ describe("isLintFullyDisabled", () => {
       isLintFullyDisabled({ accessibility: false, structure: false }),
     ).toBe(false);
   });
+});
+
+it("refuses removal through a legacy fix in a language view", async () => {
+  const useTemplateLint = await loadComposable();
+  const content = ref(createContent());
+  content.value.settings.locale = "en";
+  content.value.settings.locales = ["de"];
+  const lint = useTemplateLint({
+    content,
+    options: { disabled: true, contentLocale: "de" },
+    updateBlock: () => {},
+    updateSettings: () => {},
+    removeBlock: (id) => {
+      content.value.blocks = content.value.blocks.filter(
+        (block) => block.id !== id,
+      );
+    },
+  });
+  lint.applyFix({
+    blockId: "b1",
+    ruleId: "structure.empty-section",
+    severity: "warning",
+    message: "Empty",
+    suggestion: "Remove",
+    reference: "",
+    fix: {
+      description: "Legacy removal without metadata",
+      apply: (ctx) => ctx.removeBlock("b1"),
+    },
+  });
+  expect(content.value.blocks.map((block) => block.id)).toEqual(["b1"]);
+  lint.destroy();
 });

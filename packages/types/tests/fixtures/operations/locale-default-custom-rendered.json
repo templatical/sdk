@@ -1,0 +1,72 @@
+{
+  "name": "locale-default-custom-rendered",
+  "content": {
+    "blocks": [
+      {
+        "id": "c1",
+        "type": "custom",
+        "customType": "card",
+        "fieldValues": {
+          "label": "Hello"
+        },
+        "renderedHtml": "<p>Hello</p>",
+        "l10n": {
+          "de": {
+            "text": {
+              "fieldValues.label": {
+                "value": "Hallo",
+                "sourceHash": "f55c314b"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": [
+        "de",
+        "fr"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "setDefaultLocale",
+      "locale": "de"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "c1",
+          "type": "custom",
+          "customType": "card",
+          "fieldValues": {
+            "label": "Hallo"
+          },
+          "l10n": {
+            "en": {
+              "text": {
+                "fieldValues.label": {
+                  "value": "Hello",
+                  "sourceHash": "9f02b107"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "de",
+        "locales": [
+          "en",
+          "fr"
+        ]
+      }
+    }
+  }
+}
