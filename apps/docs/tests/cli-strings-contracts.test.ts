@@ -5,6 +5,58 @@ import { describe, expect, it } from "vitest";
 const root = resolve(import.meta.dirname, "../../..");
 describe("CLI strings documentation", () => {
   it.each([
+    "apps/docs/api/template-tools.md",
+    "apps/docs/de/api/template-tools.md",
+    "apps/docs/guide/localized-templates.md",
+    "apps/docs/de/guide/localized-templates.md",
+    "skills/templatical/reference/cli.md",
+    "skills/templatical/reference/localize.md",
+  ])("%s explains markup-like comparisons and skipped strings", (file) => {
+    const text = readFileSync(resolve(root, file), "utf8");
+    expect(text).toContain("`a<b`");
+    expect(text).toContain("`a < b`");
+    expect(text).toContain("`skipped`");
+    expect(text).toContain('"stale"');
+    expect(text).toContain('"missing"');
+  });
+  it.each([
+    "apps/docs/api/template-tools.md",
+    "apps/docs/de/api/template-tools.md",
+    "apps/docs/backend/translation.md",
+    "apps/docs/de/backend/translation.md",
+    "skills/templatical/reference/cli.md",
+    "skills/templatical/reference/localize.md",
+  ])("%s states the source style-value constraint", (file) => {
+    const text = readFileSync(resolve(root, file), "utf8");
+    expect(text).toContain("`style`");
+    expect(text).toMatch(/byte for byte|Byte für Byte/);
+  });
+  it.each([
+    "apps/docs/backend/translation.md",
+    "apps/docs/de/backend/translation.md",
+  ])(
+    "%s states the editor's and the import's style comparisons separately",
+    (file) => {
+      const text = readFileSync(resolve(root, file), "utf8");
+      // The editor decodes character references; import compares the text as written.
+      expect(text).toContain("`AT&#38;T`");
+      expect(text).toContain("`AT&amp;T`");
+      expect(text).toContain("`strings import`");
+      expect(text).not.toMatch(
+        /applies the same rule|wendet dieselbe Regel an/,
+      );
+    },
+  );
+  it.each(["apps/docs/api/operations.md", "apps/docs/de/api/operations.md"])(
+    "%s quotes singular and plural hidden-block refusals",
+    (file) => {
+      const text = readFileSync(resolve(root, file), "utf8");
+      expect(text).toContain('1 block is hidden in "de".');
+      expect(text).toContain('2 blocks are hidden in "de".');
+    },
+  );
+
+  it.each([
     "apps/docs/guide/localized-templates.md",
     "apps/docs/de/guide/localized-templates.md",
     "apps/docs/backend/translation.md",

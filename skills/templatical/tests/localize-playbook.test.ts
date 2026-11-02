@@ -22,6 +22,9 @@ describe("localization agent path", () => {
       "stored translations missing a protected term are excluded",
     );
     expect(entry.expected_output).toContain("current default");
+    expect(entry.expected_output).toContain("previous");
+    expect(entry.expected_output).toContain("import never reads");
+    expect(entry.expected_output).toContain("text from source");
   });
   it("describes only the rendered result notice fields", () => {
     const source = read("reference/localize.md");
@@ -159,6 +162,8 @@ describe("localization agent path", () => {
       `edit .templatical/<name>.json --op '{"op":"setDefaultLocale","locale":"de"}' --json`,
     );
     expect(edit).toContain("localeHiddenBlocks");
+    expect(edit).toContain("first hidden block");
+    expect(read("reference/localize.md")).toContain("first hidden block");
     expect(edit).toContain("the old default keeps its own current copy");
     expect(edit).toContain("translate HTML blocks by hand");
     expect(edit).toContain(

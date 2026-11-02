@@ -1,4 +1,5 @@
 import {
+  createMenuBlock,
   createSectionBlock,
   createParagraphBlock,
   sourceHash,
@@ -82,6 +83,43 @@ export function cornerBadgeContent(content: TemplateContent): TemplateContent {
       }),
       short,
       createParagraphBlock({ id: "corner-next", content: "<p>Next</p>" }),
+    ],
+  };
+}
+
+/** One block with a stale German item and a German item whose merge tags differ. */
+export function staleAndTagsDifferContent(
+  content: TemplateContent,
+): TemplateContent {
+  const item = (id: string, text: string) => ({
+    id,
+    text,
+    url: "https://example.com/offers",
+    openInNewTab: false,
+    bold: false,
+    underline: false,
+  });
+  return {
+    ...content,
+    blocks: [
+      createMenuBlock({
+        id: "mixed-menu",
+        items: [
+          item("stale", "Updated offers"),
+          item("tags", "Hello {{first_name}}"),
+        ],
+        l10n: {
+          de: {
+            text: {
+              "items.stale.text": { value: "Angebote", sourceHash: "00000000" },
+              "items.tags.text": {
+                value: "Hallo",
+                sourceHash: sourceHash("Hello {{first_name}}"),
+              },
+            },
+          },
+        },
+      }),
     ],
   };
 }

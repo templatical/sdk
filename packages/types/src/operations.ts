@@ -1508,7 +1508,9 @@ function setDefaultLocale(
     fail(
       "invalid_operation",
       index,
-      `${hidden.length} blocks are hidden in "${locale}". Show them before making it the default.`,
+      hidden.length === 1
+        ? `1 block is hidden in "${locale}". Show it before making it the default.`
+        : `${hidden.length} blocks are hidden in "${locale}". Show them before making it the default.`,
       hidden[0],
     );
   const held = engine.locks.find((lock) => heldByOthers(engine, lock));

@@ -99,7 +99,10 @@ describe("eval-driven guidance", () => {
   ])(
     "%s collaboration samples carry the lock locale and state the acquire rule",
     (lang, rule) => {
-      const text = read(`apps/docs/${lang}backend/collaboration.md`);
+      const page = read(`apps/docs/${lang}backend/collaboration.md`);
+      expect(page).toContain("<<< @/snippets/collaboration-client.ts");
+      // The client sample is an included file; the server sample is in the page.
+      const text = `${page}\n${read("apps/docs/snippets/collaboration-client.ts")}`;
       for (const method of ["acquireLock", "renewLock", "releaseLock"])
         expect
           .soft(text, method)

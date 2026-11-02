@@ -292,6 +292,28 @@ describe("do-not-translate strings round trip", () => {
     );
   });
 
+  it("updates protected terms when the same array is mutated in place", () => {
+    const terms = ["Sable"];
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({ text: '<x id="1"/> Cloud', tokens: ["Sable"] });
+    terms[0] = "Cloud";
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({ text: 'Sable <x id="1"/>', tokens: ["Cloud"] });
+    terms.push("Sable");
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({
+      text: '<x id="1"/> <x id="2"/>',
+      tokens: ["Sable", "Cloud"],
+    });
+    terms.splice(0);
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({ text: "Sable Cloud", tokens: [] });
+  });
+
   it("reuses source ids in a reordered existing translation", () => {
     const content = fixture();
     content.blocks = [

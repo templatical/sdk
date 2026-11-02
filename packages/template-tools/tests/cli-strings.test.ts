@@ -120,6 +120,7 @@ describe("strings export", () => {
       expect(JSON.parse(result.stdout)).toEqual({
         applied: 1,
         rejected: [],
+        skipped: [],
         file,
       });
       expect(read(file).blocks[0].l10n.de.text.content).toEqual({
@@ -267,6 +268,11 @@ describe("strings import", () => {
     expect(JSON.parse(result.stdout)).toEqual({
       applied: 0,
       rejected: [],
+      skipped: [
+        { id: "missing/content", reason: "missing" },
+        { id: "stale/content", reason: "stale" },
+        { id: "image/alt", reason: "missing" },
+      ],
       file,
     });
     expect(read(file).blocks[1].l10n.de.text.content).toEqual({
@@ -330,6 +336,7 @@ describe("strings import", () => {
     expect(JSON.parse(result.stdout)).toEqual({
       applied: 0,
       rejected: [{ id: "image/alt", reason: "unsafe_html" }],
+      skipped: [],
       file,
     });
     expect(read(file).blocks[3].l10n).toBeUndefined();
@@ -412,6 +419,7 @@ describe("strings import", () => {
       expect(JSON.parse(result.stdout)).toEqual({
         applied: 1,
         rejected: [{ id: "current/content", reason: "unsafe_html" }],
+        skipped: [],
         file,
       });
       expect(read(file).blocks[2].l10n.de.text.content.value).toBe(
@@ -510,6 +518,7 @@ describe("strings import", () => {
     expect(JSON.parse(result.stdout)).toEqual({
       applied: 3,
       rejected: [],
+      skipped: [],
       file,
     });
     expect(read(file).blocks[0].l10n.de.text.content).toEqual({
@@ -553,6 +562,7 @@ describe("strings import", () => {
         { id: "image/src", reason: "not_translatable" },
         { id: "deleted/content", reason: "unknown_field" },
       ],
+      skipped: [],
       file,
     });
     expect(read(file).blocks[3].l10n.de.text.alt.value).toBe("Ein Foto");
@@ -613,6 +623,7 @@ describe("strings import", () => {
     expect(JSON.parse(result.stdout)).toEqual({
       applied: 1,
       rejected: [],
+      skipped: [],
       file: out,
     });
     expect(read(out).blocks[0].l10n.de.text.content.value).toBe(
@@ -711,4 +722,194 @@ describe("strings import", () => {
       "--do-not-translate must be an array of at most 500 terms, each 1–100 characters.",
     );
   });
+});
+
+describe("strings import diagnostics", () => {
+  it("explains an unspaced less-than comparison without changing the JSON rejection", () => {
+    const data = exported("--only", "all");
+    data.strings = data.strings.filter((entry) => entry.id === "image/alt");
+    data.strings[0].text = "a<b";
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    const human = run("import", file, strings);
+    expect(human.status).toBe(1);
+    expect(human.stdout).toContain("image/alt: unsafe_html");
+    expect(human.stdout).toContain(
+      '  - image/alt: unsafe_html\n    A "<" directly before a letter reads as markup. Write "a < b" with a space.',
+    );
+    const json = run("import", file, strings, "--json");
+    expect(json.status).toBe(1);
+    expect(JSON.parse(json.stdout).rejected).toEqual([
+      { id: "image/alt", reason: "unsafe_html" },
+    ]);
+    expect(json.stdout).not.toContain("reads as markup");
+    expect(read(file).blocks[3].l10n).toBeUndefined();
+    data.strings[0].text = "a < b";
+    write(strings, data);
+    const spaced = run("import", file, strings);
+    expect(spaced.status, spaced.stderr).toBe(0);
+    expect(spaced.stdout).not.toContain("reads as markup");
+    expect(read(file).blocks[3].l10n.de.text.alt.value).toBe("a < b");
+  });
+
+  it.each([
+    ["an html attribute", "current", '<span onclick="bad()">Hallo</span>'],
+    ["an html tag the default lacks", "current", "<table>Hallo</table>"],
+    ["a text comment", "image", "Foto <!-- x -->"],
+    ["a text closing tag", "image", "Foto </b>"],
+  ])("gives no comparison hint for %s", (_name, block, text) => {
+    const data = exported("--only", "all", "--block", block);
+    data.strings[0].text = text;
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    const result = run("import", file, strings);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain(": unsafe_html");
+    expect(result.stdout).not.toContain("reads as markup");
+  });
+
+  it("lists every entry without text as skipped: stale for an out-of-date field, missing otherwise", () => {
+    const data = exported();
+    expect(data.strings.map((entry) => entry.id)).toEqual([
+      "missing/content",
+      "stale/content",
+      "image/alt",
+    ]);
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    // The defaults change again after the export: the entries are out of date,
+    // but each field is still classified by its stored translation.
+    const content = fixture();
+    content.blocks[1] = createParagraphBlock({
+      ...content.blocks[1],
+      content: "Newer text",
+    });
+    content.blocks[3] = createImageBlock({
+      ...content.blocks[3],
+      alt: "A different photo",
+    });
+    write(file, content);
+    const result = run("import", file, strings, "--json");
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      applied: 0,
+      rejected: [],
+      skipped: [
+        { id: "missing/content", reason: "missing" },
+        { id: "stale/content", reason: "stale" },
+        { id: "image/alt", reason: "missing" },
+      ],
+      file,
+    });
+    const human = run("import", file, strings);
+    expect(human.status, human.stderr).toBe(0);
+    expect(human.stdout).toBe(
+      [
+        `Applied 0 strings to ${file}`,
+        "  Skipped missing/content: missing",
+        "  Skipped stale/content: stale",
+        "  Skipped image/alt: missing",
+        "",
+      ].join("\n"),
+    );
+    expect(read(file).blocks[0].l10n).toBeUndefined();
+    expect(read(file).blocks[1].l10n.de.text.content.value).toBe("Alter Text");
+    expect(read(file).blocks[3].l10n).toBeUndefined();
+  });
+
+  it("does not list an entry with text as skipped", () => {
+    const data = exported();
+    data.strings[0].text = 'Hallo <x id="1"/> Sable';
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    const result = run("import", file, strings, "--json");
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      applied: 1,
+      rejected: [],
+      skipped: [
+        { id: "stale/content", reason: "stale" },
+        { id: "image/alt", reason: "missing" },
+      ],
+      file,
+    });
+  });
+});
+
+describe("strings import inline styles", () => {
+  it.each([
+    ["<p>Hello</p>", '<p style="color:red">Hallo</p>', false],
+    [
+      '<p style="color:red">Hello</p>',
+      '<p style="color:blue">Hallo</p>',
+      false,
+    ],
+    ['<p style="color:red">Hello</p>', '<p style="color:red">Hallo</p>', true],
+    ['<p style="color:red">Hello</p>', "<p>Hallo</p>", true],
+    ["<p>Hello</p>", "<p>Hallo</p>", true],
+  ])(
+    "checks styles against the default: %s -> %s",
+    (source, text, accepted) => {
+      const content = fixture();
+      content.blocks = [createParagraphBlock({ id: "copy", content: source })];
+      write(file, content);
+      const data = exported();
+      data.strings[0].text = text;
+      const strings = join(dir, "strings.json");
+      write(strings, data);
+      const result = run("import", file, strings, "--json");
+      expect(result.status, result.stderr).toBe(accepted ? 0 : 1);
+      expect(JSON.parse(result.stdout)).toEqual({
+        applied: accepted ? 1 : 0,
+        rejected: accepted
+          ? []
+          : [{ id: "copy/content", reason: "unsafe_html" }],
+        skipped: [],
+        file,
+      });
+      expect(read(file).blocks[0].l10n?.de.text.content.value).toBe(
+        accepted ? text : undefined,
+      );
+    },
+  );
+
+  it.each([
+    [
+      "keeps a style that holds a merge tag",
+      '<p style="font-family:__x1__">Hallo</p>',
+      true,
+    ],
+    [
+      "adds a declaration beside a merge tag",
+      '<p style="font-family:__x1__;color:red">Hallo</p>',
+      false,
+    ],
+  ])(
+    "compares the restored style when a translation %s",
+    (_name, text, accepted) => {
+      const content = fixture();
+      content.blocks = [
+        createParagraphBlock({
+          id: "copy",
+          content: '<p style="font-family:{{font}}">Hello</p>',
+        }),
+      ];
+      write(file, content);
+      const data = exported();
+      expect(data.strings[0].source).toBe(
+        '<p style="font-family:__x1__">Hello</p>',
+      );
+      data.strings[0].text = text;
+      const strings = join(dir, "strings.json");
+      write(strings, data);
+      const result = run("import", file, strings, "--json");
+      expect(result.status, result.stderr).toBe(accepted ? 0 : 1);
+      expect(JSON.parse(result.stdout).rejected).toEqual(
+        accepted ? [] : [{ id: "copy/content", reason: "unsafe_html" }],
+      );
+      expect(read(file).blocks[0].l10n?.de.text.content.value).toBe(
+        accepted ? '<p style="font-family:{{font}}">Hallo</p>' : undefined,
+      );
+    },
+  );
 });

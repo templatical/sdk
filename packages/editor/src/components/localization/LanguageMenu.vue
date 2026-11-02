@@ -251,12 +251,19 @@ function startRemove(locale: string) {
   removing.value = locale;
   submenu.value = null;
 }
+// A version can become the default while it is enabled, the current default
+// is enabled and no block is hidden in it.
+function canPromote(locale: string) {
+  return (
+    editable.value &&
+    versions.value.includes(locale) &&
+    props.locales.includes(locale) &&
+    defaultEnabled.value &&
+    localeHiddenBlocks(props.editor.content.value, locale).length === 0
+  );
+}
 function startPromotion(locale: string) {
-  if (
-    !defaultEnabled.value ||
-    localeHiddenBlocks(props.editor.content.value, locale).length
-  )
-    return;
+  if (!canPromote(locale)) return;
   captureConfirmation();
   promoting.value = { locale };
   submenu.value = null;
@@ -303,12 +310,7 @@ function confirm() {
   if (!editable.value) return;
   if (promoting.value) {
     const locale = promoting.value.locale;
-    if (
-      !props.locales.includes(locale) ||
-      !defaultEnabled.value ||
-      localeHiddenBlocks(props.editor.content.value, locale).length
-    )
-      return;
+    if (!canPromote(locale)) return;
     const result = localeActions?.setDefaultLocale(locale);
     if (!result) return;
     if (!result.applied) {
@@ -339,6 +341,16 @@ watch(
     }
   },
   { flush: "sync" },
+);
+// Replacing the content under an open dialog can leave its language unable to
+// become the default; the dialog counts gaps from the current content.
+watch(
+  () => promoting.value !== null && !canPromote(promoting.value.locale),
+  (blocked) => {
+    if (!blocked) return;
+    closeConfirmation();
+    close();
+  },
 );
 onClickOutside(root, () => {
   open.value = false;

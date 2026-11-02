@@ -175,20 +175,9 @@ You can copy the content settings onto the layout and override `backgroundColor`
 
 ## Headless use
 
-```ts
-import { renderToMjml } from '@templatical/renderer';
-import { applyLayout, resolveLocale } from '@templatical/types';
+This complete TypeScript example needs `@templatical/renderer` and `@templatical/types`. It builds a template and a layout that each have a German version, then composes and renders both. It prints `true true`: the default render holds the layout's `Legal notice` and the German render its `Impressum`.
 
-const mjml = await renderToMjml(content, { layout });
-const composed = applyLayout(layout, content);
-
-// One language version of a localized template, as renderToMjml composes it:
-const germanMjml = await renderToMjml(content, { layout, locale: 'de' });
-const german = applyLayout(
-  resolveLocale(layout, 'de', { missing: 'default' }),
-  resolveLocale(content, 'de'),
-);
-```
+<<< @/snippets/layout-headless.ts
 
 Preview, `toMjml`, and `toHtml` compose first, then optionally `resolvePreview`:
 

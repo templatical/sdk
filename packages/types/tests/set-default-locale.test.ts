@@ -741,7 +741,7 @@ it.each([
     locks: [],
     code: "invalid_operation",
     message:
-      '1 blocks are hidden in "de". Show them before making it the default.',
+      '1 block is hidden in "de". Show it before making it the default.',
   },
   {
     scenario: "lock",

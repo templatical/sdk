@@ -43,8 +43,13 @@ import type { OnRequestMedia } from "./index";
 export const TRANSLATIONS_KEY: InjectionKey<Translations> =
   Symbol("translations");
 
-export const LOCALE_CHIP_OPENERS_KEY: InjectionKey<Map<string, () => void>> =
-  Symbol("localeChipOpeners");
+/** The states a block's status popover can explain for a localization finding. */
+export type LocaleChipTarget = "missing" | "stale" | "tags-differ";
+
+/** Opens a block's status popover, on a finding's own state when given. */
+export const LOCALE_CHIP_OPENERS_KEY: InjectionKey<
+  Map<string, (target?: LocaleChipTarget) => void>
+> = Symbol("localeChipOpeners");
 
 export const LOCALIZATION_KEY: InjectionKey<
   { locales: string[]; doNotTranslate?: string[] } | undefined
