@@ -292,6 +292,56 @@ describe("selected block actions", () => {
     }
   });
 
+  it("follows the block's height when only the vertical position changes", async () => {
+    // A block that grows while selected (typing) keeps the same horizontal
+    // spot; the bar still re-centres.
+    const pane = makePane();
+    layout(pane, 656, { blockHeight: 120 });
+    const wrapper = mountEditor(BlockWrapper, {
+      attachTo: pane,
+      props: { block: createImageBlock(), isSelected: true },
+    });
+    try {
+      await settle();
+      const toolbar = wrapper.get(".tpl-block-actions").element as HTMLElement;
+      expect(toolbar.style.left).toBe("526px");
+      expect(toolbar.style.top).toBe("60px");
+      layout(pane, 656, { blockHeight: 200 });
+      pane.dispatchEvent(new Event("scroll"));
+      await settle();
+      expect(toolbar.style.left).toBe("526px");
+      expect(toolbar.style.top).toBe("100px");
+    } finally {
+      wrapper.unmount();
+      pane.remove();
+    }
+  });
+
+  it("keeps the bar and pill beside a block outside any canvas pane", async () => {
+    // Nothing to clamp to: a wrapper rendered outside `.tpl-body` places its
+    // chrome as if the room were unlimited.
+    const host = document.createElement("div");
+    document.body.append(host);
+    layout(host, 400, { blockHeight: 120 });
+    const wrapper = mountEditor(BlockWrapper, {
+      attachTo: host,
+      props: { block: createImageBlock(), isSelected: true },
+      provides: { [CAPABILITIES_KEY]: capabilities({ comments: 3 }) },
+    });
+    try {
+      await settle();
+      const toolbar = wrapper.get(".tpl-block-actions").element as HTMLElement;
+      expect(toolbar.style.left).toBe("608px");
+      expect(toolbar.style.top).toBe("50%");
+      expect(wrapper.get(".tpl-comment-indicator").classes()).toContain(
+        "tpl:absolute",
+      );
+    } finally {
+      wrapper.unmount();
+      host.remove();
+    }
+  });
+
   it("keeps the toolbar below a badge row that holds the comment pill", async () => {
     // The pill is 24 px tall against the lint badge's 20, so the bar clears
     // the row's measured bottom (4 + 24) plus 4 px, not a fixed 28.
