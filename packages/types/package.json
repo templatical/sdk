@@ -1,10 +1,10 @@
 {
   "name": "@templatical/types",
   "description": "Shared TypeScript types, block factory functions, and event emitter for Templatical email editor",
-  "version": "0.52.0",
+  "version": "0.52.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
-    "liquidjs": "^10.30.0",
+    "liquidjs": "^10.30.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },
@@ -29,7 +29,7 @@
   "license": "MIT",
   "module": "./dist/index.js",
   "peerDependencies": {
-    "liquidjs": "^10.30.0"
+    "liquidjs": "^10.30.1"
   },
   "peerDependenciesMeta": {
     "liquidjs": {

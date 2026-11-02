@@ -647,7 +647,7 @@ dataSource: {
 
 ## Rendern außerhalb des Editors
 
-Rendern Sie gespeicherte Templates serverseitig mit `renderToMjml(content, { customBlocks: definitions })`. Template-JSON aus `getContent()` oder aus `save` eines `templates`-Providers enthält Feldwerte, kein HTML. `editor.toMjml()` und die Aufrufe des Editors an einen [`render`-Provider](/de/backend/render) lösen jeden benutzerdefinierten Block bereits zu HTML auf und bringen sein Stylesheet mit; für diese Nutzlast braucht `renderToMjml(payload.content)` keine Optionen. Installieren Sie den optionalen Peer `liquidjs` (`^10.30.0`) im Serverprojekt:
+Rendern Sie gespeicherte Templates serverseitig mit `renderToMjml(content, { customBlocks: definitions })`. Template-JSON aus `getContent()` oder aus `save` eines `templates`-Providers enthält Feldwerte, kein HTML. `editor.toMjml()` und die Aufrufe des Editors an einen [`render`-Provider](/de/backend/render) lösen jeden benutzerdefinierten Block bereits zu HTML auf und bringen sein Stylesheet mit; für diese Nutzlast braucht `renderToMjml(payload.content)` keine Optionen. Installieren Sie den optionalen Peer `liquidjs` (`^10.30.1`) im Serverprojekt:
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
@@ -668,7 +668,7 @@ import { createCustomBlockLiquid } from '@templatical/types';
 const liquid = createCustomBlockLiquid(liquidjs);
 ```
 
-Die festen Optionen sind `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'` und `templates: {}`. Die leere Template-Map lässt `{% include %}`, `{% render %}` und `{% layout %}` keine Partials von Datenträger oder Netzwerk laden. Die Ausgabe von <code v-pre>{{ }}</code>, `{% echo %}`, `echo` innerhalb von `{% liquid %}` und `{% cycle %}` wird HTML-escaped; ein abschließendes `| raw` nimmt einen Ausgabe- oder Echo-Wert davon aus. Der optionale `liquidjs`-Peer-Bereich ist `^10.30.0`: Die Factory verwendet Interna von `Tag`, `Value` und `CycleTag`, um diese Tag-Regeln umzusetzen. Aufrufer müssen daher innerhalb dieses Bereichs bleiben. Prüfen Sie die exakte Ausgabe mit `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` läuft nur im Editor; der Server rendert die gespeicherten Feldwerte.
+Die festen Optionen sind `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'` und `templates: {}`. Die leere Template-Map lässt `{% include %}`, `{% render %}` und `{% layout %}` keine Partials von Datenträger oder Netzwerk laden. Die Ausgabe von <code v-pre>{{ }}</code>, `{% echo %}`, `echo` innerhalb von `{% liquid %}` und `{% cycle %}` wird HTML-escaped; ein abschließendes `| raw` an einer Ausgabe, einem Echo-Wert oder einem `cycle`-Kandidaten nimmt diesen Wert davon aus. Der optionale `liquidjs`-Peer-Bereich ist `^10.30.1`, die erste Version, die `outputEscape` auch auf `{% echo %}` und `{% cycle %}` anwendet; mit 10.30.0 geben diese beiden Tags ihre Werte ohne Escaping aus. Prüfen Sie die exakte Ausgabe mit `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` läuft nur im Editor; der Server rendert die gespeicherten Feldwerte.
 
 ## Im Playground
 

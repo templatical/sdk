@@ -1,7 +1,7 @@
 {
   "name": "@templatical/template-tools",
   "description": "CLI and library for Templatical email templates — validate, render, edit, import, and live-preview",
-  "version": "0.52.0",
+  "version": "0.52.1",
   "bin": {
     "templatical": "./dist/bin.js"
   },
@@ -12,10 +12,10 @@
     "@templatical/types": "workspace:*",
     "ajv": "^8.20.0",
     "htmlparser2": "^12.0.0",
-    "liquidjs": "^10.30.0"
+    "liquidjs": "^10.30.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "mjml": "^5.4.1",
     "ts-json-schema-generator": "^2.9.0",
     "typescript": "^6.0.3",

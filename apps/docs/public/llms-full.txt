@@ -1913,7 +1913,7 @@ interface RenderOptions {
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
-| `customBlocks` | -- | `CustomBlockDefinition[]` for headless rendering. The last definition per type wins; unknown types use saved `renderedHtml` and `renderedStylesheet`. Requires optional `liquidjs` peer `^10.30.0` when custom blocks are present. See the [Custom blocks guide](/guide/custom-blocks). |
+| `customBlocks` | -- | `CustomBlockDefinition[]` for headless rendering. The last definition per type wins; unknown types use saved `renderedHtml` and `renderedStylesheet`. Requires optional `liquidjs` peer `^10.30.1` when custom blocks are present. See the [Custom blocks guide](/guide/custom-blocks). |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. The editor passes this through `editor.toMjml()`. Mutually exclusive with `customBlocks`. When neither option is passed, every custom block uses `renderedHtml` (if present). |
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Mutually exclusive with `customBlocks`. A listed definition decides its type's stylesheet, including emitting none; unknown types use saved `renderedStylesheet`. A passed resolver decides every type and ignores saved copies. |
@@ -3315,10 +3315,6 @@ The factory's public module shape has no declaration dependency on `liquidjs`. P
 ```ts
 export interface CustomBlockLiquidModule {
   Liquid: new (...args: any[]) => any;
-  Tag: abstract new (...args: any[]) => any;
-  CycleTag: new (...args: any[]) => any;
-  Value: new (...args: any[]) => any;
-  toValue: (value: any) => any;
 }
 
 export declare function createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>;
@@ -10742,7 +10738,7 @@ dataSource: {
 
 ## Rendering outside the editor
 
-Render saved templates server-side with `renderToMjml(content, { customBlocks: definitions })`. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML. `editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) already resolve every custom block to HTML and carry its stylesheet, so `renderToMjml(payload.content)` needs no options for that payload. Install the optional `liquidjs` peer (`^10.30.0`) in the server project:
+Render saved templates server-side with `renderToMjml(content, { customBlocks: definitions })`. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML. `editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) already resolve every custom block to HTML and carry its stylesheet, so `renderToMjml(payload.content)` needs no options for that payload. Install the optional `liquidjs` peer (`^10.30.1`) in the server project:
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
@@ -10763,7 +10759,7 @@ import { createCustomBlockLiquid } from '@templatical/types';
 const liquid = createCustomBlockLiquid(liquidjs);
 ```
 
-Its fixed options are `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, and `templates: {}`. The empty template map makes `{% include %}`, `{% render %}` and `{% layout %}` refuse partial loading from disk or the network. It HTML-escapes <code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output, while a final `| raw` opts an output or echo value out. The optional `liquidjs` peer range is `^10.30.0`: the factory reads liquidjs's `Tag`, `Value` and `CycleTag` internals to implement those tag rules, so callers must stay within that range. Run the factory's exact-output suite with `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
+Its fixed options are `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, and `templates: {}`. The empty template map makes `{% include %}`, `{% render %}` and `{% layout %}` refuse partial loading from disk or the network. It HTML-escapes <code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output, while a final `| raw` on an output, an echo value or a cycle candidate opts that value out. The optional `liquidjs` peer range is `^10.30.1`, the first release that applies `outputEscape` to `{% echo %}` and `{% cycle %}`; with 10.30.0 those two tags print their values unescaped. Run the factory's exact-output suite with `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
 
 ## In the playground
 

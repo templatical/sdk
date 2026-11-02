@@ -10,17 +10,17 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@templatical/editor": "^0.52.0",
-    "@templatical/quality": "^0.52.0",
-    "@templatical/renderer": "^0.52.0",
-    "@templatical/types": "^0.52.0",
+    "@templatical/editor": "^0.52.1",
+    "@templatical/quality": "^0.52.1",
+    "@templatical/renderer": "^0.52.1",
+    "@templatical/types": "^0.52.1",
     "mjml": "^5.4.1",
     "nuxt": "^4.6.3",
     "vue": "^3.5.44"
   },
   "devDependencies": {
     "@types/mjml": "~5.4.2",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.14"
   }
