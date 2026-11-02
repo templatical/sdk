@@ -12,7 +12,7 @@
     "@templatical/types": "workspace:*",
     "ajv": "^8.20.0",
     "htmlparser2": "^12.0.0",
-    "liquidjs": "^10.30.0"
+    "liquidjs": "^10.30.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

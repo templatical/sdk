@@ -170,8 +170,8 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0(vue@3.5.44(typescript@6.0.3))
       liquidjs:
-        specifier: ^10.30.0
-        version: 10.30.0
+        specifier: ^10.30.1
+        version: 10.30.1
       vue:
         specifier: ^3.5.44
         version: 3.5.44(typescript@6.0.3)
@@ -541,8 +541,8 @@ importers:
         specifier: 30.1.3
         version: 30.1.3
       liquidjs:
-        specifier: ^10.30.0
-        version: 10.30.0
+        specifier: ^10.30.1
+        version: 10.30.1
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -793,8 +793,8 @@ importers:
         specifier: ^2.6.2
         version: 2.6.2
       liquidjs:
-        specifier: ^10.30.0
-        version: 10.30.0
+        specifier: ^10.30.1
+        version: 10.30.1
       mjml:
         specifier: ^5.4.1
         version: 5.4.1(relateurl@0.2.7)(svgo@4.1.0)(terser@5.51.2)(typescript@6.0.3)
@@ -847,8 +847,8 @@ importers:
         specifier: ^12.0.0
         version: 12.0.0
       liquidjs:
-        specifier: ^10.30.0
-        version: 10.30.0
+        specifier: ^10.30.1
+        version: 10.30.1
     devDependencies:
       '@types/node':
         specifier: ^26.6.6
@@ -869,8 +869,8 @@ importers:
   packages/types:
     devDependencies:
       liquidjs:
-        specifier: ^10.30.0
-        version: 10.30.0
+        specifier: ^10.30.1
+        version: 10.30.1
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -3379,8 +3379,8 @@ packages:
     engines: {node: '>=22.22.1'}
     hasBin: true
 
-  liquidjs@10.30.0:
-    resolution: {integrity: sha512-Fw4wA+8CZsJkaeLEIlPE3AoponfjEZhj7FQvYNcAEcg7jNRik7mEMoaco382FBdrYlykVf6w4vClPNctz2OYjg==}
+  liquidjs@10.30.1:
+    resolution: {integrity: sha512-P1Iz14WUHZdfbOYwHOIhtl/iAWIOYk1ks5l9rPZlDM6vZo+6BLeYIuWHAPkIz+U8Mm8HKZKITIrjX7DQJO2fqA==}
     engines: {node: '>=16'}
     hasBin: true
 
@@ -7111,7 +7111,7 @@ snapshots:
     optionalDependencies:
       yaml: 2.9.1
 
-  liquidjs@10.30.0:
+  liquidjs@10.30.1:
     dependencies:
       commander: 10.0.1
 
