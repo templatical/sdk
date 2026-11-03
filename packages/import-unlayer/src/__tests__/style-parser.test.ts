@@ -4,6 +4,7 @@ import {
   parseColor,
   parsePaddingShorthand,
   parseBorderObject,
+  isTransparentColor,
   parseDividerWidth,
   parseFontFamily,
   readUnlayerBackgroundImage,
@@ -110,6 +111,20 @@ describe("parsePaddingShorthand", () => {
       left: 0,
     });
   });
+
+  // CSS drops a padding with a negative length, judged before rounding:
+  // -0.4px rounds to -0. A literal -0 is 0.
+  it("reads a shorthand with a negative side as no padding", () => {
+    for (const value of ["-10px 0px", "10px -0.4px", "5px 5px 5px -1px"]) {
+      expect(parsePaddingShorthand(value)).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+    }
+    expect(parsePaddingShorthand("10px -0px").top).toBe(10);
+  });
 });
 
 describe("parseBorderObject", () => {
@@ -120,14 +135,164 @@ describe("parseBorderObject", () => {
         borderTopStyle: "dotted",
         borderTopColor: "#ff0000",
       }),
-    ).toEqual({ width: 3, style: "dotted", color: "#ff0000" });
+    ).toEqual({ width: 3, style: "dotted", color: "#ff0000", drawn: true });
   });
   it("returns defaults on undefined", () => {
     expect(parseBorderObject(undefined)).toEqual({
       width: 0,
       style: "solid",
       color: "#000000",
+      drawn: true,
     });
+  });
+  it("is not drawn at a stated 0 width, with no style, or in a transparent colour", () => {
+    for (const border of [
+      {
+        borderTopWidth: "0px",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      },
+      { borderTopWidth: "1px", borderTopStyle: "none", borderTopColor: "#ccc" },
+      {
+        borderTopWidth: "1px",
+        borderTopStyle: "hidden",
+        borderTopColor: "#ccc",
+      },
+      {
+        borderTopWidth: "1px",
+        borderTopStyle: "solid",
+        borderTopColor: "transparent",
+      },
+      {
+        borderTopWidth: "1px",
+        borderTopStyle: "solid",
+        borderTopColor: "rgba(0,0,0,0)",
+      },
+    ]) {
+      expect([border, parseBorderObject(border).drawn]).toEqual([
+        border,
+        false,
+      ]);
+    }
+  });
+  // A zero-width pattern that can split a run of zeros or of spaces two ways
+  // backtracks quadratically on a long run that fails to match (CodeQL
+  // js/polynomial-redos).
+  it("reads long runs of zeros and spaces in linear time (ReDoS regression)", () => {
+    for (const borderTopWidth of [
+      `${"0".repeat(40_000)}x`,
+      `0${" ".repeat(40_000)}x`,
+    ]) {
+      const start = Date.now();
+      const { drawn } = parseBorderObject({
+        borderTopWidth,
+        borderTopStyle: "solid",
+        borderTopColor: "#cccccc",
+      });
+      const elapsed = Date.now() - start;
+      expect(drawn).toBe(true);
+      expect(elapsed).toBeLessThan(250);
+    }
+  });
+
+  it("reads a zero width in every CSS length unit", () => {
+    for (const borderTopWidth of ["0svh", "0lh", "0cqw", "0dvmax", "0Q"]) {
+      expect([
+        borderTopWidth,
+        parseBorderObject({
+          borderTopWidth,
+          borderTopStyle: "solid",
+          borderTopColor: "#ccc",
+        }).drawn,
+      ]).toEqual([borderTopWidth, false]);
+    }
+  });
+
+  it("reads a zero width in any unit and a style in any case", () => {
+    for (const border of [
+      {
+        borderTopWidth: "0pt",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      },
+      {
+        borderTopWidth: "0em",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      },
+      {
+        borderTopWidth: "+0px",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      },
+      { borderTopWidth: "1px", borderTopStyle: "NONE", borderTopColor: "#ccc" },
+      {
+        borderTopWidth: "1px",
+        borderTopStyle: " Hidden ",
+        borderTopColor: "#ccc",
+      },
+    ]) {
+      expect([border, parseBorderObject(border).drawn]).toEqual([
+        border,
+        false,
+      ]);
+    }
+    expect(
+      parseBorderObject({
+        borderTopWidth: "2px",
+        borderTopStyle: "DASHED",
+        borderTopColor: "#ccc",
+      }),
+    ).toEqual({ width: 2, style: "dashed", color: "#cccccc", drawn: true });
+  });
+
+  it("is drawn with an unreadable width", () => {
+    expect(
+      parseBorderObject({
+        borderTopWidth: "thin",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      }).drawn,
+    ).toBe(true);
+  });
+  it("takes no room with a none or hidden style", () => {
+    expect(
+      parseBorderObject({
+        borderTopWidth: "3px",
+        borderTopStyle: "hidden",
+        borderTopColor: "#ccc",
+      }).width,
+    ).toBe(0);
+  });
+});
+
+describe("isTransparentColor", () => {
+  it("is true for a colour with no opacity", () => {
+    for (const value of [
+      "transparent",
+      "TRANSPARENT",
+      "#0000",
+      "#ffffff00",
+      "rgba(0, 0, 0, 0)",
+      "rgb(0 0 0 / 0%)",
+      "hsla(0, 0%, 100%, 0)",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, true]);
+    }
+  });
+
+  it("is false for a colour that paints", () => {
+    for (const value of [
+      undefined,
+      "",
+      "#000",
+      "#ffffff80",
+      "rgba(0, 0, 0, 0.5)",
+      "rgb(0 0 0 / 1%)",
+      "red",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, false]);
+    }
   });
 });
 

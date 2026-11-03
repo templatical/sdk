@@ -12,6 +12,7 @@ import { readLinkUnderline, resolveCssStyles } from "./css-resolver";
 import {
   convertElement,
   isTableContainer,
+  skippedElementEntry,
   walkContentNodes,
 } from "./block-mapper";
 import { processTable } from "./section-builder";
@@ -218,6 +219,11 @@ function processBody(
         return;
       }
 
+      const skipped = skippedElementEntry($inner, $);
+      if (skipped) {
+        entries.push(skipped);
+        return;
+      }
       const r = convertElement($inner, $, bodyWidth);
       if (r) {
         entries.push(r.entry);
@@ -247,6 +253,11 @@ function processBody(
       return;
     }
 
+    const skipped = skippedElementEntry($child, $);
+    if (skipped) {
+      entries.push(skipped);
+      return;
+    }
     const r = convertElement($child, $, bodyWidth);
     if (r) {
       entries.push(r.entry);

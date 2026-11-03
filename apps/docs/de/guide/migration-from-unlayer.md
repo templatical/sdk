@@ -77,7 +77,7 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 | `converted` | Ohne Verlust auf einen Templatical-Block abgebildet. |
 | `approximated` | Abgebildet, mit Clamp oder Flatten — `note` sagt, was sich geändert hat. |
 | `html-fallback` | Kein Block-Äquivalent; das Original-Markup ist ein `HtmlBlock`. |
-| `skipped` | Keine Ausgabe (Formulare und alles, was der Konverter ablehnt). |
+| `skipped` | Keine Ausgabe (Formulare, ein [Divider ohne Linie](#undrawn-dividers), der keinen Platz einnimmt, und alles, was der Konverter ablehnt). |
 
 Das Design-JSON, das Unlayers gehosteter Editor und `editor.saveDesign()` erzeugen, ist die Eingabe. Ein kompiliertes HTML-Export ist ein anderes Envelope — [`@templatical/import-html`](/de/guide/migration-from-html).
 
@@ -113,7 +113,7 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 | Heading | `title` | Konvertiert |
 | Image | `image` | Konvertiert (angenähert, wenn ein `maxWidth` unter 100% zu px wird; siehe [Bildbreite](#image-width)) |
 | Button | `button` | Konvertiert |
-| Divider | `divider` | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist) |
+| Divider | `divider`, oder `spacer`, wenn er [keine Linie zeichnet](#undrawn-dividers) | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn er keine Linie zeichnet und keinen Platz einnimmt) |
 | Spacer | `spacer` | Konvertiert |
 | Html | `html` | Konvertiert |
 | Menu | `menu` | Angenähert (Stile können abweichen) |
@@ -158,6 +158,18 @@ Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Sp
 :::
 
 Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den Unlayer links oder rechts ausrichtet (`textAlign`), ist angenähert; seine `note` nennt die Ausrichtung.
+
+### Divider ohne Linie {#undrawn-dividers}
+
+Ein Divider zeichnet keine Linie, wenn `border.borderTopWidth` 0 ist, `borderTopStyle` `none` oder `hidden` ist oder `borderTopColor` transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`. Ein solcher Divider fügt nur Abstand ein.
+
+| Unlayer-Divider | Ergebnis | Status |
+|---|---|---|
+| zeichnet eine Linie | `divider`, nach den Regeln oben | Konvertiert |
+| zeichnet keine Linie, Padding und transparenter Rahmen ergeben mehr als 0px | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
+| zeichnet keine Linie und nimmt keinen Platz ein | kein Block | Übersprungen |
+
+Die `height` des Spacers ist das obere plus das untere `containerPadding` plus die Breite eines transparenten Rahmens. Ein `containerPadding` mit einer negativen Seite zählt als kein Padding, weil CSS es verwirft. Ein Rahmen mit `none` oder `hidden` nimmt keinen Platz ein, seine Breite zählt also nicht. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Ein Divider ganz ohne `border` wird als durchgezogene schwarze Linie von 1px importiert.
 
 ## Konvertierung des Spaltenlayouts
 

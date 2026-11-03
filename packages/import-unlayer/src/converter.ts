@@ -27,6 +27,7 @@ import {
   convertContent,
   DEFAULT_BODY_WIDTH,
   FALLBACK_TEXT_COLOR,
+  skippedContentEntry,
 } from "./block-mapper";
 import type { ContentContext } from "./block-mapper";
 import {
@@ -100,6 +101,11 @@ function convertColumnContents(
   const blocks: Block[] = [];
 
   for (const content of column.contents ?? []) {
+    const skipped = skippedContentEntry(content);
+    if (skipped) {
+      entries.push(skipped);
+      continue;
+    }
     const { block, entry } = convertContent(content, warnings, context);
     blocks.push(block);
     entries.push(entry);

@@ -100,7 +100,7 @@ HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:
 | `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button` | Konvertiert |
 | `<a>` (Text-Link) | geht im umgebenden `paragraph` auf | Konvertiert |
 | `<a>`, das ein `<img>` umschließt | `image` mit `linkUrl` | Konvertiert |
-| `<hr>` | `divider` | Konvertiert (angenähert, wenn die Breite begrenzt oder nicht lesbar ist oder ein Divider mit Teilbreite links oder rechts ausgerichtet ist) |
+| `<hr>` | `divider`, oder `spacer`, wenn es [keine Linie zeichnet](#hr-lines) | Konvertiert (angenähert, wenn die Breite begrenzt oder nicht lesbar ist oder ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn es keine Linie zeichnet und keinen Platz einnimmt) |
 | Leeres `<td>` mit explizit gesetzter Höhe | `spacer` | Konvertiert |
 | `<td>`, dessen gesamter Inhalt ein gestyltes Text-`<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster) |
 | `<table>` (Layout, mehrere Zeilen/Spalten) | `section` (eine pro `<tr>`) | Konvertiert |
@@ -145,6 +145,20 @@ Die Breite stammt aus dem `width`-Style des `<hr>`, danach aus seinem `width`-At
 Der Platz der Linie ist der Anteil der Spalte an `settings.width` gemäß dem Spaltenlayout der Section, abzüglich des Paddings der Section, jeder Zelle und jedes Wrappers um das `<hr>` und des `<hr>` selbst.
 
 Templatical zentriert jeden Divider. Ein `<hr>` mit Teilbreite, das sein `align`-Attribut oder seine Margins links oder rechts platzieren, ist angenähert; seine `note` nennt die Ausrichtung.
+
+### `<hr>`-Linien und Abstände {#hr-lines}
+
+Ein `<hr>` wird als die Linie importiert, die es zeichnet. Seine Linie ist der obere Rahmen (`border-top`, sonst die Kurzschreibweise `border`), oder der untere Rahmen, wenn der obere nichts zeichnet, wie bei `border: 0; border-bottom: 1px solid #cccccc`. Die Einzelangaben jeder Seite (`border-top-color`, `border-width: 0 0 1px` und Ähnliches) gelten über ihrer Kurzschreibweise. Ein Rahmen zeichnet nichts, wenn er 0 breit ist, `none` oder `hidden` ist oder transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`.
+
+| `<hr>` | Ergebnis | Status |
+|---|---|---|
+| kein Rahmen für oben oder unten angegeben: kein `border`, `border-top` oder `border-bottom` und keine ihrer Einzelangaben für Breite, Stil oder Farbe | `divider`, durchgezogen schwarz 1px | Konvertiert |
+| ein Rahmen, der zeichnet | `divider` in Breite und Farbe des Rahmens; `dashed` und `dotted` behalten ihren Stil, jeder andere Stil wird `solid` | Konvertiert |
+| kein Rahmen, der zeichnet, und ein `background` oder `background-color` mit `height` | `divider` in der Hintergrundfarbe, so dick wie `height`, durchgezogen | Konvertiert |
+| kein Rahmen, der zeichnet, kein Hintergrund, belegter Platz | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
+| kein Rahmen, der zeichnet, kein Hintergrund, kein belegter Platz | kein Block | Übersprungen |
+
+Das übliche E-Mail-`<hr>`, `border: 0; height: 1px; background: #cccccc`, ist die Hintergrund-Zeile. Ein transparenter Hintergrund oder eine `height` von 0 zeichnet keine Linie. Die `height` des Spacers ist die Summe aus den oberen und unteren Margins und Paddings des `<hr>`, seiner `height` und den Breiten transparenter oberer und unterer Rahmen; ein Rahmen mit `none` oder `hidden` belegt keinen Platz. Ein negatives Padding oder eine negative `height` zählt als 0, weil CSS sie verwirft; ein negativer Margin zählt mit. Sie fällt nie unter 0, negative Margins, die zusammen weniger ergeben, werden deshalb übersprungen. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Die Breitenregeln oben gelten für jede Divider-Zeile.
 
 ## Inline-Formatierung
 

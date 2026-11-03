@@ -213,10 +213,13 @@ export function parseLegacyColor(value: string | undefined): string {
 }
 
 /**
- * Parses a CSS `padding` shorthand (1-4 values) into a SpacingValue.
+ * Parses a CSS `padding` shorthand (1-4 values) into a SpacingValue. One with
+ * a negative side is no padding, since CSS drops the declaration.
  */
 export function parsePaddingShorthand(value: string | undefined): SpacingValue {
-  if (!value) return { top: 0, right: 0, bottom: 0, left: 0 };
+  if (!value || hasNegativeLength(value)) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
 
   const parts = value.trim().split(/\s+/);
   const values = parts.map((p) => parsePxValue(p));
@@ -254,18 +257,44 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
 }
 
 /**
+ * A padding longhand's px length as written, `0` included, or `undefined` when
+ * it doesn't parse or is negative, which makes CSS drop the declaration.
+ * Trimmed first so the pattern has one way to match.
+ */
+function explicitPx(value: string | undefined): number | undefined {
+  const trimmed = (value ?? "").trim();
+  if (ZERO_LENGTH.test(trimmed)) return 0;
+  const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/i.exec(trimmed);
+  if (!match) return undefined;
+  const px = parseFloat(match[1]);
+  return px < 0 ? undefined : Math.round(px);
+}
+
+/**
+ * Whether a padding value holds a negative length, judged before rounding:
+ * `-0.4px` rounds to `-0`, which would pass as valid. A literal `-0` is 0.
+ */
+function hasNegativeLength(value: string): boolean {
+  return value
+    .trim()
+    .split(/\s+/)
+    .some((part) => parseFloat(part) < 0);
+}
+
+/**
  * Reads CSS padding from a style record, preferring the longhand props
- * (padding-top/right/bottom/left) and falling back to the `padding` shorthand.
+ * (padding-top/right/bottom/left), `0` included, and falling back to the
+ * `padding` shorthand for a side whose longhand is absent or doesn't parse.
  */
 export function readPaddingFromStyles(
   styles: Record<string, string>,
 ): SpacingValue {
   const shorthand = parsePaddingShorthand(styles.padding);
   return {
-    top: parsePxValue(styles["padding-top"]) || shorthand.top,
-    right: parsePxValue(styles["padding-right"]) || shorthand.right,
-    bottom: parsePxValue(styles["padding-bottom"]) || shorthand.bottom,
-    left: parsePxValue(styles["padding-left"]) || shorthand.left,
+    top: explicitPx(styles["padding-top"]) ?? shorthand.top,
+    right: explicitPx(styles["padding-right"]) ?? shorthand.right,
+    bottom: explicitPx(styles["padding-bottom"]) ?? shorthand.bottom,
+    left: explicitPx(styles["padding-left"]) ?? shorthand.left,
   };
 }
 
@@ -293,47 +322,178 @@ export function parseAlignment(
 }
 
 /**
+ * Whether a CSS colour paints nothing: `transparent`, or an alpha of 0 in a
+ * hex (`#rgba`, `#rrggbbaa`) or functional (`rgba()`, `hsl(… / 0%)`) colour.
+ * `parseColor` drops the alpha, so ask this before it.
+ */
+export function isTransparentColor(value: string | undefined): boolean {
+  if (!value) return false;
+  const color = value.trim().toLowerCase();
+  if (color === "transparent") return true;
+
+  const hex = color.match(
+    /^#(?:[0-9a-f]{3}([0-9a-f])|[0-9a-f]{6}([0-9a-f]{2}))$/,
+  );
+  if (hex) return /^0+$/.test(hex[1] ?? hex[2]);
+
+  const fn = color.match(/^(?:rgb|hsl)a?\((.*)\)$/);
+  if (!fn) return false;
+  const alpha = fn[1].includes("/") ? fn[1].split("/")[1] : fn[1].split(",")[3];
+  if (alpha === undefined) return false;
+  const opacity = parseFloat(alpha);
+  return Number.isFinite(opacity) && opacity <= 0;
+}
+
+const BORDER_STYLE_KEYWORDS = new Set([
+  "none",
+  "hidden",
+  "dotted",
+  "dashed",
+  "solid",
+  "double",
+  "groove",
+  "ridge",
+  "inset",
+  "outset",
+]);
+
+const BORDER_WIDTH_TOKEN = /^-?\d+(?:\.\d+)?(?:px)?$/i;
+
+/** The CSS length units (CSS Values 4 and container queries). */
+const CSS_LENGTH_UNITS = [
+  "px",
+  "cm",
+  "mm",
+  "q",
+  "in",
+  "pt",
+  "pc",
+  "em",
+  "rem",
+  "ex",
+  "rex",
+  "cap",
+  "rcap",
+  "ch",
+  "rch",
+  "ic",
+  "ric",
+  "lh",
+  "rlh",
+  "vw",
+  "vh",
+  "vi",
+  "vb",
+  "vmin",
+  "vmax",
+  "svw",
+  "svh",
+  "svi",
+  "svb",
+  "svmin",
+  "svmax",
+  "lvw",
+  "lvh",
+  "lvi",
+  "lvb",
+  "lvmin",
+  "lvmax",
+  "dvw",
+  "dvh",
+  "dvi",
+  "dvb",
+  "dvmin",
+  "dvmax",
+  "cqw",
+  "cqh",
+  "cqi",
+  "cqb",
+  "cqmin",
+  "cqmax",
+];
+
+/**
+ * A zero length: `0`, or zero in a CSS length unit, with an optional sign. Run
+ * on a trimmed value; each run of zeros has one way to match, so a long run
+ * fails in linear time.
+ */
+const ZERO_LENGTH = new RegExp(
+  `^[+-]?(?:0+(?:\\.0+)?|\\.0+)(?:${CSS_LENGTH_UNITS.join("|")})?$`,
+  "i",
+);
+
+/** A side's `border-*-width`, `-style` and `-color`, applied over its shorthand. */
+export interface BorderLonghands {
+  width?: string;
+  style?: string;
+  color?: string;
+}
+
+/**
+ * One side of a border: a `border` / `border-top` shorthand (`"1px solid
+ * #ccc"`, its parts in any order) with that side's longhands applied over it.
+ * `width` is the room the border takes, so a `none` or `hidden` border has
+ * none. `drawn` is false when the border paints nothing: a stated 0 width, a
+ * `none` or `hidden` style, or a transparent colour. Nothing stated reads as
+ * drawn.
+ */
+export function parseBorderSide(
+  shorthand: string | undefined,
+  longhands: BorderLonghands = {},
+): { width: number; style: string; color: string; drawn: boolean } {
+  let widthToken: string | undefined;
+  let styleToken: string | undefined;
+  let colorToken: string | undefined;
+  for (const token of cssTokens((shorthand ?? "").trim())) {
+    const lower = token.toLowerCase();
+    if (BORDER_STYLE_KEYWORDS.has(lower)) {
+      styleToken = lower;
+    } else if (BORDER_WIDTH_TOKEN.test(lower) || ZERO_LENGTH.test(lower)) {
+      widthToken = lower;
+    } else if (isTransparentColor(lower) || parseColor(lower)) {
+      colorToken = lower;
+    }
+  }
+  widthToken = longhands.width?.trim().toLowerCase() ?? widthToken;
+  styleToken = longhands.style?.trim().toLowerCase() ?? styleToken;
+  colorToken = longhands.color?.trim().toLowerCase() ?? colorToken;
+
+  const style = styleToken ?? "solid";
+  const hidden = style === "none" || style === "hidden";
+  const transparent = isTransparentColor(colorToken);
+  const zeroWidth = widthToken !== undefined && ZERO_LENGTH.test(widthToken);
+  return {
+    width: hidden ? 0 : parsePxValue(widthToken),
+    style,
+    color: (!transparent && parseColor(colorToken)) || "#000000",
+    drawn: !zeroWidth && !hidden && !transparent,
+  };
+}
+
+/**
  * Parses a CSS `border` shorthand (`"1px solid #ccc"`) into width/style/color.
- * Order-tolerant: each token is classified by content.
+ * See {@link parseBorderSide}, which also takes a side's longhands.
  */
 export function parseBorderShorthand(value: string | undefined): {
   width: number;
   style: string;
   color: string;
+  drawn: boolean;
 } {
-  const fallback = { width: 0, style: "solid", color: "#000000" };
-  if (!value) return fallback;
+  return parseBorderSide(value);
+}
 
-  const styleKeywords = new Set([
-    "none",
-    "hidden",
-    "dotted",
-    "dashed",
-    "solid",
-    "double",
-    "groove",
-    "ridge",
-    "inset",
-    "outset",
-  ]);
-
-  let width = 0;
-  let style = "solid";
-  let color = "#000000";
-
-  for (const token of value.trim().split(/\s+/)) {
-    const lower = token.toLowerCase();
-    if (styleKeywords.has(lower)) {
-      style = lower;
-    } else if (/^-?\d+(?:\.\d+)?(?:px)?$/i.test(lower)) {
-      width = parsePxValue(lower);
-    } else {
-      const c = parseColor(lower);
-      if (c) color = c;
-    }
-  }
-
-  return { width, style, color };
+/**
+ * The top or bottom value of a 1–4 value box property, such as
+ * `border-width: 0 0 1px` (bottom `1px`). `undefined` when it isn't set.
+ */
+export function boxSideValue(
+  value: string | undefined,
+  side: "top" | "bottom",
+): string | undefined {
+  const parts = cssTokens((value ?? "").trim());
+  if (parts.length === 0) return undefined;
+  return side === "top" ? parts[0] : (parts[2] ?? parts[0]);
 }
 
 /** A background image read from the source, with a note for each value that had no exact keyword. */
