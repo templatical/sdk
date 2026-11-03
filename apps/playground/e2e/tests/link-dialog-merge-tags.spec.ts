@@ -168,6 +168,75 @@ test.describe("Link dialog merge tags", () => {
     expect(hrefs.some((h) => h.startsWith("https://{{"))).toBe(false);
   });
 
+  // The toolbar Teleport stays mounted across a picker open and close.
+  // Re-mounting appends its anchor after the link dialog's and paints the
+  // toolbar over the dialog (#1082). The overlay is `fixed; inset: 0`.
+  test("paints the link dialog above the toolbar after the merge tag picker closes", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.doubleClickBlock("paragraph");
+    const editable = editorPage.getEditableFor("paragraph");
+    await editable.click();
+    const toolbar = page.getByRole("toolbar", { name: "Text formatting" });
+    await toolbar.getByRole("button", { name: "Insert merge tag" }).click();
+
+    const picker = page.locator(SELECTORS.mergeTagPickerModal);
+    await expect(picker).toBeVisible();
+    await page.locator(SELECTORS.mergeTagPickerItem).first().click();
+    await expect(picker).toBeHidden();
+    await expect(editable.locator(".tpl-merge-tag-node").last()).toBeVisible();
+
+    await expect(toolbar).toBeVisible();
+    await editable.click();
+    await page.keyboard.press("Shift+ArrowLeft");
+    await toolbar.getByRole("button", { name: "Add Link" }).click();
+    await expect(page.locator(SELECTORS.linkDialog)).toBeVisible();
+
+    const toolbarBox = await toolbar.boundingBox();
+    const cardBox = await page.locator(SELECTORS.linkDialog).boundingBox();
+    expect(toolbarBox?.width ?? 0).toBeGreaterThan(0);
+    expect(toolbarBox?.height ?? 0).toBeGreaterThan(0);
+    expect(cardBox?.width ?? 0).toBeGreaterThan(0);
+    expect(cardBox?.height ?? 0).toBeGreaterThan(0);
+
+    const left = Math.max(toolbarBox!.x, cardBox!.x);
+    const top = Math.max(toolbarBox!.y, cardBox!.y);
+    const right = Math.min(
+      toolbarBox!.x + toolbarBox!.width,
+      cardBox!.x + cardBox!.width,
+    );
+    const bottom = Math.min(
+      toolbarBox!.y + toolbarBox!.height,
+      cardBox!.y + cardBox!.height,
+    );
+    const overlapsCard = right > left && bottom > top;
+    const point = overlapsCard
+      ? { x: left + (right - left) / 2, y: top + (bottom - top) / 2 }
+      : {
+          x: toolbarBox!.x + toolbarBox!.width / 2,
+          y: toolbarBox!.y + toolbarBox!.height / 2,
+        };
+
+    const topmost = await page.evaluate(
+      ([x, y]) => {
+        let el = document.elementFromPoint(Number(x), Number(y));
+        while (el?.shadowRoot) {
+          const inner = el.shadowRoot.elementFromPoint(Number(x), Number(y));
+          if (!inner || inner === el) break;
+          el = inner;
+        }
+        if (el?.closest(".tpl-text-toolbar")) return "toolbar";
+        if (el?.closest("[data-testid='link-dialog']")) return "link-dialog";
+        if (el?.closest(".tpl-link-dialog")) return "overlay";
+        return el?.tagName ?? "none";
+      },
+      [point.x, point.y] as [number, number],
+    );
+
+    expect(topmost).toBe(overlapsCard ? "link-dialog" : "overlay");
+  });
+
   test("still completes a bare host with https://", async ({
     editorReady: { editorPage },
     page,

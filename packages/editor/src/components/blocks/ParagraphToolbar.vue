@@ -79,17 +79,14 @@ const tplUiTheme = inject(UI_THEME_KEY, null);
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "ParagraphToolbar");
 const popoverRoot = usePopoverRoot();
 // Picker may be null in non-editor contexts (e.g. isolated component tests).
-// When it's provided AND open, hide the floating toolbar — leaving it
-// visible behind the modal is visually noisy and the toolbar's Tailwind
-// z-index utility doesn't compile reliably, so it can sometimes paint
-// over the modal backdrop.
+// The toolbar hides while a built-in picker is open. Its Teleport stays
+// mounted for the whole edit session: re-mounting re-appends its anchor
+// after the link dialog's and paints the toolbar over the dialog (#1082).
 const picker = inject(MERGE_TAG_PICKER_KEY, null);
 const logicPicker = inject(LOGIC_TAG_PICKER_KEY, null);
 // Editor may be absent in isolated tests; used only to resolve the inherited
 // document text color for the text-color swatch.
 const editorReturn = inject(EDITOR_KEY, null);
-// Hide the floating toolbar while either built-in picker modal is open, so it
-// doesn't overlap the dialog.
 const pickerIsOpen = computed(
   () => (picker?.isOpen.value ?? false) || (logicPicker?.isOpen.value ?? false),
 );
@@ -216,8 +213,9 @@ function setHighlight(color: string): void {
 </script>
 
 <template>
-  <Teleport v-if="popoverRoot && !pickerIsOpen" :to="popoverRoot">
+  <Teleport v-if="popoverRoot" :to="popoverRoot">
     <div
+      v-if="!pickerIsOpen"
       :data-tpl-theme="tplUiTheme"
       role="toolbar"
       :aria-label="t.paragraphEditor.toolbar"
