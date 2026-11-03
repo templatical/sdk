@@ -425,7 +425,7 @@ importers:
         specifier: ^26.6.6
         version: 26.6.6
       ai:
-        specifier: ^7.0.158
+        specifier: ^7.0.159
         version: 7.0.159(zod@4.6.7)
       openai:
         specifier: ^7.45.1
