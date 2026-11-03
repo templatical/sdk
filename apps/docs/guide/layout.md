@@ -175,7 +175,7 @@ You can copy the content settings onto the layout and override `backgroundColor`
 
 ## Headless use
 
-This complete TypeScript example needs `@templatical/renderer` and `@templatical/types`. It builds a template and a layout that each have a German version, then composes and renders both. It prints `true true`: the default render holds the layout's `Legal notice` and the German render its `Impressum`.
+This complete TypeScript example needs `@templatical/renderer` and `@templatical/types`. It builds a template and a layout that each have a German version, then composes and renders both. It prints `true true 2 de`: the default render holds the layout's `Legal notice` and the German render its `Impressum`, the composed default has two blocks (the template's title in the slot, then the footer), and the German composition's `settings.locale` is `de`.
 
 <<< @/snippets/layout-headless.ts
 

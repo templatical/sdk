@@ -175,7 +175,7 @@ Sie können die Einstellungen des Inhalts auf das Layout kopieren und `backgroun
 
 ## Headless-Nutzung
 
-Dieses vollständige TypeScript-Beispiel benötigt `@templatical/renderer` und `@templatical/types`. Es erstellt ein Template und ein Layout mit je einer deutschen Version, setzt beide zusammen und rendert sie. Es gibt `true true` aus: Das Standard-Rendering enthält das `Legal notice` des Layouts, das deutsche sein `Impressum`.
+Dieses vollständige TypeScript-Beispiel benötigt `@templatical/renderer` und `@templatical/types`. Es erstellt ein Template und ein Layout mit je einer deutschen Version, setzt beide zusammen und rendert sie. Es gibt `true true 2 de` aus: Das Standard-Rendering enthält das `Legal notice` des Layouts, das deutsche sein `Impressum`, die zusammengesetzte Standardversion hat zwei Blöcke (den Titel des Templates im Slot, dann die Fußzeile), und `settings.locale` der deutschen Zusammensetzung ist `de`.
 
 <<< @/snippets/layout-headless.ts
 

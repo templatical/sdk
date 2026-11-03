@@ -20,11 +20,7 @@ const tsRules = {
 export default tseslint.config(
   // ── Global ignores ────────────────────────────────────────────────────
   {
-    ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/*.d.ts",
-    ],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/*.d.ts"],
   },
 
   // ── TypeScript files ──────────────────────────────────────────────────
@@ -95,7 +91,7 @@ export default tseslint.config(
     },
   },
 
-  // ── Tests, e2e specs and repo scripts ─────────────────────────────────
+  // ── Tests, e2e specs, docs snippets and repo scripts ──────────────────
   // Everything outside `src/` that is still hand-written code. Without this
   // block a dead import in a test is invisible to `pnpm run lint`, which is
   // what CodeQL's code-quality scan surfaces as `js/unused-local-variable`.
@@ -104,6 +100,7 @@ export default tseslint.config(
       "packages/*/tests/**/*.ts",
       "apps/*/tests/**/*.ts",
       "apps/*/e2e/**/*.ts",
+      "apps/*/snippets/**/*.ts",
       "packages/*/scripts/**/*.{ts,mjs,js}",
       "skills/*/tests/**/*.ts",
     ],

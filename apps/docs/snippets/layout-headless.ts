@@ -59,4 +59,9 @@ const german = applyLayout(
   resolveLocale(content, "de"),
 );
 
-console.log(mjml.includes("Legal notice"), germanMjml.includes("Impressum"));
+console.log(
+  mjml.includes("Legal notice"),
+  germanMjml.includes("Impressum"),
+  composed.blocks.length,
+  german.settings.locale,
+);

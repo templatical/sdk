@@ -136,7 +136,7 @@ describe("the headless layout sample", () => {
       result.german.blocks.map((block: { type: string }) => block.type),
     ).not.toContain("slot");
     expect(result.composed.blocks).toHaveLength(2);
-    expect(log).toHaveBeenCalledWith(true, true);
+    expect(log).toHaveBeenCalledWith(true, true, 2, "de");
   });
 });
 
