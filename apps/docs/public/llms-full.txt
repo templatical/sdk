@@ -13288,10 +13288,12 @@ Unknown module types — forms included — are converted to HTML blocks as a fa
 | `computedStyle.class` includes `fullwidth` | `"full"` | Converted |
 | `computedStyle.width` narrower than the image's room | the px number, rounded | Converted |
 | `computedStyle.width` as wide as the room or wider | `"full"` | Converted |
+| `computedStyle.width` a percentage under `100%`, such as `50%` | that share of the room in px, rounded, with a `note` | Approximated |
+| `computedStyle.width` `100%` or more | `"full"` | Converted |
 | no `computedStyle.width` | `image.width`, by the same rule | Converted |
 | no width at all | `"full"` | Converted |
 
-`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at, for both of BeeFree's sizing classes: a `fixedwidth` image at the width set in the editor, and an `autowidth` image at its file's width, capped at the column. Older exports write `computedStyle.width` as a number of pixels (`187.5`) and class an image that fills its column `fullwidth`. Their computed width leaves out the column's padding, which the import doesn't carry over, so the class decides. The image's room is its column's content width less the image's left and right padding. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
+`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at, for both of BeeFree's sizing classes: a `fixedwidth` image at the width set in the editor, and an `autowidth` image at its file's width, capped at the column. Older exports write `computedStyle.width` as a number of pixels (`187.5`) and class an image that fills its column `fullwidth`. Their computed width leaves out the column's padding, which the import doesn't carry over, so the class decides. The image's room is its column's content width less the image's left and right padding. `ImageBlock` stores px, which keeps its size on a phone where a percentage would shrink with the column, so a percentage width is reported `approximated`. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
 
 ### Divider width
 

@@ -213,6 +213,25 @@ describe("extractPadding", () => {
     const result = extractPadding(undefined);
     expect(result).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
   });
+
+  // CSS drops a padding declaration with a negative length.
+  it("ignores a negative longhand", () => {
+    const result = extractPadding({
+      "padding-top": "-30px",
+      "padding-right": "10px",
+      "padding-bottom": "5px",
+      "padding-left": "-0px",
+    });
+    expect(result).toEqual({ top: 0, right: 10, bottom: 5, left: 0 });
+  });
+
+  it("drops a shorthand with a negative side and reads the longhands", () => {
+    const result = extractPadding({
+      padding: "10px -5px",
+      "padding-top": "8px",
+    });
+    expect(result).toEqual({ top: 8, right: 0, bottom: 0, left: 0 });
+  });
 });
 
 describe("parseDividerWidth", () => {

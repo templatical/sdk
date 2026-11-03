@@ -133,10 +133,12 @@ Unbekannte Modultypen — Formulare eingeschlossen — werden als Fallback in HT
 | `computedStyle.class` enthält `fullwidth` | `"full"` | Konvertiert |
 | `computedStyle.width` schmaler als der Platz des Bildes | die px-Zahl, gerundet | Konvertiert |
 | `computedStyle.width` so breit wie der Platz oder breiter | `"full"` | Konvertiert |
+| `computedStyle.width` ein Prozentwert unter `100%`, etwa `50%` | dieser Anteil des Platzes in px, gerundet, mit einer `note` | Angenähert |
+| `computedStyle.width` `100%` oder mehr | `"full"` | Konvertiert |
 | kein `computedStyle.width` | `image.width`, nach derselben Regel | Konvertiert |
 | gar keine Breite | `"full"` | Konvertiert |
 
-`image.width` und `image.height` sind die Größe der Bilddatei, `computedStyle.width` ist die Breite, in der BeeFree das Bild zeigt, für beide Größenklassen von BeeFree: ein `fixedwidth`-Bild in der im Editor gesetzten Breite, ein `autowidth`-Bild in der Breite seiner Datei, begrenzt auf die Spalte. Ältere Exporte schreiben `computedStyle.width` als Pixelzahl (`187.5`) und versehen ein Bild, das seine Spalte füllt, mit der Klasse `fullwidth`. Deren berechnete Breite lässt das Padding der Spalte aus, das der Import nicht übernimmt, deshalb entscheidet die Klasse. Der Platz des Bildes ist die Inhaltsbreite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. `image.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält. Ein Bild ohne `text-align` übernimmt seine Ausrichtung aus `computedStyle.class` (`left`, `center` oder `right`).
+`image.width` und `image.height` sind die Größe der Bilddatei, `computedStyle.width` ist die Breite, in der BeeFree das Bild zeigt, für beide Größenklassen von BeeFree: ein `fixedwidth`-Bild in der im Editor gesetzten Breite, ein `autowidth`-Bild in der Breite seiner Datei, begrenzt auf die Spalte. Ältere Exporte schreiben `computedStyle.width` als Pixelzahl (`187.5`) und versehen ein Bild, das seine Spalte füllt, mit der Klasse `fullwidth`. Deren berechnete Breite lässt das Padding der Spalte aus, das der Import nicht übernimmt, deshalb entscheidet die Klasse. Der Platz des Bildes ist die Inhaltsbreite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. `ImageBlock` speichert px, die auf einem Smartphone ihre Größe behalten, wo ein Prozentwert mit der Spalte schrumpfen würde; deshalb wird eine Prozentbreite als `approximated` gemeldet. `image.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält. Ein Bild ohne `text-align` übernimmt seine Ausrichtung aus `computedStyle.class` (`left`, `center` oder `right`).
 
 ### Divider-Breite
 

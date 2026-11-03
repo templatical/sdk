@@ -296,6 +296,50 @@ describe("convertModule", () => {
         expect(at(500, 500)).toBe("full");
       });
 
+      // The block stores px, which keeps its size on a phone where a
+      // percentage would shrink, so a percentage under 100% is approximated.
+      it("converts a computed percentage to px of the room", () => {
+        const at = (width: string) => {
+          const { block, entry } = convertModule(
+            makeModule("mailup-bee-newsletter-modules-image", {
+              image: { src: "p.png", width: "1920px" },
+              computedStyle: { class: "center fixedwidth", width },
+              style: { "padding-left": "10px", "padding-right": "10px" },
+            }),
+            [],
+            { columnWidth: 600 },
+          );
+          if (block.type !== "image") throw new Error("expected an image");
+          return { width: block.width, status: entry.status, note: entry.note };
+        };
+        expect(at("50%")).toEqual({
+          width: 290,
+          status: "approximated",
+          note: "Image width 50% was converted to 290px.",
+        });
+        expect(at("33.3%").width).toBe(193);
+        expect(at("100%")).toEqual({
+          width: "full",
+          status: "converted",
+          note: undefined,
+        });
+        expect(at(" 120% ").width).toBe("full");
+
+        // Without a column width there is no room to take a share of.
+        const { block, entry } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-image", {
+            image: { src: "p.png" },
+            computedStyle: { width: "50%" },
+          }),
+          [],
+          { columnWidth: undefined },
+        );
+        expect([block.type === "image" && block.width, entry.note]).toEqual([
+          "full",
+          "Image width 50% was converted to full width.",
+        ]);
+      });
+
       it("is full at exactly the room inside the image's padding", () => {
         const at = (px: number) =>
           shown(
@@ -793,16 +837,13 @@ describe("convertModule", () => {
       expect(spacerHeight("3px hidden #BBBBBB")).toBe(30);
     });
 
-    // Room can't be negative: a negative padding that outweighs the rest is
-    // skipped, while one that doesn't still leaves the remaining room.
-    it("never makes the spacer negative", () => {
-      const outweighed = invisible("0px solid transparent", {
-        "padding-top": "-10px",
-        "padding-bottom": "0px",
+    // CSS drops a negative padding, so it takes no room and takes none away.
+    it("leaves out a negative padding", () => {
+      const mixed = invisible("20px solid transparent", {
+        "padding-top": "-30px",
+        "padding-bottom": "5px",
       });
-      expect(
-        outweighed.block.type === "spacer" && outweighed.block.height,
-      ).toBe(0);
+      expect(mixed.block.type === "spacer" && mixed.block.height).toBe(25);
       expect(
         skippedModuleEntry(
           makeModule("mailup-bee-newsletter-modules-divider", {
@@ -811,11 +852,6 @@ describe("convertModule", () => {
           }),
         )?.status,
       ).toBe("skipped");
-      const mixed = invisible("20px solid transparent", {
-        "padding-top": "-10px",
-        "padding-bottom": "0px",
-      });
-      expect(mixed.block.type === "spacer" && mixed.block.height).toBe(10);
     });
 
     it("keeps the module's background colour on the spacer", () => {

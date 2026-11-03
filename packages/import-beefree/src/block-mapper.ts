@@ -367,17 +367,40 @@ function computedPx(value: unknown): number {
  * reaches `room` (the column less the image's side padding), is `"full"`.
  * Older exports class an image that fills its column `fullwidth`, and its
  * computed width leaves out the column padding the import drops, so the class
- * decides.
+ * decides. A computed percentage under 100% becomes px of `room`, with a note:
+ * px keeps its size on a phone, where the percentage would shrink.
  */
 function resolveImageWidth(
   descriptor: BeeFreeeModuleDescriptor,
   room: number | undefined,
-): ImageBlock["width"] {
-  if (computedClasses(descriptor).includes("fullwidth")) return "full";
+): { width: ImageBlock["width"]; note?: string } {
+  if (computedClasses(descriptor).includes("fullwidth")) {
+    return { width: "full" };
+  }
+  const percent = computedPercent(descriptor.computedStyle?.width);
+  if (percent !== undefined) {
+    if (percent >= 100) return { width: "full" };
+    const width =
+      room === undefined
+        ? "full"
+        : shownWidth(Math.round((room * percent) / 100), room);
+    const label = width === "full" ? "full width" : `${width}px`;
+    return {
+      width,
+      note: `Image width ${percent}% was converted to ${label}.`,
+    };
+  }
   const shown =
     computedPx(descriptor.computedStyle?.width) ||
     parsePxValue(descriptor.image?.width);
-  return shownWidth(shown, room);
+  return { width: shownWidth(shown, room) };
+}
+
+/** A percentage BeeFree computed (`"50%"`), or `undefined` when it isn't one. */
+function computedPercent(value: unknown): number | undefined {
+  if (typeof value !== "string") return undefined;
+  const match = /^(\d+(?:\.\d+)?|\.\d+)%$/.exec(value.trim());
+  return match ? parseFloat(match[1]) : undefined;
 }
 
 /** A shown px width as `ImageBlock.width`: `"full"` when unknown or at `room`. */
@@ -392,18 +415,18 @@ function shownWidth(
 function convertImage(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-): Block {
+): { block: Block; notes: string[] } {
   const image = descriptor.image;
   const styles = makeStyles(descriptor);
   if (!image) {
-    return createImageBlock({ styles });
+    return { block: createImageBlock({ styles }), notes: [] };
   }
 
   const room =
     columnWidth === undefined
       ? undefined
       : columnWidth - styles.padding.left - styles.padding.right;
-  const width = resolveImageWidth(descriptor, room);
+  const { width, note } = resolveImageWidth(descriptor, room);
 
   // `image.width` × `image.height` is the file, so the height is never carried
   // over: the image keeps its aspect ratio at the width it is shown at. A
@@ -423,7 +446,7 @@ function convertImage(
     classes.includes(side),
   );
 
-  return createImageBlock({
+  const block = createImageBlock({
     src: image.src || "",
     alt: image.alt || "",
     width,
@@ -442,6 +465,7 @@ function convertImage(
     linkUrl: image.href || undefined,
     styles,
   });
+  return { block, notes: note ? [note] : [] };
 }
 
 function convertButton(descriptor: BeeFreeeModuleDescriptor): Block {
@@ -563,9 +587,8 @@ function dividerAlign(
 
 /**
  * The room a divider that draws no line takes: its top and bottom padding plus
- * the width of a transparent border, never below 0 (a negative padding can
- * outweigh the rest). `undefined` when the line is drawn. BeeFree templates
- * space content this way.
+ * the width of a transparent border. `undefined` when the line is drawn.
+ * BeeFree templates space content this way.
  */
 function undrawnDividerHeight(
   descriptor: BeeFreeeModuleDescriptor,
@@ -573,7 +596,7 @@ function undrawnDividerHeight(
   const border = parseBorderTop(descriptor.divider?.style?.["border-top"]);
   if (border.drawn) return undefined;
   const padding = extractPadding(descriptor.style);
-  return Math.max(0, padding.top + border.width + padding.bottom);
+  return padding.top + border.width + padding.bottom;
 }
 
 /**
@@ -1028,9 +1051,13 @@ function convertModuleBase(
     case "title":
       block = convertHeading(descriptor, textColor);
       break;
-    case "image":
-      block = convertImage(descriptor, context.columnWidth);
+    case "image": {
+      const result = convertImage(descriptor, context.columnWidth);
+      block = result.block;
+      notes = result.notes;
+      isApproximation = notes.length > 0;
       break;
+    }
     case "button":
       block = convertButton(descriptor);
       break;

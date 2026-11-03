@@ -211,17 +211,23 @@ export function extractPadding(
 ): SpacingValue {
   if (!style) return { top: 0, right: 0, bottom: 0, left: 0 };
 
-  // Check for shorthand `padding` first
+  // CSS drops a padding declaration with a negative length: a shorthand with
+  // a negative side leaves the longhands, and a negative longhand leaves 0.
   if (style.padding) {
-    return parseShorthandPadding(style.padding);
+    const shorthand = parseShorthandPadding(style.padding);
+    if (Object.values(shorthand).every((side) => side >= 0)) return shorthand;
   }
 
   return {
-    top: parsePxValue(style["padding-top"]),
-    right: parsePxValue(style["padding-right"]),
-    bottom: parsePxValue(style["padding-bottom"]),
-    left: parsePxValue(style["padding-left"]),
+    top: paddingLonghand(style["padding-top"]),
+    right: paddingLonghand(style["padding-right"]),
+    bottom: paddingLonghand(style["padding-bottom"]),
+    left: paddingLonghand(style["padding-left"]),
   };
+}
+
+function paddingLonghand(value: string | undefined): number {
+  return Math.max(0, parsePxValue(value));
 }
 
 function parseShorthandPadding(value: string): SpacingValue {
