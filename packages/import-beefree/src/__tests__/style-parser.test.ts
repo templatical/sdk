@@ -112,6 +112,17 @@ describe("parseBorderTop", () => {
     });
   });
 
+  // A length pattern that can split a run of digits two ways backtracks
+  // quadratically on a long run that fails to match (CodeQL
+  // js/polynomial-redos).
+  it("reads a long run of zeros in linear time (ReDoS regression)", () => {
+    const start = Date.now();
+    const result = parseBorderTop(`${"0".repeat(40_000)}x solid #cccccc`);
+    const elapsed = Date.now() - start;
+    expect([result.width, result.drawn]).toEqual([0, true]);
+    expect(elapsed).toBeLessThan(250);
+  });
+
   it("is not drawn at 0 width, with no style, or in a transparent colour", () => {
     for (const value of [
       "0px solid #cccccc",

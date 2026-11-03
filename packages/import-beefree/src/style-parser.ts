@@ -176,7 +176,9 @@ export function parseBorderTop(value: string | undefined): {
   let colorPart: string | undefined;
   for (const part of splitShorthand(value)) {
     const lower = part.toLowerCase();
-    const length = lower.match(/^(\d*\.?\d+)(px)?$/);
+    // Each run of digits has one way to match, so a long one fails in linear
+    // time; `\d*\.?\d+` could split it anywhere.
+    const length = lower.match(/^(\d+(?:\.\d+)?|\.\d+)(px)?$/);
     if (
       width === undefined &&
       length &&
