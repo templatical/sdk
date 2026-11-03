@@ -178,14 +178,21 @@ test.describe("Link dialog merge tags", () => {
     await editorPage.doubleClickBlock("paragraph");
     const editable = editorPage.getEditableFor("paragraph");
     await editable.click();
+    const firstNameChips = editable.locator(".tpl-merge-tag-node", {
+      hasText: "First Name",
+    });
+    const chipsBefore = await firstNameChips.count();
     const toolbar = page.getByRole("toolbar", { name: "Text formatting" });
     await toolbar.getByRole("button", { name: "Insert merge tag" }).click();
 
     const picker = page.locator(SELECTORS.mergeTagPickerModal);
     await expect(picker).toBeVisible();
-    await page.locator(SELECTORS.mergeTagPickerItem).first().click();
+    await page
+      .locator(SELECTORS.mergeTagPickerItem)
+      .filter({ hasText: "First Name" })
+      .click();
     await expect(picker).toBeHidden();
-    await expect(editable.locator(".tpl-merge-tag-node").last()).toBeVisible();
+    await expect(firstNameChips).toHaveCount(chipsBefore + 1);
 
     await expect(toolbar).toBeVisible();
     await editable.click();
