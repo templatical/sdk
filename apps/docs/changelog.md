@@ -15,6 +15,122 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.53.0
+
+<time datetime="2026-11-03">2026-11-03</time>
+
+### Features
+
+**Importers keep the source's languages**
+
+`@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-easy-email-pro` · `@templatical/import-html` · `@templatical/import-mjml` · `@templatical/import-stripo` · `@templatical/import-topol` · `@templatical/import-unlayer`
+
+- Every importer takes `defaultLocale?: string` and sets `settings.locale` from the language the source declares (`<html lang>`, `<mjml lang>`, Beefree's `language.value`, Topol's primary `langs` entry), else from `defaultLocale`, else `"en"`. Unlayer JSON declares no default language, so pass `defaultLocale`.
+- Beefree module `translations`, Unlayer `values._languages` and Topol `translations` become language versions.
+- Each language or key an importer drops, and each subject, title or description left to the host, gets a `report.warnings` entry.
+- Unlayer converts Lexical `textJson` and `paragraph` content to paragraph blocks instead of the HTML fallback.
+
+The mappings follow the vendors' documented JSON, checked 2026-10-28; real multilingual exports weren't available to test against. Check an import with `template-tools validate imported.json --locale <tag>`, and see the [Beefree](https://docs.templatical.com/guide/migration-from-beefree#languages), [Unlayer](https://docs.templatical.com/guide/migration-from-unlayer#languages) and [Topol](https://docs.templatical.com/guide/migration-from-topol#languages) guides.
+
+**Language versions and translation in the editor**
+
+`@templatical/editor`
+
+- `init({ localization: { locales, doNotTranslate? } })` turns on the **Languages** menu: add a language, make one the default or remove it. A language bar shows the version being edited, its missing and out-of-date counts, and **Translate {count} fields**, **Translate everything again…** and **Back to {default}**.
+- A status badge on each block shows hidden, missing, out-of-date, differing merge tags or changed properties, with Translate, Keep, Use default and Reset actions; a localization finding in Issues jumps to it. The settings panel marks translated or overridden fields, each with its own reset.
+- `init({ translation })` takes a `TranslationProvider`. Translate sends the gaps or every eligible field, masks merge tags, logic tags and `doNotTranslate` terms, applies what passes the exact check as one undo step and reports the rest. `doNotTranslate` takes at most 500 terms of 1–100 characters, and a field over the 20,000-unit request cap isn't sent.
+- AI chat, Fix with AI, Rewrite and Write alt text edit the active language.
+- Comments record the language they were written in and filter by it. A layout's language versions follow the selected language in preview, export and test email.
+- `getLocale()` and `setLocale(locale)` read and switch the shown language (`setLocale` throws `SdkError` with code `unknown_locale` for a version the template lacks), `onLocaleChange` reports it, and `toMjml({ locale })` / `toHtml({ locale })` render a version without changing the view.
+
+Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version. See [Localized templates](https://docs.templatical.com/guide/localized-templates) and [Translation](https://docs.templatical.com/backend/translation).
+
+**Language versions and translation in the template model**
+
+`@templatical/types`
+
+Breaking changes:
+
+- TypeScript producers must set the now required `AiRequestBase.locale` and `AiRewriteRequest.locale` to the active language, or `null` in the default view, and `CollaborationRemoteChange.locale` to the first locale operation's language in a batch, excluding `setDefaultLocale`, or `null` when there is none. Code that builds these objects must set them even without localization enabled.
+- An element id containing `.` or `/` (on a menu item, social icon, table row or table cell) now fails `validateTemplate`, and `addBlock`, `updateBlock` and `setContent` refuse to add one with `invalid_operation`. `elementIdIssues(content)` lists them; rename each.
+
+Apart from such ids, existing templates need no migration. Keep every `@templatical/*` package on the same version.
+
+- **Model:** `settings.locales` lists the language versions. Each block's and the settings' `l10n[locale]` layer holds translated `text` (`{ value, sourceHash }`), property overrides in `set`, and `hidden`. `resolveLocale(content, locale, options?: { missing?: "throw" | "default" })` projects one version, layouts included; an unknown version throws `unknown_locale` unless `missing: "default"`, which projects the document's default. `localeCoverage` and `sourceHash` report missing and out-of-date text.
+- **Operations:** `addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` and `updateSettingsLocale`, with inverses from `invertOperations` and a `locale` on locks. `setDefaultLocale` keeps the former default's text as its translation. `createSetDefaultLocaleOperation(content, locale, definitions?)` records custom text fields on the operation, so it replays without definitions. `defaultLocaleGaps` lists the fields with a nonempty default that would keep the current default's value, and `localeHiddenBlocks` the hidden blocks that refuse the change.
+- **Translation:** `TranslationProvider`, `TranslationRequest`, `TranslationResult`, `TranslationErrorCode` and `LocaleString`, with `maskTags`, `unmaskTags`, `localeStrings` and `applyLocaleStrings`. They mask merge tags, logic tags and `doNotTranslate` terms, and check them exactly on return.
+- **Also:** `Comment.locale` and `CommentInput.locale`, and `isSafeUrlAttribute(name, value): boolean`, the URL policy that the editor's sanitizer and `template-tools strings import` share.
+
+See [Localized templates](https://docs.templatical.com/guide/localized-templates) and [Locale operations](https://docs.templatical.com/api/operations#locale-operations).
+
+**Language versions in editing, collaboration and AI edits**
+
+`@templatical/core`
+
+Breaking changes:
+
+- A collaboration backend must refuse a batch that contains a `setContent` with `409` and `precondition_failed` when its `baseRevision` isn't the current revision; other batches still apply to the current content. Check a repeated `batchId` first, so a retried snapshot that already landed answers with its revision. Without the rule, a snapshot undo can overwrite a batch the backend committed but the editor hasn't received yet. The playground's reference backend implements it.
+- With language versions in use, a collaboration backend you built must apply the locale operations (`addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale`, `updateSettingsLocale`) and the lock `locale`. Until it does, it rejects those operations as `invalid_operation`, and one that ignores the lock `locale` serializes edits per block.
+
+Existing templates need no migration. Keep every `@templatical/*` package on the same version.
+
+- Edits in a language view go into that language's layer, collaboration diffs emit locale operations, and locks apply per block and language. `setDefaultLocale` conflicts with every other session's lock.
+- Under collaboration, undo or redo of a whole-template change (`setContent`, `setDefaultLocale`) is refused with `precondition_failed` once this editor has received another session's batch after it.
+- `onLocaleChange` reports the language shown whenever it changes, and `editor.createSetDefaultLocaleOperation(locale)` builds a default-language change that carries the registered custom text fields.
+- `mapLocalizedOperations` maps AI edits of a language view into translations, property overrides and shared structure changes.
+- `CollaborationApplyOptions.origin` and `.turn` are optional: a batch without `origin` is the session's own edit, with its own undo step.
+
+See [Collaboration](https://docs.templatical.com/backend/collaboration#applying-a-batch).
+
+**Language versions in the CLI, with `strings export` and `strings import`**
+
+`@templatical/template-tools`
+
+Breaking changes:
+
+- An element id containing `.` or `/` now fails `validate`; rename it.
+
+Otherwise existing templates need no migration. Keep every `@templatical/*` package on the same version.
+
+- `validate --locale <tag>` and `render --locale <tag>` check and render a language version, and the schema accepts `settings.locales` and `l10n`. An unknown locale exits `1` with `unknown_locale`.
+- `strings export <template.json> --locale <tag>` exports a language's strings, the gaps by default (`--only gaps|all`, `--block <id>`), as a `strings/1` JSON file. `strings import <template.json> <strings.json>` applies the strings whose `sourceHash` and placeholders still match and reports `{ applied, rejected, skipped, file }`, with the rejection reasons `stale`, `tags_changed`, `unknown_field`, `not_translatable` and `unsafe_html`. It exits `1` when it rejects any string.
+- `--definitions <file>` loads custom-block definitions for `validate`, `render`, `strings` and `edit`, `--do-not-translate <file>` protects terms during `strings`, and `import --default-locale <tag>` sets the default language for a source that declares none.
+- `edit` applies the locale operations, and a refused operation names its block on stderr.
+
+See [Strings](https://docs.templatical.com/api/template-tools#strings) and [Definitions](https://docs.templatical.com/api/template-tools#definitions).
+
+**Localization checks for language versions**
+
+`@templatical/quality`
+
+`contentLocale` lints a translated language version, and `localization.untranslated`, `localization.stale` and `localization.merge-tags-differ` report missing text, outdated `sourceHash` values and changed merge tags. `lintTemplate` includes the `localization` category; pass `customBlocks` to check custom `text` and `textarea` translations.
+
+Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version. See [the `localization` options](https://docs.templatical.com/quality/options#localization).
+
+**Rendering a language version**
+
+`@templatical/renderer`
+
+`renderToMjml(content, { locale })` renders a language version's text, property overrides, hidden blocks and settings, and sets MJML `lang` and `dir`. A `layout` passed alongside follows the same language and falls back to its own default. Localized custom blocks render through `renderCustomBlock` instead of the cached default-language HTML.
+
+Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version. See [Rendering a language](https://docs.templatical.com/guide/localized-templates#rendering-a-language).
+
+**Translation over your own backend**
+
+`@templatical/ai-kit`
+
+Breaking changes:
+
+- TypeScript producers must set the now required `AiRequestBase.locale` and `AiRewriteRequest.locale` to the active language, or `null` in the default view, and `CollaborationRemoteChange.locale` to the first locale operation's language in a batch, excluding `setDefaultLocale`, or `null` when there is none. Code that builds these objects must set them even without localization enabled.
+
+Otherwise existing templates need no migration. Keep every `@templatical/*` package on the same version.
+
+- `createHttpTranslationProvider` and the `translate` wire route (`POST /templates/{template}/translate`), with `readTranslationRequest`, `translateFields`, `createMockTranslationProvider` and `runTranslationConformance`.
+- `translateFields` requires every requested field id once with its placeholders intact, makes one repair attempt for failed fields and returns the fields that pass.
+- AI requests and prompts carry the active language as `locale`, and `checkRewrite` requires the input's exact merge- and logic-tag multiset.
+
+See [Translation](https://docs.templatical.com/backend/translation).
+
 ## 0.52.1
 
 <time datetime="2026-11-02">2026-11-02</time>
