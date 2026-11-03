@@ -563,8 +563,9 @@ function dividerAlign(
 
 /**
  * The room a divider that draws no line takes: its top and bottom padding plus
- * the width of a transparent border. `undefined` when the line is drawn.
- * BeeFree templates space content this way.
+ * the width of a transparent border, never below 0 (a negative padding can
+ * outweigh the rest). `undefined` when the line is drawn. BeeFree templates
+ * space content this way.
  */
 function undrawnDividerHeight(
   descriptor: BeeFreeeModuleDescriptor,
@@ -572,7 +573,7 @@ function undrawnDividerHeight(
   const border = parseBorderTop(descriptor.divider?.style?.["border-top"]);
   if (border.drawn) return undefined;
   const padding = extractPadding(descriptor.style);
-  return padding.top + border.width + padding.bottom;
+  return Math.max(0, padding.top + border.width + padding.bottom);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { convertModule } from "../block-mapper";
+import { convertModule, skippedModuleEntry } from "../block-mapper";
 import type { BeeFreeeImageContent, BeeFreeeModule } from "../types";
 
 function makeModule(
@@ -791,6 +791,31 @@ describe("convertModule", () => {
       expect(spacerHeight("0 solid #BBBBBB")).toBe(30);
       expect(spacerHeight("3px none #BBBBBB")).toBe(30);
       expect(spacerHeight("3px hidden #BBBBBB")).toBe(30);
+    });
+
+    // Room can't be negative: a negative padding that outweighs the rest is
+    // skipped, while one that doesn't still leaves the remaining room.
+    it("never makes the spacer negative", () => {
+      const outweighed = invisible("0px solid transparent", {
+        "padding-top": "-10px",
+        "padding-bottom": "0px",
+      });
+      expect(
+        outweighed.block.type === "spacer" && outweighed.block.height,
+      ).toBe(0);
+      expect(
+        skippedModuleEntry(
+          makeModule("mailup-bee-newsletter-modules-divider", {
+            divider: { style: { "border-top": "0px solid transparent" } },
+            style: { "padding-top": "-10px" },
+          }),
+        )?.status,
+      ).toBe("skipped");
+      const mixed = invisible("20px solid transparent", {
+        "padding-top": "-10px",
+        "padding-bottom": "0px",
+      });
+      expect(mixed.block.type === "spacer" && mixed.block.height).toBe(10);
     });
 
     it("keeps the module's background colour on the spacer", () => {
