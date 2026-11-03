@@ -3,6 +3,7 @@ import {
   parsePxValue,
   parseColor,
   parseBorderTop,
+  isTransparentColor,
   extractPadding,
   parseDividerWidth,
   readBeefreeBackgroundImage,
@@ -90,6 +91,90 @@ describe("parseBorderTop", () => {
     const result = parseBorderTop(undefined);
     expect(result.width).toBe(0);
     expect(result.style).toBe("solid");
+    expect(result.drawn).toBe(true);
+  });
+
+  it("keeps a colour function's spaces together", () => {
+    expect(parseBorderTop("2px dotted rgba(10, 20, 30, 0.5)")).toEqual({
+      width: 2,
+      style: "dotted",
+      color: "rgba(10, 20, 30, 0.5)",
+      drawn: true,
+    });
+  });
+
+  it("reads the parts in any order", () => {
+    expect(parseBorderTop("solid #cccccc 3px")).toEqual({
+      width: 3,
+      style: "solid",
+      color: "#cccccc",
+      drawn: true,
+    });
+  });
+
+  it("reads the thin, medium and thick width keywords", () => {
+    expect(
+      ["thin", "medium", "thick"].map(
+        (keyword) => parseBorderTop(`${keyword} solid #cccccc`).width,
+      ),
+    ).toEqual([1, 3, 5]);
+  });
+
+  // A length pattern that can split a run of digits two ways backtracks
+  // quadratically on a long run that fails to match (CodeQL
+  // js/polynomial-redos).
+  it("reads a long run of zeros in linear time (ReDoS regression)", () => {
+    const start = Date.now();
+    const result = parseBorderTop(`${"0".repeat(40_000)}x solid #cccccc`);
+    const elapsed = Date.now() - start;
+    expect([result.width, result.drawn]).toEqual([0, true]);
+    expect(elapsed).toBeLessThan(250);
+  });
+
+  it("is not drawn at 0 width, with no style, or in a transparent colour", () => {
+    for (const value of [
+      "0px solid #cccccc",
+      "0 solid #cccccc",
+      "1px none #cccccc",
+      "1px hidden #cccccc",
+      "1px solid transparent",
+      "1px solid rgba(0,0,0,0)",
+    ]) {
+      expect([value, parseBorderTop(value).drawn]).toEqual([value, false]);
+    }
+  });
+});
+
+describe("isTransparentColor", () => {
+  it("is true for a colour with no opacity", () => {
+    for (const value of [
+      "transparent",
+      "TRANSPARENT",
+      "#0000",
+      "#ffffff00",
+      "rgba(0, 0, 0, 0)",
+      "rgba(255,255,255,0.0)",
+      "rgb(0 0 0 / 0)",
+      "rgb(0 0 0 / 0%)",
+      "hsla(0, 0%, 100%, 0)",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, true]);
+    }
+  });
+
+  it("is false for a colour that paints", () => {
+    for (const value of [
+      "",
+      "#000",
+      "#000000",
+      "#ffffff80",
+      "rgba(0, 0, 0, 0.5)",
+      "rgb(0 0 0)",
+      "rgb(0 0 0 / 1%)",
+      "red",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, false]);
+    }
   });
 });
 
@@ -127,6 +212,35 @@ describe("extractPadding", () => {
   it("returns zeros for undefined", () => {
     const result = extractPadding(undefined);
     expect(result).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+  });
+
+  // CSS drops a padding declaration with a negative length.
+  it("ignores a negative longhand", () => {
+    const result = extractPadding({
+      "padding-top": "-30px",
+      "padding-right": "10px",
+      "padding-bottom": "5px",
+      "padding-left": "-0px",
+    });
+    expect(result).toEqual({ top: 0, right: 10, bottom: 5, left: 0 });
+  });
+
+  it("drops a shorthand with a negative side and reads the longhands", () => {
+    const result = extractPadding({
+      padding: "10px -5px",
+      "padding-top": "8px",
+    });
+    expect(result).toEqual({ top: 8, right: 0, bottom: 0, left: 0 });
+  });
+
+  // -0.4px rounds to -0, which must not pass as valid; a literal -0 is 0.
+  it("judges a shorthand's sign before rounding", () => {
+    expect(
+      extractPadding({ padding: "10px -0.4px", "padding-top": "8px" }),
+    ).toEqual({ top: 8, right: 0, bottom: 0, left: 0 });
+    expect(
+      extractPadding({ padding: "10px -0px", "padding-top": "8px" }).top,
+    ).toBe(10);
   });
 });
 

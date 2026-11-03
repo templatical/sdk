@@ -27,6 +27,7 @@ import type {
 import {
   convertModule,
   FALLBACK_TEXT_COLOR,
+  skippedModuleEntry,
   type ModuleContext,
 } from "./block-mapper";
 import {
@@ -102,6 +103,11 @@ function convertColumnModules(
   const blocks: Block[] = [];
 
   for (const module of column.modules) {
+    const skipped = skippedModuleEntry(module);
+    if (skipped) {
+      entries.push(skipped);
+      continue;
+    }
     const { block, entry } = convertModule(module, warnings, context);
     blocks.push(block);
     entries.push(entry);
