@@ -34,8 +34,9 @@ const emit = defineEmits<{
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
 const popoverRoot = usePopoverRoot();
-// Hide the floating toolbar while either built-in picker modal is open — see
-// ParagraphToolbar.vue for the same rationale.
+// The toolbar hides while a built-in picker is open. Its Teleport stays
+// mounted for the whole edit session: re-mounting re-appends its anchor
+// after the link dialog's and paints the toolbar over the dialog (#1082).
 const picker = inject(MERGE_TAG_PICKER_KEY, null);
 const logicPicker = inject(LOGIC_TAG_PICKER_KEY, null);
 const pickerIsOpen = computed(
@@ -141,8 +142,9 @@ const {
 
 <template>
   <div class="tpl-text-editor-wrapper tpl:relative">
-    <Teleport v-if="popoverRoot && !pickerIsOpen" :to="popoverRoot">
+    <Teleport v-if="popoverRoot" :to="popoverRoot">
       <div
+        v-if="!pickerIsOpen"
         :data-tpl-theme="tplUiTheme"
         role="toolbar"
         :aria-label="t.titleEditor.toolbar"
