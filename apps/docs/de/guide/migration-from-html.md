@@ -152,7 +152,7 @@ Ein `<hr>` wird als die Linie importiert, die es zeichnet. Seine Linie ist der o
 
 | `<hr>` | Ergebnis | Status |
 |---|---|---|
-| kein `border-top`-, `border`- oder `border-bottom`-Stil | `divider`, durchgezogen schwarz 1px | Konvertiert |
+| kein Rahmen für oben oder unten angegeben: kein `border`, `border-top` oder `border-bottom` und keine ihrer Einzelangaben für Breite, Stil oder Farbe | `divider`, durchgezogen schwarz 1px | Konvertiert |
 | ein Rahmen, der zeichnet | `divider` in Breite und Farbe des Rahmens; `dashed` und `dotted` behalten ihren Stil, jeder andere Stil wird `solid` | Konvertiert |
 | kein Rahmen, der zeichnet, und ein `background` oder `background-color` mit `height` | `divider` in der Hintergrundfarbe, so dick wie `height`, durchgezogen | Konvertiert |
 | kein Rahmen, der zeichnet, kein Hintergrund, belegter Platz | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |

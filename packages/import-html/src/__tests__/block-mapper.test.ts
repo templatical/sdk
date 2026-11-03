@@ -761,6 +761,13 @@ describe("skippedElementEntry", () => {
     expect(block.type === "spacer" && block.height).toBe(0);
   });
 
+  // A longhand alone declares the border, so the browser's default line no
+  // longer applies.
+  it("skips an <hr> whose only border style is a 0 border-width", () => {
+    const { $, $el } = firstEl('<hr style="border-width: 0;" />', "hr");
+    expect(skippedElementEntry($el, $)?.status).toBe("skipped");
+  });
+
   it("skips an <hr> that draws nothing and takes no space", () => {
     const { $, $el } = firstEl('<hr style="border: 0; margin: 0;" />', "hr");
     expect(skippedElementEntry($el, $)).toEqual({

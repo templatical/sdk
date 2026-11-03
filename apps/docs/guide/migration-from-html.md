@@ -152,7 +152,7 @@ An `<hr>` imports as the line it draws. Its line is the top border (`border-top`
 
 | `<hr>` | Result | Status |
 |---|---|---|
-| no `border-top`, `border` or `border-bottom` style | `divider`, 1px solid black | Converted |
+| no border declared for the top or bottom: no `border`, `border-top` or `border-bottom`, and none of their width, style or colour longhands | `divider`, 1px solid black | Converted |
 | a border that draws | `divider` in the border's width and colour; `dashed` and `dotted` keep their style, any other style is `solid` | Converted |
 | no border that draws, and a `background` or `background-color` with a `height` | `divider` in the background colour, as thick as `height`, solid | Converted |
 | no border that draws, no background, and room taken | `spacer` | Converted, with a `note` naming the height |
