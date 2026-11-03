@@ -364,6 +364,102 @@ describe("language menu", () => {
     expect(history.canUndo.value).toBe(false);
   });
 
+  it("updates an open promotion's gap count after same-template setContent and confirms current content", async () => {
+    const { wrapper, editor } = await openLanguages();
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    await wrapper
+      .get('[data-testid="language-make-default-de"]')
+      .trigger("click");
+    const dialog = () => wrapper.get('[role="dialog"]');
+    expect(dialog().text()).toContain(
+      "1 field has no Deutsch text and keeps its English text.",
+    );
+    const updated = JSON.parse(JSON.stringify(editor.content.value));
+    updated.blocks.push(createTitleBlock({ id: "new", content: "New offer" }));
+    editor.setContent(updated);
+    await nextTick();
+    expect(dialog().text()).toContain(
+      "2 fields have no Deutsch text and keep their English text.",
+    );
+    await wrapper
+      .get('[data-testid="language-default-confirm"]')
+      .trigger("click");
+    expect(editor.content.value.settings.locale).toBe("de");
+    expect(
+      editor.content.value.blocks.find((block) => block.id === "new"),
+    ).toMatchObject({ content: "New offer" });
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+  });
+
+  it.each([
+    {
+      name: "the language is removed",
+      change: (content: any) => {
+        content.settings.locales = ["fr"];
+      },
+    },
+    {
+      name: "the language is already the default",
+      change: (content: any) => {
+        content.settings.locale = "de";
+        content.settings.locales = ["en", "fr"];
+      },
+    },
+    {
+      name: "a block is hidden in the language",
+      change: (content: any) => {
+        content.blocks[0].l10n.de.hidden = true;
+      },
+    },
+    {
+      name: "the new default isn't an enabled language",
+      change: (content: any) => {
+        content.settings.locale = "fr";
+        content.settings.locales = ["en", "de"];
+      },
+    },
+  ])(
+    "closes an open promotion without applying it after setContent when $name",
+    async ({ change }) => {
+      const { wrapper, editor, history } = await openLanguages();
+      await wrapper.get('[data-testid="language-menu"]').trigger("click");
+      await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+      await wrapper
+        .get('[data-testid="language-make-default-de"]')
+        .trigger("click");
+      expect(wrapper.get('[role="dialog"]').text()).toContain(
+        "Make Deutsch the default language?",
+      );
+      const updated = JSON.parse(JSON.stringify(editor.content.value));
+      change(updated);
+      editor.setContent(updated);
+      await nextTick();
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="language-actions-de"]').exists()).toBe(
+        false,
+      );
+      expect(editor.content.value.settings).toEqual(updated.settings);
+      expect(history.canUndo.value).toBe(false);
+    },
+  );
+
+  it("keeps an open promotion while the replaced content still allows it", async () => {
+    const { wrapper, editor } = await openLanguages();
+    await wrapper.get('[data-testid="language-menu"]').trigger("click");
+    await wrapper.get('[data-testid="language-actions-de"]').trigger("click");
+    await wrapper
+      .get('[data-testid="language-make-default-de"]')
+      .trigger("click");
+    const updated = JSON.parse(JSON.stringify(editor.content.value));
+    updated.blocks[1].alt = "Another product";
+    editor.setContent(updated);
+    await nextTick();
+    expect(wrapper.get('[role="dialog"]').text()).toContain(
+      "Make Deutsch the default language?",
+    );
+  });
+
   it("omits the zero-gap paragraph and cancels promotion without changes", async () => {
     const content = languageContent();
     content.blocks = [content.blocks[0]];

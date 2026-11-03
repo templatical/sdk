@@ -7,7 +7,7 @@ playbook assumes it and none repeat it.
 **Every command below runs through one pinned CLI, and the invocation always
 starts the same way:**
 ```
-npx -y @templatical/template-tools@0.52.1 validate <file> --json
+npx -y @templatical/template-tools@0.53.0 validate <file> --json
 ```
 `npx`, then `-y`, then the package name pinned to an exact version, is the
 fixed prefix — identical for `validate`, `render`, `edit`, `import`, `live`,
@@ -66,8 +66,15 @@ such as `{{lang}}`, is ignored with a warning). A template's default language ch
 every operation:
 
 ```bash
-npx -y @templatical/template-tools@0.52.1 edit template.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
+npx -y @templatical/template-tools@0.53.0 edit template.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
 ```
+
+A refused operation exits `2` with `Operation N (op) was refused: <code> — <reason>`
+on stderr, in both modes, and writes nothing; stdout stays empty, also with
+`--json`. When the engine names a block, the message ends with `Block: "<id>".`
+(unless the reason already holds the id in double quotes). `setDefaultLocale` refused for hidden
+blocks names the first one, for example
+`1 block is hidden in "de". Show it before making it the default. Block: "title_1".`
 
 The workflow, its gap and hidden-block checks, and the `strings` round trip
 below are in [localize.md](localize.md).
@@ -77,12 +84,12 @@ below are in [localize.md](localize.md).
 For a saved template with German in `settings.locales`, export its missing/stale fields, edit each entry’s `text`, then import:
 
 ```bash
-npx -y @templatical/template-tools@0.52.1 strings export template.json --locale de --out strings.de.json --json
-npx -y @templatical/template-tools@0.52.1 strings import template.json strings.de.json --json
-npx -y @templatical/template-tools@0.52.1 validate template.json --locale de --json
+npx -y @templatical/template-tools@0.53.0 strings export template.json --locale de --out strings.de.json --json
+npx -y @templatical/template-tools@0.53.0 strings import template.json strings.de.json --json
+npx -y @templatical/template-tools@0.53.0 validate template.json --locale de --json
 ```
 
-The file is `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`. Its `LocaleString` entries have `id`, `format: "html" | "text"`, masked `source`, `sourceHash` and optional masked `text`. Keep the ids and hashes. Missing `text` is skipped; empty `text` is applied only when the source has no placeholders, otherwise it is rejected as `tags_changed`. A stale entry has no `text`: its stored translation is in `previous` (masked like `source`), which import never reads, so write a new `text` from the current `source` or the entry stays stale. Tokens are regenerated from current defaults and are not stored in the file.
+The file is `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`. Its `LocaleString` entries have `id`, `format: "html" | "text"`, masked `source`, `sourceHash` and optional masked `text`. Keep the ids and hashes. An entry without `text` is skipped and listed in `skipped` below; empty `text` is applied only when the source has no placeholders, otherwise it is rejected as `tags_changed`. A stale entry has no `text`: its stored translation is in `previous` (masked like `source`), which import never reads, so write a new `text` from the current `source` or the entry stays stale. Tokens are regenerated from current defaults and are not stored in the file.
 
 Both commands refuse the template's default language: `--locale` naming it, or a file whose `targetLocale` names it, exits `1` with a message on stderr. Import exits `2` and writes nothing when the file's `sourceLocale` isn't the template's default language (for example after `setDefaultLocale`); export again.
 
@@ -95,9 +102,10 @@ Both commands refuse the template's default language: `--locale` naming it, or a
 Use the same syntax, definitions and protected terms for export/import. Preserve every `<x id="n"/>` (text) and `__xn__` (HTML attributes) exactly once, sharing one sequence per field. Import checks placeholders, unmasks, then rejects unsafe markup as `unsafe_html`:
 
 - `html` strings: allowed tags `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (merge/logic chips included). Any `on*` attribute, a string ending inside a tag, and a comment, CDATA section, declaration or processing instruction the field's default doesn't contain byte for byte are refused.
+- `style` attributes in `html` strings: every `style` value, on any element, must equal a `style` value in the field's default, byte for byte and as written; unlike Translate in the editor, import doesn't decode character references first, so `AT&#38;T` is refused for a default `AT&amp;T`. A new or changed value is refused as `unsafe_html`; moving, dropping or having no styles passes.
 - URL attributes follow the editor sanitizer (`sanitizeHtml`): only `href`, `xlink:href`, `background`, `poster` and `src`, from `HTML_URL_ATTRIBUTES`, are checked as URLs. Decode references, remove tab/LF/CR, strip leading control characters and spaces, and remove trailing whitespace; these attributes may be empty, relative, `#…`, or use `http:`, `https:`, `mailto:`, `tel:`, `ftp:`, `ftps:`, `sms:`, `xmpp:` or `cid:`. Only `src` may also be a `data:image/` URL of type `png`, `jpeg`, `jpg`, `gif`, `webp` or `svg+xml` followed by `;` (for example `data:image/png;base64,…`). Any other scheme is refused, including `javascript:`, `vbscript:`, `data:` and `file:`. `srcdoc`, `ping`, `formaction` and `action`, from `HTML_FORBIDDEN_ATTRIBUTES`, are always refused, even when empty or using `https:`. Tags and `on*` handlers are checked separately.
-- `text`-format strings (custom-block `text`/`textarea` included): every tag, comment, CDATA section and declaration must also be in the field's default, byte for byte.
+- `text`-format strings (custom-block `text`/`textarea` included): every tag, comment, CDATA section and declaration must also be in the field's default, byte for byte. A `<` directly before a letter reads as a tag, so `a<b` is refused unless the default has it; write `a < b` with a space. The human output adds that hint under the entry, and the `--json` rejection stays `{ id, reason }`.
 
-Import reports `{ applied, rejected: [{ id, reason }], file }` with `--json`. Reasons: `stale` (default changed after export), `tags_changed`, `unknown_field`, `not_translatable`, `unsafe_html`. Accepted fields are validated and written even with rejections. Exit `0` means nothing was rejected; exit `1` means partial or complete rejection. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr, and the default language exits `1`, both without a result document. Missing arguments, unreadable/invalid strings files, a file from another default language or invalid definitions/term files exit `2`, without a result document. Inspect rejections and run `validate --locale de` afterward; warnings alone can still exit `0`.
+Import reports `{ applied, rejected: [{ id, reason }], skipped: [{ id, reason }], file }` with `--json`. `skipped` lists every entry without `text`: `reason` is `"stale"` when its field is out of date and `"missing"` otherwise; human output prints a `Skipped <id>: <reason>` line each, and a skip doesn't change the exit code. Rejection reasons: `stale` (default changed after export), `tags_changed`, `unknown_field`, `not_translatable`, `unsafe_html`. Accepted fields are validated and written even with rejections. Exit `0` means nothing was rejected; exit `1` means partial or complete rejection. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr, and the default language exits `1`, both without a result document. Missing arguments, unreadable/invalid strings files, a file from another default language or invalid definitions/term files exit `2`, without a result document. Inspect rejections and run `validate --locale de` afterward; warnings alone can still exit `0`.
 
 Fetch `api/template-tools` through [docs.md](docs.md) for the full contract and [localize.md](localize.md) for the localization workflow.

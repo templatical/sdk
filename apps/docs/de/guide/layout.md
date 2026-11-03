@@ -175,20 +175,9 @@ Sie können die Einstellungen des Inhalts auf das Layout kopieren und `backgroun
 
 ## Headless-Nutzung
 
-```ts
-import { renderToMjml } from '@templatical/renderer';
-import { applyLayout, resolveLocale } from '@templatical/types';
+Dieses vollständige TypeScript-Beispiel benötigt `@templatical/renderer` und `@templatical/types`. Es erstellt ein Template und ein Layout mit je einer deutschen Version, setzt beide zusammen und rendert sie. Es gibt `true true 2 de` aus: Das Standard-Rendering enthält das `Legal notice` des Layouts, das deutsche sein `Impressum`, die zusammengesetzte Standardversion hat zwei Blöcke (den Titel des Templates im Slot, dann die Fußzeile), und `settings.locale` der deutschen Zusammensetzung ist `de`.
 
-const mjml = await renderToMjml(content, { layout });
-const composed = applyLayout(layout, content);
-
-// One language version of a localized template, as renderToMjml composes it:
-const germanMjml = await renderToMjml(content, { layout, locale: 'de' });
-const german = applyLayout(
-  resolveLocale(layout, 'de', { missing: 'default' }),
-  resolveLocale(content, 'de'),
-);
-```
+<<< @/snippets/layout-headless.ts
 
 Vorschau, `toMjml` und `toHtml` setzen zuerst zusammen, dann optional `resolvePreview`:
 

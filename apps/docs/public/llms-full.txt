@@ -1747,7 +1747,7 @@ Other languages' current text is re-stamped against the new base. Stale text kee
 
 `localeHiddenBlocks(content, locale): string[]` lists, depth first, the ids of blocks whose own `l10n[locale].hidden` is `true`; it also looks inside hidden blocks, so a hidden child of a hidden section is listed separately and needs its own `hidden: false`. It returns `[]` for the default or an unknown locale. `defaultLocaleGaps(content, locale, definitions?): string[]` lists translatable field ids with a nonempty default that keep the old base because the version has neither text nor an applicable property override. Stale text is promoted and is not a gap; neither is an empty default, as in `localeCoverage`. Both helpers are pure; pass custom-block definitions to count their text fields.
 
-An unknown version or the current default is `invalid_operation`: `"<locale>" is not a language version of this template.` Hidden blocks refuse with `invalid_operation`, the first hidden `blockId`, and `<count> blocks are hidden in "<locale>". Show them before making it the default.` Any other session's lock refuses it with `locked_by_others`, as for `setContent`; `onRemoteChange.locale` is `null` for this operation. The checks run in that order: the tag, the version, hidden blocks, then locks, so hidden blocks win over a lock. AI batches in a language view refuse it.
+An unknown version or the current default is `invalid_operation`: `"<locale>" is not a language version of this template.` Hidden blocks refuse with `invalid_operation`, the first hidden `blockId`, and a message that counts them, for the version `de`: `1 block is hidden in "de". Show it before making it the default.` or `2 blocks are hidden in "de". Show them before making it the default.` Any other session's lock refuses it with `locked_by_others`, as for `setContent`; `onRemoteChange.locale` is `null` for this operation. The checks run in that order: the tag, the version, hidden blocks, then locks, so hidden blocks win over a lock. AI batches in a language view refuse it.
 
 `invertOperations` uses `setContent` to restore the exact prior content, including hashes, the promoted layer and cached HTML. Undo therefore has the same whole-template lock rule. A snapshot can't expect what it overwrites, so under collaboration the editor also records the content each such undo or redo step applies to, and skips the step (`undoSkipped`, `precondition_failed`) once this editor has received another session's batch after it, locked or not. A batch the backend committed but hasn't delivered yet is caught by the backend: it refuses a batch with a `setContent` whose `baseRevision` isn't the current revision ([Collaboration](/backend/collaboration#submit)). The undo of a `setContent` works the same way. Without other sessions' batches, undo and redo restore the content exactly. Submit the explicit operation through collaboration; a snapshot diff emits `setContent` for a default change.
 
@@ -2205,12 +2205,13 @@ Both commands work on a language version, never on the template’s default lang
 Use the same syntax, definitions and protected terms on both commands. The masking and exact placeholder check are the [translation contract](/backend/translation#provider-contract): `<x id="n"/>` in text and `__xn__` in HTML attributes, sharing one id sequence per field. Import checks placeholders, restores the original bytes, then rejects unsafe markup as `unsafe_html`:
 
 - **`html` strings:** allowed tags are `p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span` (including merge/logic chips). Any `on*` attribute is refused, and so is a string that ends inside a tag. A comment, CDATA section, declaration or processing instruction is refused unless the field’s default contains the same one byte for byte; browsers end a CDATA section in HTML at its first `>`.
+- **`style` attributes in `html` strings:** every `style` value in the string, on any element, must equal a `style` value in the field’s default, byte for byte and as written: different spacing, case or character references make a different value. A new or changed value is refused as `unsafe_html`, because a style can fetch a remote file or overlay the email. A translation that moves a default style to another element, drops it, or has no styles passes. The comparison is of the text as written: the editor's Translate decodes character references first, so it accepts `AT&#38;T` for a default `AT&amp;T`, which import refuses; see the [translation contract](/backend/translation#provider-contract).
 - **URL attributes in `html` strings** follow the editor sanitizer (`sanitizeHtml`). Only `href`, `xlink:href`, `background`, `poster` and `src`, from `HTML_URL_ATTRIBUTES`, are checked as URLs. Character references are decoded, tab, LF and CR are removed, leading control characters and spaces are stripped, and trailing whitespace is removed, as a browser does. These attributes may be empty, relative, a `#` fragment, or use `http:`, `https:`, `mailto:`, `tel:`, `ftp:`, `ftps:`, `sms:`, `xmpp:` or `cid:`. Only `src` may also be a `data:image/` URL of type `png`, `jpeg`, `jpg`, `gif`, `webp` or `svg+xml` followed by `;` (for example `data:image/png;base64,…`). Any other scheme is refused, including `javascript:`, `vbscript:`, `data:` and `file:`. `srcdoc`, `ping`, `formaction` and `action`, from `HTML_FORBIDDEN_ATTRIBUTES`, are always refused, even when empty or using `https:`. Tags and `on*` handlers are checked separately.
-- **`text`-format strings,** custom-block `text` and `textarea` fields included: every tag, comment, CDATA section and declaration must also be in the field’s default, byte for byte. A string that ends inside a tag counts as a tag.
+- **`text`-format strings,** custom-block `text` and `textarea` fields included: every tag, comment, CDATA section and declaration must also be in the field’s default, byte for byte. A string that ends inside a tag counts as a tag. A `<` directly before a letter reads as markup, so `a<b` is refused unless the default contains that markup byte for byte. Write `a < b` with a space for a comparison. The human output then prints `A "<" directly before a letter reads as markup. Write "a < b" with a space.` under the refused entry; the `--json` rejection keeps the shape `{ id, reason }`.
 
 Import rejection reasons are `stale` (the current default’s hash changed), `tags_changed` (placeholders or restored tags/terms differ), `unknown_field`, `not_translatable` and `unsafe_html`. Accepted strings are validated and written even when others are rejected. Rejections leave those fields’ stored values intact. Import exits `0` when nothing is rejected, `1` otherwise. Export exits `0`; an unknown locale exits `1` with `unknown_locale` on stderr, and the default language exits `1` with a message on stderr, both without a result document. Missing arguments, unreadable/invalid strings files, a strings file from another default language or invalid definitions/term files exit `2`.
 
-Without `--out`, export prints the strings file itself, including with `--json`. With `--out <file> --json`, its result is `{ file, sourceLocale, targetLocale, count }`. Import’s `--json` result is `{ applied, rejected: [{ id, reason }], file }`, where `applied` counts fields. Check the exit code and each rejection, then run `validate template.json --locale de --json` to check remaining missing/stale values.
+Without `--out`, export prints the strings file itself, including with `--json`. With `--out <file> --json`, its result is `{ file, sourceLocale, targetLocale, count }`. Import’s `--json` result is `{ applied, rejected: [{ id, reason }], skipped: [{ id, reason }], file }`, where `applied` counts fields. `skipped` lists every entry without `text`: `reason` is `"stale"` when its field is out of date and `"missing"` otherwise. Human output prints one `Skipped <id>: <reason>` line per entry. A skipped entry leaves its field unchanged and doesn't change the exit code. Check the exit code and each rejection, then run `validate template.json --locale de --json` to check remaining missing/stale values.
 
 ### Definitions
 
@@ -2225,7 +2226,7 @@ npx -y @templatical/template-tools edit emails/welcome.json \
 
 One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. The operations are the vocabulary the editor, collaboration backends and Templatical Cloud share — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings` and `setContent` — described in the [Operations reference](/api/operations). An operation in the old `{ "operation", "data" }` form is refused with a pointer to the new one.
 
-A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
+A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). When the engine names a block, such as the first block hidden in a language that can't become the default, the message ends with `Block: "<id>".` unless the reason already contains that id in double quotes. A refusal exits `2`, with the message on stderr in both modes and nothing on stdout, also with `--json`. Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
 
 Pass `--definitions definitions.json` when promoting a language with custom `text` or `textarea` fields. `edit` captures their paths in `setDefaultLocale.customTextFields`, so the former default retains current copies of untranslated custom fields. Existing metadata is retained, and each operation uses the preceding operations' result. The result is validated with those definitions before writing.
 
@@ -3902,58 +3903,111 @@ Source: https://docs.templatical.com/backend/collaboration
 
 Give the editor a collaboration provider and several people can edit one template at once. Every edit reaches your backend as a batch of [operations](/api/operations), your backend puts the batches in one order, and every editor applies them in that order. Selecting a block locks it, so two people never type into the same block, and everyone sees who else has the template open.
 
-```ts
-import { init } from '@templatical/editor';
+The paths, event names and `X-Session-Id` header in this example are its own transport. The contract is the provider methods, described in [The contract](#the-contract).
 
-let sessionId = '';
+```ts
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+
+let sessionId = "";
 const lockUrl = (templateId: string, blockId: string, locale?: string | null) =>
   `/api/templates/${templateId}/locks/${blockId}` +
-  (locale ? `?locale=${encodeURIComponent(locale)}` : '');
+  (locale ? `?locale=${encodeURIComponent(locale)}` : "");
+
+// A refused request rejects with its HTTP status as `statusCode` and the
+// response's `code`, `holder` and `holders`.
+async function api(url: string, options: RequestInit = {}) {
+  const response = await fetch(url, options);
+  const body = await response.json().catch(() => ({}));
+  if (response.ok) return body;
+  throw Object.assign(new Error(body.message ?? `HTTP ${response.status}`), {
+    statusCode: response.status,
+    code: body.code,
+    holder: body.holder,
+    holders: body.holders,
+  });
+}
+
+// Server-sent events carry the other sessions' changes, one subscription per
+// template.
+const subscriptions = new Map<string, EventSource>();
 
 const editor = await init({
-  container: '#editor',
-  user: { id: 'u_7', name: 'Ada Lovelace' },
-  templates: myTemplatesProvider, // `load` returns the template's `revision`
+  container: "#editor",
+  user: { id: "u_7", name: "Ada Lovelace" },
+  templates: {
+    // `load` returns the template's content and its `revision`.
+    load: (id) => api(`/api/templates/${id}`),
+    create: false,
+    save: false,
+  },
   collaboration: {
-    join: (templateId, session, handlers) => {
+    join: async (templateId, session, handlers) => {
       sessionId = session.sessionId;
-      return myRealtime.join(templateId, session, handlers);
+      subscriptions.get(templateId)?.close();
+      const events = new EventSource(
+        `/api/templates/${templateId}/events?sessionId=${sessionId}`,
+      );
+      subscriptions.set(templateId, events);
+      const on = (name: string, handle: (data: any) => void) =>
+        events.addEventListener(name, (event) =>
+          handle(JSON.parse((event as MessageEvent<string>).data)),
+        );
+      on("batch", (batch) => handlers.onBatch(batch));
+      on("resync", ({ revision, actor }) => handlers.onResync(revision, actor));
+      on("lock", (lock) => handlers.onLock(lock));
+      on("unlock", ({ blockId, sessionId, locale }) =>
+        handlers.onUnlock(blockId, sessionId, locale),
+      );
+      on("members", (members) => handlers.onMembers(members));
+      events.onopen = () => handlers.onConnectionChange("connected");
+      events.onerror = () =>
+        handlers.onConnectionChange(
+          events.readyState === EventSource.CLOSED ? "offline" : "reconnecting",
+        );
+      const state = await api(`/api/templates/${templateId}/join`, {
+        method: "POST",
+        headers: { "X-Session-Id": sessionId },
+      });
+      return { ...state, leave: () => events.close() };
     },
     submit: (templateId, batch) =>
       api(`/api/templates/${templateId}/operations`, {
-        method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        method: "POST",
+        headers: { "X-Session-Id": sessionId },
         body: JSON.stringify(batch),
       }),
     operationsAfter: (templateId, revision) =>
       api(`/api/templates/${templateId}/operations?after=${revision}`, {
-        headers: { 'X-Session-Id': sessionId },
+        headers: { "X-Session-Id": sessionId },
       }),
     acquireLock: (templateId, blockId, locale) =>
       api(`/api/templates/${templateId}/locks`, {
-        method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        method: "POST",
+        headers: { "X-Session-Id": sessionId },
         body: JSON.stringify({ blockId, locale: locale ?? null }),
       }),
     renewLock: (templateId, blockId, locale) =>
       api(lockUrl(templateId, blockId, locale), {
-        method: 'PUT',
-        headers: { 'X-Session-Id': sessionId },
+        method: "PUT",
+        headers: { "X-Session-Id": sessionId },
       }),
     releaseLock: async (templateId, blockId, locale) => {
       await fetch(lockUrl(templateId, blockId, locale), {
-        method: 'DELETE',
-        headers: { 'X-Session-Id': sessionId },
+        method: "DELETE",
+        headers: { "X-Session-Id": sessionId },
         keepalive: true,
       });
     },
   },
 });
 
-await editor.load('tpl_123');
+await editor.load("tpl_123");
 ```
 
-`api` is your own fetch helper; a refused request must reject with the HTTP status as `statusCode` and the response's `code`, `holder` and `holders` (see [Refusals](#refusals)), because a missing status counts as a network failure and is retried.
+This complete TypeScript example needs `@templatical/editor` and a backend with the routes it calls. Server-sent events carry the other sessions' changes: `join` subscribes first, then asks the backend for the revision, the unexpired locks and the members. The editor calls `join` again after a reconnect, so a second call replaces the subscription. `releaseLock` uses `fetch` with `keepalive`, so the request survives a closing page.
+
+`api` is the sample's fetch helper: a refused request rejects with the HTTP status as `statusCode` and the response's `code`, `holder` and `holders` (see [Refusals](#refusals)), because a missing status counts as a network failure and is retried.
 
 The backend combines `X-Session-Id` with the authenticated user to identify the lock owner.
 
@@ -6160,6 +6214,13 @@ export declare function applyLocaleStrings(
 Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides and hidden blocks are excluded too.
 
 The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids. If their tags no longer match, the old translation is not sent and the field is translated from the current default. `localeStrings` retains its masked current source and `sourceHash`, omitting `text`; coverage alone selects gaps or all fields. Returned HTML goes through the editor’s DOMPurify-based `sanitizeHtml` with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
+
+A translation may keep, move or drop the inline styles of its default, but not add or change one: a style can fetch a remote file or overlay the email, and the sanitizer keeps `style`. The editor and `strings import` both enforce this, with two comparisons:
+
+- **The editor's Translate** compares every `style` value in the returned HTML, on any element, with the `style` values of the field's default, after the browser's HTML parser has decoded character references. The values must be equal, byte for byte, as decoded, so `AT&#38;T` and `AT&amp;T` are the same value while `color: red` and `color:red` are not. A field with a new or changed style isn't written: it keeps its previous value and counts under `TranslationRunResult.tagsChanged`, the result notice's "kept because their tags changed" group, the same as a changed placeholder.
+- **`strings import`** compares the attribute text as written, without decoding character references, so `AT&#38;T` is refused where the default has `AT&amp;T`. It refuses such a string as `unsafe_html`; see [Template tools](/api/template-tools#strings).
+
+A translation that keeps, moves or drops a default style, or has no styles, passes both. `localeStrings` and `applyLocaleStrings` stay pure and don't check styles or sanitize.
 
 `localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. In `html` fields, terms match the decoded text: numeric references, the HTML 4.01 named references, `&apos;` and the uppercase aliases `&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;` and `&REG;` are decoded before matching, so `&apos;` matches a term's `'`. Other named references stay as written, and reference names are case-exact (`&Amp;` stays literal). In `text` fields, terms match the text as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. An extra literal occurrence of a term is plain text: with `["Cloud"]`, the source `Templatical Cloud stores cloud files` masks to `Templatical <x id="1"/> stores cloud files`, and the German `Templatical <x id="1"/> speichert Cloud-Dateien` is accepted, because every placeholder returns exactly once. `TranslationRequest` is unchanged.
 
@@ -11922,18 +11983,75 @@ You can copy the content settings onto the layout and override `backgroundColor`
 
 ## Headless use
 
+This complete TypeScript example needs `@templatical/renderer` and `@templatical/types`. It builds a template and a layout that each have a German version, then composes and renders both. It prints `true true 2 de`: the default render holds the layout's `Legal notice` and the German render its `Impressum`, the composed default has two blocks (the template's title in the slot, then the footer), and the German composition's `settings.locale` is `de`.
+
 ```ts
-import { renderToMjml } from '@templatical/renderer';
-import { applyLayout, resolveLocale } from '@templatical/types';
+import { renderToMjml } from "@templatical/renderer";
+import {
+  applyLayout,
+  applyOperations,
+  createDefaultTemplateContent,
+  createParagraphBlock,
+  createSlotBlock,
+  createTitleBlock,
+  resolveLocale,
+  sourceHash,
+  type TemplateContent,
+} from "@templatical/types";
+
+// The template and its layout each carry their own German version.
+const title = createTitleBlock({ content: "Welcome" });
+const email: TemplateContent = createDefaultTemplateContent("Arial", {
+  locale: "en",
+});
+email.blocks.push(title);
+const content = applyOperations(email, [
+  { op: "addLocale", locale: "de" },
+  {
+    op: "updateBlockLocale",
+    blockId: title.id,
+    locale: "de",
+    text: {
+      content: { value: "Willkommen", sourceHash: sourceHash(title.content) },
+    },
+  },
+]);
+
+const footer = createParagraphBlock({ content: "<p>Legal notice</p>" });
+const shell: TemplateContent = createDefaultTemplateContent("Arial", {
+  locale: "en",
+});
+shell.blocks.push(createSlotBlock(), footer);
+const layout = applyOperations(shell, [
+  { op: "addLocale", locale: "de" },
+  {
+    op: "updateBlockLocale",
+    blockId: footer.id,
+    locale: "de",
+    text: {
+      content: {
+        value: "<p>Impressum</p>",
+        sourceHash: sourceHash(footer.content),
+      },
+    },
+  },
+]);
 
 const mjml = await renderToMjml(content, { layout });
 const composed = applyLayout(layout, content);
 
 // One language version of a localized template, as renderToMjml composes it:
-const germanMjml = await renderToMjml(content, { layout, locale: 'de' });
+const germanMjml = await renderToMjml(content, { layout, locale: "de" });
 const german = applyLayout(
-  resolveLocale(layout, 'de', { missing: 'default' }),
-  resolveLocale(content, 'de'),
+  resolveLocale(layout, "de", { missing: "default" }),
+  resolveLocale(content, "de"),
+);
+
+console.log(
+  mjml.includes("Legal notice"),
+  germanMjml.includes("Impressum"),
+  composed.blocks.length,
+  german.settings.locale,
 );
 ```
 
@@ -12006,7 +12124,7 @@ Languages imported from [Beefree](/guide/migration-from-beefree#languages), [Unl
 
 Pass a [`TranslationProvider`](/backend/translation) as `init({ translation })` next to `localization`; without it there is no Translate UI. In an enabled language view, **Translate {count} fields** in the language bar sends the missing and out-of-date fields (the gaps), so current translations and manual edits survive; it's hidden when there are no gaps. **Translate everything again…** sends every eligible field after a confirmation that names the field count and says that manual edits are replaced; it's disabled when no field is eligible. A block's status badge offers **Translate** for missing text and **Re-translate** for out-of-date text or differing merge tags.
 
-Translate masks merge tags, logic tags and the terms in `localization.doNotTranslate` (for example `["Sable"]`) as numbered placeholders, and applies a returned field only when it carries exactly the placeholders it was sent; any other field keeps its previous value and is reported. HTML blocks, empty defaults, `set` overrides and hidden blocks aren't sent: translate HTML blocks by hand. The [translation contract](/backend/translation#provider-contract) defines the placeholders, batch limits, errors and the DeepL settings.
+Translate masks merge tags, logic tags and the terms in `localization.doNotTranslate` (for example `["Sable"]`) as numbered placeholders, and applies a returned field only when it carries exactly the placeholders it was sent; any other field keeps its previous value and is reported. A returned HTML field must also keep to the `style` values of its default: a new or changed value keeps the previous value too, and counts with the fields kept because their tags changed. HTML blocks, empty defaults, `set` overrides and hidden blocks aren't sent: translate HTML blocks by hand. The [translation contract](/backend/translation#provider-contract) defines the placeholders, batch limits, errors and the DeepL settings.
 
 While a run lasts, the language bar shows **Translating {done} of {total}…** with **Cancel**, and the editor stays editable. Fields returned before Cancel or an error apply together as one undo step; a run that changes nothing records nothing. With collaboration, a run is an ordinary edit, and blocks another session holds in that language or structurally are skipped. The dismissible result notice reports translated fields, fields kept because their tags changed, fields not returned, blocks skipped because someone is editing them, and the translation service's error message. Dismiss it to see the counts again; changing the view clears it.
 
@@ -12020,6 +12138,8 @@ npx -y @templatical/template-tools strings import template.json strings.de.json 
 ```
 
 Set each entry's `text` and keep its `id`, `sourceHash` and placeholders unchanged. An out-of-date entry has no `text`: its old translation is in `previous`, which import never reads, so translate it again from `source`. Import applies every string whose `sourceHash` still matches the current default and whose placeholders come back exactly, writes the accepted strings, and exits `1` when any string was rejected. Both commands refuse the default language, and import refuses a file exported before another language became the default. Pass the same `--do-not-translate` and `--definitions` files to both commands; see [Strings](/api/template-tools#strings).
+
+`strings import` refuses `a<b` in a `text` field unless the default contains that markup: a `<` directly before a letter reads as markup, so write `a < b` with a space for a comparison. The human output adds that hint under the refused entry; `--json` keeps each rejection as `{ id, reason }`. In HTML fields, every translated `style` value must equal a `style` value in the default, byte for byte as written (Translate in the editor decodes character references first); a new or changed value is `unsafe_html`. The result’s `skipped` list names every entry without `text`, with `reason: "stale"` for an out-of-date field and `reason: "missing"` otherwise; human output prints one `Skipped` line each. A skipped entry leaves its field unchanged and doesn't change the exit code.
 
 In code, the same round trip is `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts the gaps with `Sable` protected, simulates a translator's JSON edit and applies the returned locale operations; pass the same `doNotTranslate` list to both helpers. `localeStrings` returns an out-of-date entry's stored translation in `text`, and `applyLocaleStrings` stamps every `text` it receives with the extraction-time hash, so applying that entry unchanged marks the field current, as **Keep** does. Drop `text` from out-of-date entries before handing them to a translator, as the example does by moving it to `previous`, or use `strings export`. With `only: "gaps"`, only out-of-date entries carry `text`; with `only: "all"`, `localeCoverage(content, locale).stale` lists them. A default edited while the file is out makes that string out of date. The pure helpers don't sanitize returned HTML: sanitize it, keeping the placeholders, before applying it.
 
@@ -12089,7 +12209,7 @@ console.log(JSON.stringify(content), JSON.stringify(german));
 
 ## Checking a language
 
-The header's language button names the active language; in a language view with gaps it adds a warning icon and the number of gaps, with "{missing} missing, {stale} out of date" in its tooltip. Its accessible name reads the language name, then the visible gap count, the language tag and the same breakdown; without gaps it stays, for example, "Deutsch (de)". The language bar shows the same counts or **Complete**. A block with a localization state carries an icon badge in its top-right corner (top-left in a right-to-left view); its tooltip and accessible name give the label below. Select the badge, or **Jump to block** on a localization finding in the Issues panel, to open its popover. On a short selected block in a narrow canvas, the action bar sits beside the badge slot, leaving the badges and their focus rings visible.
+The header's language button names the active language; in a language view with gaps it adds a warning icon and the number of gaps, with "{missing} missing, {stale} out of date" in its tooltip. Its accessible name reads the language name, then the visible gap count, the language tag and the same breakdown; without gaps it stays, for example, "Deutsch (de)". The language bar shows the same counts or **Complete**. A block with a localization state carries an icon badge in its top-right corner (top-left in a right-to-left view); its tooltip and accessible name give the label below. Select the badge, or **Jump to block** on a localization finding in the Issues panel, to open its popover. The badge shows the first state that applies; **Jump to block** opens the popover on the finding's own state, for `localization.untranslated`, `localization.stale` or `localization.merge-tags-differ`, with that state's explanation and actions, and the badge keeps its state. Closing the popover and selecting the badge returns to the badge's state. On a short selected block in a narrow canvas, the action bar sits beside the badge slot, leaving the badges and their focus rings visible.
 
 | Badge label | Meaning | Actions |
 | --- | --- | --- |
@@ -12200,7 +12320,7 @@ Set each entry's `text` in `layout.de.json` between export and import, as in [Tr
 
 ## Default language
 
-`settings.locale` is the default language: the text every version falls back to and is translated from. To promote a version, open **Languages**, select the version's **More actions for {language}** and choose **Make default language**. The confirmation, **Make {language} the default language?**, counts the fields that have no text in that language, when there are any: "{count} fields have no {language} text and keep their {default} text. Translate them first. {default} keeps a copy; later {language} edits mark it out of date." **Make default** applies the change as one undo step, switches the view to the new default and reports "{language} is now the default language."; undoing it removes that notice. The item is disabled, with the reason under it, while the current default isn't in `localization.locales` ("Add {default} to the enabled languages first"), because the old default would become a version nobody can edit or promote back; and while blocks are hidden in that language ("Show the {count} blocks hidden in {language} first"). It isn't offered in a read-only editor or for a version that isn't enabled.
+`settings.locale` is the default language: the text every version falls back to and is translated from. To promote a version, open **Languages**, select the version's **More actions for {language}** and choose **Make default language**. The confirmation, **Make {language} the default language?**, counts the fields that have no text in that language, when there are any (it recounts from the current content and closes if the language is removed or can no longer become the default, for example after a collaboration recovery or AI replaces the content): "{count} fields have no {language} text and keep their {default} text. Translate them first. {default} keeps a copy; later {language} edits mark it out of date." **Make default** applies the change as one undo step, switches the view to the new default and reports "{language} is now the default language."; undoing it removes that notice. The item is disabled, with the reason under it, while the current default isn't in `localization.locales` ("Add {default} to the enabled languages first"), because the old default would become a version nobody can edit or promote back; and while blocks are hidden in that language ("Show the {count} blocks hidden in {language} first"). It isn't offered in a read-only editor or for a version that isn't enabled.
 
 The change is one operation, `{ "op": "setDefaultLocale", "locale": "de" }`:
 

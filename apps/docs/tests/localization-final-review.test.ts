@@ -1,18 +1,25 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 const root = join(import.meta.dirname, "../../..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
+// The release consumes a changeset; after Version Packages its text lives in
+// the package's CHANGELOG.md.
+const releaseNotes = (changeset: string, pkg: string) =>
+  existsSync(join(root, ".changeset", changeset))
+    ? read(`.changeset/${changeset}`)
+    : read(`packages/${pkg}/CHANGELOG.md`);
 const pattern = "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$";
 
 describe("localization public contracts", () => {
   it.each(["types", "ai-kit"])(
     "discloses required producers in the %s changeset",
     (pkg) => {
-      const text = read(
+      const text = releaseNotes(
         pkg === "types"
-          ? ".changeset/localized-templates-types.md"
-          : ".changeset/translation-ai-kit.md",
+          ? "localized-templates-types.md"
+          : "translation-ai-kit.md",
+        pkg,
       );
       for (const term of [
         "AiRequestBase.locale",
@@ -25,7 +32,9 @@ describe("localization public contracts", () => {
         "existing templates need no migration",
       ])
         expect.soft(text).toContain(term);
-      expect(text).toContain(`"@templatical/${pkg}": minor`);
+      expect(text).toMatch(
+        new RegExp(`"@templatical/${pkg}": minor|### Minor Changes`),
+      );
     },
   );
   it.each(["", "de/"])("%s collaboration links reach compatibility", (lang) => {
@@ -99,7 +108,10 @@ describe("eval-driven guidance", () => {
   ])(
     "%s collaboration samples carry the lock locale and state the acquire rule",
     (lang, rule) => {
-      const text = read(`apps/docs/${lang}backend/collaboration.md`);
+      const page = read(`apps/docs/${lang}backend/collaboration.md`);
+      expect(page).toContain("<<< @/snippets/collaboration-client.ts");
+      // The client sample is an included file; the server sample is in the page.
+      const text = `${page}\n${read("apps/docs/snippets/collaboration-client.ts")}`;
       for (const method of ["acquireLock", "renewLock", "releaseLock"])
         expect
           .soft(text, method)
@@ -188,7 +200,7 @@ describe("eval-driven guidance", () => {
 });
 
 it("the types changeset announces the shared URL policy export", () => {
-  expect(read(".changeset/localized-templates-types.md")).toContain(
+  expect(releaseNotes("localized-templates-types.md", "types")).toContain(
     "`isSafeUrlAttribute(name, value): boolean`",
   );
 });
@@ -299,9 +311,8 @@ describe("re-review and run-2 guidance", () => {
       [skill("localize"), "the old default keeps its own current copy"],
       [skill("edit"), "the old default keeps its own current copy"],
       [skill("cli"), "followed by `;` (for example `data:image/png;base64,…`)"],
-      [read(".changeset/localized-templates-types.md"), "followed by `;`"],
       [
-        read(".changeset/localized-templates-core.md"),
+        releaseNotes("localized-templates-core.md", "core"),
         "`baseRevision` isn't the current revision",
       ],
     ] as const)

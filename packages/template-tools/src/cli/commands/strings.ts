@@ -22,7 +22,11 @@ import {
 import { validateTemplate } from "../../validate";
 import { flagValue, type ParsedArgs } from "../args";
 import { readDefinitions, readDoNotTranslate } from "../definitions";
-import { isSafeTranslationHtml, isSafeTranslationText } from "../html-safety";
+import {
+  hasMarkupLikeLessThan,
+  isSafeTranslationHtml,
+  isSafeTranslationText,
+} from "../html-safety";
 import {
   EXIT,
   InvalidTemplateError,
@@ -71,6 +75,9 @@ function readStringsFile(file: string, cwd: string): StringsFile {
   }
   return data as unknown as StringsFile;
 }
+
+const LESS_THAN_HINT =
+  'A "<" directly before a letter reads as markup. Write "a < b" with a space.';
 
 /** Refuse the default language: strings work on a language version. */
 function assertLanguageVersion(
@@ -230,9 +237,21 @@ export function runStrings(args: ParsedArgs): number {
       | "not_translatable"
       | "unsafe_html";
   }[] = [];
+  const stale = new Set(
+    localeCoverage(template, data.targetLocale, definitions).stale,
+  );
+  const skipped: { id: string; reason: "stale" | "missing" }[] = [];
+  // Rejected text strings whose refusal the human output explains.
+  const lessThanHints = new Set<string>();
   let applied = 0;
   for (const entry of data.strings) {
-    if (entry.text === undefined) continue;
+    if (entry.text === undefined) {
+      skipped.push({
+        id: entry.id,
+        reason: stale.has(entry.id) ? "stale" : "missing",
+      });
+      continue;
+    }
     const field = fields.get(entry.id);
     const hash = hashes.get(entry.id);
     if (hash !== undefined && hash !== entry.sourceHash) {
@@ -252,12 +271,15 @@ export function runStrings(args: ParsedArgs): number {
     const tokens = current.tokens[entry.id];
     const restored = unmaskTags(entry.text, tokens)!;
     const source = field ? unmaskTags(field.source, tokens)! : "";
+    const html = field?.format === "html";
     if (
-      field?.format === "html"
+      html
         ? !isSafeTranslationHtml(restored, source)
         : !isSafeTranslationText(restored, source)
     ) {
       rejected.push({ id: entry.id, reason: "unsafe_html" });
+      if (!html && hasMarkupLikeLessThan(restored, source))
+        lessThanHints.add(entry.id);
       continue;
     }
     operations.push(...result.operations);
@@ -266,10 +288,14 @@ export function runStrings(args: ParsedArgs): number {
   const updated = applyOperations(template, operations);
   assertValid(updated);
   const path = writeTemplateFile(out ?? file, updated, cwd);
-  emit({ applied, rejected, file: path }, () =>
+  emit({ applied, rejected, skipped, file: path }, () =>
     [
       `Applied ${applied} strings to ${path}`,
-      ...rejected.map((entry) => `  - ${entry.id}: ${entry.reason}`),
+      ...rejected.flatMap((entry) => [
+        `  - ${entry.id}: ${entry.reason}`,
+        ...(lessThanHints.has(entry.id) ? [`    ${LESS_THAN_HINT}`] : []),
+      ]),
+      ...skipped.map((entry) => `  Skipped ${entry.id}: ${entry.reason}`),
     ].join("\n"),
   );
   return rejected.length ? EXIT.invalid : EXIT.ok;

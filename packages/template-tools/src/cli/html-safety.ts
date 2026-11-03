@@ -21,6 +21,8 @@ interface Markup {
   tokens: string[];
   /** The raw text of every comment, CDATA section and declaration. */
   comments: string[];
+  /** The raw value of every `style` attribute, character references undecoded. */
+  styles: string[];
   /** The input ends inside a tag. */
   unterminated: boolean;
 }
@@ -36,9 +38,12 @@ function scanMarkup(html: string): Markup {
     tags: [],
     tokens: [],
     comments: [],
+    styles: [],
     unterminated: false,
   };
   let openTag = -1;
+  let attribute = "";
+  let attributeValue = "";
   let covered = 0;
   const startOf = (index: number) =>
     Math.max(0, html.lastIndexOf("<", index - 1));
@@ -84,10 +89,18 @@ function scanMarkup(html: string): Markup {
       ontextentity(_codepoint, endIndex) {
         covered = endIndex;
       },
-      onattribdata: ignore,
+      onattribname(start, endIndex) {
+        attribute = html.slice(start, endIndex).toLowerCase();
+        attributeValue = "";
+      },
+      onattribdata(start, endIndex) {
+        attributeValue += html.slice(start, endIndex);
+      },
       onattribentity: ignore,
-      onattribend: ignore,
-      onattribname: ignore,
+      onattribend() {
+        if (attribute === "style") markup.styles.push(attributeValue);
+        attribute = "";
+      },
       onend: ignore,
     },
   );
@@ -106,7 +119,8 @@ function scanMarkup(html: string): Markup {
 /**
  * Check restored rich text, after the exact placeholder check and unmasking.
  * A comment, CDATA section or declaration passes only when `source`, the
- * field's default, carries the same one byte for byte.
+ * field's default, carries the same one byte for byte. So does every `style`
+ * attribute value, which could otherwise add a remote fetch or an overlay.
  */
 export function isSafeTranslationHtml(html: string, source = ""): boolean {
   const markup = scanMarkup(html);
@@ -115,6 +129,8 @@ export function isSafeTranslationHtml(html: string, source = ""): boolean {
   const sourceComments = new Set(scanMarkup(source).comments);
   if (markup.comments.some((comment) => !sourceComments.has(comment)))
     return false;
+  const sourceStyles = new Set(scanMarkup(source).styles);
+  if (markup.styles.some((style) => !sourceStyles.has(style))) return false;
   let safe = true;
   const parser = new Parser({
     onopentag(_name, attributes) {
@@ -128,12 +144,26 @@ export function isSafeTranslationHtml(html: string, source = ""): boolean {
   return safe;
 }
 
+/** The tokens of a restored `text` field that its default doesn't carry. */
+function foreignTokens(text: string, source: string): string[] {
+  const sourceTokens = new Set(scanMarkup(source).tokens);
+  return scanMarkup(text).tokens.filter((token) => !sourceTokens.has(token));
+}
+
 /**
  * Check a restored `text` field, whose value can reach a sink that doesn't
  * escape it: every tag, comment, CDATA section or declaration in it must
  * also be in `source`, the field's default, byte for byte.
  */
 export function isSafeTranslationText(text: string, source: string): boolean {
-  const sourceTokens = new Set(scanMarkup(source).tokens);
-  return scanMarkup(text).tokens.every((token) => sourceTokens.has(token));
+  return foreignTokens(text, source).length === 0;
+}
+
+/**
+ * Whether a `text` field that `isSafeTranslationText` refuses holds a `<`
+ * directly before a letter, which reads as the start of a tag: the usual
+ * cause is a comparison such as `a<b`.
+ */
+export function hasMarkupLikeLessThan(text: string, source: string): boolean {
+  return foreignTokens(text, source).some((token) => /^<[A-Za-z]/.test(token));
 }

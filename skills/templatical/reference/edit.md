@@ -17,7 +17,7 @@ swap a headline, delete a block, reorder two sections — apply an operation
 instead of regenerating and rewriting the whole document:
 
 ```
-npx -y @templatical/template-tools@0.52.1 edit .templatical/<name>.json --op '{"op":"updateBlock","blockId":"button_1","set":{"backgroundColor":"#1d4ed8"}}' --json
+npx -y @templatical/template-tools@0.53.0 edit .templatical/<name>.json --op '{"op":"updateBlock","blockId":"button_1","set":{"backgroundColor":"#1d4ed8"}}' --json
 ```
 
 `edit` applies the operation, validates the result, and writes the file — all
@@ -47,7 +47,7 @@ the resulting template.
 To make an existing German version the default language:
 
 ```
-npx -y @templatical/template-tools@0.52.1 edit .templatical/<name>.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
+npx -y @templatical/template-tools@0.53.0 edit .templatical/<name>.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
 ```
 
 German's values become the base and the old default becomes a version. A
@@ -62,8 +62,10 @@ translate them into German first, with Translate or `strings export` /
 ([localize.md](localize.md)); an empty default isn't a gap. HTML
 blocks aren't sent by Translate or `strings export`:
 translate HTML blocks by hand in the German view.
-Without code, the CLI checks the same: the refusal names only the number of
-hidden blocks (exit 2, nothing written), so list them with
+Without code, the CLI checks the same: the refusal names the number of
+hidden blocks and the first hidden block (`Block: "<id>".` on stderr; exit 2,
+nothing written). To show them all at once,
+list every hidden block with
 `jq '[.. | objects | select(.l10n?.de?.hidden == true) | .id]' .templatical/<name>.json`
 and show each with `{"op":"updateBlockLocale","blockId":"<id>","locale":"de","hidden":false}`.
 `validate .templatical/<name>.json --locale de --json` then reports every gap as

@@ -159,6 +159,7 @@ describe("translation text safety", () => {
   it.each([
     ["Hallo <img src=x onerror=alert(1)>", "Hello"],
     ["Hallo <b>", "Hello"],
+    ["a<b", "a is less than b"],
     ["Hallo </b>", "Hello"],
     ["Hallo <!-- x -->", "Hello"],
     ["Hallo <![CDATA[x]]>", "Hello"],
@@ -171,6 +172,8 @@ describe("translation text safety", () => {
   });
   it.each([
     ["Hallo", "Hello"],
+    ["a<b", "a<b"],
+    ["a < b", "a is less than b"],
     ["Preis < 10 € & mehr > 5", "Price < 10 € & more > 5"],
     ["Nutzen Sie <b> für Fett", "Use <b> for bold"],
     ["Hallo <!-- x -->", "Hello <!-- x -->"],
@@ -178,5 +181,101 @@ describe("translation text safety", () => {
   ])("accepts %s for the source %s", async (text, source) => {
     const { isSafeTranslationText } = await import("../src/cli/html-safety");
     expect(isSafeTranslationText(text, source)).toBe(true);
+  });
+});
+
+describe("translation HTML safety: style values", () => {
+  it.each([
+    ["adds a style", "<p>Hello</p>", '<p style="color:red">Hallo</p>', false],
+    [
+      "changes a style",
+      '<p style="color:red">Hello</p>',
+      '<p style="color:blue">Hallo</p>',
+      false,
+    ],
+    [
+      "changes only the spacing of a style",
+      '<p style="color:red">Hello</p>',
+      '<p style="color: red">Hallo</p>',
+      false,
+    ],
+    [
+      "respells a style with a character reference",
+      '<p style="color:red">Hello</p>',
+      '<p style="color:&#114;ed">Hallo</p>',
+      false,
+    ],
+    [
+      "adds a remote fetch to a source style",
+      '<p style="color:red">Hello</p>',
+      '<p style="color:red;background:url(https://x.test/p.gif)">Hallo</p>',
+      false,
+    ],
+    [
+      "repeats the attribute with another value",
+      '<p style="color:red">Hello</p>',
+      '<p style="color:red" STYLE="color:blue">Hallo</p>',
+      false,
+    ],
+    [
+      "adds a style to another element",
+      '<p style="color:red">Hello</p>',
+      '<p style="color:red"><span style="color:blue">Hallo</span></p>',
+      false,
+    ],
+    [
+      "adds an unquoted style",
+      "<p>Hello</p>",
+      "<p style=position:fixed>Hallo</p>",
+      false,
+    ],
+    ["adds a valueless style", "<p>Hello</p>", "<p style>Hallo</p>", false],
+    [
+      "keeps a style",
+      '<p style="color:red">Hello</p>',
+      '<p style="color:red">Hallo</p>',
+      true,
+    ],
+    [
+      "keeps a style in another quoting and case",
+      '<p style="color:red">Hello</p>',
+      "<p STYLE='color:red'>Hallo</p>",
+      true,
+    ],
+    [
+      "moves a style to another element",
+      '<p style="color:red">Hello</p>',
+      '<p><span style="color:red">Hallo</span></p>',
+      true,
+    ],
+    [
+      "drops the styles",
+      '<p style="color:red">Hello</p>',
+      "<p>Hallo</p>",
+      true,
+    ],
+    ["has no styles", "<p>Hello</p>", "<p>Hallo</p>", true],
+    [
+      "writes a style only inside another attribute",
+      "<p>Hello</p>",
+      "<p title='style=\"color:red\"'>Hallo</p>",
+      true,
+    ],
+  ])("%s", (_name, source, html, safe) => {
+    expect(isSafeTranslationHtml(html, source)).toBe(safe);
+  });
+});
+
+describe("markup-like less-than hint", () => {
+  it.each([
+    ["a<b", "a is less than b", true],
+    ["Hallo <img src=x onerror=alert(1)>", "Hello", true],
+    ["Hallo <!-- x -->", "Hello", false],
+    ["Hallo </b>", "Hello", false],
+    ["Preis < 10", "Price < 10", false],
+    ["a<b", "a<b", false],
+  ])("for %s with the source %s: %s", async (text, source, hint) => {
+    const { hasMarkupLikeLessThan } = await import("../src/cli/html-safety");
+    expect(hasMarkupLikeLessThan(text, source)).toBe(hint);
   });
 });

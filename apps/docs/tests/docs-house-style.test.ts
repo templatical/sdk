@@ -298,9 +298,11 @@ describe("OSS docs house style", () => {
 });
 
 describe("collaboration transport examples", () => {
+  // Both pages include the same sample (`runnable-samples.test.ts` checks it).
+  const sample = readDocs("snippets/collaboration-client.ts");
   const surfaces = [
-    ["backend/collaboration.md", readDocs("backend/collaboration.md")],
-    ["de/backend/collaboration.md", readDocs("de/backend/collaboration.md")],
+    ["backend/collaboration.md", sample],
+    ["de/backend/collaboration.md", sample],
     [
       "scene markdown",
       readRepo("apps/playground/public/scenes/collaboration.md"),
