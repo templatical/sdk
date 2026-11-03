@@ -162,8 +162,7 @@ function decodeStyleReference(
   if (name !== undefined) {
     char = NAMED_STYLE_REFERENCES[name.toLowerCase()];
   } else {
-    const codePoint =
-      decimal !== undefined ? Number(decimal) : parseInt(hex ?? "", 16);
+    const codePoint = Number(decimal ?? `0x${hex}`);
     const valid =
       codePoint > 0 &&
       codePoint <= 0x10ffff &&
@@ -243,7 +242,7 @@ export function decodeStyleReferences(html: string): string {
   let copied = 0;
   let open = html.indexOf("<");
   while (open !== -1) {
-    if (!TAG_NAME_START.test(html[open + 1] ?? "")) {
+    if (!TAG_NAME_START.test(html.charAt(open + 1))) {
       open = html.indexOf("<", open + 1);
       continue;
     }

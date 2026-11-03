@@ -143,9 +143,30 @@ describe("decodeStyleReferences", () => {
     ).toBe(`<p title='x style="&apos;t&apos;"' style="font-family: 'A'">x</p>`);
   });
 
+  it("steps over unquoted values, boolean attributes and a stray =", () => {
+    expect(
+      decodeStyleReferences(
+        `<p data-x=a&apos;b hidden style="font-family: &apos;A&apos;">x</p>`,
+      ),
+    ).toBe(`<p data-x=a&apos;b hidden style="font-family: 'A'">x</p>`);
+    expect(
+      decodeStyleReferences(`<p = style="font-family: &apos;A&apos;">x</p>`),
+    ).toBe(`<p = style="font-family: 'A'">x</p>`);
+  });
+
+  // As HTML reads it: after `hidden =`, the value is unquoted and runs to the
+  // next space, so `style="font-family:` is hidden's value, not an attribute.
+  it("reads a value after = and spaces as that attribute's", () => {
+    const html = `<p hidden = style="font-family: &apos;A&apos;">x</p>`;
+    expect(decodeStyleReferences(html)).toBe(html);
+  });
+
   it("leaves a tag with an unterminated quote alone", () => {
     const html = `<p title="open style="font-family: &apos;A&apos;">x</p>`;
     expect(decodeStyleReferences(html)).toBe(html);
+    // The tag ends, but a value's opening quote has no match inside it.
+    const unmatched = `<p x"=" y>&apos;</p>`;
+    expect(decodeStyleReferences(unmatched)).toBe(unmatched);
   });
 
   it("compiles a paragraph whose style follows a > in a title", async () => {
