@@ -1,5 +1,13 @@
 # @templatical/editor
 
+## 0.54.1
+
+### Patch Changes
+
+- 122711a: The text formatting toolbar stays behind the Insert Link dialog after a merge-tag or logic-tag picker has been opened and closed.
+- @templatical/quality@0.54.1
+  - @templatical/renderer@0.54.1
+
 ## 0.54.0
 
 ### Patch Changes

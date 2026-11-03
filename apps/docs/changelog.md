@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.54.1
+
+<time datetime="2026-11-03">2026-11-03</time>
+
+### Fixes and improvements
+
+**The text formatting toolbar stays behind the Insert Link dialog after a merge-tag or logic-tag picker has been opened and closed.**
+
+`@templatical/editor`
+
 ## 0.54.0
 
 <time datetime="2026-11-03">2026-11-03</time>

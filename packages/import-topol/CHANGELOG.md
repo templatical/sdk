@@ -1,5 +1,11 @@
 # @templatical/import-topol
 
+## 0.54.1
+
+### Patch Changes
+
+- @templatical/types@0.54.1
+
 ## 0.54.0
 
 ### Patch Changes
