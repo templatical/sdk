@@ -266,7 +266,7 @@ describe("locale notices", () => {
     expect(wrapper.find('[data-testid="locale-notice"]').exists()).toBe(false);
   });
 
-  it("shows the engine's refusal message and clears it after cancelling", async () => {
+  it("closes the dialog when its language is removed, applying nothing, and reopens it clean", async () => {
     const { wrapper, editor, history } = await openLanguages();
     await openPromotion(wrapper);
     editor.removeLocale("de");
@@ -274,24 +274,19 @@ describe("locale notices", () => {
     const before = JSON.stringify(editor.content.value);
     const undo = history.canUndo.value;
     const redo = history.canRedo.value;
-    await wrapper
-      .get('[data-testid="language-default-confirm"]')
-      .trigger("click");
-    expect(wrapper.get('[role="dialog"] [role="alert"]').text()).toBe(
-      `Couldn't make Deutsch the default language: "de" is not a language version of this template.`,
-    );
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    expect(
+      wrapper.find('[data-testid="language-default-confirm"]').exists(),
+    ).toBe(false);
     expect(JSON.stringify(editor.content.value)).toBe(before);
     expect(history.canUndo.value).toBe(undo);
     expect(history.canRedo.value).toBe(redo);
     expect(wrapper.find('[data-testid="locale-notice"]').exists()).toBe(false);
-    await wrapper
-      .get('[data-testid="language-default-cancel"]')
-      .trigger("click");
-    await wrapper
-      .get('[data-testid="language-menu"]')
-      .trigger("keydown", { key: "Escape" });
     editor.addLocale("de");
     await openPromotion(wrapper);
+    expect(wrapper.get('[role="dialog"]').text()).toContain(
+      "Make Deutsch the default language?",
+    );
     expect(wrapper.find('[role="dialog"] [role="alert"]').exists()).toBe(false);
   });
 

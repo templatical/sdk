@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import {
   readPath,
   localeCoverage,
@@ -15,6 +15,7 @@ import {
   LOCALIZATION_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  type LocaleChipTarget,
 } from "../../keys";
 import { mergeTagsDiffer } from "../../utils/mergeTagTokens";
 import LocaleStatusChip from "./LocaleStatusChip.vue";
@@ -71,6 +72,8 @@ const tagsDiffer = computed(() =>
       : [];
   }),
 );
+// The state a jump from an Issues-panel finding asked the popover to explain.
+const requested = ref<LocaleChipTarget | null>(null);
 const translationStrings = computed(() =>
   editor && locale.value && !ancestorHiddenLocales.value.has(locale.value)
     ? localeStrings(scopedContent.value, locale.value, {
@@ -78,7 +81,7 @@ const translationStrings = computed(() =>
         definitions,
         doNotTranslate: config?.doNotTranslate,
         blockId: props.block.id,
-        only: state.value === "tags-differ" ? "all" : "gaps",
+        only: popoverState.value === "tags-differ" ? "all" : "gaps",
       }).strings
     : [],
 );
@@ -121,16 +124,31 @@ const state = computed(() => {
   if (tagsDiffer.value.length) return "tags-differ";
   return setPaths.value.length ? "changed" : null;
 });
-const count = computed(() =>
-  state.value === "missing"
+function countOf(value: typeof state.value) {
+  return value === "missing"
     ? coverage.value.missing.length
-    : state.value === "stale"
+    : value === "stale"
       ? stale.value.length
-      : state.value === "tags-differ"
+      : value === "tags-differ"
         ? tagsDiffer.value.length
-        : state.value === "default-stale"
+        : value === "default-stale"
           ? staleLocales.value.length
-          : setPaths.value.length,
+          : setPaths.value.length;
+}
+const count = computed(() => countOf(state.value));
+// The badge shows one state by priority. A finding's own state replaces it in
+// the popover while the block still has fields in that state.
+const popoverState = computed(() =>
+  requested.value && countOf(requested.value) > 0
+    ? requested.value
+    : state.value,
+);
+const popoverCount = computed(() => countOf(popoverState.value));
+watch(
+  [state, () => popoverState.value !== (requested.value ?? state.value)],
+  () => {
+    requested.value = null;
+  },
 );
 const excerpt = computed(() => {
   const value = readPath(props.block, stale.value[0] ?? "");
@@ -146,6 +164,8 @@ const excerpt = computed(() => {
     :block-id="block.id"
     :state="state"
     :count="count"
+    :popover-state="popoverState ?? undefined"
+    :popover-count="popoverCount"
     :stale="stale"
     :tags-differ="tagsDiffer"
     :set-paths="setPaths"
@@ -155,5 +175,6 @@ const excerpt = computed(() => {
     :translation-count="translationStrings.length"
     :replaces-current="replacesCurrent"
     :editable="!!locale && config.locales.includes(locale)"
+    @target="requested = $event"
   />
 </template>

@@ -41,7 +41,7 @@
       "code": "invalid_operation",
       "opIndex": 0,
       "blockId": "t1",
-      "message": "1 blocks are hidden in \"de\". Show them before making it the default."
+      "message": "1 block is hidden in \"de\". Show it before making it the default."
     }
   }
 }

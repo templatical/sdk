@@ -28,6 +28,7 @@ import {
   SIZE_CHECK_KEY,
   UI_LOCALE_KEY,
   LOCALE_CHIP_OPENERS_KEY,
+  type LocaleChipTarget,
 } from "../../keys";
 import type { LintIssue } from "../../composables/useTemplateLint";
 
@@ -360,6 +361,13 @@ async function fixWithAi(issue: LintIssue): Promise<void> {
   }
 }
 
+// The popover state that explains each localization finding.
+const LOCALE_FINDING_TARGETS: Record<string, LocaleChipTarget | undefined> = {
+  "localization.untranslated": "missing",
+  "localization.stale": "stale",
+  "localization.merge-tags-differ": "tags-differ",
+};
+
 function jumpTo(issue: LintIssue): void {
   if (!editor) return;
   if (!issue.blockId) return;
@@ -369,7 +377,8 @@ function jumpTo(issue: LintIssue): void {
   if (issue.ruleId.startsWith("localization.")) {
     const blockId = issue.blockId;
     scrollToBlock(blockId, "auto");
-    void nextTick(() => chipOpeners?.get(blockId)?.());
+    const target = LOCALE_FINDING_TARGETS[issue.ruleId];
+    void nextTick(() => chipOpeners?.get(blockId)?.(target));
   } else scrollToBlock(issue.blockId);
 }
 

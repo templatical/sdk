@@ -7,58 +7,13 @@ description: Live co-editing over your own backend — ordered operations, prese
 
 Give the editor a collaboration provider and several people can edit one template at once. Every edit reaches your backend as a batch of [operations](/api/operations), your backend puts the batches in one order, and every editor applies them in that order. Selecting a block locks it, so two people never type into the same block, and everyone sees who else has the template open.
 
-```ts
-import { init } from '@templatical/editor';
+The paths, event names and `X-Session-Id` header in this example are its own transport. The contract is the provider methods, described in [The contract](#the-contract).
 
-let sessionId = '';
-const lockUrl = (templateId: string, blockId: string, locale?: string | null) =>
-  `/api/templates/${templateId}/locks/${blockId}` +
-  (locale ? `?locale=${encodeURIComponent(locale)}` : '');
+<<< @/snippets/collaboration-client.ts
 
-const editor = await init({
-  container: '#editor',
-  user: { id: 'u_7', name: 'Ada Lovelace' },
-  templates: myTemplatesProvider, // `load` returns the template's `revision`
-  collaboration: {
-    join: (templateId, session, handlers) => {
-      sessionId = session.sessionId;
-      return myRealtime.join(templateId, session, handlers);
-    },
-    submit: (templateId, batch) =>
-      api(`/api/templates/${templateId}/operations`, {
-        method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
-        body: JSON.stringify(batch),
-      }),
-    operationsAfter: (templateId, revision) =>
-      api(`/api/templates/${templateId}/operations?after=${revision}`, {
-        headers: { 'X-Session-Id': sessionId },
-      }),
-    acquireLock: (templateId, blockId, locale) =>
-      api(`/api/templates/${templateId}/locks`, {
-        method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
-        body: JSON.stringify({ blockId, locale: locale ?? null }),
-      }),
-    renewLock: (templateId, blockId, locale) =>
-      api(lockUrl(templateId, blockId, locale), {
-        method: 'PUT',
-        headers: { 'X-Session-Id': sessionId },
-      }),
-    releaseLock: async (templateId, blockId, locale) => {
-      await fetch(lockUrl(templateId, blockId, locale), {
-        method: 'DELETE',
-        headers: { 'X-Session-Id': sessionId },
-        keepalive: true,
-      });
-    },
-  },
-});
+This complete TypeScript example needs `@templatical/editor` and a backend with the routes it calls. Server-sent events carry the other sessions' changes: `join` subscribes first, then asks the backend for the revision, the unexpired locks and the members. The editor calls `join` again after a reconnect, so a second call replaces the subscription. `releaseLock` uses `fetch` with `keepalive`, so the request survives a closing page.
 
-await editor.load('tpl_123');
-```
-
-`api` is your own fetch helper; a refused request must reject with the HTTP status as `statusCode` and the response's `code`, `holder` and `holders` (see [Refusals](#refusals)), because a missing status counts as a network failure and is retried.
+`api` is the sample's fetch helper: a refused request rejects with the HTTP status as `statusCode` and the response's `code`, `holder` and `holders` (see [Refusals](#refusals)), because a missing status counts as a network failure and is retried.
 
 The backend combines `X-Session-Id` with the authenticated user to identify the lock owner.
 

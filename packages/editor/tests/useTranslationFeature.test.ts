@@ -229,6 +229,169 @@ describe("translation runs", () => {
     expect(editor.content.value.blocks[0].l10n).toBeUndefined();
   });
 
+  it.each([
+    {
+      name: "introduces a style",
+      source: "<p>Hello</p>",
+      returned: '<p style="color: red">Hallo</p>',
+    },
+    {
+      name: "changes a style",
+      source: '<p style="color: red">Hello</p>',
+      returned: '<p style="color: green">Hallo</p>',
+    },
+    {
+      name: "changes only style whitespace",
+      source: '<p style="color: red">Hello</p>',
+      returned: '<p style="color:red">Hallo</p>',
+    },
+    {
+      name: "adds a remote fetch to a source style",
+      source: '<p style="color: red">Hello</p>',
+      returned:
+        '<p style="color: red; background: url(https://x.test/p.gif)">Hallo</p>',
+    },
+    {
+      name: "adds a style to a link inside the field",
+      source: '<p>Hello <a href="https://x.test">there</a></p>',
+      returned:
+        '<p>Hallo <a href="https://x.test" style="position: fixed">dort</a></p>',
+    },
+    {
+      name: "adds a style beside a merge tag",
+      source: '<p style="font-family: {{font}}">Hello</p>',
+      returned: '<p style="font-family: __x1__; color: red">Hallo</p>',
+    },
+    {
+      name: "uses an active translation style absent from the default",
+      source: '<p style="color: red">Hello</p>',
+      returned: '<p style="color: green">Hallo</p>',
+    },
+  ])("keeps the field when a provider $name", async ({ source, returned }) => {
+    const seed = content(1);
+    seed.blocks = [
+      createTitleBlock({
+        id: "t0",
+        content: source,
+        l10n: {
+          de: {
+            text: {
+              content: {
+                value: '<p style="color: green">Alt</p>',
+                sourceHash: "old",
+              },
+            },
+          },
+        },
+      }),
+    ];
+    const { feature, editor, history } = open(
+      {
+        translate: async () => ({
+          fields: [{ id: "t0/content", text: returned }],
+        }),
+      },
+      seed,
+    );
+    const before = JSON.stringify(editor.content.value);
+    const result = await feature.translate({ only: "all" });
+    expect(result.translated).toBe(0);
+    expect(result.tagsChanged).toEqual(["t0/content"]);
+    expect(feature.lastResult.value?.tagsChanged).toEqual(["t0/content"]);
+    expect(JSON.stringify(editor.content.value)).toBe(before);
+    expect(editor.state.isDirty).toBe(false);
+    expect(history.canUndo.value).toBe(false);
+  });
+
+  it.each([
+    {
+      name: "an unchanged style",
+      source: '<p style="color: red">Hello</p>',
+      returned: '<p style="color: red">Hallo</p>',
+    },
+    {
+      name: "a source style moved to another element",
+      source: '<p style="color: red">Hello</p>',
+      returned: '<p>Hallo <span style="color: red">Welt</span></p>',
+    },
+    {
+      name: "an unchanged encoded style",
+      source: '<p style="font-family: &quot;AT&amp;T&quot;">Hello</p>',
+      returned: '<p style="font-family: &quot;AT&amp;T&quot;">Hallo</p>',
+    },
+    {
+      name: "a style-free response",
+      source: '<p style="color: red">Hello</p>',
+      returned: "<p>Hallo</p>",
+    },
+  ])("accepts $name", async ({ source, returned }) => {
+    const seed = content(1);
+    seed.blocks = [createTitleBlock({ id: "t0", content: source })];
+    const { feature, editor } = open(
+      {
+        translate: async () => ({
+          fields: [{ id: "t0/content", text: returned }],
+        }),
+      },
+      seed,
+    );
+    const result = await feature.translate({ only: "all" });
+    expect(result.translated).toBe(1);
+    expect(result.tagsChanged).toEqual([]);
+    expect(editor.content.value.blocks[0].l10n?.de.text?.content.value).toBe(
+      returned,
+    );
+  });
+
+  it("reads a style by its value, so another character reference for the same value passes", async () => {
+    const seed = content(1);
+    seed.blocks = [
+      createTitleBlock({
+        id: "t0",
+        content: '<p style="font-family: AT&amp;T">Hello</p>',
+      }),
+    ];
+    const { feature, editor } = open(
+      {
+        translate: async () => ({
+          fields: [
+            {
+              id: "t0/content",
+              text: '<p style="font-family: AT&#38;T">Hallo</p>',
+            },
+          ],
+        }),
+      },
+      seed,
+    );
+    const result = await feature.translate({ only: "all" });
+    expect(result.translated).toBe(1);
+    expect(result.tagsChanged).toEqual([]);
+    expect(editor.content.value.blocks[0].l10n?.de.text?.content.value).toBe(
+      '<p style="font-family: AT&amp;T">Hallo</p>',
+    );
+  });
+
+  it("preserves masked merge tags in an unchanged source style", async () => {
+    const seed = content(1);
+    seed.blocks = [
+      createTitleBlock({
+        id: "t0",
+        content: '<p style="font-family: {{font}}">Hello</p>',
+      }),
+    ];
+    const { feature, editor } = open(
+      { translate: async (request) => answer(request) },
+      seed,
+    );
+    const result = await feature.translate({ only: "all" });
+    expect(result.translated).toBe(1);
+    expect(result.tagsChanged).toEqual([]);
+    expect(editor.content.value.blocks[0].l10n?.de.text?.content.value).toBe(
+      '<p style="font-family: {{font}}">Hallo</p>',
+    );
+  });
+
   it("sends 120 consecutive fields in three sequential calls and undoes the batch once", async () => {
     const translate = vi.fn(async (request: TranslationRequest) =>
       answer(request),

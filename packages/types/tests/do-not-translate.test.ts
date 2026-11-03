@@ -292,6 +292,47 @@ describe("do-not-translate strings round trip", () => {
     );
   });
 
+  it("updates protected terms when the same array is mutated in place", () => {
+    const terms = ["Sable"];
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({ text: '<x id="1"/> Cloud', tokens: ["Sable"] });
+    terms[0] = "Cloud";
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({ text: 'Sable <x id="1"/>', tokens: ["Cloud"] });
+    terms.push("Sable");
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({
+      text: '<x id="1"/> <x id="2"/>',
+      tokens: ["Sable", "Cloud"],
+    });
+    terms.splice(0);
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: terms }),
+    ).toEqual({ text: "Sable Cloud", tokens: [] });
+  });
+
+  it("still masks with a term list used again after many other lists", () => {
+    const masked = (term: string) => ({
+      text: '<x id="1"/> Cloud',
+      tokens: [term],
+    });
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: ["Sable"] }),
+    ).toEqual(masked("Sable"));
+    for (let index = 0; index < 40; index++) {
+      const term = `Term${index}`;
+      expect(
+        maskTags(`${term} Cloud`, syntax, "text", { doNotTranslate: [term] }),
+      ).toEqual(masked(term));
+    }
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: ["Sable"] }),
+    ).toEqual(masked("Sable"));
+  });
+
   it("reuses source ids in a reordered existing translation", () => {
     const content = fixture();
     content.blocks = [

@@ -26,7 +26,8 @@ async function mountChipPreview(
     | "short"
     | "comments-off"
     | "corners"
-    | "tags",
+    | "tags"
+    | "mixed",
   width?: number,
 ) {
   await page.evaluate(
@@ -53,6 +54,12 @@ async function mountChipPreview(
           /* @vite-ignore */ fixturePath
         );
         content.blocks = cornerBadgeContent(content).blocks;
+      } else if (kind === "mixed") {
+        const fixturePath = "/e2e/helpers/language-chip-content.ts";
+        const { staleAndTagsDifferContent } = await import(
+          /* @vite-ignore */ fixturePath
+        );
+        content.blocks = staleAndTagsDifferContent(content).blocks;
       } else if (kind === "tags") {
         const block = content.blocks[1];
         block.alt = "Hello {{first_name}}";
@@ -609,6 +616,64 @@ test.describe("language versions", () => {
       await expect(
         host.locator('[data-block-id="languages-hero"] img'),
       ).toHaveAttribute("src", "/examples/sable/buds.png");
+    } finally {
+      await page.evaluate(() => (window as any).__languageChipCleanup?.());
+    }
+  });
+
+  test("opens the explanation of the finding it jumps from, and the badge's own when opened directly", async ({
+    page,
+    scenePage,
+    editorPage,
+    shadowDom,
+  }) => {
+    await scenePage.goto("languages");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await mountChipPreview(page, shadowDom, "mixed");
+    const host = page.locator("#language-chip-preview");
+    try {
+      await host.getByTestId("language-menu").click();
+      await host.getByTestId("language-option-de").click();
+      const badge = host
+        .locator('[data-block-id="mixed-menu"]')
+        .getByTestId("locale-chip");
+      // The block has a stale field and a field whose merge tags differ; the
+      // badge shows the stale state, which outranks the other.
+      await expect(badge).toHaveAttribute("data-state", "stale");
+      const popover = host.getByTestId("locale-popover");
+      const jumpFrom = async (rule: string) => {
+        await host.locator("#tpl-tab-issues").click();
+        await host
+          .locator("li")
+          .filter({ hasText: rule })
+          .getByTestId("issue-jump")
+          .click();
+      };
+
+      await jumpFrom("localization.merge-tags-differ");
+      await expect(popover).toHaveAttribute("aria-label", "Merge tags differ");
+      await expect(popover).toContainText(
+        "Its merge tags don't match the English text.",
+      );
+      await expect(host.getByTestId("locale-retranslate")).toBeVisible();
+      await expect(host.getByTestId("locale-keep")).toHaveCount(0);
+      await expect(badge).toHaveAttribute("data-state", "stale");
+
+      await jumpFrom("localization.stale");
+      await expect(popover).toHaveAttribute("aria-label", "Out of date");
+      await expect(popover).toContainText(
+        "English changed since this was translated.",
+      );
+      await expect(host.getByTestId("locale-keep")).toBeVisible();
+
+      // Closing the popover and opening the badge returns to the priority state.
+      await jumpFrom("localization.merge-tags-differ");
+      await expect(popover).toHaveAttribute("aria-label", "Merge tags differ");
+      await page.keyboard.press("Escape");
+      await expect(popover).toHaveCount(0);
+      await badge.click();
+      await expect(popover).toHaveAttribute("aria-label", "Out of date");
     } finally {
       await page.evaluate(() => (window as any).__languageChipCleanup?.());
     }

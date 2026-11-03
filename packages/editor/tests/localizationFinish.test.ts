@@ -3,12 +3,21 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { nextTick, ref } from "vue";
-import { createTitleBlock } from "@templatical/types";
+import {
+  createMenuBlock,
+  createTitleBlock,
+  sourceHash,
+} from "@templatical/types";
 import { mountEditor } from "./helpers/mount";
 import { languageContent, openLanguages } from "./helpers/localization";
 import Canvas from "../src/components/Canvas.vue";
 import BlockIssueBadge from "../src/components/canvas/BlockIssueBadge.vue";
-import { EDITOR_KEY, TEMPLATE_LINT_KEY } from "../src/keys";
+import {
+  EDITOR_KEY,
+  LOCALE_CHIP_OPENERS_KEY,
+  TEMPLATE_LINT_KEY,
+  type LocaleChipTarget,
+} from "../src/keys";
 import * as styles from "../src/constants/styleConstants";
 
 const source = (name: string) =>
@@ -173,6 +182,192 @@ describe("localization finish review", () => {
     await nextTick();
     expect(wrapper.find('[data-testid="locale-popover"]').exists()).toBe(true);
     expect(editor.state.selectedBlockId).toBe("title");
+  });
+
+  describe("a block with a missing, a stale and a tags-differ field", () => {
+    async function mixed(config: Parameters<typeof openLanguages>[0] = {}) {
+      vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(
+        () => {},
+      );
+      const content = languageContent();
+      content.blocks = [
+        createMenuBlock({
+          id: "mixed",
+          items: [
+            { id: "missing", text: "Missing", url: "" },
+            { id: "stale", text: "Updated offer", url: "" },
+            { id: "tags", text: "Hello {{first_name}}", url: "" },
+          ],
+          l10n: {
+            de: {
+              text: {
+                "items.stale.text": { value: "Angebot", sourceHash: "old" },
+                "items.tags.text": {
+                  value: "Hallo",
+                  sourceHash: sourceHash("Hello {{first_name}}"),
+                },
+              },
+              set: { color: "#123456" },
+            },
+          },
+        }),
+      ];
+      const { wrapper, editor } = await openLanguages({ content, ...config });
+      editor.setActiveLocale("de");
+      await wrapper.get("#tpl-tab-issues").trigger("click");
+      await vi.dynamicImportSettled();
+      const provides = (wrapper.findComponent(Canvas).vm as any).$.provides;
+      provides[TEMPLATE_LINT_KEY as symbol].issues.value = [
+        "untranslated",
+        "stale",
+        "merge-tags-differ",
+      ].map((rule) => ({
+        ruleId: `localization.${rule}`,
+        blockId: "mixed",
+        severity: "warning",
+        message: rule,
+      }));
+      await nextTick();
+      return {
+        wrapper,
+        editor,
+        openers: provides[LOCALE_CHIP_OPENERS_KEY as symbol] as Map<
+          string,
+          (target?: LocaleChipTarget) => void
+        >,
+        badge: wrapper.get(
+          '[data-block-id="mixed"] [data-testid="locale-chip"]',
+        ),
+        popup: () => wrapper.get('[data-testid="locale-popover"]'),
+        // Selecting the block leaves the Issues tab, so each jump opens it again.
+        jump: async (rule: string) => {
+          await wrapper.get("#tpl-tab-issues").trigger("click");
+          await vi.dynamicImportSettled();
+          const row = wrapper
+            .findAll("li")
+            .find((item) => item.text().includes(`localization.${rule}`))!;
+          await row.get('[data-testid="issue-jump"]').trigger("click");
+          await nextTick();
+          await nextTick();
+        },
+      };
+    }
+
+    it.each([
+      {
+        rule: "stale",
+        label: "Out of date",
+        explanation: "English changed since this was translated.",
+        actions: ["locale-keep", "locale-use-default"],
+      },
+      {
+        rule: "merge-tags-differ",
+        label: "Merge tags differ",
+        explanation: "Its merge tags don't match the English text.",
+        actions: ["locale-use-default"],
+      },
+      {
+        rule: "untranslated",
+        label: "Not translated",
+        explanation: "Not translated yet. The email shows the English text.",
+        actions: [],
+      },
+    ])(
+      "opens the popover on $label for localization.$rule while the badge keeps its priority",
+      async ({ rule, label, explanation, actions }) => {
+        const { editor, badge, popup, jump } = await mixed();
+        await jump(rule);
+        expect(popup().attributes("aria-label")).toBe(label);
+        expect(popup().text()).toContain(explanation);
+        expect(
+          popup()
+            .findAll("button")
+            .map((button) => button.attributes("data-testid")),
+        ).toEqual(actions);
+        expect(badge.attributes("data-state")).toBe("missing");
+        expect(badge.attributes("aria-label")).toBe("Not translated");
+        expect(editor.state.selectedBlockId).toBe("mixed");
+      },
+    );
+
+    it("returns to the badge's priority after closing, and the badge opens it directly", async () => {
+      const { badge, popup, jump } = await mixed();
+      await jump("merge-tags-differ");
+      expect(popup().attributes("aria-label")).toBe("Merge tags differ");
+      await popup().trigger("keydown", { key: "Escape" });
+      expect(badge.attributes("aria-expanded")).toBe("false");
+      await badge.trigger("click");
+      expect(popup().attributes("aria-label")).toBe("Not translated");
+      await popup().trigger("keydown", { key: "Escape" });
+      await jump("stale");
+      expect(popup().attributes("aria-label")).toBe("Out of date");
+      await popup().trigger("keydown", { key: "Escape" });
+      await badge.trigger("click");
+      expect(popup().attributes("aria-label")).toBe("Not translated");
+    });
+
+    it("acts on the targeted state's fields", async () => {
+      const { editor, popup, jump } = await mixed();
+      await jump("merge-tags-differ");
+      await popup().get('[data-testid="locale-use-default"]').trigger("click");
+      expect(editor.content.value.blocks[0].l10n?.de).toEqual({
+        text: { "items.stale.text": { value: "Angebot", sourceHash: "old" } },
+        set: { color: "#123456" },
+      });
+      await jump("stale");
+      await popup().get('[data-testid="locale-keep"]').trigger("click");
+      expect(
+        editor.content.value.blocks[0].l10n?.de.text?.["items.stale.text"],
+      ).toEqual({ value: "Angebot", sourceHash: sourceHash("Updated offer") });
+    });
+
+    it("retargets an open popover and falls back when the target stops applying", async () => {
+      const { editor, openers, badge, popup } = await mixed();
+      await badge.trigger("click");
+      expect(popup().attributes("aria-label")).toBe("Not translated");
+      openers.get("mixed")!("tags-differ");
+      await nextTick();
+      await nextTick();
+      expect(popup().attributes("aria-label")).toBe("Merge tags differ");
+      openers.get("mixed")!("stale");
+      await nextTick();
+      await nextTick();
+      expect(popup().attributes("aria-label")).toBe("Out of date");
+      editor.keepTranslations("mixed", ["items.stale.text"]);
+      await nextTick();
+      await nextTick();
+      expect(popup().attributes("aria-label")).toBe("Not translated");
+      expect(popup().text()).toContain("Not translated yet.");
+    });
+
+    it("sends the targeted state's fields when Re-translate runs", async () => {
+      const translate = vi.fn(async () => ({ fields: [] }));
+      const { popup, jump } = await mixed({ translation: { translate } });
+      const sent = (call: number) =>
+        (translate.mock.calls[call] as any[])[0].fields.map(
+          (field: { id: string }) => field.id,
+        );
+      await jump("merge-tags-differ");
+      await popup().get('[data-testid="locale-retranslate"]').trigger("click");
+      await vi.waitFor(() => expect(translate).toHaveBeenCalledTimes(1));
+      expect(sent(0)).toEqual([
+        "mixed/items.missing.text",
+        "mixed/items.stale.text",
+        "mixed/items.tags.text",
+      ]);
+      await vi.waitFor(() =>
+        expect(
+          document.querySelector('[data-testid="locale-popover"]'),
+        ).not.toBeNull(),
+      );
+      await jump("stale");
+      await popup().get('[data-testid="locale-retranslate"]').trigger("click");
+      await vi.waitFor(() => expect(translate).toHaveBeenCalledTimes(2));
+      expect(sent(1)).toEqual([
+        "mixed/items.missing.text",
+        "mixed/items.stale.text",
+      ]);
+    });
   });
 
   it("filters only localization rules from canvas badges in a language view", async () => {

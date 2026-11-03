@@ -7,6 +7,7 @@ import {
   LOCALE_CHIP_OPENERS_KEY,
   TRANSLATION_FEATURE_KEY,
   UI_LOCALE_KEY,
+  type LocaleChipTarget,
 } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import { useEditorRoot } from "../../composables/useEditorRoot";
@@ -20,16 +21,17 @@ import {
   primaryBtnCompactClass,
 } from "../../constants/styleConstants";
 
+type ChipState =
+  "missing" | "stale" | "tags-differ" | "changed" | "hidden" | "default-stale";
+
 const props = defineProps<{
   blockId: string;
-  state:
-    | "missing"
-    | "stale"
-    | "tags-differ"
-    | "changed"
-    | "hidden"
-    | "default-stale";
+  state: ChipState;
   count: number;
+  /** The state the popover explains, when a finding asked for one other than the badge's. */
+  popoverState?: ChipState;
+  /** The count of `popoverState`. */
+  popoverCount?: number;
   stale: string[];
   tagsDiffer?: string[];
   setPaths: string[];
@@ -40,6 +42,7 @@ const props = defineProps<{
   replacesCurrent?: boolean;
   editable: boolean;
 }>();
+const emit = defineEmits<{ target: [target: LocaleChipTarget | null] }>();
 const editor = inject(EDITOR_KEY, null);
 const translation = inject(TRANSLATION_FEATURE_KEY, null);
 const chipOpeners = inject(LOCALE_CHIP_OPENERS_KEY, null);
@@ -65,8 +68,8 @@ const language = computed(() =>
 const defaultLanguage = computed(() =>
   languageName(editor?.content.value.settings.locale ?? "en"),
 );
-const label = computed(() => {
-  switch (props.state) {
+function labelOf(state: ChipState, count: number) {
+  switch (state) {
     case "tags-differ":
       return t.localization.tagsDiffer;
     case "hidden":
@@ -74,17 +77,22 @@ const label = computed(() => {
     case "changed":
       return format(t.localization.changed, { language: language.value });
     case "default-stale":
-      return plural(t.localization.staleLanguages, props.count, uiLocale);
+      return plural(t.localization.staleLanguages, count, uiLocale);
     case "missing":
-      return props.count === 1
+      return count === 1
         ? t.localization.notTranslated
-        : plural(t.localization.notTranslatedCount, props.count, uiLocale);
+        : plural(t.localization.notTranslatedCount, count, uiLocale);
     default:
-      return props.count === 1
+      return count === 1
         ? t.localization.outOfDate
-        : plural(t.localization.staleCount, props.count, uiLocale);
+        : plural(t.localization.staleCount, count, uiLocale);
   }
-});
+}
+const label = computed(() => labelOf(props.state, props.count));
+// The badge keeps its priority state; the popover explains the finding's own.
+const shown = computed(() => props.popoverState ?? props.state);
+const shownCount = computed(() => props.popoverCount ?? props.count);
+const shownLabel = computed(() => labelOf(shown.value, shownCount.value));
 const icon = computed(() =>
   props.state === "hidden"
     ? EyeOff
@@ -100,8 +108,9 @@ const icon = computed(() =>
 // or a count is said, the popover repeats it for keyboard and touch users.
 const labelInPopover = computed(
   () =>
-    props.state === "default-stale" ||
-    ((props.state === "missing" || props.state === "stale") && props.count > 1),
+    shown.value === "default-stale" ||
+    ((shown.value === "missing" || shown.value === "stale") &&
+      shownCount.value > 1),
 );
 const canTranslate = computed(
   () => props.editable && props.eligibleGaps && translation?.isAvailable.value,
@@ -199,10 +208,15 @@ watch(
     if (value) {
       root.addEventListener("click", outside, true);
       root.addEventListener("scroll", onScroll, true);
-    }
+    } else emit("target", null);
   },
   { flush: "sync" },
 );
+// Another state has another explanation and size.
+watch(shown, () => {
+  confirming.value = false;
+  if (open.value) void positionPopover();
+});
 watch(
   [
     () => props.blockId,
@@ -214,7 +228,9 @@ watch(
   () => close(),
 );
 onUnmounted(removeListeners);
-const openFromIssue = () => {
+const openFromIssue = (target?: LocaleChipTarget) => {
+  if (!open.value && !popoverRoot.value) return;
+  emit("target", target ?? null);
   if (!open.value) void toggle();
 };
 watch(
@@ -248,12 +264,12 @@ function openLanguage(locale: string) {
 }
 function translate() {
   if (!canTranslate.value || translation?.running.value) return;
-  if (props.state === "tags-differ" && props.replacesCurrent) {
+  if (shown.value === "tags-differ" && props.replacesCurrent) {
     confirming.value = true;
     return;
   }
   void translation?.translate({
-    only: props.state === "tags-differ" ? "all" : "gaps",
+    only: shown.value === "tags-differ" ? "all" : "gaps",
     blockId: props.blockId,
   });
 }
@@ -299,7 +315,7 @@ function confirmTranslation() {
       :id="id"
       ref="popover"
       role="dialog"
-      :aria-label="confirming ? undefined : label"
+      :aria-label="confirming ? undefined : shownLabel"
       :aria-labelledby="confirming ? `${id}-question` : undefined"
       :aria-describedby="confirming ? `${id}-warning` : undefined"
       tabindex="-1"
@@ -367,16 +383,16 @@ function confirmTranslation() {
           v-if="labelInPopover"
           class="tpl:m-0 tpl:mb-2 tpl:text-xs tpl:font-medium"
         >
-          {{ label }}
+          {{ shownLabel }}
         </p>
-        <p v-if="state === 'missing'" class="tpl:m-0">
+        <p v-if="shown === 'missing'" class="tpl:m-0">
           {{
             format(t.localization.missingExplanation, {
               default: defaultLanguage,
             })
           }}
         </p>
-        <template v-else-if="state === 'stale'">
+        <template v-else-if="shown === 'stale'">
           <p class="tpl:m-0">
             {{
               format(t.localization.staleExplanation, {
@@ -390,21 +406,21 @@ function confirmTranslation() {
             {{ format(t.localization.currentExcerpt, { excerpt }) }}
           </p>
         </template>
-        <p v-else-if="state === 'tags-differ'" class="tpl:m-0">
+        <p v-else-if="shown === 'tags-differ'" class="tpl:m-0">
           {{
             format(t.localization.tagsDifferExplanation, {
               default: defaultLanguage,
             })
           }}
         </p>
-        <p v-else-if="state === 'changed'" class="tpl:m-0">
+        <p v-else-if="shown === 'changed'" class="tpl:m-0">
           {{
-            plural(t.localization.changedProperties, count, uiLocale, {
+            plural(t.localization.changedProperties, shownCount, uiLocale, {
               default: defaultLanguage,
             })
           }}
         </p>
-        <p v-else-if="state === 'hidden'" class="tpl:m-0">
+        <p v-else-if="shown === 'hidden'" class="tpl:m-0">
           {{ format(t.localization.hiddenExplanation, { language }) }}
         </p>
         <ul v-else class="tpl:m-0 tpl:list-none tpl:p-0">
@@ -424,35 +440,35 @@ function confirmTranslation() {
           </li>
         </ul>
         <div
-          v-if="editable && state !== 'default-stale'"
+          v-if="editable && shown !== 'default-stale'"
           class="tpl:mt-2 tpl:flex tpl:flex-wrap tpl:gap-1"
         >
           <button
             v-if="
               canTranslate &&
-              (state === 'missing' ||
-                state === 'stale' ||
-                state === 'tags-differ')
+              (shown === 'missing' ||
+                shown === 'stale' ||
+                shown === 'tags-differ')
             "
             type="button"
             ref="retranslate"
             :data-testid="
-              state === 'missing' ? 'locale-translate' : 'locale-retranslate'
+              shown === 'missing' ? 'locale-translate' : 'locale-retranslate'
             "
             :class="secondaryBtnCompactClass"
             :disabled="!!translation?.running.value"
             @click="translate"
           >
             {{
-              state === "missing"
+              shown === "missing"
                 ? t.localization.translate
                 : t.localization.retranslate
             }}
           </button>
-          <template v-if="state === 'stale' || state === 'tags-differ'">
+          <template v-if="shown === 'stale' || shown === 'tags-differ'">
             <button
               type="button"
-              v-if="state === 'stale'"
+              v-if="shown === 'stale'"
               data-testid="locale-keep"
               :class="
                 canTranslate ? ghostBtnCompactClass : secondaryBtnCompactClass
@@ -465,12 +481,12 @@ function confirmTranslation() {
               type="button"
               data-testid="locale-use-default"
               :class="
-                state === 'tags-differ' && !canTranslate
+                shown === 'tags-differ' && !canTranslate
                   ? secondaryBtnCompactClass
                   : ghostBtnCompactClass
               "
               @click="
-                reset(state === 'tags-differ' ? (tagsDiffer ?? []) : stale)
+                reset(shown === 'tags-differ' ? (tagsDiffer ?? []) : stale)
               "
             >
               {{
@@ -481,7 +497,7 @@ function confirmTranslation() {
             </button>
           </template>
           <button
-            v-if="state === 'changed'"
+            v-if="shown === 'changed'"
             type="button"
             data-testid="locale-reset"
             :class="secondaryBtnCompactClass"
@@ -490,7 +506,7 @@ function confirmTranslation() {
             {{ t.localization.resetChanges }}
           </button>
           <button
-            v-if="state === 'hidden'"
+            v-if="shown === 'hidden'"
             type="button"
             data-testid="locale-show"
             :class="secondaryBtnCompactClass"

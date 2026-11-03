@@ -127,11 +127,17 @@ function decodedTermText(text: string): { text: string; offsets?: number[] } {
   return { text: decoded, offsets };
 }
 
-/** Compiled term patterns, one per term list; `null` when no term is left after trimming. */
-const termPatterns = new WeakMap<readonly string[], RegExp | null>();
+/**
+ * Compiled term patterns, keyed by the terms' content so a list changed in
+ * place compiles again. `null` when no term is left after trimming. Only the
+ * most recent lists are kept.
+ */
+const termPatterns = new Map<string, RegExp | null>();
+const TERM_PATTERN_LIMIT = 32;
 
 function termPattern(terms: readonly string[]): RegExp | null {
-  let pattern = termPatterns.get(terms);
+  const key = JSON.stringify(terms);
+  let pattern = termPatterns.get(key);
   if (pattern === undefined) {
     const alternatives = terms
       .map((term) => term.trim())
@@ -144,7 +150,9 @@ function termPattern(terms: readonly string[]): RegExp | null {
           "gu",
         )
       : null;
-    termPatterns.set(terms, pattern);
+    if (termPatterns.size >= TERM_PATTERN_LIMIT)
+      termPatterns.delete(termPatterns.keys().next().value!);
+    termPatterns.set(key, pattern);
   }
   return pattern;
 }

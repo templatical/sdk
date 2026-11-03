@@ -55,6 +55,14 @@ function isOldVocabulary(input: unknown): boolean {
   );
 }
 
+/** Whether an engine message already names the block, as `Block "<id>"`, `block with id "<id>"` or `section "<id>"`. */
+function namesBlock(message: string, blockId: string): boolean {
+  const id = blockId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b(?:[Bb]lock(?: with id)?|[Ss]ection) "${id}"`).test(
+    message,
+  );
+}
+
 export function runEdit(args: ParsedArgs): number {
   const file = args.positional[0];
   if (!file) throw new UsageError("edit needs a template file.");
@@ -88,8 +96,13 @@ export function runEdit(args: ParsedArgs): number {
   } catch (error) {
     if (!(error instanceof OperationError)) throw error;
     const refused = operations[opIndex] as { op?: unknown } | undefined;
+    // `blockId` is the block the refusal concerns, for example the first one
+    // hidden in a language that can't become the default.
     throw new UsageError(
-      `Operation ${opIndex + 1} (${String(refused?.op)}) was refused: ${error.code} — ${error.message}`,
+      `Operation ${opIndex + 1} (${String(refused?.op)}) was refused: ${error.code} — ${error.message}` +
+        (error.blockId === undefined || namesBlock(error.message, error.blockId)
+          ? ""
+          : ` Block: "${error.blockId}".`),
     );
   }
 
