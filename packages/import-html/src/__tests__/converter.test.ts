@@ -1152,10 +1152,13 @@ describe("convertHtmlTemplate — <hr> that draws nothing", () => {
     note: "The divider draws no line and takes no space.",
   };
 
-  it("skips one that takes no space, at the top level and in a cell", () => {
+  // The three walks that convert an element: the body, a cell, and a wrapper
+  // that also holds a table.
+  it("skips one that takes no space, at the top level, in a cell and beside a table", () => {
     for (const html of [
       '<html><body><p>Above</p><hr style="border:0;margin:0"><p>Below</p></body></html>',
       '<html><body><table width="600"><tr><td><p>Above</p><hr style="border:0;margin:0"><p>Below</p></td></tr></table></body></html>',
+      '<html><body><div><p>Above</p><hr style="border:0;margin:0"><table width="600"><tr><td><p>In</p></td></tr></table></div></body></html>',
     ]) {
       const { content, report } = convertHtmlTemplate(html);
       expect(findBlock(content.blocks, "divider")).toBeUndefined();
