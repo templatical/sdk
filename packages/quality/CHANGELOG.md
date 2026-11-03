@@ -1,5 +1,20 @@
 # @templatical/quality
 
+## 0.53.0
+
+### Minor Changes
+
+- cef9348: Localization checks for language versions
+
+  `contentLocale` lints a translated language version, and `localization.untranslated`, `localization.stale` and `localization.merge-tags-differ` report missing text, outdated `sourceHash` values and changed merge tags. `lintTemplate` includes the `localization` category; pass `customBlocks` to check custom `text` and `textarea` translations.
+
+  Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version. See [the `localization` options](https://docs.templatical.com/quality/options#localization).
+
+### Patch Changes
+
+- Updated dependencies [cef9348]
+  - @templatical/types@0.53.0
+
 ## 0.52.1
 
 ### Patch Changes

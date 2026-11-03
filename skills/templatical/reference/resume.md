@@ -6,7 +6,7 @@ When a turn begins with no memory of which file was being worked on, do not
 guess and do not start a new one. Ask the CLI:
 
 ```
-npx -y @templatical/template-tools@0.52.1 list --json
+npx -y @templatical/template-tools@0.53.0 list --json
 ```
 
 It enumerates `.templatical/*.json` straight off disk, so it is authoritative
