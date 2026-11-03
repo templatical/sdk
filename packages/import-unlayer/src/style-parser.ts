@@ -160,9 +160,11 @@ export function parseBorderObject(border: UnlayerBorder | undefined): {
   }
   const style = border.borderTopStyle || "solid";
   const hidden = style === "none" || style === "hidden";
-  // Only a width written as zero; an unreadable one also parses to 0.
-  const zeroWidth = /^\s*0*\.?0+\s*(?:px)?\s*$/.test(
-    String(border.borderTopWidth ?? ""),
+  // Only a width written as zero; an unreadable one also parses to 0. Trimmed
+  // first, and each run of zeros has one way to match, so a long run fails in
+  // linear time.
+  const zeroWidth = /^(?:0+(?:\.0+)?|\.0+)(?:px)?$/.test(
+    String(border.borderTopWidth ?? "").trim(),
   );
   return {
     width: hidden ? 0 : parsePxValue(border.borderTopWidth),

@@ -161,6 +161,26 @@ describe("parseBorderObject", () => {
       ]);
     }
   });
+  // A zero-width pattern that can split a run of zeros or of spaces two ways
+  // backtracks quadratically on a long run that fails to match (CodeQL
+  // js/polynomial-redos).
+  it("reads long runs of zeros and spaces in linear time (ReDoS regression)", () => {
+    for (const borderTopWidth of [
+      `${"0".repeat(40_000)}x`,
+      `0${" ".repeat(40_000)}x`,
+    ]) {
+      const start = Date.now();
+      const { drawn } = parseBorderObject({
+        borderTopWidth,
+        borderTopStyle: "solid",
+        borderTopColor: "#cccccc",
+      });
+      const elapsed = Date.now() - start;
+      expect(drawn).toBe(true);
+      expect(elapsed).toBeLessThan(250);
+    }
+  });
+
   it("is drawn with an unreadable width", () => {
     expect(
       parseBorderObject({
