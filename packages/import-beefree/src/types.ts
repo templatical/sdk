@@ -72,7 +72,12 @@ export interface BeeFreeeModule {
 
 export interface BeeFreeeModuleDescriptor {
   style?: Record<string, string>;
-  computedStyle?: Record<string, string | boolean>;
+  /**
+   * Values BeeFree computed for the module. Numbers appear in older exports
+   * (`width: 187.5`), and the Icons module nests objects (`iconSpacing`), so
+   * every reader checks the type it needs.
+   */
+  computedStyle?: Record<string, unknown>;
   text?: BeeFreeeTextContent;
   paragraph?: BeeFreeeTextContent;
   heading?: BeeFreeeHeadingContent;
@@ -82,7 +87,8 @@ export interface BeeFreeeModuleDescriptor {
   divider?: BeeFreeeeDividerContent;
   spacer?: BeeFreeeSpacerContent;
   html?: BeeFreeeHtmlContent;
-  iconsList?: BeeFreeeSocialContent;
+  /** Social icons for the Social module, icon items for the Icons module. */
+  iconsList?: BeeFreeeSocialContent | BeeFreeeIconsContent;
   video?: BeeFreeeVideoContent;
   menu?: BeeFreeeMenuContent;
   table?: BeeFreeeTableContent;
@@ -106,6 +112,11 @@ export interface BeeFreeeImageContent {
   translations?: BeeFreeTranslations;
   src: string;
   href?: string;
+  /**
+   * Written by the GIPHY addon: the GIF's page on giphy.com, not a link the
+   * author set. The importer links an image from `href` only.
+   */
+  url?: string;
   alt?: string;
   width?: string;
   height?: string;
@@ -134,6 +145,25 @@ export interface BeeFreeeHtmlContent {
 
 export interface BeeFreeeSocialContent {
   icons: BeeFreeeSocialIcon[];
+}
+
+export interface BeeFreeeIconsContent {
+  icons: BeeFreeeIconItem[];
+}
+
+/** An item of the Icons module (`mailup-bee-newsletter-modules-icons`). */
+export interface BeeFreeeIconItem {
+  /** The icon's image URL. */
+  image?: string;
+  alt?: string;
+  title?: string;
+  href?: string;
+  target?: string;
+  text?: string;
+  textPosition?: string;
+  /** The image file's own size, e.g. `"48px"`. */
+  width?: string;
+  height?: string;
 }
 
 export interface BeeFreeeSocialIcon {

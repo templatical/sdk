@@ -22,12 +22,15 @@ import type {
   SocialPlatform,
   SocialIcon,
   MenuItemData,
+  SpacingValue,
   TableRowData,
   TableCellData,
 } from "@templatical/types";
 import type {
+  BeeFreeeIconItem,
   BeeFreeeModule,
   BeeFreeeModuleDescriptor,
+  BeeFreeeSocialIcon,
   ImportReportEntry,
 } from "./types";
 import {
@@ -77,7 +80,36 @@ const MODULE_TYPE_MAP: Record<string, string> = {
   "mailup-bee-newsletter-modules-video": "video",
   "mailup-bee-newsletter-modules-menu": "menu",
   "mailup-bee-newsletter-modules-table": "table",
+  "mailup-bee-newsletter-modules-icons": "icons",
 };
+
+const ADDON_MODULE = "mailup-bee-newsletter-modules-addon";
+const EMPTY_MODULE = "mailup-bee-newsletter-modules-empty";
+
+/**
+ * An addon keeps the payload of the module it stands in for, so the payload it
+ * carries names the converter. Checked in this order.
+ */
+const ADDON_PAYLOADS = [
+  ["image", "image"],
+  ["html", "html"],
+  ["heading", "title"],
+  ["paragraph", "paragraph"],
+  ["text", "paragraph"],
+  ["list", "list"],
+  ["button", "button"],
+  ["divider", "divider"],
+  ["menu", "menu"],
+  ["iconsList", "icons"],
+] as const;
+
+/** The converter a module goes to, or `undefined` when there is none. */
+function moduleKind(module: BeeFreeeModule): string | undefined {
+  if (module.type !== ADDON_MODULE) return MODULE_TYPE_MAP[module.type];
+  return ADDON_PAYLOADS.find(
+    ([key]) => module.descriptor[key] !== undefined,
+  )?.[1];
+}
 
 const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
   facebook: "facebook",
@@ -307,7 +339,7 @@ function convertHeading(
 
 /**
  * The classes BeeFree records in `computedStyle.class` for an image: its
- * alignment and `autowidth` / `fixedwidth`.
+ * alignment, `autowidth` / `fixedwidth`, and in older exports `fullwidth`.
  */
 function computedClasses(descriptor: BeeFreeeModuleDescriptor): string[] {
   const value = descriptor.computedStyle?.class;
@@ -315,21 +347,43 @@ function computedClasses(descriptor: BeeFreeeModuleDescriptor): string[] {
 }
 
 /**
- * The width BeeFree shows an image at, as `ImageBlock.width`. `image.width` and
- * `image.height` are the file's own size: an `autowidth` image fills its
- * column, and a `fixedwidth` one is shown at `computedStyle.width`. An export
- * without `computedStyle` falls back to `image.width`. No width, or one that
+ * A px length BeeFree computed: `"172.5px"`, or a bare number in older
+ * exports. 0 when it isn't one.
+ */
+function computedPx(value: unknown): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
+  }
+  return typeof value === "string" ? parsePxValue(value) : 0;
+}
+
+/**
+ * The width BeeFree shows an image at, as `ImageBlock.width`. BeeFree records
+ * it in `computedStyle.width` for both classes: a `fixedwidth` image at the
+ * width the author set, an `autowidth` one at its file's width capped at the
+ * column. `image.width` and `image.height` are the file's own size, the
+ * fallback for an export without `computedStyle`. No width, or one that
  * reaches `room` (the column less the image's side padding), is `"full"`.
+ * Older exports class an image that fills its column `fullwidth`, and its
+ * computed width leaves out the column padding the import drops, so the class
+ * decides.
  */
 function resolveImageWidth(
   descriptor: BeeFreeeModuleDescriptor,
   room: number | undefined,
 ): ImageBlock["width"] {
-  if (computedClasses(descriptor).includes("autowidth")) return "full";
-  const computed = descriptor.computedStyle?.width;
+  if (computedClasses(descriptor).includes("fullwidth")) return "full";
   const shown =
-    parsePxValue(typeof computed === "string" ? computed : undefined) ||
+    computedPx(descriptor.computedStyle?.width) ||
     parsePxValue(descriptor.image?.width);
+  return shownWidth(shown, room);
+}
+
+/** A shown px width as `ImageBlock.width`: `"full"` when unknown or at `room`. */
+function shownWidth(
+  shown: number,
+  room: number | undefined,
+): ImageBlock["width"] {
   if (shown <= 0) return "full";
   return room !== undefined && shown >= room ? "full" : shown;
 }
@@ -506,6 +560,37 @@ function dividerAlign(
     : descriptor.style?.["text-align"];
 }
 
+/**
+ * The room a divider that draws no line takes: its top and bottom padding plus
+ * the width of a transparent border. `undefined` when the line is drawn.
+ * BeeFree templates space content this way.
+ */
+function undrawnDividerHeight(
+  descriptor: BeeFreeeModuleDescriptor,
+): number | undefined {
+  const border = parseBorderTop(descriptor.divider?.style?.["border-top"]);
+  if (border.drawn) return undefined;
+  const padding = extractPadding(descriptor.style);
+  return padding.top + border.width + padding.bottom;
+}
+
+/**
+ * A divider that draws no line, as a spacer of the same height. A spacer
+ * renders no padding, so the divider's padding goes into the height.
+ */
+function convertUndrawnDivider(
+  descriptor: BeeFreeeModuleDescriptor,
+  height: number,
+): Block {
+  return createSpacerBlock({
+    height,
+    styles: {
+      ...makeStyles(descriptor),
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    },
+  });
+}
+
 function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
   const spacer = descriptor.spacer;
   const height = parsePxValue(spacer?.style?.height) || 24;
@@ -536,7 +621,8 @@ function convertSocial(
 
   const icons: SocialIcon[] = [];
 
-  for (const beeIcon of iconsList.icons) {
+  // The Icons module keeps items of another shape under the same key.
+  for (const beeIcon of iconsList.icons as BeeFreeeSocialIcon[]) {
     const id = (beeIcon.id ?? beeIcon.name ?? "").toLowerCase();
     const platform = SOCIAL_PLATFORM_MAP[id];
 
@@ -558,6 +644,200 @@ function convertSocial(
     icons,
     styles: makeStyles(descriptor),
   });
+}
+
+/** Escape `& < > "` for text content and attribute values. */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function stringField(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function iconItems(descriptor: BeeFreeeModuleDescriptor): BeeFreeeIconItem[] {
+  const icons = descriptor.iconsList?.icons;
+  return Array.isArray(icons) ? (icons as BeeFreeeIconItem[]) : [];
+}
+
+/** The padding BeeFree keeps around each icon, `computedStyle.iconSpacing`. */
+function iconSpacing(descriptor: BeeFreeeModuleDescriptor): SpacingValue {
+  const value = descriptor.computedStyle?.iconSpacing;
+  if (typeof value !== "object" || value === null) return extractPadding({});
+  return extractPadding(
+    Object.fromEntries(
+      Object.entries(value).filter(([, side]) => typeof side === "string"),
+    ),
+  );
+}
+
+/**
+ * The height BeeFree draws every icon at, and an icon's width at that height,
+ * from its file's size. The width is `undefined` when the size isn't stated.
+ */
+function iconSize(
+  descriptor: BeeFreeeModuleDescriptor,
+  item: BeeFreeeIconItem,
+): { height: number; width: number | undefined } {
+  const height = computedPx(descriptor.computedStyle?.iconHeight) || 32;
+  const fileWidth = parsePxValue(stringField(item.width));
+  const fileHeight = parsePxValue(stringField(item.height));
+  return {
+    height,
+    width:
+      fileWidth > 0 && fileHeight > 0
+        ? Math.round((height * fileWidth) / fileHeight)
+        : undefined,
+  };
+}
+
+/**
+ * A lone icon without text, as an image block at the icon height. `undefined`
+ * when the module holds anything else, or the icon's file size is unknown.
+ */
+function convertSingleIcon(
+  descriptor: BeeFreeeModuleDescriptor,
+  columnWidth: number | undefined,
+): Block | undefined {
+  const items = iconItems(descriptor);
+  if (items.length !== 1) return undefined;
+  const [item] = items;
+  const src = stringField(item.image);
+  const { width } = iconSize(descriptor, item);
+  if (!src || stringField(item.text) || width === undefined) return undefined;
+
+  // The module's padding plus the space BeeFree keeps around the icon.
+  const styles = makeStyles(descriptor);
+  const spacing = iconSpacing(descriptor);
+  const padding = {
+    top: styles.padding.top + spacing.top,
+    right: styles.padding.right + spacing.right,
+    bottom: styles.padding.bottom + spacing.bottom,
+    left: styles.padding.left + spacing.left,
+  };
+  const room =
+    columnWidth === undefined
+      ? undefined
+      : columnWidth - padding.left - padding.right;
+
+  return createImageBlock({
+    src,
+    alt: stringField(item.alt),
+    width: shownWidth(width, room),
+    naturalWidth: parsePxValue(stringField(item.width)),
+    naturalHeight: parsePxValue(stringField(item.height)),
+    align: toAlign(descriptor.style?.["text-align"]),
+    linkUrl: stringField(item.href) || undefined,
+    styles: { ...styles, padding },
+  });
+}
+
+/** The module's text style as CSS declarations, for the icons' text cells. */
+function iconTextStyle(style: Record<string, string>): string {
+  const color = parseColor(style.color);
+  const fontFamily = canonicalFontStack(style["font-family"]);
+  const fontSize = parsePxValue(style["font-size"]);
+  const fontWeight = style["font-weight"];
+  return [
+    color ? `color: ${color};` : "",
+    fontFamily ? `font-family: ${fontFamily};` : "",
+    fontSize ? `font-size: ${fontSize}px;` : "",
+    fontWeight ? `font-weight: ${fontWeight};` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/**
+ * The Icons module as the table BeeFree draws: the icons side by side, each at
+ * the icon height inside its `iconSpacing`, with its text on the side
+ * `textPosition` names, in the module's text style.
+ */
+function iconsHtml(descriptor: BeeFreeeModuleDescriptor): string {
+  const style = descriptor.style ?? {};
+  const computed = descriptor.computedStyle ?? {};
+  const align = toAlign(style["text-align"]);
+  const color = parseColor(style.color);
+  const textStyle = iconTextStyle(style);
+  const gap =
+    computedPx(computed.itemsSpacing) || computedPx(computed.itemSpacing);
+  const spacing = iconSpacing(descriptor);
+  const iconPadding =
+    spacing.top || spacing.right || spacing.bottom || spacing.left
+      ? `padding: ${spacing.top}px ${spacing.right}px ${spacing.bottom}px ${spacing.left}px; `
+      : "";
+
+  const items = iconItems(descriptor).map((item, index) => {
+    const position = stringField(item.textPosition);
+    const stacked = position === "top" || position === "bottom";
+    const cellAlign = stacked ? ' align="center"' : "";
+    const href = stringField(item.href);
+    const target = stringField(item.target);
+    const link = (inner: string, linkStyle: string) =>
+      href
+        ? `<a href="${escapeHtml(href)}"${target ? ` target="${escapeHtml(target)}"` : ""} style="${escapeHtml(linkStyle)}">${inner}</a>`
+        : inner;
+
+    const src = stringField(item.image);
+    const { height, width } = iconSize(descriptor, item);
+    const title = stringField(item.title);
+    const imgStyle = [
+      "display: block;",
+      stacked ? "margin: 0 auto;" : "",
+      width === undefined ? "" : `width: ${width}px;`,
+      `height: ${height}px;`,
+      "border: 0;",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const img = `<img src="${escapeHtml(src)}" alt="${escapeHtml(stringField(item.alt))}"${title ? ` title="${escapeHtml(title)}"` : ""}${width === undefined ? "" : ` width="${width}"`} height="${height}" style="${imgStyle}">`;
+    const iconCell = src
+      ? `<td${cellAlign} style="${iconPadding}vertical-align: middle;">${link(img, "text-decoration: none;")}</td>`
+      : "";
+
+    const text = stringField(item.text);
+    const textCell = text
+      ? `<td${cellAlign} style="vertical-align: middle;${textStyle ? ` ${escapeHtml(textStyle)}` : ""}">${link(
+          escapeHtml(text),
+          `${color ? `color: ${color}; ` : ""}text-decoration: none;`,
+        )}</td>`
+      : "";
+
+    const rows =
+      position === "top"
+        ? [textCell, iconCell]
+        : position === "bottom"
+          ? [iconCell, textCell]
+          : [position === "left" ? textCell + iconCell : iconCell + textCell];
+    const body = rows
+      .filter(Boolean)
+      .map((row) => `<tr>${row}</tr>`)
+      .join("");
+    const itemGap = index > 0 && gap ? `padding-left: ${gap}px; ` : "";
+    return `<td style="${itemGap}vertical-align: middle;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">${body}</table></td>`;
+  });
+
+  const tableAlign = align === "left" ? "" : ` align="${align}"`;
+  return `<table role="presentation" border="0" cellpadding="0" cellspacing="0"${tableAlign} style="border-collapse: collapse;"><tr>${items.join("")}</tr></table>`;
+}
+
+function convertIcons(
+  descriptor: BeeFreeeModuleDescriptor,
+  columnWidth: number | undefined,
+): { block: Block; rebuilt: boolean } {
+  const single = convertSingleIcon(descriptor, columnWidth);
+  if (single) return { block: single, rebuilt: false };
+  return {
+    block: createHtmlBlock({
+      content: iconsHtml(descriptor),
+      styles: makeStyles(descriptor),
+    }),
+    rebuilt: true,
+  };
 }
 
 function convertVideo(descriptor: BeeFreeeModuleDescriptor): Block {
@@ -684,7 +964,7 @@ function convertModuleBase(
   warnings: string[],
   context: ModuleContext = {},
 ): { block: Block; entry: ImportReportEntry } {
-  const mappedType = MODULE_TYPE_MAP[module.type];
+  const mappedType = moduleKind(module);
   const descriptor = module.descriptor;
   const textColor = context.textColor ?? FALLBACK_TEXT_COLOR;
 
@@ -695,7 +975,10 @@ function convertModuleBase(
         beeFreeModuleType: module.type,
         templaticalBlockType: "html",
         status: "html-fallback",
-        note: `Unknown module type "${module.type}" converted to HTML block.`,
+        note:
+          module.type === ADDON_MODULE
+            ? "The addon carries no content Templatical reads; converted to an HTML block."
+            : `Unknown module type "${module.type}" converted to HTML block.`,
       },
     };
   }
@@ -719,6 +1002,14 @@ function convertModuleBase(
       block = convertButton(descriptor);
       break;
     case "divider": {
+      const height = undrawnDividerHeight(descriptor);
+      if (height !== undefined) {
+        block = convertUndrawnDivider(descriptor, height);
+        notes = [
+          `The divider draws no line; imported as a ${height}px spacer.`,
+        ];
+        break;
+      }
       const result = convertDivider(descriptor, context.columnWidth);
       block = result.block;
       notes = result.notes;
@@ -728,6 +1019,22 @@ function convertModuleBase(
     case "spacer":
       block = convertSpacer(descriptor);
       break;
+    case "icons": {
+      const result = convertIcons(descriptor, context.columnWidth);
+      if (result.rebuilt) {
+        return {
+          block: result.block,
+          entry: {
+            beeFreeModuleType: module.type,
+            templaticalBlockType: "html",
+            status: "html-fallback",
+            note: "Icons module rebuilt as an HTML table.",
+          },
+        };
+      }
+      block = result.block;
+      break;
+    }
     case "html":
       block = convertHtml(descriptor);
       break;
@@ -773,6 +1080,35 @@ function convertModuleBase(
       ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
     },
   };
+}
+
+/**
+ * The report entry for a module that imports no block, or `undefined` when it
+ * converts: an empty module, an Icons module with no icons, and a divider that
+ * draws no line and takes no space.
+ */
+export function skippedModuleEntry(
+  module: BeeFreeeModule,
+): ImportReportEntry | undefined {
+  const skip = (note: string): ImportReportEntry => ({
+    beeFreeModuleType: module.type,
+    templaticalBlockType: null,
+    status: "skipped",
+    note,
+  });
+  if (module.type === EMPTY_MODULE) return skip("The module is empty.");
+  switch (moduleKind(module)) {
+    case "icons":
+      return iconItems(module.descriptor).length === 0
+        ? skip("The Icons module has no icons.")
+        : undefined;
+    case "divider":
+      return undrawnDividerHeight(module.descriptor) === 0
+        ? skip("The divider draws no line and takes no space.")
+        : undefined;
+    default:
+      return undefined;
+  }
 }
 
 export function convertModule(

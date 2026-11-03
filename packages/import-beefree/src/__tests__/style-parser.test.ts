@@ -3,6 +3,7 @@ import {
   parsePxValue,
   parseColor,
   parseBorderTop,
+  isTransparentColor,
   extractPadding,
   parseDividerWidth,
   readBeefreeBackgroundImage,
@@ -90,6 +91,71 @@ describe("parseBorderTop", () => {
     const result = parseBorderTop(undefined);
     expect(result.width).toBe(0);
     expect(result.style).toBe("solid");
+    expect(result.drawn).toBe(true);
+  });
+
+  it("keeps a colour function's spaces together", () => {
+    expect(parseBorderTop("2px dotted rgba(10, 20, 30, 0.5)")).toEqual({
+      width: 2,
+      style: "dotted",
+      color: "rgba(10, 20, 30, 0.5)",
+      drawn: true,
+    });
+  });
+
+  it("reads the parts in any order", () => {
+    expect(parseBorderTop("solid #cccccc 3px")).toEqual({
+      width: 3,
+      style: "solid",
+      color: "#cccccc",
+      drawn: true,
+    });
+  });
+
+  it("is not drawn at 0 width, with no style, or in a transparent colour", () => {
+    for (const value of [
+      "0px solid #cccccc",
+      "0 solid #cccccc",
+      "1px none #cccccc",
+      "1px hidden #cccccc",
+      "1px solid transparent",
+      "1px solid rgba(0,0,0,0)",
+    ]) {
+      expect([value, parseBorderTop(value).drawn]).toEqual([value, false]);
+    }
+  });
+});
+
+describe("isTransparentColor", () => {
+  it("is true for a colour with no opacity", () => {
+    for (const value of [
+      "transparent",
+      "TRANSPARENT",
+      "#0000",
+      "#ffffff00",
+      "rgba(0, 0, 0, 0)",
+      "rgba(255,255,255,0.0)",
+      "rgb(0 0 0 / 0)",
+      "rgb(0 0 0 / 0%)",
+      "hsla(0, 0%, 100%, 0)",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, true]);
+    }
+  });
+
+  it("is false for a colour that paints", () => {
+    for (const value of [
+      "",
+      "#000",
+      "#000000",
+      "#ffffff80",
+      "rgba(0, 0, 0, 0.5)",
+      "rgb(0 0 0)",
+      "rgb(0 0 0 / 1%)",
+      "red",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, false]);
+    }
   });
 });
 

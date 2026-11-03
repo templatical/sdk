@@ -96,19 +96,111 @@ export function parseColor(value: string | undefined): string {
   return trimmed;
 }
 
+/**
+ * Whether a CSS colour paints nothing: `transparent`, or an alpha of 0 in a
+ * hex (`#rgba`, `#rrggbbaa`) or functional (`rgba()`, `hsl(… / 0%)`) colour.
+ */
+export function isTransparentColor(value: string | undefined): boolean {
+  if (!value) return false;
+  const color = value.trim().toLowerCase();
+  if (color === "transparent") return true;
+
+  const hex = color.match(
+    /^#(?:[0-9a-f]{3}([0-9a-f])|[0-9a-f]{6}([0-9a-f]{2}))$/,
+  );
+  if (hex) return /^0+$/.test(hex[1] ?? hex[2]);
+
+  const fn = color.match(/^(?:rgb|hsl)a?\((.*)\)$/);
+  if (!fn) return false;
+  const alpha = fn[1].includes("/") ? fn[1].split("/")[1] : fn[1].split(",")[3];
+  if (alpha === undefined) return false;
+  const opacity = parseFloat(alpha);
+  return Number.isFinite(opacity) && opacity <= 0;
+}
+
+const BORDER_STYLES = new Set([
+  "none",
+  "hidden",
+  "dotted",
+  "dashed",
+  "solid",
+  "double",
+  "groove",
+  "ridge",
+  "inset",
+  "outset",
+]);
+
+const BORDER_WIDTH_KEYWORDS: Record<string, number> = {
+  thin: 1,
+  medium: 3,
+  thick: 5,
+};
+
+/** Split on whitespace outside parentheses, so `rgba(0, 0, 0, 0)` is one part. */
+function splitShorthand(value: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of value.trim()) {
+    if (ch === "(") depth++;
+    if (ch === ")") depth = Math.max(0, depth - 1);
+    if (depth === 0 && /\s/.test(ch)) {
+      if (current) parts.push(current);
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  if (current) parts.push(current);
+  return parts;
+}
+
+/**
+ * A `border-top` shorthand, its parts in any order. `width` is the room the
+ * border takes, so a `none` or `hidden` border has none. `drawn` is false when
+ * the border paints nothing: a stated 0 width, a `none` or `hidden` style, or a
+ * transparent colour. A shorthand without a width reads as 0 wide but drawn.
+ */
 export function parseBorderTop(value: string | undefined): {
   width: number;
   style: string;
   color: string;
+  drawn: boolean;
 } {
-  if (!value) return { width: 0, style: "solid", color: "#000000" };
+  if (!value)
+    return { width: 0, style: "solid", color: "#000000", drawn: true };
 
-  // "2px solid #cccccc"
-  const parts = value.trim().split(/\s+/);
+  let width: number | undefined;
+  let style: string | undefined;
+  let colorPart: string | undefined;
+  for (const part of splitShorthand(value)) {
+    const lower = part.toLowerCase();
+    const length = lower.match(/^(\d*\.?\d+)(px)?$/);
+    if (
+      width === undefined &&
+      length &&
+      (length[2] || Number(length[1]) === 0)
+    ) {
+      width = Number(length[1]);
+    } else if (
+      width === undefined &&
+      Object.hasOwn(BORDER_WIDTH_KEYWORDS, lower)
+    ) {
+      width = BORDER_WIDTH_KEYWORDS[lower];
+    } else if (style === undefined && BORDER_STYLES.has(lower)) {
+      style = lower;
+    } else {
+      colorPart ??= part;
+    }
+  }
+
+  const hidden = style === "none" || style === "hidden";
   return {
-    width: parsePxValue(parts[0]),
-    style: parts[1] || "solid",
-    color: parseColor(parts[2]) || "#000000",
+    width: hidden || width === undefined ? 0 : Math.round(width),
+    style: style ?? "solid",
+    color: parseColor(colorPart) || "#000000",
+    drawn: width !== 0 && !hidden && !isTransparentColor(colorPart),
   };
 }
 

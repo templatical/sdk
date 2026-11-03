@@ -76,8 +76,8 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 |---|---|
 | `converted` | Ohne Verlust auf einen Templatical-Block abgebildet. |
 | `approximated` | Abgebildet, mit Clamp oder Flatten — `note` sagt, was sich geändert hat. |
-| `html-fallback` | Kein Block-Äquivalent — ein unbekannter Modultyp, Formulare eingeschlossen. Die Ausgabe ist ein `HtmlBlock`; seinen Inhalt beschreibt die [Block-Zuordnung](#block-zuordnung). |
-| `skipped` | Keine Ausgabe. Dieser Konverter vergibt den Status nicht: Jedes Modul erzeugt einen Block. |
+| `html-fallback` | Kein Block-Äquivalent — ein unbekannter Modultyp (Formulare eingeschlossen), ein [Icons](#icons)-Modul, das nicht genau ein Icon ohne Text enthält, oder ein [Addon](#addons) ohne Payload, das der Importer liest. Die Ausgabe ist ein `HtmlBlock`; seinen Inhalt beschreibt die [Block-Zuordnung](#block-zuordnung). |
+| `skipped` | Keine Ausgabe, und `templaticalBlockType` ist `null`: ein leeres Modul, ein Icons-Modul ohne Icons oder ein [Divider ohne Linie](#undrawn-dividers), der keinen Platz einnimmt. |
 
 Das JSON, das BeeFrees Editor speichert (`page.rows`), ist die Eingabe. Ein kompiliertes HTML-Export ist ein anderes Envelope — [`@templatical/import-html`](/de/guide/migration-from-html).
 
@@ -113,9 +113,12 @@ BeeFree-Blocktypen werden den Templatical-Äquivalenten zugeordnet:
 | List | `paragraph` | Konvertiert |
 | Image | `image` | Konvertiert |
 | Button | `button` | Konvertiert |
-| Divider | `divider` | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist) |
+| Divider | `divider`, oder `spacer`, wenn er [keine Linie zeichnet](#undrawn-dividers) | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn er keine Linie zeichnet und keinen Platz einnimmt) |
 | Spacer | `spacer` | Konvertiert |
 | Social | `social` | Konvertiert |
+| Icons | `image` für ein Icon ohne Text, sonst `html` ([Icons](#icons)) | Konvertiert oder HTML-Fallback |
+| Addon | der Block für das Payload, das es trägt ([Addons](#addons)) | Wie dieses Modul |
+| Empty | keiner | Übersprungen |
 | Html | `html` | Konvertiert |
 | Menu | `menu` | Angenähert (Stile können abweichen) |
 | Video | `video` | Konvertiert |
@@ -127,13 +130,13 @@ Unbekannte Modultypen — Formulare eingeschlossen — werden als Fallback in HT
 
 | BeeFree-Bild | `ImageBlock.width` | Status |
 |---|---|---|
-| `computedStyle.class` enthält `autowidth` | `"full"` | Konvertiert |
+| `computedStyle.class` enthält `fullwidth` | `"full"` | Konvertiert |
 | `computedStyle.width` schmaler als der Platz des Bildes | die px-Zahl, gerundet | Konvertiert |
 | `computedStyle.width` so breit wie der Platz oder breiter | `"full"` | Konvertiert |
-| kein `computedStyle` | `image.width`, nach derselben Regel | Konvertiert |
+| kein `computedStyle.width` | `image.width`, nach derselben Regel | Konvertiert |
 | gar keine Breite | `"full"` | Konvertiert |
 
-`image.width` und `image.height` sind die Größe der Bilddatei, `computedStyle.width` ist die Breite, in der BeeFree das Bild zeigt. Der Platz des Bildes ist die Inhaltsbreite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. `image.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält. Ein Bild ohne `text-align` übernimmt seine Ausrichtung aus `computedStyle.class` (`left`, `center` oder `right`).
+`image.width` und `image.height` sind die Größe der Bilddatei, `computedStyle.width` ist die Breite, in der BeeFree das Bild zeigt, für beide Größenklassen von BeeFree: ein `fixedwidth`-Bild in der im Editor gesetzten Breite, ein `autowidth`-Bild in der Breite seiner Datei, begrenzt auf die Spalte. Ältere Exporte schreiben `computedStyle.width` als Pixelzahl (`187.5`) und versehen ein Bild, das seine Spalte füllt, mit der Klasse `fullwidth`. Deren berechnete Breite lässt das Padding der Spalte aus, das der Import nicht übernimmt, deshalb entscheidet die Klasse. Der Platz des Bildes ist die Inhaltsbreite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. `image.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält. Ein Bild ohne `text-align` übernimmt seine Ausrichtung aus `computedStyle.class` (`left`, `center` oder `right`).
 
 ### Divider-Breite
 
@@ -150,6 +153,50 @@ Unbekannte Modultypen — Formulare eingeschlossen — werden als Fallback in HT
 Die Inhaltsbreite einer Spalte ist ihr Anteil an `settings.width` gemäß dem Spaltenlayout der Section, abzüglich des linken und rechten Paddings des Dividers. Eine Zeile mit vier oder mehr Spalten wird auf eine Spalte reduziert, und ihre Module nehmen die ganze `settings.width` ein.
 
 Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den BeeFree links oder rechts ausrichtet (`computedStyle.align`), ist angenähert; seine `note` nennt die Ausrichtung.
+
+### Divider ohne Linie {#undrawn-dividers}
+
+Ein Divider zeichnet keine Linie, wenn sein `border-top` 0 breit ist, `none` oder `hidden` ist oder transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`. BeeFree-Vorlagen nutzen solche Divider als Abstand.
+
+| BeeFree-Divider | Ergebnis | Status |
+|---|---|---|
+| zeichnet eine Linie | `divider`, nach den Regeln oben | Konvertiert |
+| zeichnet keine Linie, Padding und transparenter Rahmen ergeben mehr als 0px | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
+| zeichnet keine Linie und nimmt keinen Platz ein | kein Block | Übersprungen |
+
+Die `height` des Spacers ist das `padding-top` des Dividers plus `padding-bottom` plus die Breite eines transparenten Rahmens. Ein Rahmen mit `none` oder `hidden` nimmt keinen Platz ein, seine Breite zählt also nicht. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0, und die `background-color` des Dividers wird übernommen. Ein Divider ganz ohne `border-top` wird als durchgezogene schwarze Linie von 1px importiert.
+
+### Icons {#icons}
+
+Das Icons-Modul (`mailup-bee-newsletter-modules-icons`) zeigt eine Reihe von Icons, jedes mit optionalem Text. BeeFree zeichnet jedes Icon in der Höhe `computedStyle.iconHeight` (32px, wenn nicht gesetzt), mit einer Breite nach der Dateigröße in `width` und `height` des Icons, innerhalb des Paddings aus `computedStyle.iconSpacing`.
+
+| Icons-Modul | Ergebnis | Status |
+|---|---|---|
+| ein Icon, kein Text, `width` und `height` angegeben | `image` in der Icon-Höhe | Konvertiert |
+| mehrere Icons, Text oder ein Icon ohne bekannte Dateigröße | `html`: eine Tabelle mit den Icons nebeneinander | HTML-Fallback, mit der `note` `Icons module rebuilt as an HTML table.` |
+| keine Icons | kein Block | Übersprungen |
+
+Das Bild behält `alt` des Icons und verlinkt auf dessen `href`. Es steht, wo `text-align` des Moduls es hinsetzt, sein Padding ist das Padding des Moduls plus `iconSpacing`, und die Dateigröße wird zu `naturalWidth` und `naturalHeight`.
+
+Die Tabelle setzt den `text` jedes Icons auf die Seite, die `textPosition` nennt (`left`, `right`, `top` oder `bottom`), in `color`, `font-family`, `font-size` und `font-weight` des Moduls, mit `computedStyle.itemsSpacing` zwischen den Icons. Icon und Text verlinken auf `href` und öffnen sich in `target`. Templatical hat keinen Block, der Icons in einer Reihe anordnet, deshalb wird die Tabelle als HTML bearbeitet.
+
+### Addons {#addons}
+
+Ein Addon-Modul (`mailup-bee-newsletter-modules-addon`) behält das Payload des Moduls, für das es steht. Es wird deshalb wie dieses Modul konvertiert und gemeldet. Der Importer sucht diese Payloads im Descriptor, in dieser Reihenfolge:
+
+| Payload | Konvertiert als |
+|---|---|
+| `image` | Image |
+| `html` | Html |
+| `heading` | Heading |
+| `paragraph` oder `text` | Paragraph |
+| `list` | List |
+| `button` | Button |
+| `divider` | Divider |
+| `menu` | Menu |
+| `iconsList` | Icons |
+
+Ein Bild-Addon verlinkt nur auf `image.href`. Das GIPHY-Addon schreibt zusätzlich `image.url`, die Seite des GIFs auf giphy.com; sie wird nicht importiert. Ein Addon ohne eines dieser Payloads wird zum Kommentar `<!-- Unsupported BeeFree module: … -->` und als `html-fallback` gemeldet. Das Bild-Payload ist an einem echten GIPHY-Export geprüft; die übrigen folgen BeeFrees [Addon-Inhaltstypen](https://docs.beefree.io/beefree-sdk/builder-addons/custom-addons/custom-addon-types).
 
 ## Konvertierung von Spaltenlayouts
 
@@ -180,7 +227,7 @@ Globale Template-Einstellungen werden soweit möglich konvertiert:
 
 - **Benutzerdefinierte Schriftarten** -- BeeFrees Deklarationen für benutzerdefinierte Schriftarten werden nicht automatisch importiert. Fügen Sie sie manuell über die Konfigurationsoption `fonts` hinzu.
 - **Bedingte Anzeige** -- BeeFrees Regeln für dynamische Inhalte haben kein direktes Äquivalent und werden während der Konvertierung verworfen.
-- **Icons** -- Benutzerdefinierte Icon-Uploads von BeeFree werden nicht migriert. Standard-Social-Plattform-Icons werden anhand des Namens zugeordnet.
+- **Icons** -- Ein Icons-Modul mit Text oder mehreren Icons wird zu einer HTML-Tabelle, die als HTML bearbeitet wird ([Icons](#icons)). In einem Social-Modul werden benutzerdefinierte Icon-Uploads nicht migriert; Standard-Social-Plattform-Icons werden anhand des Namens zugeordnet.
 - **Formulare** -- BeeFrees Formularmodule haben kein Templatical-Äquivalent. Jedes wird zu einem HTML-Block mit Status `html-fallback`; Felder und Absende-Aktion des Formulars werden nicht nachgebildet.
 - **Linkfarben einzelner Blöcke** -- Die eigene Linkfarbe eines Textmoduls (`computedStyle.linkColor`) wird verworfen; seine Links übernehmen `settings.linkColor`.
 - **Erweitertes Styling** -- Einige granulare BeeFree-Stileigenschaften (z. B. Padding-Überschreibungen pro Spalte) werden möglicherweise nicht vollständig beibehalten.

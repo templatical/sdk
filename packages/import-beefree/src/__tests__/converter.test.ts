@@ -1012,4 +1012,178 @@ describe("convertBeeFreeTemplate", () => {
       expect(blocks[0].type).toBe("paragraph");
     });
   });
+
+  // The reproduction from #1070: only the last divider draws a line in BeeFree.
+  it("imports dividers that draw no line as spacers", () => {
+    const divider = (borderTop: string) => ({
+      type: "mailup-bee-newsletter-modules-divider",
+      descriptor: {
+        divider: { style: { "border-top": borderTop, width: "100%" } },
+        style: {
+          "padding-top": "15px",
+          "padding-right": "0px",
+          "padding-bottom": "15px",
+          "padding-left": "0px",
+        },
+      },
+    });
+    const { content, report } = convertBeeFreeTemplate({
+      page: {
+        body: { content: { style: { width: "600px" } } },
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  divider("0px solid transparent"),
+                  divider("0px solid #BBBBBB"),
+                  divider("10px solid transparent"),
+                  divider("1px solid #BBBBBB"),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(
+      content.blocks.map((b) =>
+        b.type === "spacer"
+          ? `spacer ${b.height}`
+          : b.type === "divider"
+            ? `divider ${b.thickness} ${b.color}`
+            : b.type,
+      ),
+    ).toEqual(["spacer 30", "spacer 30", "spacer 40", "divider 1 #bbbbbb"]);
+    expect(report.entries.map((e) => e.templaticalBlockType)).toEqual([
+      "spacer",
+      "spacer",
+      "spacer",
+      "divider",
+    ]);
+  });
+
+  describe("modules that import nothing", () => {
+    const text = {
+      type: "mailup-bee-newsletter-modules-text",
+      descriptor: { text: { html: "<p>Hi</p>" } },
+    };
+
+    it("reports an empty module skipped and leaves its column empty", () => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          body: { content: { style: { width: "600px" } } },
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 6,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-empty",
+                      descriptor: {},
+                    },
+                  ],
+                },
+                { "grid-columns": 6, modules: [text] },
+              ],
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.children.map((col) => col.map((b) => b.type))).toEqual([
+        [],
+        ["paragraph"],
+      ]);
+      expect(report.entries[0]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-empty",
+        templaticalBlockType: null,
+        status: "skipped",
+        note: "The module is empty.",
+      });
+      expect(report.summary).toMatchObject({
+        total: 2,
+        converted: 1,
+        skipped: 1,
+      });
+    });
+
+    it("skips a divider that draws no line and has no padding", () => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          body: { content: { style: { width: "600px" } } },
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    text,
+                    {
+                      type: "mailup-bee-newsletter-modules-divider",
+                      descriptor: {
+                        divider: {
+                          style: { "border-top": "0px solid transparent" },
+                        },
+                        style: {
+                          "padding-top": "0px",
+                          "padding-bottom": "0px",
+                        },
+                      },
+                    },
+                    text,
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(content.blocks.map((b) => b.type)).toEqual([
+        "paragraph",
+        "paragraph",
+      ]);
+      expect(report.entries[1]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-divider",
+        templaticalBlockType: null,
+        status: "skipped",
+        note: "The divider draws no line and takes no space.",
+      });
+    });
+
+    it("skips an Icons module with no icons", () => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          body: { content: { style: { width: "600px" } } },
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-icons",
+                      descriptor: { iconsList: { icons: [] } },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(content.blocks).toEqual([]);
+      expect(report.entries).toEqual([
+        {
+          beeFreeModuleType: "mailup-bee-newsletter-modules-icons",
+          templaticalBlockType: null,
+          status: "skipped",
+          note: "The Icons module has no icons.",
+        },
+      ]);
+    });
+  });
 });
