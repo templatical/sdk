@@ -3,8 +3,10 @@ import {
   backgroundShorthandColor,
   parseAlignment,
   parseBackgroundShorthand,
+  boxSideValue,
   isTransparentColor,
   parseBorderShorthand,
+  parseBorderSide,
   parseColor,
   parseFontWeight,
   parsePaddingShorthand,
@@ -279,6 +281,49 @@ describe("parseBorderShorthand", () => {
       color: "#000000",
       drawn: true,
     });
+  });
+});
+
+describe("parseBorderSide", () => {
+  it("applies longhands over the shorthand's parts", () => {
+    expect(
+      parseBorderSide("1px solid transparent", { color: "#cccccc" }),
+    ).toEqual({ width: 1, style: "solid", color: "#cccccc", drawn: true });
+    expect(
+      parseBorderSide("2px dashed #cccccc", { width: "0", style: undefined }),
+    ).toEqual({ width: 0, style: "dashed", color: "#cccccc", drawn: false });
+  });
+
+  it("reads longhands without a shorthand", () => {
+    expect(
+      parseBorderSide(undefined, {
+        width: "3px",
+        style: "dotted",
+        color: "rgba(0, 0, 0, 0)",
+      }),
+    ).toEqual({ width: 3, style: "dotted", color: "#000000", drawn: false });
+  });
+});
+
+describe("boxSideValue", () => {
+  it("reads the top and bottom of a one- to four-value box", () => {
+    expect(
+      ["1px", "1px 2px", "1px 2px 3px", "1px 2px 3px 4px"].map((value) => [
+        boxSideValue(value, "top"),
+        boxSideValue(value, "bottom"),
+      ]),
+    ).toEqual([
+      ["1px", "1px"],
+      ["1px", "1px"],
+      ["1px", "3px"],
+      ["1px", "3px"],
+    ]);
+  });
+
+  it("keeps a colour function together and is undefined when unset", () => {
+    expect(boxSideValue("rgba(0, 0, 0, 0) #ccc red", "bottom")).toBe("red");
+    expect(boxSideValue(undefined, "top")).toBeUndefined();
+    expect(boxSideValue("  ", "top")).toBeUndefined();
   });
 });
 

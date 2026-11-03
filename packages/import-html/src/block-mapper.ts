@@ -21,9 +21,10 @@ import type {
 import type { ImportReportEntry } from "./types";
 import {
   backgroundShorthandColor,
+  boxSideValue,
   isTransparentColor,
   parseAlignment,
-  parseBorderShorthand,
+  parseBorderSide,
   parseColor,
   parseFontWeight,
   parseImageBorderRadius,
@@ -965,18 +966,41 @@ function dividerAlign($el: Cheerio<Element>): "left" | "center" | "right" {
 }
 
 /**
- * The border that draws an `<hr>`'s line: the top border (`border-top`, else
- * the `border` shorthand) when it draws, else a drawn `border-bottom`, the
- * common `border: 0; border-bottom: 1px solid #ccc` email `<hr>`. With neither
- * declared, the top reads as the browser's default line.
+ * One side of an `<hr>`'s border: `border-<side>`, else the `border`
+ * shorthand, with `border-<side>-width/-style/-color` and the
+ * `border-width/-style/-color` box values applied over it. `declared` is false
+ * when nothing sets that side.
+ */
+function hrSide(styles: Record<string, string>, side: "top" | "bottom") {
+  const shorthand = styles[`border-${side}`] ?? styles.border;
+  const longhands = {
+    width:
+      styles[`border-${side}-width`] ??
+      boxSideValue(styles["border-width"], side),
+    style:
+      styles[`border-${side}-style`] ??
+      boxSideValue(styles["border-style"], side),
+    color:
+      styles[`border-${side}-color`] ??
+      boxSideValue(styles["border-color"], side),
+  };
+  const declared =
+    shorthand !== undefined ||
+    Object.values(longhands).some((value) => value !== undefined);
+  return { ...parseBorderSide(shorthand, longhands), declared };
+}
+
+/**
+ * The border that draws an `<hr>`'s line: the top border when it draws, else
+ * a drawn bottom border, the common `border: 0; border-bottom: 1px solid #ccc`
+ * email `<hr>`. With neither declared, the top reads as the browser's default
+ * line.
  */
 function hrBorder(styles: Record<string, string>) {
-  const topValue = styles["border-top"] ?? styles.border;
-  const top = parseBorderShorthand(topValue);
-  if (styles["border-bottom"] === undefined) return top;
-  if (topValue !== undefined && top.drawn) return top;
-  const bottom = parseBorderShorthand(styles["border-bottom"]);
-  return bottom.drawn ? bottom : top;
+  const top = hrSide(styles, "top");
+  if (top.declared && top.drawn) return top;
+  const bottom = hrSide(styles, "bottom");
+  return bottom.declared && bottom.drawn ? bottom : top;
 }
 
 /**
@@ -1011,25 +1035,25 @@ function verticalMargins(styles: Record<string, string>): {
 
 /**
  * The room an `<hr>` that draws nothing takes: its vertical margins and
- * padding, its `height` and the widths of transparent top and bottom borders.
- * `undefined` when a border or its background draws a line. An `<hr>` with no
- * border styles draws the browser's default line.
+ * padding, its `height` and the widths of transparent top and bottom borders,
+ * never below 0 (negative margins pull content up; a spacer can't). `undefined`
+ * when a border or its background draws a line. An `<hr>` with no border
+ * styles draws the browser's default line.
  */
 function undrawnHrHeight($el: Cheerio<Element>): number | undefined {
   const styles = getStyles($el);
   if (hrBorder(styles).drawn || hrBackgroundLine(styles)) return undefined;
   const margin = verticalMargins(styles);
   const padding = readPaddingFromStyles(styles);
-  const top = parseBorderShorthand(styles["border-top"] ?? styles.border);
-  const bottom = parseBorderShorthand(styles["border-bottom"] ?? styles.border);
-  return (
+  return Math.max(
+    0,
     margin.top +
-    padding.top +
-    top.width +
-    parsePxValue(styles.height) +
-    bottom.width +
-    padding.bottom +
-    margin.bottom
+      padding.top +
+      hrSide(styles, "top").width +
+      parsePxValue(styles.height) +
+      hrSide(styles, "bottom").width +
+      padding.bottom +
+      margin.bottom,
   );
 }
 

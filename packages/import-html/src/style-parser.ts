@@ -315,12 +315,72 @@ export function isTransparentColor(value: string | undefined): boolean {
   return Number.isFinite(opacity) && opacity <= 0;
 }
 
+const BORDER_STYLE_KEYWORDS = new Set([
+  "none",
+  "hidden",
+  "dotted",
+  "dashed",
+  "solid",
+  "double",
+  "groove",
+  "ridge",
+  "inset",
+  "outset",
+]);
+
+const BORDER_WIDTH_TOKEN = /^-?\d+(?:\.\d+)?(?:px)?$/i;
+
+/** A side's `border-*-width`, `-style` and `-color`, applied over its shorthand. */
+export interface BorderLonghands {
+  width?: string;
+  style?: string;
+  color?: string;
+}
+
+/**
+ * One side of a border: a `border` / `border-top` shorthand (`"1px solid
+ * #ccc"`, its parts in any order) with that side's longhands applied over it.
+ * `width` is the room the border takes, so a `none` or `hidden` border has
+ * none. `drawn` is false when the border paints nothing: a stated 0 width, a
+ * `none` or `hidden` style, or a transparent colour. Nothing stated reads as
+ * drawn.
+ */
+export function parseBorderSide(
+  shorthand: string | undefined,
+  longhands: BorderLonghands = {},
+): { width: number; style: string; color: string; drawn: boolean } {
+  let widthToken: string | undefined;
+  let styleToken: string | undefined;
+  let colorToken: string | undefined;
+  for (const token of cssTokens((shorthand ?? "").trim())) {
+    const lower = token.toLowerCase();
+    if (BORDER_STYLE_KEYWORDS.has(lower)) {
+      styleToken = lower;
+    } else if (BORDER_WIDTH_TOKEN.test(lower)) {
+      widthToken = lower;
+    } else if (isTransparentColor(lower) || parseColor(lower)) {
+      colorToken = lower;
+    }
+  }
+  widthToken = longhands.width?.trim().toLowerCase() ?? widthToken;
+  styleToken = longhands.style?.trim().toLowerCase() ?? styleToken;
+  colorToken = longhands.color?.trim().toLowerCase() ?? colorToken;
+
+  const style = styleToken ?? "solid";
+  const hidden = style === "none" || style === "hidden";
+  const transparent = isTransparentColor(colorToken);
+  const zeroWidth = widthToken !== undefined && parseFloat(widthToken) === 0;
+  return {
+    width: hidden ? 0 : parsePxValue(widthToken),
+    style,
+    color: (!transparent && parseColor(colorToken)) || "#000000",
+    drawn: !zeroWidth && !hidden && !transparent,
+  };
+}
+
 /**
  * Parses a CSS `border` shorthand (`"1px solid #ccc"`) into width/style/color.
- * Order-tolerant: each token is classified by content. `width` is the room
- * the border takes, so a `none` or `hidden` border has none. `drawn` is false
- * when the border paints nothing: a stated 0 width, a `none` or `hidden`
- * style, or a transparent colour. No shorthand at all reads as drawn.
+ * See {@link parseBorderSide}, which also takes a side's longhands.
  */
 export function parseBorderShorthand(value: string | undefined): {
   width: number;
@@ -328,50 +388,20 @@ export function parseBorderShorthand(value: string | undefined): {
   color: string;
   drawn: boolean;
 } {
-  const fallback = { width: 0, style: "solid", color: "#000000", drawn: true };
-  if (!value) return fallback;
+  return parseBorderSide(value);
+}
 
-  const styleKeywords = new Set([
-    "none",
-    "hidden",
-    "dotted",
-    "dashed",
-    "solid",
-    "double",
-    "groove",
-    "ridge",
-    "inset",
-    "outset",
-  ]);
-
-  let width = 0;
-  let zeroWidth = false;
-  let style = "solid";
-  let color = "#000000";
-  let transparent = false;
-
-  for (const token of cssTokens(value.trim())) {
-    const lower = token.toLowerCase();
-    if (styleKeywords.has(lower)) {
-      style = lower;
-    } else if (/^-?\d+(?:\.\d+)?(?:px)?$/i.test(lower)) {
-      width = parsePxValue(lower);
-      zeroWidth = parseFloat(lower) === 0;
-    } else if (isTransparentColor(lower)) {
-      transparent = true;
-    } else {
-      const c = parseColor(lower);
-      if (c) color = c;
-    }
-  }
-
-  const hidden = style === "none" || style === "hidden";
-  return {
-    width: hidden ? 0 : width,
-    style,
-    color,
-    drawn: !zeroWidth && !hidden && !transparent,
-  };
+/**
+ * The top or bottom value of a 1–4 value box property, such as
+ * `border-width: 0 0 1px` (bottom `1px`). `undefined` when it isn't set.
+ */
+export function boxSideValue(
+  value: string | undefined,
+  side: "top" | "bottom",
+): string | undefined {
+  const parts = cssTokens((value ?? "").trim());
+  if (parts.length === 0) return undefined;
+  return side === "top" ? parts[0] : (parts[2] ?? parts[0]);
 }
 
 /** A background image read from the source, with a note for each value that had no exact keyword. */

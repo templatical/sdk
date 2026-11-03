@@ -148,7 +148,7 @@ Templatical zentriert jeden Divider. Ein `<hr>` mit Teilbreite, das sein `align`
 
 ### `<hr>`-Linien und Abstände {#hr-lines}
 
-Ein `<hr>` wird als die Linie importiert, die es zeichnet. Seine Linie ist der obere Rahmen (`border-top`, sonst die Kurzschreibweise `border`), oder `border-bottom`, wenn der obere nichts zeichnet, wie bei `border: 0; border-bottom: 1px solid #cccccc`. Ein Rahmen zeichnet nichts, wenn er 0 breit ist, `none` oder `hidden` ist oder transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`.
+Ein `<hr>` wird als die Linie importiert, die es zeichnet. Seine Linie ist der obere Rahmen (`border-top`, sonst die Kurzschreibweise `border`), oder der untere Rahmen, wenn der obere nichts zeichnet, wie bei `border: 0; border-bottom: 1px solid #cccccc`. Die Einzelangaben jeder Seite (`border-top-color`, `border-width: 0 0 1px` und Ähnliches) gelten über ihrer Kurzschreibweise. Ein Rahmen zeichnet nichts, wenn er 0 breit ist, `none` oder `hidden` ist oder transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`.
 
 | `<hr>` | Ergebnis | Status |
 |---|---|---|
@@ -158,7 +158,7 @@ Ein `<hr>` wird als die Linie importiert, die es zeichnet. Seine Linie ist der o
 | kein Rahmen, der zeichnet, kein Hintergrund, belegter Platz | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
 | kein Rahmen, der zeichnet, kein Hintergrund, kein belegter Platz | kein Block | Übersprungen |
 
-Das übliche E-Mail-`<hr>`, `border: 0; height: 1px; background: #cccccc`, ist die Hintergrund-Zeile. Ein transparenter Hintergrund oder eine `height` von 0 zeichnet keine Linie. Die `height` des Spacers sind die oberen und unteren Margins und Paddings des `<hr>`, seine `height` und die Breiten transparenter oberer und unterer Rahmen; ein Rahmen mit `none` oder `hidden` belegt keinen Platz. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Die Breitenregeln oben gelten für jede Divider-Zeile.
+Das übliche E-Mail-`<hr>`, `border: 0; height: 1px; background: #cccccc`, ist die Hintergrund-Zeile. Ein transparenter Hintergrund oder eine `height` von 0 zeichnet keine Linie. Die `height` des Spacers sind die oberen und unteren Margins und Paddings des `<hr>`, seine `height` und die Breiten transparenter oberer und unterer Rahmen; ein Rahmen mit `none` oder `hidden` belegt keinen Platz. Sie fällt nie unter 0, negative Margins, die zusammen weniger ergeben, werden deshalb übersprungen. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Die Breitenregeln oben gelten für jede Divider-Zeile.
 
 ## Inline-Formatierung
 

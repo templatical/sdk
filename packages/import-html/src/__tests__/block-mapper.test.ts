@@ -651,6 +651,42 @@ describe("convertElement — <hr> by what it draws", () => {
     }
   });
 
+  it("applies border longhands over the shorthand", () => {
+    for (const [style, thickness, color, lineStyle] of [
+      [
+        "border: 0; border-top: 1px solid transparent; border-top-color: #cccccc;",
+        1,
+        "#cccccc",
+        "solid",
+      ],
+      [
+        "border: none; border-top-width: 2px; border-top-style: dashed; border-top-color: #dddddd;",
+        2,
+        "#dddddd",
+        "dashed",
+      ],
+      [
+        "border: 0; border-width: 0 0 1px; border-style: solid; border-color: #eeeeee;",
+        1,
+        "#eeeeee",
+        "solid",
+      ],
+    ] as const) {
+      const { block } = convert(style);
+      if (block.type !== "divider")
+        throw new Error(`expected a divider: ${style}`);
+      expect([block.thickness, block.color, block.lineStyle]).toEqual([
+        thickness,
+        color,
+        lineStyle,
+      ]);
+    }
+    expect(
+      convert("border-top: 1px solid #cccccc; border-top-color: transparent;")
+        .block.type,
+    ).not.toBe("divider");
+  });
+
   it("keeps a drawn top border over the bottom border", () => {
     const { block } = convert(
       "border-top: 1px solid #eeeeee; border-bottom: 3px solid #000000;",
@@ -713,6 +749,18 @@ describe("convertElement — <hr> by what it draws", () => {
 });
 
 describe("skippedElementEntry", () => {
+  // A negative margin pulls content up; a spacer can't be negative, and MJML
+  // rejects a negative mj-spacer height.
+  it("skips an <hr> whose margins add up to less than nothing", () => {
+    const { $, $el } = firstEl(
+      '<hr style="border: 0; margin: -10px 0;" />',
+      "hr",
+    );
+    expect(skippedElementEntry($el, $)?.status).toBe("skipped");
+    const { block } = convertElement($el, $, 600)!;
+    expect(block.type === "spacer" && block.height).toBe(0);
+  });
+
   it("skips an <hr> that draws nothing and takes no space", () => {
     const { $, $el } = firstEl('<hr style="border: 0; margin: 0;" />', "hr");
     expect(skippedElementEntry($el, $)).toEqual({

@@ -148,7 +148,7 @@ Templatical centres every divider. A partial-width `<hr>` that its `align` attri
 
 ### `<hr>` lines and spacing {#hr-lines}
 
-An `<hr>` imports as the line it draws. Its line is the top border (`border-top`, else the `border` shorthand), or `border-bottom` when the top draws nothing, as in `border: 0; border-bottom: 1px solid #cccccc`. A border draws nothing when it's 0 wide, `none` or `hidden`, or transparent: `transparent`, or a colour with an alpha of 0 such as `rgba(0, 0, 0, 0)` or `#ffffff00`.
+An `<hr>` imports as the line it draws. Its line is the top border (`border-top`, else the `border` shorthand), or the bottom border when the top draws nothing, as in `border: 0; border-bottom: 1px solid #cccccc`. Each side's longhands (`border-top-color`, `border-width: 0 0 1px` and the like) apply over its shorthand. A border draws nothing when it's 0 wide, `none` or `hidden`, or transparent: `transparent`, or a colour with an alpha of 0 such as `rgba(0, 0, 0, 0)` or `#ffffff00`.
 
 | `<hr>` | Result | Status |
 |---|---|---|
@@ -158,7 +158,7 @@ An `<hr>` imports as the line it draws. Its line is the top border (`border-top`
 | no border that draws, no background, and room taken | `spacer` | Converted, with a `note` naming the height |
 | no border that draws, no background, and no room taken | no block | Skipped |
 
-The usual email `<hr>`, `border: 0; height: 1px; background: #cccccc`, is the background row. A background that is transparent, or a `height` of 0, draws no line. The spacer's `height` is the `<hr>`'s top and bottom margins and padding, its `height`, and the widths of transparent top and bottom borders; a `none` or `hidden` border takes no room. A spacer renders no padding, so its own padding is 0. The width rules above apply to every divider row.
+The usual email `<hr>`, `border: 0; height: 1px; background: #cccccc`, is the background row. A background that is transparent, or a `height` of 0, draws no line. The spacer's `height` is the `<hr>`'s top and bottom margins and padding, its `height`, and the widths of transparent top and bottom borders; a `none` or `hidden` border takes no room. It never goes below 0, so negative margins that add up to less are skipped. A spacer renders no padding, so its own padding is 0. The width rules above apply to every divider row.
 
 ## Inline Formatting
 
