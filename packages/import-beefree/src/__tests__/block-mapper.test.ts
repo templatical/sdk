@@ -890,6 +890,11 @@ describe("convertModule", () => {
       });
     });
 
+    it("keeps the icon's px width when the column is unknown", () => {
+      const { block } = convertModule(iconsModule([gift]), []);
+      expect(block.type === "image" && block.width).toBe(32);
+    });
+
     it("keeps the icon's aspect ratio at the icon height", () => {
       const { block } = convertModule(
         iconsModule([{ ...gift, width: "325px", height: "303px" }]),
@@ -1004,6 +1009,14 @@ describe("convertModule", () => {
       expect(content).toContain('href="https://example.com/?a=1&amp;b=2"');
       expect(content).toContain("&lt;b&gt;Bold&lt;/b&gt; &amp; co");
       expect(content).not.toContain("<b>");
+    });
+
+    it("rebuilds an item without an image as its text alone", () => {
+      const { content } = html(
+        iconsModule([{ text: "Call us", textPosition: "right", href: "" }]),
+      );
+      expect(content).not.toContain("<img");
+      expect(content).toContain(">Call us</td>");
     });
 
     it("links nothing when the icon has no href", () => {

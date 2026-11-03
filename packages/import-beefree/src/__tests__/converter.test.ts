@@ -1154,6 +1154,41 @@ describe("convertBeeFreeTemplate", () => {
       });
     });
 
+    it("converts an Icons module that holds icons", () => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          body: { content: { style: { width: "600px" } } },
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-icons",
+                      descriptor: {
+                        iconsList: {
+                          icons: [
+                            {
+                              image: "https://example.com/i.png",
+                              width: "48px",
+                              height: "48px",
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(content.blocks.map((b) => b.type)).toEqual(["image"]);
+      expect(report.entries.map((e) => e.status)).toEqual(["converted"]);
+    });
+
     it("skips an Icons module with no icons", () => {
       const { content, report } = convertBeeFreeTemplate({
         page: {

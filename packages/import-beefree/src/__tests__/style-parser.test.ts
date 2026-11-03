@@ -112,6 +112,14 @@ describe("parseBorderTop", () => {
     });
   });
 
+  it("reads the thin, medium and thick width keywords", () => {
+    expect(
+      ["thin", "medium", "thick"].map(
+        (keyword) => parseBorderTop(`${keyword} solid #cccccc`).width,
+      ),
+    ).toEqual([1, 3, 5]);
+  });
+
   // A length pattern that can split a run of digits two ways backtracks
   // quadratically on a long run that fails to match (CodeQL
   // js/polynomial-redos).
