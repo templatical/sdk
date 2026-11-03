@@ -6,6 +6,7 @@ import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import {
   RICH_TEXT_CSS_CLASS,
+  decodeStyleReferences,
   richTextGapClass,
   resolveParagraphGap,
 } from "../rich-text";
@@ -33,7 +34,9 @@ export function renderParagraph(
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   // The canvas fills blank lines with the same helper, so the two agree.
-  const content = fillEmptyParagraphs(convertMergeTagsToValues(block.content));
+  const content = decodeStyleReferences(
+    fillEmptyParagraphs(convertMergeTagsToValues(block.content)),
+  );
   const cssClassAttr = getCssClassAttr(block, [
     RICH_TEXT_CSS_CLASS,
     richTextGapClass(resolveParagraphGap(block.paragraphSpacing)),
