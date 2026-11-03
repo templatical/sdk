@@ -3,6 +3,7 @@ import {
   backgroundShorthandColor,
   parseAlignment,
   parseBackgroundShorthand,
+  isTransparentColor,
   parseBorderShorthand,
   parseColor,
   parseFontWeight,
@@ -220,6 +221,7 @@ describe("parseBorderShorthand", () => {
       width: 1,
       style: "solid",
       color: "#cccccc",
+      drawn: true,
     });
   });
 
@@ -228,6 +230,7 @@ describe("parseBorderShorthand", () => {
       width: 2,
       style: "dashed",
       color: "#ff0000",
+      drawn: true,
     });
   });
 
@@ -236,7 +239,37 @@ describe("parseBorderShorthand", () => {
       width: 0,
       style: "solid",
       color: "#000000",
+      drawn: true,
     });
+  });
+
+  it("keeps a colour function's spaces together", () => {
+    expect(parseBorderShorthand("2px dotted rgba(10, 20, 30, 0.5)")).toEqual({
+      width: 2,
+      style: "dotted",
+      color: "#0a141e",
+      drawn: true,
+    });
+  });
+
+  it("is not drawn at a stated 0 width, with no style, or in a transparent colour", () => {
+    for (const value of [
+      "0",
+      "0px solid #cccccc",
+      "none",
+      "1px hidden #cccccc",
+      "1px solid transparent",
+      "1px solid rgba(0, 0, 0, 0)",
+    ]) {
+      expect([value, parseBorderShorthand(value).drawn]).toEqual([
+        value,
+        false,
+      ]);
+    }
+  });
+
+  it("takes no room with a none or hidden style", () => {
+    expect(parseBorderShorthand("3px none #cccccc").width).toBe(0);
   });
 
   it("ignores unrecognized tokens", () => {
@@ -244,7 +277,38 @@ describe("parseBorderShorthand", () => {
       width: 1,
       style: "solid",
       color: "#000000",
+      drawn: true,
     });
+  });
+});
+
+describe("isTransparentColor", () => {
+  it("is true for a colour with no opacity", () => {
+    for (const value of [
+      "transparent",
+      "TRANSPARENT",
+      "#0000",
+      "#ffffff00",
+      "rgba(0, 0, 0, 0)",
+      "rgb(0 0 0 / 0%)",
+      "hsla(0, 0%, 100%, 0)",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, true]);
+    }
+  });
+
+  it("is false for a colour that paints", () => {
+    for (const value of [
+      undefined,
+      "",
+      "#000",
+      "#ffffff80",
+      "rgba(0, 0, 0, 0.5)",
+      "rgb(0 0 0 / 1%)",
+      "red",
+    ]) {
+      expect([value, isTransparentColor(value)]).toEqual([value, false]);
+    }
   });
 });
 

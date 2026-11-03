@@ -75,7 +75,7 @@ Each `report.entries` item is one source module:
 | `converted` | Mapped to a Templatical block with no loss of fidelity. |
 | `approximated` | Mapped, with a clamp or flatten — `note` states what changed. |
 | `html-fallback` | No block equivalent; original markup is an `HtmlBlock`. |
-| `skipped` | No output (forms, and anything the converter refuses). |
+| `skipped` | No output (forms, a [divider that draws no line](#undrawn-dividers) and takes no space, and anything the converter refuses). |
 
 The design JSON Unlayer's hosted editor and `editor.saveDesign()` emit is the input. A compiled HTML export is a different envelope — use [`@templatical/import-html`](/guide/migration-from-html).
 
@@ -115,7 +115,7 @@ Unlayer content types map to Templatical equivalents:
 | Heading | `title` | Converted |
 | Image | `image` | Converted (approximated when a `maxWidth` under 100% becomes px; see [Image width](#image-width)) |
 | Button | `button` | Converted |
-| Divider | `divider` | Converted (approximated when a partial-width divider is aligned left or right) |
+| Divider | `divider`, or `spacer` when it [draws no line](#undrawn-dividers) | Converted (approximated when a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
@@ -160,6 +160,18 @@ A px width is compared with the line's span: its column's width less the divider
 :::
 
 Templatical centres every divider. A partial-width divider that Unlayer aligns left or right (`textAlign`) is approximated, and its `note` names the alignment.
+
+### Dividers that draw no line {#undrawn-dividers}
+
+A divider draws no line when its `border.borderTopWidth` is 0, its `borderTopStyle` is `none` or `hidden`, or its `borderTopColor` is transparent: `transparent`, or a colour with an alpha of 0 such as `rgba(0, 0, 0, 0)` or `#ffffff00`. Such a divider only adds space.
+
+| Unlayer divider | Result | Status |
+|---|---|---|
+| draws a line | `divider`, by the rules above | Converted |
+| draws no line, and its padding and transparent border add up to more than 0px | `spacer` | Converted, with a `note` naming the height |
+| draws no line and takes no space | no block | Skipped |
+
+The spacer's `height` is the top plus bottom `containerPadding` plus the width of a transparent border. A `none` or `hidden` border takes no space, so its width doesn't count. A spacer renders no padding, so its own padding is 0. A divider with no `border` at all imports as a 1px solid black line.
 
 ## Column Layout Conversion
 

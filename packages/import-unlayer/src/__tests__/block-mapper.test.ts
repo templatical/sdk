@@ -838,6 +838,90 @@ describe("convertContent", () => {
     });
   });
 
+  // A divider that draws no line only spaces content: its padding, and a
+  // transparent border's width, take up room.
+  describe("divider that draws no line", () => {
+    function undrawn(
+      border: UnlayerContentValues["border"],
+      containerPadding = "15px 10px",
+    ) {
+      return convertContent(
+        makeContent("divider", { border, containerPadding, width: "100%" }),
+        [],
+        { columnWidth: 600 },
+      );
+    }
+
+    function spacerHeight(border: UnlayerContentValues["border"]): number {
+      const { block } = undrawn(border);
+      if (block.type !== "spacer") throw new Error("expected a spacer");
+      return block.height;
+    }
+
+    const solid = (borderTopWidth: string, borderTopColor: string) => ({
+      borderTopWidth,
+      borderTopStyle: "solid",
+      borderTopColor,
+    });
+
+    it("imports a 0px border as a spacer as tall as the padding", () => {
+      const { block, entry } = undrawn(solid("0px", "transparent"));
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(30);
+      expect(block.styles.padding).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+      expect(entry).toEqual({
+        unlayerContentType: "divider",
+        templaticalBlockType: "spacer",
+        status: "converted",
+        note: "The divider draws no line; imported as a 30px spacer.",
+      });
+    });
+
+    it("adds a transparent border's width to the height", () => {
+      expect(spacerHeight(solid("10px", "transparent"))).toBe(40);
+      expect(spacerHeight(solid("1px", "rgba(0, 0, 0, 0)"))).toBe(31);
+      expect(spacerHeight(solid("2px", "#ffffff00"))).toBe(32);
+    });
+
+    it("leaves out a 0px, none or hidden border's width", () => {
+      expect(spacerHeight(solid("0px", "#BBBBBB"))).toBe(30);
+      expect(
+        spacerHeight({
+          borderTopWidth: "3px",
+          borderTopStyle: "none",
+          borderTopColor: "#BBBBBB",
+        }),
+      ).toBe(30);
+      expect(
+        spacerHeight({
+          borderTopWidth: "3px",
+          borderTopStyle: "hidden",
+          borderTopColor: "#BBBBBB",
+        }),
+      ).toBe(30);
+    });
+
+    it("keeps a divider whose border is drawn", () => {
+      for (const border of [
+        solid("1px", "#BBBBBB"),
+        solid("1px", "rgba(0, 0, 0, 0.5)"),
+        undefined,
+      ]) {
+        const { block, entry } = undrawn(border);
+        expect([block.type, entry.status]).toEqual(["divider", "converted"]);
+      }
+      const { block } = undrawn(solid("1px", "rgba(0, 0, 0, 0.5)"));
+      if (block.type !== "divider") throw new Error("expected a divider");
+      expect([block.thickness, block.color]).toEqual([1, "rgba(0, 0, 0, 0.5)"]);
+    });
+  });
+
   describe("spacer", () => {
     it("derives height from containerPadding fallback", () => {
       const { block } = convertContent(

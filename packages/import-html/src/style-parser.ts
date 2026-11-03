@@ -293,15 +293,42 @@ export function parseAlignment(
 }
 
 /**
+ * Whether a CSS colour paints nothing: `transparent`, or an alpha of 0 in a
+ * hex (`#rgba`, `#rrggbbaa`) or functional (`rgba()`, `hsl(… / 0%)`) colour.
+ * `parseColor` drops the alpha, so ask this before it.
+ */
+export function isTransparentColor(value: string | undefined): boolean {
+  if (!value) return false;
+  const color = value.trim().toLowerCase();
+  if (color === "transparent") return true;
+
+  const hex = color.match(
+    /^#(?:[0-9a-f]{3}([0-9a-f])|[0-9a-f]{6}([0-9a-f]{2}))$/,
+  );
+  if (hex) return /^0+$/.test(hex[1] ?? hex[2]);
+
+  const fn = color.match(/^(?:rgb|hsl)a?\((.*)\)$/);
+  if (!fn) return false;
+  const alpha = fn[1].includes("/") ? fn[1].split("/")[1] : fn[1].split(",")[3];
+  if (alpha === undefined) return false;
+  const opacity = parseFloat(alpha);
+  return Number.isFinite(opacity) && opacity <= 0;
+}
+
+/**
  * Parses a CSS `border` shorthand (`"1px solid #ccc"`) into width/style/color.
- * Order-tolerant: each token is classified by content.
+ * Order-tolerant: each token is classified by content. `width` is the room
+ * the border takes, so a `none` or `hidden` border has none. `drawn` is false
+ * when the border paints nothing: a stated 0 width, a `none` or `hidden`
+ * style, or a transparent colour. No shorthand at all reads as drawn.
  */
 export function parseBorderShorthand(value: string | undefined): {
   width: number;
   style: string;
   color: string;
+  drawn: boolean;
 } {
-  const fallback = { width: 0, style: "solid", color: "#000000" };
+  const fallback = { width: 0, style: "solid", color: "#000000", drawn: true };
   if (!value) return fallback;
 
   const styleKeywords = new Set([
@@ -318,22 +345,33 @@ export function parseBorderShorthand(value: string | undefined): {
   ]);
 
   let width = 0;
+  let zeroWidth = false;
   let style = "solid";
   let color = "#000000";
+  let transparent = false;
 
-  for (const token of value.trim().split(/\s+/)) {
+  for (const token of cssTokens(value.trim())) {
     const lower = token.toLowerCase();
     if (styleKeywords.has(lower)) {
       style = lower;
     } else if (/^-?\d+(?:\.\d+)?(?:px)?$/i.test(lower)) {
       width = parsePxValue(lower);
+      zeroWidth = parseFloat(lower) === 0;
+    } else if (isTransparentColor(lower)) {
+      transparent = true;
     } else {
       const c = parseColor(lower);
       if (c) color = c;
     }
   }
 
-  return { width, style, color };
+  const hidden = style === "none" || style === "hidden";
+  return {
+    width: hidden ? 0 : width,
+    style,
+    color,
+    drawn: !zeroWidth && !hidden && !transparent,
+  };
 }
 
 /** A background image read from the source, with a note for each value that had no exact keyword. */

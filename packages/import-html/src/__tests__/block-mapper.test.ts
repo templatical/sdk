@@ -9,6 +9,7 @@ import {
   isProseAnchor,
   isSpacerCell,
   looksLikeButton,
+  skippedElementEntry,
 } from "../block-mapper";
 import type { Element } from "domhandler";
 import type { Cheerio } from "cheerio";
@@ -595,6 +596,110 @@ describe("convertElement — divider", () => {
     expect(r.block.thickness).toBe(1);
     expect(r.block.lineStyle).toBe("solid");
     expect(r.block.color).toBe("#000000");
+  });
+});
+
+// What an <hr> draws decides what it imports as: a drawn top border is the
+// line, a background with a height is the line when the border draws nothing,
+// and an <hr> that draws neither only spaces content.
+describe("convertElement — <hr> by what it draws", () => {
+  function convert(style: string) {
+    const { $, $el } = firstEl(`<hr style="${style}" />`, "hr");
+    return convertElement($el, $, 600)!;
+  }
+
+  function spacerHeight(style: string): number {
+    const { block } = convert(style);
+    if (block.type !== "spacer") throw new Error(`expected a spacer`);
+    return block.height;
+  }
+
+  it("draws the line with its background when the border draws nothing", () => {
+    for (const [style, thickness, color] of [
+      ["border: 0; height: 1px; background: #cccccc;", 1, "#cccccc"],
+      ["border: none; height: 2px; background-color: #ddd;", 2, "#dddddd"],
+    ] as const) {
+      const { block, entry } = convert(style);
+      if (block.type !== "divider") throw new Error("expected a divider");
+      expect([block.thickness, block.color, block.lineStyle]).toEqual([
+        thickness,
+        color,
+        "solid",
+      ]);
+      expect(entry).toEqual({
+        sourceTag: "hr",
+        templaticalBlockType: "divider",
+        status: "converted",
+      });
+    }
+  });
+
+  it("keeps a drawn top border over the background", () => {
+    const { block } = convert(
+      "border-top: 1px solid #eeeeee; height: 3px; background: #000000;",
+    );
+    if (block.type !== "divider") throw new Error("expected a divider");
+    expect([block.thickness, block.color]).toEqual([1, "#eeeeee"]);
+  });
+
+  it("imports an <hr> that draws nothing as a spacer of the room it takes", () => {
+    const { block, entry } = convert(
+      "border: 0; border-top: 0px solid transparent; margin: 20px 0;",
+    );
+    expect(block.type).toBe("spacer");
+    if (block.type !== "spacer") return;
+    expect(block.height).toBe(40);
+    expect(block.styles.padding).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
+    expect(entry).toEqual({
+      sourceTag: "hr",
+      templaticalBlockType: "spacer",
+      status: "converted",
+      note: "The divider draws no line; imported as a 40px spacer.",
+    });
+  });
+
+  it("counts margins, padding, height and a transparent border", () => {
+    expect(
+      spacerHeight(
+        "border: none; margin-top: 10px; margin-bottom: 15px; padding: 5px 0;",
+      ),
+    ).toBe(35);
+    expect(
+      spacerHeight("border: 0; border-top: 10px solid transparent; margin: 0;"),
+    ).toBe(10);
+    expect(spacerHeight("border: 0; height: 4px; margin: 8px 0;")).toBe(20);
+    expect(
+      spacerHeight("border: 0; height: 2px; background: transparent;"),
+    ).toBe(2);
+    expect(spacerHeight("border: 0; margin: 6px 0 9px;")).toBe(15);
+  });
+});
+
+describe("skippedElementEntry", () => {
+  it("skips an <hr> that draws nothing and takes no space", () => {
+    const { $, $el } = firstEl('<hr style="border: 0; margin: 0;" />', "hr");
+    expect(skippedElementEntry($el, $)).toEqual({
+      sourceTag: "hr",
+      templaticalBlockType: null,
+      status: "skipped",
+      note: "The divider draws no line and takes no space.",
+    });
+  });
+
+  it("leaves an <hr> that draws a line or takes space to convertElement", () => {
+    for (const html of [
+      "<hr />",
+      '<hr style="border: 0; height: 1px; background: #cccccc;" />',
+      '<hr style="border: 0; margin: 10px 0;" />',
+    ]) {
+      const { $, $el } = firstEl(html, "hr");
+      expect([html, skippedElementEntry($el, $)]).toEqual([html, undefined]);
+    }
   });
 });
 

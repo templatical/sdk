@@ -121,16 +121,54 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
   }
 }
 
+/**
+ * Whether a CSS colour paints nothing: `transparent`, or an alpha of 0 in a
+ * hex (`#rgba`, `#rrggbbaa`) or functional (`rgba()`, `hsl(… / 0%)`) colour.
+ */
+export function isTransparentColor(value: string | undefined): boolean {
+  if (!value) return false;
+  const color = value.trim().toLowerCase();
+  if (color === "transparent") return true;
+
+  const hex = color.match(
+    /^#(?:[0-9a-f]{3}([0-9a-f])|[0-9a-f]{6}([0-9a-f]{2}))$/,
+  );
+  if (hex) return /^0+$/.test(hex[1] ?? hex[2]);
+
+  const fn = color.match(/^(?:rgb|hsl)a?\((.*)\)$/);
+  if (!fn) return false;
+  const alpha = fn[1].includes("/") ? fn[1].split("/")[1] : fn[1].split(",")[3];
+  if (alpha === undefined) return false;
+  const opacity = parseFloat(alpha);
+  return Number.isFinite(opacity) && opacity <= 0;
+}
+
+/**
+ * A divider's top border. `width` is the room the border takes, so a `none` or
+ * `hidden` border has none. `drawn` is false when the border paints nothing: a
+ * stated 0 width, a `none` or `hidden` style, or a transparent colour. A
+ * border without a width reads as 0 wide but drawn.
+ */
 export function parseBorderObject(border: UnlayerBorder | undefined): {
   width: number;
   style: string;
   color: string;
+  drawn: boolean;
 } {
-  if (!border) return { width: 0, style: "solid", color: "#000000" };
+  if (!border) {
+    return { width: 0, style: "solid", color: "#000000", drawn: true };
+  }
+  const style = border.borderTopStyle || "solid";
+  const hidden = style === "none" || style === "hidden";
+  // Only a width written as zero; an unreadable one also parses to 0.
+  const zeroWidth = /^\s*0*\.?0+\s*(?:px)?\s*$/.test(
+    String(border.borderTopWidth ?? ""),
+  );
   return {
-    width: parsePxValue(border.borderTopWidth),
-    style: border.borderTopStyle || "solid",
+    width: hidden ? 0 : parsePxValue(border.borderTopWidth),
+    style,
     color: parseColor(border.borderTopColor) || "#000000",
+    drawn: !zeroWidth && !hidden && !isTransparentColor(border.borderTopColor),
   };
 }
 

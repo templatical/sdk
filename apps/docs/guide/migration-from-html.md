@@ -100,7 +100,7 @@ HTML elements map to Templatical equivalents:
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
-| `<hr>` | `divider` | Converted (approximated when the width is clamped or unreadable, or a partial-width divider is aligned left or right) |
+| `<hr>` | `divider`, or `spacer` when it [draws no line](#hr-lines) | Converted (approximated when the width is clamped or unreadable, or a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Empty `<td>` with explicit height | `spacer` | Converted |
 | `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
@@ -145,6 +145,20 @@ The width comes from the `<hr>`'s `width` style, then its `width` attribute.
 The line's room is the column's share of `settings.width`, by the section's column layout, less the padding of the section, of every cell and wrapper around the `<hr>`, and of the `<hr>` itself.
 
 Templatical centres every divider. A partial-width `<hr>` that its `align` attribute or its margins place at the left or the right is approximated, and its `note` names the alignment.
+
+### `<hr>` lines and spacing {#hr-lines}
+
+An `<hr>` imports as the line it draws. Its border is `border-top`, else the `border` shorthand. A border draws nothing when it's 0 wide, `none` or `hidden`, or transparent: `transparent`, or a colour with an alpha of 0 such as `rgba(0, 0, 0, 0)` or `#ffffff00`.
+
+| `<hr>` | Result | Status |
+|---|---|---|
+| no `border-top` or `border` style | `divider`, 1px solid black | Converted |
+| a border that draws | `divider` in the border's width, style and colour | Converted |
+| a border that draws nothing, and a `background` or `background-color` with a `height` | `divider` in the background colour, as thick as `height`, solid | Converted |
+| a border that draws nothing, no background, and room taken | `spacer` | Converted, with a `note` naming the height |
+| a border that draws nothing, no background, and no room taken | no block | Skipped |
+
+The usual email `<hr>`, `border: 0; height: 1px; background: #cccccc`, is the background row. A background that is transparent, or a `height` of 0, draws no line. The spacer's `height` is the `<hr>`'s top and bottom margins and padding, its `height`, and the width of a transparent border; a `none` or `hidden` border takes no room. A spacer renders no padding, so its own padding is 0. The width rules above apply to every divider row.
 
 ## Inline Formatting
 

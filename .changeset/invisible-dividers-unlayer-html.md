@@ -1,0 +1,11 @@
+---
+"@templatical/import-unlayer": patch
+"@templatical/import-html": patch
+---
+
+The Unlayer and HTML importers import a divider as the line it draws, so one that draws nothing no longer becomes a black line.
+
+- **Unlayer.** A divider whose `border.borderTopWidth` is 0, whose `borderTopStyle` is `none` or `hidden`, or whose `borderTopColor` is transparent (`transparent`, or an alpha of 0 such as `rgba(0, 0, 0, 0)`) becomes a `spacer`. Its height is the top and bottom `containerPadding` plus a transparent border's width, and it's reported `converted` with a `note` naming the height. One that adds up to 0px produces no block and is reported `skipped`. `0px solid transparent` imported as a 1px black line and `10px solid transparent` as a 10px black bar.
+- **HTML.** An `<hr>` whose border draws nothing is drawn by its `background` or `background-color` when it has a `height`: `border: 0; height: 1px; background: #cccccc` now imports as a 1px `#cccccc` divider, where it imported as a 1px black one. An `<hr>` that draws neither becomes a `spacer` of its vertical margins, padding, `height` and transparent border width, or is skipped at 0px. An `<hr>` with no border styles still imports as a 1px solid black line.
+
+Rules and tables: [Unlayer](https://docs.templatical.com/guide/migration-from-unlayer#undrawn-dividers) and [HTML](https://docs.templatical.com/guide/migration-from-html#hr-lines) migration guides.
