@@ -20,23 +20,34 @@
  */
 
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  readlinkSync,
+  realpathSync,
+  rmSync,
+} from "node:fs";
 import { constants, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { materializeExample, repoRootFrom } from "./consumer-fixture.mjs";
 
-const EXAMPLES = {
+// Ports below Linux's ephemeral range (32768–60999): one inside it can be the
+// local port of an outgoing or TIME_WAIT socket when the server starts, and the
+// bind fails with EADDRINUSE although nothing listens. tests/ci-ports.test.ts
+// holds every port CI binds to this.
+export const EXAMPLES = {
   nextjs: {
-    port: 51741,
+    port: 21741,
     kind: "fullstack",
     startArgs: (port) => ["--port", String(port)],
   },
-  nuxt: { port: 51742, kind: "fullstack", startArgs: () => [] },
-  sveltekit: { port: 51743, kind: "fullstack", startArgs: () => [] },
-  "react-router": { port: 51744, kind: "fullstack", startArgs: () => [] },
+  nuxt: { port: 21742, kind: "fullstack", startArgs: () => [] },
+  sveltekit: { port: 21743, kind: "fullstack", startArgs: () => [] },
+  "react-router": { port: 21744, kind: "fullstack", startArgs: () => [] },
   "react-vite": {
-    port: 51745,
+    port: 21745,
     kind: "minimal",
     // vite preview listens on whichever address `localhost` resolves to first,
     // and in CI's Playwright container the probe never reached it. Binding and
@@ -111,6 +122,109 @@ async function assertPortFree(url, name) {
   if (await answers(url)) {
     throw new Error(
       `${url} already answers: stop that server first, or this run would test it instead of ${name}`,
+    );
+  }
+}
+
+const TCP_STATES = {
+  "01": "ESTABLISHED",
+  "02": "SYN_SENT",
+  "03": "SYN_RECV",
+  "04": "FIN_WAIT1",
+  "05": "FIN_WAIT2",
+  "06": "TIME_WAIT",
+  "07": "CLOSE",
+  "08": "CLOSE_WAIT",
+  "09": "LAST_ACK",
+  "0A": "LISTEN",
+  "0B": "CLOSING",
+};
+
+/**
+ * The sockets whose local port is `port`, from Linux's `/proc/net/tcp` and
+ * `tcp6` tables (keyed by path; a missing table is skipped). Addresses stay in
+ * the tables' hex; `inode` is `"0"` for a socket no process owns, such as one
+ * in TIME_WAIT.
+ */
+export function socketsOnPort(tables, port) {
+  const suffix = `:${port.toString(16).toUpperCase().padStart(4, "0")}`;
+  const sockets = [];
+  for (const [table, text] of Object.entries(tables)) {
+    for (const row of text.split("\n").slice(1)) {
+      const fields = row.trim().split(/\s+/);
+      if (!fields[1]?.endsWith(suffix)) continue;
+      sockets.push({
+        table,
+        local: fields[1],
+        remote: fields[2],
+        state: TCP_STATES[fields[3]] ?? fields[3],
+        inode: fields[9],
+      });
+    }
+  }
+  return sockets;
+}
+
+/** The command line of the process that owns each socket inode, best effort. */
+function socketOwners() {
+  const owners = new Map();
+  let pids = [];
+  try {
+    pids = readdirSync("/proc").filter((entry) => /^\d+$/.test(entry));
+  } catch {
+    return owners;
+  }
+  for (const pid of pids) {
+    let fds = [];
+    try {
+      fds = readdirSync(`/proc/${pid}/fd`);
+    } catch {
+      continue;
+    }
+    for (const fd of fds) {
+      try {
+        const inode = /^socket:\[(\d+)\]$/.exec(
+          readlinkSync(`/proc/${pid}/fd/${fd}`),
+        )?.[1];
+        if (inode && !owners.has(inode)) {
+          const command = readFileSync(`/proc/${pid}/cmdline`, "utf8")
+            .replaceAll("\0", " ")
+            .trim();
+          owners.set(inode, `${pid} ${command}`);
+        }
+      } catch {
+        // the process or descriptor went away
+      }
+    }
+  }
+  return owners;
+}
+
+/**
+ * Print what holds `port` when a server exits before answering, so a bind
+ * failure names its cause. Linux only: elsewhere there's no `/proc/net/tcp`.
+ */
+function logPortHolders(port) {
+  const tables = {};
+  for (const path of ["/proc/net/tcp", "/proc/net/tcp6"]) {
+    try {
+      tables[path] = readFileSync(path, "utf8");
+    } catch {
+      // not Linux, or no IPv6
+    }
+  }
+  if (Object.keys(tables).length === 0) return;
+  const sockets = socketsOnPort(tables, port);
+  if (sockets.length === 0) {
+    log(`no socket holds port ${port}`);
+    return;
+  }
+  const owners = socketOwners();
+  log(`sockets on port ${port}:`);
+  for (const socket of sockets) {
+    const owner = owners.get(socket.inode) ?? "no owning process";
+    log(
+      `  ${socket.state} ${socket.local} -> ${socket.remote} (${socket.table}; ${owner})`,
     );
   }
 }
@@ -212,6 +326,9 @@ async function serveAndTest({
     });
   } catch (error) {
     console.error(error.message);
+    if (server.exitCode !== null || server.signalCode !== null) {
+      logPortHolders(example.port);
+    }
     return false;
   } finally {
     stopServer();
@@ -265,7 +382,20 @@ async function main() {
   process.exit(passed ? 0 : 1);
 }
 
-main().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+// Run only as a script: tests/ci-ports.test.ts imports the port table. Both
+// sides are realpaths, since import.meta.url resolves symlinks and argv
+// doesn't.
+function invokedDirectly() {
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (invokedDirectly()) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}
