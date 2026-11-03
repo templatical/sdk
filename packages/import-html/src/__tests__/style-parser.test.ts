@@ -190,6 +190,22 @@ describe("readPaddingFromStyles", () => {
       left: 10,
     });
   });
+
+  it("keeps an explicit zero longhand over the shorthand", () => {
+    expect(
+      readPaddingFromStyles({
+        padding: "10px",
+        "padding-top": "0",
+        "padding-bottom": "0px",
+      }),
+    ).toEqual({ top: 0, right: 10, bottom: 0, left: 10 });
+  });
+
+  it("falls back to the shorthand for a longhand that doesn't parse", () => {
+    expect(
+      readPaddingFromStyles({ padding: "10px", "padding-top": "auto" }),
+    ).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+  });
 });
 
 describe("parseFontWeight", () => {

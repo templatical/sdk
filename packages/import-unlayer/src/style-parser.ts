@@ -158,14 +158,18 @@ export function parseBorderObject(border: UnlayerBorder | undefined): {
   if (!border) {
     return { width: 0, style: "solid", color: "#000000", drawn: true };
   }
-  const style = border.borderTopStyle || "solid";
+  const style =
+    String(border.borderTopStyle ?? "")
+      .trim()
+      .toLowerCase() || "solid";
   const hidden = style === "none" || style === "hidden";
-  // Only a width written as zero; an unreadable one also parses to 0. Trimmed
-  // first, and each run of zeros has one way to match, so a long run fails in
-  // linear time.
-  const zeroWidth = /^(?:0+(?:\.0+)?|\.0+)(?:px)?$/.test(
-    String(border.borderTopWidth ?? "").trim(),
-  );
+  // Only a width written as zero, in any CSS length unit; an unreadable one
+  // (`0x`, `thin`) also parses to 0 but counts as drawn. Trimmed first, and
+  // each run of zeros has one way to match, so a long run fails in linear time.
+  const zeroWidth =
+    /^[+-]?(?:0+(?:\.0+)?|\.0+)(?:px|pt|pc|em|rem|ex|ch|vw|vh|vmin|vmax|cm|mm|in|q)?$/i.test(
+      String(border.borderTopWidth ?? "").trim(),
+    );
   return {
     width: hidden ? 0 : parsePxValue(border.borderTopWidth),
     style,

@@ -181,6 +181,44 @@ describe("parseBorderObject", () => {
     }
   });
 
+  it("reads a zero width in any unit and a style in any case", () => {
+    for (const border of [
+      {
+        borderTopWidth: "0pt",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      },
+      {
+        borderTopWidth: "0em",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      },
+      {
+        borderTopWidth: "+0px",
+        borderTopStyle: "solid",
+        borderTopColor: "#ccc",
+      },
+      { borderTopWidth: "1px", borderTopStyle: "NONE", borderTopColor: "#ccc" },
+      {
+        borderTopWidth: "1px",
+        borderTopStyle: " Hidden ",
+        borderTopColor: "#ccc",
+      },
+    ]) {
+      expect([border, parseBorderObject(border).drawn]).toEqual([
+        border,
+        false,
+      ]);
+    }
+    expect(
+      parseBorderObject({
+        borderTopWidth: "2px",
+        borderTopStyle: "DASHED",
+        borderTopColor: "#ccc",
+      }),
+    ).toEqual({ width: 2, style: "dashed", color: "#cccccc", drawn: true });
+  });
+
   it("is drawn with an unreadable width", () => {
     expect(
       parseBorderObject({

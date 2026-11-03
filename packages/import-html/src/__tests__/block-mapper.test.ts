@@ -763,6 +763,14 @@ describe("skippedElementEntry", () => {
 
   // A longhand alone declares the border, so the browser's default line no
   // longer applies.
+  it("skips an <hr> whose padding longhands zero out the shorthand", () => {
+    const { $, $el } = firstEl(
+      '<hr style="border: 0; padding: 10px 0; padding-top: 0; padding-bottom: 0;" />',
+      "hr",
+    );
+    expect(skippedElementEntry($el, $)?.status).toBe("skipped");
+  });
+
   it("skips an <hr> whose only border style is a 0 border-width", () => {
     const { $, $el } = firstEl('<hr style="border-width: 0;" />', "hr");
     expect(skippedElementEntry($el, $)?.status).toBe("skipped");

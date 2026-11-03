@@ -254,18 +254,28 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
 }
 
 /**
+ * A px length as written, `0` included, or `undefined` when it doesn't parse.
+ * Trimmed first so the pattern has one way to match.
+ */
+function explicitPx(value: string | undefined): number | undefined {
+  const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/i.exec((value ?? "").trim());
+  return match ? Math.round(parseFloat(match[1])) : undefined;
+}
+
+/**
  * Reads CSS padding from a style record, preferring the longhand props
- * (padding-top/right/bottom/left) and falling back to the `padding` shorthand.
+ * (padding-top/right/bottom/left), `0` included, and falling back to the
+ * `padding` shorthand for a side whose longhand is absent or doesn't parse.
  */
 export function readPaddingFromStyles(
   styles: Record<string, string>,
 ): SpacingValue {
   const shorthand = parsePaddingShorthand(styles.padding);
   return {
-    top: parsePxValue(styles["padding-top"]) || shorthand.top,
-    right: parsePxValue(styles["padding-right"]) || shorthand.right,
-    bottom: parsePxValue(styles["padding-bottom"]) || shorthand.bottom,
-    left: parsePxValue(styles["padding-left"]) || shorthand.left,
+    top: explicitPx(styles["padding-top"]) ?? shorthand.top,
+    right: explicitPx(styles["padding-right"]) ?? shorthand.right,
+    bottom: explicitPx(styles["padding-bottom"]) ?? shorthand.bottom,
+    left: explicitPx(styles["padding-left"]) ?? shorthand.left,
   };
 }
 
