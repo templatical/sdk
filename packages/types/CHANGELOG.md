@@ -1,5 +1,9 @@
 # @templatical/types
 
+## 0.54.1
+
+No changes in this release.
+
 ## 0.54.0
 
 No changes in this release.

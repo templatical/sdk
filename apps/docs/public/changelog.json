@@ -18,8 +18,23 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.54.0",
+  "latest": "0.54.1",
   "versions": [
+    {
+      "version": "0.54.1",
+      "date": "2026-11-03",
+      "changes": [
+        {
+          "hash": "122711a",
+          "level": "patch",
+          "title": "The text formatting toolbar stays behind the Insert Link dialog after a merge-tag or logic-tag picker has been opened and closed.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.54.0",
       "date": "2026-11-03",
