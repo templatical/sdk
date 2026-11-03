@@ -907,6 +907,29 @@ describe("convertContent", () => {
       ).toBe(30);
     });
 
+    // Room can't be negative: a negative padding that outweighs the rest is
+    // skipped, while one that doesn't still leaves the remaining room.
+    it("never makes the spacer negative", () => {
+      expect(
+        spacerHeight({
+          borderTopWidth: "20px",
+          borderTopStyle: "solid",
+          borderTopColor: "transparent",
+        }),
+      ).toBe(50);
+      const { block } = undrawn(solid("0px", "transparent"), "-10px 0px");
+      expect(block.type === "spacer" && block.height).toBe(0);
+      const mixed = convertContent(
+        makeContent("divider", {
+          border: solid("20px", "transparent"),
+          containerPadding: "-10px 0px 0px",
+        }),
+        [],
+        { columnWidth: 600 },
+      ).block;
+      expect(mixed.type === "spacer" && mixed.height).toBe(10);
+    });
+
     it("keeps a divider whose border is drawn", () => {
       for (const border of [
         solid("1px", "#BBBBBB"),

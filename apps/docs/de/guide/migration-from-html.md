@@ -158,7 +158,7 @@ Ein `<hr>` wird als die Linie importiert, die es zeichnet. Seine Linie ist der o
 | kein Rahmen, der zeichnet, kein Hintergrund, belegter Platz | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
 | kein Rahmen, der zeichnet, kein Hintergrund, kein belegter Platz | kein Block | Übersprungen |
 
-Das übliche E-Mail-`<hr>`, `border: 0; height: 1px; background: #cccccc`, ist die Hintergrund-Zeile. Ein transparenter Hintergrund oder eine `height` von 0 zeichnet keine Linie. Die `height` des Spacers sind die oberen und unteren Margins und Paddings des `<hr>`, seine `height` und die Breiten transparenter oberer und unterer Rahmen; ein Rahmen mit `none` oder `hidden` belegt keinen Platz. Sie fällt nie unter 0, negative Margins, die zusammen weniger ergeben, werden deshalb übersprungen. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Die Breitenregeln oben gelten für jede Divider-Zeile.
+Das übliche E-Mail-`<hr>`, `border: 0; height: 1px; background: #cccccc`, ist die Hintergrund-Zeile. Ein transparenter Hintergrund oder eine `height` von 0 zeichnet keine Linie. Die `height` des Spacers ist die Summe aus den oberen und unteren Margins und Paddings des `<hr>`, seiner `height` und den Breiten transparenter oberer und unterer Rahmen; ein Rahmen mit `none` oder `hidden` belegt keinen Platz. Sie fällt nie unter 0, negative Margins, die zusammen weniger ergeben, werden deshalb übersprungen. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Die Breitenregeln oben gelten für jede Divider-Zeile.
 
 ## Inline-Formatierung
 

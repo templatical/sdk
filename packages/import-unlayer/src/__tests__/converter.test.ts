@@ -154,6 +154,7 @@ describe("convertUnlayerTemplate", () => {
                   divider("0px", "transparent", "15px 0px"),
                   divider("10px", "transparent", "15px 0px"),
                   divider("0px", "transparent", "0px"),
+                  divider("0px", "transparent", "-10px 0px"),
                   divider("1px", "#BBBBBB", "10px 0px"),
                 ],
                 values: {},
@@ -178,6 +179,7 @@ describe("convertUnlayerTemplate", () => {
     expect(report.entries.map((e) => e.status)).toEqual([
       "converted",
       "converted",
+      "skipped",
       "skipped",
       "converted",
     ]);
