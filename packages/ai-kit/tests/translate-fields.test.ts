@@ -24,12 +24,14 @@ const good = {
   id: "p/content",
   text: '<p>Hallo <x id="1"/> <a href="__x2__">Kaufen</a></p>',
 };
+const alt = { id: "i/alt", text: 'Hallo <x id="1"/>' };
+// The model sees the fields as f1 and f2, so it answers under those aliases.
+const f1 = { ...good, id: "f1" };
+const f2 = { ...alt, id: "f2" };
 
 describe("translateFields", () => {
   it("collects streaming JSON with no tools and prompts with languages and field formats", async () => {
-    const text = JSON.stringify({
-      fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
-    });
+    const text = JSON.stringify({ fields: [f1, f2] });
     const model = scriptedModel([
       [
         { type: "text", text: text.slice(0, 12) },
@@ -38,7 +40,7 @@ describe("translateFields", () => {
       ],
     ]);
     expect(await translateFields({ request, model })).toEqual({
-      fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
+      fields: [good, alt],
     });
     expect(model.calls).toHaveLength(1);
     expect(model.calls[0].tools).toEqual([]);
@@ -46,12 +48,17 @@ describe("translateFields", () => {
     expect(model.calls[0].system).toContain('<x id="n"/>');
     expect(prompt).toContain("English");
     expect(prompt).toContain("German");
-    expect(prompt).toContain(JSON.stringify(request.fields));
+    expect(prompt.split("Fields:\n")[1]).toBe(
+      JSON.stringify([
+        { id: "f1", format: "html", text: request.fields[0].text },
+        { id: "f2", format: "text", text: request.fields[1].text },
+      ]),
+    );
+    expect(prompt).not.toContain("p/content");
+    expect(prompt).not.toContain("i/alt");
   });
   it("tells the model to reply with the JSON object alone", async () => {
-    const model = scriptedModel([
-      answer([good, { id: "i/alt", text: 'Hallo <x id="1"/>' }]),
-    ]);
+    const model = scriptedModel([answer([f1, f2])]);
     await translateFields({ request, model });
     expect(model.calls[0].system).toContain(
       "Reply with the JSON object alone, with no code fence and no other text.",
@@ -60,25 +67,21 @@ describe("translateFields", () => {
   it.each(["```json\n", "```\n", "```JSON\n"])(
     "accepts an answer wrapped in a code fence on the first attempt: %j",
     async (fence) => {
-      const text = JSON.stringify({
-        fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
-      });
+      const text = JSON.stringify({ fields: [f1, f2] });
       const model = scriptedModel([
         [{ type: "text", text: fence + text + "\n```\n" }],
       ]);
       expect(await translateFields({ request, model })).toEqual({
-        fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
+        fields: [good, alt],
       });
       expect(model.calls).toHaveLength(1);
     },
   );
   it("repairs prose around JSON, since only a surrounding code fence is dropped", async () => {
-    const text = JSON.stringify({
-      fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
-    });
+    const text = JSON.stringify({ fields: [f1, f2] });
     const model = scriptedModel([
       [{ type: "text", text: `Here is the translation:\n${text}` }],
-      answer([good, { id: "i/alt", text: 'Hallo <x id="1"/>' }]),
+      answer([f1, f2]),
     ]);
     expect((await translateFields({ request, model })).fields).toHaveLength(2);
     expect(model.calls).toHaveLength(2);
@@ -89,26 +92,26 @@ describe("translateFields", () => {
     'Hallo <x id="2"/>',
     "Hallo __x1____x2__",
   ])("repairs a bad placeholder multiset: %s", async (text) => {
-    const model = scriptedModel([
-      answer([good, { id: "i/alt", text }]),
-      answer([{ id: "i/alt", text: 'Hallo <x id="1"/>' }]),
-    ]);
+    const model = scriptedModel([answer([f1, { ...f2, text }]), answer([f2])]);
     expect(await translateFields({ request, model })).toEqual({
-      fields: [good, { id: "i/alt", text: 'Hallo <x id="1"/>' }],
+      fields: [good, alt],
     });
     expect(model.calls).toHaveLength(2);
-    expect(model.calls[1].messages.at(-1)?.content).toContain("i/alt");
-    expect(model.calls[1].messages.at(-1)?.content).not.toContain("p/content");
+    const repair = model.calls[1].messages.at(-1)?.content;
+    expect(repair).toContain('for these failed ids only: ["f2"]');
+    expect(repair).not.toContain("f1");
+    expect(repair).not.toContain("i/alt");
+    expect(repair).not.toContain("p/content");
   });
-  it("keeps valid fields across one repair, ignores unknown and rejects duplicate ids", async () => {
+  it("keeps valid fields across one repair, ignores unknown and rejects duplicate aliases", async () => {
     const model = scriptedModel([
       answer([
-        good,
-        { id: "i/alt", text: 'A <x id="1"/>' },
-        { id: "i/alt", text: 'B <x id="1"/>' },
+        f1,
+        { id: "f2", text: 'A <x id="1"/>' },
+        { id: "f2", text: 'B <x id="1"/>' },
         { id: "unknown", text: "x" },
       ]),
-      answer([{ id: "i/alt", text: "lost tag" }]),
+      answer([{ id: "f2", text: "lost tag" }]),
     ]);
     expect(await translateFields({ request, model })).toEqual({
       fields: [good],
@@ -116,11 +119,40 @@ describe("translateFields", () => {
     expect(model.calls).toHaveLength(2);
   });
   it("repairs missing fields and accepts a partial result", async () => {
-    const model = scriptedModel([answer([good]), answer([])]);
+    const model = scriptedModel([answer([f1]), answer([])]);
     expect(await translateFields({ request, model })).toEqual({
       fields: [good],
     });
-    expect(model.calls[1].messages.at(-1)?.content).toContain("i/alt");
+    expect(model.calls[1].messages.at(-1)?.content).toContain('["f2"]');
+  });
+  it("maps an answer keyed by aliases back to the field ids, in request order", async () => {
+    const model = scriptedModel([answer([f2, f1])]);
+    expect(await translateFields({ request, model })).toEqual({
+      fields: [good, alt],
+    });
+    expect(model.calls).toHaveLength(1);
+  });
+  it("does not match a real field id, since the model was only shown aliases", async () => {
+    const model = scriptedModel([answer([good, f2]), answer([f1])]);
+    expect(await translateFields({ request, model })).toEqual({
+      fields: [good, alt],
+    });
+    expect(model.calls).toHaveLength(2);
+    const repair = model.calls[1].messages.at(-1)?.content;
+    expect(repair).toContain('for these failed ids only: ["f1"]');
+    expect(repair).not.toContain("p/content");
+  });
+  it("fails a field whose alias appears twice and repairs it by alias", async () => {
+    const model = scriptedModel([
+      answer([f1, f2, { id: "f2", text: 'B <x id="1"/>' }]),
+      answer([f2]),
+    ]);
+    expect(await translateFields({ request, model })).toEqual({
+      fields: [good, alt],
+    });
+    expect(model.calls[1].messages.at(-1)?.content).toContain(
+      'for these failed ids only: ["f2"]',
+    );
   });
   it.each([
     '{"fields":[',
@@ -128,10 +160,7 @@ describe("translateFields", () => {
     "garbage",
     '{"fields":null}',
   ])("repairs incomplete or unusable JSON: %s", async (text) => {
-    const model = scriptedModel([
-      [{ type: "text", text }],
-      answer([good, { id: "i/alt", text: 'Hallo <x id="1"/>' }]),
-    ]);
+    const model = scriptedModel([[{ type: "text", text }], answer([f1, f2])]);
     expect((await translateFields({ request, model })).fields).toHaveLength(2);
     expect(model.calls).toHaveLength(2);
   });
@@ -153,7 +182,7 @@ describe("translateFields", () => {
     expect(
       await translateFields({
         request,
-        model: scriptedModel([answer([good]), [{ type: "text", text: "{" }]]),
+        model: scriptedModel([answer([f1]), [{ type: "text", text: "{" }]]),
       }),
     ).toEqual({ fields: [good] });
   });
