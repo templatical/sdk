@@ -9,6 +9,7 @@ import {
   createButtonBlock,
   createDividerBlock,
   createHtmlBlock,
+  createSpacerBlock,
 } from "@templatical/types";
 import type {
   Block,
@@ -19,8 +20,11 @@ import type {
 } from "@templatical/types";
 import type { ImportReportEntry } from "./types";
 import {
+  backgroundShorthandColor,
+  boxSideValue,
+  isTransparentColor,
   parseAlignment,
-  parseBorderShorthand,
+  parseBorderSide,
   parseColor,
   parseFontWeight,
   parseImageBorderRadius,
@@ -962,7 +966,121 @@ function dividerAlign($el: Cheerio<Element>): "left" | "center" | "right" {
 }
 
 /**
+ * One side of an `<hr>`'s border: `border-<side>`, else the `border`
+ * shorthand, with `border-<side>-width/-style/-color` and the
+ * `border-width/-style/-color` box values applied over it. `declared` is false
+ * when nothing sets that side.
+ */
+function hrSide(styles: Record<string, string>, side: "top" | "bottom") {
+  const shorthand = styles[`border-${side}`] ?? styles.border;
+  const longhands = {
+    width:
+      styles[`border-${side}-width`] ??
+      boxSideValue(styles["border-width"], side),
+    style:
+      styles[`border-${side}-style`] ??
+      boxSideValue(styles["border-style"], side),
+    color:
+      styles[`border-${side}-color`] ??
+      boxSideValue(styles["border-color"], side),
+  };
+  const declared =
+    shorthand !== undefined ||
+    Object.values(longhands).some((value) => value !== undefined);
+  return { ...parseBorderSide(shorthand, longhands), declared };
+}
+
+/**
+ * The border that draws an `<hr>`'s line: the top border when it draws, else
+ * a drawn bottom border, the common `border: 0; border-bottom: 1px solid #ccc`
+ * email `<hr>`. With neither declared, the top reads as the browser's default
+ * line.
+ */
+function hrBorder(styles: Record<string, string>) {
+  const top = hrSide(styles, "top");
+  if (top.declared && top.drawn) return top;
+  const bottom = hrSide(styles, "bottom");
+  return bottom.declared && bottom.drawn ? bottom : top;
+}
+
+/**
+ * The line an `<hr>`'s background draws, the usual email `<hr>`
+ * (`border: 0; height: 1px; background: #ccc`): its colour and `height`.
+ * `undefined` when the background is unset or transparent, or the height is 0.
+ */
+function hrBackgroundLine(
+  styles: Record<string, string>,
+): { color: string; thickness: number } | undefined {
+  const raw =
+    styles["background-color"] ?? backgroundShorthandColor(styles.background);
+  if (!raw || isTransparentColor(raw)) return undefined;
+  const color = parseColor(raw);
+  const thickness = parsePxValue(styles.height);
+  return color && thickness > 0 ? { color, thickness } : undefined;
+}
+
+/** An element's top and bottom margins in px, from the shorthand and longhands. */
+function verticalMargins(styles: Record<string, string>): {
+  top: number;
+  bottom: number;
+} {
+  const parts = (styles.margin ?? "").trim().split(/\s+/).filter(Boolean);
+  const top = parts[0] ?? "";
+  const bottom = parts.length >= 3 ? parts[2] : top;
+  return {
+    top: parsePxValue(styles["margin-top"] ?? top),
+    bottom: parsePxValue(styles["margin-bottom"] ?? bottom),
+  };
+}
+
+/**
+ * The room an `<hr>` that draws nothing takes: its vertical margins and
+ * padding, its `height` and the widths of transparent top and bottom borders,
+ * never below 0 (negative margins pull content up; a spacer can't). CSS drops
+ * a negative padding or height, so neither counts. `undefined` when a border
+ * or its background draws a line. An `<hr>` with no border styles draws the
+ * browser's default line.
+ */
+function undrawnHrHeight($el: Cheerio<Element>): number | undefined {
+  const styles = getStyles($el);
+  if (hrBorder(styles).drawn || hrBackgroundLine(styles)) return undefined;
+  const margin = verticalMargins(styles);
+  const padding = readPaddingFromStyles(styles);
+  return Math.max(
+    0,
+    margin.top +
+      padding.top +
+      hrSide(styles, "top").width +
+      Math.max(0, parsePxValue(styles.height)) +
+      hrSide(styles, "bottom").width +
+      padding.bottom +
+      margin.bottom,
+  );
+}
+
+/**
+ * The report entry for an element that imports no block, or `undefined` when
+ * it converts: an `<hr>` that draws nothing and takes no space.
+ */
+export function skippedElementEntry(
+  $el: Cheerio<Element>,
+  $: CheerioAPI,
+): ImportReportEntry | undefined {
+  const { $el: $target } = resolveWrappedBlock($el, $);
+  if (tagOf($target[0]) !== "hr" || undrawnHrHeight($target) !== 0) {
+    return undefined;
+  }
+  return {
+    sourceTag: "hr",
+    templaticalBlockType: null,
+    status: "skipped",
+    note: "The divider draws no line and takes no space.",
+  };
+}
+
+/**
  * <hr> → Divider block, with a note for each thing the block does not keep.
+ * The line is the top border, or the background when the border draws nothing.
  *
  * Templatical centres every divider, so a partial one the source places at
  * either side is reported. A full-width line has no placement to lose.
@@ -972,9 +1090,10 @@ function convertDivider(
   room: number | undefined,
 ): { block: Block; notes: string[] } {
   const styles = getStyles($el);
-  const border = parseBorderShorthand(styles["border-top"] ?? styles.border);
+  const border = hrBorder(styles);
+  const background = border.drawn ? undefined : hrBackgroundLine(styles);
   const lineStyle =
-    border.style === "dashed" || border.style === "dotted"
+    !background && (border.style === "dashed" || border.style === "dotted")
       ? border.style
       : "solid";
 
@@ -990,8 +1109,8 @@ function convertDivider(
   return {
     block: createDividerBlock({
       lineStyle: lineStyle as "solid" | "dashed" | "dotted",
-      color: border.color || "#e5e7eb",
-      thickness: border.width || 1,
+      color: background?.color ?? (border.color || "#e5e7eb"),
+      thickness: background?.thickness ?? (border.width || 1),
       width,
       styles: {
         padding: readPaddingFromStyles(styles),
@@ -1201,6 +1320,22 @@ export function convertElement(
   }
 
   if (tag === "hr") {
+    const height = undrawnHrHeight($target);
+    if (height !== undefined) {
+      // A spacer renders no padding, so the <hr>'s spacing is all height.
+      return {
+        block: createSpacerBlock({
+          height,
+          styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+        }),
+        entry: {
+          sourceTag: tag,
+          templaticalBlockType: "spacer",
+          status: "converted",
+          note: `The divider draws no line; imported as a ${height}px spacer.`,
+        },
+      };
+    }
     const { block, notes } = convertDivider($target, room);
     return {
       block,

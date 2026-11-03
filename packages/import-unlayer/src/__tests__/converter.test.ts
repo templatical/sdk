@@ -129,6 +129,68 @@ describe("convertUnlayerTemplate", () => {
     ]);
   });
 
+  it("imports dividers that draw no line as spacers, and skips one that takes no space", () => {
+    const divider = (
+      borderTopWidth: string,
+      borderTopColor: string,
+      containerPadding: string,
+    ) => ({
+      type: "divider",
+      values: {
+        border: { borderTopWidth, borderTopStyle: "solid", borderTopColor },
+        containerPadding,
+        width: "100%",
+      },
+    });
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: { contentWidth: "600px" },
+        rows: [
+          {
+            cells: [1],
+            columns: [
+              {
+                contents: [
+                  divider("0px", "transparent", "15px 0px"),
+                  divider("10px", "transparent", "15px 0px"),
+                  divider("0px", "transparent", "0px"),
+                  divider("0px", "transparent", "-10px 0px"),
+                  divider("1px", "#BBBBBB", "10px 0px"),
+                ],
+                values: {},
+              },
+            ],
+            values: {},
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    if (section.type !== "section") throw new Error("expected a section");
+    expect(
+      section.children[0].map((b) =>
+        b.type === "spacer"
+          ? `spacer ${b.height}`
+          : b.type === "divider"
+            ? `divider ${b.thickness} ${b.color}`
+            : b.type,
+      ),
+    ).toEqual(["spacer 30", "spacer 40", "divider 1 #bbbbbb"]);
+    expect(report.entries.map((e) => e.status)).toEqual([
+      "converted",
+      "converted",
+      "skipped",
+      "skipped",
+      "converted",
+    ]);
+    expect(report.entries[2]).toEqual({
+      unlayerContentType: "divider",
+      templaticalBlockType: null,
+      status: "skipped",
+      note: "The divider draws no line and takes no space.",
+    });
+  });
+
   describe("divider width against its column", () => {
     function dividerWidthIn(
       cells: number[],

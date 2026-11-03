@@ -1143,3 +1143,37 @@ describe("convertHtmlTemplate — a stylesheet rule's data-URI background image"
     expect(section.backgroundImage?.url).toBe("data:image/png;base64,AAAA");
   });
 });
+
+describe("convertHtmlTemplate — <hr> that draws nothing", () => {
+  const SKIPPED = {
+    sourceTag: "hr",
+    templaticalBlockType: null,
+    status: "skipped",
+    note: "The divider draws no line and takes no space.",
+  };
+
+  // The three walks that convert an element: the body, a cell, and a wrapper
+  // that also holds a table.
+  it("skips one that takes no space, at the top level, in a cell and beside a table", () => {
+    for (const html of [
+      '<html><body><p>Above</p><hr style="border:0;margin:0"><p>Below</p></body></html>',
+      '<html><body><table width="600"><tr><td><p>Above</p><hr style="border:0;margin:0"><p>Below</p></td></tr></table></body></html>',
+      '<html><body><div><p>Above</p><hr style="border:0;margin:0"><table width="600"><tr><td><p>In</p></td></tr></table></div></body></html>',
+    ]) {
+      const { content, report } = convertHtmlTemplate(html);
+      expect(findBlock(content.blocks, "divider")).toBeUndefined();
+      expect(findBlock(content.blocks, "spacer")).toBeUndefined();
+      expect(report.entries.filter((e) => e.sourceTag === "hr")).toEqual([
+        SKIPPED,
+      ]);
+    }
+  });
+
+  it("imports one drawn by its background as a line, in a cell", () => {
+    const { content } = convertHtmlTemplate(
+      '<html><body><table width="600"><tr><td><p>Above</p><hr style="border:0;height:1px;background:#cccccc"><p>Below</p></td></tr></table></body></html>',
+    );
+    const divider = findBlock(content.blocks, "divider");
+    expect([divider?.thickness, divider?.color]).toEqual([1, "#cccccc"]);
+  });
+});

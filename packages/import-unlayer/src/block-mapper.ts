@@ -462,6 +462,30 @@ function convertDivider(
   };
 }
 
+/**
+ * The room a divider that draws no line takes: its top and bottom padding plus
+ * the width of a transparent border. `undefined` when the line is drawn.
+ */
+function undrawnDividerHeight(
+  values: UnlayerContentValues,
+): number | undefined {
+  const border = parseBorderObject(values.border);
+  if (border.drawn) return undefined;
+  const padding = parsePaddingShorthand(values.containerPadding);
+  return padding.top + border.width + padding.bottom;
+}
+
+/**
+ * A divider that draws no line, as a spacer of the same height. A spacer
+ * renders no padding, so the divider's padding goes into the height.
+ */
+function convertUndrawnDivider(height: number): Block {
+  return createSpacerBlock({
+    height,
+    styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+  });
+}
+
 function convertSpacer(values: UnlayerContentValues): Block {
   const padding = parsePaddingShorthand(values.containerPadding);
   const height =
@@ -612,6 +636,18 @@ function convertContentBase(
         },
       };
     case "divider": {
+      const height = undrawnDividerHeight(values);
+      if (height !== undefined) {
+        return {
+          block: convertUndrawnDivider(height),
+          entry: {
+            unlayerContentType: type,
+            templaticalBlockType: "spacer",
+            status: "converted",
+            note: `The divider draws no line; imported as a ${height}px spacer.`,
+          },
+        };
+      }
       const { block, notes } = convertDivider(values, columnWidth);
       return {
         block,
@@ -709,6 +745,23 @@ function convertContentBase(
         },
       };
   }
+}
+
+/**
+ * The report entry for an item that imports no block, or `undefined` when it
+ * converts: a divider that draws no line and takes no space.
+ */
+export function skippedContentEntry(
+  content: UnlayerContent,
+): ImportReportEntry | undefined {
+  if (content.type !== "divider") return undefined;
+  if (undrawnDividerHeight(content.values ?? {}) !== 0) return undefined;
+  return {
+    unlayerContentType: content.type,
+    templaticalBlockType: null,
+    status: "skipped",
+    note: "The divider draws no line and takes no space.",
+  };
 }
 
 export function convertContent(
