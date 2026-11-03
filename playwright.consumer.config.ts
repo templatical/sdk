@@ -23,7 +23,9 @@ import { vanillaConsumerDir } from "./packages/editor/scripts/consumer-fixture.m
  * command before vite starts.
  */
 
-const PORT = 51731;
+// Below Linux's ephemeral range, as every port CI binds is
+// (packages/editor/tests/ci-ports.test.ts).
+const PORT = 21731;
 // The prepare step derives the same folder from the same checkout path.
 const CONSUMER_ROOT = vanillaConsumerDir(__dirname);
 
