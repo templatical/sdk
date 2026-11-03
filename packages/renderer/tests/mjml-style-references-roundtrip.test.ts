@@ -125,4 +125,35 @@ describe("decodeStyleReferences", () => {
       "<p>Plain &apos;text&apos;</p>",
     );
   });
+
+  // A `>` inside a quoted value doesn't end the tag.
+  it("reads past a > inside an earlier attribute's value", () => {
+    expect(
+      decodeStyleReferences(
+        `<p title="2 > 1" style="font-family: &apos;A&apos;">x</p>`,
+      ),
+    ).toBe(`<p title="2 > 1" style="font-family: 'A'">x</p>`);
+  });
+
+  it("rewrites the style attribute, never style text inside another value", () => {
+    expect(
+      decodeStyleReferences(
+        `<p title='x style="&apos;t&apos;"' style="font-family: &apos;A&apos;">x</p>`,
+      ),
+    ).toBe(`<p title='x style="&apos;t&apos;"' style="font-family: 'A'">x</p>`);
+  });
+
+  it("leaves a tag with an unterminated quote alone", () => {
+    const html = `<p title="open style="font-family: &apos;A&apos;">x</p>`;
+    expect(decodeStyleReferences(html)).toBe(html);
+  });
+
+  it("compiles a paragraph whose style follows a > in a title", async () => {
+    const html = await compile([
+      createParagraphBlock({
+        content: `<p title="2 > 1" style="font-family: &apos;Courier New&apos;">Hi</p>`,
+      }),
+    ]);
+    expect(html).toContain("font-family: 'Courier New'");
+  });
 });

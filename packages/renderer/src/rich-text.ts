@@ -1,4 +1,9 @@
-import { RICH_TEXT_SPACING, isSection, isWrapper } from "@templatical/types";
+import {
+  RICH_TEXT_SPACING,
+  findOpenTagEnd,
+  isSection,
+  isWrapper,
+} from "@templatical/types";
 import type { Block, ContentDirection } from "@templatical/types";
 
 /**
@@ -143,8 +148,8 @@ const NAMED_STYLE_REFERENCES: Record<string, string> = {
 };
 
 const STYLE_REFERENCE = /&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp));/gi;
-const OPENING_TAG = /<[a-z][^<>]*>/gi;
-const STYLE_ATTRIBUTE = /(\sstyle\s*=\s*)(?:"([^"]*)"|'([^']*)')/gi;
+const TAG_NAME_START = /[a-z]/i;
+const HTML_SPACE = /[ \t\n\f\r]/;
 
 function decodeStyleReference(
   reference: string,
@@ -175,9 +180,55 @@ function decodeStyleReference(
 }
 
 /**
+ * The open tag `tag` (from `<` up to, not including, its `>`) with the
+ * references in its first quoted `style` attribute decoded. Attributes are
+ * walked in order and quoted values skipped whole, so `style="…"` text inside
+ * another attribute's value is never taken for the attribute.
+ */
+function decodeTagStyle(tag: string): string {
+  let i = 1;
+  while (i < tag.length && !HTML_SPACE.test(tag[i]) && tag[i] !== "/") i++;
+  while (i < tag.length) {
+    while (i < tag.length && (HTML_SPACE.test(tag[i]) || tag[i] === "/")) i++;
+    const nameStart = i;
+    while (i < tag.length && !/[\s=/]/.test(tag[i])) i++;
+    const name = tag.slice(nameStart, i).toLowerCase();
+    if (name === "") {
+      i++;
+      continue;
+    }
+    while (i < tag.length && HTML_SPACE.test(tag[i])) i++;
+    if (tag[i] !== "=") continue;
+    i++;
+    while (i < tag.length && HTML_SPACE.test(tag[i])) i++;
+    const quote = tag[i];
+    if (quote === '"' || quote === "'") {
+      const valueEnd = tag.indexOf(quote, i + 1);
+      if (valueEnd === -1) return tag;
+      if (name === "style") {
+        const value = tag
+          .slice(i + 1, valueEnd)
+          .replace(STYLE_REFERENCE, (reference, decimal, hex, named) =>
+            decodeStyleReference(reference, quote, decimal, hex, named),
+          );
+        return `${tag.slice(0, i + 1)}${value}${tag.slice(valueEnd)}`;
+      }
+      i = valueEnd + 1;
+      continue;
+    }
+    while (i < tag.length && !HTML_SPACE.test(tag[i])) i++;
+  }
+  return tag;
+}
+
+/**
  * Rich-text HTML with the character references in its `style` attributes
- * written as the characters they stand for (`&apos;` → `'`), `&amp;`, `&lt;`
- * and `&gt;` aside.
+ * written as the characters they stand for: `&apos;`, `&quot;`, `&nbsp;` and
+ * numeric references (`&#39;`, `&#x27;`). Other named references stay as
+ * written, and so do `&amp;`, `<` and `>` in any form; a reference to `&`
+ * becomes `&amp;`. Tags are found with the quote-aware `findOpenTagEnd`, so a
+ * `>` inside an attribute value doesn't end one, and a tag whose quote never
+ * closes is left alone.
  *
  * MJML inlines {@link richTextStylesheet} with juice, which re-parses the
  * style attribute of every element a rule matches and splits it on `;`
@@ -188,23 +239,23 @@ function decodeStyleReference(
  */
 export function decodeStyleReferences(html: string): string {
   if (!html.includes("&")) return html;
-  return html.replace(OPENING_TAG, (tag) =>
-    tag.replace(
-      STYLE_ATTRIBUTE,
-      (
-        _attribute,
-        prefix: string,
-        doubleQuoted: string | undefined,
-        singleQuoted: string | undefined,
-      ) => {
-        const quote = doubleQuoted !== undefined ? '"' : "'";
-        const value = (doubleQuoted ?? singleQuoted ?? "").replace(
-          STYLE_REFERENCE,
-          (reference, decimal, hex, name) =>
-            decodeStyleReference(reference, quote, decimal, hex, name),
-        );
-        return `${prefix}${quote}${value}${quote}`;
-      },
-    ),
-  );
+  let out = "";
+  let copied = 0;
+  let open = html.indexOf("<");
+  while (open !== -1) {
+    if (!TAG_NAME_START.test(html[open + 1] ?? "")) {
+      open = html.indexOf("<", open + 1);
+      continue;
+    }
+    const end = findOpenTagEnd(html, open + 1);
+    if (end === -1) break;
+    const tag = html.slice(open, end);
+    const decoded = decodeTagStyle(tag);
+    if (decoded !== tag) {
+      out += html.slice(copied, open) + decoded;
+      copied = end;
+    }
+    open = html.indexOf("<", end);
+  }
+  return out + html.slice(copied);
 }
