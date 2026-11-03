@@ -130,3 +130,81 @@ export function collectParagraphGaps(blocks: Block[]): number[] {
 
   return gaps;
 }
+
+/**
+ * The named references {@link decodeStyleReferences} writes out. `<` and `>`
+ * stay encoded, named or numeric: MJML parses its source as XML, which forbids
+ * a raw `<` in an attribute, and no CSS value needs one.
+ */
+const NAMED_STYLE_REFERENCES: Record<string, string> = {
+  apos: "'",
+  quot: '"',
+  nbsp: String.fromCharCode(0xa0),
+};
+
+const STYLE_REFERENCE = /&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp));/gi;
+const OPENING_TAG = /<[a-z][^<>]*>/gi;
+const STYLE_ATTRIBUTE = /(\sstyle\s*=\s*)(?:"([^"]*)"|'([^']*)')/gi;
+
+function decodeStyleReference(
+  reference: string,
+  quote: string,
+  decimal: string | undefined,
+  hex: string | undefined,
+  name: string | undefined,
+): string {
+  let char: string;
+  if (name !== undefined) {
+    char = NAMED_STYLE_REFERENCES[name.toLowerCase()];
+  } else {
+    const codePoint =
+      decimal !== undefined ? Number(decimal) : parseInt(hex ?? "", 16);
+    const valid =
+      codePoint > 0 &&
+      codePoint <= 0x10ffff &&
+      !(codePoint >= 0xd800 && codePoint <= 0xdfff);
+    if (!valid) return reference;
+    char = String.fromCodePoint(codePoint);
+  }
+  // A raw `&` could start a reference, and the delimiter would end the
+  // attribute; CSS reads either quote the same.
+  if (char === "&") return "&amp;";
+  if (char === "<" || char === ">") return reference;
+  if (char === quote) return quote === '"' ? "'" : '"';
+  return char;
+}
+
+/**
+ * Rich-text HTML with the character references in its `style` attributes
+ * written as the characters they stand for (`&apos;` → `'`), `&amp;`, `&lt;`
+ * and `&gt;` aside.
+ *
+ * MJML inlines {@link richTextStylesheet} with juice, which re-parses the
+ * style attribute of every element a rule matches and splits it on `;`
+ * without decoding references first. The `;` that ends `&apos;`, `&quot;` or
+ * `&nbsp;` outside a `url()` therefore cuts a declaration in two, and the
+ * compile throws. Imported content carries such references: BeeFree's TinyMCE
+ * output and import-mjml's serializer write them.
+ */
+export function decodeStyleReferences(html: string): string {
+  if (!html.includes("&")) return html;
+  return html.replace(OPENING_TAG, (tag) =>
+    tag.replace(
+      STYLE_ATTRIBUTE,
+      (
+        _attribute,
+        prefix: string,
+        doubleQuoted: string | undefined,
+        singleQuoted: string | undefined,
+      ) => {
+        const quote = doubleQuoted !== undefined ? '"' : "'";
+        const value = (doubleQuoted ?? singleQuoted ?? "").replace(
+          STYLE_REFERENCE,
+          (reference, decimal, hex, name) =>
+            decodeStyleReference(reference, quote, decimal, hex, name),
+        );
+        return `${prefix}${quote}${value}${quote}`;
+      },
+    ),
+  );
+}
