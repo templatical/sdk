@@ -181,6 +181,19 @@ describe("parseBorderObject", () => {
     }
   });
 
+  it("reads a zero width in every CSS length unit", () => {
+    for (const borderTopWidth of ["0svh", "0lh", "0cqw", "0dvmax", "0Q"]) {
+      expect([
+        borderTopWidth,
+        parseBorderObject({
+          borderTopWidth,
+          borderTopStyle: "solid",
+          borderTopColor: "#ccc",
+        }).drawn,
+      ]).toEqual([borderTopWidth, false]);
+    }
+  });
+
   it("reads a zero width in any unit and a style in any case", () => {
     for (const border of [
       {

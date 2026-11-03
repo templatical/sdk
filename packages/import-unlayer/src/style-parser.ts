@@ -143,6 +143,69 @@ export function isTransparentColor(value: string | undefined): boolean {
   return Number.isFinite(opacity) && opacity <= 0;
 }
 
+/** The CSS length units (CSS Values 4 and container queries). */
+const CSS_LENGTH_UNITS = [
+  "px",
+  "cm",
+  "mm",
+  "q",
+  "in",
+  "pt",
+  "pc",
+  "em",
+  "rem",
+  "ex",
+  "rex",
+  "cap",
+  "rcap",
+  "ch",
+  "rch",
+  "ic",
+  "ric",
+  "lh",
+  "rlh",
+  "vw",
+  "vh",
+  "vi",
+  "vb",
+  "vmin",
+  "vmax",
+  "svw",
+  "svh",
+  "svi",
+  "svb",
+  "svmin",
+  "svmax",
+  "lvw",
+  "lvh",
+  "lvi",
+  "lvb",
+  "lvmin",
+  "lvmax",
+  "dvw",
+  "dvh",
+  "dvi",
+  "dvb",
+  "dvmin",
+  "dvmax",
+  "cqw",
+  "cqh",
+  "cqi",
+  "cqb",
+  "cqmin",
+  "cqmax",
+];
+
+/**
+ * A zero length: `0`, or zero in a CSS length unit, with an optional sign. Run
+ * on a trimmed value; each run of zeros has one way to match, so a long run
+ * fails in linear time.
+ */
+const ZERO_LENGTH = new RegExp(
+  `^[+-]?(?:0+(?:\\.0+)?|\\.0+)(?:${CSS_LENGTH_UNITS.join("|")})?$`,
+  "i",
+);
+
 /**
  * A divider's top border. `width` is the room the border takes, so a `none` or
  * `hidden` border has none. `drawn` is false when the border paints nothing: a
@@ -163,13 +226,11 @@ export function parseBorderObject(border: UnlayerBorder | undefined): {
       .trim()
       .toLowerCase() || "solid";
   const hidden = style === "none" || style === "hidden";
-  // Only a width written as zero, in any CSS length unit; an unreadable one
-  // (`0x`, `thin`) also parses to 0 but counts as drawn. Trimmed first, and
-  // each run of zeros has one way to match, so a long run fails in linear time.
-  const zeroWidth =
-    /^[+-]?(?:0+(?:\.0+)?|\.0+)(?:px|pt|pc|em|rem|ex|ch|vw|vh|vmin|vmax|cm|mm|in|q)?$/i.test(
-      String(border.borderTopWidth ?? "").trim(),
-    );
+  // Only a width written as zero; an unreadable one (`0x`, `thin`) also
+  // parses to 0 but counts as drawn.
+  const zeroWidth = ZERO_LENGTH.test(
+    String(border.borderTopWidth ?? "").trim(),
+  );
   return {
     width: hidden ? 0 : parsePxValue(border.borderTopWidth),
     style,

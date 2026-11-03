@@ -771,6 +771,11 @@ describe("skippedElementEntry", () => {
     expect(skippedElementEntry($el, $)?.status).toBe("skipped");
   });
 
+  it("skips an <hr> whose border is a zero length in another unit", () => {
+    const { $, $el } = firstEl('<hr style="border: 0em;" />', "hr");
+    expect(skippedElementEntry($el, $)?.status).toBe("skipped");
+  });
+
   it("skips an <hr> whose only border style is a 0 border-width", () => {
     const { $, $el } = firstEl('<hr style="border-width: 0;" />', "hr");
     expect(skippedElementEntry($el, $)?.status).toBe("skipped");

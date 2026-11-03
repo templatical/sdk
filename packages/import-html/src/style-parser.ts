@@ -258,7 +258,9 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
  * Trimmed first so the pattern has one way to match.
  */
 function explicitPx(value: string | undefined): number | undefined {
-  const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/i.exec((value ?? "").trim());
+  const trimmed = (value ?? "").trim();
+  if (ZERO_LENGTH.test(trimmed)) return 0;
+  const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/i.exec(trimmed);
   return match ? Math.round(parseFloat(match[1])) : undefined;
 }
 
@@ -340,6 +342,69 @@ const BORDER_STYLE_KEYWORDS = new Set([
 
 const BORDER_WIDTH_TOKEN = /^-?\d+(?:\.\d+)?(?:px)?$/i;
 
+/** The CSS length units (CSS Values 4 and container queries). */
+const CSS_LENGTH_UNITS = [
+  "px",
+  "cm",
+  "mm",
+  "q",
+  "in",
+  "pt",
+  "pc",
+  "em",
+  "rem",
+  "ex",
+  "rex",
+  "cap",
+  "rcap",
+  "ch",
+  "rch",
+  "ic",
+  "ric",
+  "lh",
+  "rlh",
+  "vw",
+  "vh",
+  "vi",
+  "vb",
+  "vmin",
+  "vmax",
+  "svw",
+  "svh",
+  "svi",
+  "svb",
+  "svmin",
+  "svmax",
+  "lvw",
+  "lvh",
+  "lvi",
+  "lvb",
+  "lvmin",
+  "lvmax",
+  "dvw",
+  "dvh",
+  "dvi",
+  "dvb",
+  "dvmin",
+  "dvmax",
+  "cqw",
+  "cqh",
+  "cqi",
+  "cqb",
+  "cqmin",
+  "cqmax",
+];
+
+/**
+ * A zero length: `0`, or zero in a CSS length unit, with an optional sign. Run
+ * on a trimmed value; each run of zeros has one way to match, so a long run
+ * fails in linear time.
+ */
+const ZERO_LENGTH = new RegExp(
+  `^[+-]?(?:0+(?:\\.0+)?|\\.0+)(?:${CSS_LENGTH_UNITS.join("|")})?$`,
+  "i",
+);
+
 /** A side's `border-*-width`, `-style` and `-color`, applied over its shorthand. */
 export interface BorderLonghands {
   width?: string;
@@ -366,7 +431,7 @@ export function parseBorderSide(
     const lower = token.toLowerCase();
     if (BORDER_STYLE_KEYWORDS.has(lower)) {
       styleToken = lower;
-    } else if (BORDER_WIDTH_TOKEN.test(lower)) {
+    } else if (BORDER_WIDTH_TOKEN.test(lower) || ZERO_LENGTH.test(lower)) {
       widthToken = lower;
     } else if (isTransparentColor(lower) || parseColor(lower)) {
       colorToken = lower;
@@ -379,7 +444,7 @@ export function parseBorderSide(
   const style = styleToken ?? "solid";
   const hidden = style === "none" || style === "hidden";
   const transparent = isTransparentColor(colorToken);
-  const zeroWidth = widthToken !== undefined && parseFloat(widthToken) === 0;
+  const zeroWidth = widthToken !== undefined && ZERO_LENGTH.test(widthToken);
   return {
     width: hidden ? 0 : parsePxValue(widthToken),
     style,

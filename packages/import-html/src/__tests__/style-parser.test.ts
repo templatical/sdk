@@ -191,6 +191,16 @@ describe("readPaddingFromStyles", () => {
     });
   });
 
+  it("keeps a zero longhand in any CSS length unit over the shorthand", () => {
+    expect(
+      readPaddingFromStyles({
+        padding: "10px 0",
+        "padding-top": "0em",
+        "padding-bottom": "0EM",
+      }),
+    ).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+  });
+
   it("keeps an explicit zero longhand over the shorthand", () => {
     expect(
       readPaddingFromStyles({
@@ -284,6 +294,16 @@ describe("parseBorderShorthand", () => {
         false,
       ]);
     }
+  });
+
+  it("reads a zero width in any CSS length unit, but not an unknown one", () => {
+    for (const value of ["0em", "0rem solid #cccccc", "solid 0svh #cccccc"]) {
+      expect([value, parseBorderShorthand(value).drawn]).toEqual([
+        value,
+        false,
+      ]);
+    }
+    expect(parseBorderShorthand("0x solid #cccccc").drawn).toBe(true);
   });
 
   it("takes no room with a none or hidden style", () => {
