@@ -1019,6 +1019,72 @@ describe("convertModule", () => {
       expect(content).toContain(">Call us</td>");
     });
 
+    // The table is markup the importer writes, and an HTML block is rendered
+    // unsanitized, so an unsafe URL must never reach it.
+    it("drops an unsafe icon link or image and says so", () => {
+      const warnings: string[] = [];
+      const { block } = convertModule(
+        iconsModule([
+          {
+            ...gift,
+            href: "javascript:alert(1)",
+            text: "Free gift",
+          },
+          {
+            ...gift,
+            image: "javascript:alert(2)",
+            href: "data:text/html,<b>x</b>",
+          },
+        ]),
+        warnings,
+        { columnWidth: 600 },
+      );
+      if (block.type !== "html") throw new Error("expected an html block");
+      expect(block.content).not.toMatch(/javascript:|data:/);
+      expect(block.content).not.toContain("<a ");
+      expect(block.content).toContain(">Free gift</td>");
+      expect(block.content.match(/<img /g)).toHaveLength(1);
+      expect(warnings).toEqual([
+        'Dropped the unsafe link "javascript:alert(1)" on an Icons item.',
+        'Dropped the unsafe image "javascript:alert(2)" on an Icons item.',
+        'Dropped the unsafe link "data:text/html,<b>x</b>" on an Icons item.',
+      ]);
+    });
+
+    it("drops an unsafe link on a lone icon imported as an image", () => {
+      const warnings: string[] = [];
+      const { block } = convertModule(
+        iconsModule([{ ...gift, href: " JavaScript:alert(1)" }]),
+        warnings,
+        { columnWidth: 600 },
+      );
+      expect(block.type === "image" && block.linkUrl).toBeUndefined();
+      expect(warnings).toEqual([
+        'Dropped the unsafe link " JavaScript:alert(1)" on an Icons item.',
+      ]);
+    });
+
+    it("keeps safe and relative icon links", () => {
+      for (const href of [
+        "https://example.com",
+        "mailto:hi@example.com",
+        "/offers",
+      ]) {
+        const warnings: string[] = [];
+        const { block } = convertModule(
+          iconsModule([{ ...gift, href }]),
+          warnings,
+          {
+            columnWidth: 600,
+          },
+        );
+        expect([block.type === "image" && block.linkUrl, warnings]).toEqual([
+          href,
+          [],
+        ]);
+      }
+    });
+
     it("links nothing when the icon has no href", () => {
       const { content } = html(
         iconsModule([{ ...gift, href: "", text: "Plain" }]),

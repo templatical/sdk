@@ -180,9 +180,11 @@ Das Bild behält `alt` des Icons und verlinkt auf dessen `href`. Es steht, wo `t
 
 Die Tabelle setzt den `text` jedes Icons auf die Seite, die `textPosition` nennt (`left`, `right`, `top` oder `bottom`), in `color`, `font-family`, `font-size` und `font-weight` des Moduls, mit `computedStyle.itemsSpacing` zwischen den Icons. Icon und Text verlinken auf `href` und öffnen sich in `target`. Templatical hat keinen Block, der Icons in einer Reihe anordnet, deshalb wird die Tabelle als HTML bearbeitet.
 
+Beide Ergebnisse verwerfen `href` oder `image` eines Icons, wenn die HTML-URL-Regel des Editors (`isSafeHtmlUrl` in `@templatical/types`) sie ablehnt, etwa eine `javascript:`-, `vbscript:`- oder Nicht-Bild-`data:`-URL, und fügen einen Eintrag in `report.warnings` hinzu, der sie nennt. Die Tabelle ist Markup, das der Importer schreibt, und ein HTML-Block wird unbereinigt gerendert.
+
 ### Addons {#addons}
 
-Ein Addon-Modul (`mailup-bee-newsletter-modules-addon`) behält das Payload des Moduls, für das es steht. Es wird deshalb wie dieses Modul konvertiert und gemeldet. Der Importer sucht diese Payloads im Descriptor, in dieser Reihenfolge:
+Ein Addon-Modul (`mailup-bee-newsletter-modules-addon`) behält das Payload des Moduls, für das es steht. Es wird deshalb wie dieses Modul konvertiert: Das Payload bestimmt den Block und seinen Status. Sein Berichtseintrag behält `beeFreeModuleType: "mailup-bee-newsletter-modules-addon"`. Der Importer sucht diese Payloads im Descriptor, in dieser Reihenfolge:
 
 | Payload | Konvertiert als |
 |---|---|

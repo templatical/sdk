@@ -13335,9 +13335,11 @@ The image keeps the icon's `alt` and links to its `href`. It sits where the modu
 
 The table puts each icon's `text` on the side `textPosition` names (`left`, `right`, `top` or `bottom`), in the module's `color`, `font-family`, `font-size` and `font-weight`, with `computedStyle.itemsSpacing` between icons. Icon and text link to `href` and open in `target`. Templatical has no block that lays icons out in a row, so the table is edited as HTML.
 
+Both results drop an icon's `href` or `image` when the editor's HTML URL policy (`isSafeHtmlUrl` in `@templatical/types`) rejects it, such as a `javascript:`, `vbscript:` or non-image `data:` URL, and add a `report.warnings` entry naming it. The table is markup the importer writes, and an HTML block renders unsanitized.
+
 ### Addons {#addons}
 
-An addon module (`mailup-bee-newsletter-modules-addon`) keeps the payload of the module it stands in for, so it converts as that module and is reported as that module would be. The importer looks for these payloads in the descriptor, in this order:
+An addon module (`mailup-bee-newsletter-modules-addon`) keeps the payload of the module it stands in for, so it converts as that module: the payload decides the block and its status. Its report entry keeps `beeFreeModuleType: "mailup-bee-newsletter-modules-addon"`. The importer looks for these payloads in the descriptor, in this order:
 
 | Payload | Converts as |
 |---|---|

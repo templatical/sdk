@@ -1,6 +1,7 @@
 import { localeTag, text, warn } from "./localization";
 import {
   canonicalFontStack,
+  isSafeHtmlUrl,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
@@ -825,15 +826,46 @@ function iconsHtml(descriptor: BeeFreeeModuleDescriptor): string {
   return `<table role="presentation" border="0" cellpadding="0" cellspacing="0"${tableAlign} style="border-collapse: collapse;"><tr>${items.join("")}</tr></table>`;
 }
 
+/**
+ * The Icons module's items without the link and image URLs the editor's HTML
+ * policy rejects (`javascript:`, `vbscript:`, a non-image `data:`), each named
+ * in `warnings`. Both outputs carry these URLs into markup, and an HTML block
+ * renders unsanitized.
+ */
+function safeIconItems(
+  descriptor: BeeFreeeModuleDescriptor,
+  warnings: string[],
+): BeeFreeeIconItem[] {
+  return iconItems(descriptor).map((item) => {
+    const safe = { ...item };
+    const image = stringField(item.image);
+    if (image && !isSafeHtmlUrl(image, "src")) {
+      warnings.push(`Dropped the unsafe image "${image}" on an Icons item.`);
+      safe.image = "";
+    }
+    const href = stringField(item.href);
+    if (href && !isSafeHtmlUrl(href, "href")) {
+      warnings.push(`Dropped the unsafe link "${href}" on an Icons item.`);
+      safe.href = "";
+    }
+    return safe;
+  });
+}
+
 function convertIcons(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
+  warnings: string[],
 ): { block: Block; rebuilt: boolean } {
-  const single = convertSingleIcon(descriptor, columnWidth);
+  const safe = {
+    ...descriptor,
+    iconsList: { icons: safeIconItems(descriptor, warnings) },
+  };
+  const single = convertSingleIcon(safe, columnWidth);
   if (single) return { block: single, rebuilt: false };
   return {
     block: createHtmlBlock({
-      content: iconsHtml(descriptor),
+      content: iconsHtml(safe),
       styles: makeStyles(descriptor),
     }),
     rebuilt: true,
@@ -1020,7 +1052,7 @@ function convertModuleBase(
       block = convertSpacer(descriptor);
       break;
     case "icons": {
-      const result = convertIcons(descriptor, context.columnWidth);
+      const result = convertIcons(descriptor, context.columnWidth, warnings);
       if (result.rebuilt) {
         return {
           block: result.block,
