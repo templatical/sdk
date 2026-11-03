@@ -213,9 +213,8 @@ export function extractPadding(
 
   // CSS drops a padding declaration with a negative length: a shorthand with
   // a negative side leaves the longhands, and a negative longhand leaves 0.
-  if (style.padding) {
-    const shorthand = parseShorthandPadding(style.padding);
-    if (Object.values(shorthand).every((side) => side >= 0)) return shorthand;
+  if (style.padding && !hasNegativeLength(style.padding)) {
+    return parseShorthandPadding(style.padding);
   }
 
   return {
@@ -228,6 +227,17 @@ export function extractPadding(
 
 function paddingLonghand(value: string | undefined): number {
   return Math.max(0, parsePxValue(value));
+}
+
+/**
+ * Whether a padding value holds a negative length, read before rounding:
+ * `-0.4px` rounds to `-0`, which would pass as valid. A literal `-0` is 0.
+ */
+function hasNegativeLength(value: string): boolean {
+  return value
+    .trim()
+    .split(/\s+/)
+    .some((part) => parseFloat(part) < 0);
 }
 
 function parseShorthandPadding(value: string): SpacingValue {

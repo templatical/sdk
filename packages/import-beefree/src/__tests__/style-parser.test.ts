@@ -232,6 +232,16 @@ describe("extractPadding", () => {
     });
     expect(result).toEqual({ top: 8, right: 0, bottom: 0, left: 0 });
   });
+
+  // -0.4px rounds to -0, which must not pass as valid; a literal -0 is 0.
+  it("judges a shorthand's sign before rounding", () => {
+    expect(
+      extractPadding({ padding: "10px -0.4px", "padding-top": "8px" }),
+    ).toEqual({ top: 8, right: 0, bottom: 0, left: 0 });
+    expect(
+      extractPadding({ padding: "10px -0px", "padding-top": "8px" }).top,
+    ).toBe(10);
+  });
 });
 
 describe("parseDividerWidth", () => {
