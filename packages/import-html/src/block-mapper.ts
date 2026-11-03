@@ -1036,9 +1036,10 @@ function verticalMargins(styles: Record<string, string>): {
 /**
  * The room an `<hr>` that draws nothing takes: its vertical margins and
  * padding, its `height` and the widths of transparent top and bottom borders,
- * never below 0 (negative margins pull content up; a spacer can't). `undefined`
- * when a border or its background draws a line. An `<hr>` with no border
- * styles draws the browser's default line.
+ * never below 0 (negative margins pull content up; a spacer can't). CSS drops
+ * a negative padding or height, so neither counts. `undefined` when a border
+ * or its background draws a line. An `<hr>` with no border styles draws the
+ * browser's default line.
  */
 function undrawnHrHeight($el: Cheerio<Element>): number | undefined {
   const styles = getStyles($el);
@@ -1050,7 +1051,7 @@ function undrawnHrHeight($el: Cheerio<Element>): number | undefined {
     margin.top +
       padding.top +
       hrSide(styles, "top").width +
-      parsePxValue(styles.height) +
+      Math.max(0, parsePxValue(styles.height)) +
       hrSide(styles, "bottom").width +
       padding.bottom +
       margin.bottom,

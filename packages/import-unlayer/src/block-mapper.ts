@@ -464,8 +464,7 @@ function convertDivider(
 
 /**
  * The room a divider that draws no line takes: its top and bottom padding plus
- * the width of a transparent border, never below 0 (a negative padding can't
- * make a negative spacer). `undefined` when the line is drawn.
+ * the width of a transparent border. `undefined` when the line is drawn.
  */
 function undrawnDividerHeight(
   values: UnlayerContentValues,
@@ -473,7 +472,7 @@ function undrawnDividerHeight(
   const border = parseBorderObject(values.border);
   if (border.drawn) return undefined;
   const padding = parsePaddingShorthand(values.containerPadding);
-  return Math.max(0, padding.top + border.width + padding.bottom);
+  return padding.top + border.width + padding.bottom;
 }
 
 /**

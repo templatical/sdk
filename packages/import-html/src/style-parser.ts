@@ -213,10 +213,13 @@ export function parseLegacyColor(value: string | undefined): string {
 }
 
 /**
- * Parses a CSS `padding` shorthand (1-4 values) into a SpacingValue.
+ * Parses a CSS `padding` shorthand (1-4 values) into a SpacingValue. One with
+ * a negative side is no padding, since CSS drops the declaration.
  */
 export function parsePaddingShorthand(value: string | undefined): SpacingValue {
-  if (!value) return { top: 0, right: 0, bottom: 0, left: 0 };
+  if (!value || hasNegativeLength(value)) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
 
   const parts = value.trim().split(/\s+/);
   const values = parts.map((p) => parsePxValue(p));
@@ -254,14 +257,28 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
 }
 
 /**
- * A px length as written, `0` included, or `undefined` when it doesn't parse.
+ * A padding longhand's px length as written, `0` included, or `undefined` when
+ * it doesn't parse or is negative, which makes CSS drop the declaration.
  * Trimmed first so the pattern has one way to match.
  */
 function explicitPx(value: string | undefined): number | undefined {
   const trimmed = (value ?? "").trim();
   if (ZERO_LENGTH.test(trimmed)) return 0;
   const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/i.exec(trimmed);
-  return match ? Math.round(parseFloat(match[1])) : undefined;
+  if (!match) return undefined;
+  const px = parseFloat(match[1]);
+  return px < 0 ? undefined : Math.round(px);
+}
+
+/**
+ * Whether a padding value holds a negative length, judged before rounding:
+ * `-0.4px` rounds to `-0`, which would pass as valid. A literal `-0` is 0.
+ */
+function hasNegativeLength(value: string): boolean {
+  return value
+    .trim()
+    .split(/\s+/)
+    .some((part) => parseFloat(part) < 0);
 }
 
 /**

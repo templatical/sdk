@@ -169,7 +169,7 @@ Ein Divider zeichnet keine Linie, wenn `border.borderTopWidth` 0 ist, `borderTop
 | zeichnet keine Linie, Padding und transparenter Rahmen ergeben mehr als 0px | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
 | zeichnet keine Linie und nimmt keinen Platz ein | kein Block | Übersprungen |
 
-Die `height` des Spacers ist das obere plus das untere `containerPadding` plus die Breite eines transparenten Rahmens. Ein Rahmen mit `none` oder `hidden` nimmt keinen Platz ein, seine Breite zählt also nicht. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Ein Divider ganz ohne `border` wird als durchgezogene schwarze Linie von 1px importiert.
+Die `height` des Spacers ist das obere plus das untere `containerPadding` plus die Breite eines transparenten Rahmens. Ein `containerPadding` mit einer negativen Seite zählt als kein Padding, weil CSS es verwirft. Ein Rahmen mit `none` oder `hidden` nimmt keinen Platz ein, seine Breite zählt also nicht. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Ein Divider ganz ohne `border` wird als durchgezogene schwarze Linie von 1px importiert.
 
 ## Konvertierung des Spaltenlayouts
 

@@ -171,7 +171,7 @@ A divider draws no line when its `border.borderTopWidth` is 0, its `borderTopSty
 | draws no line, and its padding and transparent border add up to more than 0px | `spacer` | Converted, with a `note` naming the height |
 | draws no line and takes no space | no block | Skipped |
 
-The spacer's `height` is the top plus bottom `containerPadding` plus the width of a transparent border. A `none` or `hidden` border takes no space, so its width doesn't count. A spacer renders no padding, so its own padding is 0. A divider with no `border` at all imports as a 1px solid black line.
+The spacer's `height` is the top plus bottom `containerPadding` plus the width of a transparent border. A `containerPadding` with a negative side counts as no padding, since CSS drops it. A `none` or `hidden` border takes no space, so its width doesn't count. A spacer renders no padding, so its own padding is 0. A divider with no `border` at all imports as a 1px solid black line.
 
 ## Column Layout Conversion
 

@@ -746,6 +746,20 @@ describe("convertElement — <hr> by what it draws", () => {
     ).toBe(10);
     expect(spacerHeight("border: 4px solid transparent;")).toBe(8);
   });
+
+  // CSS drops a negative padding or height, so neither takes room away; a
+  // negative margin is valid and does.
+  it("leaves out a negative padding or height, never a negative margin", () => {
+    expect(
+      spacerHeight(
+        "border: 0; border-top: 20px solid transparent; padding-top: -30px; padding-bottom: 5px;",
+      ),
+    ).toBe(25);
+    expect(spacerHeight("border: 0; height: -10px; padding: 5px 0;")).toBe(10);
+    expect(spacerHeight("border: 0; padding: 20px 0; margin-top: -5px;")).toBe(
+      35,
+    );
+  });
 });
 
 describe("skippedElementEntry", () => {

@@ -111,6 +111,20 @@ describe("parsePaddingShorthand", () => {
       left: 0,
     });
   });
+
+  // CSS drops a padding with a negative length, judged before rounding:
+  // -0.4px rounds to -0. A literal -0 is 0.
+  it("reads a shorthand with a negative side as no padding", () => {
+    for (const value of ["-10px 0px", "10px -0.4px", "5px 5px 5px -1px"]) {
+      expect(parsePaddingShorthand(value)).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+    }
+    expect(parsePaddingShorthand("10px -0px").top).toBe(10);
+  });
 });
 
 describe("parseBorderObject", () => {

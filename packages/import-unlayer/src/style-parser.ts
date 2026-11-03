@@ -83,10 +83,18 @@ export function parseColor(value: string | undefined): string {
   return trimmed;
 }
 
+/**
+ * A CSS `padding` shorthand (1-4 values) as a SpacingValue. One with a negative
+ * side is no padding, since CSS drops the declaration; the sign is read before
+ * rounding, as `-0.4px` rounds to `-0`.
+ */
 export function parsePaddingShorthand(value: string | undefined): SpacingValue {
   if (!value) return { top: 0, right: 0, bottom: 0, left: 0 };
 
   const parts = value.trim().split(/\s+/);
+  if (parts.some((part) => parseFloat(part) < 0)) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
   const values = parts.map((p) => parsePxValue(p));
 
   switch (values.length) {

@@ -13978,7 +13978,7 @@ An `<hr>` imports as the line it draws. Its line is the top border (`border-top`
 | no border that draws, no background, and room taken | `spacer` | Converted, with a `note` naming the height |
 | no border that draws, no background, and no room taken | no block | Skipped |
 
-The usual email `<hr>`, `border: 0; height: 1px; background: #cccccc`, is the background row. A background that is transparent, or a `height` of 0, draws no line. The spacer's `height` is the `<hr>`'s top and bottom margins and padding, its `height`, and the widths of transparent top and bottom borders; a `none` or `hidden` border takes no room. It never goes below 0, so negative margins that add up to less are skipped. A spacer renders no padding, so its own padding is 0. The width rules above apply to every divider row.
+The usual email `<hr>`, `border: 0; height: 1px; background: #cccccc`, is the background row. A background that is transparent, or a `height` of 0, draws no line. The spacer's `height` is the `<hr>`'s top and bottom margins and padding, its `height`, and the widths of transparent top and bottom borders; a `none` or `hidden` border takes no room. A negative padding or `height` counts as 0, since CSS drops it; a negative margin counts. It never goes below 0, so negative margins that add up to less are skipped. A spacer renders no padding, so its own padding is 0. The width rules above apply to every divider row.
 
 ## Inline Formatting
 
@@ -14978,7 +14978,7 @@ A divider draws no line when its `border.borderTopWidth` is 0, its `borderTopSty
 | draws no line, and its padding and transparent border add up to more than 0px | `spacer` | Converted, with a `note` naming the height |
 | draws no line and takes no space | no block | Skipped |
 
-The spacer's `height` is the top plus bottom `containerPadding` plus the width of a transparent border. A `none` or `hidden` border takes no space, so its width doesn't count. A spacer renders no padding, so its own padding is 0. A divider with no `border` at all imports as a 1px solid black line.
+The spacer's `height` is the top plus bottom `containerPadding` plus the width of a transparent border. A `containerPadding` with a negative side counts as no padding, since CSS drops it. A `none` or `hidden` border takes no space, so its width doesn't count. A spacer renders no padding, so its own padding is 0. A divider with no `border` at all imports as a 1px solid black line.
 
 ## Column Layout Conversion
 

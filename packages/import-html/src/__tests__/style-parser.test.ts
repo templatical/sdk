@@ -170,6 +170,20 @@ describe("parsePaddingShorthand", () => {
       left: 0,
     });
   });
+
+  // CSS drops a padding with a negative length, judged before rounding:
+  // -0.4px rounds to -0. A literal -0 is 0.
+  it("reads a shorthand with a negative side as no padding", () => {
+    for (const value of ["-10px 0", "10px -0.4px", "5px 5px 5px -1px"]) {
+      expect(parsePaddingShorthand(value)).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+    }
+    expect(parsePaddingShorthand("10px -0px").top).toBe(10);
+  });
 });
 
 describe("readPaddingFromStyles", () => {
@@ -180,6 +194,17 @@ describe("readPaddingFromStyles", () => {
       "padding-left": "8px",
     });
     expect(r).toEqual({ top: 12, right: 5, bottom: 5, left: 8 });
+  });
+
+  it("drops a negative longhand, so the shorthand applies to that side", () => {
+    expect(
+      readPaddingFromStyles({
+        padding: "6px",
+        "padding-top": "-30px",
+        "padding-bottom": "-0.4px",
+        "padding-left": "-0px",
+      }),
+    ).toEqual({ top: 6, right: 6, bottom: 6, left: 0 });
   });
 
   it("falls back to shorthand when no longhand", () => {

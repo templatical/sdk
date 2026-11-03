@@ -907,9 +907,8 @@ describe("convertContent", () => {
       ).toBe(30);
     });
 
-    // Room can't be negative: a negative padding that outweighs the rest is
-    // skipped, while one that doesn't still leaves the remaining room.
-    it("never makes the spacer negative", () => {
+    // CSS drops a negative padding, so it takes no room and takes none away.
+    it("leaves out a negative padding", () => {
       expect(
         spacerHeight({
           borderTopWidth: "20px",
@@ -927,7 +926,7 @@ describe("convertContent", () => {
         [],
         { columnWidth: 600 },
       ).block;
-      expect(mixed.type === "spacer" && mixed.height).toBe(10);
+      expect(mixed.type === "spacer" && mixed.height).toBe(20);
     });
 
     it("keeps a divider whose border is drawn", () => {
