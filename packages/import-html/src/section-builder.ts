@@ -21,6 +21,7 @@ import {
   isInlineContent,
   isSpacerCell,
   isTableContainer,
+  skippedElementEntry,
   walkContentNodes,
 } from "./block-mapper";
 import {
@@ -858,6 +859,11 @@ function extractContentBlocks(
         return;
       }
 
+      const skipped = skippedElementEntry($child, $);
+      if (skipped) {
+        entries.push(skipped);
+        return;
+      }
       const r = convertElement($child, $, inner);
       if (r) {
         entries.push(r.entry);

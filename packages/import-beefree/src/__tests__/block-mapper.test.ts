@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { convertModule } from "../block-mapper";
+import { convertModule, skippedModuleEntry } from "../block-mapper";
 import type { BeeFreeeImageContent, BeeFreeeModule } from "../types";
 
 function makeModule(
@@ -226,13 +226,118 @@ describe("convertModule", () => {
         ]);
       });
 
-      it("an autowidth image is full whatever its computed width", () => {
-        expect(
-          shown({
-            image: { src: "h.jpg", width: "200px" },
-            computedStyle: { class: "autowidth", width: "200px" },
-          }).width,
-        ).toBe("full");
+      // BeeFree shows an autowidth image at its file's width, capped at the
+      // column, and records that in computedStyle.width: a 111px logo stays
+      // 111px in an 800px template (#1069).
+      it("shows an autowidth image at its computed width", () => {
+        const logo = shown(
+          {
+            image: { src: "logo.png", alt: "Logo" },
+            computedStyle: { class: "center autowidth", width: "111px" },
+          },
+          800,
+        );
+        expect([logo.width, logo.align]).toEqual([111, "center"]);
+      });
+
+      it("is full when an autowidth image's computed width reaches the room", () => {
+        const at = (px: number) =>
+          shown(
+            {
+              image: { src: "p.png" },
+              computedStyle: { class: "autowidth", width: `${px}px` },
+            },
+            600,
+          ).width;
+        expect(at(600)).toBe("full");
+        expect(at(599)).toBe(599);
+      });
+
+      it("falls back to the file's width for an autowidth image without a computed width", () => {
+        const at = (file: string) =>
+          shown(
+            {
+              image: { src: "p.png", width: file },
+              computedStyle: { class: "center autowidth" },
+            },
+            600,
+          ).width;
+        expect(at("240px")).toBe(240);
+        expect(at("1920px")).toBe("full");
+      });
+
+      // Older exports mark an image that fills its column `fullwidth`, and
+      // record a computed width that leaves out the column's padding.
+      it("imports a fullwidth image as full", () => {
+        const image = shown(
+          {
+            image: { src: "p.png" },
+            computedStyle: {
+              class: "center  autowidth  fullwidth",
+              width: 230,
+            },
+          },
+          250,
+        );
+        expect(image.width).toBe("full");
+      });
+
+      // Older exports write computedStyle.width as a number of pixels.
+      it("reads a numeric computed width", () => {
+        const at = (width: number, columnWidth: number) =>
+          shown(
+            {
+              image: { src: "p.png" },
+              computedStyle: { class: "center fixedwidth", width },
+            },
+            columnWidth,
+          ).width;
+        expect(at(187.5, 250)).toBe(188);
+        expect(at(500, 500)).toBe("full");
+      });
+
+      // The block stores px, which keeps its size on a phone where a
+      // percentage would shrink, so a percentage under 100% is approximated.
+      it("converts a computed percentage to px of the room", () => {
+        const at = (width: string) => {
+          const { block, entry } = convertModule(
+            makeModule("mailup-bee-newsletter-modules-image", {
+              image: { src: "p.png", width: "1920px" },
+              computedStyle: { class: "center fixedwidth", width },
+              style: { "padding-left": "10px", "padding-right": "10px" },
+            }),
+            [],
+            { columnWidth: 600 },
+          );
+          if (block.type !== "image") throw new Error("expected an image");
+          return { width: block.width, status: entry.status, note: entry.note };
+        };
+        expect(at("50%")).toEqual({
+          width: 290,
+          status: "approximated",
+          note: "Image width 50% was converted to 290px.",
+        });
+        expect(at("33.3%").width).toBe(193);
+        expect(at("100%")).toEqual({
+          width: "full",
+          status: "converted",
+          note: undefined,
+        });
+        expect(at(" 120% ").width).toBe("full");
+
+        // Without a column width there is no room to take a share of.
+        const { block, entry } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-image", {
+            image: { src: "p.png" },
+            computedStyle: { width: "50%" },
+          }),
+          [],
+          { columnWidth: undefined },
+        );
+        expect([block.type === "image" && block.width, entry.note]).toEqual([
+          "full",
+          "Image width 50% was converted to full width.",
+        ]);
       });
 
       it("is full at exactly the room inside the image's padding", () => {
@@ -668,6 +773,483 @@ describe("convertModule", () => {
       expect(full.block.width).toBe("full");
       expect(full.entry.status).toBe("converted");
       expect(full.entry.note).toBeUndefined();
+    });
+  });
+
+  // BeeFree templates space content with dividers that draw nothing: only
+  // their padding, and a transparent border's width, take up room (#1070).
+  describe("divider that draws no line", () => {
+    function invisible(
+      borderTop: string,
+      style: Record<string, string> = {
+        "padding-top": "15px",
+        "padding-right": "10px",
+        "padding-bottom": "15px",
+        "padding-left": "10px",
+      },
+    ) {
+      return convertModule(
+        makeModule("mailup-bee-newsletter-modules-divider", {
+          divider: { style: { "border-top": borderTop, width: "100%" } },
+          style,
+        }),
+        [],
+        { columnWidth: 600 },
+      );
+    }
+
+    function spacerHeight(borderTop: string): number {
+      const { block } = invisible(borderTop);
+      if (block.type !== "spacer") throw new Error(`expected a spacer`);
+      return block.height;
+    }
+
+    it("imports a 0px border as a spacer as tall as the padding", () => {
+      const { block, entry } = invisible("0px solid transparent");
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(30);
+      expect(block.styles.padding).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+      expect(entry).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-divider",
+        templaticalBlockType: "spacer",
+        status: "converted",
+        note: "The divider draws no line; imported as a 30px spacer.",
+      });
+    });
+
+    it("adds a transparent border's width to the height", () => {
+      expect(spacerHeight("10px solid transparent")).toBe(40);
+      expect(spacerHeight("1px solid rgba(0, 0, 0, 0)")).toBe(31);
+      expect(spacerHeight("2px solid #ffffff00")).toBe(32);
+      expect(spacerHeight("2px solid hsl(0 0% 100% / 0%)")).toBe(32);
+    });
+
+    it("leaves out a 0px, none or hidden border's width", () => {
+      expect(spacerHeight("0px solid #BBBBBB")).toBe(30);
+      expect(spacerHeight("0 solid #BBBBBB")).toBe(30);
+      expect(spacerHeight("3px none #BBBBBB")).toBe(30);
+      expect(spacerHeight("3px hidden #BBBBBB")).toBe(30);
+    });
+
+    // CSS drops a negative padding, so it takes no room and takes none away.
+    it("leaves out a negative padding", () => {
+      const mixed = invisible("20px solid transparent", {
+        "padding-top": "-30px",
+        "padding-bottom": "5px",
+      });
+      expect(mixed.block.type === "spacer" && mixed.block.height).toBe(25);
+      expect(
+        skippedModuleEntry(
+          makeModule("mailup-bee-newsletter-modules-divider", {
+            divider: { style: { "border-top": "0px solid transparent" } },
+            style: { "padding-top": "-10px" },
+          }),
+        )?.status,
+      ).toBe("skipped");
+    });
+
+    it("keeps the module's background colour on the spacer", () => {
+      const { block } = invisible("0px solid transparent", {
+        "padding-top": "10px",
+        "padding-bottom": "10px",
+        "background-color": "#F0F0F0",
+      });
+      expect(block.styles.backgroundColor).toBe("#f0f0f0");
+    });
+
+    it("keeps a divider whose border is drawn", () => {
+      for (const borderTop of [
+        "1px solid #BBBBBB",
+        "1px solid rgba(0, 0, 0, 0.5)",
+        "2px solid #ffffff80",
+      ]) {
+        const { block, entry } = invisible(borderTop);
+        expect([block.type, entry.status]).toEqual(["divider", "converted"]);
+      }
+      const { block } = invisible("1px solid rgba(0, 0, 0, 0.5)");
+      if (block.type !== "divider") throw new Error("expected a divider");
+      expect([block.thickness, block.color]).toEqual([1, "rgba(0, 0, 0, 0.5)"]);
+    });
+  });
+
+  describe("icons", () => {
+    const ICONS = "mailup-bee-newsletter-modules-icons";
+
+    function iconsModule(
+      icons: Array<Record<string, string>>,
+      overrides: Partial<BeeFreeeModule["descriptor"]> = {},
+    ): BeeFreeeModule {
+      return makeModule(ICONS, {
+        iconsList: { icons },
+        computedStyle: {
+          iconHeight: "32px",
+          iconSpacing: {
+            "padding-top": "5px",
+            "padding-right": "6px",
+            "padding-bottom": "5px",
+            "padding-left": "5px",
+          },
+          itemSpacing: "0px",
+        } as unknown as Record<string, string>,
+        style: {
+          color: "#9d9d9d",
+          "font-family": "inherit",
+          "font-size": "15px",
+          "padding-top": "5px",
+          "padding-right": "0px",
+          "padding-bottom": "5px",
+          "padding-left": "0px",
+          "text-align": "center",
+        },
+        ...overrides,
+      });
+    }
+
+    const gift = {
+      image: "https://example.com/gift.png",
+      alt: "Gift",
+      href: "https://example.com/gift",
+      target: "_blank",
+      text: "",
+      textPosition: "right",
+      width: "48px",
+      height: "48px",
+    };
+
+    it("imports a single icon without text as an image at the icon height", () => {
+      const { block, entry } = convertModule(iconsModule([gift]), [], {
+        columnWidth: 600,
+      });
+      expect(block.type).toBe("image");
+      if (block.type !== "image") return;
+      expect(block).toMatchObject({
+        src: "https://example.com/gift.png",
+        alt: "Gift",
+        width: 32,
+        naturalWidth: 48,
+        naturalHeight: 48,
+        align: "center",
+        linkUrl: "https://example.com/gift",
+      });
+      // The module's padding plus the space BeeFree keeps around each icon.
+      expect(block.styles.padding).toEqual({
+        top: 10,
+        right: 6,
+        bottom: 10,
+        left: 5,
+      });
+      expect(entry).toEqual({
+        beeFreeModuleType: ICONS,
+        templaticalBlockType: "image",
+        status: "converted",
+      });
+    });
+
+    it("keeps the icon's px width when the column is unknown", () => {
+      const { block } = convertModule(iconsModule([gift]), []);
+      expect(block.type === "image" && block.width).toBe(32);
+    });
+
+    it("keeps the icon's aspect ratio at the icon height", () => {
+      const { block } = convertModule(
+        iconsModule([{ ...gift, width: "325px", height: "303px" }]),
+        [],
+        { columnWidth: 600 },
+      );
+      expect(block.type === "image" && block.width).toBe(34);
+    });
+
+    function html(module: BeeFreeeModule): { content: string; entry: unknown } {
+      const { block, entry } = convertModule(module, [], { columnWidth: 600 });
+      if (block.type !== "html") throw new Error("expected an html block");
+      return { content: block.content, entry };
+    }
+
+    it("rebuilds an icon with text as an HTML table", () => {
+      const { content, entry } = html(
+        iconsModule([{ ...gift, text: "Free gift", textPosition: "right" }]),
+      );
+      expect(entry).toEqual({
+        beeFreeModuleType: ICONS,
+        templaticalBlockType: "html",
+        status: "html-fallback",
+        note: "Icons module rebuilt as an HTML table.",
+      });
+      expect(content).toContain('align="center"');
+      expect(content).toContain(
+        '<a href="https://example.com/gift" target="_blank" style="text-decoration: none;"><img src="https://example.com/gift.png" alt="Gift" width="32" height="32" style="display: block; width: 32px; height: 32px; border: 0;"></a>',
+      );
+      expect(content).toContain(
+        "padding: 5px 6px 5px 5px; vertical-align: middle;",
+      );
+      expect(content).toContain(
+        '<a href="https://example.com/gift" target="_blank" style="color: #9d9d9d; text-decoration: none;">Free gift</a>',
+      );
+      expect(content).toContain("font-size: 15px");
+      expect(content).not.toContain("inherit");
+    });
+
+    it("places the text on the side textPosition names", () => {
+      const order = (textPosition: string) => {
+        const { content } = html(
+          iconsModule([{ ...gift, text: "Gift", textPosition }]),
+        );
+        return content.indexOf("<img") < content.indexOf(">Gift</a>")
+          ? "icon first"
+          : "text first";
+      };
+      expect(order("right")).toBe("icon first");
+      expect(order("bottom")).toBe("icon first");
+      expect(order("left")).toBe("text first");
+      expect(order("top")).toBe("text first");
+
+      // top and bottom stack the text on its own row.
+      const rows = (textPosition: string) =>
+        html(
+          iconsModule([{ ...gift, text: "Gift", textPosition }]),
+        ).content.split("<tr>").length - 1;
+      expect(rows("bottom")).toBe(rows("right") + 1);
+      expect(rows("top")).toBe(rows("left") + 1);
+    });
+
+    it("rebuilds a row of icons with the items spacing between them", () => {
+      const { content } = html(
+        iconsModule(
+          [
+            { ...gift, image: "https://example.com/a.png", alt: "A" },
+            { ...gift, image: "https://example.com/b.png", alt: "B" },
+            { ...gift, image: "https://example.com/c.png", alt: "C" },
+          ],
+          {
+            computedStyle: {
+              iconHeight: "64px",
+              itemsSpacing: "15px",
+            },
+          },
+        ),
+      );
+      const srcs = [...content.matchAll(/<img src="([^"]+)"/g)].map(
+        (m) => m[1],
+      );
+      expect(srcs).toEqual([
+        "https://example.com/a.png",
+        "https://example.com/b.png",
+        "https://example.com/c.png",
+      ]);
+      expect(content.match(/height="64"/g)).toHaveLength(3);
+      expect(content.match(/padding-left: 15px/g)).toHaveLength(2);
+    });
+
+    it("sizes an icon by height alone when its file size is unknown", () => {
+      const { content } = html(
+        iconsModule([{ image: "https://example.com/x.png", alt: "X" }]),
+      );
+      expect(content).toContain(
+        '<img src="https://example.com/x.png" alt="X" height="32" style="display: block; height: 32px; border: 0;">',
+      );
+    });
+
+    it("escapes what it writes into the HTML", () => {
+      const { content } = html(
+        iconsModule([
+          {
+            ...gift,
+            alt: 'Say "hi"',
+            href: "https://example.com/?a=1&b=2",
+            text: "<b>Bold</b> & co",
+          },
+        ]),
+      );
+      expect(content).toContain('alt="Say &quot;hi&quot;"');
+      expect(content).toContain('href="https://example.com/?a=1&amp;b=2"');
+      expect(content).toContain("&lt;b&gt;Bold&lt;/b&gt; &amp; co");
+      expect(content).not.toContain("<b>");
+    });
+
+    it("rebuilds an item without an image as its text alone", () => {
+      const { content } = html(
+        iconsModule([{ text: "Call us", textPosition: "right", href: "" }]),
+      );
+      expect(content).not.toContain("<img");
+      expect(content).toContain(">Call us</td>");
+    });
+
+    // The table is markup the importer writes, and an HTML block is rendered
+    // unsanitized, so an unsafe URL must never reach it.
+    it("drops an unsafe icon link or image and says so", () => {
+      const warnings: string[] = [];
+      const { block } = convertModule(
+        iconsModule([
+          {
+            ...gift,
+            href: "javascript:alert(1)",
+            text: "Free gift",
+          },
+          {
+            ...gift,
+            image: "javascript:alert(2)",
+            href: "data:text/html,<b>x</b>",
+          },
+        ]),
+        warnings,
+        { columnWidth: 600 },
+      );
+      if (block.type !== "html") throw new Error("expected an html block");
+      expect(block.content).not.toMatch(/javascript:|data:/);
+      expect(block.content).not.toContain("<a ");
+      expect(block.content).toContain(">Free gift</td>");
+      expect(block.content.match(/<img /g)).toHaveLength(1);
+      expect(warnings).toEqual([
+        'Dropped the unsafe link "javascript:alert(1)" on an Icons item.',
+        'Dropped the unsafe image "javascript:alert(2)" on an Icons item.',
+        'Dropped the unsafe link "data:text/html,<b>x</b>" on an Icons item.',
+      ]);
+    });
+
+    it("drops an unsafe link on a lone icon imported as an image", () => {
+      const warnings: string[] = [];
+      const { block } = convertModule(
+        iconsModule([{ ...gift, href: " JavaScript:alert(1)" }]),
+        warnings,
+        { columnWidth: 600 },
+      );
+      expect(block.type === "image" && block.linkUrl).toBeUndefined();
+      expect(warnings).toEqual([
+        'Dropped the unsafe link " JavaScript:alert(1)" on an Icons item.',
+      ]);
+    });
+
+    it("keeps safe and relative icon links", () => {
+      for (const href of [
+        "https://example.com",
+        "mailto:hi@example.com",
+        "/offers",
+      ]) {
+        const warnings: string[] = [];
+        const { block } = convertModule(
+          iconsModule([{ ...gift, href }]),
+          warnings,
+          {
+            columnWidth: 600,
+          },
+        );
+        expect([block.type === "image" && block.linkUrl, warnings]).toEqual([
+          href,
+          [],
+        ]);
+      }
+    });
+
+    it("links nothing when the icon has no href", () => {
+      const { content } = html(
+        iconsModule([{ ...gift, href: "", text: "Plain" }]),
+      );
+      expect(content).not.toContain("<a ");
+      expect(content).toContain(">Plain</td>");
+    });
+  });
+
+  // An addon keeps the payload of the module it stands in for, so it converts
+  // as that module (#1071).
+  describe("addon", () => {
+    const ADDON = "mailup-bee-newsletter-modules-addon";
+
+    // The shape of a GIPHY addon in a real export.
+    it("converts an addon carrying an image as an image", () => {
+      const { block, entry } = convertModule(
+        makeModule(ADDON, {
+          image: {
+            alt: "Image",
+            src: "https://media.giphy.com/cat.gif",
+            href: "",
+            url: "https://giphy.com/gifs/cat",
+            width: "480px",
+            height: "480px",
+          } as BeeFreeeImageContent,
+          style: { width: "100%" },
+          computedStyle: { class: "center fixedwidth", width: "354.75px" },
+        }),
+        [],
+        { columnWidth: 600 },
+      );
+      expect(block.type).toBe("image");
+      if (block.type !== "image") return;
+      expect([block.src, block.width, block.align]).toEqual([
+        "https://media.giphy.com/cat.gif",
+        355,
+        "center",
+      ]);
+      // `url` is the GIF's page on giphy.com, not a link the author set.
+      expect(block.linkUrl).toBeUndefined();
+      expect(entry).toEqual({
+        beeFreeModuleType: ADDON,
+        templaticalBlockType: "image",
+        status: "converted",
+      });
+    });
+
+    it("reads a numeric computed width on an image addon", () => {
+      const { block } = convertModule(
+        makeModule(ADDON, {
+          image: { src: "https://example.com/sticker.gif" },
+          computedStyle: { class: "center fixedwidth", width: 256 },
+          style: { width: "100%" },
+        }),
+        [],
+        { columnWidth: 600 },
+      );
+      expect(block.type === "image" && block.width).toBe(256);
+    });
+
+    it("converts an addon carrying HTML as an HTML block", () => {
+      const { block, entry } = convertModule(
+        makeModule(ADDON, { html: { html: "<p>Countdown</p>" } }),
+        [],
+      );
+      expect(block.type === "html" && block.content).toBe("<p>Countdown</p>");
+      expect(entry.status).toBe("converted");
+    });
+
+    it("converts an addon carrying text, a button or icons as that module", () => {
+      const typeOf = (descriptor: BeeFreeeModule["descriptor"]) =>
+        convertModule(makeModule(ADDON, descriptor), [], { columnWidth: 600 })
+          .block.type;
+      expect(typeOf({ paragraph: { html: "<p>Hi</p>" } })).toBe("paragraph");
+      expect(typeOf({ heading: { title: "h2", text: "Hi" } })).toBe("title");
+      expect(typeOf({ button: { label: "Go" } })).toBe("button");
+      expect(
+        typeOf({
+          iconsList: {
+            icons: [
+              {
+                image: "https://example.com/i.png",
+                width: "8px",
+                height: "8px",
+              },
+            ],
+          },
+          computedStyle: { iconHeight: "16px" },
+        }),
+      ).toBe("image");
+    });
+
+    it("falls back to an HTML comment for an addon with nothing to read", () => {
+      const { block, entry } = convertModule(makeModule(ADDON, {}), []);
+      expect(block.type === "html" && block.content).toBe(
+        `<!-- Unsupported BeeFree module: ${ADDON} -->`,
+      );
+      expect(entry).toEqual({
+        beeFreeModuleType: ADDON,
+        templaticalBlockType: "html",
+        status: "html-fallback",
+        note: "The addon carries no content Templatical reads; converted to an HTML block.",
+      });
     });
   });
 

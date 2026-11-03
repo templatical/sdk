@@ -1,4 +1,9 @@
-import { RICH_TEXT_SPACING, isSection, isWrapper } from "@templatical/types";
+import {
+  RICH_TEXT_SPACING,
+  findOpenTagEnd,
+  isSection,
+  isWrapper,
+} from "@templatical/types";
 import type { Block, ContentDirection } from "@templatical/types";
 
 /**
@@ -129,4 +134,127 @@ export function collectParagraphGaps(blocks: Block[]): number[] {
   }
 
   return gaps;
+}
+
+/**
+ * The named references {@link decodeStyleReferences} writes out. `<` and `>`
+ * stay encoded, named or numeric: MJML parses its source as XML, which forbids
+ * a raw `<` in an attribute, and no CSS value needs one.
+ */
+const NAMED_STYLE_REFERENCES: Record<string, string> = {
+  apos: "'",
+  quot: '"',
+  nbsp: String.fromCharCode(0xa0),
+};
+
+const STYLE_REFERENCE = /&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp));/gi;
+const TAG_NAME_START = /[a-z]/i;
+const HTML_SPACE = /[ \t\n\f\r]/;
+
+function decodeStyleReference(
+  reference: string,
+  quote: string,
+  decimal: string | undefined,
+  hex: string | undefined,
+  name: string | undefined,
+): string {
+  let char: string;
+  if (name !== undefined) {
+    char = NAMED_STYLE_REFERENCES[name.toLowerCase()];
+  } else {
+    const codePoint = Number(decimal ?? `0x${hex}`);
+    const valid =
+      codePoint > 0 &&
+      codePoint <= 0x10ffff &&
+      !(codePoint >= 0xd800 && codePoint <= 0xdfff);
+    if (!valid) return reference;
+    char = String.fromCodePoint(codePoint);
+  }
+  // A raw `&` could start a reference, and the delimiter would end the
+  // attribute; CSS reads either quote the same.
+  if (char === "&") return "&amp;";
+  if (char === "<" || char === ">") return reference;
+  if (char === quote) return quote === '"' ? "'" : '"';
+  return char;
+}
+
+/**
+ * The open tag `tag` (from `<` up to, not including, its `>`) with the
+ * references in its first quoted `style` attribute decoded. Attributes are
+ * walked in order and quoted values skipped whole, so `style="…"` text inside
+ * another attribute's value is never taken for the attribute.
+ */
+function decodeTagStyle(tag: string): string {
+  let i = 1;
+  while (i < tag.length && !HTML_SPACE.test(tag[i]) && tag[i] !== "/") i++;
+  while (i < tag.length) {
+    while (i < tag.length && (HTML_SPACE.test(tag[i]) || tag[i] === "/")) i++;
+    const nameStart = i;
+    while (i < tag.length && !/[\s=/]/.test(tag[i])) i++;
+    const name = tag.slice(nameStart, i).toLowerCase();
+    if (name === "") {
+      i++;
+      continue;
+    }
+    while (i < tag.length && HTML_SPACE.test(tag[i])) i++;
+    if (tag[i] !== "=") continue;
+    i++;
+    while (i < tag.length && HTML_SPACE.test(tag[i])) i++;
+    const quote = tag[i];
+    if (quote === '"' || quote === "'") {
+      const valueEnd = tag.indexOf(quote, i + 1);
+      if (valueEnd === -1) return tag;
+      if (name === "style") {
+        const value = tag
+          .slice(i + 1, valueEnd)
+          .replace(STYLE_REFERENCE, (reference, decimal, hex, named) =>
+            decodeStyleReference(reference, quote, decimal, hex, named),
+          );
+        return `${tag.slice(0, i + 1)}${value}${tag.slice(valueEnd)}`;
+      }
+      i = valueEnd + 1;
+      continue;
+    }
+    while (i < tag.length && !HTML_SPACE.test(tag[i])) i++;
+  }
+  return tag;
+}
+
+/**
+ * Rich-text HTML with the character references in its `style` attributes
+ * written as the characters they stand for: `&apos;`, `&quot;`, `&nbsp;` and
+ * numeric references (`&#39;`, `&#x27;`). Other named references stay as
+ * written, and so do `&amp;`, `<` and `>` in any form; a reference to `&`
+ * becomes `&amp;`. Tags are found with the quote-aware `findOpenTagEnd`, so a
+ * `>` inside an attribute value doesn't end one, and a tag whose quote never
+ * closes is left alone.
+ *
+ * MJML inlines {@link richTextStylesheet} with juice, which re-parses the
+ * style attribute of every element a rule matches and splits it on `;`
+ * without decoding references first. The `;` that ends `&apos;`, `&quot;` or
+ * `&nbsp;` outside a `url()` therefore cuts a declaration in two, and the
+ * compile throws. Imported content carries such references: BeeFree's TinyMCE
+ * output and import-mjml's serializer write them.
+ */
+export function decodeStyleReferences(html: string): string {
+  if (!html.includes("&")) return html;
+  let out = "";
+  let copied = 0;
+  let open = html.indexOf("<");
+  while (open !== -1) {
+    if (!TAG_NAME_START.test(html.charAt(open + 1))) {
+      open = html.indexOf("<", open + 1);
+      continue;
+    }
+    const end = findOpenTagEnd(html, open + 1);
+    if (end === -1) break;
+    const tag = html.slice(open, end);
+    const decoded = decodeTagStyle(tag);
+    if (decoded !== tag) {
+      out += html.slice(copied, open) + decoded;
+      copied = end;
+    }
+    open = html.indexOf("<", end);
+  }
+  return out + html.slice(copied);
 }

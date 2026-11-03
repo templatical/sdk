@@ -83,10 +83,18 @@ export function parseColor(value: string | undefined): string {
   return trimmed;
 }
 
+/**
+ * A CSS `padding` shorthand (1-4 values) as a SpacingValue. One with a negative
+ * side is no padding, since CSS drops the declaration; the sign is read before
+ * rounding, as `-0.4px` rounds to `-0`.
+ */
 export function parsePaddingShorthand(value: string | undefined): SpacingValue {
   if (!value) return { top: 0, right: 0, bottom: 0, left: 0 };
 
   const parts = value.trim().split(/\s+/);
+  if (parts.some((part) => parseFloat(part) < 0)) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
   const values = parts.map((p) => parsePxValue(p));
 
   switch (values.length) {
@@ -121,16 +129,121 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
   }
 }
 
+/**
+ * Whether a CSS colour paints nothing: `transparent`, or an alpha of 0 in a
+ * hex (`#rgba`, `#rrggbbaa`) or functional (`rgba()`, `hsl(… / 0%)`) colour.
+ */
+export function isTransparentColor(value: string | undefined): boolean {
+  if (!value) return false;
+  const color = value.trim().toLowerCase();
+  if (color === "transparent") return true;
+
+  const hex = color.match(
+    /^#(?:[0-9a-f]{3}([0-9a-f])|[0-9a-f]{6}([0-9a-f]{2}))$/,
+  );
+  if (hex) return /^0+$/.test(hex[1] ?? hex[2]);
+
+  const fn = color.match(/^(?:rgb|hsl)a?\((.*)\)$/);
+  if (!fn) return false;
+  const alpha = fn[1].includes("/") ? fn[1].split("/")[1] : fn[1].split(",")[3];
+  if (alpha === undefined) return false;
+  const opacity = parseFloat(alpha);
+  return Number.isFinite(opacity) && opacity <= 0;
+}
+
+/** The CSS length units (CSS Values 4 and container queries). */
+const CSS_LENGTH_UNITS = [
+  "px",
+  "cm",
+  "mm",
+  "q",
+  "in",
+  "pt",
+  "pc",
+  "em",
+  "rem",
+  "ex",
+  "rex",
+  "cap",
+  "rcap",
+  "ch",
+  "rch",
+  "ic",
+  "ric",
+  "lh",
+  "rlh",
+  "vw",
+  "vh",
+  "vi",
+  "vb",
+  "vmin",
+  "vmax",
+  "svw",
+  "svh",
+  "svi",
+  "svb",
+  "svmin",
+  "svmax",
+  "lvw",
+  "lvh",
+  "lvi",
+  "lvb",
+  "lvmin",
+  "lvmax",
+  "dvw",
+  "dvh",
+  "dvi",
+  "dvb",
+  "dvmin",
+  "dvmax",
+  "cqw",
+  "cqh",
+  "cqi",
+  "cqb",
+  "cqmin",
+  "cqmax",
+];
+
+/**
+ * A zero length: `0`, or zero in a CSS length unit, with an optional sign. Run
+ * on a trimmed value; each run of zeros has one way to match, so a long run
+ * fails in linear time.
+ */
+const ZERO_LENGTH = new RegExp(
+  `^[+-]?(?:0+(?:\\.0+)?|\\.0+)(?:${CSS_LENGTH_UNITS.join("|")})?$`,
+  "i",
+);
+
+/**
+ * A divider's top border. `width` is the room the border takes, so a `none` or
+ * `hidden` border has none. `drawn` is false when the border paints nothing: a
+ * stated 0 width, a `none` or `hidden` style, or a transparent colour. A
+ * border without a width reads as 0 wide but drawn.
+ */
 export function parseBorderObject(border: UnlayerBorder | undefined): {
   width: number;
   style: string;
   color: string;
+  drawn: boolean;
 } {
-  if (!border) return { width: 0, style: "solid", color: "#000000" };
+  if (!border) {
+    return { width: 0, style: "solid", color: "#000000", drawn: true };
+  }
+  const style =
+    String(border.borderTopStyle ?? "")
+      .trim()
+      .toLowerCase() || "solid";
+  const hidden = style === "none" || style === "hidden";
+  // Only a width written as zero; an unreadable one (`0x`, `thin`) also
+  // parses to 0 but counts as drawn.
+  const zeroWidth = ZERO_LENGTH.test(
+    String(border.borderTopWidth ?? "").trim(),
+  );
   return {
-    width: parsePxValue(border.borderTopWidth),
-    style: border.borderTopStyle || "solid",
+    width: hidden ? 0 : parsePxValue(border.borderTopWidth),
+    style,
     color: parseColor(border.borderTopColor) || "#000000",
+    drawn: !zeroWidth && !hidden && !isTransparentColor(border.borderTopColor),
   };
 }
 

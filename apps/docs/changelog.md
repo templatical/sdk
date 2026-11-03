@@ -15,6 +15,42 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.54.0
+
+<time datetime="2026-11-03">2026-11-03</time>
+
+### Features
+
+**`convertBeeFreeTemplate()` imports images at the width BeeFree shows them, keeps spacing dividers invisible, and converts the Icons module, addons and empty modules.**
+
+`@templatical/import-beefree`
+
+- **Image width (#1069).** An `autowidth` image is sized like a `fixedwidth` one, from `computedStyle.width` (its file's width capped at the column), and is `"full"` only when that reaches the image's room. A 111px `autowidth` logo in an 800px template imported at full width; it now imports at `111`. A `computedStyle.width` written as a number (`187.5`, in older exports) is read too, and `computedStyle.class` `fullwidth` imports as `"full"`. A percentage under `100%` becomes that share of the room in px, reported `approximated` with a `note`.
+- **Dividers that draw no line (#1070).** A divider whose `border-top` is 0 wide, `none`, `hidden` or transparent (`transparent`, or an alpha of 0 such as `rgba(0, 0, 0, 0)`) becomes a `spacer` whose height is its top and bottom padding plus a transparent border's width (a negative padding counts as 0, as CSS drops it), reported `converted` with a `note` naming the height. One that adds up to 0px produces no block and is reported `skipped`. These imported as visible lines: `0px solid transparent` as a 1px black line, `10px solid transparent` as a 10px black bar.
+- **Icons module (#1071).** `mailup-bee-newsletter-modules-icons` with one icon and no text becomes an `image` at `computedStyle.iconHeight`. Any other Icons module becomes an HTML table with the icons, their text and links, reported `html-fallback` with the `note` `Icons module rebuilt as an HTML table.` Both replace an empty `<!-- Unsupported BeeFree module -->` comment.
+- **Addons (#1071).** `mailup-bee-newsletter-modules-addon` converts as the module whose payload it carries (`image`, `html`, `heading`, `paragraph`, `text`, `list`, `button`, `divider`, `menu` or `iconsList`). An image addon links to `image.href` only; GIPHY's `image.url` is the GIF's page and isn't imported.
+- **Empty modules.** `mailup-bee-newsletter-modules-empty`, and an Icons module with no icons, produce no block and are reported `skipped` with `templaticalBlockType: null`.
+
+Rules and tables: the [BeeFree migration guide](https://docs.templatical.com/guide/migration-from-beefree). Check an imported template with `template-tools validate imported.json`.
+
+### Fixes and improvements
+
+**The Unlayer and HTML importers import a divider as the line it draws, so one that draws nothing no longer becomes a black line.**
+
+`@templatical/import-html` · `@templatical/import-unlayer`
+
+- **Unlayer.** A divider whose `border.borderTopWidth` is 0, whose `borderTopStyle` is `none` or `hidden`, or whose `borderTopColor` is transparent (`transparent`, or an alpha of 0 such as `rgba(0, 0, 0, 0)`) becomes a `spacer`. Its height is the top and bottom `containerPadding` plus a transparent border's width, and it's reported `converted` with a `note` naming the height. One that adds up to 0px produces no block and is reported `skipped`. Until this release, `0px solid transparent` imported as a 1px black line and `10px solid transparent` as a 10px black bar.
+- **HTML.** An `<hr>`'s line is its top border, or its `border-bottom` when the top draws nothing: `border: 0; border-bottom: 1px solid #cccccc` now imports as a 1px `#cccccc` divider. With no border that draws, its `background` or `background-color` draws the line when it has a `height`: `border: 0; height: 1px; background: #cccccc` now imports as a 1px `#cccccc` divider. Until this release, both imported as 1px black lines. An `<hr>` that draws nothing becomes a `spacer` of its vertical margins, padding, `height` and transparent border widths, or is skipped at 0px. An `<hr>` with no border styles still imports as a 1px solid black line.
+- **Negative padding.** CSS drops a padding with a negative length, and both importers now do too, for every block: a padding shorthand with a negative side is no padding, and an HTML padding longhand that's negative leaves the shorthand's value for that side. The sign is read before rounding, so `-0.4px` counts as negative. An `<hr>`'s negative `height` counts as 0.
+
+Rules and tables: [Unlayer](https://docs.templatical.com/guide/migration-from-unlayer#undrawn-dividers) and [HTML](https://docs.templatical.com/guide/migration-from-html#hr-lines) migration guides.
+
+**Compiling `renderToMjml()` output with mjml no longer throws `TypeError: Cannot read properties of undefined (reading 'indexOf')` when a paragraph or title holds a character reference in a `style` attribute.**
+
+`@templatical/renderer`
+
+MJML inlines the renderer's rich-text stylesheet with juice, which splits the style attribute of each `<p>`, `<ul>`, `<ol>` and `<li>` on `;` before decoding references, so the `;` ending `&apos;`, `&quot;`, `&#39;` or `&nbsp;` broke the compile. Imported content carries these: BeeFree's text HTML (`font-family: Monda, &apos;Courier New&apos;`) and import-mjml's output for a single-quoted font. The paragraph and title renderers now write those references as the characters they stand for inside `style` attributes, a quote as the one the attribute isn't delimited with (CSS reads either). `&amp;`, `&lt;` and `&gt;` stay encoded. Check with `template-tools render --html` on an imported template.
+
 ## 0.53.0
 
 <time datetime="2026-11-03">2026-11-03</time>
