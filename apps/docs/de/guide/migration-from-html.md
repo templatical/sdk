@@ -148,17 +148,17 @@ Templatical zentriert jeden Divider. Ein `<hr>` mit Teilbreite, das sein `align`
 
 ### `<hr>`-Linien und Abstände {#hr-lines}
 
-Ein `<hr>` wird als die Linie importiert, die es zeichnet. Sein Rahmen ist `border-top`, sonst die Kurzschreibweise `border`. Ein Rahmen zeichnet nichts, wenn er 0 breit ist, `none` oder `hidden` ist oder transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`.
+Ein `<hr>` wird als die Linie importiert, die es zeichnet. Seine Linie ist der obere Rahmen (`border-top`, sonst die Kurzschreibweise `border`), oder `border-bottom`, wenn der obere nichts zeichnet, wie bei `border: 0; border-bottom: 1px solid #cccccc`. Ein Rahmen zeichnet nichts, wenn er 0 breit ist, `none` oder `hidden` ist oder transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`.
 
 | `<hr>` | Ergebnis | Status |
 |---|---|---|
-| kein `border-top`- oder `border`-Stil | `divider`, durchgezogen schwarz 1px | Konvertiert |
-| ein Rahmen, der zeichnet | `divider` in Breite, Stil und Farbe des Rahmens | Konvertiert |
-| ein Rahmen, der nichts zeichnet, und ein `background` oder `background-color` mit `height` | `divider` in der Hintergrundfarbe, so dick wie `height`, durchgezogen | Konvertiert |
-| ein Rahmen, der nichts zeichnet, kein Hintergrund, belegter Platz | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
-| ein Rahmen, der nichts zeichnet, kein Hintergrund, kein belegter Platz | kein Block | Übersprungen |
+| kein `border-top`-, `border`- oder `border-bottom`-Stil | `divider`, durchgezogen schwarz 1px | Konvertiert |
+| ein Rahmen, der zeichnet | `divider` in Breite und Farbe des Rahmens; `dashed` und `dotted` behalten ihren Stil, jeder andere Stil wird `solid` | Konvertiert |
+| kein Rahmen, der zeichnet, und ein `background` oder `background-color` mit `height` | `divider` in der Hintergrundfarbe, so dick wie `height`, durchgezogen | Konvertiert |
+| kein Rahmen, der zeichnet, kein Hintergrund, belegter Platz | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
+| kein Rahmen, der zeichnet, kein Hintergrund, kein belegter Platz | kein Block | Übersprungen |
 
-Das übliche E-Mail-`<hr>`, `border: 0; height: 1px; background: #cccccc`, ist die Hintergrund-Zeile. Ein transparenter Hintergrund oder eine `height` von 0 zeichnet keine Linie. Die `height` des Spacers sind die oberen und unteren Margins und Paddings des `<hr>`, seine `height` und die Breite eines transparenten Rahmens; ein Rahmen mit `none` oder `hidden` belegt keinen Platz. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Die Breitenregeln oben gelten für jede Divider-Zeile.
+Das übliche E-Mail-`<hr>`, `border: 0; height: 1px; background: #cccccc`, ist die Hintergrund-Zeile. Ein transparenter Hintergrund oder eine `height` von 0 zeichnet keine Linie. Die `height` des Spacers sind die oberen und unteren Margins und Paddings des `<hr>`, seine `height` und die Breiten transparenter oberer und unterer Rahmen; ein Rahmen mit `none` oder `hidden` belegt keinen Platz. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0. Die Breitenregeln oben gelten für jede Divider-Zeile.
 
 ## Inline-Formatierung
 

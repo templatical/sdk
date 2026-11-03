@@ -634,6 +634,31 @@ describe("convertElement — <hr> by what it draws", () => {
     }
   });
 
+  // `border:0; border-bottom:1px solid #ccc` is a common email <hr>.
+  it("draws the line with the bottom border when the top draws nothing", () => {
+    for (const [style, thickness, color, lineStyle] of [
+      ["border: 0; border-bottom: 1px solid #cccccc;", 1, "#cccccc", "solid"],
+      ["border-bottom: 2px dashed #dddddd;", 2, "#dddddd", "dashed"],
+    ] as const) {
+      const { block, entry } = convert(style);
+      if (block.type !== "divider") throw new Error("expected a divider");
+      expect([block.thickness, block.color, block.lineStyle]).toEqual([
+        thickness,
+        color,
+        lineStyle,
+      ]);
+      expect(entry.status).toBe("converted");
+    }
+  });
+
+  it("keeps a drawn top border over the bottom border", () => {
+    const { block } = convert(
+      "border-top: 1px solid #eeeeee; border-bottom: 3px solid #000000;",
+    );
+    if (block.type !== "divider") throw new Error("expected a divider");
+    expect([block.thickness, block.color]).toEqual([1, "#eeeeee"]);
+  });
+
   it("keeps a drawn top border over the background", () => {
     const { block } = convert(
       "border-top: 1px solid #eeeeee; height: 3px; background: #000000;",
@@ -678,6 +703,13 @@ describe("convertElement — <hr> by what it draws", () => {
     ).toBe(2);
     expect(spacerHeight("border: 0; margin: 6px 0 9px;")).toBe(15);
   });
+
+  it("counts the room of transparent top and bottom borders", () => {
+    expect(
+      spacerHeight("border: 0; border-bottom: 10px solid transparent;"),
+    ).toBe(10);
+    expect(spacerHeight("border: 4px solid transparent;")).toBe(8);
+  });
 });
 
 describe("skippedElementEntry", () => {
@@ -696,6 +728,7 @@ describe("skippedElementEntry", () => {
       "<hr />",
       '<hr style="border: 0; height: 1px; background: #cccccc;" />',
       '<hr style="border: 0; margin: 10px 0;" />',
+      '<hr style="border: 0; border-bottom: 1px solid #cccccc;" />',
     ]) {
       const { $, $el } = firstEl(html, "hr");
       expect([html, skippedElementEntry($el, $)]).toEqual([html, undefined]);

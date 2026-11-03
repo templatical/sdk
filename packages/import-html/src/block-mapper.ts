@@ -964,9 +964,19 @@ function dividerAlign($el: Cheerio<Element>): "left" | "center" | "right" {
   return isAuto(left) ? "right" : "left";
 }
 
-/** An `<hr>`'s top border: `border-top`, else the `border` shorthand. */
+/**
+ * The border that draws an `<hr>`'s line: the top border (`border-top`, else
+ * the `border` shorthand) when it draws, else a drawn `border-bottom`, the
+ * common `border: 0; border-bottom: 1px solid #ccc` email `<hr>`. With neither
+ * declared, the top reads as the browser's default line.
+ */
 function hrBorder(styles: Record<string, string>) {
-  return parseBorderShorthand(styles["border-top"] ?? styles.border);
+  const topValue = styles["border-top"] ?? styles.border;
+  const top = parseBorderShorthand(topValue);
+  if (styles["border-bottom"] === undefined) return top;
+  if (topValue !== undefined && top.drawn) return top;
+  const bottom = parseBorderShorthand(styles["border-bottom"]);
+  return bottom.drawn ? bottom : top;
 }
 
 /**
@@ -1001,21 +1011,23 @@ function verticalMargins(styles: Record<string, string>): {
 
 /**
  * The room an `<hr>` that draws nothing takes: its vertical margins and
- * padding, its `height` and a transparent border's width. `undefined` when its
- * top border or its background draws a line. An `<hr>` with no border styles
- * draws the browser's default line.
+ * padding, its `height` and the widths of transparent top and bottom borders.
+ * `undefined` when a border or its background draws a line. An `<hr>` with no
+ * border styles draws the browser's default line.
  */
 function undrawnHrHeight($el: Cheerio<Element>): number | undefined {
   const styles = getStyles($el);
-  const border = hrBorder(styles);
-  if (border.drawn || hrBackgroundLine(styles)) return undefined;
+  if (hrBorder(styles).drawn || hrBackgroundLine(styles)) return undefined;
   const margin = verticalMargins(styles);
   const padding = readPaddingFromStyles(styles);
+  const top = parseBorderShorthand(styles["border-top"] ?? styles.border);
+  const bottom = parseBorderShorthand(styles["border-bottom"] ?? styles.border);
   return (
     margin.top +
     padding.top +
-    border.width +
+    top.width +
     parsePxValue(styles.height) +
+    bottom.width +
     padding.bottom +
     margin.bottom
   );

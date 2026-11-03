@@ -13968,17 +13968,17 @@ Templatical centres every divider. A partial-width `<hr>` that its `align` attri
 
 ### `<hr>` lines and spacing {#hr-lines}
 
-An `<hr>` imports as the line it draws. Its border is `border-top`, else the `border` shorthand. A border draws nothing when it's 0 wide, `none` or `hidden`, or transparent: `transparent`, or a colour with an alpha of 0 such as `rgba(0, 0, 0, 0)` or `#ffffff00`.
+An `<hr>` imports as the line it draws. Its line is the top border (`border-top`, else the `border` shorthand), or `border-bottom` when the top draws nothing, as in `border: 0; border-bottom: 1px solid #cccccc`. A border draws nothing when it's 0 wide, `none` or `hidden`, or transparent: `transparent`, or a colour with an alpha of 0 such as `rgba(0, 0, 0, 0)` or `#ffffff00`.
 
 | `<hr>` | Result | Status |
 |---|---|---|
-| no `border-top` or `border` style | `divider`, 1px solid black | Converted |
-| a border that draws | `divider` in the border's width, style and colour | Converted |
-| a border that draws nothing, and a `background` or `background-color` with a `height` | `divider` in the background colour, as thick as `height`, solid | Converted |
-| a border that draws nothing, no background, and room taken | `spacer` | Converted, with a `note` naming the height |
-| a border that draws nothing, no background, and no room taken | no block | Skipped |
+| no `border-top`, `border` or `border-bottom` style | `divider`, 1px solid black | Converted |
+| a border that draws | `divider` in the border's width and colour; `dashed` and `dotted` keep their style, any other style is `solid` | Converted |
+| no border that draws, and a `background` or `background-color` with a `height` | `divider` in the background colour, as thick as `height`, solid | Converted |
+| no border that draws, no background, and room taken | `spacer` | Converted, with a `note` naming the height |
+| no border that draws, no background, and no room taken | no block | Skipped |
 
-The usual email `<hr>`, `border: 0; height: 1px; background: #cccccc`, is the background row. A background that is transparent, or a `height` of 0, draws no line. The spacer's `height` is the `<hr>`'s top and bottom margins and padding, its `height`, and the width of a transparent border; a `none` or `hidden` border takes no room. A spacer renders no padding, so its own padding is 0. The width rules above apply to every divider row.
+The usual email `<hr>`, `border: 0; height: 1px; background: #cccccc`, is the background row. A background that is transparent, or a `height` of 0, draws no line. The spacer's `height` is the `<hr>`'s top and bottom margins and padding, its `height`, and the widths of transparent top and bottom borders; a `none` or `hidden` border takes no room. A spacer renders no padding, so its own padding is 0. The width rules above apply to every divider row.
 
 ## Inline Formatting
 
