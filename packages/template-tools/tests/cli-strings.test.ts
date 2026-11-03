@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -12,6 +12,8 @@ import {
   type CustomBlockDefinition,
   type LocaleString,
 } from "@templatical/types";
+import { parseArgs } from "../src/cli/args";
+import { runStrings } from "../src/cli/commands/strings";
 
 let dir: string;
 let file: string;
@@ -912,4 +914,46 @@ describe("strings import inline styles", () => {
       );
     },
   );
+});
+
+// The tests above run the built binary, which coverage can't see; this one
+// runs the import in the test process.
+describe("strings import in process", () => {
+  let stdout: string[];
+  beforeEach(() => {
+    stdout = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      stdout.push(String(chunk));
+      return true;
+    });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("lists rejections with the less-than hint, then entries without text as skipped", () => {
+    const data = exported("--only", "all");
+    expect(data.strings.map((entry) => entry.id)).toEqual([
+      "missing/content",
+      "stale/content",
+      "current/content",
+      "image/alt",
+    ]);
+    data.strings[2].text = "<table>Willkommen</table>";
+    data.strings[3].text = "a<b";
+    const strings = join(dir, "strings.json");
+    write(strings, data);
+    expect(runStrings(parseArgs(["strings", "import", file, strings]))).toBe(1);
+    expect(stdout.join("")).toBe(
+      [
+        `Applied 0 strings to ${file}`,
+        "  - current/content: unsafe_html",
+        "  - image/alt: unsafe_html",
+        '    A "<" directly before a letter reads as markup. Write "a < b" with a space.',
+        "  Skipped missing/content: missing",
+        "  Skipped stale/content: stale",
+        "",
+      ].join("\n"),
+    );
+    expect(read(file).blocks[2].l10n.de.text.content.value).toBe("Willkommen");
+    expect(read(file).blocks[3].l10n).toBeUndefined();
+  });
 });

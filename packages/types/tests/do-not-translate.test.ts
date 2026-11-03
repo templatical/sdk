@@ -314,6 +314,25 @@ describe("do-not-translate strings round trip", () => {
     ).toEqual({ text: "Sable Cloud", tokens: [] });
   });
 
+  it("still masks with a term list used again after many other lists", () => {
+    const masked = (term: string) => ({
+      text: '<x id="1"/> Cloud',
+      tokens: [term],
+    });
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: ["Sable"] }),
+    ).toEqual(masked("Sable"));
+    for (let index = 0; index < 40; index++) {
+      const term = `Term${index}`;
+      expect(
+        maskTags(`${term} Cloud`, syntax, "text", { doNotTranslate: [term] }),
+      ).toEqual(masked(term));
+    }
+    expect(
+      maskTags("Sable Cloud", syntax, "text", { doNotTranslate: ["Sable"] }),
+    ).toEqual(masked("Sable"));
+  });
+
   it("reuses source ids in a reordered existing translation", () => {
     const content = fixture();
     content.blocks = [
