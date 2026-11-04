@@ -18,9 +18,8 @@ jobs:
       # guard suppresses workflow runs triggered by GITHUB_TOKEN — without a
       # PAT, the CI workflow never fires on the VP PR and required-check
       # rules hold it in "Expected — Waiting for status" forever. With the
-      # PAT, ci.yml fires normally; jobs detect the `changeset-release/*`
-      # branch via their IS_VP env flag and no-op their work while still
-      # reporting green.
+      # PAT, ci.yml runs the same validation on the Version Packages PR as
+      # on other PRs.
       - uses: actions/checkout@v7
         with:
           token: ${{ secrets.CHANGESETS_PAT }}
