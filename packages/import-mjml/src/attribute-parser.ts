@@ -18,7 +18,7 @@ import type {
 export function parsePxValue(value: string | number | undefined): number {
   if (value === undefined || value === null || value === "") return 0;
   if (typeof value === "number") return Math.round(value);
-  const match = value.match(/^\s*(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?$/);
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 

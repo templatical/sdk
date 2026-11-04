@@ -408,7 +408,7 @@ export {
   replaceMergeTagSpans,
   scanMergeTagSpans,
 } from "./merge-tag-html";
-export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
+export type { SyntaxMatch, SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 export {
   containsMergeTag,
   getLogicMergeTagKeyword,
@@ -422,6 +422,8 @@ export {
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
   resolveSyntax,
+  scanCombinedSyntaxMatches,
+  scanSyntaxMatches,
   substituteHtmlMergeTagSamples,
   substituteTextMergeTagSamples,
   SYNTAX_PRESETS,
