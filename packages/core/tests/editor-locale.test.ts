@@ -58,6 +58,26 @@ function german() {
 }
 
 describe("editor language routing", () => {
+  it("stores a default-locale section rewrite that moves a descendant out of its section", () => {
+    const leaf = createTitleBlock({ id: "X", content: "Original" });
+    const nested = createSectionBlock({ id: "S", children: [[leaf]] });
+    const outer = createSectionBlock({ id: "A", children: [[nested]] });
+    const content = createDefaultTemplateContent();
+    content.settings.locale = "en";
+    content.settings.locales = ["de"];
+    content.blocks = [outer];
+    const editor = useEditor({ content });
+    const expected = safeClone(outer);
+    expected.children = [
+      [createSectionBlock({ id: "S", children: [[]] }), leaf],
+    ];
+
+    editor.updateBlock("A", { children: safeClone(expected.children) });
+
+    expect(editor.content.value.blocks).toEqual([expected]);
+    expect(editor.state.isDirty).toBe(true);
+  });
+
   it("refuses a localized section rewrite when reconciliation repeats a descendant ID", () => {
     const leaf = createTitleBlock({ id: "X", content: "Original" });
     const nested = createSectionBlock({ id: "S", children: [[leaf]] });

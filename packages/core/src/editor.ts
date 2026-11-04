@@ -580,8 +580,10 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
               return false;
             seenChildIds.add(id);
           }
-      const reconciledIds = blockIdsOf(reconciled);
-      if (new Set(reconciledIds).size !== reconciledIds.length) return false;
+      if (activeLocale.value) {
+        const reconciledIds = blockIdsOf(reconciled);
+        if (new Set(reconciledIds).size !== reconciledIds.length) return false;
+      }
     }
     return (
       !isBlockLocked(blockId, affectsDescendants || "columns" in updates) &&
