@@ -566,15 +566,19 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       Array.isArray(next.children)
     ) {
       const currentDescendantIds = new Set(blockIdsOf(block).slice(1));
+      const seenChildIds = new Set<string>();
       for (const column of next.children)
         for (const child of column)
-          for (const id of blockIdsOf(child))
+          for (const id of blockIdsOf(child)) {
             if (
+              seenChildIds.has(id) ||
               isBlockLocked(id, true) ||
               (findBlockById(state.content.blocks, id) !== null &&
                 !currentDescendantIds.has(id))
             )
               return false;
+            seenChildIds.add(id);
+          }
     }
     return (
       !isBlockLocked(blockId, affectsDescendants || "columns" in updates) &&

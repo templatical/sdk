@@ -379,6 +379,27 @@ describe('locked blocks', () => {
         expect(editor.state.isDirty).toBe(false);
     });
 
+    it('updateBlock refuses repeated new child IDs without changing content', () => {
+        const target = createSectionBlock({ id: 'target', children: [[]] });
+        const content = createDefaultTemplateContent();
+        content.blocks = [target];
+        const original = structuredClone(content);
+        const editor = useEditor({ content });
+        const first = createParagraphBlock({
+            id: 'new-child',
+            content: '<p>First</p>',
+        });
+        const second = createParagraphBlock({
+            id: 'new-child',
+            content: '<p>Second</p>',
+        });
+
+        editor.updateBlock(target.id, { children: [[first, second]] });
+
+        expect(editor.state.content).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
+    });
+
     it('updateBlock refuses a same-id children payload that overwrites a peer-locked child', () => {
         const { editor, container, original } = editorWithContainer(
             'section',
