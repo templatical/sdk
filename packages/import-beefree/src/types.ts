@@ -172,6 +172,10 @@ export interface BeeFreeeSocialIcon {
     src?: string;
     href?: string;
     alt?: string;
+    target?: string;
+    /** The icon file's size. A number of px, or a px length. */
+    width?: string | number;
+    height?: string | number;
   };
   name?: string;
   text?: string;
@@ -257,4 +261,10 @@ export interface ImportReport {
 export interface ImportResult {
   content: import("@templatical/types").TemplateContent;
   report: ImportReport;
+  /**
+   * Web fonts to load, taken from `page.body.webFonts` entries that carry a
+   * URL. A host passes them to the editor's `fonts.customFonts` and to
+   * `render`. System stacks and `inherit` are left out.
+   */
+  customFonts: import("@templatical/types").CustomFont[];
 }

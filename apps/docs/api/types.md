@@ -266,6 +266,12 @@ interface ImageBlock extends BaseBlock {
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
   decorative?: boolean;
+  /**
+   * Full width on a phone. Absent: fluid only when the image fills its column
+   * on desktop. `true` always emits MJML `fluid-on-mobile`; `false` never does.
+   * Video thumbnails have no equivalent.
+   */
+  fluidOnMobile?: boolean;
 }
 ```
 
@@ -284,6 +290,8 @@ interface ButtonBlock extends BaseBlock {
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
+  /** Label weight. `'regular'` is 400, `'medium'` is 500 and `'bold'` is 700. Omitted renders bold, which is what a button with no weight renders. */
+  fontWeight?: 'regular' | 'medium' | 'bold';
   openInNewTab?: boolean;
   width?: number | 'full';
   align: 'left' | 'center' | 'right';

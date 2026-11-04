@@ -358,6 +358,10 @@ const ptBR: typeof en = {
     decorative: "Imagem decorativa",
     decorativeHint:
       "Oculta para leitores de tela. Use apenas para espaçadores e elementos visuais.",
+    fluidOnMobile: "Largura total no celular",
+    fluidOnMobileAuto: "Automática",
+    fluidOnMobileAlways: "Sempre",
+    fluidOnMobileNever: "Nunca",
   },
 
   // Toolbar - Video
@@ -395,6 +399,10 @@ const ptBR: typeof en = {
     textColor: "Cor do Texto",
     borderRadius: "Arredondamento das Bordas",
     fontSize: "Tamanho da Fonte",
+    fontWeight: "Peso",
+    fontWeightRegular: "Comum",
+    fontWeightMedium: "Médio",
+    fontWeightBold: "Negrito",
     width: "Largura",
     widthAuto: "Ajustar ao conteúdo",
     fullWidth: "Largura Total",

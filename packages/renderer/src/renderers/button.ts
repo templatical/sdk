@@ -38,6 +38,7 @@ export function renderButton(
   const backgroundColor = buttonBackgroundAttr(block.backgroundColor);
   const textColor = escapeAttr(block.textColor);
   const fontSize = block.fontSize;
+  const fontWeight = renderFontWeight(block.fontWeight);
   const borderRadius = escapeAttr(renderButtonRadius(block.borderRadius));
   const text = escapeHtml(block.text);
   const targetAttr = block.openInNewTab
@@ -58,7 +59,7 @@ export function renderButton(
   background-color="${backgroundColor}"
   color="${textColor}"
   font-size="${escapeAttr(String(fontSize))}px"
-  font-weight="bold"
+  font-weight="${fontWeight}"
   border-radius="${borderRadius}"${borderAttrStr}
   inner-padding="${buttonPadding}"
   align="${align}"
@@ -73,6 +74,17 @@ export function renderButton(
 function buttonBackgroundAttr(color: string): string {
   if (color.trim() === "") return "transparent";
   return escapeAttr(color);
+}
+
+/**
+ * Omitted weight stays `bold`, the attribute a button has always rendered
+ * with. A stored weight is that step's CSS number.
+ */
+function renderFontWeight(weight: ButtonBlock["fontWeight"]): string {
+  if (weight === "regular") return "400";
+  if (weight === "medium") return "500";
+  if (weight === "bold") return "700";
+  return "bold";
 }
 
 function renderFontFamilyAttr(
