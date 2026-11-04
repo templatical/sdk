@@ -64,6 +64,10 @@ export interface EditingSession {
   apply(opsJson: unknown): EditingApplyResult;
 }
 
+function isLocaleLayer(layer: unknown): layer is Record<string, unknown> {
+  return typeof layer === "object" && layer !== null && !Array.isArray(layer);
+}
+
 /**
  * A turn's working copy of the template (A1 §5). Every call is checked, in
  * order: the shape, the count, the content rules, undeclared merge tags, the
@@ -176,6 +180,10 @@ export function createEditingSession(
     if (contentReason !== null) return refuse(contentReason);
 
     const defaultLocale = defaultLocaleOf(next);
+    for (const layer of Object.values(next.settings.l10n ?? {})) {
+      if (!isLocaleLayer(layer))
+        return refuse("the template has an invalid locale layer");
+    }
     const locales = new Set<string>([
       defaultLocale,
       ...(next.settings.locales ?? []),
@@ -187,7 +195,8 @@ export function createEditingSession(
       if (typeof block.l10n !== "object" || block.l10n === null) continue;
       for (const [locale, layer] of Object.entries(block.l10n)) {
         locales.add(locale);
-        if (typeof layer !== "object" || layer === null) continue;
+        if (!isLocaleLayer(layer))
+          return refuse("the template has an invalid locale layer");
         const set = (layer as { set?: { children?: unknown } }).set;
         pending.push(...walkBlocks(set?.children));
       }

@@ -412,9 +412,10 @@ describe("editing session locale type guard", () => {
     expect(session.batches).toHaveLength(1);
   });
 
-  it("accepts a block whose locale layer is not an object, since it overrides nothing", () => {
+  it("refuses a block whose locale layer is not an object", () => {
+    const start = content();
     const session = createEditingSession({
-      content: content() as never,
+      content: start as never,
       mergeTags,
     });
     const result = session.apply([
@@ -430,12 +431,43 @@ describe("editing session locale type guard", () => {
         after: "p1",
       },
     ] as never);
-    expect(result.feedback).toBe("Applied.");
-    expect(
-      session.content.blocks.map((block) => [block.id, block.type]),
-    ).toEqual([
-      ["p1", "paragraph"],
-      ["p2", "paragraph"],
-    ]);
+    expect(result).toEqual({
+      ok: false,
+      feedback: "Refused: the template has an invalid locale layer",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
   });
+
+  it.each([
+    { name: "null", layer: null },
+    { name: "string", layer: "invalid" },
+    { name: "array", layer: [] },
+  ])(
+    "refuses a settings locale layer that is not an object ($name)",
+    ({ layer }) => {
+      const start = content();
+      const session = createEditingSession({
+        content: start as never,
+        mergeTags,
+      });
+
+      expect(
+        session.apply([
+          {
+            op: "setContent",
+            content: {
+              ...start,
+              settings: { ...start.settings, l10n: { de: layer } },
+            },
+          },
+        ] as never),
+      ).toEqual({
+        ok: false,
+        feedback: "Refused: the template has an invalid locale layer",
+      });
+      expect(session.content).toEqual(start);
+      expect(session.batches).toEqual([]);
+    },
+  );
 });
