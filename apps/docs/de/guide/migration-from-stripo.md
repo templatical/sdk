@@ -138,7 +138,7 @@ Plugin-Speicher ist ein Tabellenbaum mit `esd-*`-Klassen. Jedes `esd-structure` 
 | `esd-block-button` | `button` | `href`, Text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius`, sofern vorhanden. |
 | `esd-block-menu` (2+ Item-Zellen) | `menu` | Ein `MenuItemData` je Item-Zelle. |
 | `esd-block-menu` (1 Item-Zelle) | `paragraph` (oder das innere Mapping) | Ein gestapelter Schritt, keine Navigation — Password-Reset-Zeilen bleiben Fließtext. |
-| `esd-block-social` | `social` | Plattform aus `title` / `src` / `alt`; unbekannte Namen werden `website`. |
+| `esd-block-social` | `social` | Plattform aus `title` / `src` / `alt`. Ein unbekanntes Netzwerk wird ein Website-Icon, und der Block wird als `approximated` gemeldet. |
 | `esd-block-spacer` | `spacer` oder `divider` | Ein sichtbarer `border-bottom` oder `border-top` am Spacer oder in der inneren Zelle wird ein Trenner (Stil, Farbe, Stärke und die Breitenregel unten). Sonst ein Spacer: Höhe aus `style`, dem `height`-Attribut oder dem vertikalen Padding. |
 | `esd-block-html` | `html` | Inneres Markup bleibt erhalten. |
 
@@ -155,7 +155,7 @@ Der kompilierte Export entfernt `esd-*` von den Elementen und behält `es-*`-Res
 | `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, einschließlich vom umschließenden `es-button-border`. Widgets bleiben in Dokumentreihenfolge beim Text um sie herum. |
 | `table.es-menu` (2+ Item-Zellen) | `menu` | |
 | `table.es-menu` (1 Item-Zelle) | inneres Mapping | Eine Schrittzeile, dieselbe Regel wie beim Plugin-Pfad. |
-| `table.es-social` | `social` | Dasselbe Plattform-Mapping wie beim Plugin-Pfad. |
+| `table.es-social` | `social` | Dasselbe Plattform-Mapping wie beim Plugin-Pfad. Ein unbekanntes Netzwerk wird ein Website-Icon, und der Block wird als `approximated` gemeldet. |
 | `es-spacer` mit sichtbarem Rahmen | `divider` | Stil, Farbe und Stärke aus `border-bottom` oder `border-top`. Die Breite folgt der Regel unten. |
 | `es-spacer` ohne Rahmen | `spacer` | Höhe aus `style`, dem `height`-Attribut oder dem vertikalen Padding. |
 

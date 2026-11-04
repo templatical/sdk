@@ -61,4 +61,23 @@ describe("normalizePlatform", () => {
     expect(normalizePlatform(undefined, "icons/xing.png")).toBe("xing");
     expect(normalizePlatform(undefined, "xing.png?v=2")).toBe("xing");
   });
+
+  it("lets an explicit website label outrank the platform a file name suggests", () => {
+    expect(
+      normalizePlatform("Website", "https://cdn.example/icons/facebook.png"),
+    ).toBe("website");
+    expect(
+      normalizePlatform(
+        undefined,
+        "https://cdn.example/icons/facebook.png",
+        "Web",
+      ),
+    ).toBe("website");
+    expect(
+      normalizePlatform("Facebook", "https://cdn.example/icons/web.png"),
+    ).toBe("facebook");
+    expect(
+      normalizePlatform(undefined, "https://cdn.example/icons/web.png"),
+    ).toBe("website");
+  });
 });
