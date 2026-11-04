@@ -1,5 +1,14 @@
 # @templatical/renderer
 
+## 0.54.2
+
+### Patch Changes
+
+- 90aebe1: Template values in MJML attributes are escaped before rendering. Body background colours containing markup use a transparent fallback so the compiled HTML does not carry that markup. CSS-valued attributes (background colours, border radius, background size, position and repeat) also drop `;`, `{`, `}` and line breaks, so a value stays one CSS declaration.
+- a72fbd8: Title blocks now unwrap paragraphs with quoted attributes correctly in the editor and rendered email. The editor sanitizes title HTML after unwrapping to close a script-injection path in the canvas. `findOpenTagEnd` now treats a quote inside an unquoted attribute value as an ordinary character, as HTML does.
+- Updated dependencies [a72fbd8]
+  - @templatical/types@0.54.2
+
 ## 0.54.1
 
 ### Patch Changes
