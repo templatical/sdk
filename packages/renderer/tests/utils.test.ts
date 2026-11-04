@@ -80,9 +80,9 @@ describe("horizontalInset", () => {
   });
 
   it("ignores top and bottom", () => {
-    expect(
-      horizontalInset({ top: 40, right: 5, bottom: 40, left: 5 }),
-    ).toBe(10);
+    expect(horizontalInset({ top: 40, right: 5, bottom: 40, left: 5 })).toBe(
+      10,
+    );
   });
 
   it("counts only the sides that are drawn", () => {
@@ -153,5 +153,29 @@ describe("fluidOnMobileAttr", () => {
 
   it("is never set on a narrow image", () => {
     expect(fluidOnMobileAttr(image(120), ctx)).toBe("");
+  });
+
+  it("keeps that rule when fluidOnMobile is omitted", () => {
+    expect(
+      fluidOnMobileAttr({ ...image("full"), fluidOnMobile: undefined }, ctx),
+    ).toBe(' fluid-on-mobile="true"');
+    expect(
+      fluidOnMobileAttr({ ...image(120), fluidOnMobile: undefined }, ctx),
+    ).toBe("");
+  });
+
+  it("always emits the attribute when fluidOnMobile is true", () => {
+    expect(fluidOnMobileAttr({ ...image(120), fluidOnMobile: true }, ctx)).toBe(
+      ' fluid-on-mobile="true"',
+    );
+  });
+
+  it("never emits the attribute when fluidOnMobile is false", () => {
+    expect(
+      fluidOnMobileAttr({ ...image("full"), fluidOnMobile: false }, ctx),
+    ).toBe("");
+    expect(
+      fluidOnMobileAttr({ ...image(240), fluidOnMobile: false }, ctx),
+    ).toBe("");
   });
 });

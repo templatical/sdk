@@ -1,5 +1,16 @@
 # @templatical/editor
 
+## 0.54.2
+
+### Patch Changes
+
+- a72fbd8: Title blocks now unwrap paragraphs with quoted attributes correctly in the editor and rendered email. The editor sanitizes title HTML after unwrapping to close a script-injection path in the canvas. `findOpenTagEnd` now treats a quote inside an unquoted attribute value as an ordinary character, as HTML does.
+- d0e0c05: In preview mode the canvas hides lint issue badges, like the rest of the block chrome.
+- Updated dependencies [90aebe1]
+- Updated dependencies [a72fbd8]
+  - @templatical/renderer@0.54.2
+  - @templatical/quality@0.54.2
+
 ## 0.54.1
 
 ### Patch Changes

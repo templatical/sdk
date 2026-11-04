@@ -20,6 +20,44 @@ function mountIt(block: ImageBlock) {
   return mountEditor(ImageToolbar, { props: { block } });
 }
 
+describe("ImageToolbar full width on mobile", () => {
+  function select(block: ImageBlock) {
+    const wrapper = mountEditor(ImageToolbar, {
+      props: { block },
+      provides: { [TRANSLATIONS_KEY]: en },
+    });
+    return wrapper.find('[data-testid="image-fluid-on-mobile"]');
+  }
+
+  it("offers Automatic, Always and Never, with Automatic selected when the field is absent", () => {
+    const control = select(createImageBlock({ width: 280 }));
+    expect((control.element as HTMLSelectElement).value).toBe("auto");
+    const labels = control.findAll("option").map((option) => option.text());
+    expect(labels).toEqual([
+      en.image.fluidOnMobileAuto,
+      en.image.fluidOnMobileAlways,
+      en.image.fluidOnMobileNever,
+    ]);
+    expect(en.image.fluidOnMobile).toBe("Full width on mobile");
+  });
+
+  it("maps Always to true, Never to false, and Automatic to an absent field", async () => {
+    const wrapper = mountEditor(ImageToolbar, {
+      props: { block: createImageBlock({ width: 280, fluidOnMobile: true }) },
+      provides: { [TRANSLATIONS_KEY]: en },
+    });
+    const control = wrapper.find('[data-testid="image-fluid-on-mobile"]');
+    expect((control.element as HTMLSelectElement).value).toBe("always");
+
+    await control.setValue("never");
+    await control.setValue("auto");
+
+    const emitted = wrapper.emitted("update") as [Partial<ImageBlock>][];
+    expect(emitted[0][0].fluidOnMobile).toBe(false);
+    expect(emitted[1][0].fluidOnMobile).toBeUndefined();
+  });
+});
+
 describe("ImageToolbar width control", () => {
   it("switching the width <select> to Custom seeds the default custom width", async () => {
     // block.width = 400 is a preset, so widthMode resolves to "400" and the

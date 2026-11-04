@@ -4,6 +4,7 @@ import {
   TITLE_FONT_WEIGHT,
   TITLE_LINE_HEIGHT,
   fillEmptyParagraphs,
+  findOpenTagEnd,
 } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import {
@@ -45,7 +46,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // Emit the color only when the block sets one; otherwise the `mj-text`
   // inherits the document `textColor` default from `<mj-attributes>`.
   const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
-  const align = block.textAlign;
+  const align = escapeAttr(block.textAlign);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   // `unwrapParagraph` strips only a *single* outer `<p>`, so a title the user
   // pressed Enter in keeps its paragraphs and needs a spacing rule. Titles
@@ -73,12 +74,17 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
  * heading, so strip a single outer `<p>` wrapper if present.
  */
 function unwrapParagraph(html: string): string {
-  const match = html.match(/^\s*<p\b[^>]*>([\s\S]*)<\/p>\s*$/);
-  if (!match) return html;
+  const openingTag = /^\s*<p\b/.exec(html);
+  if (!openingTag) return html;
+  const openingTagEnd = findOpenTagEnd(html, openingTag[0].length);
+  if (openingTagEnd === -1) return html;
+  const closingTag = /<\/p>\s*$/.exec(html);
+  if (!closingTag || closingTag.index <= openingTagEnd) return html;
+  const content = html.slice(openingTagEnd + 1, closingTag.index);
   // Only unwrap when there is exactly one top-level <p> — otherwise the
   // content has multiple paragraphs and we must leave it alone.
-  if (/<\/p>\s*<p\b/i.test(match[1])) return html;
-  return match[1];
+  if (/<\/p>\s*<p\b/i.test(content)) return html;
+  return content;
 }
 
 function renderFontFamilyAttr(

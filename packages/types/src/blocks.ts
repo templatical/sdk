@@ -356,6 +356,14 @@ export interface ImageBlock extends BaseBlock {
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
   decorative?: boolean;
+  /**
+   * Whether the image fills its column on a phone (`mj-image`
+   * `fluid-on-mobile`). Omitted keeps the automatic rule: fluid only when the
+   * image fills its column on desktop. `true` always emits the attribute;
+   * `false` never does. Video thumbnails have no equivalent and stay on the
+   * automatic rule.
+   */
+  fluidOnMobile?: boolean;
 }
 
 export interface ButtonBlock extends BaseBlock {
@@ -379,6 +387,11 @@ export interface ButtonBlock extends BaseBlock {
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
+  /**
+   * Label weight. `"regular"` is 400, `"medium"` is 500 and `"bold"` is 700.
+   * Omitted renders bold, which is what a button with no weight renders.
+   */
+  fontWeight?: "regular" | "medium" | "bold";
   width?: number | "full";
   /**
    * Placement of the button within its column. No visible effect when `width`
