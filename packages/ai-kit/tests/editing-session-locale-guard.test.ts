@@ -411,4 +411,31 @@ describe("editing session locale type guard", () => {
     });
     expect(session.batches).toHaveLength(1);
   });
+
+  it("accepts a block whose locale layer is not an object, since it overrides nothing", () => {
+    const session = createEditingSession({
+      content: content() as never,
+      mergeTags,
+    });
+    const result = session.apply([
+      {
+        op: "addBlock",
+        block: {
+          id: "p2",
+          type: "paragraph",
+          content: "<p>Second</p>",
+          l10n: { de: null },
+        },
+        parent: null,
+        after: "p1",
+      },
+    ] as never);
+    expect(result.feedback).toBe("Applied.");
+    expect(
+      session.content.blocks.map((block) => [block.id, block.type]),
+    ).toEqual([
+      ["p1", "paragraph"],
+      ["p2", "paragraph"],
+    ]);
+  });
 });
