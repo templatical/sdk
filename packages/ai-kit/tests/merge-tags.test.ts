@@ -7,10 +7,10 @@ import {
 } from "../src/server";
 
 describe("merge tags in AI input and output (S7 Y5)", () => {
-  it("scans unclosed built-in openers in under 400 ms", () => {
+  it("scans unclosed built-in openers in under 1500 ms", () => {
     const start = performance.now();
-    expect(mergeTagTokens("{{".repeat(40_000), "liquid")).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(mergeTagTokens("{{".repeat(90_000), "liquid")).toEqual([]);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
   it.each([
     [

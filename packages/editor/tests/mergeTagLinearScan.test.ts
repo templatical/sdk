@@ -13,16 +13,16 @@ import {
 } from "../src/utils/normalizeMergeTagMarkup";
 
 const liquid = SYNTAX_PRESETS.liquid;
-const unclosed = "{{".repeat(40_000);
+const unclosed = "{{".repeat(90_000);
 
-function under400(run: () => void): void {
+function under1500(run: () => void): void {
   const start = performance.now();
   run();
-  expect(performance.now() - start).toBeLessThan(400);
+  expect(performance.now() - start).toBeLessThan(1500);
 }
 
 describe("built-in merge-tag consumers", () => {
-  it("segments a field with unclosed openers in under 400 ms", () => {
+  it("segments a field with unclosed openers in under 1500 ms", () => {
     let field: ReturnType<typeof useMergeTagField> | undefined;
     const app = createApp(
       defineComponent({
@@ -39,55 +39,55 @@ describe("built-in merge-tag consumers", () => {
     app.provide(MERGE_TAGS_KEY, shallowRef([]));
     app.provide(MERGE_TAG_SYNTAX_KEY, liquid);
     app.mount(document.createElement("div"));
-    under400(() => {
+    under1500(() => {
       expect(field!.segments.value).toEqual([
         { type: "text", value: unclosed },
       ]);
     });
     app.unmount();
   });
-  it("splits unclosed openers in under 400 ms", () => {
-    under400(() => {
+  it("splits unclosed openers in under 1500 ms", () => {
+    under1500(() => {
       expect(splitMergeTagLabelSegments(unclosed, [], liquid)).toEqual([
         { type: "text", value: unclosed },
       ]);
     });
   });
 
-  it("checks complete tags before the caret in under 400 ms", () => {
+  it("checks complete tags before the caret in under 1500 ms", () => {
     const value = unclosed + "\n{{done}}";
-    under400(() => {
+    under1500(() => {
       expect(
         findOpenMergeTagTrigger(value, value.length, "{{", "}}", liquid.value),
       ).toBeNull();
     });
   });
 
-  it("extracts raw tokens in under 400 ms", () => {
-    under400(() => {
+  it("extracts raw tokens in under 1500 ms", () => {
+    under1500(() => {
       expect(mergeTagTokens(unclosed, liquid, "text")).toEqual([]);
     });
   });
-  it("extracts many complete raw tokens in under 400 ms", () => {
-    under400(() => {
+  it("extracts many complete raw tokens in under 1500 ms", () => {
+    under1500(() => {
       expect(
-        mergeTagTokens("{{x}}".repeat(50_000), liquid, "text"),
-      ).toHaveLength(50_000);
+        mergeTagTokens("{{x}}".repeat(110_000), liquid, "text"),
+      ).toHaveLength(110_000);
     });
   });
 
-  it("normalizes text after unclosed openers in under 400 ms", () => {
+  it("normalizes text after unclosed openers in under 1500 ms", () => {
     const html = unclosed + "\n{{done}}";
-    under400(() => {
+    under1500(() => {
       expect(normalizeMergeTagsInHtml(html, [], liquid)).toContain(
         '<span data-merge-tag="{{done}}">{{done}}</span>',
       );
     });
   });
-  it("collects many nonoverlapping hits in under 400 ms", () => {
+  it("collects many nonoverlapping hits in under 1500 ms", () => {
     const start = performance.now();
-    const hits = collectHits("{{x}}".repeat(50_000), [], liquid);
-    expect(hits).toHaveLength(50_000);
+    const hits = collectHits("{{x}}".repeat(130_000), [], liquid);
+    expect(hits).toHaveLength(130_000);
     expect(hits[0]).toEqual({
       start: 0,
       end: 5,
@@ -95,7 +95,7 @@ describe("built-in merge-tag consumers", () => {
       value: "{{x}}",
       label: "{{x}}",
     });
-    expect(hits.at(-1)?.start).toBe(249_995);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(hits.at(-1)?.start).toBe(649_995);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
 });

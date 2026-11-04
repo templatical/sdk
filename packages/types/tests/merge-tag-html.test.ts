@@ -7,12 +7,12 @@ import {
 } from "../src";
 
 describe("merge-tag HTML scanning", () => {
-  it("scans malformed span prefixes in under 400 ms and finds a later chip", () => {
-    const html = "<span ".repeat(6_000) + "<span></span>";
+  it("scans malformed span prefixes in under 1500 ms and finds a later chip", () => {
+    const html = "<span ".repeat(16_000) + "<span></span>";
     const start = performance.now();
     expect(scanMergeTagSpans(html)).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(400);
-    const prefix = "<span ".repeat(6_000);
+    expect(performance.now() - start).toBeLessThan(1500);
+    const prefix = "<span ".repeat(16_000);
     const withChip = prefix + '<span data-merge-tag="{{x}}">X</span>';
     expect(scanMergeTagSpans(withChip)).toEqual([
       {

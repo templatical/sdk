@@ -56,31 +56,31 @@ function values(extracted: ReturnType<typeof localeStrings>) {
 }
 
 describe("maskTags", () => {
-  it("masks many unclosed built-in openers in under 400 ms", () => {
-    const text = "{{".repeat(40_000);
+  it("masks many unclosed built-in openers in under 1500 ms", () => {
+    const text = "{{".repeat(90_000);
     const start = performance.now();
     expect(maskTags(text, liquid, "text")).toEqual({ text, tokens: [] });
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
-  it("masks many complete built-in tags in under 400 ms", () => {
-    const text = "{{x}}".repeat(20_000);
+  it("masks many complete tags followed by unclosed openers in under 1500 ms", () => {
+    const text = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
     const start = performance.now();
     expect(maskTags(text, liquid, "text").tokens).toHaveLength(20_000);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
-  it("masks many overlapping logic and value candidates in under 400 ms", () => {
+  it("masks overlapping candidates and unclosed openers in under 1500 ms", () => {
     expect(
       maskTags("{{#if x}}}{{#if y}}}", SYNTAX_PRESETS.handlebars, "text"),
     ).toEqual({
       text: '<x id="1"/>}<x id="2"/>}',
       tokens: ["{{#if x}}", "{{#if y}}"],
     });
-    const text = "{{#if x}}}".repeat(20_000);
+    const text = "{{#if x}}}".repeat(20_000) + "{{".repeat(60_000);
     const start = performance.now();
     expect(
       maskTags(text, SYNTAX_PRESETS.handlebars, "text").tokens,
     ).toHaveLength(20_000);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
   it("masks chips whole and raw tags in document order, preserving original bytes", () => {
     const html = `<p>{{before}} Hi ${chip}, {{ city }} and {{first_name}}</p>`;

@@ -27,8 +27,8 @@ const localization = (content: ReturnType<typeof template>, options = {}) =>
   );
 
 describe("localization rules", () => {
-  it("compares many unclosed built-in openers in under 400 ms", () => {
-    const value = "{{".repeat(40_000);
+  it("compares many unclosed built-in openers in under 1500 ms", () => {
+    const value = "{{".repeat(90_000);
     const content = template();
     content.blocks = [
       createParagraphBlock({
@@ -41,10 +41,10 @@ describe("localization rules", () => {
     ];
     const start = performance.now();
     expect(localization(content)).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
-  it("compares many complete built-in tags in under 400 ms", () => {
-    const value = "{{x}}".repeat(20_000);
+  it("compares complete tags followed by unclosed openers in under 1500 ms", () => {
+    const value = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
     const content = template();
     content.blocks = [
       createParagraphBlock({
@@ -57,7 +57,7 @@ describe("localization rules", () => {
     ];
     const start = performance.now();
     expect(localization(content)).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
   it("reports each missing field including settings with null blockId, only in a version", () => {
     const content = template();

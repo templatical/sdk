@@ -24,20 +24,20 @@ function matches(kind: "value" | "logic", syntax: SyntaxPreset, text: string) {
 }
 
 describe("built-in paste rules", () => {
-  it("scans unclosed value openers in under 400 ms", () => {
+  it("scans unclosed value openers in under 1500 ms", () => {
     const start = performance.now();
     expect(
-      matches("value", SYNTAX_PRESETS.liquid, "{{".repeat(40_000)),
+      matches("value", SYNTAX_PRESETS.liquid, "{{".repeat(90_000)),
     ).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
 
-  it("scans unclosed logic openers in under 400 ms", () => {
+  it("scans unclosed logic openers in under 1500 ms", () => {
     const start = performance.now();
     expect(
-      matches("logic", SYNTAX_PRESETS.liquid, "{% if ".repeat(20_000)),
+      matches("logic", SYNTAX_PRESETS.liquid, "{% if ".repeat(50_000)),
     ).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(400);
+    expect(performance.now() - start).toBeLessThan(1500);
   });
 
   it("keeps built-in paste match offsets and text", () => {
