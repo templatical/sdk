@@ -272,7 +272,7 @@ export async function renderToMjml(
       }
     </mj-style>${renderCustomBlockStylesheets(customBlockStylesheets)}
   </mj-head>
-  <mj-body width="${escapeAttr(String(renderContext.containerWidth))}px" background-color="${escapeAttr(backgroundColor)}">
+  <mj-body width="${escapeAttr(String(renderContext.containerWidth))}px" background-color="${escapeCssValue(backgroundColor)}">
 ${bodyContent}
   </mj-body>
 </mjml>`;

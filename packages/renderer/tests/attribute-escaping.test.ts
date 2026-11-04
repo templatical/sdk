@@ -4,10 +4,12 @@ import {
   createDefaultTemplateContent,
   createDividerBlock,
   createImageBlock,
+  createMenuBlock,
   createParagraphBlock,
   createSectionBlock,
   createSocialIconsBlock,
   createSpacerBlock,
+  createTableBlock,
 } from "@templatical/types";
 import { renderToMjml } from "../src";
 
@@ -129,5 +131,49 @@ describe("template values in MJML attributes", () => {
 
     const mjml = await renderToMjml(content);
     expect(mjml).toContain('height="24&quot; data-unsafe=&quot;yespx"');
+  });
+
+  it("keeps a colour to one CSS declaration", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.backgroundColor = "red;background-image:url(//x.test/a)";
+    content.blocks = [
+      createSectionBlock({
+        styles: { backgroundColor: "blue; position:fixed" } as never,
+      }),
+    ];
+
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain(
+      'background-color="redbackground-image:url(//x.test/a)"',
+    );
+    expect(mjml).toContain('background-color="blue position:fixed"');
+    expect(mjml).not.toMatch(/background-color="[^"]*;/);
+  });
+
+  it("keeps crafted menu spacing and table sizes inside their CSS values", async () => {
+    const content = createDefaultTemplateContent();
+    const menu = createMenuBlock();
+    const item = {
+      url: "https://example.com",
+      openInNewTab: false,
+      bold: false,
+      underline: false,
+    };
+    menu.items = [
+      { ...item, id: "a", text: "A" },
+      { ...item, id: "b", text: "B" },
+    ];
+    (menu as { spacing: unknown }).spacing = "1;position:fixed";
+    const table = createTableBlock();
+    (table as { borderWidth: unknown }).borderWidth = "1;position:fixed";
+    (table as { cellPadding: unknown }).cellPadding = "2}x{color:red";
+    content.blocks = [menu, table];
+
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain("padding: 0 1position:fixedpx;");
+    expect(mjml).toContain("border: 1position:fixedpx solid");
+    expect(mjml).toContain("padding: 2xcolor:redpx");
+    expect(mjml).not.toContain("1;position:fixed");
+    expect(mjml).not.toContain("2}x{color:red");
   });
 });

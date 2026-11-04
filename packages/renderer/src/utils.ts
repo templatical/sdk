@@ -53,7 +53,7 @@ export function bgAttr(
   const name =
     placement === "native" ? "background-color" : "container-background-color";
 
-  return ` ${name}="${escapeAttr(backgroundColor)}"`;
+  return ` ${name}="${escapeCssValue(backgroundColor)}"`;
 }
 
 /**
@@ -153,7 +153,7 @@ export function borderRadiusAttr(
     return "";
   }
 
-  return ` border-radius="${escapeAttr(css)}"`;
+  return ` border-radius="${escapeCssValue(css)}"`;
 }
 
 /**
@@ -172,5 +172,5 @@ export function backgroundImageAttrs(bg: BackgroundImage | undefined): string {
     return "";
   }
 
-  return ` background-url="${escapeAttr(resolved.url)}" background-size="${escapeAttr(resolved.size)}" background-position="${escapeAttr(resolved.position)}" background-repeat="${escapeAttr(resolved.repeat)}"`;
+  return ` background-url="${escapeAttr(resolved.url)}" background-size="${escapeCssValue(resolved.size)}" background-position="${escapeCssValue(resolved.position)}" background-repeat="${escapeCssValue(resolved.repeat)}"`;
 }
