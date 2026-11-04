@@ -111,7 +111,7 @@ export function parseColor(value: string | undefined): string {
 
 export function parsePxValue(value: string | undefined): number {
   if (!value) return 0;
-  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?$/);
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 

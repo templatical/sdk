@@ -1,8 +1,40 @@
 import { load } from "cheerio";
 import { describe, expect, it } from "vitest";
 import { parseStyleSheet, resolveCssStyles } from "../css-resolver";
+import { expectLinear } from "./expectLinear";
 
 describe("parseStyleSheet", () => {
+  it("scans brace-free CSS linearly", () => {
+    expect(parseStyleSheet("div;".repeat(20_000))).toEqual([]);
+    expectLinear(
+      (n) => {
+        const value = "div;".repeat(n);
+        return () => parseStyleSheet(value);
+      },
+      100,
+      2_500,
+    );
+  });
+  it("keeps brace-free inner rules after malformed outer bodies", () => {
+    expect(parseStyleSheet(".card { .title { font-size: 20px } }")).toEqual([
+      {
+        selectors: [".title"],
+        declarations: { "font-size": "20px" },
+      },
+    ]);
+    expect(
+      parseStyleSheet("a { color: blue } div { span { color: red } }"),
+    ).toEqual([
+      { selectors: ["a"], declarations: { color: "blue" } },
+      { selectors: ["span"], declarations: { color: "red" } },
+    ]);
+    expect(parseStyleSheet("div { color red\nspan { color: blue } }")).toEqual([
+      {
+        selectors: ["color red\nspan"],
+        declarations: { color: "blue" },
+      },
+    ]);
+  });
   it("parses a single rule with one declaration", () => {
     const rules = parseStyleSheet("p { color: red; }");
     expect(rules).toHaveLength(1);

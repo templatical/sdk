@@ -5,10 +5,26 @@ import {
   mergeTagTokensIn,
   unknownMergeTags,
 } from "../src/server";
+import { expectLinear } from "./helpers/expectLinear";
 
 describe("merge tags in AI input and output (S7 Y5)", () => {
+  it("scans unclosed built-in openers linearly", () => {
+    expect(mergeTagTokens("{{".repeat(90_000), "liquid")).toEqual([]);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => mergeTagTokens(value, "liquid");
+      },
+      500,
+      1_000,
+    );
+  });
   it.each([
-    ["liquid", "Hi {{ first_name }} and {{coupon}}", ["{{ first_name }}", "{{coupon}}"]],
+    [
+      "liquid",
+      "Hi {{ first_name }} and {{coupon}}",
+      ["{{ first_name }}", "{{coupon}}"],
+    ],
     ["handlebars", "Hi {{{raw}}} {{name}}", ["{{{raw}}}", "{{name}}"]],
     ["mailchimp", "Hi *|FNAME|*", ["*|FNAME|*"]],
     ["ampscript", "Hi %%=v(@name)=%%", ["%%=v(@name)=%%"]],
@@ -45,7 +61,11 @@ describe("merge tags in AI input and output (S7 Y5)", () => {
 
   it("names each unknown token once, in order, and checks nothing for custom", () => {
     expect(
-      unknownMergeTags("liquid", ["{{a}}", "{{b}}", "{{a}}", "{{c}}", "{{b}}"], ["{{a}}"]),
+      unknownMergeTags(
+        "liquid",
+        ["{{a}}", "{{b}}", "{{a}}", "{{c}}", "{{b}}"],
+        ["{{a}}"],
+      ),
     ).toEqual(["{{b}}", "{{c}}"]);
     expect(unknownMergeTags("custom", ["{{b}}"], [])).toEqual([]);
   });

@@ -1,6 +1,7 @@
 import {
   getLogicMergeTagKeyword,
   isLogicMergeTagValue,
+  scanCombinedSyntaxMatches,
 } from "@templatical/types";
 import {
   computed,
@@ -109,12 +110,8 @@ export function useMergeTagField(
     if (!val) return [];
 
     const result: MergeTagSegment[] = [];
-    const combinedSource = `(${syntax.value.source}|${syntax.logic.source})`;
-    const regex = new RegExp(combinedSource, "g");
     let lastIndex = 0;
-    let match;
-
-    while ((match = regex.exec(val)) !== null) {
+    for (const match of scanCombinedSyntaxMatches(val, syntax)) {
       if (match.index > lastIndex) {
         result.push({
           type: "text",
@@ -122,7 +119,7 @@ export function useMergeTagField(
         });
       }
 
-      const matched = match[0];
+      const matched = match.value;
       if (isMergeTagValue(matched)) {
         result.push({
           type: "mergeTag",
