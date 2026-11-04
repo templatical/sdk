@@ -36,12 +36,12 @@ export function renderTable(block: TableBlock, context: RenderContext): string {
   // Emit the color only when set; otherwise the `mj-text` (and its cells,
   // which carry no color of their own) inherit the document `textColor`.
   const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
-  const align = block.textAlign;
+  const align = escapeAttr(block.textAlign);
 
   const tableHtml = renderTableElement(block);
 
   return `<mj-text
-  font-size="${fontSize}px"${colorAttr}
+  font-size="${escapeAttr(String(fontSize))}px"${colorAttr}
   align="${align}"
   line-height="1.5"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
@@ -91,8 +91,8 @@ function renderCell(
   const cellPadding = block.cellPadding;
 
   const styles: string[] = [
-    `border: ${borderWidth}px solid ${borderColor}`,
-    `padding: ${cellPadding}px`,
+    `border: ${escapeCssValue(String(borderWidth))}px solid ${borderColor}`,
+    `padding: ${escapeCssValue(String(cellPadding))}px`,
   ];
 
   if (isHeader) {

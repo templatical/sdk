@@ -56,6 +56,13 @@ function updateWidthMode(mode: string): void {
   updateField("width", undefined);
 }
 
+function updateFontWeight(value: string): void {
+  // Bold is the weight an omitted field renders. Storing it would write the
+  // default onto every button, so the control clears the field, as Auto
+  // clears width.
+  updateField("fontWeight", value === "bold" ? undefined : value);
+}
+
 function updateCustomWidth(raw: string): void {
   // Guard against empty / NaN / non-positive input. An empty number field
   // yields Number("") === 0, which would emit width: 0 and render a 0px
@@ -165,6 +172,17 @@ function updateCustomWidth(raw: string): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
+  </FieldRow>
+  <FieldRow :label="t.button.fontWeight" class="tpl:mb-3.5" path="fontWeight">
+    <SlidingPillSelect
+      :options="[
+        { value: 'regular', label: t.button.fontWeightRegular },
+        { value: 'medium', label: t.button.fontWeightMedium },
+        { value: 'bold', label: t.button.fontWeightBold },
+      ]"
+      :model-value="block.fontWeight ?? 'bold'"
+      @update:model-value="updateFontWeight"
+    />
   </FieldRow>
   <FieldRow :label="t.button.width" class="tpl:mb-3.5" path="width">
     <select

@@ -182,13 +182,17 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: image -->
 **Required** — `src` (string), `alt` (string), `width` (int | "full"), `align` ("left" | "center" | "right").
-**Optional** — `l10n` (object), `height` (int), `naturalWidth` (int), `naturalHeight` (int), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
+**Optional** — `l10n` (object), `height` (int), `naturalWidth` (int), `naturalHeight` (int), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool), `fluidOnMobile` (bool).
 <!-- END GENERATED FIELDS: image -->
 
 - `alt` — write meaningful alt text.
 - `width` — `"full"` for a hero or banner that spans its column, a px number for
   a logo or icon. A px width keeps that width on phones; one at or above the
   column's room renders like `"full"` and fills the column there.
+- `fluidOnMobile` — omit it and the image fills its column on a phone only when
+  it already fills that column on desktop. `true` always fills the phone
+  column; `false` keeps the desktop width there (it still shrinks to fit a
+  narrower phone). Video has no such field.
 - `naturalWidth` / `naturalHeight` — the image file's own size, filled in by
   the editor and the importers for the aspect-ratio lock. Never rendered; omit
   them.
@@ -212,9 +216,11 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: button -->
 **Required** — `text` (string), `url` (string), `backgroundColor` (string), `textColor` (string), `borderRadius` (BorderRadiusValue), `fontSize` (int), `buttonPadding` (SpacingValue), `align` ("left" | "center" | "right").
-**Optional** — `l10n` (object), `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `width` (int | "full").
+**Optional** — `l10n` (object), `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `fontWeight` ("regular" | "medium" | "bold"), `width` (int | "full").
 <!-- END GENERATED FIELDS: button -->
 
+- `fontWeight` is `"regular"` (400), `"medium"` (500) or `"bold"` (700). Omit
+  it: the label renders bold.
 - `buttonPadding` is `{ top, right, bottom, left }`.
 - `borderRadius` — a px number, or `{ topLeft, topRight, bottomRight,
   bottomLeft }` for a radius per corner.

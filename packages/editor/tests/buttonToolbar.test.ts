@@ -79,7 +79,17 @@ describe("ButtonToolbar width control", () => {
 
 describe("ButtonToolbar align control", () => {
   function alignRadios(wrapper: ReturnType<typeof mountIt>) {
-    return wrapper.find('[role="radiogroup"]').findAll('[role="radio"]');
+    const group = wrapper
+      .findAll('[role="radiogroup"]')
+      .find((candidate) =>
+        candidate
+          .findAll('[role="radio"]')
+          .some((radio) =>
+            radio.attributes("aria-label")?.startsWith("title.align"),
+          ),
+      );
+    expect(group, "align control").toBeTruthy();
+    return group!.findAll('[role="radio"]');
   }
 
   it("reflects the block's alignment", () => {
@@ -117,6 +127,59 @@ describe("ButtonToolbar align control", () => {
     // appear and disappear as the width mode changes. Mirrors ImageToolbar.
     const wrapper = mountIt(createButtonBlock({ width: "full" }));
     expect(alignRadios(wrapper)).toHaveLength(3);
+  });
+});
+
+describe("ButtonToolbar font weight", () => {
+  function weightRadios(wrapper: ReturnType<typeof mountIt>) {
+    const group = wrapper
+      .findAll('[role="radiogroup"]')
+      .find((candidate) =>
+        candidate
+          .findAll('[role="radio"]')
+          .some((radio) =>
+            radio.attributes("aria-label")?.startsWith("button.fontWeight"),
+          ),
+      );
+    expect(group, "font weight control").toBeTruthy();
+    return group!.findAll('[role="radio"]');
+  }
+
+  it("shows Bold when the field is absent", () => {
+    const wrapper = mountIt(createButtonBlock());
+    expect(wrapper.text()).toContain("button.fontWeight");
+
+    const checked = weightRadios(wrapper).filter(
+      (radio) => radio.attributes("aria-checked") === "true",
+    );
+    expect(checked).toHaveLength(1);
+    expect(checked[0].attributes("aria-label")).toBe("button.fontWeightBold");
+  });
+
+  it.each([
+    ["regular", "button.fontWeightRegular"],
+    ["medium", "button.fontWeightMedium"],
+    ["bold", "button.fontWeightBold"],
+  ] as const)("shows the stored %s weight", (fontWeight, label) => {
+    const checked = weightRadios(
+      mountIt(createButtonBlock({ fontWeight })),
+    ).filter((radio) => radio.attributes("aria-checked") === "true");
+    expect(checked).toHaveLength(1);
+    expect(checked[0].attributes("aria-label")).toBe(label);
+  });
+
+  it("stores regular and medium, and clears bold so the template stays minimal", async () => {
+    // Bold is what an omitted field renders. Choosing it drops the field,
+    // the same way Auto drops width, instead of writing "bold" on every button.
+    const wrapper = mountIt(createButtonBlock({ fontWeight: "regular" }));
+    const radios = weightRadios(wrapper);
+
+    await radios[1].trigger("click");
+    await radios[2].trigger("click");
+
+    const emitted = wrapper.emitted("update") as [Partial<ButtonBlock>][];
+    expect(emitted[0][0]).toEqual({ fontWeight: "medium" });
+    expect(emitted[1][0]).toEqual({ fontWeight: undefined });
   });
 });
 

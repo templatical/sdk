@@ -27,15 +27,15 @@ export function renderDivider(
         ? `${block.width}px`
         : block.width;
   const thickness = block.thickness;
-  const lineStyle = block.lineStyle;
+  const lineStyle = escapeAttr(block.lineStyle);
   const color = escapeAttr(block.color);
   const visibilityAttr = getCssClassAttr(block);
 
   return `<mj-divider
-  border-width="${thickness}px"
+  border-width="${escapeAttr(String(thickness))}px"
   border-style="${lineStyle}"
   border-color="${color}"
-  width="${width}"
+  width="${escapeAttr(width)}"
   padding="${padding}"${bgColor}${visibilityAttr}
 />`;
 }
