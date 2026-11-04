@@ -7,8 +7,17 @@ import {
 } from "../src/server";
 
 describe("merge tags in AI input and output (S7 Y5)", () => {
+  it("scans unclosed built-in openers in under 400 ms", () => {
+    const start = performance.now();
+    expect(mergeTagTokens("{{".repeat(40_000), "liquid")).toEqual([]);
+    expect(performance.now() - start).toBeLessThan(400);
+  });
   it.each([
-    ["liquid", "Hi {{ first_name }} and {{coupon}}", ["{{ first_name }}", "{{coupon}}"]],
+    [
+      "liquid",
+      "Hi {{ first_name }} and {{coupon}}",
+      ["{{ first_name }}", "{{coupon}}"],
+    ],
     ["handlebars", "Hi {{{raw}}} {{name}}", ["{{{raw}}}", "{{name}}"]],
     ["mailchimp", "Hi *|FNAME|*", ["*|FNAME|*"]],
     ["ampscript", "Hi %%=v(@name)=%%", ["%%=v(@name)=%%"]],
@@ -45,7 +54,11 @@ describe("merge tags in AI input and output (S7 Y5)", () => {
 
   it("names each unknown token once, in order, and checks nothing for custom", () => {
     expect(
-      unknownMergeTags("liquid", ["{{a}}", "{{b}}", "{{a}}", "{{c}}", "{{b}}"], ["{{a}}"]),
+      unknownMergeTags(
+        "liquid",
+        ["{{a}}", "{{b}}", "{{a}}", "{{c}}", "{{b}}"],
+        ["{{a}}"],
+      ),
     ).toEqual(["{{b}}", "{{c}}"]);
     expect(unknownMergeTags("custom", ["{{b}}"], [])).toEqual([]);
   });

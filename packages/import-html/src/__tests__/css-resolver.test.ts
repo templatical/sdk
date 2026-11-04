@@ -3,6 +3,31 @@ import { describe, expect, it } from "vitest";
 import { parseStyleSheet, resolveCssStyles } from "../css-resolver";
 
 describe("parseStyleSheet", () => {
+  it("scans brace-free CSS in under 400 ms", () => {
+    const start = performance.now();
+    expect(parseStyleSheet("div;".repeat(20_000))).toEqual([]);
+    expect(performance.now() - start).toBeLessThan(400);
+  });
+  it("keeps brace-free inner rules after malformed outer bodies", () => {
+    expect(parseStyleSheet(".card { .title { font-size: 20px } }")).toEqual([
+      {
+        selectors: [".title"],
+        declarations: { "font-size": "20px" },
+      },
+    ]);
+    expect(
+      parseStyleSheet("a { color: blue } div { span { color: red } }"),
+    ).toEqual([
+      { selectors: ["a"], declarations: { color: "blue" } },
+      { selectors: ["span"], declarations: { color: "red" } },
+    ]);
+    expect(parseStyleSheet("div { color red\nspan { color: blue } }")).toEqual([
+      {
+        selectors: ["color red\nspan"],
+        declarations: { color: "blue" },
+      },
+    ]);
+  });
   it("parses a single rule with one declaration", () => {
     const rules = parseStyleSheet("p { color: red; }");
     expect(rules).toHaveLength(1);

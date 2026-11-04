@@ -46,6 +46,27 @@ export function findOpenTagEnd(html: string, from: number): number {
   return -1;
 }
 
+/** End of a span's opening tag, or the next span start if this one is malformed. */
+export function findOpenSpanBoundary(
+  html: string,
+  from: number,
+): { end: number; nextSpan: number } {
+  let quote: string | null = null;
+  for (let i = from; i < html.length; i++) {
+    const char = html[i];
+    if (quote !== null) {
+      if (char === quote) quote = null;
+    } else if (QUOTES.has(char)) {
+      quote = char;
+    } else if (char === ">") {
+      return { end: i, nextSpan: -1 };
+    } else if (char === "<" && html.startsWith("<span", i)) {
+      return { end: -1, nextSpan: i };
+    }
+  }
+  return { end: -1, nextSpan: -1 };
+}
+
 function isAttrNameChar(char: string): boolean {
   return (
     char !== " " &&

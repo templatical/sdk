@@ -27,6 +27,38 @@ const localization = (content: ReturnType<typeof template>, options = {}) =>
   );
 
 describe("localization rules", () => {
+  it("compares many unclosed built-in openers in under 400 ms", () => {
+    const value = "{{".repeat(40_000);
+    const content = template();
+    content.blocks = [
+      createParagraphBlock({
+        id: "copy",
+        content: value,
+        l10n: {
+          de: { text: { content: { value, sourceHash: sourceHash(value) } } },
+        },
+      }),
+    ];
+    const start = performance.now();
+    expect(localization(content)).toEqual([]);
+    expect(performance.now() - start).toBeLessThan(400);
+  });
+  it("compares many complete built-in tags in under 400 ms", () => {
+    const value = "{{x}}".repeat(20_000);
+    const content = template();
+    content.blocks = [
+      createParagraphBlock({
+        id: "copy",
+        content: value,
+        l10n: {
+          de: { text: { content: { value, sourceHash: sourceHash(value) } } },
+        },
+      }),
+    ];
+    const start = performance.now();
+    expect(localization(content)).toEqual([]);
+    expect(performance.now() - start).toBeLessThan(400);
+  });
   it("reports each missing field including settings with null blockId, only in a version", () => {
     const content = template();
     content.blocks = [
@@ -245,7 +277,10 @@ describe("localization rules", () => {
         l10n: {
           de: {
             text: {
-              "items.deleted.text": { value: "Verwaist", sourceHash: "00000000" },
+              "items.deleted.text": {
+                value: "Verwaist",
+                sourceHash: "00000000",
+              },
             },
           },
         },

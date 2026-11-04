@@ -40,6 +40,12 @@ describe("parseColor", () => {
 });
 
 describe("parsePxValue", () => {
+  it("rejects a long invalid whitespace suffix in under 400 ms", () => {
+    const start = performance.now();
+    expect(parsePxValue("1" + " ".repeat(40_000) + "x")).toBe(0);
+    expect(performance.now() - start).toBeLessThan(400);
+    expect(parsePxValue("12 px ")).toBe(12);
+  });
   it("reads a px length", () => {
     expect(parsePxValue("30px")).toBe(30);
   });

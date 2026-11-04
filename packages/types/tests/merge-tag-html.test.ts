@@ -3,9 +3,25 @@ import {
   convertMergeTagsToValues,
   getTagAttrValue,
   replaceMergeTagSpans,
+  scanMergeTagSpans,
 } from "../src";
 
 describe("merge-tag HTML scanning", () => {
+  it("scans malformed span prefixes in under 400 ms and finds a later chip", () => {
+    const html = "<span ".repeat(6_000) + "<span></span>";
+    const start = performance.now();
+    expect(scanMergeTagSpans(html)).toEqual([]);
+    expect(performance.now() - start).toBeLessThan(400);
+    const prefix = "<span ".repeat(6_000);
+    const withChip = prefix + '<span data-merge-tag="{{x}}">X</span>';
+    expect(scanMergeTagSpans(withChip)).toEqual([
+      {
+        start: prefix.length,
+        end: withChip.length,
+        markup: '<span data-merge-tag="{{x}}">X</span>',
+      },
+    ]);
+  });
   it("replaces nested chip labels completely while preserving surrounding markup", () => {
     const html =
       '<p>Hi <span class="chip" data-merge-tag="[[a&lt;b]]"><b>First</b><span>name</span></span>!</p>';

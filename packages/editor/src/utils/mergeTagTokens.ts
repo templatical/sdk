@@ -1,6 +1,7 @@
 import {
   decodeHtmlEntities,
   replaceMergeTagSpans,
+  scanSyntaxMatches,
   type SyntaxPreset,
 } from "@templatical/types";
 
@@ -31,26 +32,31 @@ export function mergeTagTokens(
     (match) => ({ start: match.index, end: match.index + match[0].length }),
   );
   const matches: { start: number; end: number; value: string }[] = [];
-  for (const regex of [syntax.logic, syntax.value]) {
-    const pattern = new RegExp(
-      regex.source,
-      regex.flags.replace(/[gy]/g, "") + "g",
-    );
-    for (const match of remaining.matchAll(pattern)) {
+  const logic = scanSyntaxMatches(remaining, syntax, "logic");
+  const acceptedLogic: { start: number; end: number }[] = [];
+  let logicIndex = 0;
+  for (const kind of ["logic", "value"] as const) {
+    let placeholderIndex = 0;
+    for (const match of kind === "logic"
+      ? logic
+      : scanSyntaxMatches(remaining, syntax, "value")) {
       const start = match.index;
-      const end = start + match[0].length;
-      if (
-        placeholders.some(
-          (placeholder) => start < placeholder.end && end > placeholder.start,
-        )
-      )
+      const end = start + match.value.length;
+      while (placeholders[placeholderIndex]?.end <= start) placeholderIndex++;
+      const placeholder = placeholders[placeholderIndex];
+      if (placeholder && start < placeholder.end && end > placeholder.start)
         continue;
-      if (matches.some((other) => start < other.end && end > other.start))
-        continue;
+      if (kind === "value") {
+        while (acceptedLogic[logicIndex]?.end <= start) logicIndex++;
+        const other = acceptedLogic[logicIndex];
+        if (other && start < other.end && end > other.start) continue;
+      }
+      if (kind === "logic") acceptedLogic.push({ start, end });
       matches.push({
         start,
         end,
-        value: format === "html" ? decodeHtmlEntities(match[0]) : match[0],
+        value:
+          format === "html" ? decodeHtmlEntities(match.value) : match.value,
       });
     }
   }
