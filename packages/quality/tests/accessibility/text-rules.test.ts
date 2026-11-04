@@ -212,6 +212,50 @@ describe("a11y.text-justified", () => {
     ).toBe('<p style="font-family: &#x27;Open Sans&#x27;">Body</p>');
   });
 
+  it("reports and fixes a declaration separated by a decimal character reference", () => {
+    const html = '<p style="color:red&#59;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe('<p style="color:red">Body</p>');
+  });
+
+  it("reports and fixes a declaration separated by a hex character reference", () => {
+    const html = '<p style="color:&#35;123&#x3b;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe('<p style="color:&#35;123">Body</p>');
+  });
+
+  it("fix preserves literal semicolons inside a character-reference-quoted value", () => {
+    const html =
+      '<p style="content:&quot;one;text-align:justify;two&quot;; text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe(
+      '<p style="content:&quot;one;text-align:justify;two&quot;">Body</p>',
+    );
+  });
+
+  it("does not report text-align inside a character-reference-quoted value", () => {
+    expect(
+      lint(
+        '<p style="content:&quot;one;text-align:justify;two&quot;">Body</p>',
+      ),
+    ).toEqual([]);
+  });
+
+  it("fix preserves semicolons inside a function with encoded parentheses", () => {
+    const html =
+      '<p style="background:url&#40;foo;text-align:justify&#41;;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe(
+      '<p style="background:url&#40;foo;text-align:justify&#41;">Body</p>',
+    );
+  });
+
+  it("fix preserves a semicolon escaped by an encoded backslash", () => {
+    const html = '<p style="content:one&#92;;two;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe('<p style="content:one&#92;;two">Body</p>');
+  });
+
   it("does not treat text-align inside a URL as a declaration", () => {
     expect(
       lint(

@@ -1,4 +1,4 @@
-import { isParagraph } from "@templatical/types";
+import { decodeHtmlEntities, isParagraph } from "@templatical/types";
 import type { Block } from "@templatical/types";
 import type { LintPatchContext, Rule, RuleMeta } from "../../types";
 import {
@@ -19,31 +19,45 @@ const TEXT_ALIGN_DECL = /^\s*text-align\s*:\s*([^;]*)/i;
 const CHARACTER_REFERENCE =
   /^&(?:[A-Za-z][A-Za-z0-9]*|#[0-9]+|#[xX][0-9a-fA-F]+);/;
 
-/** Split only at declaration boundaries, preserving strings and function values. */
+/** Split at decoded declaration boundaries while retaining raw source slices. */
 function splitDeclarations(style: string): string[] {
   const declarations: string[] = [];
   let start = 0;
   let depth = 0;
   let quote: '"' | "'" | null = null;
-  for (let i = 0; i < style.length; i++) {
-    const char = style[i];
-    if (char === "\\") {
-      i++;
-    } else if (quote !== null) {
-      if (char === quote) quote = null;
-    } else if (char === "&") {
+  let escaped = false;
+  for (let i = 0; i < style.length;) {
+    let chars = style[i];
+    let end = i + 1;
+    if (chars === "&") {
       const reference = CHARACTER_REFERENCE.exec(style.slice(i));
-      if (reference !== null) i += reference[0].length - 1;
-    } else if (char === '"' || char === "'") {
-      quote = char;
-    } else if (char === "(") {
-      depth++;
-    } else if (char === ")" && depth > 0) {
-      depth--;
-    } else if (char === ";" && depth === 0) {
-      declarations.push(style.slice(start, i));
-      start = i + 1;
+      if (reference !== null) {
+        const decoded = decodeHtmlEntities(reference[0]);
+        if (decoded !== reference[0]) {
+          chars = decoded;
+          end = i + reference[0].length;
+        }
+      }
     }
+    for (const char of chars) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (quote !== null) {
+        if (char === quote) quote = null;
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === "(") {
+        depth++;
+      } else if (char === ")" && depth > 0) {
+        depth--;
+      } else if (char === ";" && depth === 0) {
+        declarations.push(style.slice(start, i));
+        start = end;
+      }
+    }
+    i = end;
   }
   declarations.push(style.slice(start));
   return declarations;
@@ -66,7 +80,7 @@ function styleValues(html: string): string[] {
 
 function isJustified(style: string): boolean {
   return splitDeclarations(style).some((decl) => {
-    const match = TEXT_ALIGN_DECL.exec(decl);
+    const match = TEXT_ALIGN_DECL.exec(decodeHtmlEntities(decl));
     return match !== null && match[1].trim().toLowerCase() === "justify";
   });
 }
@@ -82,7 +96,7 @@ function isJustified(style: string): boolean {
  */
 function removeTextAlign(style: string): string {
   return splitDeclarations(style)
-    .filter((decl) => !/^\s*text-align\s*:/i.test(decl))
+    .filter((decl) => !/^\s*text-align\s*:/i.test(decodeHtmlEntities(decl)))
     .map((decl) => decl.trim())
     .filter((decl) => decl !== "")
     .join("; ");
