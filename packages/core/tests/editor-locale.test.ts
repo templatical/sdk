@@ -58,6 +58,27 @@ function german() {
 }
 
 describe("editor language routing", () => {
+  it("refuses a localized section rewrite when reconciliation repeats a descendant ID", () => {
+    const leaf = createTitleBlock({ id: "X", content: "Original" });
+    const nested = createSectionBlock({ id: "S", children: [[leaf]] });
+    const content = createDefaultTemplateContent();
+    content.settings.locale = "en";
+    content.settings.locales = ["de"];
+    content.blocks = [createSectionBlock({ id: "A", children: [[nested]] })];
+    const onStructureChange = vi.fn();
+    const editor = useEditor({ content, onStructureChange });
+    editor.setActiveLocale("de");
+    const before = safeClone(editor.content.value);
+
+    editor.updateBlock("A", {
+      children: [[createSectionBlock({ id: "S", children: [[]] }), leaf]],
+    });
+
+    expect(editor.content.value).toEqual(before);
+    expect(editor.state.isDirty).toBe(false);
+    expect(onStructureChange).not.toHaveBeenCalled();
+  });
+
   it("refuses a children payload against a lock in another locale even when its ids stay unchanged", () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
@@ -168,7 +189,9 @@ describe("editor language routing", () => {
       else editor.setBlockHidden("t1", action === "hide");
       expect(editor.content.value.blocks[0].l10n?.de.text?.content).toEqual({
         value: "<p>Hallo</p>",
-        sourceHash: sourceHash(action === "keep" ? "<p>Hallo</p>" : "<p>Hello</p>"),
+        sourceHash: sourceHash(
+          action === "keep" ? "<p>Hallo</p>" : "<p>Hello</p>",
+        ),
       });
       if (action === "keep")
         expect(localeCoverage(editor.content.value, "de").translated).toContain(
@@ -345,7 +368,10 @@ describe("editor language routing", () => {
         l10n: {
           de: {
             text: {
-              "items.i1.text": { value: "Start", sourceHash: sourceHash("Home") },
+              "items.i1.text": {
+                value: "Start",
+                sourceHash: sourceHash("Home"),
+              },
             },
           },
         },
@@ -639,7 +665,9 @@ describe("editor language routing", () => {
         content: "Base",
         l10n: {
           de: {
-            text: { content: { value: "Deutsch", sourceHash: sourceHash("Base") } },
+            text: {
+              content: { value: "Deutsch", sourceHash: sourceHash("Base") },
+            },
           },
         },
       });
@@ -716,7 +744,10 @@ it("routes absent preheader as set and existing preheader as text through valida
   editor.updateSettings({ preheaderText: "Neue Vorschau" });
   expect(editor.content.value.settings.l10n?.de).toEqual({
     text: {
-      preheaderText: { value: "Neue Vorschau", sourceHash: sourceHash("Preview") },
+      preheaderText: {
+        value: "Neue Vorschau",
+        sourceHash: sourceHash("Preview"),
+      },
     },
   });
   expect(validateTemplate(editor.content.value)).toEqual({
@@ -975,7 +1006,10 @@ describe("base edits prune locale orphans", () => {
         l10n: {
           de: {
             text: {
-              "items.home.text": { value: "Start", sourceHash: sourceHash("Home") },
+              "items.home.text": {
+                value: "Start",
+                sourceHash: sourceHash("Home"),
+              },
             },
           },
         },

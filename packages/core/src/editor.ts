@@ -554,7 +554,8 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         "invalid_operation",
       );
     const next = { ...block, ...updates } as Block;
-    const structural = reconcileStructure(safeClone(block), next, (id) =>
+    const reconciled = safeClone(block);
+    const structural = reconcileStructure(reconciled, next, (id) =>
       findBlockById(state.content.blocks, id),
     );
     const rewritesChildren = "children" in updates;
@@ -579,6 +580,8 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
               return false;
             seenChildIds.add(id);
           }
+      const reconciledIds = blockIdsOf(reconciled);
+      if (new Set(reconciledIds).size !== reconciledIds.length) return false;
     }
     return (
       !isBlockLocked(blockId, affectsDescendants || "columns" in updates) &&
