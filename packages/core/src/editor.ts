@@ -558,12 +558,27 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       findBlockById(state.content.blocks, id),
     );
     const rewritesChildren = "children" in updates;
+    const affectsDescendants =
+      structural || rewritesChildren || next.type !== block.type;
+    if (
+      rewritesChildren &&
+      next.type === "section" &&
+      Array.isArray(next.children)
+    ) {
+      const currentDescendantIds = new Set(blockIdsOf(block).slice(1));
+      for (const column of next.children)
+        for (const child of column)
+          for (const id of blockIdsOf(child))
+            if (
+              isBlockLocked(id, true) ||
+              (findBlockById(state.content.blocks, id) !== null &&
+                !currentDescendantIds.has(id))
+            )
+              return false;
+    }
     return (
-      !isBlockLocked(
-        blockId,
-        structural || rewritesChildren || "columns" in updates,
-      ) &&
-      (!(structural || rewritesChildren) ||
+      !isBlockLocked(blockId, affectsDescendants || "columns" in updates) &&
+      (!affectsDescendants ||
         !blockIdsOf(block).some(
           (id) => id !== blockId && isBlockLocked(id, true),
         ))

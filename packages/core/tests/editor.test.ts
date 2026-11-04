@@ -248,6 +248,7 @@ describe('locked blocks', () => {
         const content = createDefaultTemplateContent();
         content.blocks = [container, sibling];
         const original = structuredClone(content.blocks);
+        const originalContent = structuredClone(content);
         const lockedBlocks = ref(
             new Map(locked ? [[child.id, { id: 'peer' }]] : []),
         );
@@ -257,7 +258,7 @@ describe('locked blocks', () => {
             lockedBlocks,
         });
         if (kind === 'wrapper') editor.content.value = content;
-        return { editor, container, sibling, original };
+        return { editor, container, sibling, original, originalContent };
     }
 
     it.each(['section', 'wrapper'] as const)(
@@ -304,6 +305,78 @@ describe('locked blocks', () => {
         );
         editor.updateBlock(container.id, { children: [[]] } as Partial<Block>);
         expect(editor.state.content.blocks).toEqual(original);
+    });
+
+    it('updateBlock refuses a type change that hides a peer-locked descendant', () => {
+        const { editor, container, originalContent } = editorWithContainer(
+            'section',
+            true,
+        );
+
+        editor.updateBlock(container.id, { type: 'paragraph' });
+
+        expect(editor.state.content).toEqual(originalContent);
+        expect(editor.state.isDirty).toBe(false);
+
+        const unlocked = editorWithContainer('section', false);
+        unlocked.editor.updateBlock(unlocked.container.id, { type: 'paragraph' });
+        expect(unlocked.editor.state.content.blocks).toEqual([
+            { ...unlocked.original[0], type: 'paragraph' },
+            unlocked.original[1],
+        ]);
+        expect(unlocked.editor.state.isDirty).toBe(true);
+    });
+
+    it('updateBlock refuses a nested incoming child whose ID is peer-locked', () => {
+        const held = createParagraphBlock({ id: 'held', content: '<p>Held</p>' });
+        const target = createSectionBlock({ id: 'target', children: [[]] });
+        const content = createDefaultTemplateContent();
+        content.blocks = [target];
+        const original = structuredClone(content);
+        const lockedBlocks = ref(new Map([[held.id, { id: 'peer' }]]));
+        const editor = useEditor({ content, lockedBlocks });
+
+        editor.updateBlock(target.id, {
+            children: [[createSectionBlock({
+                id: 'incoming',
+                children: [[{ ...held, content: '<p>Replacement</p>' }]],
+            })]],
+        });
+
+        expect(editor.state.content).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
+
+        lockedBlocks.value = new Map();
+        const fresh = createParagraphBlock({ id: 'fresh', content: '<p>Fresh</p>' });
+        const nested = createSectionBlock({
+            id: 'new-section',
+            children: [[fresh]],
+        });
+        editor.updateBlock(target.id, { children: [[nested]] });
+        expect(editor.state.content).toEqual({
+            ...original,
+            blocks: [{ ...original.blocks[0], children: [[nested]] }],
+        });
+        expect(editor.state.isDirty).toBe(true);
+    });
+
+    it('updateBlock refuses an incoming child ID already outside the target in a locale', () => {
+        const existing = createParagraphBlock({ id: 'existing', content: '<p>Elsewhere</p>' });
+        const target = createSectionBlock({ id: 'target', children: [[]] });
+        const other = createSectionBlock({ id: 'other', children: [[existing]] });
+        const content = createDefaultTemplateContent();
+        content.settings.locales = ['de'];
+        content.blocks = [target, other];
+        const original = structuredClone(content);
+        const editor = useEditor({ content });
+        editor.setActiveLocale('de');
+
+        editor.updateBlock(target.id, {
+            children: [[{ ...existing, content: '<p>Duplicate</p>' }]],
+        });
+
+        expect(editor.state.content).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
     });
 
     it('updateBlock refuses a same-id children payload that overwrites a peer-locked child', () => {
