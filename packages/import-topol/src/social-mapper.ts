@@ -20,6 +20,7 @@ const KNOWN_PLATFORMS: Record<SocialPlatform, true> = {
   twitter: true,
   instagram: true,
   linkedin: true,
+  xing: true,
   youtube: true,
   tiktok: true,
   pinterest: true,

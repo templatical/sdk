@@ -2334,6 +2334,89 @@ describe("convertModule", () => {
       expect(warnings).toHaveLength(0);
     });
 
+    it("maps Xing from the id, name, alt, title, or a xing.com host", () => {
+      const platformsOf = (
+        fields: Record<string, unknown>,
+        image: Record<string, unknown>,
+      ) => {
+        const warnings: string[] = [];
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-social", {
+            iconsList: { icons: [{ ...fields, image }] },
+          }),
+          warnings,
+        );
+        if (block.type !== "social") return { icons: [], warnings };
+        return { icons: block.icons, warnings };
+      };
+
+      const mapped = (
+        fields: Record<string, unknown>,
+        image: Record<string, unknown>,
+      ) => {
+        const result = platformsOf(fields, image);
+        expect(result.warnings).toEqual([]);
+        expect(result.icons).toHaveLength(1);
+        return result.icons[0];
+      };
+
+      expect(
+        mapped({ id: "xing" }, { href: "https://example.com/profile" })
+          .platform,
+      ).toBe("xing");
+      const named = mapped(
+        { name: "Xing" },
+        { href: "https://example.com/profile" },
+      );
+      expect(named.platform).toBe("xing");
+      expect(named.url).toBe("https://example.com/profile");
+      expect(
+        mapped(
+          { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+          { alt: "XING", href: "https://example.com/profile" },
+        ).platform,
+      ).toBe("xing");
+      expect(
+        mapped(
+          { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+          { title: "Xing", href: "https://example.com/profile" },
+        ).platform,
+      ).toBe("xing");
+      expect(
+        mapped(
+          {
+            id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            name: "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+          },
+          { href: "https://www.xing.com/pages/example" },
+        ),
+      ).toEqual(
+        expect.objectContaining({
+          platform: "xing",
+          url: "https://www.xing.com/pages/example",
+        }),
+      );
+      expect(
+        mapped(
+          { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+          { href: "https://profile.xing.com/example" },
+        ).platform,
+      ).toBe("xing");
+
+      for (const href of [
+        "https://notxing.com/pages/example",
+        "https://evil.example/xing.com",
+        "https://xing.com.evil.example/pages",
+      ]) {
+        expect(
+          platformsOf(
+            { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+            { alt: "Channel", href },
+          ).icons.map((icon) => icon.platform),
+        ).not.toContain("xing");
+      }
+    });
+
     it("keeps an unknown network as an image and notes it", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-social", {
@@ -2349,9 +2432,9 @@ describe("convertModule", () => {
             {
               name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
               image: {
-                alt: "Xing",
-                href: "https://www.xing.com/pages/example",
-                src: "https://cdn.example.com/xing.png",
+                alt: "Vimeo",
+                href: "https://vimeo.com/example",
+                src: "https://cdn.example.com/vimeo.png",
                 target: "_blank",
                 width: 64,
                 height: 64,
@@ -2372,9 +2455,9 @@ describe("convertModule", () => {
       const image = extras?.[0];
       expect(image?.type).toBe("image");
       if (image?.type === "image") {
-        expect(image.src).toBe("https://cdn.example.com/xing.png");
-        expect(image.linkUrl).toBe("https://www.xing.com/pages/example");
-        expect(image.alt).toBe("Xing");
+        expect(image.src).toBe("https://cdn.example.com/vimeo.png");
+        expect(image.linkUrl).toBe("https://vimeo.com/example");
+        expect(image.alt).toBe("Vimeo");
         expect(image.width).toBe(32);
         expect(image.naturalWidth).toBe(64);
         expect(image.naturalHeight).toBe(64);
@@ -2382,7 +2465,7 @@ describe("convertModule", () => {
         expect(image.linkOpenInNewTab).toBe(true);
       }
       expect(warnings).toEqual([
-        'Social network "Xing" has no Templatical icon; imported as an image.',
+        'Social network "Vimeo" has no Templatical icon; imported as an image.',
       ]);
       expect(entry.note).toBe(warnings[0]);
       expect(entry.status).toBe("approximated");

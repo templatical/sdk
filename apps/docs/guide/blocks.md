@@ -22,7 +22,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
 | Visual separation | [Divider](#divider) | Horizontal line with style options |
 | Vertical spacing | [Spacer](#spacer) | Empty space between blocks |
-| Social links | [Social Icons](#social-icons) | 17 platforms, 5 icon styles |
+| Social links | [Social Icons](#social-icons) | 18 platforms, 5 icon styles |
 | Navigation links | [Menu](#menu) | Horizontal link list with separators |
 | Tabular data | [Table](#table) | Data table with optional header styling |
 | Video preview | [Video](#video) | Clickable thumbnail (email clients don't support embedded video) |
@@ -138,7 +138,7 @@ A row of social media icons linking to platform profiles.
 
 Email clients that switch to dark mode, such as the Gmail app and Outlook, change the background but leave images as they are. A dark `plain` or `outlined` icon therefore carries a faint white halo that is barely visible on light backgrounds and keeps the icon visible as an outline once the background turns dark. Light icons have no halo, so they stay clean on colored bands, but clients that turn a dark background light (the Gmail app on iOS, Outlook for Windows) can hide a light `plain` or `outlined` icon. A filled shape avoids both, since its badge brings its own contrast.
 
-17 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
+18 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
 Each `SocialIcon` has:
 

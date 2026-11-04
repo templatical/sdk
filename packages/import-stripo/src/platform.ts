@@ -8,6 +8,7 @@ const NAMED: Record<string, SocialPlatform> = {
   instagram: "instagram",
   inst: "instagram",
   linkedin: "linkedin",
+  xing: "xing",
   youtube: "youtube",
   yt: "youtube",
   tiktok: "tiktok",

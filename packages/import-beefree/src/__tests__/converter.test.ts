@@ -2088,6 +2088,15 @@ describe("convertBeeFreeTemplate", () => {
           { "grid-columns": 5, modules: [text()] },
         ],
       });
+      // 7/12 rounds to 583 thousandths: 83 from an even split, 84 from 2/3.
+      // 5/12 rounds the same way. A third would narrow the smaller share
+      // enough to wrap a one-line footer.
+      const fiveSeven = sectionOf({
+        columns: [
+          { "grid-columns": 5, modules: [text("<p>L</p>")] },
+          { "grid-columns": 7, modules: [text("<p>R</p>")] },
+        ],
+      });
       const unevenThree = sectionOf({
         columns: [
           { "grid-columns": 2, modules: [text()] },
@@ -2107,14 +2116,67 @@ describe("convertBeeFreeTemplate", () => {
       expect(ratioNotes(threeNine.report.warnings)).toEqual([
         'Column ratio 3-9 was mapped to the nearest layout "1-2".',
       ]);
-      expect(sevenFive.section.columns).toBe("2-1");
+      expect(sevenFive.section.columns).toBe("2");
       expect(ratioNotes(sevenFive.report.warnings)).toEqual([
-        'Column ratio 7-5 was mapped to the nearest layout "2-1".',
+        'Column ratio 7-5 was mapped to the nearest layout "2".',
+      ]);
+      expect(fiveSeven.section.columns).toBe("2");
+      expect(fiveSeven.section.children).toHaveLength(2);
+      expect(ratioNotes(fiveSeven.report.warnings)).toEqual([
+        'Column ratio 5-7 was mapped to the nearest layout "2".',
       ]);
       expect(unevenThree.section.columns).toBe("3");
       expect(ratioNotes(unevenThree.report.warnings)).toEqual([
         'Column ratio 2-8-2 was mapped to the nearest layout "3".',
       ]);
+    });
+
+    it("returns inner padding when a snap narrows a column", () => {
+      const padding = (left: string, right: string) => ({
+        "padding-top": "10px",
+        "padding-right": right,
+        "padding-bottom": "10px",
+        "padding-left": left,
+      });
+      const paragraph = (align: string, box: Record<string, string>) => ({
+        type: "mailup-bee-newsletter-modules-text",
+        descriptor: {
+          text: { html: `<p style="text-align: ${align}">Hi</p>` },
+          style: box,
+        },
+      });
+      const { section } = sectionOf({
+        columns: [
+          {
+            "grid-columns": 7,
+            style: padding("40px", "5px"),
+            modules: [paragraph("left", padding("10px", "10px"))],
+          },
+          {
+            "grid-columns": 5,
+            style: padding("10px", "40px"),
+            modules: [paragraph("right", padding("10px", "10px"))],
+          },
+        ],
+      });
+
+      // 7/12 of 600 is 350 and the even column is 300, so the left side is
+      // 50px short. Its inner padding is the right side (15px) and that
+      // goes to 0; the outer 50px stays. The right column is wider than
+      // its 250px source, so its padding is unchanged.
+      expect(section.columns).toBe("2");
+      expect(section.children[0][0].styles.padding).toEqual({
+        top: 20,
+        right: 0,
+        bottom: 20,
+        left: 50,
+      });
+      expect(section.children[1][0].styles.padding).toEqual({
+        top: 20,
+        right: 50,
+        bottom: 20,
+        left: 20,
+      });
     });
 
     it("treats a non-positive column total as an even split", () => {
@@ -2249,9 +2311,9 @@ describe("convertBeeFreeTemplate", () => {
                           {
                             name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
                             image: {
-                              alt: "Xing",
-                              href: "https://www.xing.com/pages/example",
-                              src: "https://cdn.example.com/xing.png",
+                              alt: "Vimeo",
+                              href: "https://vimeo.com/example",
+                              src: "https://cdn.example.com/vimeo.png",
                             },
                           },
                         ],
@@ -2272,16 +2334,68 @@ describe("convertBeeFreeTemplate", () => {
     ]);
     const image = content.blocks[1];
     expect(image.type === "image" && image.src).toBe(
-      "https://cdn.example.com/xing.png",
+      "https://cdn.example.com/vimeo.png",
     );
     expect(image.type === "image" && image.linkUrl).toBe(
-      "https://www.xing.com/pages/example",
+      "https://vimeo.com/example",
     );
     expect(report.entries).toHaveLength(1);
     expect(report.entries[0].status).toBe("approximated");
     expect(report.warnings).toEqual([
-      'Social network "Xing" has no Templatical icon; imported as an image.',
+      'Social network "Vimeo" has no Templatical icon; imported as an image.',
     ]);
+  });
+
+  it("keeps a Xing icon on the social block", () => {
+    const { content, report } = convertBeeFreeTemplate({
+      page: {
+        body: { content: { style: { width: "600px" } } },
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-social",
+                    descriptor: {
+                      iconsList: {
+                        icons: [
+                          {
+                            id: "facebook",
+                            name: "Facebook",
+                            image: { href: "https://facebook.com/page" },
+                          },
+                          {
+                            name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
+                            image: {
+                              alt: "Xing",
+                              href: "https://www.xing.com/pages/example",
+                              src: "https://cdn.example.com/xing.png",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(content.blocks.map((block) => block.type)).toEqual(["social"]);
+    const social = content.blocks[0];
+    expect(social.type).toBe("social");
+    if (social.type !== "social") return;
+    expect(social.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+      ["facebook", "https://facebook.com/page"],
+      ["xing", "https://www.xing.com/pages/example"],
+    ]);
+    expect(report.warnings).toEqual([]);
+    expect(report.entries[0].status).toBe("converted");
   });
 });
 
