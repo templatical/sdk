@@ -105,6 +105,34 @@ function noteSnappedRatio(
 }
 
 /**
+ * Nearest two-column layout, in the same thousandths as `isExactLayout`.
+ * `2` is listed first, so an equal distance stays on the even split. 7/12
+ * rounds to 583: 83 from even, 84 from 2/3, so the narrower share is not
+ * squeezed to a third.
+ */
+function nearestTwoColumn(
+  left: number,
+  total: number,
+): Exclude<ColumnLayout, "1" | "3"> {
+  const milli = ratioMilli(left, total);
+  const choices: Array<[Exclude<ColumnLayout, "1" | "3">, number]> = [
+    ["2", 500],
+    ["2-1", 667],
+    ["1-2", 333],
+  ];
+  let best: Exclude<ColumnLayout, "1" | "3"> = "2";
+  let bestDistance = Math.abs(milli - 500);
+  for (const [layout, target] of choices) {
+    const distance = Math.abs(milli - target);
+    if (distance < bestDistance) {
+      best = layout;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+/**
  * Determines the Templatical ColumnLayout from BeeFree column grid values.
  * A split that is not exactly `2`, `1-2`, `2-1` or an even `3` keeps the
  * nearest of those and records one warning naming the source ratio. Four or
@@ -128,10 +156,7 @@ function resolveColumnLayout(
       noteSnappedRatio(columns, "2", warnings);
       return "2";
     }
-    const ratio = left / total;
-    let layout: ColumnLayout = "2";
-    if (ratio > 0.58) layout = "2-1";
-    else if (ratio < 0.42) layout = "1-2";
+    const layout = nearestTwoColumn(left, total);
     if (!isExactLayout(layout, left, total)) {
       noteSnappedRatio(columns, layout, warnings);
     }
@@ -430,6 +455,56 @@ function drawnSide(side: BorderValue["left"] | undefined): number {
 }
 
 /**
+ * BeeFree's grid share of the section box, in whole pixels. The same floor
+ * the renderer uses, so an exact layout and this share differ only where
+ * the percentage rounding does.
+ */
+function columnShareWidths(columns: BeeFreeeColumn[], box: number): number[] {
+  const units = columns.map(columnUnits);
+  const total = units.reduce((sum, share) => sum + share, 0);
+  if (total <= 0) {
+    const each = Math.floor(box / Math.max(columns.length, 1));
+    return columns.map(() => each);
+  }
+  return units.map((share) => Math.floor((box * share) / total));
+}
+
+/** True when `layout` is not the source ratio, so a column may be narrower. */
+function layoutSnaps(
+  columns: BeeFreeeColumn[],
+  layout: Exclude<ColumnLayout, "1">,
+): boolean {
+  if (layout === "3") return !columnsEqual(columns);
+  const total = columns.reduce((sum, column) => sum + columnUnits(column), 0);
+  return !isExactLayout(layout, columnUnits(columns[0]!), total);
+}
+
+/**
+ * A snapped column is narrower than its grid share. The missing pixels come
+ * back from the padding that faces the next column, and the outer edge stays.
+ * Nothing is taken past 0, and a wider column is left alone.
+ */
+function giveBackInnerPadding(
+  blocks: Block[],
+  deficit: number,
+  sides: Array<"left" | "right">,
+): void {
+  if (deficit <= 0) return;
+  for (const block of blocks) {
+    const padding = block.styles.padding;
+    let remaining = deficit;
+    for (const side of sides) {
+      if (remaining <= 0) break;
+      const have = padding[side];
+      if (have <= 0) continue;
+      const give = Math.min(remaining, have);
+      padding[side] = have - give;
+      remaining -= give;
+    }
+  }
+}
+
+/**
  * Whole pixels MJML gives each column's content. A multi-column section
  * imported here has no padding of its own; a row border still shrinks the box.
  */
@@ -645,7 +720,24 @@ function processRow(
     settings.width,
     frame.border,
   );
+  const sectionBox =
+    Math.floor(settings.width) -
+    drawnSide(frame.border?.left) -
+    drawnSide(frame.border?.right);
+  const sourceWidths = layoutSnaps(columns, layout)
+    ? columnShareWidths(columns, sectionBox)
+    : null;
   children.forEach((column, index) => {
+    if (sourceWidths) {
+      const last = children.length - 1;
+      const inner: Array<"left" | "right"> =
+        index === 0 ? ["right"] : index === last ? ["left"] : ["right", "left"];
+      giveBackInnerPadding(
+        column,
+        sourceWidths[index]! - (contentWidths[index] ?? 0),
+        inner,
+      );
+    }
     keepColumnImagesAtDesktopWidth(column, contentWidths[index] ?? 0);
   });
 

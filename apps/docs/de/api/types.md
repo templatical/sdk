@@ -405,7 +405,7 @@ interface SocialIcon {
 }
 
 type SocialPlatform =
-  | 'facebook' | 'twitter' | 'instagram' | 'linkedin'
+  | 'facebook' | 'twitter' | 'instagram' | 'linkedin' | 'xing'
   | 'youtube' | 'tiktok' | 'pinterest' | 'email'
   | 'whatsapp' | 'telegram' | 'discord' | 'snapchat'
   | 'reddit' | 'github' | 'dribbble' | 'behance'
