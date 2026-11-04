@@ -107,6 +107,24 @@ describe("built-in merge-tag scanning", () => {
     expect(performance.now() - start).toBeLessThan(1500);
   });
 
+  it("rewrites many spans without the target attribute in under 1500 ms", () => {
+    const short = '<span>a</span><span data-merge-tag="{{x}}">x</span>';
+    expect(
+      resolveHtmlMergeTagLabels(short, [{ label: "X", value: "{{x}}" }]),
+    ).toBe('<span>a</span><span data-merge-tag="{{x}}">X</span>');
+    const html = "<span>".repeat(40_000) + "</span>";
+    const start = performance.now();
+    expect(resolveHtmlMergeTagLabels(html, [])).toBe(html);
+    expect(performance.now() - start).toBeLessThan(1500);
+  });
+
+  it("stops at the first match when only asked whether a tag exists", () => {
+    expect(containsMergeTag("{{a}} {{b}}", SYNTAX_PRESETS.liquid)).toBe(true);
+    expect(containsMergeTag("no tags here {{", SYNTAX_PRESETS.liquid)).toBe(
+      false,
+    );
+  });
+
   it("rewrites past malformed span prefixes in under 1500 ms", () => {
     const html = "<span ".repeat(16_000) + "<span></span>";
     const start = performance.now();

@@ -464,8 +464,8 @@ export function containsMergeTag(value: string, syntax: SyntaxPreset): boolean {
     Object.values(SYNTAX_PRESETS).includes(syntax as Required<SyntaxPreset>)
   ) {
     return (
-      scanSyntaxMatches(value, syntax, "value").length > 0 ||
-      scanSyntaxMatches(value, syntax, "logic").length > 0
+      scanSyntaxMatches(value, syntax, "value", 0, 1).length > 0 ||
+      scanSyntaxMatches(value, syntax, "logic", 0, 1).length > 0
     );
   }
 
@@ -553,11 +553,6 @@ function rewriteSpanByAttr(
       out += html.substring(i);
       break;
     }
-    const closeStart = html.indexOf("</span>", openEnd + 1);
-    if (closeStart === -1) {
-      out += html.substring(i);
-      break;
-    }
     const attrs = html.substring(open + 5, openEnd);
     const value = getTagAttrValue(attrs, attrName);
     if (value === null) {
@@ -566,6 +561,11 @@ function rewriteSpanByAttr(
       out += html.substring(i, openEnd + 1);
       i = openEnd + 1;
       continue;
+    }
+    const closeStart = html.indexOf("</span>", openEnd + 1);
+    if (closeStart === -1) {
+      out += html.substring(i);
+      break;
     }
     const newLabel = relabel(value);
     if (options?.unwrap?.(value)) {
