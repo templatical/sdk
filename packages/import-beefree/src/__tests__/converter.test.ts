@@ -1,8 +1,8 @@
 import { elementIdIssues } from "@templatical/types";
 import { describe, it, expect } from "vitest";
-import type { Block, DividerBlock } from "@templatical/types";
+import type { Block, DividerBlock, ImageBlock } from "@templatical/types";
 import { convertBeeFreeTemplate } from "../converter";
-import type { BeeFreeTemplate } from "../types";
+import type { BeeFreeeRow, BeeFreeTemplate } from "../types";
 import fixture from "./fixtures/example-1.json";
 
 describe("convertBeeFreeTemplate", () => {
@@ -867,11 +867,12 @@ describe("convertBeeFreeTemplate", () => {
     expect(report.warnings.some((w) => w.includes("synced"))).toBe(true);
   });
 
-  it("warns about multiple web fonts", () => {
+  it("does not warn about web fonts the template never uses", () => {
     const template: BeeFreeTemplate = {
       page: {
         rows: [],
         body: {
+          content: { style: { "font-family": "Arial, sans-serif" } },
           webFonts: [
             { name: "Montserrat" },
             { name: "Open Sans" },
@@ -881,8 +882,169 @@ describe("convertBeeFreeTemplate", () => {
       },
     };
 
-    const { report } = convertBeeFreeTemplate(template);
-    expect(report.warnings.some((w) => w.includes("web fonts"))).toBe(true);
+    const { customFonts, report } = convertBeeFreeTemplate(template);
+
+    expect(customFonts).toEqual([]);
+    expect(report.warnings.some((warning) => /font/i.test(warning))).toBe(
+      false,
+    );
+  });
+
+  it("returns custom fonts that have a URL and skips system stacks", () => {
+    const montserrat =
+      "'Montserrat', 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif";
+    const template: BeeFreeTemplate = {
+      page: {
+        rows: [],
+        body: {
+          content: { style: { "font-family": montserrat } },
+          webFonts: [
+            {
+              name: "Label",
+              fontFamily: montserrat,
+              url: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap",
+            },
+            {
+              name: "Montserrat",
+              fontFamily: "Montserrat, sans-serif",
+              url: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400&display=swap",
+            },
+            {
+              name: "inherit",
+              fontFamily: "inherit",
+              url: "https://fonts.googleapis.com/css2?family=Inherit",
+            },
+            {
+              name: "Arial",
+              fontFamily: "Arial, Helvetica Neue, Helvetica, sans-serif",
+              url: "https://example.com/arial.css",
+            },
+            {
+              name: "Open Sans",
+              url: "https://fonts.googleapis.com/css2?family=Open+Sans",
+            },
+            { name: "Roboto", fontFamily: "Roboto, sans-serif", url: "  " },
+          ],
+        },
+      },
+    };
+
+    const { customFonts, report } = convertBeeFreeTemplate(template);
+
+    expect(customFonts).toEqual([
+      {
+        name: "Montserrat",
+        url: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap",
+      },
+      {
+        name: "Open Sans",
+        url: "https://fonts.googleapis.com/css2?family=Open+Sans",
+      },
+    ]);
+    expect(report.warnings.some((warning) => /font/i.test(warning))).toBe(
+      false,
+    );
+  });
+
+  it("does not warn when the only fonts are system stacks", () => {
+    const template: BeeFreeTemplate = {
+      page: {
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-paragraph",
+                    descriptor: {
+                      paragraph: {
+                        html: "<p>Hi</p>",
+                        style: {
+                          "font-family":
+                            "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        body: {
+          content: {
+            style: { "font-family": "Arial, Helvetica, sans-serif" },
+          },
+          webFonts: [
+            {
+              name: "Arial",
+              fontFamily: "Arial, Helvetica Neue, Helvetica, sans-serif",
+            },
+            {
+              name: "Helvetica",
+              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            },
+            {
+              name: "Georgia",
+              fontFamily: "Georgia, Times, 'Times New Roman', serif",
+            },
+          ],
+        },
+      },
+    };
+
+    const { customFonts, report } = convertBeeFreeTemplate(template);
+
+    expect(customFonts).toEqual([]);
+    expect(report.warnings.some((warning) => /font/i.test(warning))).toBe(
+      false,
+    );
+  });
+
+  it("warns when a used font has no URL and is not a system stack", () => {
+    const template: BeeFreeTemplate = {
+      page: {
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-paragraph",
+                    descriptor: {
+                      paragraph: {
+                        html: "<p style=\"font-family: 'Open Sans', Arial\">Hi</p>",
+                        style: { "font-family": "inherit" },
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        body: {
+          content: {
+            style: { "font-family": "'Montserrat', sans-serif" },
+          },
+          webFonts: [
+            { name: "Montserrat", fontFamily: "'Montserrat', sans-serif" },
+            { name: "Open Sans" },
+            { name: "Arial", fontFamily: "Arial, sans-serif" },
+          ],
+        },
+      },
+    };
+
+    const { customFonts, report } = convertBeeFreeTemplate(template);
+
+    expect(customFonts).toEqual([]);
+    expect(report.warnings).toEqual([
+      'Font "Montserrat" is used but BeeFree provides no URL for it.',
+      'Font "Open Sans" is used but BeeFree provides no URL for it.',
+    ]);
   });
 
   describe("row background images", () => {
@@ -1220,5 +1382,1047 @@ describe("convertBeeFreeTemplate", () => {
         },
       ]);
     });
+  });
+
+  // A column's box has no per-column home on a section. One column folds its
+  // padding, background and border onto the section; several columns fold
+  // padding into the modules and drop the rest.
+  describe("column box", () => {
+    const text = (padding: Record<string, string>) => ({
+      type: "mailup-bee-newsletter-modules-text",
+      descriptor: {
+        style: padding,
+        text: { html: "<p>Hi</p>" },
+      },
+    });
+
+    function sectionOf(template: BeeFreeTemplate) {
+      const { content, report } = convertBeeFreeTemplate(template);
+      const block = content.blocks[0];
+      if (block?.type !== "section") {
+        throw new Error(`expected a section, got ${block?.type}`);
+      }
+      return { section: block, report, content };
+    }
+
+    it("adds a single column's padding to the section and leaves the module's padding", () => {
+      const { section } = sectionOf({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  style: {
+                    "padding-top": "11px",
+                    "padding-right": "22px",
+                    "padding-bottom": "33px",
+                    "padding-left": "44px",
+                  },
+                  modules: [
+                    text({
+                      "padding-top": "1px",
+                      "padding-right": "2px",
+                      "padding-bottom": "3px",
+                      "padding-left": "4px",
+                    }),
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      expect(section.columns).toBe("1");
+      expect(section.styles.padding).toEqual({
+        top: 11,
+        right: 22,
+        bottom: 33,
+        left: 44,
+      });
+      expect(section.styles.backgroundColor).toBeUndefined();
+      expect(section.children[0][0].styles.padding).toEqual({
+        top: 1,
+        right: 2,
+        bottom: 3,
+        left: 4,
+      });
+    });
+
+    it("prefers the column background over the row content background", () => {
+      const painted = sectionOf({
+        page: {
+          rows: [
+            {
+              content: { style: { "background-color": "#112233" } },
+              columns: [
+                {
+                  "grid-columns": 12,
+                  style: { "background-color": "#abcdef" },
+                  modules: [text({})],
+                },
+              ],
+            },
+          ],
+        },
+      }).section;
+      const transparent = sectionOf({
+        page: {
+          rows: [
+            {
+              content: { style: { "background-color": "#112233" } },
+              columns: [
+                {
+                  "grid-columns": 12,
+                  style: { "background-color": "transparent" },
+                  modules: [text({})],
+                },
+              ],
+            },
+          ],
+        },
+      }).section;
+
+      expect(painted.styles.backgroundColor).toBe("#abcdef");
+      expect(transparent.styles.backgroundColor).toBe("#112233");
+    });
+
+    it("maps a single column's border onto the section", () => {
+      const { section } = sectionOf({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  style: {
+                    "border-top": "2px dashed #112233",
+                    "border-right": "4px double #123456",
+                    "border-bottom": "1px solid #445566",
+                    "border-left": "0px solid transparent",
+                  },
+                  modules: [text({})],
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      expect(section.border).toEqual({
+        top: { width: 2, style: "dashed", color: "#112233" },
+        right: { width: 4, style: "solid", color: "#123456" },
+        bottom: { width: 1, style: "solid", color: "#445566" },
+        left: { width: 0, style: "solid", color: "#000000" },
+      });
+    });
+
+    it("ignores a non-px or negative column padding", () => {
+      const { section } = sectionOf({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  style: {
+                    padding: "8px 9px 10px 11px",
+                    "padding-top": "99px",
+                  },
+                  modules: [text({})],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const ignored = sectionOf({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  style: {
+                    "padding-top": "15px",
+                    "padding-right": "2em",
+                    "padding-bottom": "-5px",
+                    "padding-left": "10",
+                  },
+                  modules: [text({})],
+                },
+              ],
+            },
+          ],
+        },
+      }).section;
+
+      // A shorthand wins over the longhands, the same way a module's padding does.
+      expect(section.styles.padding).toEqual({
+        top: 8,
+        right: 9,
+        bottom: 10,
+        left: 11,
+      });
+      expect(ignored.styles.padding).toEqual({
+        top: 15,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+    });
+
+    it("folds each column's padding into its modules and drops the column box", () => {
+      const { section, report } = sectionOf({
+        page: {
+          rows: [
+            {
+              content: { style: { "background-color": "#eeeeee" } },
+              columns: [
+                {
+                  "grid-columns": 6,
+                  style: {
+                    "background-color": "#ff00aa",
+                    "border-top": "3px solid #000000",
+                    "padding-top": "10px",
+                    "padding-right": "6px",
+                    "padding-bottom": "20px",
+                    "padding-left": "4px",
+                  },
+                  modules: [
+                    text({
+                      "padding-top": "1px",
+                      "padding-right": "2px",
+                      "padding-bottom": "3px",
+                      "padding-left": "4px",
+                    }),
+                    text({
+                      "padding-top": "0px",
+                      "padding-right": "0px",
+                      "padding-bottom": "0px",
+                      "padding-left": "0px",
+                    }),
+                    text({
+                      "padding-top": "5px",
+                      "padding-right": "6px",
+                      "padding-bottom": "7px",
+                      "padding-left": "8px",
+                    }),
+                  ],
+                },
+                {
+                  "grid-columns": 6,
+                  style: {
+                    "padding-top": "9px",
+                    "padding-right": "3px",
+                    "padding-bottom": "0px",
+                    "padding-left": "1px",
+                  },
+                  modules: [
+                    text({
+                      "padding-top": "2px",
+                      "padding-right": "2px",
+                      "padding-bottom": "2px",
+                      "padding-left": "2px",
+                    }),
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      expect(section.columns).toBe("2");
+      expect(section.styles.padding).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+      expect(section.styles.backgroundColor).toBe("#eeeeee");
+      expect(section.border).toBeUndefined();
+      expect(section.children[0][0].styles.padding).toEqual({
+        top: 11,
+        right: 8,
+        bottom: 3,
+        left: 8,
+      });
+      expect(section.children[0][1].styles.padding).toEqual({
+        top: 0,
+        right: 6,
+        bottom: 0,
+        left: 4,
+      });
+      expect(section.children[0][2].styles.padding).toEqual({
+        top: 5,
+        right: 12,
+        bottom: 27,
+        left: 12,
+      });
+      expect(section.children[1][0].styles.padding).toEqual({
+        top: 11,
+        right: 5,
+        bottom: 2,
+        left: 3,
+      });
+      expect(
+        report.warnings.filter((warning) =>
+          warning.includes("Column background/border"),
+        ),
+      ).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+    });
+
+    it("does not warn when every column background and border paints nothing", () => {
+      const { report } = sectionOf({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 6,
+                  style: {
+                    "background-color": "transparent",
+                    "border-top": "0px solid transparent",
+                    "border-right": "0 solid transparent",
+                    "border-bottom": "0px solid transparent",
+                    "border-left": "0px solid transparent",
+                    "padding-left": "5px",
+                    "padding-right": "5px",
+                  },
+                  modules: [text({})],
+                },
+                {
+                  "grid-columns": 6,
+                  modules: [text({})],
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      expect(
+        report.warnings.some((warning) =>
+          warning.includes("Column background/border"),
+        ),
+      ).toBe(false);
+    });
+
+    it("treats a fully transparent column background as unset", () => {
+      const columnWarning = (warnings: string[]) =>
+        warnings.filter((warning) =>
+          warning.includes("Column background/border"),
+        );
+
+      for (const background of [
+        "rgba(0, 0, 0, 0)",
+        "hsla(0, 0%, 100%, 0)",
+        "#00000000",
+      ]) {
+        const { report } = sectionOf({
+          page: {
+            rows: [
+              {
+                columns: [
+                  {
+                    "grid-columns": 6,
+                    style: { "background-color": background },
+                    modules: [text({})],
+                  },
+                  { "grid-columns": 6, modules: [text({})] },
+                ],
+              },
+            ],
+          },
+        });
+        expect(columnWarning(report.warnings)).toEqual([]);
+      }
+
+      const { report: borderReport } = sectionOf({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 6,
+                  style: { "border-top": "1px solid rgba(0, 0, 0, 0)" },
+                  modules: [text({})],
+                },
+                { "grid-columns": 6, modules: [text({})] },
+              ],
+            },
+          ],
+        },
+      });
+      expect(columnWarning(borderReport.warnings)).toEqual([]);
+
+      const { section } = sectionOf({
+        page: {
+          rows: [
+            {
+              content: { style: { "background-color": "#112233" } },
+              columns: [
+                {
+                  "grid-columns": 12,
+                  style: { "background-color": "rgba(0, 0, 0, 0)" },
+                  modules: [text({})],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(section.styles.backgroundColor).toBe("#112233");
+
+      const { report: painted, section: paintedSection } = sectionOf({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 6,
+                  style: { "background-color": "rgba(0, 0, 0, 0.5)" },
+                  modules: [text({})],
+                },
+                { "grid-columns": 6, modules: [text({})] },
+              ],
+            },
+          ],
+        },
+      });
+      expect(columnWarning(painted.warnings)).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+      expect(paintedSection.styles.backgroundColor).toBeUndefined();
+    });
+
+    it("folds a flattened row's column padding into each column's modules", () => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          rows: [
+            {
+              content: { style: { "background-color": "#eeeeee" } },
+              columns: [5, 0, 0, 0].map((top, index) => ({
+                "grid-columns": 3,
+                style: {
+                  "padding-top": `${top}px`,
+                  "padding-right": "1px",
+                  "padding-bottom": "6px",
+                  "padding-left": "2px",
+                  ...(index === 0 ? { "background-color": "#ff00aa" } : {}),
+                },
+                modules: [text({})],
+              })),
+            },
+          ],
+        },
+      });
+
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.columns).toBe("1");
+      expect(section.styles.padding).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+      expect(section.styles.backgroundColor).toBe("#eeeeee");
+      expect(section.children[0].map((block) => block.styles.padding)).toEqual([
+        { top: 5, right: 1, bottom: 6, left: 2 },
+        { top: 0, right: 1, bottom: 6, left: 2 },
+        { top: 0, right: 1, bottom: 6, left: 2 },
+        { top: 0, right: 1, bottom: 6, left: 2 },
+      ]);
+      expect(
+        report.warnings.filter((warning) =>
+          warning.includes("Column background/border"),
+        ),
+      ).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+    });
+  });
+
+  // Row chrome that lives outside a single column: the container band, hide
+  // flags, mobile stacking, a content width, a non-canonical grid and the
+  // row border.
+  describe("row settings", () => {
+    const text = (html = "<p>Hi</p>") => ({
+      type: "mailup-bee-newsletter-modules-text",
+      descriptor: { text: { html } },
+    });
+
+    function convertRow(row: BeeFreeeRow, messageWidth = "600px") {
+      return convertBeeFreeTemplate({
+        page: {
+          body: {
+            container: { style: { "background-color": "#f1f2f7" } },
+            content: { computedStyle: { messageWidth } },
+          },
+          rows: [row],
+        },
+      });
+    }
+
+    function sectionOf(row: BeeFreeeRow, messageWidth = "600px") {
+      const { content, report } = convertRow(row, messageWidth);
+      const block = content.blocks[0];
+      if (block?.type !== "section") {
+        throw new Error(`expected a section, got ${block?.type}`);
+      }
+      return { section: block, report, content };
+    }
+
+    function ratioNotes(warnings: string[]): string[] {
+      return warnings.filter(
+        (warning) =>
+          warning.includes("Column ratio") || warning.includes("flattened"),
+      );
+    }
+
+    it("paints the container band across the email and keeps a transparent content box clear", () => {
+      const { section, content } = sectionOf({
+        container: { style: { "background-color": "#ffffff" } },
+        content: { style: { "background-color": "transparent" } },
+        columns: [
+          {
+            "grid-columns": 12,
+            style: { "background-color": "transparent" },
+            modules: [text()],
+          },
+        ],
+      });
+
+      expect(content.settings.backgroundColor).toBe("#f1f2f7");
+      expect(content.settings.width).toBe(600);
+      expect(section.styles.backgroundColor).toBeUndefined();
+      expect(section.wrapper).toEqual({ backgroundColor: "#ffffff" });
+      expect(section.children[0][0].type).toBe("paragraph");
+    });
+
+    it("keeps the content colour on the section and the container colour on the band", () => {
+      const { section } = sectionOf({
+        container: { style: { "background-color": "#f9f9f9" } },
+        content: { style: { "background-color": "#abcdef" } },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+
+      expect(section.styles.backgroundColor).toBe("#abcdef");
+      expect(section.wrapper).toEqual({ backgroundColor: "#f9f9f9" });
+    });
+
+    it("omits the band when it is the same colour as the section fill", () => {
+      const { section } = sectionOf({
+        container: { style: { "background-color": "#abcdef" } },
+        content: { style: { "background-color": "#abcdef" } },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+
+      expect(section.styles.backgroundColor).toBe("#abcdef");
+      expect(section.wrapper).toBeUndefined();
+    });
+
+    it("lets a column colour replace the content colour and still keeps a different band", () => {
+      const { section } = sectionOf({
+        container: { style: { "background-color": "#f9f9f9" } },
+        content: { style: { "background-color": "#111111" } },
+        columns: [
+          {
+            "grid-columns": 12,
+            style: { "background-color": "#abcdef" },
+            modules: [text()],
+          },
+        ],
+      });
+
+      expect(section.styles.backgroundColor).toBe("#abcdef");
+      expect(section.wrapper).toEqual({ backgroundColor: "#f9f9f9" });
+    });
+
+    it("does not wrap a row whose container and content paint nothing", () => {
+      const { content, report } = convertRow({
+        container: { style: { "background-color": "transparent" } },
+        content: {
+          style: {
+            "background-color": "transparent",
+            "border-top": "0px solid transparent",
+            "border-right": "0px solid transparent",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            width: "600px",
+          },
+          computedStyle: {
+            hideContentOnMobile: false,
+            hideContentOnDesktop: false,
+            rowColStackOnMobile: true,
+          },
+        },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+
+      expect(content.blocks[0].type).toBe("paragraph");
+      expect(report.warnings).toEqual([]);
+    });
+
+    it("maps hide-on-mobile and hide-on-desktop onto section visibility", () => {
+      const mobile = sectionOf({
+        content: { computedStyle: { hideContentOnMobile: true } },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      }).section;
+      const desktop = sectionOf({
+        content: { computedStyle: { hideContentOnDesktop: "true" } },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      }).section;
+      const both = sectionOf({
+        content: {
+          computedStyle: {
+            hideContentOnMobile: true,
+            hideContentOnDesktop: true,
+          },
+        },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      }).section;
+
+      expect(mobile.visibility).toEqual({ desktop: true, mobile: false });
+      expect(mobile.children[0][0].visibility).toBeUndefined();
+      expect(desktop.visibility).toEqual({ desktop: false, mobile: true });
+      expect(both.visibility).toEqual({ desktop: false, mobile: false });
+    });
+
+    it("sets stackOnMobile false only for a row that opts out", () => {
+      const optedOut = sectionOf({
+        content: { computedStyle: { rowColStackOnMobile: false } },
+        columns: [
+          { "grid-columns": 6, modules: [text("<p>L</p>")] },
+          { "grid-columns": 6, modules: [text("<p>R</p>")] },
+        ],
+      });
+      const stacking = sectionOf({
+        content: { computedStyle: { rowColStackOnMobile: true } },
+        columns: [
+          { "grid-columns": 6, modules: [text()] },
+          { "grid-columns": 6, modules: [text()] },
+        ],
+      });
+
+      expect(optedOut.section.columns).toBe("2");
+      expect(optedOut.section.stackOnMobile).toBe(false);
+      expect(optedOut.report.warnings).toEqual([]);
+      expect(stacking.section.stackOnMobile).toBeUndefined();
+    });
+
+    it("drops a no-stack flag when the row has a single column", () => {
+      const { content, report } = convertRow({
+        content: { computedStyle: { rowColStackOnMobile: false } },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+
+      expect(content.blocks[0].type).toBe("paragraph");
+      expect(report.warnings).toEqual([
+        "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a 2- or 3-column section.",
+      ]);
+    });
+
+    it("warns when the row content width differs from the email width and keeps the email width", () => {
+      const { section, content, report } = sectionOf({
+        content: {
+          style: { "background-color": "#abcdef", width: "500px" },
+        },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+      const percent = convertRow({
+        content: { style: { width: "100%" } },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+      const same = convertRow({
+        content: { style: { width: "600px" } },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+
+      expect(content.settings.width).toBe(600);
+      expect("width" in section).toBe(false);
+      expect(section.styles.backgroundColor).toBe("#abcdef");
+      expect(report.warnings).toEqual([
+        "Row content width 500px differs from the email width 600px. A section has no width of its own, so the row keeps the email width.",
+      ]);
+      expect(percent.report.warnings).toEqual([
+        'Row content width "100%" differs from the email width 600px. A section has no width of its own, so the row keeps the email width.',
+      ]);
+      expect(same.report.warnings).toEqual([]);
+    });
+
+    it("maps an exact grid silently and names a snapped ratio once", () => {
+      const exact = sectionOf({
+        columns: [
+          { "grid-columns": 8, modules: [text()] },
+          { "grid-columns": 4, modules: [text()] },
+        ],
+      });
+      const equal = sectionOf({
+        columns: [
+          { "grid-columns": 6, modules: [text()] },
+          { "grid-columns": 6, modules: [text()] },
+        ],
+      });
+      const thirds = sectionOf({
+        columns: [
+          { "grid-columns": 4, modules: [text()] },
+          { "grid-columns": 4, modules: [text()] },
+          { "grid-columns": 4, modules: [text()] },
+        ],
+      });
+      const threeNine = sectionOf({
+        columns: [
+          { "grid-columns": 3, modules: [text("<p>L</p>")] },
+          { "grid-columns": 9, modules: [text("<p>R</p>")] },
+        ],
+      });
+      const sevenFive = sectionOf({
+        columns: [
+          { "grid-columns": 7, modules: [text()] },
+          { "grid-columns": 5, modules: [text()] },
+        ],
+      });
+      const unevenThree = sectionOf({
+        columns: [
+          { "grid-columns": 2, modules: [text()] },
+          { "grid-columns": 8, modules: [text()] },
+          { "grid-columns": 2, modules: [text()] },
+        ],
+      });
+
+      expect(exact.section.columns).toBe("2-1");
+      expect(ratioNotes(exact.report.warnings)).toEqual([]);
+      expect(equal.section.columns).toBe("2");
+      expect(ratioNotes(equal.report.warnings)).toEqual([]);
+      expect(thirds.section.columns).toBe("3");
+      expect(ratioNotes(thirds.report.warnings)).toEqual([]);
+      expect(threeNine.section.columns).toBe("1-2");
+      expect(threeNine.section.children).toHaveLength(2);
+      expect(ratioNotes(threeNine.report.warnings)).toEqual([
+        'Column ratio 3-9 was mapped to the nearest layout "1-2".',
+      ]);
+      expect(sevenFive.section.columns).toBe("2-1");
+      expect(ratioNotes(sevenFive.report.warnings)).toEqual([
+        'Column ratio 7-5 was mapped to the nearest layout "2-1".',
+      ]);
+      expect(unevenThree.section.columns).toBe("3");
+      expect(ratioNotes(unevenThree.report.warnings)).toEqual([
+        'Column ratio 2-8-2 was mapped to the nearest layout "3".',
+      ]);
+    });
+
+    it("treats a non-positive column total as an even split", () => {
+      const { section, report } = sectionOf({
+        columns: [
+          { "grid-columns": 0, modules: [text("<p>L</p>")] },
+          { "grid-columns": 0, modules: [text("<p>R</p>")] },
+        ],
+      });
+
+      expect(section.columns).toBe("2");
+      expect(section.children).toHaveLength(2);
+      expect(ratioNotes(report.warnings)).toEqual([
+        'Column ratio 0-0 was mapped to the nearest layout "2".',
+      ]);
+    });
+
+    it("names the original ratio when four columns are flattened", () => {
+      const { content, report } = convertRow({
+        columns: [1, 2, 3, 4].map((n) => ({
+          "grid-columns": 3,
+          modules: [text(`<p>${n}</p>`)],
+        })),
+      });
+
+      expect(content.blocks.map((block) => block.type)).toEqual([
+        "paragraph",
+        "paragraph",
+        "paragraph",
+        "paragraph",
+      ]);
+      expect(ratioNotes(report.warnings)).toEqual([
+        "Row with 4 columns (3-3-3-3) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to 3.",
+      ]);
+    });
+
+    it("maps a row border onto the section and keeps a column border when both paint", () => {
+      const rowOnly = sectionOf({
+        content: {
+          style: {
+            "border-top": "2px dashed #112233",
+            "border-right": "0px solid transparent",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+          },
+        },
+        columns: [{ "grid-columns": 12, modules: [text()] }],
+      });
+      const conflict = sectionOf({
+        content: { style: { "border-top": "4px solid #222222" } },
+        columns: [
+          {
+            "grid-columns": 12,
+            style: { "border-top": "1px solid #111111" },
+            modules: [text()],
+          },
+        ],
+      });
+      const same = sectionOf({
+        content: { style: { "border-top": "1px solid #111111" } },
+        columns: [
+          {
+            "grid-columns": 12,
+            style: { "border-top": "1px solid #111111" },
+            modules: [text()],
+          },
+        ],
+      });
+      const multi = sectionOf({
+        content: { style: { "border-top": "2px dashed #112233" } },
+        columns: [
+          { "grid-columns": 6, modules: [text()] },
+          { "grid-columns": 6, modules: [text()] },
+        ],
+      });
+
+      expect(rowOnly.section.border).toEqual({
+        top: { width: 2, style: "dashed", color: "#112233" },
+        right: { width: 0, style: "solid", color: "#000000" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 0, style: "solid", color: "#000000" },
+      });
+      expect(rowOnly.report.warnings).toEqual([]);
+      expect(conflict.section.border).toEqual({
+        top: { width: 1, style: "solid", color: "#111111" },
+        right: { width: 0, style: "solid", color: "#000000" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 0, style: "solid", color: "#000000" },
+      });
+      expect(conflict.report.warnings).toEqual([
+        "Row border was dropped; the column border is kept on the section.",
+      ]);
+      expect(same.section.border?.top).toEqual({
+        width: 1,
+        style: "solid",
+        color: "#111111",
+      });
+      expect(
+        same.report.warnings.some((warning) => warning.includes("Row border")),
+      ).toBe(false);
+      expect(multi.section.border?.top).toEqual({
+        width: 2,
+        style: "dashed",
+        color: "#112233",
+      });
+      expect(
+        multi.report.warnings.some((warning) => warning.includes("Row border")),
+      ).toBe(false);
+    });
+  });
+
+  it("places an unknown social network in the column beside the social block", () => {
+    const { content, report } = convertBeeFreeTemplate({
+      page: {
+        body: { content: { style: { width: "600px" } } },
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-social",
+                    descriptor: {
+                      iconsList: {
+                        icons: [
+                          {
+                            id: "facebook",
+                            name: "Facebook",
+                            image: { href: "https://facebook.com/page" },
+                          },
+                          {
+                            name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
+                            image: {
+                              alt: "Xing",
+                              href: "https://www.xing.com/pages/example",
+                              src: "https://cdn.example.com/xing.png",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(content.blocks.map((block) => block.type)).toEqual([
+      "social",
+      "image",
+    ]);
+    const image = content.blocks[1];
+    expect(image.type === "image" && image.src).toBe(
+      "https://cdn.example.com/xing.png",
+    );
+    expect(image.type === "image" && image.linkUrl).toBe(
+      "https://www.xing.com/pages/example",
+    );
+    expect(report.entries).toHaveLength(1);
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.warnings).toEqual([
+      'Social network "Xing" has no Templatical icon; imported as an image.',
+    ]);
+  });
+});
+
+describe("image fluidOnMobile", () => {
+  function photo(width: string) {
+    return {
+      type: "mailup-bee-newsletter-modules-image",
+      descriptor: {
+        image: { src: "https://example.com/photo.png", alt: "Photo" },
+        computedStyle: { class: "center autowidth", width },
+      },
+    };
+  }
+
+  function imagesIn(template: BeeFreeTemplate): ImageBlock[] {
+    const { content } = convertBeeFreeTemplate(template);
+    const images: ImageBlock[] = [];
+    const walk = (blocks: Block[]) => {
+      for (const block of blocks) {
+        if (block.type === "image") images.push(block);
+        if (block.type === "section") {
+          for (const column of block.children) walk(column);
+        }
+      }
+    };
+    walk(content.blocks);
+    return images;
+  }
+
+  it("pins a half-column image that fills only after column padding is folded", () => {
+    // 270px in a 300px column, then 10px + 20px of column padding: the room
+    // becomes 270, so the renderer would stretch it. BeeFree keeps 270.
+    const [image, other] = imagesIn({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 6,
+                style: { padding: "0px 20px 20px 10px" },
+                modules: [photo("270px")],
+              },
+              {
+                "grid-columns": 6,
+                modules: [photo("100px")],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(image.width).toBe(270);
+    expect(image.styles.padding.left).toBe(10);
+    expect(image.styles.padding.right).toBe(20);
+    expect(image.fluidOnMobile).toBe(false);
+    expect(other.width).toBe(100);
+    expect(other.fluidOnMobile).toBeUndefined();
+  });
+
+  it("pins a third-column image the renderer floors to a fill, and not the wider last column", () => {
+    // 33.33% of 600 is 199. A 199px image fills that column and not the
+    // 33.34% column (200px).
+    const images = imagesIn({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            columns: [4, 4, 4].map((grid) => ({
+              "grid-columns": grid,
+              modules: [photo("199px")],
+            })),
+          },
+        ],
+      },
+    });
+
+    expect(images.map((image) => image.width)).toEqual([199, 199, 199]);
+    expect(images.map((image) => image.fluidOnMobile)).toEqual([
+      false,
+      false,
+      undefined,
+    ]);
+  });
+
+  it("pins an image that fills only after the section border shrinks the column", () => {
+    // A 2px border on each side leaves 596px. Half of that is 298, under the
+    // 300px share the width was measured against.
+    const [image] = imagesIn({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            content: {
+              style: {
+                "border-left": "2px solid #000000",
+                "border-right": "2px solid #000000",
+              },
+            },
+            columns: [
+              { "grid-columns": 6, modules: [photo("298px")] },
+              { "grid-columns": 6, modules: [photo("100px")] },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(image.width).toBe(298);
+    expect(image.fluidOnMobile).toBe(false);
+  });
+
+  it("leaves a full-width row and a flattened row unset", () => {
+    const [hero] = imagesIn({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            columns: [{ "grid-columns": 12, modules: [photo("600px")] }],
+          },
+        ],
+      },
+    });
+    expect(hero.width).toBe("full");
+    expect(hero.fluidOnMobile).toBeUndefined();
+
+    const [flat] = imagesIn({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            columns: [3, 3, 3, 3].map((grid) => ({
+              "grid-columns": grid,
+              modules: [photo("600px")],
+            })),
+          },
+        ],
+      },
+    });
+    expect(flat.width).toBe("full");
+    expect(flat.fluidOnMobile).toBeUndefined();
   });
 });

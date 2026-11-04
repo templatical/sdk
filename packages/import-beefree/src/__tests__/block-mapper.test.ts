@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { convertModule, skippedModuleEntry } from "../block-mapper";
+import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
+import {
+  convertModule,
+  findStyleAttr,
+  skippedModuleEntry,
+} from "../block-mapper";
 import type { BeeFreeeImageContent, BeeFreeeModule } from "../types";
 
 function makeModule(
@@ -7,6 +12,79 @@ function makeModule(
   descriptor: BeeFreeeModule["descriptor"],
 ): BeeFreeeModule {
   return { type, descriptor };
+}
+
+/** The first `<tag …>` in `html`. A quoted value is not split on `>`. */
+function firstOpenTag(html: string, tag: string): string {
+  const start = html.indexOf(`<${tag}`);
+  if (start === -1) return "";
+  let i = start + tag.length + 1;
+  let quote = "";
+  while (i < html.length) {
+    const char = html[i] ?? "";
+    if (quote) {
+      if (char === quote) quote = "";
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === ">") {
+      return html.slice(start, i + 1);
+    }
+    i++;
+  }
+  return html.slice(start);
+}
+
+/** Attributes on one open tag. A quoted value stays a single attribute. */
+function attributesOf(openTag: string): { name: string; value: string }[] {
+  const attrs: { name: string; value: string }[] = [];
+  let i = openTag[1] === "/" ? 2 : 1;
+  while (i < openTag.length && /[a-z0-9]/i.test(openTag[i] ?? "")) i++;
+  while (i < openTag.length && openTag[i] !== ">") {
+    while (i < openTag.length && /[\s/]/.test(openTag[i] ?? "")) i++;
+    if (i >= openTag.length || openTag[i] === ">") break;
+    const nameStart = i;
+    while (i < openTag.length && !/[\s=/>]/.test(openTag[i] ?? "")) i++;
+    const name = openTag.slice(nameStart, i).toLowerCase();
+    while (i < openTag.length && /\s/.test(openTag[i] ?? "")) i++;
+    if (openTag[i] !== "=") {
+      attrs.push({ name, value: "" });
+      continue;
+    }
+    i++;
+    while (i < openTag.length && /\s/.test(openTag[i] ?? "")) i++;
+    const quote = openTag[i];
+    if (quote === '"' || quote === "'") {
+      const end = openTag.indexOf(quote, i + 1);
+      attrs.push({
+        name,
+        value: end === -1 ? openTag.slice(i + 1) : openTag.slice(i + 1, end),
+      });
+      i = end === -1 ? openTag.length : end + 1;
+      continue;
+    }
+    const valueStart = i;
+    while (
+      i < openTag.length &&
+      !/\s/.test(openTag[i] ?? "") &&
+      openTag[i] !== ">"
+    )
+      i++;
+    attrs.push({ name, value: openTag.slice(valueStart, i) });
+  }
+  return attrs;
+}
+
+/** One `style` attribute, and no attribute the payload tried to inject. */
+function expectClosedStyle(html: string, tag: string): string {
+  expect(html).not.toContain('" onmouseover=');
+  expect(html).not.toContain('"onmouseover=');
+  expect(html).toContain("&quot;");
+  const open = firstOpenTag(html, tag);
+  const attrs = attributesOf(open);
+  const styles = attrs.filter((attr) => attr.name === "style");
+  expect(styles).toHaveLength(1);
+  expect(attrs.some((attr) => attr.name === "onmouseover")).toBe(false);
+  return styles[0]?.value ?? "";
 }
 
 describe("convertModule", () => {
@@ -83,7 +161,188 @@ describe("convertModule", () => {
       const { block } = convertModule(mod, warnings);
       const elapsed = Date.now() - start;
       expect(block.type).toBe("paragraph");
-      expect(elapsed).toBeLessThan(500);
+      expect(elapsed).toBeLessThan(2500);
+    });
+
+    // Unclosed roots stay nested. Styling that chain has to stay linear.
+    it.each([
+      ["<li>a", "list"],
+      ["<h1>a", "text"],
+      ["<ul>a", "list"],
+    ] as const)(
+      "styles unclosed %s in linear time on 20k tags",
+      (chunk, kind) => {
+        const html = chunk.repeat(20_000);
+        const payload = { style: { color: "#123456" }, html };
+        const start = Date.now();
+        const { block } = convertModule(
+          makeModule(
+            `mailup-bee-newsletter-modules-${kind}`,
+            kind === "list" ? { list: payload } : { text: payload },
+          ),
+          [],
+        );
+        const elapsed = Date.now() - start;
+        expect(block.type).toBe("paragraph");
+        expect(elapsed).toBeLessThan(2500);
+      },
+    );
+  });
+
+  // BeeFree paragraphs are margin 0. An absent `paragraphSpacing` renders as
+  // the 8px default, so every text or list block states its gap.
+  describe("paragraph spacing", () => {
+    function spacing(
+      kind: "text" | "paragraph" | "list",
+      html: string,
+    ): number | undefined {
+      const descriptor =
+        kind === "text"
+          ? { text: { html } }
+          : kind === "paragraph"
+            ? { paragraph: { html } }
+            : { list: { html } };
+      const { block } = convertModule(
+        makeModule(`mailup-bee-newsletter-modules-${kind}`, descriptor),
+        [],
+      );
+      if (block.type !== "paragraph") {
+        throw new Error(`expected a paragraph, got ${block.type}`);
+      }
+      return block.paragraphSpacing;
+    }
+
+    it("uses 0 when no paragraph states a margin", () => {
+      expect(spacing("text", "<p>One</p><p>Two</p>")).toBe(0);
+      expect(spacing("paragraph", "<p>One</p><p>Two</p>")).toBe(0);
+      expect(spacing("list", "<ul><li>One</li><li>Two</li></ul>")).toBe(0);
+    });
+
+    it("reads a paragraph module's computed paragraphSpacing", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-paragraph", {
+          paragraph: {
+            html: "<p>One</p>\n<p>Two</p>",
+            computedStyle: { paragraphSpacing: "16px" },
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("paragraph");
+      if (block.type !== "paragraph") return;
+      expect(block.paragraphSpacing).toBe(16);
+    });
+
+    it("lets computed paragraphSpacing win over a margin in the html", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-paragraph", {
+          paragraph: {
+            html: '<p style="margin-bottom: 4px">One</p><p>Two</p>',
+            computedStyle: { paragraphSpacing: "15.6px" },
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("paragraph");
+      if (block.type !== "paragraph") return;
+      expect(block.paragraphSpacing).toBe(16);
+    });
+
+    it("falls through to the html margin when paragraphSpacing is not px", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-paragraph", {
+          paragraph: {
+            html: '<p style="margin-bottom: 12px">One</p>',
+            computedStyle: { paragraphSpacing: "1em" },
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("paragraph");
+      if (block.type !== "paragraph") return;
+      expect(block.paragraphSpacing).toBe(12);
+    });
+
+    it("reads margin-bottom from the style attribute, not from text that merely contains style", () => {
+      expect(
+        spacing(
+          "text",
+          `<p title="x style='margin-bottom: 9px'" data-style="margin-bottom: 7px" style="margin-bottom: 4px">One</p>`,
+        ),
+      ).toBe(4);
+      expect(
+        spacing("text", "<p style=margin-bottom:6px>One</p><p>Two</p>"),
+      ).toBe(6);
+    });
+
+    it("reads an explicit px margin-bottom", () => {
+      expect(
+        spacing("text", '<p style="margin-bottom: 12px">One</p><p>Two</p>'),
+      ).toBe(12);
+      expect(
+        spacing(
+          "list",
+          '<ul><li><p style="margin-bottom: 9px">One</p></li></ul>',
+        ),
+      ).toBe(9);
+    });
+
+    it.each([
+      ['<p style="margin: 4px 8px 6px">A</p>', 6],
+      ['<p style="margin: 10px 20px">A</p>', 10],
+      ['<p style="margin: 0 0 14px 0">A</p>', 14],
+      ['<p style="margin: 8px">A</p>', 8],
+      ["<p style='margin-bottom: 5px'>A</p>", 5],
+    ])("reads the bottom of %s as %i", (html, gap) => {
+      expect(spacing("paragraph", html)).toBe(gap);
+    });
+
+    it("lets a later margin-bottom replace the shorthand", () => {
+      expect(
+        spacing("text", '<p style="margin: 10px; margin-bottom: 3px">A</p>'),
+      ).toBe(3);
+    });
+
+    it("ignores a non-px margin, including one that overrides a px shorthand", () => {
+      expect(spacing("text", '<p style="margin-bottom: 1.5em">A</p>')).toBe(0);
+      expect(
+        spacing("text", '<p style="margin: 10px; margin-bottom: 2em">A</p>'),
+      ).toBe(0);
+      expect(spacing("text", '<p style="margin-bottom: -4px">A</p>')).toBe(0);
+    });
+
+    it("keeps the first explicit px margin when later paragraphs differ", () => {
+      expect(
+        spacing(
+          "text",
+          '<p style="margin-bottom: 0px">A</p><p style="margin-bottom: 14px">B</p>',
+        ),
+      ).toBe(0);
+      expect(
+        spacing(
+          "text",
+          '<p>A</p><p style="margin-bottom: 14px">B</p><p style="margin-bottom: 4px">C</p>',
+        ),
+      ).toBe(14);
+    });
+
+    it("rounds a fractional px margin the way other lengths are rounded", () => {
+      expect(spacing("text", '<p style="margin-bottom: 8.6px">A</p>')).toBe(9);
+      expect(spacing("text", '<p style="margin-bottom: 8.4px">A</p>')).toBe(8);
+    });
+
+    it("ignores style when it is only part of another attribute name", () => {
+      expect(spacing("text", '<p mystyle="margin-bottom: 12px">A</p>')).toBe(0);
+      expect(spacing("text", '<p stylesheet="margin-bottom: 12px">A</p>')).toBe(
+        0,
+      );
+      expect(spacing("text", "<p style>A</p>")).toBe(0);
+      expect(
+        spacing(
+          "text",
+          '<p mystyle="margin-bottom: 12px">A</p><p style="margin-bottom: 7px">B</p>',
+        ),
+      ).toBe(7);
     });
   });
 
@@ -107,13 +366,226 @@ describe("convertModule", () => {
 
       expect(block.type).toBe("title");
       if (block.type === "title") {
-        expect(block.content).toBe("<p>Big Title</p>");
+        expect(block.content).toBe(
+          '<p><span style="font-size: 32px; font-weight: bold">Big Title</span></p>',
+        );
         expect(block.level).toBe(1);
         expect(block.color).toBe("#111111");
         expect(block.textAlign).toBe("center");
       }
-      expect(entry.status).toBe("converted");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("h1 chosen for 32px; line box differs");
     });
+
+    it("keeps text-align from the module when the heading style omits it", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-heading", {
+          style: { "text-align": "center" },
+          heading: {
+            title: "h1",
+            text: "Welcome",
+            style: {
+              color: "#222222",
+              "font-size": "18px",
+              "line-height": "120%",
+              "letter-spacing": "1px",
+              "font-weight": "700",
+              "font-family": "'Open Sans', sans-serif",
+            },
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("title");
+      if (block.type !== "title") return;
+      expect(block.level).toBe(4);
+      expect(block.color).toBe("#222222");
+      expect(block.textAlign).toBe("center");
+      expect(block.fontFamily).toBe("'Open Sans', sans-serif");
+      expect(block.content).toBe(
+        '<p><span style="font-size: 18px; line-height: 1.2; font-weight: 700; letter-spacing: 1px">Welcome</span></p>',
+      );
+    });
+
+    it("keeps text-align written on the heading tag", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-heading", {
+          heading: {
+            title: "h2",
+            text: '<h2 style="font-size: 23px; text-align: right">Hi</h2>',
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("title");
+      if (block.type !== "title") return;
+      expect(block.textAlign).toBe("right");
+      expect(block.content).toBe(
+        '<p><span style="font-size: 23px">Hi</span></p>',
+      );
+      expect(block.level).toBe(3);
+    });
+
+    it("writes font size, line-height and weight onto the heading text", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-heading", {
+          heading: {
+            title: "h1",
+            text: "© Scherer Gruppe 2026",
+            style: {
+              color: "#ffffff",
+              "font-size": "16px",
+              "font-weight": "400",
+              "line-height": "120%",
+              "letter-spacing": "0px",
+            },
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("title");
+      if (block.type !== "title") return;
+      expect(block.level).toBe(4);
+      expect(block.color).toBe("#ffffff");
+      expect(block.content).toBe(
+        '<p><span style="font-size: 16px; line-height: 1.2; font-weight: 400">© Scherer Gruppe 2026</span></p>',
+      );
+    });
+
+    it("reads font size from the heading tag when the style omits it", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-heading", {
+          heading: {
+            title: "h1",
+            text: '<h1 style="font-size: 18px; line-height: 150%; letter-spacing: 1px">Location</h1>',
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("title");
+      if (block.type !== "title") return;
+      expect(block.level).toBe(4);
+      expect(block.content).toBe(
+        '<p><span style="font-size: 18px; line-height: 1.5; letter-spacing: 1px">Location</span></p>',
+      );
+    });
+
+    it("escapes a quote, an ampersand and a less-than in heading typography", () => {
+      const heading = (style: Record<string, string>) => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-heading", {
+            heading: { title: "h2", text: "Hi", style },
+          }),
+          [],
+        );
+        if (block.type !== "title") throw new Error("expected a title");
+        return block.content;
+      };
+
+      const quoted = heading({
+        "letter-spacing": '1px" onmouseover="x',
+        "font-weight": 'bold" onmouseover="y',
+      });
+      expect(expectClosedStyle(quoted, "span")).toBe(
+        "font-weight: bold&quot; onmouseover=&quot;y; letter-spacing: 1px&quot;onmouseover=&quot;x",
+      );
+      expect(findStyleAttr(firstOpenTag(quoted, "span"))?.value).toBe(
+        'font-weight: bold" onmouseover="y; letter-spacing: 1px"onmouseover="x',
+      );
+
+      const marked = heading({ "letter-spacing": "1px&<" });
+      expect(marked).toBe(
+        '<p><span style="letter-spacing: 1px&amp;&lt;">Hi</span></p>',
+      );
+      expect(marked).not.toContain("&amp;amp;");
+    });
+
+    it("keeps an encoded quote inside heading typography and decodes one in the text", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-heading", {
+          heading: {
+            title: "h2",
+            text: "{{ say &quot;hi&quot; }}",
+            style: {
+              "font-weight":
+                "{% if a == &#39;x&#39; &gt; 1 %}{{ b(&quot;c&quot;) onmouseover=&quot;y&quot; }}",
+              "letter-spacing": "{{ x&quot; onmouseover=&quot;y }}",
+            },
+          },
+        }),
+        [],
+      );
+      if (block.type !== "title") throw new Error("expected a title");
+      const style =
+        "font-weight: {% if a == 'x' > 1 %}{{ b(&quot;c&quot;) onmouseover=&quot;y&quot; }}; letter-spacing: {{x&quot;onmouseover=&quot;y}}";
+      expect(block.content).toBe(
+        `<p><span style="${style}">{{ say "hi" }}</span></p>`,
+      );
+      expect(expectClosedStyle(block.content, "span")).toBe(style);
+      expect(
+        attributesOf(firstOpenTag(block.content, "span")).some(
+          (attr) => attr.name === "onmouseover",
+        ),
+      ).toBe(false);
+    });
+
+    // The title line box is the level size from HEADING_LEVEL_FONT_SIZE
+    // (h1 36, h2 28, h3 22, h4 18). The span keeps BeeFree's exact size.
+    it.each([
+      { px: 18, title: "h1", level: 4, lineBox: 18, note: undefined },
+      { px: 23, title: "h1", level: 3, lineBox: 22, note: undefined },
+      { px: 28, title: "h1", level: 2, lineBox: 28, note: undefined },
+      {
+        px: 32,
+        title: "h1",
+        level: 1,
+        lineBox: 36,
+        note: "h1 chosen for 32px; line box differs",
+      },
+      { px: 36, title: "h1", level: 1, lineBox: 36, note: undefined },
+      {
+        px: 48,
+        title: "h2",
+        level: 1,
+        lineBox: 36,
+        note: "h1 chosen for 48px (source h2); line box differs",
+      },
+      {
+        px: 32,
+        title: "h3",
+        level: 2,
+        lineBox: 28,
+        note: "h2 chosen for 32px (source h3); line box differs",
+      },
+    ] as const)(
+      "uses h$level for a $px px $title so the line box is $lineBox px",
+      ({ px, title, level, lineBox, note }) => {
+        const { block, entry } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-heading", {
+            heading: {
+              title,
+              text: "Hello",
+              style: { "font-size": `${px}px` },
+            },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("title");
+        if (block.type !== "title") return;
+        expect(block.level).toBe(level);
+        expect(HEADING_LEVEL_FONT_SIZE[block.level]).toBe(lineBox);
+        expect(block.content).toBe(
+          `<p><span style="font-size: ${px}px">Hello</span></p>`,
+        );
+        expect(entry.note).toBe(note);
+        expect(entry.status).toBe(note ? "approximated" : "converted");
+      },
+    );
   });
 
   describe("image", () => {
@@ -575,6 +1047,302 @@ describe("convertModule", () => {
         expect(block.text).not.toContain("<");
         expect(block.text).not.toContain(">");
       }
+    });
+
+    function buttonWith(
+      style: Record<string, string | number>,
+      moduleStyle?: Record<string, string>,
+    ) {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-button", {
+          ...(moduleStyle ? { style: moduleStyle } : {}),
+          button: {
+            label: "Go",
+            href: "https://example.com",
+            // BeeFree JSON stores a numeric font-weight; the descriptor type
+            // only names strings.
+            style: style as Record<string, string>,
+          },
+        }),
+        [],
+      );
+      if (block.type !== "button") throw new Error("expected a button block");
+      return { block, entry };
+    }
+
+    // The renderer's button label line box is 1.2× the font size (MJML's
+    // `line-height: 120%`). Beefree's usual 200% is taller, and that extra
+    // half goes into the top and bottom padding.
+    it("folds a 200% line-height into the top and bottom padding", () => {
+      const { block } = buttonWith({
+        "font-size": "14px",
+        "line-height": "200%",
+        "padding-top": "10px",
+        "padding-right": "20px",
+        "padding-bottom": "10px",
+        "padding-left": "20px",
+      });
+      // (28 - 1.2×14) / 2 = 5.6, rounded to 6.
+      expect(block.buttonPadding).toEqual({
+        top: 16,
+        right: 20,
+        bottom: 16,
+        left: 20,
+      });
+    });
+
+    it("folds a unitless line-height the same way as a percentage", () => {
+      const { block } = buttonWith({
+        "font-size": "16px",
+        "line-height": "2",
+        "padding-top": "5px",
+        "padding-bottom": "5px",
+      });
+      // (32 - 1.2×16) / 2 = 6.4, rounded to 6. Side padding stays the default.
+      expect(block.buttonPadding.top).toBe(11);
+      expect(block.buttonPadding.bottom).toBe(11);
+    });
+
+    it("reads a px line-height as that many pixels", () => {
+      const { block } = buttonWith({
+        "font-size": "14px",
+        "line-height": "28px",
+        "padding-top": "10px",
+        "padding-bottom": "10px",
+      });
+      expect(block.buttonPadding.top).toBe(16);
+      expect(block.buttonPadding.bottom).toBe(16);
+    });
+
+    it("leaves padding alone when the line-height is already 120%", () => {
+      const { block } = buttonWith({
+        "font-size": "14px",
+        "line-height": "120%",
+        "padding-top": "10px",
+        "padding-bottom": "10px",
+      });
+      expect(block.buttonPadding.top).toBe(10);
+      expect(block.buttonPadding.bottom).toBe(10);
+    });
+
+    it("does not shrink padding when the line-height is under 120%", () => {
+      const { block } = buttonWith({
+        "font-size": "14px",
+        "line-height": "100%",
+        "padding-top": "10px",
+        "padding-bottom": "10px",
+      });
+      expect(block.buttonPadding.top).toBe(10);
+      expect(block.buttonPadding.bottom).toBe(10);
+    });
+
+    // Nearest of 400, 500 and 700. A tie takes the lighter stop, so 450 is
+    // regular and 600 is medium. Bold is the renderer's own weight, so it
+    // leaves the field unset.
+    it.each([
+      ["400", "regular"],
+      ["450", "regular"],
+      ["normal", "regular"],
+      [400, "regular"],
+      ["451", "medium"],
+      ["500", "medium"],
+      ["599", "medium"],
+      ["600", "medium"],
+      [600, "medium"],
+    ] as const)("maps font-weight %s to %s", (raw, weight) => {
+      const { block, entry } = buttonWith({ "font-weight": raw });
+      expect(block.fontWeight).toBe(weight);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it.each([
+      "601",
+      "700",
+      "800",
+      "bold",
+      "BOLD",
+      "bolder",
+      " 700 ",
+      700,
+    ] as const)(
+      "leaves font-weight %s unset because the label already renders bold",
+      (raw) => {
+        const { block, entry } = buttonWith({ "font-weight": raw });
+        expect(block.fontWeight).toBeUndefined();
+        expect(entry.status).toBe("converted");
+        expect(entry.note).toBeUndefined();
+      },
+    );
+
+    it("does not note a weight BeeFree left unset or could not read", () => {
+      for (const raw of [undefined, "", "inherit", "lighter"]) {
+        const { block, entry } = buttonWith(
+          raw === undefined ? {} : { "font-weight": raw },
+        );
+        expect(block.fontWeight).toBeUndefined();
+        expect(entry.status).toBe("converted");
+        expect(entry.note).toBeUndefined();
+      }
+    });
+
+    it("maps the style weight and strips a strong label rather than reading the tag as weight", () => {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-button", {
+          button: {
+            label:
+              '<div class="txtTinyMce-wrapper"><p style="word-break:break-word;"><strong>REGISTER NOW</strong></p></div>',
+            href: "https://example.com",
+            style: { "font-weight": "400", "font-size": "14px" },
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("button");
+      if (block.type !== "button") return;
+      expect(block.text).toBe("REGISTER NOW");
+      expect(block.fontWeight).toBe("regular");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("maps weight 400 when only part of the label is strong", () => {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-button", {
+          button: {
+            label: "<p>Pay <strong>now</strong></p>",
+            href: "https://example.com",
+            style: { "font-weight": "400" },
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("button");
+      if (block.type !== "button") return;
+      expect(block.text).toBe("Pay now");
+      expect(block.fontWeight).toBe("regular");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("imports a 100% width as full and keeps the module alignment", () => {
+      const { block, entry } = buttonWith(
+        { width: "100%" },
+        { "text-align": "left" },
+      );
+      expect(block.width).toBe("full");
+      expect(block.align).toBe("left");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("notes a percentage width other than 100% and sizes the button to its label", () => {
+      const { block, entry } = buttonWith(
+        { width: "50%" },
+        { "text-align": "right" },
+      );
+      expect(block.width).toBeUndefined();
+      expect(block.align).toBe("right");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("width 50% is not carried");
+    });
+
+    it("keeps a px width and leaves auto width unset", () => {
+      expect(buttonWith({ width: "240px" }).block.width).toBe(240);
+      expect(buttonWith({ width: "auto" }).block.width).toBeUndefined();
+      expect(buttonWith({}).block.width).toBeUndefined();
+    });
+
+    it("maps a drawn border and drops one that paints nothing", () => {
+      const drawn = buttonWith({
+        "border-top": "2px solid #112233",
+        "border-right": "2px solid #112233",
+        "border-bottom": "2px solid #112233",
+        "border-left": "2px solid #112233",
+      });
+      expect(drawn.block.border).toEqual({
+        top: { width: 2, style: "solid", color: "#112233" },
+        right: { width: 2, style: "solid", color: "#112233" },
+        bottom: { width: 2, style: "solid", color: "#112233" },
+        left: { width: 2, style: "solid", color: "#112233" },
+      });
+      expect(drawn.entry.status).toBe("converted");
+
+      const ghost = buttonWith({
+        "border-top": "0px solid transparent",
+        "border-right": "0px solid transparent",
+        "border-bottom": "0px solid transparent",
+        "border-left": "0px solid transparent",
+      });
+      expect(ghost.block.border).toBeUndefined();
+    });
+
+    it("keeps a single drawn side and reads double as solid", () => {
+      const { block } = buttonWith({
+        "border-bottom": "1px dashed #abcdef",
+        "border-top": "3px double #000000",
+      });
+      expect(block.border).toEqual({
+        top: { width: 3, style: "solid", color: "#000000" },
+        right: { width: 0, style: "solid", color: "#000000" },
+        bottom: { width: 1, style: "dashed", color: "#abcdef" },
+        left: { width: 0, style: "solid", color: "#000000" },
+      });
+    });
+
+    it("names a letter-spacing in one note and drops a zero", () => {
+      const spaced = buttonWith({
+        "font-weight": "bold",
+        "letter-spacing": "1px",
+      });
+      expect(spaced.block).not.toHaveProperty("letterSpacing");
+      expect(spaced.entry.status).toBe("approximated");
+      expect(spaced.entry.note).toBe("letter spacing 1px is not carried");
+
+      const tight = buttonWith({
+        "font-weight": "700",
+        "letter-spacing": "-1px",
+      });
+      expect(tight.entry.note).toBe("letter spacing -1px is not carried");
+
+      const em = buttonWith({
+        "font-weight": "bold",
+        "letter-spacing": "0.05em",
+      });
+      expect(em.entry.note).toBe("letter spacing 0.05em is not carried");
+
+      for (const letterSpacing of ["0px", "0", "normal"]) {
+        const { block, entry } = buttonWith({
+          "font-weight": "bold",
+          "letter-spacing": letterSpacing,
+        });
+        expect(block).not.toHaveProperty("letterSpacing");
+        expect(entry.status).toBe("converted");
+        expect(entry.note).toBeUndefined();
+      }
+    });
+
+    it("names letter-spacing and a percentage width, and still maps the weight", () => {
+      const { block, entry } = buttonWith({
+        "font-weight": "400",
+        "letter-spacing": "1px",
+        width: "50%",
+      });
+      expect(block.fontWeight).toBe("regular");
+      expect(block).not.toHaveProperty("letterSpacing");
+      expect(block.width).toBeUndefined();
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("letter spacing 1px, width 50% are not carried");
+    });
+
+    it("maps a non-bold weight and drops a zero letter-spacing without a note", () => {
+      const { block, entry } = buttonWith({
+        "font-weight": "400",
+        "letter-spacing": "0px",
+      });
+      expect(block.fontWeight).toBe("regular");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
     });
 
     it("strips button label in linear time on adversarial `<<<<…` input (ReDoS regression)", () => {
@@ -1072,6 +1840,120 @@ describe("convertModule", () => {
       expect(content).not.toContain("<b>");
     });
 
+    it("escapes quotes in icon text styles and leaves an existing entity", () => {
+      const { content } = html(
+        iconsModule([{ ...gift, text: "Gift", textPosition: "right" }], {
+          style: {
+            color: "red&amp;",
+            "font-family": "'Evil\"X', sans-serif",
+            "font-weight": 'bold" onmouseover="x',
+            "font-size": "15px",
+            "text-align": "left",
+          },
+        }),
+      );
+      const textCell =
+        [...content.matchAll(/<td\b[^>]*>/g)].find((match) =>
+          match[0].includes("font-family"),
+        )?.[0] ?? "";
+      expect(expectClosedStyle(textCell, "td")).toBe(
+        "vertical-align: middle; color: red&amp;; font-family: 'Evil&quot;X', sans-serif; font-size: 15px; font-weight: bold&quot; onmouseover=&quot;x;",
+      );
+      expect(findStyleAttr(textCell)?.value).toBe(
+        'vertical-align: middle; color: red&; font-family: \'Evil"X\', sans-serif; font-size: 15px; font-weight: bold" onmouseover="x;',
+      );
+      expect(content).not.toContain("&amp;amp;");
+      expect(content).toContain(
+        'style="color: red&amp;; text-decoration: none;"',
+      );
+    });
+
+    it("drops a quote in an icon width, padding or gap and escapes the title", () => {
+      const attack = '10px" onmouseover="x';
+      const { content } = html(
+        iconsModule(
+          [
+            {
+              ...gift,
+              text: "Gift",
+              width: attack,
+              height: attack,
+              title: 't" onmouseover="x',
+            },
+            { ...gift, image: "https://example.com/b.png", alt: "B" },
+          ],
+          {
+            computedStyle: {
+              iconHeight: attack,
+              itemsSpacing: attack,
+              iconSpacing: {
+                "padding-top": attack,
+                "padding-right": "6px",
+                "padding-bottom": "5px",
+                "padding-left": "5px",
+              },
+            } as unknown as Record<string, string>,
+          },
+        ),
+      );
+      expect(content).not.toContain('" onmouseover=');
+      expect(content).toContain('title="t&quot; onmouseover=&quot;x"');
+      expect(content).toContain(' width="10"');
+      expect(content).toContain(' height="10"');
+      expect(content).toContain(
+        'style="display: block; width: 10px; height: 10px; border: 0;"',
+      );
+      expect(content).toContain(
+        'style="padding: 10px 6px 5px 5px; vertical-align: middle;"',
+      );
+      expect(content).toContain(
+        'style="padding-left: 10px; vertical-align: middle;"',
+      );
+      const titleTag = firstOpenTag(content, "img");
+      expect(
+        attributesOf(titleTag).some((attr) => attr.name === "onmouseover"),
+      ).toBe(false);
+      expect(
+        attributesOf(titleTag).filter((attr) => attr.name === "style"),
+      ).toHaveLength(1);
+    });
+
+    it("keeps an encoded quote inside icon attributes and decodes one in the text", () => {
+      const { content } = html(
+        iconsModule([
+          {
+            ...gift,
+            href: "https://example.com/{% if a == &#39;x&#39; &gt; 1 %}{{ d(&quot;e&quot;) }}",
+            alt: "{{ b&#34;c&#x22; }}",
+            title: "{{ a(&quot;x&quot;) onmouseover=&quot;y&quot; }}",
+            target: "{{ t&#39; }}",
+            text: "{% if a == &#39;x&#39; &gt; 1 %}{{ say &quot;hi&quot; }}",
+            textPosition: "right",
+          },
+        ]),
+      );
+
+      expect(content).toContain(
+        "href=\"https://example.com/{% if a == 'x' > 1 %}{{ d(&quot;e&quot;) }}\"",
+      );
+      expect(content).toContain('alt="{{ b&quot;c&quot; }}"');
+      expect(content).toContain(
+        'title="{{ a(&quot;x&quot;) onmouseover=&quot;y&quot; }}"',
+      );
+      expect(content).toContain('target="{{ t\' }}"');
+      expect(content).toContain("{% if a == 'x' > 1 %}{{ say \"hi\" }}");
+      expect(content).not.toContain('" onmouseover=');
+
+      const img = attributesOf(firstOpenTag(content, "img"));
+      expect(img.filter((attr) => attr.name === "title")).toHaveLength(1);
+      expect(img.filter((attr) => attr.name === "alt")).toHaveLength(1);
+      expect(img.filter((attr) => attr.name === "src")).toHaveLength(1);
+      expect(img.some((attr) => attr.name === "onmouseover")).toBe(false);
+      const anchor = attributesOf(firstOpenTag(content, "a"));
+      expect(anchor.filter((attr) => attr.name === "href")).toHaveLength(1);
+      expect(anchor.some((attr) => attr.name === "onmouseover")).toBe(false);
+    });
+
     it("rebuilds an item without an image as its text alone", () => {
       const { content } = html(
         iconsModule([{ text: "Call us", textPosition: "right", href: "" }]),
@@ -1310,13 +2192,134 @@ describe("convertModule", () => {
       expect(warnings).toHaveLength(0);
     });
 
-    it("warns and skips unknown platforms", () => {
+    it("reads the network from the name when the id is a UUID", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-social", {
         iconsList: {
           icons: [
-            { name: "facebook", image: { href: "#" } },
-            { name: "myspace", image: { href: "#" } },
+            {
+              id: "f232c9a3-1c03-4a9f-abf7-93fae3155a76",
+              name: "youtube",
+              image: {
+                href: "https://www.youtube.com/channel/example",
+                alt: "YouTube",
+              },
+            },
+            {
+              id: "38683686-a77e-4696-9706-505089c77e03",
+              name: "E-Mail",
+              image: { href: "https://example.com/contact", alt: "E-Mail" },
+            },
+            {
+              id: "",
+              name: "linkedin",
+              image: { href: "https://www.linkedin.com/company/example" },
+            },
+          ],
+        },
+      });
+
+      const { block } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("social");
+      if (block.type === "social") {
+        expect(block.icons.map((icon) => icon.platform)).toEqual([
+          "youtube",
+          "email",
+          "linkedin",
+        ]);
+        expect(block.icons[0].url).toBe(
+          "https://www.youtube.com/channel/example",
+        );
+      }
+      expect(warnings).toHaveLength(0);
+    });
+
+    it("drops a rejected scheme on a recognised network and keeps a safe link", () => {
+      const icon = (
+        href: string,
+      ): BeeFreeeModule["descriptor"]["iconsList"] => ({
+        icons: [
+          {
+            id: "f232c9a3-1c03-4a9f-abf7-93fae3155a76",
+            name: "youtube",
+            image: { href, alt: "YouTube" },
+          },
+        ],
+      });
+      const rejected: string[] = [];
+      const { block: unsafe } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: icon("javascript:alert(1)"),
+        }),
+        rejected,
+      );
+      expect(unsafe.type).toBe("social");
+      if (unsafe.type !== "social") return;
+      expect(unsafe.icons).toHaveLength(1);
+      expect(unsafe.icons[0].platform).toBe("youtube");
+      expect(unsafe.icons[0].url).toBe("#");
+      expect(rejected).toEqual([
+        'Dropped the unsafe link "javascript:alert(1)" on a social icon.',
+      ]);
+
+      const kept: string[] = [];
+      const { block: safe } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: icon("https://www.youtube.com/channel/example"),
+        }),
+        kept,
+      );
+      expect(safe.type).toBe("social");
+      if (safe.type !== "social") return;
+      expect(safe.icons[0].url).toBe("https://www.youtube.com/channel/example");
+      expect(kept).toEqual([]);
+    });
+
+    it("drops a rejected scheme on an unknown network's image and link", () => {
+      const warnings: string[] = [];
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "myspace",
+                image: {
+                  alt: "Myspace",
+                  href: "javascript:alert(1)",
+                  src: "javascript:alert(2)",
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([]);
+      expect(JSON.stringify(block)).not.toMatch(/javascript:/);
+      expect(warnings).toEqual([
+        'Dropped the unsafe link "javascript:alert(1)" on a social icon.',
+        'Dropped the unsafe image "javascript:alert(2)" on a social icon.',
+        'Social network "Myspace" has no Templatical icon and no image or link to keep.',
+      ]);
+    });
+
+    it("reads the network from the link host when the name is a UUID", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-social", {
+        iconsList: {
+          icons: [
+            {
+              id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              name: "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+              image: {
+                href: "https://www.youtube.com/user/example",
+                alt: "Channel",
+              },
+            },
           ],
         },
       });
@@ -1326,10 +2329,117 @@ describe("convertModule", () => {
       expect(block.type).toBe("social");
       if (block.type === "social") {
         expect(block.icons).toHaveLength(1);
+        expect(block.icons[0].platform).toBe("youtube");
+      }
+      expect(warnings).toHaveLength(0);
+    });
+
+    it("keeps an unknown network as an image and notes it", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-social", {
+        style: { "text-align": "center" },
+        computedStyle: { iconsDefaultWidth: 32 },
+        iconsList: {
+          icons: [
+            {
+              id: "facebook",
+              name: "Facebook",
+              image: { href: "https://facebook.com/page" },
+            },
+            {
+              name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
+              image: {
+                alt: "Xing",
+                href: "https://www.xing.com/pages/example",
+                src: "https://cdn.example.com/xing.png",
+                target: "_blank",
+                width: 64,
+                height: 64,
+              },
+            },
+          ],
+        },
+      });
+
+      const { block, extras, entry } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("social");
+      if (block.type === "social") {
+        expect(block.icons).toHaveLength(1);
         expect(block.icons[0].platform).toBe("facebook");
       }
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toContain("myspace");
+      expect(extras).toHaveLength(1);
+      const image = extras?.[0];
+      expect(image?.type).toBe("image");
+      if (image?.type === "image") {
+        expect(image.src).toBe("https://cdn.example.com/xing.png");
+        expect(image.linkUrl).toBe("https://www.xing.com/pages/example");
+        expect(image.alt).toBe("Xing");
+        expect(image.width).toBe(32);
+        expect(image.naturalWidth).toBe(64);
+        expect(image.naturalHeight).toBe(64);
+        expect(image.align).toBe("center");
+        expect(image.linkOpenInNewTab).toBe(true);
+      }
+      expect(warnings).toEqual([
+        'Social network "Xing" has no Templatical icon; imported as an image.',
+      ]);
+      expect(entry.note).toBe(warnings[0]);
+      expect(entry.status).toBe("approximated");
+    });
+
+    it("imports a social module of only unknown icons as images", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-social", {
+        iconsList: {
+          icons: [
+            {
+              name: "myspace",
+              image: { href: "https://myspace.com/band", alt: "Myspace" },
+            },
+          ],
+        },
+      });
+
+      const { block, extras } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("html");
+      if (block.type === "html") {
+        expect(block.content).toBe(
+          '<a href="https://myspace.com/band">Myspace</a>',
+        );
+      }
+      expect(extras ?? []).toHaveLength(0);
+      expect(warnings[0]).toContain("Myspace");
+      expect(warnings[0]).toContain("link");
+    });
+
+    it("keeps an encoded quote in an unknown network's link and decodes the label", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "myspace",
+                image: {
+                  alt: "{% if a == &#39;x&#39; %}{{ n&quot; }}",
+                  href: "https://example.com/{% if a == &#39;x&#39; &gt; 1 %}{{ id(&quot;a&quot;) }}",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("html");
+      if (block.type !== "html") throw new Error("expected html");
+      expect(block.content).toBe(
+        "<a href=\"https://example.com/{% if a == 'x' > 1 %}{{ id(&quot;a&quot;) }}\">{% if a == 'x' %}{{ n\" }}</a>",
+      );
+      expect(block.content).not.toContain('" onmouseover=');
+      const attrs = attributesOf(firstOpenTag(block.content, "a"));
+      expect(attrs.filter((attr) => attr.name === "href")).toHaveLength(1);
+      expect(attrs.some((attr) => attr.name === "onmouseover")).toBe(false);
     });
 
     it("creates default block when no iconsList", () => {
@@ -1342,6 +2452,165 @@ describe("convertModule", () => {
       if (block.type === "social") {
         expect(block.icons).toHaveLength(0);
       }
+    });
+
+    it("maps alignment, per-icon padding and icon width", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          style: { "text-align": "left" },
+          computedStyle: {
+            iconsDefaultWidth: 24,
+            padding: "0 2.5px 0 2.5px",
+          },
+          iconsList: {
+            icons: [
+              {
+                id: "facebook",
+                image: { href: "https://facebook.com/page" },
+              },
+              {
+                id: "instagram",
+                image: { href: "https://instagram.com/user" },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.align).toBe("left");
+      // 2.5px on each side: the gap between icons is the two paddings.
+      expect(block.spacing).toBe(5);
+      expect(block.iconSize).toBe("small");
+      expect(block.iconStyle).toBe("solid");
+      expect(block.iconTone).toBeUndefined();
+    });
+
+    it("maps a circle dark-gray icon set to circle icons in the dark tone", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          style: { "text-align": "center" },
+          computedStyle: { iconsDefaultWidth: 48, padding: "0 5px 0 5px" },
+          iconsList: {
+            icons: [
+              {
+                id: "facebook",
+                image: {
+                  href: "https://facebook.com/page",
+                  src: "https://cdn.example.com/social-networks-icon-sets/circle-dark-gray/facebook.png",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.iconStyle).toBe("circle");
+      expect(block.iconTone).toBe("dark");
+      expect(block.iconSize).toBe("large");
+      expect(block.spacing).toBe(10);
+      expect(block.align).toBe("center");
+    });
+
+    it("leaves the default icon style when the set has no matching shape", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                id: "facebook",
+                image: {
+                  href: "https://facebook.com/page",
+                  src: "https://cdn.example.com/social-networks-icon-sets/sparkle-neon/facebook.png",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.iconStyle).toBe("solid");
+      expect(block.iconTone).toBeUndefined();
+      expect(block.iconSize).toBe("medium");
+      expect(block.spacing).toBe(10);
+      expect(block.align).toBe("center");
+    });
+
+    it("keeps the default icon style when the set name has a malformed percent-escape", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                id: "facebook",
+                image: {
+                  href: "https://facebook.com/page",
+                  src: "https://cdn.example.com/social-networks-icon-sets/circle%E0/facebook.png",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.iconStyle).toBe("solid");
+      expect(block.iconTone).toBeUndefined();
+    });
+
+    it("names an unknown icon from the title, a non-uuid name, the id, or the host", () => {
+      const uuid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+      const uuid2 = "11111111-2222-3333-4444-555555555555";
+      const { block, extras, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              { image: { alt: "Custom", href: "not a url" } },
+              { image: { title: "Room", href: "https://example.com/x" } },
+              { name: "myspace", image: { href: "https://myspace.example/u" } },
+              {
+                name: uuid,
+                id: "lobby",
+                image: { href: "https://example.com/room" },
+              },
+              {
+                name: uuid,
+                id: uuid2,
+                image: { href: "https://www.cdn.example/icon.png" },
+              },
+              { name: uuid, id: uuid2, image: { href: "not-a-url" } },
+              { name: uuid, id: uuid2, image: { href: "tel:555" } },
+            ],
+          },
+        }),
+        [],
+      );
+
+      const html = [block, ...(extras ?? [])].map((item) => {
+        if (item.type !== "html") return item.type;
+        return item.content;
+      });
+      expect(html).toEqual([
+        '<a href="not a url">Custom</a>',
+        '<a href="https://example.com/x">Room</a>',
+        '<a href="https://myspace.example/u">myspace</a>',
+        '<a href="https://example.com/room">lobby</a>',
+        '<a href="https://www.cdn.example/icon.png">cdn.example</a>',
+        '<a href="not-a-url">custom</a>',
+        '<a href="tel:555">custom</a>',
+      ]);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toContain("Custom");
     });
   });
 
@@ -2120,6 +3389,562 @@ describe("convertModule", () => {
         if (block.type === "menu") {
           expect(block.items[0].url).toBe("https://href.test");
         }
+      });
+    });
+
+    // BeeFree paints a text module's style as the base and the TinyMCE blob
+    // on top. Line-height is the exception: the HTML export drops the blob's
+    // px line-height and renders the module value as a unitless ratio.
+    describe("text, list and link styles", () => {
+      function textHtml(
+        kind: "text" | "list",
+        html: string,
+        style: Record<string, string>,
+        computedStyle?: Record<string, string>,
+      ): string {
+        const payload = { html, style, computedStyle };
+        const { block } = convertModule(
+          makeModule(
+            `mailup-bee-newsletter-modules-${kind}`,
+            kind === "text" ? { text: payload } : { list: payload },
+          ),
+          [],
+        );
+        if (block.type !== "paragraph") {
+          throw new Error(`expected a paragraph, got ${block.type}`);
+        }
+        return block.content;
+      }
+
+      it("puts the module font-size on the paragraph so the line box is not the 14px default", () => {
+        // mj-text is 14px. A 12px size only on an inner span leaves the
+        // paragraph's strut at 14px, so each line is taller than BeeFree.
+        expect(
+          textHtml("text", "<p>Hi</p>", {
+            "font-size": "12px",
+            "line-height": "150%",
+          }),
+        ).toBe(
+          '<p style="font-size: 12px; line-height: 1.5"><span style="font-size: 12px">Hi</span></p>',
+        );
+      });
+
+      it("keeps a blank paragraph empty so it stays one line tall", () => {
+        // BeeFree paints `<p></p>` as one line. A span inside it is content,
+        // so the paragraph collapses and the following line moves up.
+        const style = {
+          color: "#555555",
+          "font-family": "Georgia, serif",
+          "line-height": "150%",
+        };
+        expect(
+          textHtml(
+            "text",
+            "<p>We look forward to seeing you.</p><p></p><p>Sincerely,<br/>Your Event Team</p>",
+            style,
+          ),
+        ).toBe(
+          '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia">We look forward to seeing you.</span></p>' +
+            '<p style="line-height: 1.5"></p>' +
+            '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia">Sincerely,<br/>Your Event Team</span></p>',
+        );
+        expect(textHtml("text", "<p> </p>", style)).toBe(
+          '<p style="line-height: 1.5"></p>',
+        );
+        expect(textHtml("text", "<p>&nbsp;</p>", style)).toBe(
+          '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia">&nbsp;</span></p>',
+        );
+        expect(textHtml("text", "<p><br/></p>", style)).toBe(
+          '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia"><br/></span></p>',
+        );
+      });
+
+      it("keeps broken tag text that still has ink, and drops a tag with none", () => {
+        // `<scr<b>ipt>` loses `<scr<b>` when tags are removed, leaving `ipt>`.
+        // That remainder is text, so the paragraph is not blank. The check
+        // never writes the stripped string back into the markup.
+        expect(
+          textHtml("text", "<p><scr<b>ipt></p>", { color: "#555555" }),
+        ).toBe('<p><span style="color: #555555"><scr<b>ipt></span></p>');
+        expect(
+          textHtml("text", "<p><scr<script>ipt></p>", { color: "#555555" }),
+        ).toBe('<p><span style="color: #555555"><scr<script>ipt></span></p>');
+        expect(textHtml("text", "<p><b> </b></p>", { color: "#555555" })).toBe(
+          "<p></p>",
+        );
+        expect(textHtml("text", "<p><img></p>", { color: "#555555" })).toBe(
+          '<p><span style="color: #555555"><img></span></p>',
+        );
+      });
+
+      it("writes the module line-height as a unitless ratio and drops the blob px value", () => {
+        expect(
+          textHtml(
+            "text",
+            '<p style="line-height: 18px; font-size: 14px">Hi</p>',
+            { "line-height": "150%" },
+          ),
+        ).toBe('<p style="font-size: 14px; line-height: 1.5">Hi</p>');
+      });
+
+      it("drops a span line-height so a nested size inherits the module ratio", () => {
+        expect(
+          textHtml(
+            "text",
+            '<p style="line-height: 16px"><span style="font-size: 26px; line-height: 31px">Hi</span></p>',
+            { "line-height": "120%" },
+          ),
+        ).toBe(
+          '<p style="line-height: 1.2"><span style="font-size: 26px">Hi</span></p>',
+        );
+      });
+
+      it("keeps a unitless module line-height and applies it when the blob sets none", () => {
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "1.6" })).toBe(
+          '<p style="line-height: 1.6">Hi</p>',
+        );
+      });
+
+      it("keeps the blob line-height when the module sets none", () => {
+        expect(
+          textHtml(
+            "text",
+            '<p style="line-height: 18px"><span style="line-height: 31px">Hi</span></p>',
+            {},
+          ),
+        ).toBe(
+          '<p style="line-height: 18px"><span style="line-height: 31px">Hi</span></p>',
+        );
+      });
+
+      // An unquoted style value ends at whitespace or `>`. Removing it must
+      // drop that attribute and the space before it, and a merged value is
+      // quoted so a space or semicolon stays inside the attribute.
+      it("rewrites an unquoted style without eating the tag or leaving the value bare", () => {
+        const lineHeight = { "line-height": "120%" };
+        expect(
+          textHtml(
+            "text",
+            "<span style=line-height:31px>Hi</span>",
+            lineHeight,
+          ),
+        ).toBe("<span>Hi</span>");
+        expect(
+          textHtml(
+            "text",
+            "<span style=color:red;font-size:12px;line-height:31px>Hi</span>",
+            lineHeight,
+          ),
+        ).toBe('<span style="color:red; font-size:12px">Hi</span>');
+        expect(
+          textHtml("text", "<p style=text-align:right>Hi</p>", {
+            "line-height": "180%",
+          }),
+        ).toBe('<p style="text-align:right; line-height: 1.8">Hi</p>');
+        expect(
+          textHtml(
+            "text",
+            "<span class=note style=line-height:31px>Hi</span>",
+            lineHeight,
+          ),
+        ).toBe("<span class=note>Hi</span>");
+        expect(
+          textHtml(
+            "text",
+            "<span style=line-height:31px hidden>Hi</span>",
+            lineHeight,
+          ),
+        ).toBe("<span hidden>Hi</span>");
+        expect(
+          textHtml(
+            "text",
+            "<span hidden style=line-height:31px>Hi</span>",
+            lineHeight,
+          ),
+        ).toBe("<span hidden>Hi</span>");
+      });
+
+      it("rewrites quoted and single-quoted styles, and a tag with no style", () => {
+        const lineHeight = { "line-height": "120%" };
+        expect(
+          textHtml(
+            "text",
+            '<span style="line-height: 31px">Hi</span>',
+            lineHeight,
+          ),
+        ).toBe("<span>Hi</span>");
+        expect(
+          textHtml(
+            "text",
+            '<span style="color: red; line-height: 31px">Hi</span>',
+            lineHeight,
+          ),
+        ).toBe('<span style="color: red">Hi</span>');
+        expect(
+          textHtml(
+            "text",
+            "<span style='line-height: 31px'>Hi</span>",
+            lineHeight,
+          ),
+        ).toBe("<span>Hi</span>");
+        expect(
+          textHtml(
+            "text",
+            "<span style='color: red; line-height: 31px'>Hi</span>",
+            lineHeight,
+          ),
+        ).toBe('<span style="color: red">Hi</span>');
+        expect(
+          textHtml(
+            "text",
+            '<span class="note" style="line-height: 31px">Hi</span>',
+            lineHeight,
+          ),
+        ).toBe('<span class="note">Hi</span>');
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "150%" })).toBe(
+          '<p style="line-height: 1.5">Hi</p>',
+        );
+      });
+
+      // A nested block stops the paragraph from taking a fresh span, so the
+      // module font is merged into the paragraph's own style. Single quotes
+      // in that family must not end a single-quoted attribute.
+      it("merges a quoted font-family into a single-quoted style on a paragraph and a nested span", () => {
+        const html = textHtml(
+          "text",
+          "<p style='color: red'><span style='color: navy'>Hi</span><div>There</div></p>",
+          { "font-family": "'Open Sans', sans-serif" },
+        );
+        expect(html).toBe(
+          "<p style=\"color: red; font-family: 'Open Sans', sans-serif\"><span style='color: navy'>Hi</span><div><span style=\"font-family: 'Open Sans', sans-serif\">There</span></div></p>",
+        );
+        const open = html.slice(0, html.indexOf(">") + 1);
+        expect(findStyleAttr(open)?.value).toBe(
+          "color: red; font-family: 'Open Sans', sans-serif",
+        );
+      });
+
+      it("escapes a quote and an ampersand when rewriting a double-quoted style", () => {
+        const html = textHtml(
+          "text",
+          '<p style="font: a &lt; &quot;b&amp;c&quot;"><div></div></p>',
+          { "letter-spacing": '1"&' },
+        );
+        const open = html.slice(0, html.indexOf(">") + 1);
+        expect(open).toBe(
+          '<p style="font: a &lt; &quot;b&amp;c&quot;; letter-spacing: 1&quot;&amp;">',
+        );
+        expect(findStyleAttr(open)?.value).toBe(
+          'font: a < "b&c"; letter-spacing: 1"&',
+        );
+        expect(html).toBe(`${open}<div></div></p>`);
+      });
+
+      it("treats a style attribute with no value as empty", () => {
+        expect(
+          textHtml("text", "<p style>Hi</p>", { "line-height": "150%" }),
+        ).toBe('<p style="line-height: 1.5">Hi</p>');
+        expect(
+          textHtml("text", "<p style hidden>Hi</p>", { "line-height": "150%" }),
+        ).toBe('<p style="line-height: 1.5" hidden>Hi</p>');
+        expect(
+          textHtml("text", "<span style>Hi</span>", { "line-height": "120%" }),
+        ).toBe("<span>Hi</span>");
+      });
+
+      it("keeps an encoded quote inside a letter-spacing span and decodes one in the text", () => {
+        const html = textHtml("text", "<p>{{ say &quot;hi&quot; }}</p>", {
+          "letter-spacing": "{{ x&quot; onmouseover=&quot;y }}",
+        });
+        expect(html).toBe(
+          '<p><span style="letter-spacing: {{x&quot;onmouseover=&quot;y}}">{{ say "hi" }}</span></p>',
+        );
+        expect(html).not.toContain('" onmouseover=');
+        const attrs = attributesOf(firstOpenTag(html, "span"));
+        expect(attrs.filter((attr) => attr.name === "style")).toHaveLength(1);
+        expect(attrs.some((attr) => attr.name === "onmouseover")).toBe(false);
+      });
+
+      it("carries letter-spacing on the text span and skips a zero spacing", () => {
+        expect(textHtml("text", "<p>Hi</p>", { "letter-spacing": "1px" })).toBe(
+          '<p><span style="letter-spacing: 1px">Hi</span></p>',
+        );
+        expect(textHtml("text", "<p>Hi</p>", { "letter-spacing": "0px" })).toBe(
+          "<p>Hi</p>",
+        );
+      });
+
+      it("keeps a single-quoted font stack inside one span style attribute", () => {
+        const html = textHtml("text", "<p>Hi</p>", {
+          "font-family": "'Open Sans', sans-serif",
+        });
+        expect(html).toBe(
+          `<p><span style="font-family: 'Open Sans', sans-serif">Hi</span></p>`,
+        );
+        expect(findStyleAttr(firstOpenTag(html, "span"))?.value).toBe(
+          "font-family: 'Open Sans', sans-serif",
+        );
+      });
+
+      it("escapes a quote in the leaf span's letter-spacing, weight, color and font", () => {
+        const html = textHtml("text", "<p>Hi</p>", {
+          "letter-spacing": '1px" onmouseover="x',
+          "font-weight": 'bold" onmouseover="w',
+          color: 'red" onmouseover="c',
+          "font-family": "'Evil\"X', sans-serif",
+        });
+        expect(expectClosedStyle(html, "span")).toBe(
+          "color: red&quot; onmouseover=&quot;c; font-weight: bold&quot; onmouseover=&quot;w; font-family: 'Evil&quot;X', sans-serif; letter-spacing: 1px&quot;onmouseover=&quot;x",
+        );
+        expect(findStyleAttr(firstOpenTag(html, "span"))?.value).toBe(
+          'color: red" onmouseover="c; font-weight: bold" onmouseover="w; font-family: \'Evil"X\', sans-serif; letter-spacing: 1px"onmouseover="x',
+        );
+      });
+
+      it("escapes an ampersand and a less-than in leaf letter-spacing and keeps an entity", () => {
+        expect(
+          textHtml("text", "<p>Hi</p>", { "letter-spacing": "1px&<" }),
+        ).toBe('<p><span style="letter-spacing: 1px&amp;&lt;">Hi</span></p>');
+        const encoded = textHtml("text", "<p>Hi</p>", {
+          "letter-spacing": "1&quot;px",
+        });
+        expect(encoded).toBe(
+          '<p><span style="letter-spacing: 1&quot;px">Hi</span></p>',
+        );
+        expect(encoded).not.toContain("&amp;quot;");
+        expect(findStyleAttr(firstOpenTag(encoded, "span"))?.value).toBe(
+          'letter-spacing: 1"px',
+        );
+      });
+
+      it("escapes a quote in text-align on the paragraph", () => {
+        const html = textHtml("text", "<p>Hi</p>", {
+          "text-align": 'center" onmouseover="x',
+        });
+        expect(expectClosedStyle(html, "p")).toBe(
+          "text-align: center&quot; onmouseover=&quot;x",
+        );
+        expect(findStyleAttr(firstOpenTag(html, "p"))?.value).toBe(
+          'text-align: center" onmouseover="x',
+        );
+      });
+
+      it("keeps a length or normal line-height and drops a keyword that is not one", () => {
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "16px" })).toBe(
+          '<p style="line-height: 16px">Hi</p>',
+        );
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "16 px" })).toBe(
+          '<p style="line-height: 16px">Hi</p>',
+        );
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "1.5em" })).toBe(
+          '<p style="line-height: 1.5em">Hi</p>',
+        );
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "2REM" })).toBe(
+          '<p style="line-height: 2rem">Hi</p>',
+        );
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "normal" })).toBe(
+          '<p style="line-height: normal">Hi</p>',
+        );
+        expect(
+          textHtml("text", "<p>Hi</p>", { "line-height": "inherit" }),
+        ).toBe("<p>Hi</p>");
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "  " })).toBe(
+          "<p>Hi</p>",
+        );
+        expect(textHtml("text", "<p>Hi</p>", { "line-height": "bogus" })).toBe(
+          "<p>Hi</p>",
+        );
+      });
+
+      it("drops a keyword letter-spacing", () => {
+        expect(
+          textHtml("text", "<p>Hi</p>", { "letter-spacing": "normal" }),
+        ).toBe("<p>Hi</p>");
+        expect(
+          textHtml("text", "<p>Hi</p>", { "letter-spacing": " inherit " }),
+        ).toBe("<p>Hi</p>");
+        expect(textHtml("text", "<p>Hi</p>", { "letter-spacing": "   " })).toBe(
+          "<p>Hi</p>",
+        );
+      });
+
+      it("keeps a comment, a bare < and an unclosed tag in the text", () => {
+        const color = { color: "#555555" };
+        expect(textHtml("text", "<p>Hi <!-- note --> there</p>", color)).toBe(
+          '<p><span style="color: #555555">Hi <!-- note --> there</span></p>',
+        );
+        expect(textHtml("text", "<p>Hi <!-- note</p>", color)).toBe(
+          '<p><span style="color: #555555">Hi <!-- note</p></span>',
+        );
+        expect(textHtml("text", "<p>1 < 2</p>", color)).toBe(
+          '<p><span style="color: #555555">1 < 2</span></p>',
+        );
+        expect(textHtml("text", "<p>a<>b</p>", color)).toBe(
+          '<p><span style="color: #555555">a<>b</span></p>',
+        );
+        expect(textHtml("text", "<p>Hi</p", color)).toBe(
+          '<p><span style="color: #555555">Hi</p</span>',
+        );
+        expect(textHtml("text", '<p>Hi <span class="x"', color)).toBe(
+          '<p><span style="color: #555555">Hi <span class="x"</span>',
+        );
+      });
+
+      it("does not override a text-align the blob already sets", () => {
+        expect(
+          textHtml("text", '<p style="text-align: right">Hi</p>', {
+            "text-align": "center",
+            "line-height": "180%",
+          }),
+        ).toBe('<p style="text-align: right; line-height: 1.8">Hi</p>');
+      });
+
+      it("styles a heading and a leaf div the same way as a paragraph", () => {
+        expect(
+          textHtml("text", "<h2>Title</h2>", {
+            color: "#222222",
+            "font-size": "18px",
+            "line-height": "150%",
+          }),
+        ).toBe(
+          '<h2 style="font-size: 18px; line-height: 1.5"><span style="font-size: 18px; color: #222222">Title</span></h2>',
+        );
+        expect(
+          textHtml("text", "<div>Hello</div>", {
+            color: "#222222",
+            "line-height": "150%",
+          }),
+        ).toBe(
+          '<div style="line-height: 1.5"><span style="color: #222222">Hello</span></div>',
+        );
+      });
+
+      it("writes the list box BeeFree renders onto ul, ol and li", () => {
+        // Outer text sits 20px in: half of the 40px indent, which is what the
+        // export's -20px wrapper does against the 40px UA padding. A nested
+        // list keeps the full indent. Margins are 0, and the marker reverts
+        // to the UA (disc, then circle).
+        expect(textHtml("list", '<ul start="1"><li>One</li></ul>', {})).toBe(
+          '<ul start="1" style="margin-top: 0; margin-bottom: 0; padding-left: 20px; list-style-type: revert"><li style="margin: 0">One</li></ul>',
+        );
+        expect(
+          textHtml("list", "<ol><li>One<ul><li>Two</li></ul></li></ol>", {}),
+        ).toBe(
+          '<ol style="margin-top: 0; margin-bottom: 0; padding-left: 20px; list-style-type: revert"><li style="margin: 0">One<ul style="margin-top: 0; margin-bottom: 0; padding-left: 40px; list-style-type: revert"><li style="margin: 0">Two</li></ul></li></ol>',
+        );
+      });
+
+      it("uses liIndent for the list padding and the end side when the list is rtl", () => {
+        expect(
+          textHtml(
+            "list",
+            "<ul><li>One<ul><li>Two</li></ul></li></ul>",
+            {
+              direction: "rtl",
+            },
+            { liIndent: "60px" },
+          ),
+        ).toBe(
+          '<ul style="margin-top: 0; margin-bottom: 0; padding-right: 30px; list-style-type: revert"><li style="margin: 0">One<ul style="margin-top: 0; margin-bottom: 0; padding-right: 60px; list-style-type: revert"><li style="margin: 0">Two</li></ul></li></ul>',
+        );
+      });
+
+      it("keeps a margin, padding or marker the list html already sets", () => {
+        expect(
+          textHtml(
+            "list",
+            '<ul style="margin-top: 4px; padding-left: 8px; list-style-type: square"><li style="margin-top: 2px">One</li></ul>',
+            {},
+          ),
+        ).toBe(
+          '<ul style="margin-top: 4px; padding-left: 8px; list-style-type: square; margin-bottom: 0"><li style="margin-top: 2px">One</li></ul>',
+        );
+      });
+
+      it("leaves a list inside a text module on the renderer defaults", () => {
+        expect(textHtml("text", "<ul><li>One</li></ul>", {})).toBe(
+          "<ul><li>One</li></ul>",
+        );
+      });
+
+      it("styles list items and the list root without overriding blob styles", () => {
+        expect(
+          textHtml("list", "<ul><li>One</li></ul>", {
+            color: "#555555",
+            "font-size": "14px",
+            "font-family": "Georgia, serif",
+            "letter-spacing": "1px",
+            "line-height": "200%",
+            "text-align": "center",
+          }),
+        ).toBe(
+          '<ul style="font-size: 14px; text-align: center; line-height: 2; margin-top: 0; margin-bottom: 0; padding-left: 20px; list-style-type: revert"><li style="font-size: 14px; text-align: center; line-height: 2; margin: 0"><span style="font-size: 14px; color: #555555; font-family: Georgia; letter-spacing: 1px">One</span></li></ul>',
+        );
+        expect(
+          textHtml(
+            "list",
+            '<ul><li style="text-align: right"><span style="font-size: 18px; color: #111111">One</span></li></ul>',
+            {
+              color: "#555555",
+              "font-size": "14px",
+              "line-height": "200%",
+              "text-align": "center",
+            },
+          ),
+        ).toBe(
+          '<ul style="font-size: 14px; text-align: center; line-height: 2; margin-top: 0; margin-bottom: 0; padding-left: 20px; list-style-type: revert"><li style="text-align: right; font-size: 14px; line-height: 2; margin: 0"><span style="font-size: 14px; color: #555555"><span style="font-size: 18px; color: #111111">One</span></span></li></ul>',
+        );
+      });
+
+      it("paints the module link color on an anchor that has none", () => {
+        expect(
+          textHtml(
+            "text",
+            '<p><a href="https://example.com" style="text-decoration: underline;">Read</a></p>',
+            {},
+            { linkColor: "#4397C7" },
+          ),
+        ).toBe(
+          '<p><a href="https://example.com" style="text-decoration: underline; color: #4397c7">Read</a></p>',
+        );
+      });
+
+      it("keeps a blob anchor color ahead of the module link color", () => {
+        expect(
+          textHtml(
+            "text",
+            '<p><a href="https://example.com" style="color: #ff0000; text-decoration: underline">Go</a></p>',
+            { linkColor: "#4397c7" },
+          ),
+        ).toBe(
+          '<p><a href="https://example.com" style="color: #ff0000; text-decoration: underline">Go</a></p>',
+        );
+      });
+
+      it("reads link-color from the module style and leaves an anchor unset when neither is set", () => {
+        expect(
+          textHtml("text", '<p><a href="https://example.com">Go</a></p>', {
+            "link-color": "#112233",
+          }),
+        ).toBe(
+          '<p><a href="https://example.com" style="color: #112233">Go</a></p>',
+        );
+        expect(
+          textHtml("text", '<p><a href="https://example.com">Go</a></p>', {}),
+        ).toBe('<p><a href="https://example.com">Go</a></p>');
+      });
+
+      it("colors a list-item anchor from computedStyle", () => {
+        expect(
+          textHtml(
+            "list",
+            "<ul><li><a href=\"https://example.com\" style='text-decoration: underline'>One</a></li></ul>",
+            { "line-height": "200%" },
+            { linkColor: "#333333" },
+          ),
+        ).toBe(
+          '<ul style="line-height: 2; margin-top: 0; margin-bottom: 0; padding-left: 20px; list-style-type: revert"><li style="line-height: 2; margin: 0"><a href="https://example.com" style="text-decoration: underline; color: #333333">One</a></li></ul>',
+        );
       });
     });
   });

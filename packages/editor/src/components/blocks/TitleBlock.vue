@@ -11,6 +11,7 @@ import {
 } from "@templatical/types";
 import { computed, defineAsyncComponent } from "vue";
 import { unwrapParagraph } from "../../utils/unwrapParagraph";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
 
 const props = defineProps<{
@@ -52,7 +53,9 @@ const titleStyle = computed(() => {
 });
 
 const headingTag = computed(() => `h${props.block.level}`);
-const headingHtml = computed(() => unwrapParagraph(resolvedContent.value));
+const headingHtml = computed(() =>
+  sanitizeHtml(unwrapParagraph(resolvedContent.value)),
+);
 </script>
 
 <template>
