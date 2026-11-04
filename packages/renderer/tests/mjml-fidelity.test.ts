@@ -47,6 +47,10 @@ describe("title heading does not nest <p>", () => {
   it.each([
     ['<p title="2 > 1">Hi</p>', "Hi"],
     ["<p title='2 > 1'>Hi</p>", "Hi"],
+    [
+      "<p title=don't>Don't <strong>miss</strong></p>",
+      "Don't <strong>miss</strong>",
+    ],
   ])("renders title content from %s as %s", (content, expected) => {
     const block = createTitleBlock({ content, level: 2 });
     const mjml = renderBlock(block, ctx);
