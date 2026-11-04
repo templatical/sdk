@@ -4,6 +4,7 @@ import {
   extractText,
   findAttrSpans,
   hasNestedAnchors,
+  rewriteOpenTags,
 } from "../src/html-utils";
 
 describe("extractAnchors", () => {
@@ -178,5 +179,34 @@ describe("findAttrSpans", () => {
 
   it("returns null when a quoted value never closes", () => {
     expect(findAttrSpans(' rel="a', "rel")).toBe(null);
+  });
+});
+
+describe("rewriteOpenTags", () => {
+  const rewriteAnchors = (html: string) =>
+    rewriteOpenTags(html, ({ name, attrs }) =>
+      name === "a" ? `<a${attrs} rel="noopener">` : null,
+    );
+
+  it("preserves comments and rewrites the real tag after them", () => {
+    const html = '<!-- <a title=" --> <a href="/x">Buy</a>';
+    expect(rewriteAnchors(html)).toBe(
+      '<!-- <a title=" --> <a href="/x" rel="noopener">Buy</a>',
+    );
+  });
+
+  it("leaves an unterminated comment unchanged", () => {
+    const html = '<a href="/x">Buy</a><!-- <a href="/y">';
+    expect(rewriteAnchors(html)).toBe(
+      '<a href="/x" rel="noopener">Buy</a><!-- <a href="/y">',
+    );
+  });
+
+  it("does not visit tag-like text inside script or CDATA", () => {
+    const html =
+      '<script><a href="/script"></script><![CDATA[<a href="/cdata">]]><a href="/real">Buy</a>';
+    expect(rewriteAnchors(html)).toBe(
+      '<script><a href="/script"></script><![CDATA[<a href="/cdata">]]><a href="/real" rel="noopener">Buy</a>',
+    );
   });
 });

@@ -170,6 +170,38 @@ describe("a11y.text-justified", () => {
     ).toBe('<p style="line-height: 1.8">Body copy.</p>');
   });
 
+  it("fix preserves semicolons inside a URL in an unquoted style", () => {
+    expect(
+      applyFix(
+        "<p style=background:url(data:text/css,foo;text-align:justify;color:red);text-align:justify>Body</p>",
+      ),
+    ).toBe(
+      '<p style="background:url(data:text/css,foo;text-align:justify;color:red)">Body</p>',
+    );
+  });
+
+  it("fix preserves semicolons inside a CSS string", () => {
+    expect(
+      applyFix(
+        `<p style="content:'one;text-align:justify;two';text-align:justify">Body</p>`,
+      ),
+    ).toBe(`<p style="content:'one;text-align:justify;two'">Body</p>`);
+  });
+
+  it("does not treat text-align inside a URL as a declaration", () => {
+    expect(
+      lint(
+        '<p style="background:url(data:text/css,foo;text-align:justify;color:red)">Body</p>',
+      ),
+    ).toEqual([]);
+  });
+
+  it("fix skips commented markup before a justified tag", () => {
+    expect(
+      applyFix('<!-- <p style=" --> <p style="text-align:justify">Body</p>'),
+    ).toBe('<!-- <p style=" --> <p>Body</p>');
+  });
+
   it("fix unsets rather than forcing left, so the paragraph inherits", () => {
     expect(applyFix('<p style="text-align: justify">Body.</p>')).not.toContain(
       "text-align",

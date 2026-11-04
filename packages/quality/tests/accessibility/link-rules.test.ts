@@ -272,6 +272,58 @@ describe("a11y.link-target-blank-no-rel", () => {
     );
   });
 
+  it("auto-fix decodes named target references the same way as detection", () => {
+    expect(
+      applyRelFix('<p><a href="/x" target="&lowbar;blank">Buy</a></p>'),
+    ).toBe('<p><a href="/x" target="&lowbar;blank" rel="noopener">Buy</a></p>');
+  });
+
+  it("does not decode an escaped named reference twice", () => {
+    const { all } = lint(
+      '<p><a href="/x" target="&amp;lowbar;blank">Buy</a></p>',
+    );
+    expect(
+      all.filter((i) => i.ruleId === "a11y.link-target-blank-no-rel"),
+    ).toEqual([]);
+  });
+
+  it("auto-fix treats a non-breaking space in rel as part of the token", () => {
+    expect(
+      applyRelFix(
+        '<p><a href="/x" target="_blank" rel="foo&nbsp;noopener">Buy</a></p>',
+      ),
+    ).toBe(
+      '<p><a href="/x" target="_blank" rel="foo&nbsp;noopener noopener">Buy</a></p>',
+    );
+  });
+
+  it("auto-fix preserves a literal non-breaking space in rel", () => {
+    expect(applyRelFix('<p><a target="_blank" rel="\u00a0">Buy</a></p>')).toBe(
+      '<p><a target="_blank" rel="\u00a0 noopener">Buy</a></p>',
+    );
+  });
+
+  it("recognizes noopener after each HTML ASCII whitespace character", () => {
+    for (const separator of [" ", "\t", "\n", "\f", "\r"]) {
+      const { all } = lint(
+        `<p><a href="/x" target="_blank" rel="external${separator}noopener">Buy</a></p>`,
+      );
+      expect(
+        all.filter((i) => i.ruleId === "a11y.link-target-blank-no-rel"),
+      ).toEqual([]);
+    }
+  });
+
+  it("auto-fix skips a commented anchor before the real link", () => {
+    expect(
+      applyRelFix(
+        '<p><!-- <a title=" --> <a href="/x" target="_blank">Buy</a></p>',
+      ),
+    ).toBe(
+      '<p><!-- <a title=" --> <a href="/x" target="_blank" rel="noopener">Buy</a></p>',
+    );
+  });
+
   it("auto-fix of double-quoted anchors stays byte-identical", () => {
     expect(applyRelFix('<p><a href="/x" target="_blank">Buy</a></p>')).toBe(
       '<p><a href="/x" target="_blank" rel="noopener">Buy</a></p>',

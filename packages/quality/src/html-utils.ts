@@ -1,4 +1,3 @@
-import { findOpenTagEnd } from "@templatical/types";
 import { Parser } from "htmlparser2";
 
 export interface AnchorInfo {
@@ -315,9 +314,8 @@ export function removeAttrSpan(attrs: string, span: AttrSpan): string {
  * Rewrite open tags in `html`. `visit` returns a replacement for the whole
  * tag, angle brackets included, or null to keep the original bytes.
  *
- * The closing `>` comes from `findOpenTagEnd`, so a `>` inside a quoted
- * attribute does not end the tag. A tag that never closes stops the walk
- * and the rest of the string is copied unchanged.
+ * Parser offsets keep quoted `>` inside attributes and skip comments and
+ * raw text. Tags the parser does not open stay unchanged.
  */
 export function rewriteOpenTags(
   html: string,
@@ -325,43 +323,27 @@ export function rewriteOpenTags(
     name: string;
     rawName: string;
     attrs: string;
+    decodedAttrs: Record<string, string>;
   }) => string | null,
 ): string {
   let out = "";
-  let i = 0;
-  while (i < html.length) {
-    const open = html.indexOf("<", i);
-    if (open === -1 || open + 1 >= html.length) {
-      out += html.slice(i);
-      break;
-    }
-    const next = html[open + 1];
-    if (!isTagNameStart(next)) {
-      out += html.slice(i, open + 1);
-      i = open + 1;
-      continue;
-    }
-    let nameEnd = open + 1;
-    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
-    const tagEnd = findOpenTagEnd(html, nameEnd);
-    if (tagEnd === -1) {
-      out += html.slice(i);
-      break;
-    }
-    const rawName = html.slice(open + 1, nameEnd);
-    const attrs = html.slice(nameEnd, tagEnd);
-    const replacement = visit({
-      name: rawName.toLowerCase(),
-      rawName,
-      attrs,
-    });
-    if (replacement === null) {
-      out += html.slice(i, tagEnd + 1);
-    } else {
-      out += html.slice(i, open);
+  let copiedTo = 0;
+  const parser = new Parser({
+    onopentag(name, decodedAttrs) {
+      const open = parser.startIndex;
+      const tagEnd = parser.endIndex;
+      if (!isTagNameStart(html[open + 1])) return;
+      let nameEnd = open + 1;
+      while (nameEnd < tagEnd && isTagNameChar(html[nameEnd])) nameEnd++;
+      const rawName = html.slice(open + 1, nameEnd);
+      const attrs = html.slice(nameEnd, tagEnd);
+      const replacement = visit({ name, rawName, attrs, decodedAttrs });
+      if (replacement === null) return;
+      out += html.slice(copiedTo, open);
       out += replacement;
-    }
-    i = tagEnd + 1;
-  }
-  return out;
+      copiedTo = tagEnd + 1;
+    },
+  });
+  parser.end(html);
+  return out + html.slice(copiedTo);
 }

@@ -15,22 +15,34 @@ export const meta: RuleMeta = {
   severity: "warning",
 };
 
-/**
- * Matches a `text-align` declaration and captures its value. Anchored on
- * the property name with a `(^|;)` prefix so it can only ever match a
- * declaration boundary.
- *
- * That anchor is the whole point: `justify-content: center` is common in
- * the `html` block's flexbox markup, and a rule that searched for the
- * bare token `justify` would flag every one of them. Matching the
- * property — never the value alone — is what makes the rule specific.
- *
- * Whitespace is permitted around `:` and the value because imported
- * templates aren't normalized; content that round-trips through TipTap
- * is always `text-align: <value>`, but content loaded via `init()` or an
- * importer can carry any spacing or casing.
- */
-const TEXT_ALIGN_DECL = /(^|;)\s*text-align\s*:\s*([^;]*)/i;
+const TEXT_ALIGN_DECL = /^\s*text-align\s*:\s*([^;]*)/i;
+
+/** Split only at declaration boundaries, preserving strings and function values. */
+function splitDeclarations(style: string): string[] {
+  const declarations: string[] = [];
+  let start = 0;
+  let depth = 0;
+  let quote: '"' | "'" | null = null;
+  for (let i = 0; i < style.length; i++) {
+    const char = style[i];
+    if (char === "\\") {
+      i++;
+    } else if (quote !== null) {
+      if (char === quote) quote = null;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === "(") {
+      depth++;
+    } else if (char === ")" && depth > 0) {
+      depth--;
+    } else if (char === ";" && depth === 0) {
+      declarations.push(style.slice(start, i));
+      start = i + 1;
+    }
+  }
+  declarations.push(style.slice(start));
+  return declarations;
+}
 
 /** Raw `style` values from every open tag. An unquoted value is included. */
 function styleValues(html: string): string[] {
@@ -48,9 +60,10 @@ function styleValues(html: string): string[] {
 }
 
 function isJustified(style: string): boolean {
-  const match = TEXT_ALIGN_DECL.exec(style);
-  if (match === null) return false;
-  return match[2].trim().toLowerCase() === "justify";
+  return splitDeclarations(style).some((decl) => {
+    const match = TEXT_ALIGN_DECL.exec(decl);
+    return match !== null && match[1].trim().toLowerCase() === "justify";
+  });
 }
 
 /**
@@ -63,8 +76,7 @@ function isJustified(style: string): boolean {
  * attribute wholesale would silently discard the line height.
  */
 function removeTextAlign(style: string): string {
-  return style
-    .split(";")
+  return splitDeclarations(style)
     .filter((decl) => !/^\s*text-align\s*:/i.test(decl))
     .map((decl) => decl.trim())
     .filter((decl) => decl !== "")
@@ -83,8 +95,8 @@ function removeTextAlign(style: string): string {
  *
  * Each `style` is the raw attribute text and is written back double-quoted.
  * A `"` in the value is escaped so it stays part of `style`; `&` and
- * existing entities are copied as written. The tag boundary comes from
- * `findOpenTagEnd`.
+ * existing entities are copied as written. The parser supplies the tag
+ * boundary.
  */
 function unjustify(html: string): string {
   return rewriteOpenTags(html, ({ rawName, attrs }) => {
