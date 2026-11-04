@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SYNTAX_PRESETS, type SyntaxPreset } from "@templatical/types";
 import { MergeTagNode } from "../src/extensions/MergeTagNode";
 import { LogicMergeTagNode } from "../src/extensions/LogicMergeTagNode";
+import { expectLinear } from "./helpers/expectLinear";
 
 function pasteFinder(kind: "value" | "logic", syntax: SyntaxPreset) {
   const extension = kind === "value" ? MergeTagNode : LogicMergeTagNode;
@@ -24,20 +25,32 @@ function matches(kind: "value" | "logic", syntax: SyntaxPreset, text: string) {
 }
 
 describe("built-in paste rules", () => {
-  it("scans unclosed value openers in under 1500 ms", () => {
-    const start = performance.now();
+  it("scans unclosed value openers linearly", () => {
     expect(
       matches("value", SYNTAX_PRESETS.liquid, "{{".repeat(90_000)),
     ).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => matches("value", SYNTAX_PRESETS.liquid, value);
+      },
+      500,
+      250,
+    );
   });
 
-  it("scans unclosed logic openers in under 1500 ms", () => {
-    const start = performance.now();
+  it("scans unclosed logic openers linearly", () => {
     expect(
       matches("logic", SYNTAX_PRESETS.liquid, "{% if ".repeat(50_000)),
     ).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{% if ".repeat(n);
+        return () => matches("logic", SYNTAX_PRESETS.liquid, value);
+      },
+      500,
+      80,
+    );
   });
 
   it("keeps built-in paste match offsets and text", () => {

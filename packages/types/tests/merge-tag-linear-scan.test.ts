@@ -6,6 +6,7 @@ import {
   scanSyntaxMatches,
   SYNTAX_PRESETS,
 } from "../src";
+import { expectLinear } from "./helpers/expectLinear";
 
 describe("built-in merge-tag scanning", () => {
   it("matches the built-in regexes on real tags and seeded text", () => {
@@ -98,24 +99,36 @@ describe("built-in merge-tag scanning", () => {
     }
   });
 
-  it("scans complete value tags followed by unclosed openers in under 1500 ms", () => {
+  it("scans complete value tags followed by unclosed openers linearly", () => {
     const text = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
-    const start = performance.now();
     expect(scanCombinedSyntaxMatches(text, SYNTAX_PRESETS.liquid)).toHaveLength(
       20_000,
     );
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+        return () => scanCombinedSyntaxMatches(value, SYNTAX_PRESETS.liquid);
+      },
+      100,
+      200,
+    );
   });
 
-  it("rewrites many spans without the target attribute in under 1500 ms", () => {
+  it("rewrites many spans without the target attribute linearly", () => {
     const short = '<span>a</span><span data-merge-tag="{{x}}">x</span>';
     expect(
       resolveHtmlMergeTagLabels(short, [{ label: "X", value: "{{x}}" }]),
     ).toBe('<span>a</span><span data-merge-tag="{{x}}">X</span>');
     const html = "<span>".repeat(40_000) + "</span>";
-    const start = performance.now();
     expect(resolveHtmlMergeTagLabels(html, [])).toBe(html);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "<span>".repeat(n) + "<span ".repeat(n) + "</span>";
+        return () => resolveHtmlMergeTagLabels(value, []);
+      },
+      100,
+      1_000,
+    );
   });
 
   it("stops at the first match when only asked whether a tag exists", () => {
@@ -123,29 +136,57 @@ describe("built-in merge-tag scanning", () => {
     expect(containsMergeTag("no tags here {{", SYNTAX_PRESETS.liquid)).toBe(
       false,
     );
+    // A full scan grows with the tags after the first; an early exit does not.
+    const time = (tags: number) => {
+      const text = "{{a}}" + "{{x}}".repeat(tags);
+      const start = performance.now();
+      for (let i = 0; i < 200; i++)
+        containsMergeTag(text, SYNTAX_PRESETS.liquid);
+      return performance.now() - start;
+    };
+    time(1_000);
+    expect(time(64_000) / Math.max(time(1_000), 0.5)).toBeLessThan(8);
   });
 
-  it("rewrites past malformed span prefixes in under 1500 ms", () => {
+  it("rewrites past malformed span prefixes linearly", () => {
     const html = "<span ".repeat(16_000) + "<span></span>";
-    const start = performance.now();
     expect(resolveHtmlMergeTagLabels(html, [])).toBe(html);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "<span ".repeat(n) + "<span></span>";
+        return () => resolveHtmlMergeTagLabels(value, []);
+      },
+      100,
+      1_000,
+    );
   });
 
-  it("rejects many unclosed liquid openers within 1500 ms", () => {
+  it("rejects many unclosed liquid openers linearly", () => {
     const input = "{{".repeat(90_000);
-    const start = performance.now();
     expect(containsMergeTag(input, SYNTAX_PRESETS.liquid)).toBe(false);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => containsMergeTag(value, SYNTAX_PRESETS.liquid);
+      },
+      100,
+      2_000,
+    );
   });
 
-  it("rejects liquid logic prefixes ending at line breaks within 1500 ms", () => {
+  it("rejects liquid logic prefixes ending at line breaks linearly", () => {
     const input = "{% if\n".repeat(16_000) + "%}" + "{% if ".repeat(50_000);
-    const start = performance.now();
     expect(scanSyntaxMatches(input, SYNTAX_PRESETS.liquid, "logic")).toEqual(
       [],
     );
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{% if\n".repeat(n) + "%}" + "{% if ".repeat(n * 3);
+        return () => scanSyntaxMatches(value, SYNTAX_PRESETS.liquid, "logic");
+      },
+      100,
+      350,
+    );
   });
 
   it("matches Mailchimp values after many failed prefixes", () => {
@@ -155,12 +196,18 @@ describe("built-in merge-tag scanning", () => {
     );
   });
 
-  it("rejects Mailchimp logic prefixes ending at line breaks within 1500 ms", () => {
+  it("rejects Mailchimp logic prefixes ending at line breaks linearly", () => {
     const input = "*|IF:\n".repeat(16_000) + "|*" + "*|IF:".repeat(70_000);
-    const start = performance.now();
     expect(scanCombinedSyntaxMatches(input, SYNTAX_PRESETS.mailchimp)).toEqual(
       [],
     );
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "*|IF:\n".repeat(n) + "|*" + "*|IF:".repeat(n * 4);
+        return () => scanCombinedSyntaxMatches(value, SYNTAX_PRESETS.mailchimp);
+      },
+      100,
+      350,
+    );
   });
 });

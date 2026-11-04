@@ -5,13 +5,20 @@ import {
   replaceMergeTagSpans,
   scanMergeTagSpans,
 } from "../src";
+import { expectLinear } from "./helpers/expectLinear";
 
 describe("merge-tag HTML scanning", () => {
-  it("scans malformed span prefixes in under 1500 ms and finds a later chip", () => {
+  it("scans malformed span prefixes linearly and finds a later chip", () => {
+    expectLinear(
+      (n) => {
+        const text = "<span ".repeat(n) + "<span></span>";
+        return () => scanMergeTagSpans(text);
+      },
+      100,
+      1_000,
+    );
     const html = "<span ".repeat(16_000) + "<span></span>";
-    const start = performance.now();
     expect(scanMergeTagSpans(html)).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(1500);
     const prefix = "<span ".repeat(16_000);
     const withChip = prefix + '<span data-merge-tag="{{x}}">X</span>';
     expect(scanMergeTagSpans(withChip)).toEqual([

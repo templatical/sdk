@@ -11,13 +11,20 @@ import {
   parsePxValue,
   readMjmlBackgroundImage,
 } from "../attribute-parser";
+import { expectLinear } from "./expectLinear";
 
 describe("parsePxValue", () => {
-  it("rejects a long invalid whitespace suffix in under 1500 ms", () => {
-    const start = performance.now();
+  it("rejects a long invalid whitespace suffix linearly", () => {
     expect(parsePxValue("1" + " ".repeat(80_000) + "x")).toBe(0);
-    expect(performance.now() - start).toBeLessThan(1500);
     expect(parsePxValue(" 12 px ")).toBe(12);
+    expectLinear(
+      (n) => {
+        const value = "1" + " ".repeat(n) + "x";
+        return () => parsePxValue(value);
+      },
+      250,
+      8_000,
+    );
   });
   it("reads a px length", () => {
     expect(parsePxValue("24px")).toBe(24);

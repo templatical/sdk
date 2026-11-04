@@ -1,12 +1,19 @@
 import { load } from "cheerio";
 import { describe, expect, it } from "vitest";
 import { parseStyleSheet, resolveCssStyles } from "../css-resolver";
+import { expectLinear } from "./expectLinear";
 
 describe("parseStyleSheet", () => {
-  it("scans brace-free CSS in under 1500 ms", () => {
-    const start = performance.now();
+  it("scans brace-free CSS linearly", () => {
     expect(parseStyleSheet("div;".repeat(20_000))).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "div;".repeat(n);
+        return () => parseStyleSheet(value);
+      },
+      100,
+      2_500,
+    );
   });
   it("keeps brace-free inner rules after malformed outer bodies", () => {
     expect(parseStyleSheet(".card { .title { font-size: 20px } }")).toEqual([

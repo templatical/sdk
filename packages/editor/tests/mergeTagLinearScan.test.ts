@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 import { SYNTAX_PRESETS } from "@templatical/types";
 import { createApp, defineComponent, h, ref, shallowRef } from "vue";
 import { useMergeTagField } from "../src/composables/useMergeTagField";
@@ -11,81 +11,137 @@ import {
   collectHits,
   normalizeMergeTagsInHtml,
 } from "../src/utils/normalizeMergeTagMarkup";
+import { expectLinear } from "./helpers/expectLinear";
 
 const liquid = SYNTAX_PRESETS.liquid;
 const unclosed = "{{".repeat(90_000);
 
-function under1500(run: () => void): void {
-  const start = performance.now();
-  run();
-  expect(performance.now() - start).toBeLessThan(1500);
-}
-
 describe("built-in merge-tag consumers", () => {
-  it("segments a field with unclosed openers in under 1500 ms", () => {
-    let field: ReturnType<typeof useMergeTagField> | undefined;
-    const app = createApp(
-      defineComponent({
-        setup() {
-          field = useMergeTagField({
-            modelValue: () => unclosed,
-            emit: () => {},
-            elementRef: ref(null),
-          });
-          return () => h("div");
-        },
-      }),
-    );
-    app.provide(MERGE_TAGS_KEY, shallowRef([]));
-    app.provide(MERGE_TAG_SYNTAX_KEY, liquid);
-    app.mount(document.createElement("div"));
-    under1500(() => {
-      expect(field!.segments.value).toEqual([
-        { type: "text", value: unclosed },
-      ]);
-    });
-    app.unmount();
-  });
-  it("splits unclosed openers in under 1500 ms", () => {
-    under1500(() => {
-      expect(splitMergeTagLabelSegments(unclosed, [], liquid)).toEqual([
-        { type: "text", value: unclosed },
-      ]);
-    });
-  });
-
-  it("checks complete tags before the caret in under 1500 ms", () => {
-    const value = unclosed + "\n{{done}}";
-    under1500(() => {
-      expect(
-        findOpenMergeTagTrigger(value, value.length, "{{", "}}", liquid.value),
-      ).toBeNull();
-    });
-  });
-
-  it("extracts raw tokens in under 1500 ms", () => {
-    under1500(() => {
-      expect(mergeTagTokens(unclosed, liquid, "text")).toEqual([]);
-    });
-  });
-  it("extracts many complete raw tokens in under 1500 ms", () => {
-    under1500(() => {
-      expect(
-        mergeTagTokens("{{x}}".repeat(110_000), liquid, "text"),
-      ).toHaveLength(110_000);
-    });
-  });
-
-  it("normalizes text after unclosed openers in under 1500 ms", () => {
-    const html = unclosed + "\n{{done}}";
-    under1500(() => {
-      expect(normalizeMergeTagsInHtml(html, [], liquid)).toContain(
-        '<span data-merge-tag="{{done}}">{{done}}</span>',
+  it("segments a field with unclosed openers linearly", () => {
+    function segments(value: string) {
+      let field: ReturnType<typeof useMergeTagField> | undefined;
+      const app = createApp(
+        defineComponent({
+          setup() {
+            field = useMergeTagField({
+              modelValue: () => value,
+              emit: () => {},
+              elementRef: ref(null),
+            });
+            return () => h("div");
+          },
+        }),
       );
-    });
+      app.provide(MERGE_TAGS_KEY, shallowRef([]));
+      app.provide(MERGE_TAG_SYNTAX_KEY, liquid);
+      app.mount(document.createElement("div"));
+      const result = field!.segments.value;
+      app.unmount();
+      return result;
+    }
+    expect(segments(unclosed)).toEqual([{ type: "text", value: unclosed }]);
+    const apps: ReturnType<typeof createApp>[] = [];
+    onTestFinished(() => apps.forEach((app) => app.unmount()));
+    expectLinear(
+      (n) => {
+        const first = "{{".repeat(n);
+        const model = ref(first);
+        let field: ReturnType<typeof useMergeTagField> | undefined;
+        const app = createApp(
+          defineComponent({
+            setup() {
+              field = useMergeTagField({
+                modelValue: () => model.value,
+                emit: () => {},
+                elementRef: ref(null),
+              });
+              return () => h("div");
+            },
+          }),
+        );
+        app.provide(MERGE_TAGS_KEY, shallowRef([]));
+        app.provide(MERGE_TAG_SYNTAX_KEY, liquid);
+        app.mount(document.createElement("div"));
+        apps.push(app);
+        return () => {
+          model.value = model.value === first ? first + " " : first;
+          return field!.segments.value;
+        };
+      },
+      500,
+      400,
+    );
   });
-  it("collects many nonoverlapping hits in under 1500 ms", () => {
-    const start = performance.now();
+  it("splits unclosed openers linearly", () => {
+    expect(splitMergeTagLabelSegments(unclosed, [], liquid)).toEqual([
+      { type: "text", value: unclosed },
+    ]);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => splitMergeTagLabelSegments(value, [], liquid);
+      },
+      500,
+      300,
+    );
+  });
+
+  it("checks complete tags before the caret linearly", () => {
+    const value = unclosed + "\n{{done}}";
+    expect(
+      findOpenMergeTagTrigger(value, value.length, "{{", "}}", liquid.value),
+    ).toBeNull();
+    expectLinear(
+      (n) => {
+        const text = "{{".repeat(n) + "\n{{done}}";
+        return () =>
+          findOpenMergeTagTrigger(text, text.length, "{{", "}}", liquid.value);
+      },
+      500,
+      350,
+    );
+  });
+
+  it("extracts raw tokens linearly", () => {
+    expect(mergeTagTokens(unclosed, liquid, "text")).toEqual([]);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => mergeTagTokens(value, liquid, "text");
+      },
+      500,
+      350,
+    );
+  });
+  it("extracts many complete raw tokens linearly", () => {
+    expect(
+      mergeTagTokens("{{x}}".repeat(110_000), liquid, "text"),
+    ).toHaveLength(110_000);
+    expectLinear(
+      (n) => {
+        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+        return () => mergeTagTokens(value, liquid, "text");
+      },
+      500,
+      60,
+    );
+  });
+
+  it("normalizes text after unclosed openers linearly", () => {
+    const html = unclosed + "\n{{done}}";
+    expect(normalizeMergeTagsInHtml(html, [], liquid)).toContain(
+      '<span data-merge-tag="{{done}}">{{done}}</span>',
+    );
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n) + "\n{{done}}";
+        return () => normalizeMergeTagsInHtml(value, [], liquid);
+      },
+      500,
+      350,
+    );
+  });
+  it("collects many nonoverlapping hits linearly", () => {
     const hits = collectHits("{{x}}".repeat(130_000), [], liquid);
     expect(hits).toHaveLength(130_000);
     expect(hits[0]).toEqual({
@@ -96,6 +152,13 @@ describe("built-in merge-tag consumers", () => {
       label: "{{x}}",
     });
     expect(hits.at(-1)?.start).toBe(649_995);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{{x}}".repeat(n);
+        return () => collectHits(value, [], liquid);
+      },
+      500,
+      80,
+    );
   });
 });

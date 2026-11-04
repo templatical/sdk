@@ -13,6 +13,7 @@ import {
   lintTemplate,
   LOCALIZATION_RULES,
 } from "../../src";
+import { expectLinear } from "../helpers/expectLinear";
 
 function template() {
   const content = createDefaultTemplateContent();
@@ -27,7 +28,7 @@ const localization = (content: ReturnType<typeof template>, options = {}) =>
   );
 
 describe("localization rules", () => {
-  it("compares many unclosed built-in openers in under 1500 ms", () => {
+  it("compares many unclosed built-in openers linearly", () => {
     const value = "{{".repeat(90_000);
     const content = template();
     content.blocks = [
@@ -39,11 +40,29 @@ describe("localization rules", () => {
         },
       }),
     ];
-    const start = performance.now();
     expect(localization(content)).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        const content = template();
+        content.blocks = [
+          createParagraphBlock({
+            id: "copy",
+            content: value,
+            l10n: {
+              de: {
+                text: { content: { value, sourceHash: sourceHash(value) } },
+              },
+            },
+          }),
+        ];
+        return () => localization(content);
+      },
+      1_000,
+      25,
+    );
   });
-  it("compares complete tags followed by unclosed openers in under 1500 ms", () => {
+  it("compares complete tags followed by unclosed openers linearly", () => {
     const value = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
     const content = template();
     content.blocks = [
@@ -55,9 +74,27 @@ describe("localization rules", () => {
         },
       }),
     ];
-    const start = performance.now();
     expect(localization(content)).toEqual([]);
-    expect(performance.now() - start).toBeLessThan(1500);
+    expectLinear(
+      (n) => {
+        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+        const content = template();
+        content.blocks = [
+          createParagraphBlock({
+            id: "copy",
+            content: value,
+            l10n: {
+              de: {
+                text: { content: { value, sourceHash: sourceHash(value) } },
+              },
+            },
+          }),
+        ];
+        return () => localization(content);
+      },
+      500,
+      10,
+    );
   });
   it("reports each missing field including settings with null blockId, only in a version", () => {
     const content = template();
