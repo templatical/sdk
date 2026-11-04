@@ -64,8 +64,81 @@ export interface EditingSession {
   apply(opsJson: unknown): EditingApplyResult;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function isLocaleLayer(layer: unknown): layer is Record<string, unknown> {
-  return typeof layer === "object" && layer !== null && !Array.isArray(layer);
+  if (!isRecord(layer)) return false;
+  if (Object.hasOwn(layer, "set") && !isRecord(layer.set)) return false;
+  if (Object.hasOwn(layer, "text")) {
+    if (!isRecord(layer.text)) return false;
+    for (const entry of Object.values(layer.text)) {
+      if (
+        !isRecord(entry) ||
+        typeof entry.value !== "string" ||
+        typeof entry.sourceHash !== "string"
+      )
+        return false;
+    }
+  }
+  return !Object.hasOwn(layer, "hidden") || layer.hidden === true;
+}
+
+function hasValidLocalizedChildren(type: unknown, children: unknown): boolean {
+  if (type === "section")
+    return (
+      Array.isArray(children) &&
+      children.every(
+        (column) =>
+          Array.isArray(column) &&
+          column.every(
+            (child) =>
+              isRecord(child) &&
+              (child.type !== "section" && child.type !== "wrapper"
+                ? true
+                : hasValidLocalizedChildren(child.type, child.children)),
+          ),
+      )
+    );
+  if (type === "wrapper")
+    return (
+      Array.isArray(children) &&
+      children.every(
+        (child) =>
+          isRecord(child) &&
+          (child.type !== "section" && child.type !== "wrapper"
+            ? true
+            : hasValidLocalizedChildren(child.type, child.children)),
+      )
+    );
+  return true;
+}
+
+function hasInvalidLocaleLayers(blocks: unknown, settings?: unknown): boolean {
+  if (isRecord(settings) && settings.l10n !== undefined) {
+    if (!isRecord(settings.l10n)) return true;
+    if (Object.values(settings.l10n).some((layer) => !isLocaleLayer(layer)))
+      return true;
+  }
+  const pending = walkBlocks(blocks);
+  for (let index = 0; index < pending.length; index++) {
+    const l10n = pending[index].l10n;
+    if (l10n === undefined) continue;
+    if (!isRecord(l10n)) return true;
+    for (const layer of Object.values(l10n)) {
+      if (!isLocaleLayer(layer)) return true;
+      const set = layer.set as Record<string, unknown> | undefined;
+      if (
+        set &&
+        Object.hasOwn(set, "children") &&
+        !hasValidLocalizedChildren(pending[index].type, set.children)
+      )
+        return true;
+      pending.push(...walkBlocks(set?.children));
+    }
+  }
+  return false;
 }
 
 /**
@@ -100,6 +173,19 @@ export function createEditingSession(
     }
     if (parsed.length > limits.maxOps) {
       return refuse(`send at most ${limits.maxOps} operations in one call.`);
+    }
+
+    if (hasInvalidLocaleLayers(content.blocks, content.settings))
+      return refuse("the template has an invalid locale layer");
+    for (const op of parsed) {
+      if (!isRecord(op)) continue;
+      if (
+        (op.op === "addBlock" && hasInvalidLocaleLayers([op.block])) ||
+        (op.op === "setContent" &&
+          isRecord(op.content) &&
+          hasInvalidLocaleLayers(op.content.blocks, op.content.settings))
+      )
+        return refuse("the template has an invalid locale layer");
     }
 
     const existing = new Map<string, Record<string, unknown>>();
@@ -179,11 +265,10 @@ export function createEditingSession(
     );
     if (contentReason !== null) return refuse(contentReason);
 
+    if (hasInvalidLocaleLayers(next.blocks, next.settings))
+      return refuse("the template has an invalid locale layer");
+
     const defaultLocale = defaultLocaleOf(next);
-    for (const layer of Object.values(next.settings.l10n ?? {})) {
-      if (!isLocaleLayer(layer))
-        return refuse("the template has an invalid locale layer");
-    }
     const locales = new Set<string>([
       defaultLocale,
       ...(next.settings.locales ?? []),
@@ -195,8 +280,6 @@ export function createEditingSession(
       if (typeof block.l10n !== "object" || block.l10n === null) continue;
       for (const [locale, layer] of Object.entries(block.l10n)) {
         locales.add(locale);
-        if (!isLocaleLayer(layer))
-          return refuse("the template has an invalid locale layer");
         const set = (layer as { set?: { children?: unknown } }).set;
         pending.push(...walkBlocks(set?.children));
       }

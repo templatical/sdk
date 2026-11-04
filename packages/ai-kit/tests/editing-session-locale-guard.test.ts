@@ -355,6 +355,161 @@ describe("editing session locale type guard", () => {
     expect(session.batches).toEqual([]);
   });
 
+  it.each([
+    { field: "set", value: null },
+    { field: "set", value: [] },
+    { field: "set", value: "invalid" },
+    { field: "text", value: null },
+    { field: "text", value: [] },
+    { field: "text", value: "invalid" },
+  ])(
+    "refuses a default locale layer with malformed $field ($value)",
+    ({ field, value }) => {
+      const start = content();
+      const session = createEditingSession({
+        content: start as never,
+        mergeTags,
+      });
+
+      expect(
+        session.apply([
+          {
+            op: "setContent",
+            content: {
+              ...start,
+              settings: { ...start.settings, l10n: { en: { [field]: value } } },
+            },
+          },
+        ] as never),
+      ).toEqual({
+        ok: false,
+        feedback: "Refused: the template has an invalid locale layer",
+      });
+      expect(session.content).toEqual(start);
+      expect(session.batches).toEqual([]);
+
+      expect(session.apply([{ op: "setDefaultLocale", locale: "de" }]).ok).toBe(
+        true,
+      );
+    },
+  );
+
+  it("refuses setDefaultLocale when a preexisting default locale layer has null set", () => {
+    const start = content();
+    const malformed = {
+      ...start,
+      settings: { ...start.settings, l10n: { en: { set: null } } },
+    };
+    const session = createEditingSession({
+      content: malformed as never,
+      mergeTags,
+    });
+
+    expect(session.apply([{ op: "setDefaultLocale", locale: "de" }])).toEqual({
+      ok: false,
+      feedback: "Refused: the template has an invalid locale layer",
+    });
+    expect(session.content).toEqual(malformed);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("refuses a null translated text entry in the default locale", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "addBlock",
+          block: {
+            id: "p2",
+            type: "paragraph",
+            content: "<p>Second</p>",
+            l10n: { en: { text: { content: null } } },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ] as never),
+    ).toEqual({
+      ok: false,
+      feedback: "Refused: the template has an invalid locale layer",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("refuses malformed locale layers in an added block before updating it", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "addBlock",
+          block: {
+            id: "p2",
+            type: "paragraph",
+            content: "<p>Second</p>",
+            l10n: { de: null },
+          },
+          parent: null,
+          after: "p1",
+        },
+        {
+          op: "updateBlock",
+          blockId: "p2",
+          set: { content: "<p>Updated</p>" },
+        },
+      ] as never),
+    ).toEqual({
+      ok: false,
+      feedback: "Refused: the template has an invalid locale layer",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it.each([{ children: null }, { children: [null] }])(
+    "refuses a malformed localized section structure before promotion ($children)",
+    ({ children }) => {
+      const start = content();
+      const session = createEditingSession({
+        content: start as never,
+        mergeTags,
+      });
+
+      expect(
+        session.apply([
+          {
+            op: "addBlock",
+            block: {
+              id: "s1",
+              type: "section",
+              columns: "1",
+              children: [[]],
+              l10n: { de: { set: { children } } },
+            },
+            parent: null,
+            after: "p1",
+          },
+          { op: "setDefaultLocale", locale: "de" },
+        ] as never),
+      ).toEqual({
+        ok: false,
+        feedback: "Refused: the template has an invalid locale layer",
+      });
+      expect(session.content).toEqual(start);
+      expect(session.batches).toEqual([]);
+    },
+  );
+
   it("applies a section with translated German text", () => {
     const start = content();
     const translated = {
