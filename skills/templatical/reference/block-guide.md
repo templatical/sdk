@@ -242,8 +242,8 @@ underline: bool, color?: hex }`.
 
 - `icons` — each is `{ id, platform, url }`.
 - `platform` is one of: `facebook`, `twitter`, `instagram`, `linkedin`,
-  `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`, `discord`,
-  `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
+  `xing`, `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`,
+  `discord`, `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
 - `iconStyle` is one of `"solid"`, `"outlined"`, `"rounded"`, `"square"`,
   `"circle"`, `"plain"` (the glyph alone, no badge).
 - `iconTone` is one of `"brand"` (each platform's color, the default),

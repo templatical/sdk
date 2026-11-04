@@ -68,6 +68,21 @@ describe("convertSocial", () => {
     expect(r.entry.note).toContain('"google"');
   });
 
+  it("maps xing", () => {
+    const r = convertSocial(
+      social({
+        display: "xing:url",
+        "xing-href": "https://www.xing.com/pages/a",
+      }),
+      ctx(),
+    )!;
+    const block = r.block as SocialIconsBlock;
+    expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+      ["xing", "https://www.xing.com/pages/a"],
+    ]);
+    expect(r.entry.status).toBe("converted");
+  });
+
   it("joins the platform and icon-size notes when both are approximated", () => {
     // Every one of the five reference exports produces at least one social
     // entry with both notes at once — google's own widget still writes

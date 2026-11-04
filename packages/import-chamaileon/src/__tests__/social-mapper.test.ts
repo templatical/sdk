@@ -54,6 +54,23 @@ describe("convertSocial", () => {
     expect(entry.note).toMatch(/Mastodon/);
   });
 
+  it("maps Xing", () => {
+    const { block, entry } = convertSocial(
+      {
+        type: "social",
+        attrs: {
+          elements: [{ type: "Xing", link: "https://www.xing.com/pages/a" }],
+          size: 32,
+        },
+      },
+      ctx(),
+    );
+    const social = block as SocialIconsBlock;
+    expect(social.icons[0].platform).toBe("xing");
+    expect(social.icons[0].url).toBe("https://www.xing.com/pages/a");
+    expect(entry.status).toBe("converted");
+  });
+
   it("skips an empty elements list", () => {
     const { block, entry } = convertSocial(
       { type: "social", attrs: { elements: [] } },

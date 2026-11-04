@@ -449,6 +449,7 @@ const es: typeof en = {
       twitter: "X (Twitter)",
       instagram: "Instagram",
       linkedin: "LinkedIn",
+      xing: "XING",
       youtube: "YouTube",
       tiktok: "TikTok",
       pinterest: "Pinterest",

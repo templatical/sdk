@@ -441,6 +441,7 @@ export type SocialPlatform =
   | "twitter"
   | "instagram"
   | "linkedin"
+  | "xing"
   | "youtube"
   | "tiktok"
   | "pinterest"
