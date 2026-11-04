@@ -482,7 +482,8 @@ function layoutSnaps(
 /**
  * A snapped column is narrower than its grid share. The missing pixels come
  * back from the padding that faces the next column, and the outer edge stays.
- * Nothing is taken past 0, and a wider column is left alone.
+ * Nothing is taken past 0, and a wider column is left alone. Image, lone-icon
+ * and divider widths are measured with this padding already returned.
  */
 function giveBackInnerPadding(
   blocks: Block[],
@@ -703,17 +704,6 @@ function processRow(
   // Multi-column — wrap in a SectionBlock. Each column's padding folds into
   // its modules; a column background or border has no per-column box.
   const widths = columnPixels(layout, settings.width);
-  const children: Block[][] = columns.map((col, index) => {
-    const blocks = convertColumnModules(
-      col,
-      { columnWidth: widths[index], textColor: settings.textColor },
-      entries,
-      warnings,
-    );
-    foldColumnPadding(blocks, extractPadding(col.style));
-    return blocks;
-  });
-  warnIfColumnBoxDropped(columns, warnings);
   const frame = rowFrame(row, rowBg, undefined, true, warnings);
   const contentWidths = renderedColumnContentWidths(
     layout,
@@ -727,15 +717,51 @@ function processRow(
   const sourceWidths = layoutSnaps(columns, layout)
     ? columnShareWidths(columns, sectionBox)
     : null;
+  const facing = (index: number): Array<"left" | "right"> => {
+    const last = columns.length - 1;
+    if (index === 0) return ["right"];
+    if (index === last) return ["left"];
+    return ["right", "left"];
+  };
+  const children: Block[][] = columns.map((col, index) => {
+    const deficit = sourceWidths
+      ? sourceWidths[index]! - (contentWidths[index] ?? 0)
+      : 0;
+    const columnPadding = extractPadding(col.style);
+    const blocks = convertColumnModules(
+      col,
+      {
+        columnWidth: widths[index],
+        textColor: settings.textColor,
+        ...(sourceWidths
+          ? {
+              paddingReturn: {
+                deficit: Math.max(0, deficit),
+                sides: facing(index),
+                columnPadding,
+              },
+            }
+          : {}),
+      },
+      entries,
+      warnings,
+    );
+    foldColumnPadding(blocks, columnPadding);
+    return blocks;
+  });
+  warnIfColumnBoxDropped(columns, warnings);
+  // Widths that are a length of this room — an image, a lone icon, a px
+  // divider — are chosen with the padding already returned, so giving it
+  // back does not resize them. A full button, a percentage divider, a menu
+  // and an HTML block are a share of the column; the returned padding is
+  // what makes that share the source column. A video keeps its stated px
+  // width and a social row keeps its icon size.
   children.forEach((column, index) => {
     if (sourceWidths) {
-      const last = children.length - 1;
-      const inner: Array<"left" | "right"> =
-        index === 0 ? ["right"] : index === last ? ["left"] : ["right", "left"];
       giveBackInnerPadding(
         column,
         sourceWidths[index]! - (contentWidths[index] ?? 0),
-        inner,
+        facing(index),
       );
     }
     keepColumnImagesAtDesktopWidth(column, contentWidths[index] ?? 0);

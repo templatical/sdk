@@ -34,6 +34,21 @@ function peel(raw: string): string {
 }
 
 /**
+ * The file name of an icon src. An absolute URL contributes its last path
+ * segment, so the host is not a name; an empty path has none. A relative or
+ * protocol-relative src resolves against a placeholder base for the same
+ * reason. The query and hash are not part of the name.
+ */
+function srcFileName(src: string): string {
+  try {
+    const url = new URL(src, "https://placeholder.invalid");
+    return url.pathname.split("/").pop() || "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Map a Stripo icon's title, alt, or src stem onto a SocialPlatform.
  * Unknown names become `website` — same floor as the MJML importer.
  */
@@ -42,13 +57,15 @@ export function normalizePlatform(
   src?: string,
   alt?: string,
 ): SocialPlatform {
-  for (const candidate of [name, alt, src]) {
+  for (const candidate of [name, alt]) {
     if (!candidate) continue;
-    const words = peel(candidate).split(/\s+/);
-    for (const w of words) {
+    for (const w of peel(candidate).split(/\s+/)) {
       if (NAMED[w]) return NAMED[w];
     }
-    const stem = peel(candidate.split("/").pop() ?? "");
+  }
+  // Only the file name identifies an icon; the host and folders of a URL do not.
+  if (src) {
+    const stem = peel(srcFileName(src));
     for (const w of stem.split(/\s+/)) {
       if (NAMED[w]) return NAMED[w];
     }
