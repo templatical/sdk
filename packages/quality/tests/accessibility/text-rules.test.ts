@@ -188,6 +188,30 @@ describe("a11y.text-justified", () => {
     ).toBe(`<p style="content:'one;text-align:justify;two'">Body</p>`);
   });
 
+  it("fix preserves named character references in a sibling declaration", () => {
+    expect(
+      applyFix(
+        '<p style="font-family: &quot;Open Sans&quot;; text-align: justify">Body</p>',
+      ),
+    ).toBe('<p style="font-family: &quot;Open Sans&quot;">Body</p>');
+  });
+
+  it("fix preserves decimal character references in a sibling declaration", () => {
+    expect(
+      applyFix(
+        '<p style="font-family: &#39;Open Sans&#39;; text-align: justify">Body</p>',
+      ),
+    ).toBe('<p style="font-family: &#39;Open Sans&#39;">Body</p>');
+  });
+
+  it("fix preserves hex character references in a sibling declaration", () => {
+    expect(
+      applyFix(
+        '<p style="font-family: &#x27;Open Sans&#x27;; text-align: justify">Body</p>',
+      ),
+    ).toBe('<p style="font-family: &#x27;Open Sans&#x27;">Body</p>');
+  });
+
   it("does not treat text-align inside a URL as a declaration", () => {
     expect(
       lint(
@@ -225,11 +249,10 @@ describe("a11y.text-justified", () => {
   });
 
   it("fix keeps a double-quoted style entity as written", () => {
-    // `;` is also the declaration separator, so the entity semicolon is the
-    // split between `color` and `text-align`. The entity name stays literal.
+    // The first semicolon ends the entity; the second ends the declaration.
     expect(
       applyFix('<p style="color: &copy;; text-align: justify">Body</p>'),
-    ).toBe('<p style="color: &copy">Body</p>');
+    ).toBe('<p style="color: &copy;">Body</p>');
   });
 
   it("respects a severity override", () => {

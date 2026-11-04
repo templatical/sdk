@@ -16,6 +16,8 @@ export const meta: RuleMeta = {
 };
 
 const TEXT_ALIGN_DECL = /^\s*text-align\s*:\s*([^;]*)/i;
+const CHARACTER_REFERENCE =
+  /^&(?:[A-Za-z][A-Za-z0-9]*|#[0-9]+|#[xX][0-9a-fA-F]+);/;
 
 /** Split only at declaration boundaries, preserving strings and function values. */
 function splitDeclarations(style: string): string[] {
@@ -29,6 +31,9 @@ function splitDeclarations(style: string): string[] {
       i++;
     } else if (quote !== null) {
       if (char === quote) quote = null;
+    } else if (char === "&") {
+      const reference = CHARACTER_REFERENCE.exec(style.slice(i));
+      if (reference !== null) i += reference[0].length - 1;
     } else if (char === '"' || char === "'") {
       quote = char;
     } else if (char === "(") {
