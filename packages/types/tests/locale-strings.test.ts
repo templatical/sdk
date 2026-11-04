@@ -74,8 +74,8 @@ describe("maskTags", () => {
         const value = "{{".repeat(n);
         return () => maskTags(value, liquid, "text");
       },
-      500,
-      400,
+      5_000,
+      40,
     );
   });
   it("masks many complete tags followed by unclosed openers linearly", () => {

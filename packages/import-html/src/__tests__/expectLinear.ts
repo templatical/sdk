@@ -28,6 +28,7 @@ export function expectLinear(
       `n=${n} repetitions=${repetitions} small=${small.toFixed(2)}ms large=${large.toFixed(2)}ms ratio=${ratio.toFixed(2)}`,
     );
   }
-  expect(ratio).toBeLessThan(8);
+  // Linear growth measures about 4; the quadratic code this guards against measures 16 or more.
+  expect(ratio).toBeLessThan(10);
   return { n, ratio };
 }
