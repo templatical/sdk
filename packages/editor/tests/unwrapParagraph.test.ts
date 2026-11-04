@@ -17,6 +17,13 @@ describe("unwrapParagraph", () => {
       );
     });
 
+    it.each(['<p title="2 > 1">Hi</p>', "<p title='2 > 1'>Hi</p>"])(
+      "keeps > inside the quoted attribute of %s",
+      (html) => {
+        expect(unwrapParagraph(html)).toBe("Hi");
+      },
+    );
+
     it("tolerates whitespace around the wrapper", () => {
       expect(unwrapParagraph("  <p>Hello</p>  ")).toBe("Hello");
       expect(unwrapParagraph("\n<p>Hello</p>\n")).toBe("Hello");
