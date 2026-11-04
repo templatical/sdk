@@ -36,10 +36,10 @@ export function renderSocialIcons(
     ? ` container-background-color="${escapeAttr(block.styles.backgroundColor)}"`
     : "";
   const visibilityAttr = getCssClassAttr(block);
-  const align = block.align;
+  const align = escapeAttr(block.align);
   const iconSize = block.iconSize;
   const iconStyle = block.iconStyle;
-  const assetDir = socialIconAssetDir(iconStyle, block.iconTone);
+  const assetDir = escapeAttr(socialIconAssetDir(iconStyle, block.iconTone));
   const spacing = block.spacing;
 
   let iconSizePx: number;
@@ -74,7 +74,7 @@ export function renderSocialIcons(
 
   const iconCount = icons.length;
   const socialElements = icons.map((icon, index) => {
-    const platform = icon.platform;
+    const platform = escapeAttr(icon.platform);
     const url = escapeAttr(icon.url);
     const iconSrc = `${context.socialIconsBaseUrl}/${assetDir}/${platform}.png`;
 
@@ -82,7 +82,7 @@ export function renderSocialIcons(
     const rightPad = index === iconCount - 1 ? 0 : spacing;
 
     // Empty content hides the platform name text, matching the editor display
-    return `<mj-social-element src="${iconSrc}" href="${url}" icon-size="${iconSizePx}px" padding="0 ${rightPad}px 0 0" border-radius="${borderRadius}" background-color="transparent"></mj-social-element>`;
+    return `<mj-social-element src="${iconSrc}" href="${url}" icon-size="${iconSizePx}px" padding="0 ${escapeAttr(String(rightPad))}px 0 0" border-radius="${borderRadius}" background-color="transparent"></mj-social-element>`;
   });
 
   const socialContent = socialElements.join("\n");
