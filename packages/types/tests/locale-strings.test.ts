@@ -57,6 +57,15 @@ function values(extracted: ReturnType<typeof localeStrings>) {
 }
 
 describe("maskTags", () => {
+  it("skips a zero-length custom match and finds a later logic tag", () => {
+    const syntax = { value: /\[\[\w+\]\]/g, logic: /^|<if>/g };
+
+    expect(maskTags("Hi <if> [[name]]!", syntax, "text")).toEqual({
+      text: 'Hi <x id="1"/> <x id="2"/>!',
+      tokens: ["<if>", "[[name]]"],
+    });
+  });
+
   it("masks many unclosed built-in openers linearly", () => {
     const text = "{{".repeat(90_000);
     expect(maskTags(text, liquid, "text")).toEqual({ text, tokens: [] });

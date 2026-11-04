@@ -17,6 +17,55 @@ const liquid = SYNTAX_PRESETS.liquid;
 const unclosed = "{{".repeat(90_000);
 
 describe("built-in merge-tag consumers", () => {
+  it("advances to the current logic hit before rejecting overlapping values", () => {
+    expect(
+      collectHits("{{#if a}}{{#if b}}{{name}}", [], SYNTAX_PRESETS.handlebars),
+    ).toEqual([
+      {
+        start: 0,
+        end: 9,
+        attr: "data-logic-merge-tag",
+        value: "{{#if a}}",
+        label: "IF",
+      },
+      {
+        start: 9,
+        end: 18,
+        attr: "data-logic-merge-tag",
+        value: "{{#if b}}",
+        label: "IF",
+      },
+      {
+        start: 18,
+        end: 26,
+        attr: "data-merge-tag",
+        value: "{{name}}",
+        label: "{{name}}",
+      },
+    ]);
+  });
+
+  it("skips a zero-length custom match and collects later hits", () => {
+    const syntax = { value: /\[\[\w+\]\]/g, logic: /^|<if>/g };
+
+    expect(collectHits("Hi <if> [[name]]!", [], syntax)).toEqual([
+      {
+        start: 3,
+        end: 7,
+        attr: "data-logic-merge-tag",
+        value: "<if>",
+        label: "<if>",
+      },
+      {
+        start: 8,
+        end: 16,
+        attr: "data-merge-tag",
+        value: "[[name]]",
+        label: "[[name]]",
+      },
+    ]);
+  });
+
   it("segments a field with unclosed openers linearly", () => {
     function segments(value: string) {
       let field: ReturnType<typeof useMergeTagField> | undefined;

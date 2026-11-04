@@ -9,6 +9,52 @@ import {
 import { expectLinear } from "./helpers/expectLinear";
 
 describe("built-in merge-tag scanning", () => {
+  it("scans custom syntax from an offset without changing its regex state", () => {
+    const syntax = { value: /\[\[[a-z]+\]\]/iy, logic: /\[%[a-z]+%\]/iy };
+    const text = "[[first]] [%if%] [[SECOND]]";
+    syntax.value.lastIndex = 3;
+
+    expect(scanSyntaxMatches(text, syntax, "value", 10, 1)).toEqual([
+      { index: 17, value: "[[SECOND]]" },
+    ]);
+    expect(scanSyntaxMatches(text, syntax, "logic")).toEqual([
+      { index: 10, value: "[%if%]" },
+    ]);
+    expect(syntax.value.lastIndex).toBe(3);
+    expect(syntax.logic.lastIndex).toBe(0);
+  });
+
+  it("combines custom value and logic matches in text order", () => {
+    const syntax = { value: /\[\[[a-z]+\]\]/g, logic: /\[%[a-z]+%\]/g };
+    const text = "[%if%] [[name]] [%end%]";
+
+    expect(scanCombinedSyntaxMatches(text, syntax)).toEqual([
+      { index: 0, value: "[%if%]" },
+      { index: 7, value: "[[name]]" },
+      { index: 16, value: "[%end%]" },
+    ]);
+    const combined = new RegExp(
+      `(${syntax.value.source}|${syntax.logic.source})`,
+      "g",
+    );
+    expect(scanCombinedSyntaxMatches(text, syntax)).toEqual(
+      [...text.matchAll(combined)].map((match) => ({
+        index: match.index,
+        value: match[0],
+      })),
+    );
+  });
+
+  it("preserves an attributed span with no closing tag", () => {
+    const html = '<p><span data-merge-tag="{{name}}">Name';
+
+    expect(
+      resolveHtmlMergeTagLabels(html, [
+        { label: "Full Name", value: "{{name}}" },
+      ]),
+    ).toBe(html);
+  });
+
   it("matches the built-in regexes on real tags and seeded text", () => {
     const examples = [
       "{{first_name}} {{ first_name | capitalize }}",
