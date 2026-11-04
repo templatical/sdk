@@ -46,7 +46,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // Emit the color only when the block sets one; otherwise the `mj-text`
   // inherits the document `textColor` default from `<mj-attributes>`.
   const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
-  const align = block.textAlign;
+  const align = escapeAttr(block.textAlign);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   // `unwrapParagraph` strips only a *single* outer `<p>`, so a title the user
   // pressed Enter in keeps its paragraphs and needs a spacing rule. Titles

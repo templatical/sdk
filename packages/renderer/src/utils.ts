@@ -53,7 +53,7 @@ export function bgAttr(
   const name =
     placement === "native" ? "background-color" : "container-background-color";
 
-  return ` ${name}="${backgroundColor}"`;
+  return ` ${name}="${escapeCssValue(backgroundColor)}"`;
 }
 
 /**
@@ -153,7 +153,7 @@ export function borderRadiusAttr(
     return "";
   }
 
-  return ` border-radius="${css}"`;
+  return ` border-radius="${escapeCssValue(css)}"`;
 }
 
 /**
@@ -172,5 +172,5 @@ export function backgroundImageAttrs(bg: BackgroundImage | undefined): string {
     return "";
   }
 
-  return ` background-url="${escapeAttr(resolved.url)}" background-size="${resolved.size}" background-position="${resolved.position}" background-repeat="${resolved.repeat}"`;
+  return ` background-url="${escapeAttr(resolved.url)}" background-size="${escapeCssValue(resolved.size)}" background-position="${escapeCssValue(resolved.position)}" background-repeat="${escapeCssValue(resolved.repeat)}"`;
 }
