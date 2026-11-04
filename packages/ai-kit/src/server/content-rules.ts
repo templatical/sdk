@@ -24,6 +24,24 @@ function list(types: readonly string[]): string {
     : `${types.slice(0, -1).join(", ")} or ${types.at(-1)}`;
 }
 
+function hasLocaleTypeOverride(block: Record<string, unknown>): boolean {
+  const l10n = block.l10n;
+  return (
+    typeof l10n === "object" &&
+    l10n !== null &&
+    Object.values(l10n).some((layer) => {
+      if (typeof layer !== "object" || layer === null) return false;
+      const { set, text } = layer as Record<string, unknown>;
+      return [set, text].some(
+        (fields) =>
+          typeof fields === "object" &&
+          fields !== null &&
+          Object.hasOwn(fields, "type"),
+      );
+    })
+  );
+}
+
 /**
  * Why an AI may not write these blocks into content holding `existing` blocks,
  * or `null` when it may: a forbidden type that isn't already there (a replace
@@ -38,14 +56,17 @@ export function contentRuleRefusal(
     const previous =
       typeof block.id === "string" ? existing.get(block.id) : undefined;
     if (
-      previous &&
-      previous.type === block.type &&
-      (block.type !== "custom" || previous.customType === block.customType)
-    )
-      continue;
-    if (typeof block.type === "string" && forbidden.includes(block.type)) {
+      typeof block.type === "string" &&
+      forbidden.includes(block.type) &&
+      !(
+        previous &&
+        previous.type === block.type &&
+        (block.type !== "custom" || previous.customType === block.customType)
+      )
+    ) {
       return `you can't add ${list(forbidden)} blocks`;
     }
+    if (hasLocaleTypeOverride(block)) return "you can't change a block's type";
   }
   return null;
 }

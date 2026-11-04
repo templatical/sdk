@@ -156,6 +156,13 @@ export function createEditingSession(
       return refuse(engineRefusal(error, parsed, content, locks, sessionId));
     }
 
+    const contentReason = contentRuleRefusal(
+      next.blocks,
+      existing,
+      limits.forbiddenBlockTypes,
+    );
+    if (contentReason !== null) return refuse(contentReason);
+
     const bytes = new TextEncoder().encode(JSON.stringify(next)).length;
     if (bytes > limits.maxContentBytes) {
       return refuse(
