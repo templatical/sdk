@@ -73,7 +73,7 @@ describe("init() warns about an unusable locale", () => {
 
   it("lists the locales that would have worked", async () => {
     const [message] = await initWithLocale("it");
-    for (const locale of ["ca", "de", "en", "es", "fr", "ja", "nl", "pt-BR"]) {
+    for (const locale of ["ca", "da", "de", "en", "es", "fr", "ja", "nl", "pt-BR"]) {
       expect(message).toContain(locale);
     }
   });
