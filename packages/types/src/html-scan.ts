@@ -1,5 +1,5 @@
 /**
- * Minimal, allocation-free primitives for reading an HTML open tag out of a
+ * Minimal, forward-only primitives for reading an HTML open tag out of a
  * markup string. They exist because merge-tag markup is rewritten from a raw
  * string in two packages — `@templatical/types` (label / sample resolution for
  * the previews) and `@templatical/renderer` (converting spans back to tokens on
@@ -33,6 +33,22 @@ const QUOTES = new Set(['"', "'"]);
  * is the safe answer for malformed HTML.
  */
 export function findOpenTagEnd(html: string, from: number): number {
+  return scanOpenTag(html, from, false).end;
+}
+
+/** End of a span's opening tag, or the next span start if this one is malformed. */
+export function findOpenSpanBoundary(
+  html: string,
+  from: number,
+): { end: number; nextSpan: number } {
+  return scanOpenTag(html, from, true);
+}
+
+function scanOpenTag(
+  html: string,
+  from: number,
+  stopAtNextSpan: boolean,
+): { end: number; nextSpan: number } {
   let quote: string | null = null;
   let state: "tag" | "beforeValue" | "unquotedValue" = "tag";
   for (let i = from; i < html.length; i++) {
@@ -40,6 +56,9 @@ export function findOpenTagEnd(html: string, from: number): number {
     if (quote !== null) {
       if (char === quote) quote = null;
       continue;
+    }
+    if (stopAtNextSpan && char === "<" && html.startsWith("<span", i)) {
+      return { end: -1, nextSpan: i };
     }
     if (state === "beforeValue") {
       if (isWhitespace(char)) continue;
@@ -51,7 +70,7 @@ export function findOpenTagEnd(html: string, from: number): number {
       state = "unquotedValue";
     }
     if (state === "unquotedValue") {
-      if (char === ">") return i;
+      if (char === ">") return { end: i, nextSpan: -1 };
       if (isWhitespace(char)) state = "tag";
       continue;
     }
@@ -59,28 +78,7 @@ export function findOpenTagEnd(html: string, from: number): number {
       state = "beforeValue";
       continue;
     }
-    if (char === ">") return i;
-  }
-  return -1;
-}
-
-/** End of a span's opening tag, or the next span start if this one is malformed. */
-export function findOpenSpanBoundary(
-  html: string,
-  from: number,
-): { end: number; nextSpan: number } {
-  let quote: string | null = null;
-  for (let i = from; i < html.length; i++) {
-    const char = html[i];
-    if (quote !== null) {
-      if (char === quote) quote = null;
-    } else if (QUOTES.has(char)) {
-      quote = char;
-    } else if (char === ">") {
-      return { end: i, nextSpan: -1 };
-    } else if (char === "<" && html.startsWith("<span", i)) {
-      return { end: -1, nextSpan: i };
-    }
+    if (char === ">") return { end: i, nextSpan: -1 };
   }
   return { end: -1, nextSpan: -1 };
 }

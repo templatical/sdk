@@ -55,6 +55,39 @@ describe("built-in merge-tag scanning", () => {
     ).toBe(html);
   });
 
+  it("resolves a span with an apostrophe in an unquoted attribute value", () => {
+    const html = '<span data-merge-tag="{{name}}" title=don\'t>old</span>';
+
+    expect(
+      resolveHtmlMergeTagLabels(html, [
+        { label: "Full Name", value: "{{name}}" },
+      ]),
+    ).toBe('<span data-merge-tag="{{name}}" title=don\'t>Full Name</span>');
+  });
+
+  it("resolves a span with a double quote in an unquoted attribute value", () => {
+    const html = '<span data-merge-tag="{{name}}" title=don"t>old</span>';
+
+    expect(
+      resolveHtmlMergeTagLabels(html, [
+        { label: "Full Name", value: "{{name}}" },
+      ]),
+    ).toBe('<span data-merge-tag="{{name}}" title=don"t>Full Name</span>');
+  });
+
+  it("keeps a quoted > inside a span with an unquoted apostrophe", () => {
+    const html =
+      '<span title="a > b" data-merge-tag="{{name}}" note=don\'t>old</span>';
+
+    expect(
+      resolveHtmlMergeTagLabels(html, [
+        { label: "Full Name", value: "{{name}}" },
+      ]),
+    ).toBe(
+      '<span title="a > b" data-merge-tag="{{name}}" note=don\'t>Full Name</span>',
+    );
+  });
+
   it("matches the built-in regexes on real tags and seeded text", () => {
     const examples = [
       "{{first_name}} {{ first_name | capitalize }}",
