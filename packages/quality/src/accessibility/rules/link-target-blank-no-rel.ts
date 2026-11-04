@@ -1,7 +1,13 @@
 import { isParagraph, isTitle } from "@templatical/types";
 import type { Block } from "@templatical/types";
 import type { LintPatchContext, Rule, RuleMeta } from "../../types";
-import { extractAnchors } from "../../html-utils";
+import {
+  attrRawValue,
+  doubleQuotedAttr,
+  extractAnchors,
+  findAttrSpans,
+  rewriteOpenTags,
+} from "../../html-utils";
 
 export const meta: RuleMeta = {
   id: "a11y.link-target-blank-no-rel",
@@ -17,7 +23,7 @@ function getHtml(block: Block): string | null {
 
 function hasSafeRel(rel: string | null): boolean {
   if (rel === null) return false;
-  const tokens = rel.toLowerCase().split(/\s+/);
+  const tokens = rel.toLowerCase().split(/[ \t\n\f\r]+/);
   return tokens.includes("noopener") || tokens.includes("noreferrer");
 }
 
@@ -46,58 +52,35 @@ export const linkTargetBlankNoRel: Rule = {
   },
 };
 
-interface ParsedAttr {
-  raw: string;
-  name: string;
-  value: string | null;
-  /** Start offset of `raw` within the parent attrs string. */
-  start: number;
-}
-
-const ATTR_RE =
-  /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
-
-function parseAttrs(attrs: string): ParsedAttr[] {
-  const parsed: ParsedAttr[] = [];
-  const re = new RegExp(ATTR_RE.source, ATTR_RE.flags);
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(attrs)) !== null) {
-    const value = match[2] ?? match[3] ?? match[4] ?? null;
-    parsed.push({
-      raw: match[0],
-      name: match[1],
-      value,
-      start: match.index,
-    });
-  }
-  return parsed;
-}
-
-function hasUnsafeTargetBlank(parsed: ParsedAttr[]): boolean {
-  return parsed.some(
-    (a) =>
-      a.name.toLowerCase() === "target" &&
-      a.value !== null &&
-      a.value.toLowerCase() === "_blank",
-  );
-}
-
+/**
+ * Add `noopener` on every `<a target="_blank">` that lacks it.
+ *
+ * The attribute value is the raw text inside its quotes (double-quoted,
+ * single-quoted, or unquoted), so an entity such as `&copy;` is kept as
+ * written. The value is written back double-quoted, and a `"` in it is
+ * escaped so it cannot close the attribute. The rewritten open tag is a
+ * lowercase `<a`. Its boundary and decoded attribute values come from the
+ * parser in `rewriteOpenTags`, as they do during detection.
+ */
 function addNoopenerToTargetBlank(html: string): string {
-  return html.replace(/<a\b([^>]*)>/gi, (match, attrs: string) => {
-    const parsed = parseAttrs(attrs);
-    if (!hasUnsafeTargetBlank(parsed)) return match;
+  return rewriteOpenTags(html, ({ name, attrs, decodedAttrs }) => {
+    if (name !== "a") return null;
+    if (decodedAttrs.target !== "_blank") return null;
 
-    const relAttr = parsed.find((a) => a.name.toLowerCase() === "rel");
-    if (relAttr) {
-      const tokens = (relAttr.value ?? "").toLowerCase().split(/\s+/);
-      if (tokens.includes("noopener") || tokens.includes("noreferrer")) {
-        return match;
-      }
-      const newRel = `${relAttr.value ?? ""} noopener`.trim();
-      const before = attrs.slice(0, relAttr.start);
-      const after = attrs.slice(relAttr.start + relAttr.raw.length);
-      return `<a${before}rel="${newRel}"${after}>`;
+    const relSpans = findAttrSpans(attrs, "rel");
+    if (relSpans === null) return null;
+    const relSpan = relSpans[0];
+    if (relSpan === undefined) {
+      return `<a${attrs} ${doubleQuotedAttr("rel", "noopener")}>`;
     }
-    return `<a${attrs} rel="noopener">`;
+
+    const relValue = attrRawValue(attrs.slice(relSpan.start, relSpan.end));
+    if (hasSafeRel(decodedAttrs.rel ?? null)) return null;
+    const newRel = `${relValue ?? ""} noopener`.replace(/^[ \t\n\f\r]+/, "");
+    const next =
+      attrs.slice(0, relSpan.start) +
+      doubleQuotedAttr("rel", newRel) +
+      attrs.slice(relSpan.end);
+    return `<a${next}>`;
   });
 }

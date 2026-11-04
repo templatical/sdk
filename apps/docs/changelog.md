@@ -15,6 +15,24 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.54.2
+
+<time datetime="2026-11-04">2026-11-04</time>
+
+### Fixes and improvements
+
+**Template values in MJML attributes are escaped before rendering. Body background colours containing markup use a transparent fallback so the compiled HTML does not carry that markup. CSS-valued attributes (background colours, border radius, background size, position and repeat) also drop `;`, `{`, `}` and line breaks, so a value stays one CSS declaration.**
+
+`@templatical/renderer`
+
+**Title blocks now unwrap paragraphs with quoted attributes correctly in the editor and rendered email. The editor sanitizes title HTML after unwrapping to close a script-injection path in the canvas. `findOpenTagEnd` now treats a quote inside an unquoted attribute value as an ordinary character, as HTML does.**
+
+`@templatical/editor` · `@templatical/renderer` · `@templatical/types`
+
+**In preview mode the canvas hides lint issue badges, like the rest of the block chrome.**
+
+`@templatical/editor`
+
 ## 0.54.1
 
 <time datetime="2026-11-03">2026-11-03</time>

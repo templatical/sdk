@@ -50,7 +50,8 @@ export function escapeCssValue(text: string): string {
   if (text === "") {
     return "";
   }
-  return escapeAttr(text).replace(/[;{}\r\n]/g, "");
+  // Strip before escaping, so the `;` that ends each `&quot;` survives.
+  return escapeAttr(text.replace(/[;{}\r\n]/g, ""));
 }
 
 const FONT_FAMILY_ENTITY_REGEX = /[&<>"]/g;

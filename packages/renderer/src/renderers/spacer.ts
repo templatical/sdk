@@ -26,5 +26,5 @@ export function renderSpacer(
     : "";
   const visibilityAttr = getCssClassAttr(block);
 
-  return `<mj-spacer height="${height}px" padding="0"${bgColor}${visibilityAttr} />`;
+  return `<mj-spacer height="${escapeAttr(String(height))}px" padding="0"${bgColor}${visibilityAttr} />`;
 }

@@ -360,6 +360,10 @@ const ca: typeof en = {
     decorative: "Imatge decorativa",
     decorativeHint:
       "Ocult per als lectors de pantalla. Utilitzeu-lo només per a espaiadors i detalls visuals.",
+    fluidOnMobile: "Amplada completa al mòbil",
+    fluidOnMobileAuto: "Automàtic",
+    fluidOnMobileAlways: "Sempre",
+    fluidOnMobileNever: "Mai",
   },
 
   // Toolbar - Video
@@ -397,6 +401,10 @@ const ca: typeof en = {
     textColor: "Color del text",
     borderRadius: "Radi de la vora",
     fontSize: "Mida de la font",
+    fontWeight: "Gruix",
+    fontWeightRegular: "Normal",
+    fontWeightMedium: "Mitjà",
+    fontWeightBold: "Negreta",
     width: "Amplada",
     widthAuto: "Ajusta al contingut",
     fullWidth: "Amplada completa",

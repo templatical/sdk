@@ -61,6 +61,7 @@ Displays an image with optional link wrapping.
 | `src` | `string` | Image URL |
 | `alt` | `string` | Alt text |
 | `width` | `number \| 'full'` | Display width in px, or `'full'` for 100%. See [Width on phones](/guide/images#width-on-phones) |
+| `fluidOnMobile` | `boolean` | Omit for the automatic rule: full width on a phone only when the image fills its column on desktop. `true` always emits MJML `fluid-on-mobile`; `false` never does. See [Width on phones](/guide/images#width-on-phones) |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or `{ topLeft, topRight, bottomRight, bottomLeft }` per corner. Omit or 0 for square corners |
@@ -86,6 +87,7 @@ A call-to-action button with customizable appearance.
 | `fontSize` | `number` | Font size in px |
 | `buttonPadding` | `SpacingValue` | Inner padding |
 | `fontFamily` | `string` | Font family override |
+| `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Label weight: 400, 500 or 700. Omit for bold, which is how a button with no weight renders. |
 | `openInNewTab` | `boolean` | Link target behavior |
 | `width` | `number \| 'full'` | Fixed width in px, or `'full'` for 100%. Omit to size to content. |
 | `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. |
