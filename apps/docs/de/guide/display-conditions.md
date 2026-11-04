@@ -83,6 +83,29 @@ Wenn `allowCustom` auf `true` gesetzt ist, können Benutzer ihre eigenen `before
 `current.data` ist der opake Zustand der Bedingung, damit Ihr Dialog wieder ausgefüllt öffnet. Ein aufgelöster Wert braucht die Zeichenketten `label`, `before` und `after`. Leere Zeichenketten sind gültig. `description`, `group` und `data` bleiben erhalten. Ist `onRequest` gesetzt, werden `conditions` und `allowCustom` ignoriert.
 
 ```ts
+import { init } from '@templatical/editor';
+
+function openConditionBuilder({
+  data,
+}: {
+  blockId: string;
+  data?: unknown;
+}) {
+  const saved =
+    data !== null && typeof data === 'object'
+      ? (data as { field?: string; operator?: string; value?: string })
+      : undefined;
+  const field = saved?.field ?? 'customer.vip';
+  const operator = saved?.operator ?? '==';
+  const value = saved?.value ?? 'true';
+  return Promise.resolve({
+    label: `${field} ${operator} ${value}`,
+    before: `{% if ${field} ${operator} ${value} %}`,
+    after: '{% endif %}',
+    data: { field, operator, value },
+  });
+}
+
 const editor = await init({
   container: '#editor',
   displayConditions: {

@@ -11197,6 +11197,29 @@ When `allowCustom` is `true`, users can write their own `before` and `after` str
 `current.data` is the opaque state from the condition, so the builder can reopen filled in. A resolved value needs string `label`, `before` and `after`. Empty strings are valid. `description`, `group` and `data` are kept. With `onRequest` set, `conditions` and `allowCustom` are ignored.
 
 ```ts
+import { init } from '@templatical/editor';
+
+function openConditionBuilder({
+  data,
+}: {
+  blockId: string;
+  data?: unknown;
+}) {
+  const saved =
+    data !== null && typeof data === 'object'
+      ? (data as { field?: string; operator?: string; value?: string })
+      : undefined;
+  const field = saved?.field ?? 'customer.vip';
+  const operator = saved?.operator ?? '==';
+  const value = saved?.value ?? 'true';
+  return Promise.resolve({
+    label: `${field} ${operator} ${value}`,
+    before: `{% if ${field} ${operator} ${value} %}`,
+    after: '{% endif %}',
+    data: { field, operator, value },
+  });
+}
+
 const editor = await init({
   container: '#editor',
   displayConditions: {
