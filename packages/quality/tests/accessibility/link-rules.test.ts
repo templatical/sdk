@@ -266,6 +266,12 @@ describe("a11y.link-target-blank-no-rel", () => {
     );
   });
 
+  it("auto-fix adds noopener when the target is written with a character reference", () => {
+    expect(applyRelFix('<p><a href="/x" target="&#95;blank">Buy</a></p>')).toBe(
+      '<p><a href="/x" target="&#95;blank" rel="noopener">Buy</a></p>',
+    );
+  });
+
   it("auto-fix of double-quoted anchors stays byte-identical", () => {
     expect(applyRelFix('<p><a href="/x" target="_blank">Buy</a></p>')).toBe(
       '<p><a href="/x" target="_blank" rel="noopener">Buy</a></p>',

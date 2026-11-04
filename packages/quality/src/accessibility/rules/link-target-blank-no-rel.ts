@@ -1,4 +1,4 @@
-import { isParagraph, isTitle } from "@templatical/types";
+import { decodeHtmlEntities, isParagraph, isTitle } from "@templatical/types";
 import type { Block } from "@templatical/types";
 import type { LintPatchContext, Rule, RuleMeta } from "../../types";
 import {
@@ -69,7 +69,10 @@ function addNoopenerToTargetBlank(html: string): string {
     if (targetSpans === null) return null;
     const opensNewTab = targetSpans.some((span) => {
       const target = attrRawValue(attrs.slice(span.start, span.end));
-      return target !== null && target.toLowerCase() === "_blank";
+      // Decoded, as detection reads it: `&#95;blank` opens a new tab too.
+      return (
+        target !== null && decodeHtmlEntities(target).toLowerCase() === "_blank"
+      );
     });
     if (!opensNewTab) return null;
 
@@ -81,7 +84,8 @@ function addNoopenerToTargetBlank(html: string): string {
     }
 
     const relValue = attrRawValue(attrs.slice(relSpan.start, relSpan.end));
-    if (hasSafeRel(relValue)) return null;
+    if (hasSafeRel(relValue === null ? null : decodeHtmlEntities(relValue)))
+      return null;
     const newRel = `${relValue ?? ""} noopener`.trim();
     const next =
       attrs.slice(0, relSpan.start) +
