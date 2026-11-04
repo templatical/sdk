@@ -116,4 +116,30 @@ test.describe("Template lint (a11y + structure)", () => {
     const row = editorPage.getIssueRow("link.javascript-protocol");
     await expect(row).toBeVisible();
   });
+
+  test("preview mode hides block issue badges and shows them again on exit", async ({
+    scenePage,
+    editorPage,
+    page,
+  }) => {
+    await openIssuesScene(scenePage, editorPage, {});
+    // The Issues scene plants two block findings: the hero image has no alt
+    // (error) and the first button reads "Click here" (warning).
+    const badges = page.locator(".tpl-canvas .tpl-block-issue-badge");
+    await expect(badges).toHaveCount(2);
+    await expect(badges.filter({ visible: true })).toHaveCount(2);
+
+    const toggle = page.locator(SELECTORS.previewToggle);
+    await editorPage.togglePreview();
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await expect(badges).toHaveCount(2);
+    await expect(badges.filter({ visible: true })).toHaveCount(0);
+    for (const badge of await badges.all()) {
+      await expect(badge).toBeHidden();
+    }
+
+    await editorPage.togglePreview();
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await expect(badges.filter({ visible: true })).toHaveCount(2);
+  });
 });
