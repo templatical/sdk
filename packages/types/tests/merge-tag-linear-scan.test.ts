@@ -139,10 +139,14 @@ describe("built-in merge-tag scanning", () => {
     // A full scan grows with the tags after the first; an early exit does not.
     const time = (tags: number) => {
       const text = "{{a}}" + "{{x}}".repeat(tags);
-      const start = performance.now();
-      for (let i = 0; i < 200; i++)
-        containsMergeTag(text, SYNTAX_PRESETS.liquid);
-      return performance.now() - start;
+      let best = Infinity;
+      for (let sample = 0; sample < 3; sample++) {
+        const start = performance.now();
+        for (let i = 0; i < 200; i++)
+          containsMergeTag(text, SYNTAX_PRESETS.liquid);
+        best = Math.min(best, performance.now() - start);
+      }
+      return best;
     };
     time(1_000);
     expect(time(64_000) / Math.max(time(1_000), 0.5)).toBeLessThan(8);

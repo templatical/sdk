@@ -27,6 +27,8 @@ const localization = (content: ReturnType<typeof template>, options = {}) =>
     issue.ruleId.startsWith("localization."),
   );
 
+// The two linear-growth tests lint a long paragraph at two sizes, best of three
+// each; CI's coverage run needs more than the default 5 s for that.
 describe("localization rules", () => {
   it("compares many unclosed built-in openers linearly", () => {
     const value = "{{".repeat(90_000);
@@ -61,7 +63,7 @@ describe("localization rules", () => {
       1_000,
       25,
     );
-  });
+  }, 30_000);
   it("compares complete tags followed by unclosed openers linearly", () => {
     const value = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
     const content = template();
@@ -95,7 +97,7 @@ describe("localization rules", () => {
       500,
       10,
     );
-  });
+  }, 30_000);
   it("reports each missing field including settings with null blockId, only in a version", () => {
     const content = template();
     content.blocks = [
