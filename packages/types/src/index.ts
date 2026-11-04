@@ -190,6 +190,7 @@ export type {
   UpdateSettingsLocaleOperation,
 } from "./operations";
 export {
+  blockIdsOf,
   applyOperations,
   createSetDefaultLocaleOperation,
   applyOperationsInPlace,
