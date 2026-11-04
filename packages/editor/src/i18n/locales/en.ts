@@ -353,6 +353,10 @@ export default {
     decorative: "Decorative image",
     decorativeHint:
       "Hidden from screen readers. Use only for spacers and visual flourishes.",
+    fluidOnMobile: "Full width on mobile",
+    fluidOnMobileAuto: "Automatic",
+    fluidOnMobileAlways: "Always",
+    fluidOnMobileNever: "Never",
   },
 
   // Toolbar - Video
@@ -390,6 +394,10 @@ export default {
     textColor: "Text Color",
     borderRadius: "Border Radius",
     fontSize: "Font Size",
+    fontWeight: "Font Weight",
+    fontWeightRegular: "Regular",
+    fontWeightMedium: "Medium",
+    fontWeightBold: "Bold",
     width: "Width",
     widthAuto: "Fit to content",
     fullWidth: "Full Width",

@@ -1,5 +1,11 @@
 # @templatical/types
 
+## 0.54.2
+
+### Patch Changes
+
+- a72fbd8: Title blocks now unwrap paragraphs with quoted attributes correctly in the editor and rendered email. The editor sanitizes title HTML after unwrapping to close a script-injection path in the canvas. `findOpenTagEnd` now treats a quote inside an unquoted attribute value as an ordinary character, as HTML does.
+
 ## 0.54.1
 
 No changes in this release.

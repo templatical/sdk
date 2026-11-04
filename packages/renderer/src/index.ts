@@ -219,7 +219,11 @@ export async function renderToMjml(
   const fontFamily = renderContext.resolveFontFamily(
     toRender.settings.fontFamily,
   );
-  const backgroundColor = toRender.settings.backgroundColor;
+  // MJML copies the body colour into compiled HTML styles. Markup in a colour
+  // has no valid CSS meaning and must not survive into that output.
+  const backgroundColor = /[<>]/.test(toRender.settings.backgroundColor)
+    ? "transparent"
+    : toRender.settings.backgroundColor;
   // Document-level default text color → the `<mj-text>` default below. Blocks
   // that set their own color (e.g. Title) or carry inline text-color marks
   // override it. Omitted when unset so existing templates render identically.
@@ -268,7 +272,7 @@ export async function renderToMjml(
       }
     </mj-style>${renderCustomBlockStylesheets(customBlockStylesheets)}
   </mj-head>
-  <mj-body width="${renderContext.containerWidth}px" background-color="${backgroundColor}">
+  <mj-body width="${escapeAttr(String(renderContext.containerWidth))}px" background-color="${escapeCssValue(backgroundColor)}">
 ${bodyContent}
   </mj-body>
 </mjml>`;

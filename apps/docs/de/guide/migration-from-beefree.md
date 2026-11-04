@@ -16,19 +16,19 @@ Dieses Paket befindet sich in aktiver Entwicklung. Einige Blocktypen und erweite
 ::: code-group
 
 ```bash [npm]
-npm install @templatical/import-beefree
+npm install @templatical/import-beefree @templatical/editor @templatical/renderer
 ```
 
 ```bash [pnpm]
-pnpm add @templatical/import-beefree
+pnpm add @templatical/import-beefree @templatical/editor @templatical/renderer
 ```
 
 ```bash [yarn]
-yarn add @templatical/import-beefree
+yarn add @templatical/import-beefree @templatical/editor @templatical/renderer
 ```
 
 ```bash [bun]
-bun add @templatical/import-beefree
+bun add @templatical/import-beefree @templatical/editor @templatical/renderer
 ```
 
 :::
@@ -39,7 +39,7 @@ Sie können es auch von einem CDN laden:
 
 ```html
 <script type="module">
-  import { convertBeeFreeTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-beefree/+esm';
+  import { convertBeeFreeTemplate } from "https://cdn.jsdelivr.net/npm/@templatical/import-beefree/+esm";
   // ...dann konvertieren wie im Abschnitt „Verwendung“ unten
 </script>
 ```
@@ -47,20 +47,26 @@ Sie können es auch von einem CDN laden:
 ## Verwendung {#usage}
 
 ```ts
-import { convertBeeFreeTemplate } from '@templatical/import-beefree';
+import { convertBeeFreeTemplate } from "@templatical/import-beefree";
+import { init } from "@templatical/editor";
+import { renderToMjml } from "@templatical/renderer";
 
 // Laden Sie Ihr BeeFree-Template-JSON
-const res = await fetch('/api/beefree-templates/123');
+const res = await fetch("/api/beefree-templates/123");
 const beefreeJson = await res.json();
 
 // In das Templatical-Format konvertieren
-const { content, report } = convertBeeFreeTemplate(beefreeJson);
+const { content, report, customFonts } = convertBeeFreeTemplate(beefreeJson);
 
 // Im Editor verwenden
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   content,
+  fonts: { customFonts },
 });
+
+// Dieselben Schriften beim Rendern laden
+const mjml = await renderToMjml(content, { customFonts });
 
 // Den Konvertierungsbericht auf etwaige Probleme prüfen
 console.log(report);
@@ -69,15 +75,17 @@ console.log(report);
 [Im Playground öffnen](https://play.templatical.com/scenes/import-beefree)
 
 Die Funktion gibt ein `ImportResult` zurück mit:
+
 - `content` — den konvertierten `TemplateContent`, bereit für den Editor
 - `report` — einen Konvertierungsbericht mit dem Status jedes Blocks (`converted`, `approximated`, `html-fallback` oder `skipped`)
+- `customFonts` — `{ name, url }[]` aus `page.body.webFonts`-Einträgen mit URL. Das Array geht an `init({ fonts: { customFonts } })` und an `renderToMjml`. System-Stacks (`Arial`, `Helvetica Neue`, …) und `inherit` fehlen. Eine Schrift, die das Template nutzt, die keine URL hat und kein solcher Stack ist, steht in `report.warnings`.
 
-| Status | Bedeutung |
-|---|---|
-| `converted` | Ohne Verlust auf einen Templatical-Block abgebildet. |
-| `approximated` | Abgebildet, mit Clamp oder Flatten — `note` sagt, was sich geändert hat. |
-| `html-fallback` | Kein Block-Äquivalent — ein unbekannter Modultyp (Formulare eingeschlossen), ein [Icons](#icons)-Modul, das nicht genau ein Icon ohne Text enthält, oder ein [Addon](#addons) ohne Payload, das der Importer liest. Die Ausgabe ist ein `HtmlBlock`; seinen Inhalt beschreibt die [Block-Zuordnung](#block-zuordnung). |
-| `skipped` | Keine Ausgabe, und `templaticalBlockType` ist `null`: ein leeres Modul, ein Icons-Modul ohne Icons oder ein [Divider ohne Linie](#undrawn-dividers), der keinen Platz einnimmt. |
+| Status          | Bedeutung                                                                                                                                                                                                                                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `converted`     | Ohne Verlust auf einen Templatical-Block abgebildet.                                                                                                                                                                                                                                                                   |
+| `approximated`  | Eine verlustbehaftete Abbildung. Die `note` nennt, wenn sie gesetzt ist, die genaue Änderung, etwa einen Clamp, einen nicht übernommenen Zeichenabstand oder eine Prozentbreite eines Buttons oder eine Bild-Prozentbreite, die als px gespeichert wird. HTML in Tabellenzellen, das auf Klartext reduziert wird, wird hier gemeldet und in `report.warnings` genannt. |
+| `html-fallback` | Kein Block-Äquivalent — ein unbekannter Modultyp (Formulare eingeschlossen), ein [Icons](#icons)-Modul mit Icons außer einem einzelnen Icon ohne Text, mit nicht-leerem Bild und positiver px-Dateibreite und -höhe, oder ein [Addon](#addons) ohne Payload, das der Importer liest. Die Ausgabe ist ein `HtmlBlock`; seinen Inhalt beschreibt die [Block-Zuordnung](#block-zuordnung). |
+| `skipped`       | Keine Ausgabe, und `templaticalBlockType` ist `null`: ein leeres Modul, ein Icons-Modul ohne Icons oder ein [Divider ohne Linie](#undrawn-dividers), der keinen Platz einnimmt.                                                                                                                                        |
 
 Das JSON, das BeeFrees Editor speichert (`page.rows`), ist die Eingabe. Ein kompiliertes HTML-Export ist ein anderes Envelope — [`@templatical/import-html`](/de/guide/migration-from-html).
 
@@ -105,54 +113,77 @@ export interface ConvertBeeFreeOptions {
 
 BeeFree-Blocktypen werden den Templatical-Äquivalenten zugeordnet:
 
-| BeeFree-Modul | Templatical-Block | Status |
-|---|---|---|
-| Text | `paragraph` | Konvertiert |
-| Paragraph | `paragraph` | Konvertiert |
-| Heading | `title` | Konvertiert |
-| List | `paragraph` | Konvertiert |
-| Image | `image` | Konvertiert |
-| Button | `button` | Konvertiert |
-| Divider | `divider`, oder `spacer`, wenn er [keine Linie zeichnet](#undrawn-dividers) | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn er keine Linie zeichnet und keinen Platz einnimmt) |
-| Spacer | `spacer` | Konvertiert |
-| Social | `social` | Konvertiert |
-| Icons | `image` für ein Icon ohne Text, sonst `html` ([Icons](#icons)) | Konvertiert oder HTML-Fallback |
-| Addon | der Block für das Payload, das es trägt ([Addons](#addons)) | Wie dieses Modul |
-| Empty | keiner | Übersprungen |
-| Html | `html` | Konvertiert |
-| Menu | `menu` | Angenähert (Stile können abweichen) |
-| Video | `video` | Konvertiert |
-| Table | `table` | Konvertiert |
+| BeeFree-Modul | Templatical-Block                                                           | Status                                                                                                                                                             |
+| ------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Text          | `paragraph`                                                                 | Konvertiert                                                                                                                                                        |
+| Paragraph     | `paragraph`                                                                 | Konvertiert                                                                                                                                                        |
+| Heading       | `title`                                                                     | Konvertiert                                                                                                                                                        |
+| List          | `paragraph`                                                                 | Konvertiert                                                                                                                                                        |
+| Image         | `image`                                                                     | Konvertiert                                                                                                                                                        |
+| Button        | `button`                                                                    | Konvertiert (angenähert, wenn Zeichenabstand oder eine Prozentbreite außer 100% nicht übernommen wird)                                                             |
+| Divider       | `divider`, oder `spacer`, wenn er [keine Linie zeichnet](#undrawn-dividers) | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn er keine Linie zeichnet und keinen Platz einnimmt) |
+| Spacer        | `spacer`                                                                    | Konvertiert                                                                                                                                                        |
+| Social        | `social`                                                                    | Konvertiert                                                                                                                                                        |
+| Icons         | `image` für ein Icon ohne Text, mit nicht-leerem Bild und positiver px-Dateibreite und -höhe, sonst `html` ([Icons](#icons)) | Konvertiert oder HTML-Fallback |
+| Addon         | der Block für das Payload, das es trägt ([Addons](#addons))                 | Wie dieses Modul                                                                                                                                                   |
+| Empty         | keiner                                                                      | Übersprungen                                                                                                                                                       |
+| Html          | `html`                                                                      | Konvertiert                                                                                                                                                        |
+| Menu          | `menu`                                                                      | Angenähert (Stile können abweichen)                                                                                                                                |
+| Video         | `video`                                                                     | Konvertiert                                                                                                                                                        |
+| Table         | `table`                                                                     | Konvertiert (angenähert, wenn HTML in Zellen auf Klartext reduziert wird)                                                          |
 
 Unbekannte Modultypen — Formulare eingeschlossen — werden als Fallback in HTML-Blöcke konvertiert und als `html-fallback` gemeldet. Inhalt des Blocks ist `descriptor.text.html`, `descriptor.html.html` oder `descriptor.heading.text` des Moduls, das erste gesetzte Feld. Fehlen alle drei, ist es ein Kommentar `<!-- Unsupported BeeFree module: <type> -->`, der nichts rendert.
 
+Text- und List-Module setzen `paragraphSpacing` auf `0`: BeeFree-Textabsätze haben Margin 0, und eine fehlende Lücke würde mit 8px gerendert. Ein `<p>` mit explizitem px-`margin-bottom`, oder die untere Länge einer `margin`-Kurzschreibweise, setzt diese Lücke stattdessen. Eine Länge, die nicht in px ist, wird ignoriert. Die erste solche Länge gilt, wenn Absätze voneinander abweichen. `computedStyle.paragraphSpacing` eines Paragraph-Moduls (die Lücke, die BeeFree zwischen seinen Absätzen rendert, meist `16px`) setzt `paragraphSpacing` und hat Vorrang vor einem Margin im HTML.
+
+Der `style` eines Text-, Paragraph- oder List-Moduls gilt für jede Blockwurzel in seinem HTML (`p`, `h1`–`h6`, `div`, `ul`, `ol`, `li`). `text-align`, `line-height` und `font-size` stehen am Element. Die Zeilenbox nutzt die Schriftgröße des Elements, und gerenderter Text ist standardmäßig 14px, daher würde eine Größe nur auf einem inneren Span jede Zeile höher machen als in BeeFree. `color`, `font-weight`, `font-family`, `letter-spacing` und dieselbe `font-size` umschließen den Text einer Wurzel, die keinen verschachtelten Block enthält. Eine Deklaration, die das HTML an diesem Element bereits setzt, bleibt. `line-height` kommt vom Modul und ersetzt jedes `line-height` im HTML; ein Prozentwert wird als einheitenloses Verhältnis gespeichert (`120%` ist `1.2`, `200%` ist `2`). `letter-spacing` von `0` oder `normal` wird weggelassen. Ein `<a>` behält eine `color`, die es bereits setzt. Sonst wird `linkColor` oder `link-color` des Moduls, aus `style` und dann aus `computedStyle`, auf den Anker geschrieben. Fehlen beide, übernimmt der Link `settings.linkColor`.
+
+Ein List-Modul schreibt zusätzlich BeeFrees List-Box inline auf jedes `<ul>`, `<ol>` und `<li>`, damit sie den List-Abstand des Renderers schlägt (8px an der Liste, 4px an einem Eintrag, 24px Einzug). `margin-top` und `margin-bottom` der Liste sind `0`, und `margin` jedes Eintrags ist `0`. `list-style-type` ist `revert`. `padding-left` ist die Hälfte von `computedStyle.liIndent` an der äußeren Liste und der volle Einzug an einer verschachtelten Liste (`40px`, wenn der Einzug fehlt, also 20px und 40px); eine Liste von rechts nach links nutzt `padding-right`. Ein `margin`, ein Padding oder ein Marker, den das HTML bereits setzt, bleibt. Eine Liste in einem Text- oder Paragraph-Modul bleibt, wie sie geschrieben ist.
+
+### Buttons {#buttons}
+
+Ein Button behält Farben, Radius, Padding, Schriftgröße, Schriftfamilie, Breite und Rahmen. `font-weight` wird zu `fontWeight`: eine Zahl bis einschließlich 450 oder `normal` ist `"regular"` (400); von 451 bis 600, einschließlich `600`, ist `"medium"` (500); über 600 oder `bold` / `bolder` wird weggelassen, und die Beschriftung rendert fett (700). Bei gleichem Abstand gewinnt die leichtere Stufe. Eine Stärke, die keine Zahl und keines dieser Wörter ist, entfällt. Ein `letter-spacing` außer `0` oder `normal` wird nicht übernommen, ebenso eine Prozentbreite außer `100%`. Eine kurze `note` nennt, was fehlt, und das Modul wird als `approximated` gemeldet.
+
+Die Beschriftung rendert mit dem 1,2-fachen ihrer Schriftgröße. Eine größere Zeilenhöhe — ein Prozentwert der Schriftgröße, ein einheitenloses Verhältnis oder eine px-Länge — wird auf das obere und untere Padding verteilt und auf ganze Pixel gerundet. Das hinzugefügte Padding ist nie negativ, daher lässt `120%` oder weniger das Padding unverändert. BeeFrees übliche `200%` machen den Button höher.
+
+| BeeFree-`width`                     | `ButtonBlock.width`                                     | Status      |
+| ----------------------------------- | ------------------------------------------------------- | ----------- |
+| fehlt, oder `auto`                  | weggelassen (Breite der Beschriftung)                   | Konvertiert |
+| `100%`                              | `"full"`                                                | Konvertiert |
+| ein anderer Prozentwert, etwa `50%` | weggelassen (Breite der Beschriftung), mit einer `note` | Angenähert  |
+| eine positive px-Breite             | diese Pixelzahl, gerundet                               | Konvertiert |
+
+Die Position des Buttons in der Spalte ist das `text-align` des Moduls (`left`, `center` oder `right`), oder das `text-align` des Button-Styles, wenn das Modul keines setzt. `border-top`, `border-right`, `border-bottom` und `border-left` werden zu `border`. Eine Seite, die nichts zeichnet — Breite 0, `none`, `hidden` oder transparent — wird mit Breite 0 gespeichert. Zeichnet keine Seite, wird `border` weggelassen. Ein Stil außer `solid`, `dashed` oder `dotted` wird als `solid` importiert.
+
 ### Bildbreite {#image-width}
 
-| BeeFree-Bild | `ImageBlock.width` | Status |
-|---|---|---|
-| `computedStyle.class` enthält `fullwidth` | `"full"` | Konvertiert |
-| `computedStyle.width` schmaler als der Platz des Bildes | die px-Zahl, gerundet | Konvertiert |
-| `computedStyle.width` so breit wie der Platz oder breiter | `"full"` | Konvertiert |
-| `computedStyle.width` ein Prozentwert unter `100%`, etwa `50%` | dieser Anteil des Platzes in px, gerundet, mit einer `note` | Angenähert |
-| `computedStyle.width` `100%` oder mehr | `"full"` | Konvertiert |
-| kein `computedStyle.width` | `image.width`, nach derselben Regel | Konvertiert |
-| gar keine Breite | `"full"` | Konvertiert |
+| BeeFree-Bild                                                   | `ImageBlock.width`                                          | Status      |
+| -------------------------------------------------------------- | ----------------------------------------------------------- | ----------- |
+| `computedStyle.class` enthält `fullwidth`                      | `"full"`                                                    | Konvertiert |
+| `computedStyle.width` schmaler als der Platz des Bildes        | die px-Zahl, gerundet                                       | Konvertiert |
+| `computedStyle.width` so breit wie der Platz oder breiter      | `"full"`                                                    | Konvertiert |
+| `computedStyle.width` ein Prozentwert unter `100%`, etwa `50%` | dieser Anteil des Platzes in px, gerundet, mit einer `note` | Angenähert  |
+| `computedStyle.width` `100%` oder mehr                         | `"full"`                                                    | Konvertiert |
+| kein `computedStyle.width`                                     | `image.width`, nach derselben Regel                         | Konvertiert |
+| gar keine Breite                                               | `"full"`                                                    | Konvertiert |
 
-`image.width` und `image.height` sind die Größe der Bilddatei, `computedStyle.width` ist die Breite, in der BeeFree das Bild zeigt, für beide Größenklassen von BeeFree: ein `fixedwidth`-Bild in der im Editor gesetzten Breite, ein `autowidth`-Bild in der Breite seiner Datei, begrenzt auf die Spalte. Ältere Exporte schreiben `computedStyle.width` als Pixelzahl (`187.5`) und versehen ein Bild, das seine Spalte füllt, mit der Klasse `fullwidth`. Deren berechnete Breite lässt das Padding der Spalte aus, das der Import nicht übernimmt, deshalb entscheidet die Klasse. Der Platz des Bildes ist die Inhaltsbreite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. `ImageBlock` speichert px, die auf einem Smartphone ihre Größe behalten, wo ein Prozentwert mit der Spalte schrumpfen würde; deshalb wird eine Prozentbreite als `approximated` gemeldet. `image.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält. Ein Bild ohne `text-align` übernimmt seine Ausrichtung aus `computedStyle.class` (`left`, `center` oder `right`).
+`image.width` und `image.height` sind die Größe der Bilddatei, `computedStyle.width` ist die Breite, in der BeeFree das Bild zeigt, für beide Größenklassen von BeeFree: ein `fixedwidth`-Bild in der im Editor gesetzten Breite, ein `autowidth`-Bild in der Breite seiner Datei, begrenzt auf die Spalte. Ältere Exporte schreiben `computedStyle.width` als Pixelzahl (`187.5`) und versehen ein Bild, das seine Spalte füllt, mit der Klasse `fullwidth`. Deren berechnete Breite lässt das Padding der Spalte aus, deshalb entscheidet die Klasse. Der Platz des Bildes ist die Inhaltsbreite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. `ImageBlock` speichert px, die auf einem Smartphone ihre Größe behalten, wo ein Prozentwert mit der Spalte schrumpfen würde; deshalb wird eine Prozentbreite als `approximated` gemeldet. `image.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält. Ein Bild ohne `text-align` übernimmt seine Ausrichtung aus `computedStyle.class` (`left`, `center` oder `right`).
+
+BeeFree behält auf dem Smartphone die Desktop-Breite eines Bildes, das in einer Spalte schmaler als die E-Mail sitzt. Der Import setzt `fluidOnMobile` bei einem solchen Bild auf `false`, wenn es diese Spalte füllt, sodass es nicht auf die gestapelte Spalte wächst. Ein Bild in einer zeilenbreiten Spalte und eines, das seine Spalte nicht füllt, lässt `fluidOnMobile` weg. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones).
 
 ### Divider-Breite
 
-| BeeFree-`width` | `DividerBlock.width` | Status |
-|---|---|---|
-| fehlt, oder `100%` | `"full"` | Konvertiert |
-| ein Prozentwert unter `100%`, etwa `50%` | derselbe Prozentwert auf zwei Nachkommastellen, `"50%"` | Konvertiert |
-| unter `0%` oder über `100%` | begrenzt auf `"0%"` bzw. `"full"` | Angenähert |
-| px, schmaler als die Inhaltsbreite der eigenen Spalte | die px-Zahl | Konvertiert |
-| px, so breit wie die Inhaltsbreite der eigenen Spalte oder breiter | `"full"` | Konvertiert |
-| eine negative px-Breite | `0` | Angenähert |
-| jeder andere Wert | `"full"` | Angenähert |
+| BeeFree-`width`                                                    | `DividerBlock.width`                                    | Status      |
+| ------------------------------------------------------------------ | ------------------------------------------------------- | ----------- |
+| fehlt, oder `100%`                                                 | `"full"`                                                | Konvertiert |
+| ein Prozentwert unter `100%`, etwa `50%`                           | derselbe Prozentwert auf zwei Nachkommastellen, `"50%"` | Konvertiert |
+| unter `0%` oder über `100%`                                        | begrenzt auf `"0%"` bzw. `"full"`                       | Angenähert  |
+| px, schmaler als die Inhaltsbreite der eigenen Spalte              | die px-Zahl                                             | Konvertiert |
+| px, so breit wie die Inhaltsbreite der eigenen Spalte oder breiter | `"full"`                                                | Konvertiert |
+| eine negative px-Breite                                            | `0`                                                     | Angenähert  |
+| jeder andere Wert                                                  | `"full"`                                                | Angenähert  |
 
-Die Inhaltsbreite einer Spalte ist ihr Anteil an `settings.width` gemäß dem Spaltenlayout der Section, abzüglich des linken und rechten Paddings des Dividers. Eine Zeile mit vier oder mehr Spalten wird auf eine Spalte reduziert, und ihre Module nehmen die ganze `settings.width` ein.
+Die Inhaltsbreite einer Spalte ist ihr Anteil an `settings.width` gemäß dem Spaltenlayout der Section, abzüglich des linken und rechten Paddings des Dividers. Eine Zeile mit vier oder mehr Spalten wird auf eine Spalte reduziert, und ihre Module nehmen die ganze `settings.width` ein. Die Warnung nennt das Ausgangsverhältnis.
 
 Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den BeeFree links oder rechts ausrichtet (`computedStyle.align`), ist angenähert; seine `note` nennt die Ausrichtung.
 
@@ -160,11 +191,11 @@ Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den BeeFree lin
 
 Ein Divider zeichnet keine Linie, wenn sein `border-top` 0 breit ist, `none` oder `hidden` ist oder transparent ist: `transparent` oder eine Farbe mit Alpha 0 wie `rgba(0, 0, 0, 0)` oder `#ffffff00`. BeeFree-Vorlagen nutzen solche Divider als Abstand.
 
-| BeeFree-Divider | Ergebnis | Status |
-|---|---|---|
-| zeichnet eine Linie | `divider`, nach den Regeln oben | Konvertiert |
-| zeichnet keine Linie, Padding und transparenter Rahmen ergeben mehr als 0px | `spacer` | Konvertiert, mit einer `note`, die die Höhe nennt |
-| zeichnet keine Linie und nimmt keinen Platz ein | kein Block | Übersprungen |
+| BeeFree-Divider                                                             | Ergebnis                        | Status                                            |
+| --------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------- |
+| zeichnet eine Linie                                                         | `divider`, nach den Regeln oben | Konvertiert                                       |
+| zeichnet keine Linie, Padding und transparenter Rahmen ergeben mehr als 0px | `spacer`                        | Konvertiert, mit einer `note`, die die Höhe nennt |
+| zeichnet keine Linie und nimmt keinen Platz ein                             | kein Block                      | Übersprungen                                      |
 
 Die `height` des Spacers ist das `padding-top` des Dividers plus `padding-bottom` plus die Breite eines transparenten Rahmens. Ein Rahmen mit `none` oder `hidden` nimmt keinen Platz ein, seine Breite zählt also nicht. Ein Spacer rendert kein Padding, deshalb ist sein eigenes Padding 0, und die `background-color` des Dividers wird übernommen. Ein Divider ganz ohne `border-top` wird als durchgezogene schwarze Linie von 1px importiert.
 
@@ -172,11 +203,11 @@ Die `height` des Spacers ist das `padding-top` des Dividers plus `padding-bottom
 
 Das Icons-Modul (`mailup-bee-newsletter-modules-icons`) zeigt eine Reihe von Icons, jedes mit optionalem Text. BeeFree zeichnet jedes Icon in der Höhe `computedStyle.iconHeight` (32px, wenn nicht gesetzt), mit einer Breite nach der Dateigröße in `width` und `height` des Icons, innerhalb des Paddings aus `computedStyle.iconSpacing`.
 
-| Icons-Modul | Ergebnis | Status |
-|---|---|---|
-| ein Icon, kein Text, `width` und `height` angegeben | `image` in der Icon-Höhe | Konvertiert |
-| mehrere Icons, Text oder ein Icon ohne bekannte Dateigröße | `html`: eine Tabelle mit den Icons nebeneinander | HTML-Fallback, mit der `note` `Icons module rebuilt as an HTML table.` |
-| keine Icons | kein Block | Übersprungen |
+| Icons-Modul                                                | Ergebnis                                         | Status                                                                 |
+| ---------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------- |
+| ein Icon, kein Text, nicht-leeres Bild, positive px-`width` und `height` | `image` in der Icon-Höhe                         | Konvertiert                                                            |
+| mehrere Icons, Text oder ein Icon ohne Bild oder ohne positive px-`width` oder `height` | `html`: eine Tabelle mit den Icons nebeneinander | HTML-Fallback, mit der `note` `Icons module rebuilt as an HTML table.` |
+| keine Icons                                                | kein Block                                       | Übersprungen                                                           |
 
 Das Bild behält `alt` des Icons und verlinkt auf dessen `href`. Es steht, wo `text-align` des Moduls es hinsetzt, sein Padding ist das Padding des Moduls plus `iconSpacing`, und die Dateigröße wird zu `naturalWidth` und `naturalHeight`.
 
@@ -188,59 +219,69 @@ Beide Ergebnisse verwerfen `href` oder `image` eines Icons, wenn die HTML-URL-Re
 
 Ein Addon-Modul (`mailup-bee-newsletter-modules-addon`) behält das Payload des Moduls, für das es steht. Es wird deshalb wie dieses Modul konvertiert: Das Payload bestimmt den Block und seinen Status. Sein Berichtseintrag behält `beeFreeModuleType: "mailup-bee-newsletter-modules-addon"`. Der Importer sucht diese Payloads im Descriptor, in dieser Reihenfolge:
 
-| Payload | Konvertiert als |
-|---|---|
-| `image` | Image |
-| `html` | Html |
-| `heading` | Heading |
-| `paragraph` oder `text` | Paragraph |
-| `list` | List |
-| `button` | Button |
-| `divider` | Divider |
-| `menu` | Menu |
-| `iconsList` | Icons |
+| Payload                 | Konvertiert als |
+| ----------------------- | --------------- |
+| `image`                 | Image           |
+| `html`                  | Html            |
+| `heading`               | Heading         |
+| `paragraph` oder `text` | Paragraph       |
+| `list`                  | List            |
+| `button`                | Button          |
+| `divider`               | Divider         |
+| `menu`                  | Menu            |
+| `iconsList`             | Icons           |
 
 Ein Bild-Addon verlinkt nur auf `image.href`. Das GIPHY-Addon schreibt zusätzlich `image.url`, die Seite des GIFs auf giphy.com; sie wird nicht importiert. Ein Addon ohne eines dieser Payloads wird zum Kommentar `<!-- Unsupported BeeFree module: … -->` und als `html-fallback` gemeldet. Das Bild-Payload ist an einem echten GIPHY-Export geprüft; die übrigen folgen BeeFrees [Addon-Inhaltstypen](https://docs.beefree.io/beefree-sdk/builder-addons/custom-addons/custom-addon-types).
 
-## Konvertierung von Spaltenlayouts
+## Konvertierung von Spaltenlayouts {#column-layout-conversion}
 
 BeeFree organisiert Inhalte in Zeilen mit Spalten. Diese werden einem Templatical-`SectionBlock` mit dem entsprechenden `ColumnLayout` zugeordnet:
 
-| BeeFree-Spalten | Templatical-Layout |
-|---|---|
-| 1 Spalte (100%) | `'1'` |
-| 2 gleiche Spalten | `'2'` |
-| 3 gleiche Spalten | `'3'` |
-| 2 Spalten (~33/66) | `'1-2'` |
-| 2 Spalten (~66/33) | `'2-1'` |
+| BeeFree-Spalten    | Templatical-Layout |
+| ------------------ | ------------------ |
+| 1 Spalte (100%)    | `'1'`              |
+| 2 gleiche Spalten  | `'2'`              |
+| 3 gleiche Spalten  | `'3'`              |
+| 2 Spalten (~33/66) | `'1-2'`            |
+| 2 Spalten (~66/33) | `'2-1'`            |
 
-Spaltenbreiten, die nicht einem Standardverhältnis entsprechen, werden dem am nächsten liegenden verfügbaren Layout zugeordnet.
+Spaltenbreiten, die nicht einem Standardverhältnis entsprechen, werden dem am nächsten liegenden verfügbaren Layout zugeordnet. Dieses Einrasten ist eine Zeile in `report.warnings`, die das Ausgangsverhältnis nennt, zum Beispiel `Column ratio 3-9 was mapped to the nearest layout "1-2"`. `8-4`, `4-8`, `6-6` und ein gleichmäßiges `4-4-4` entsprechen `2-1`, `1-2`, `2` und `3` und warnen nicht. Eine Zeile mit vier oder mehr Spalten wird weiterhin auf eine Spalte reduziert; die Warnung nennt auch dieses Verhältnis (`3-3-3-3`).
+
+Padding, Hintergrund und Rahmen einer Spalte liegen auf der Spalte. Eine einspaltige Zeile übernimmt das Padding in das Sektions-Padding (addiert zum eigenen Padding der Zeile, das nicht importiert wird und daher bei 0 beginnt), nutzt die `background-color` der Spalte, wenn sie gesetzt ist, sonst den Inhaltshintergrund der Zeile, und bildet `border-top` / `border-right` / `border-bottom` / `border-left` auf den Rahmen der Sektion ab. Die Zeile wird in eine einspaltige Sektion gehüllt, sobald eines davon gesetzt ist. Padding, das nicht in px ist oder negativ ist, wird ignoriert. Ein Rahmenstil außer `solid`, `dashed` oder `dotted` wird als `solid` importiert.
+
+Eine mehrspaltige Zeile, auch eine von 4 oder mehr Spalten auf eine Spalte reduzierte, addiert das Padding jeder Spalte zu ihren Modulen: links und rechts an jedem Modul, oben am ersten, unten am letzten. Hintergrund oder Rahmen einer Spalte haben keine Box pro Spalte und werden verworfen, mit einem `report.warnings`-Eintrag pro Zeile: `Column background/border was dropped; a multi-column row has no per-column box.` Ein transparenter Hintergrund oder ein Rahmen, der nichts zeichnet, warnt nicht.
 
 ## Template-Einstellungen
 
 Globale Template-Einstellungen werden soweit möglich konvertiert:
 
 - **Breite** -- `page.body.content.computedStyle.messageWidth` wird `settings.width` zugeordnet, mit `page.body.content.style.width` als Fallback und 600, wenn keines von beiden gesetzt ist
-- **Hintergrundfarbe** -- `page.body.content.style.background-color` wird `settings.backgroundColor` zugeordnet, mit `page.body.container.style.background-color` als Fallback und `#ffffff`, wenn keines von beiden gesetzt ist. Das `content.style.background-color` einer Zeile wird zur `backgroundColor` ihrer Sektion; eine einspaltige Zeile mit Hintergrundfarbe wird in eine einspaltige Sektion gehüllt, damit die Farbe erhalten bleibt. Die Farbe im `container.style` einer Zeile — das Band über die volle Breite hinter der Zeile — wird nicht gelesen und geht verloren.
+- **Hintergrundfarbe** -- `page.body.content.style.background-color` wird `settings.backgroundColor` zugeordnet, mit `page.body.container.style.background-color` als Fallback und `#ffffff`, wenn keines von beiden gesetzt ist. Das `content.style.background-color` einer Zeile wird zur `backgroundColor` ihrer Sektion (die innere Box); eine einspaltige Zeile mit Hintergrundfarbe wird in eine einspaltige Sektion gehüllt, damit die Farbe erhalten bleibt. Die eigene `background-color` einer einzelnen Spalte ersetzt sie, wenn sie gesetzt ist. Das `container.style.background-color` einer Zeile — das Band außerhalb dieser Box — wird zu `section.wrapper.backgroundColor`. Der Wrapper ist so breit wie die E-Mail (`settings.width`), und die Füllung der Sektion bleibt die Inhaltsfarbe, sodass der Inhalt in der Inhaltsbox bleibt. Der Wrapper entfällt, wenn das Band transparent ist oder dieselbe Farbe hat wie die Sektionsfüllung. Templatical hat kein Feld für ein Band bis zum Viewport-Rand, daher reicht das Band nicht in die Ränder jenseits der E-Mail-Breite.
+- **Sichtbarkeit der Zeile** -- `content.computedStyle.hideContentOnMobile` und `hideContentOnDesktop` setzen die `visibility` der Sektion (`{ desktop, mobile }`). Eines der beiden Flags hüllt die Zeile in eine Sektion. Sind beide nicht gesetzt oder false, bleibt `visibility` ungesetzt.
+- **Stapeln auf Mobilgeräten** -- `content.computedStyle.rowColStackOnMobile: false` setzt `stackOnMobile: false` auf einer Sektion mit 2 oder 3 Spalten, sodass die Spalten auf dem Telefon nebeneinander bleiben. `true` oder ein fehlendes Flag lässt `stackOnMobile` ungesetzt, und die Spalten stapeln sich. Bei einer einspaltigen Zeile oder einer von vier oder mehr Spalten auf eine Spalte reduzierten Zeile wird das Flag mit einer Warnung verworfen: `rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a 2- or 3-column section.`
+- **Zeilenbreite** -- `content.style.width` ist die Inhaltsbox. Eine px-Breite ungleich `settings.width`, oder eine Breite, die nicht in px ist, erzeugt eine Warnung, die beide nennt, und lässt die Sektion auf der E-Mail-Breite. Eine Sektion hat keine eigene Breite.
+- **Zeilenrahmen** -- `border-top`, `border-right`, `border-bottom` und `border-left` im `content.style` werden mit denselben Regeln wie ein Spaltenrahmen auf den Rahmen der Sektion abgebildet. Bei einer einspaltigen Zeile gewinnt der Spaltenrahmen, wenn beide zeichnen und sich unterscheiden, mit einer Warnung: `Row border was dropped; the column border is kept on the section.` Eine mehrspaltige Zeile behält den Zeilenrahmen; ein Spaltenrahmen wird weiterhin verworfen.
 - **Hintergrundbilder** -- Das `background-image` im `content.style` einer Zeile wird zum `backgroundImage` ihrer Sektion, mit `background-size`, `background-position` und `background-repeat` (wo nicht gesetzt, mit den CSS-Anfangswerten), und hüllt eine einspaltige Zeile wie eine Farbe in eine Sektion. Das Bild des Bands im `container.style` erscheint nur, solange die Inhaltsfläche weder ein Bild noch eine Farbe hat: Dann zeichnet die Sektion es in Inhaltsbreite, sonst wird es verworfen. Eine Größe, die eine Seite füllt (`100%` oder eine px-Breite mindestens so groß wie die E-Mail), wird `cover`, jede andere Länge oder Prozentangabe `auto`; eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein; `repeat-x` und `repeat-y` werden zu `repeat`. `report.warnings` nennt jedes Bild eines Bands und jeden Wert ohne exaktes Schlüsselwort.
 - **Textfarbe** -- `page.body.content.style.color` wird `settings.textColor` zugeordnet, `#1a1a1a`, wenn sie nicht gesetzt ist. Text-, Paragraph-, List-, Heading-, Menu- und Table-Module ohne eigene Farbe übernehmen sie.
 - **Links** -- `page.body.content.computedStyle.linkColor` wird `settings.linkColor` zugeordnet. `settings.linkUnderline` ist `true`: BeeFree setzt Unterstreichungen pro Link, im Markup des jeweiligen Links.
-- **Schriftfamilie** -- Die Standard-Schriftfamilie wird in `settings.fontFamily` übernommen. Der gesamte Stack wird übernommen, sodass seine Fallbacks erhalten bleiben; ein Stack, der genau dem einer eingebauten Schriftart entspricht (`Arial, sans-serif`), wird als bloßer Name gespeichert. Ein Modul, dessen `font-family` `inherit`, `initial`, `unset` oder `revert` ist, setzt keine eigene Schrift und übernimmt `settings.fontFamily`.
+- **Schriftfamilie** -- Die Standard-Schriftfamilie wird in `settings.fontFamily` übernommen. Der gesamte Stack wird übernommen, sodass seine Fallbacks erhalten bleiben; ein Stack, der genau dem einer eingebauten Schriftart entspricht (`Arial, sans-serif`), wird als bloßer Name gespeichert. Ein Modul, dessen `font-family` `inherit`, `initial`, `unset` oder `revert` ist, setzt keine eigene Schrift und übernimmt `settings.fontFamily`. Eine Überschrift behält diese Familie, dazu Farbe und Ausrichtung (aus dem Heading-Style, dann dem Heading-Tag, dann dem Modul). Der Title-Block hat keine Felder für Schriftgröße, Gewicht, Zeilenhöhe oder Zeichenabstand, daher werden `font-size`, `font-weight`, `line-height` und `letter-spacing` einer Überschrift auf den Text geschrieben und überschreiben die Größe der Ebene, die fette Stärke und die Zeilenhöhe 1.3. Die Ebene ist die nächste von h1–h4 (36, 28, 22 und 18px) zu dieser Schriftgröße — dem Modul-Style, oder der `font-size` am Heading-Tag, wenn der Style sie auslässt — und bei Gleichstand bleibt die Quell-Ebene, sodass die Zeilenbox der Größe folgt. Liegt die gewählte Größe mehr als 1px daneben, wird der Block als angenähert gemeldet (`h4 chosen for 16px (source h1); line box differs`). Eine prozentuale Zeilenhöhe wird ein einheitenloses Verhältnis. `letter-spacing` von `0` oder `normal` wird weggelassen. Eine `font-size` am Heading-Tag bleibt, wenn der Style sie auslässt.
+- **Merge-Tags** -- HTML-Zeichenreferenzen innerhalb von <code v-pre>{{ }}</code>, `{% %}` und `{# #}` werden in jeder übernommenen Zeichenkette dekodiert: Rich Text, Überschriften, Button-Beschriftungen, Links und Bildadressen, Alt-Texte, HTML und der Preheader. `&#39;` wird zu `'`, `&quot;` zu einem Anführungszeichen, `&gt;` zu `>`, `&amp;` zu `&` und `&nbsp;` zu einem normalen Leerzeichen (Twig liest ein geschütztes Leerzeichen nicht als Leerraum). Ein doppeltes Anführungszeichen innerhalb eines Tokens in einem HTML-Attribut bleibt als `&quot;` kodiert. Dieselben Referenzen außerhalb eines Tokens bleiben im Rich Text kodiert, außer einem verdoppelten `&amp;nbsp;` (und `&amp;#160;` / `&amp;#xa0;`), das als einzelne Referenz zurückgeschrieben wird. Eine Button-Beschriftung und eine Tabellenzelle sind Klartext, daher werden Referenzen dort ebenfalls dekodiert: der Renderer maskiert die Beschriftung, und ein kodiertes `&nbsp;` erschiene sonst als die Buchstaben `&amp;nbsp;`. Ein Token ohne schließendes Begrenzungszeichen bleibt unverändert. Ein `<code data-bee-type="mergetag">`-Wrapper um ein Merge-Tag in Text, einer Überschrift, einer Liste oder einer Button-Beschriftung wird entfernt und das Token darin bleibt erhalten; jedes andere `<code>` bleibt stehen. Ein Chip, der nur Leerzeichen enthält, wird zu einem normalen Leerzeichen. Ein Chip mit genau einem Token verwirft ein führendes normales Leerzeichen, behält ein führendes geschütztes Leerzeichen und behält ein Leerzeichen nach dem Token. Ein `<code>`, das nur ein Token hervorhebt, verwirft dasselbe normale führende Leerzeichen, und das `<code>` bleibt stehen.
 
 ## Bekannte Einschränkungen
 
-- **Benutzerdefinierte Schriftarten** -- BeeFrees Deklarationen für benutzerdefinierte Schriftarten werden nicht automatisch importiert. Fügen Sie sie manuell über die Konfigurationsoption `fonts` hinzu.
+- **Benutzerdefinierte Schriftarten** -- `customFonts` im Ergebnis listet jede BeeFree-Webschrift mit URL. Geben Sie das Array an die Editor-Option `fonts.customFonts` und an `renderToMjml`, sonst fällt die Schrift zurück. Eine vom Template genutzte Schrift ohne URL, die kein System-Stack ist, wird in `report.warnings` genannt.
 - **Bedingte Anzeige** -- BeeFrees Regeln für dynamische Inhalte haben kein direktes Äquivalent und werden während der Konvertierung verworfen.
-- **Icons** -- Ein Icons-Modul mit Text oder mehreren Icons wird zu einer HTML-Tabelle, die als HTML bearbeitet wird ([Icons](#icons)). In einem Social-Modul werden benutzerdefinierte Icon-Uploads nicht migriert; Standard-Social-Plattform-Icons werden anhand des Namens zugeordnet.
+- **Icons** -- Ein Icons-Modul wird zu einer HTML-Tabelle, die als HTML bearbeitet wird, es sei denn, es ist genau ein Icon ohne Text, mit nicht-leerem Bild und positiver px-Dateibreite und -höhe ([Icons](#icons)). In einem Social-Modul wird die Plattform aus der Icon-Id gelesen, dann aus Name, Alt-Text, Titel oder dem Host des Links. Ein Netzwerk ohne Templatical-Icon bleibt als Bild erhalten, oder als Link, wenn das Icon kein Bild hat, und wird im Bericht genannt. Das `text-align` der Zeile wird `align`. Der Abstand zwischen Icons ist links plus rechts von `computedStyle.padding`. `iconsDefaultWidth` wählt das nächste von small (24px), medium (32px) und large (48px). Ein Icon-Set in der Datei-URL wird abgebildet, wenn die Form passt (`circle`, `rounded` oder `square`); ein schwarzes oder weißes Set setzt den dunklen oder hellen Ton, und `circle-dark-gray` nutzt den dunklen Ton. Ein Set ohne passende Form bleibt bei den farbigen Standard-Icons.
 - **Formulare** -- BeeFrees Formularmodule haben kein Templatical-Äquivalent. Jedes wird zu einem HTML-Block mit Status `html-fallback`; Felder und Absende-Aktion des Formulars werden nicht nachgebildet.
-- **Linkfarben einzelner Blöcke** -- Die eigene Linkfarbe eines Textmoduls (`computedStyle.linkColor`) wird verworfen; seine Links übernehmen `settings.linkColor`.
-- **Erweitertes Styling** -- Einige granulare BeeFree-Stileigenschaften (z. B. Padding-Überschreibungen pro Spalte) werden möglicherweise nicht vollständig beibehalten.
+- **Spaltenbox in mehrspaltigen Zeilen** -- Padding wird in die Module übernommen. Hintergrund und Rahmen werden verworfen, mit einer Warnung pro Zeile (siehe [Konvertierung von Spaltenlayouts](#column-layout-conversion)). Ein Spacer ignoriert `styles.padding`, daher rendert Spalten-Padding, das auf einen Spacer gelegt wurde, nicht.
+- **Mobiler Breakpoint** -- BeeFree stapelt bei `messageWidth + 20` (620px, wenn die E-Mail 600px breit ist). Templatical behält den MJML-Breakpoint von 480px. Der Import ändert ihn nicht.
+- **Zeilenhintergrund bis zum Viewport-Rand** -- Die Containerfarbe ist der Sektions-Wrapper, so breit wie die E-Mail, nicht der Bereich außerhalb davon.
 
 ## Konvertierte Templates überprüfen
 
 Überprüfen Sie nach der Konvertierung die Ausgabe im Editor auf:
 
 1. Fehlende Bilder (bei Bedarf erneut hochladen oder URLs aktualisieren)
-2. Schriftrendering (fügen Sie der Editor-Konfiguration benutzerdefinierte Schriftarten hinzu)
+2. Schriftrendering (`customFonts` an die Editor-Option `fonts` und an `renderToMjml` übergeben)
 3. Spaltenproportionen (passen Sie Layouts an, wenn die automatische Zuordnung nicht passt)
 4. Abstände und Padding (Feinabstimmung im Block-Einstellungsbereich)

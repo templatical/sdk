@@ -328,6 +328,10 @@ const nl: typeof en = {
     decorative: "Decoratieve afbeelding",
     decorativeHint:
       "Verborgen voor schermlezers. Alleen gebruiken voor tussenruimtes en visuele versieringen.",
+    fluidOnMobile: "Volledige breedte op mobiel",
+    fluidOnMobileAuto: "Automatisch",
+    fluidOnMobileAlways: "Altijd",
+    fluidOnMobileNever: "Nooit",
   },
   video: {
     videoUrl: "URL van de video",
@@ -361,6 +365,10 @@ const nl: typeof en = {
     textColor: "Tekstkleur",
     borderRadius: "Hoekafronding",
     fontSize: "Tekengrootte",
+    fontWeight: "Lettergewicht",
+    fontWeightRegular: "Normaal",
+    fontWeightMedium: "Gemiddeld",
+    fontWeightBold: "Vet",
     width: "Breedte",
     widthAuto: "Aanpassen aan inhoud",
     fullWidth: "Volledige breedte",

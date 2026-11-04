@@ -169,7 +169,9 @@ Ein Bild mit `'full'` füllt seine Spalte auf jedem Bildschirm. Eine Pixelbreite
 
 Eine Pixelbreite, die den Platz ihrer Spalte erreicht oder überschreitet, wird wie `'full'` gerendert: auf dem Desktop in Spaltenbreite, auf dem Smartphone über die ganze Spalte. Dieser Platz ist die Spalte abzüglich des seitlichen Paddings und Rahmens von Wrapper-Band, Sektion und Bild.
 
-Video-Thumbnails folgen derselben Regel.
+`fluidOnMobile` setzt diese Regel außer Kraft. Ohne Angabe gilt sie. `true` schreibt immer MJML `fluid-on-mobile="true"`, sodass das Bild auf dem Smartphone seine gestapelte Spalte füllt, auch wenn es auf dem Desktop schmaler ist. `false` schreibt das Attribut nie, sodass ein spaltenfüllendes Bild auf dem Smartphone seine Desktop-Breite behält und nur schrumpft, wenn es sonst nicht passt. Einen eigenen Breakpoint gibt es nicht: es gilt der mobile Breakpoint von MJML.
+
+Video-Thumbnails folgen der automatischen Regel. Sie haben kein Feld `fluidOnMobile`.
 
 ::: tip
 Wenn die Spalten einer Sektion auf dem Smartphone untereinander rutschen, ist jede Spalte dort breiter als auf dem Desktop. Ein Bild, dessen Breite zwischen beiden liegt, füllt die Spalte auf dem Smartphone, während die mobile Vorschau es in seiner eingestellten Breite zeigt.

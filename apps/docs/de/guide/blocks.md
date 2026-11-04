@@ -61,6 +61,7 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 | `src` | `string` | Bild-URL |
 | `alt` | `string` | Alternativtext |
 | `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100%. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
+| `fluidOnMobile` | `boolean` | Ohne Angabe gilt die automatische Regel: volle Breite auf dem Smartphone nur, wenn das Bild seine Spalte auf dem Desktop füllt. `true` setzt immer MJML `fluid-on-mobile`; `false` nie. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder `{ topLeft, topRight, bottomRight, bottomLeft }` pro Ecke. Ohne Angabe oder 0 bleiben die Ecken eckig |
@@ -86,6 +87,7 @@ Eine Call-to-Action-Schaltfläche mit anpassbarem Erscheinungsbild.
 | `fontSize` | `number` | Schriftgröße in px |
 | `buttonPadding` | `SpacingValue` | Innerer Abstand |
 | `fontFamily` | `string` | Überschreibung der Schriftfamilie |
+| `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Schriftstärke der Beschriftung: 400, 500 oder 700. Weglassen für fett, so wie eine Schaltfläche ohne Stärke rendert. |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |
 | `width` | `number \| 'full'` | Feste Breite in px oder `'full'` für 100%. Weglassen, um an den Inhalt anzupassen. |
 | `align` | `'left' \| 'center' \| 'right'` | Ausrichtung innerhalb der Spalte. Ohne sichtbare Wirkung, wenn `width` auf `'full'` steht. |

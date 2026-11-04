@@ -359,6 +359,10 @@ const es: typeof en = {
     decorative: "Imagen decorativa",
     decorativeHint:
       "Oculto para los lectores de pantalla. Utilízalo solo para espaciadores y adornos visuales.",
+    fluidOnMobile: "Ancho completo en el móvil",
+    fluidOnMobileAuto: "Automático",
+    fluidOnMobileAlways: "Siempre",
+    fluidOnMobileNever: "Nunca",
   },
 
   // Toolbar - Video
@@ -396,6 +400,10 @@ const es: typeof en = {
     textColor: "Color del texto",
     borderRadius: "Radio del borde",
     fontSize: "Tamaño de fuente",
+    fontWeight: "Grosor",
+    fontWeightRegular: "Regular",
+    fontWeightMedium: "Medio",
+    fontWeightBold: "Negrita",
     width: "Ancho",
     widthAuto: "Ajustar al contenido",
     fullWidth: "Ancho completo",

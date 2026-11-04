@@ -790,6 +790,27 @@ describe("preview-mode visibility gate", () => {
     // nested blocks hidden on a viewport would still show in preview.
     expect(sectionBlock).toMatch(/:preview-mode="editor\.state\.previewMode"/);
   });
+
+  it("hides the lint issue badge with the rest of the block chrome", () => {
+    // `.tpl-preview-mode` is the canvas class. The badge stays mounted in
+    // preview (BlockIssueBadge has no preview v-if), so this rule is what
+    // takes the warning and error icons off the email.
+    const styles = read("styles/index.css");
+    const match = styles.match(
+      /^(\.tpl-preview-mode \.tpl-block-actions\s*(?:,[^{]*)?)\{([^}]*)\}/m,
+    );
+    expect(match).not.toBeNull();
+    const selectors = match![1].split(",").map((selector) => selector.trim());
+    expect(selectors).toEqual([
+      ".tpl-preview-mode .tpl-block-actions",
+      ".tpl-preview-mode .tpl-block-hidden-overlay",
+      ".tpl-preview-mode .tpl-condition-toggle",
+      ".tpl-preview-mode .tpl-comment-indicator",
+      ".tpl-preview-mode .tpl-collab-lock",
+      ".tpl-preview-mode .tpl-block-issue-badge",
+    ]);
+    expect(match![2].trim()).toBe("display: none;");
+  });
 });
 
 describe("a resolver owns the display-condition filter", () => {

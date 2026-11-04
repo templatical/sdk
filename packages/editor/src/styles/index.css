@@ -773,7 +773,8 @@
 .tpl-preview-mode .tpl-block-hidden-overlay,
 .tpl-preview-mode .tpl-condition-toggle,
 .tpl-preview-mode .tpl-comment-indicator,
-.tpl-preview-mode .tpl-collab-lock {
+.tpl-preview-mode .tpl-collab-lock,
+.tpl-preview-mode .tpl-block-issue-badge {
     display: none;
 }
 

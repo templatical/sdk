@@ -310,6 +310,10 @@ const translations: typeof en = {
     decorative: "装飾用の画像",
     decorativeHint:
       "スクリーンリーダーには読み上げられません。余白や装飾として使う画像にのみ指定してください。",
+    fluidOnMobile: "モバイルで全幅",
+    fluidOnMobileAuto: "自動",
+    fluidOnMobileAlways: "常に",
+    fluidOnMobileNever: "しない",
   },
   video: {
     videoUrl: "動画のURL",
@@ -343,6 +347,10 @@ const translations: typeof en = {
     textColor: "文字色",
     borderRadius: "角の丸み",
     fontSize: "文字サイズ",
+    fontWeight: "太さ",
+    fontWeightRegular: "標準",
+    fontWeightMedium: "中太",
+    fontWeightBold: "太字",
     width: "幅",
     widthAuto: "内容に合わせる",
     fullWidth: "全幅",

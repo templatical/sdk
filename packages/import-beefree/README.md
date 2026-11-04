@@ -22,8 +22,9 @@ const beefreeJson = await fetch('/path/to/beefree-template.json').then(r => r.js
 
 const result = convertBeeFreeTemplate(beefreeJson);
 
-console.log(result.content);   // → Templatical TemplateContent
-console.log(result.report);    // → conversion report (per-module status, warnings, summary)
+console.log(result.content);      // → Templatical TemplateContent
+console.log(result.report);       // → conversion report (per-module status, warnings, summary)
+console.log(result.customFonts);  // → { name, url }[] for fonts.customFonts and render
 
 // Inspect modules that didn't convert cleanly
 for (const entry of result.report.entries) {
@@ -59,11 +60,11 @@ Unknown or partially-supported modules are flagged in `result.report` so you can
 
 ## API
 
-- `convertBeeFreeTemplate(template)` — converts a BeeFree JSON template, returns `{ content, report }`
+- `convertBeeFreeTemplate(template)` — converts a BeeFree JSON template, returns `{ content, report, customFonts }`
 
 Types:
 - `BeeFreeTemplate` — input shape (see source for full structure)
-- `ImportResult` — `{ content: TemplateContent, report: ImportReport }`
+- `ImportResult` — `{ content: TemplateContent, report: ImportReport, customFonts: CustomFont[] }`
 - `ImportReport` — `{ entries: ImportReportEntry[], warnings: string[], summary: { total, converted, approximated, htmlFallback, skipped } }`
 - `ImportReportEntry` — `{ beeFreeModuleType, templaticalBlockType, status, note? }`
 - `ConversionStatus` — `'converted' | 'approximated' | 'html-fallback' | 'skipped'`

@@ -266,6 +266,12 @@ interface ImageBlock extends BaseBlock {
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
   decorative?: boolean;
+  /**
+   * Volle Breite auf dem Smartphone. Ohne Angabe nur dann fluid, wenn das Bild
+   * seine Spalte auf dem Desktop füllt. `true` setzt immer MJML
+   * `fluid-on-mobile`; `false` nie. Video-Thumbnails haben kein Gegenstück.
+   */
+  fluidOnMobile?: boolean;
 }
 ```
 
@@ -284,6 +290,8 @@ interface ButtonBlock extends BaseBlock {
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
+  /** Schriftstärke der Beschriftung. `'regular'` ist 400, `'medium'` ist 500 und `'bold'` ist 700. Weggelassen wird fett gerendert, so wie eine Schaltfläche ohne Stärke. */
+  fontWeight?: 'regular' | 'medium' | 'bold';
   openInNewTab?: boolean;
   width?: number | 'full';
   align: 'left' | 'center' | 'right';

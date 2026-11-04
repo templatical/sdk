@@ -7,7 +7,12 @@ describe("BeeFree languages", () => {
   it.each([
     [0, "content", "<p>Hello</p>", "<p>Hola</p>"],
     [1, "content", "<p>Welcome</p>", "<p>Bienvenido</p>"],
-    [2, "content", "<ul><li>One</li></ul>", "<ul><li>Uno</li></ul>"],
+    [
+      2,
+      "content",
+      '<ul style="margin-top: 0; margin-bottom: 0; padding-left: 20px; list-style-type: revert"><li style="margin: 0">One</li></ul>',
+      '<ul style="margin-top: 0; margin-bottom: 0; padding-left: 20px; list-style-type: revert"><li style="margin: 0">Uno</li></ul>',
+    ],
     [3, "text", "Shop", "Comprar"],
     [4, "alt", "Photo", "Foto"],
     [5, "alt", "Preview", "Vista previa"],

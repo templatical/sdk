@@ -1,0 +1,23 @@
+{
+  "page": {
+    "rows": [
+      {
+        "columns": [
+          {
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-text",
+                "descriptor": {
+                  "text": {
+                    "html": "<div class=\"txtTinyMce-wrapper\" style=\"font-size: 14px; line-height: 21px;\"><p style=\"text-align: center;\"><span style=\"color: #000000;\">Lorem ipsum dolor<code spellcheck=\"false\" data-bee-type=\"mergetag\" data-bee-code=\"\">{{ Lorem }}</code>Lorem ipsum dolor</span></p><p style=\"text-align: center;\"><span style=\"color: #000000;\"><strong>Lorem ipsum dolor<code spellcheck=\"false\" data-bee-type=\"mergetag\" data-bee-code=\"\">{{ Lorem }} </code></strong></span></p><p style=\"text-align: center;\"><code spellcheck=\"false\" data-bee-type=\"speciallink\" data-bee-code=\"\"><a href=\"{{ guest.link }}\" target=\"_blank\" style=\"text-decoration: underline;\" rel=\"noopener\"><code spellcheck=\"false\" data-bee-type=\"mergetag\" data-bee-code=\"\">{{ Lorem }}</code></a></code></p></div>"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

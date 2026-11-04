@@ -329,6 +329,10 @@ const fr: typeof en = {
     decorative: "Image décorative",
     decorativeHint:
       "Masquée pour les lecteurs d'écran. À réserver aux espaceurs et ornements visuels.",
+    fluidOnMobile: "Pleine largeur sur mobile",
+    fluidOnMobileAuto: "Automatique",
+    fluidOnMobileAlways: "Toujours",
+    fluidOnMobileNever: "Jamais",
   },
   video: {
     videoUrl: "URL de la vidéo",
@@ -362,6 +366,10 @@ const fr: typeof en = {
     textColor: "Couleur du texte",
     borderRadius: "Rayon de bordure",
     fontSize: "Taille de police",
+    fontWeight: "Graisse",
+    fontWeightRegular: "Régulier",
+    fontWeightMedium: "Moyen",
+    fontWeightBold: "Gras",
     width: "Largeur",
     widthAuto: "Ajuster au contenu",
     fullWidth: "Pleine largeur",

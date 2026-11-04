@@ -358,6 +358,10 @@ const de: typeof en = {
     decorative: "Dekoratives Bild",
     decorativeHint:
       "Wird von Bildschirmlesern ignoriert. Nur für Abstandshalter und visuelle Verzierungen verwenden.",
+    fluidOnMobile: "Volle Breite auf Mobilgeräten",
+    fluidOnMobileAuto: "Automatisch",
+    fluidOnMobileAlways: "Immer",
+    fluidOnMobileNever: "Nie",
   },
 
   // Toolbar - Video
@@ -395,6 +399,10 @@ const de: typeof en = {
     textColor: "Textfarbe",
     borderRadius: "Eckenradius",
     fontSize: "Schriftgröße",
+    fontWeight: "Schriftstärke",
+    fontWeightRegular: "Regulär",
+    fontWeightMedium: "Mittel",
+    fontWeightBold: "Fett",
     width: "Breite",
     widthAuto: "An Inhalt anpassen",
     fullWidth: "Volle Breite",
