@@ -5,13 +5,16 @@ import type {
 } from "@templatical/types";
 import {
   applyOperations,
+  defaultLocaleOf,
   invertOperations,
   OperationError,
+  resolveLocale,
   safeClone,
 } from "@templatical/types";
 import { AI_LIMITS } from "../wire";
 import {
   contentRuleRefusal,
+  localeLayerRuleRefusal,
   updateBlockRuleRefusal,
   walkBlocks,
 } from "./content-rules";
@@ -111,7 +114,16 @@ export function createEditingSession(
       const reason =
         record.op === "updateBlock"
           ? updateBlockRuleRefusal(record, existing)
-          : contentRuleRefusal(added, existing, limits.forbiddenBlockTypes);
+          : record.op === "updateBlockLocale" &&
+              typeof record.blockId === "string" &&
+              existing.has(record.blockId)
+            ? localeLayerRuleRefusal(
+                existing.get(record.blockId)!,
+                record,
+                existing,
+                limits.forbiddenBlockTypes,
+              )
+            : contentRuleRefusal(added, existing, limits.forbiddenBlockTypes);
       if (reason !== null) return refuse(opRefusal(index, op, reason));
     }
 
@@ -162,6 +174,65 @@ export function createEditingSession(
       limits.forbiddenBlockTypes,
     );
     if (contentReason !== null) return refuse(contentReason);
+
+    const defaultLocale = defaultLocaleOf(next);
+    const locales = new Set<string>([
+      defaultLocale,
+      ...(next.settings.locales ?? []),
+      ...Object.keys(next.settings.l10n ?? {}),
+    ]);
+    const pending = walkBlocks(next.blocks);
+    for (let index = 0; index < pending.length; index++) {
+      const block = pending[index];
+      if (typeof block.l10n !== "object" || block.l10n === null) continue;
+      for (const [locale, layer] of Object.entries(block.l10n)) {
+        locales.add(locale);
+        if (typeof layer !== "object" || layer === null) continue;
+        const set = (layer as { set?: { children?: unknown } }).set;
+        pending.push(...walkBlocks(set?.children));
+      }
+    }
+    const resolvable = {
+      ...next,
+      settings: { ...next.settings, locales: [...locales] },
+    };
+    const views = new Map<string, TemplateContent>();
+    try {
+      for (const locale of locales)
+        views.set(locale, resolveLocale(resolvable, locale));
+    } catch {
+      return refuse("the template has an invalid locale layer");
+    }
+    const base = views.get(defaultLocale)!;
+    const baseBlocks = new Map<string, Record<string, unknown>>();
+    for (const block of walkBlocks(base.blocks)) {
+      if (typeof block.id === "string") baseBlocks.set(block.id, block);
+    }
+    const baseReason = contentRuleRefusal(
+      base.blocks,
+      existing,
+      limits.forbiddenBlockTypes,
+    );
+    if (baseReason !== null) return refuse(baseReason);
+    for (const [locale, view] of views) {
+      if (locale === defaultLocale) continue;
+      for (const block of walkBlocks(view.blocks)) {
+        const original =
+          typeof block.id === "string" ? baseBlocks.get(block.id) : undefined;
+        if (
+          original?.type === "custom" &&
+          block.type === "custom" &&
+          block.customType !== original.customType
+        )
+          return refuse("you can't change a block's customType");
+      }
+      const reason = contentRuleRefusal(
+        view.blocks,
+        baseBlocks,
+        limits.forbiddenBlockTypes,
+      );
+      if (reason !== null) return refuse(reason);
+    }
 
     const bytes = new TextEncoder().encode(JSON.stringify(next)).length;
     if (bytes > limits.maxContentBytes) {

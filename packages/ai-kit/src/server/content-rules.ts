@@ -24,22 +24,34 @@ function list(types: readonly string[]): string {
     : `${types.slice(0, -1).join(", ")} or ${types.at(-1)}`;
 }
 
-function hasLocaleTypeOverride(block: Record<string, unknown>): boolean {
-  const l10n = block.l10n;
-  return (
-    typeof l10n === "object" &&
-    l10n !== null &&
-    Object.values(l10n).some((layer) => {
-      if (typeof layer !== "object" || layer === null) return false;
-      const { set, text } = layer as Record<string, unknown>;
-      return [set, text].some(
-        (fields) =>
-          typeof fields === "object" &&
-          fields !== null &&
-          Object.hasOwn(fields, "type"),
-      );
-    })
-  );
+/** A locale may not change block type or custom schema or add forbidden children. */
+export function localeLayerRuleRefusal(
+  block: Record<string, unknown>,
+  layer: unknown,
+  existing: ReadonlyMap<string, Record<string, unknown>>,
+  forbidden: readonly string[],
+): string | null {
+  if (typeof layer !== "object" || layer === null) return null;
+  const { set, text } = layer as Record<string, unknown>;
+  const setFields =
+    typeof set === "object" && set !== null
+      ? (set as Record<string, unknown>)
+      : {};
+  const textFields =
+    typeof text === "object" && text !== null
+      ? (text as Record<string, unknown>)
+      : {};
+  if (Object.hasOwn(setFields, "type") || Object.hasOwn(textFields, "type"))
+    return "you can't change a block's type";
+  if (
+    (Object.hasOwn(setFields, "customType") &&
+      setFields.customType !== block.customType) ||
+    (Object.hasOwn(textFields, "customType") &&
+      (textFields.customType as { value?: unknown } | null)?.value !==
+        block.customType)
+  )
+    return "you can't change a block's customType";
+  return contentRuleRefusal(setFields.children, existing, forbidden);
 }
 
 /**
@@ -66,7 +78,17 @@ export function contentRuleRefusal(
     ) {
       return `you can't add ${list(forbidden)} blocks`;
     }
-    if (hasLocaleTypeOverride(block)) return "you can't change a block's type";
+    if (typeof block.l10n === "object" && block.l10n !== null) {
+      for (const layer of Object.values(block.l10n)) {
+        const reason = localeLayerRuleRefusal(
+          block,
+          layer,
+          existing,
+          forbidden,
+        );
+        if (reason !== null) return reason;
+      }
+    }
   }
   return null;
 }

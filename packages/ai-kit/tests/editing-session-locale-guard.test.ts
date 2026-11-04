@@ -1,4 +1,4 @@
-import { sourceHash } from "@templatical/types";
+import { resolveLocale, sourceHash } from "@templatical/types";
 import { describe, expect, it } from "vitest";
 import { createEditingSession } from "../src/server";
 
@@ -137,5 +137,278 @@ describe("editing session locale type guard", () => {
     });
     expect(session.content).toEqual(start);
     expect(session.batches).toEqual([]);
+  });
+
+  it("refuses a section whose German children introduce a custom block", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "addBlock",
+          block: {
+            id: "s1",
+            type: "section",
+            columns: "1",
+            children: [[]],
+            l10n: {
+              de: {
+                set: {
+                  children: [[{ id: "c1", type: "custom", customType: "qr" }]],
+                },
+              },
+            },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback:
+        "Refused: op 0 (addBlock s1) was refused: you can't add custom, slot or wrapper blocks",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("refuses localized custom children supplied through setContent", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "setContent",
+          content: {
+            ...start,
+            blocks: [
+              ...start.blocks,
+              {
+                id: "s1",
+                type: "section",
+                columns: "1",
+                children: [[]],
+                l10n: {
+                  de: {
+                    set: {
+                      children: [
+                        [{ id: "c1", type: "custom", customType: "qr" }],
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback:
+        "Refused: op 0 (setContent) was refused: you can't add custom, slot or wrapper blocks",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("refuses a localized custom schema change on an existing block", () => {
+    const start = {
+      ...content(),
+      blocks: [{ id: "c1", type: "custom", customType: "qr", fieldValues: {} }],
+    };
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "updateBlockLocale",
+          blockId: "c1",
+          locale: "de",
+          set: { customType: "barcode" },
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback:
+        "Refused: op 0 (updateBlockLocale) was refused: you can't change a block's customType",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("refuses a batch when an existing German layer resolves to a custom child", () => {
+    const start = {
+      ...content(),
+      blocks: [
+        {
+          id: "s1",
+          type: "section",
+          columns: "1",
+          children: [[]],
+          l10n: {
+            de: {
+              set: {
+                children: [[{ id: "c1", type: "custom", customType: "qr" }]],
+              },
+            },
+          },
+        },
+      ],
+    };
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([{ op: "updateSettings", set: { width: 640 } }]),
+    ).toEqual({
+      ok: false,
+      feedback: "Refused: you can't add custom, slot or wrapper blocks",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("checks an undeclared locale when a former base custom block survives only there", () => {
+    const start = {
+      blocks: [
+        { id: "c1", type: "custom", customType: "qr" },
+        { id: "s1", type: "section", columns: "1", children: [[]] },
+      ],
+      settings: { width: 600, locale: "en", locales: [] },
+    };
+    const replacement = {
+      blocks: [
+        {
+          id: "s1",
+          type: "section",
+          columns: "1",
+          children: [[]],
+          l10n: {
+            de: {
+              set: {
+                children: [[{ id: "c1", type: "custom", customType: "qr" }]],
+              },
+            },
+          },
+        },
+      ],
+      settings: start.settings,
+    };
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(session.apply([{ op: "setContent", content: replacement }])).toEqual(
+      {
+        ok: false,
+        feedback: "Refused: you can't add custom, slot or wrapper blocks",
+      },
+    );
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("refuses a malformed locale layer without throwing", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "setContent",
+          content: {
+            ...start,
+            blocks: [
+              ...start.blocks,
+              {
+                id: "p2",
+                type: "paragraph",
+                content: "<p>Second</p>",
+                l10n: { de: { set: null } },
+              },
+            ],
+          },
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback: "Refused: the template has an invalid locale layer",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("applies a section with translated German text", () => {
+    const start = content();
+    const translated = {
+      id: "s1",
+      type: "section",
+      columns: "1",
+      children: [
+        [
+          {
+            id: "p2",
+            type: "paragraph",
+            content: "<p>Welcome</p>",
+            l10n: {
+              de: {
+                text: {
+                  content: {
+                    value: "<p>Willkommen</p>",
+                    sourceHash: sourceHash("<p>Welcome</p>"),
+                  },
+                },
+              },
+            },
+          },
+        ],
+      ],
+    };
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        { op: "addBlock", block: translated, parent: null, after: "p1" },
+      ]).ok,
+    ).toBe(true);
+    expect(session.content).toEqual({
+      ...start,
+      blocks: [...start.blocks, translated],
+    });
+    expect(resolveLocale(session.content, "de")).toEqual({
+      blocks: [
+        start.blocks[0],
+        {
+          id: "s1",
+          type: "section",
+          columns: "1",
+          children: [
+            [{ id: "p2", type: "paragraph", content: "<p>Willkommen</p>" }],
+          ],
+        },
+      ],
+      settings: { width: 600, locale: "de" },
+    });
+    expect(session.batches).toHaveLength(1);
   });
 });
