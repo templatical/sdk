@@ -11,19 +11,32 @@ import { useI18n } from "../../composables/useI18n";
 import {
   monoTextareaClass,
   primaryBtnClass,
+  secondaryBtnClass,
 } from "../../constants/styleConstants";
 import {
   resolveHero,
+  safeClone,
   type Block,
   type DisplayCondition,
 } from "@templatical/types";
 import { Monitor, Smartphone } from "@lucide/vue";
-import { computed, inject, reactive, ref, watch, type Component } from "vue";
+import {
+  computed,
+  inject,
+  reactive,
+  ref,
+  toRaw,
+  watch,
+  type Component,
+} from "vue";
+import { useAliveFlag } from "../../composables/useAliveFlag";
+import { logger } from "../../utils/logger";
 import {
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
   EDITOR_KEY,
   LOCALIZATION_KEY,
+  ON_REQUEST_DISPLAY_CONDITION_KEY,
 } from "../../keys";
 
 type SectionKey = "spacing" | "bg" | "display" | "condition";
@@ -52,6 +65,9 @@ const localeHidden = computed(
 
 const displayConditions = inject(DISPLAY_CONDITIONS_KEY, []);
 const allowCustomConditions = inject(ALLOW_CUSTOM_CONDITIONS_KEY, false);
+const onRequest = inject(ON_REQUEST_DISPLAY_CONDITION_KEY, null);
+const aliveFlag = useAliveFlag();
+const requesting = ref(false);
 
 const openSections = reactive(new Set<SectionKey>());
 const customConditionMode = ref(false);
@@ -73,8 +89,57 @@ function toggleSection(key: SectionKey): void {
 }
 
 const hasDisplayConditions = computed(
-  () => displayConditions.length > 0 || allowCustomConditions,
+  () => !!onRequest || displayConditions.length > 0 || allowCustomConditions,
 );
+
+function isDisplayCondition(value: unknown): value is DisplayCondition {
+  // An array is an object, so named label/before/after on it would pass a typeof check.
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.label === "string" &&
+    typeof record.before === "string" &&
+    typeof record.after === "string"
+  );
+}
+
+function writeCondition(
+  blockId: string,
+  displayCondition: DisplayCondition | undefined,
+): void {
+  if (props.block.id === blockId) {
+    emit("update", { displayCondition });
+    return;
+  }
+  if (!editor || !editor.findBlockLocation(blockId)) return;
+  editor.updateBlock(blockId, { displayCondition });
+}
+
+async function requestDisplayCondition(): Promise<void> {
+  if (!onRequest || requesting.value) return;
+  const blockId = props.block.id;
+  const block = safeClone(toRaw(props.block));
+  const current = props.block.displayCondition
+    ? safeClone(toRaw(props.block.displayCondition))
+    : undefined;
+  requesting.value = true;
+  try {
+    const result = await onRequest(current ? { current, block } : { block });
+    if (!aliveFlag.alive) return;
+    if (result === null) return;
+    if (!isDisplayCondition(result)) {
+      logger.warn(
+        "displayConditions.onRequest resolved a value without string label, before and after — ignoring it.",
+      );
+      return;
+    }
+    // Copy so a later host mutation, including nested data, cannot reach editor state.
+    writeCondition(blockId, safeClone(result));
+  } finally {
+    if (aliveFlag.alive) requesting.value = false;
+  }
+}
 
 const isCustomCondition = computed(() => {
   if (!props.block.displayCondition) return false;
@@ -268,7 +333,50 @@ function toggleVisibility(key: VisibilityKey): void {
       :open="openSections.has('condition')"
       @toggle="toggleSection('condition')"
     >
-      <div class="tpl:space-y-2">
+      <div v-if="onRequest" class="tpl:space-y-2">
+        <template v-if="block.displayCondition">
+          <p class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)]">
+            {{ block.displayCondition.label }}
+          </p>
+          <p
+            v-if="block.displayCondition.description"
+            class="tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
+          >
+            {{ block.displayCondition.description }}
+          </p>
+          <div class="tpl:flex tpl:gap-2">
+            <button
+              type="button"
+              data-testid="display-condition-edit"
+              :class="secondaryBtnClass"
+              :disabled="requesting"
+              @click="requestDisplayCondition"
+            >
+              {{ t.blockSettings.editCondition }}
+            </button>
+            <button
+              type="button"
+              data-testid="display-condition-remove"
+              :class="secondaryBtnClass"
+              :disabled="requesting"
+              @click="emit('update', { displayCondition: undefined })"
+            >
+              {{ t.blockSettings.removeCondition }}
+            </button>
+          </div>
+        </template>
+        <button
+          v-else
+          type="button"
+          data-testid="display-condition-request"
+          :class="secondaryBtnClass"
+          :disabled="requesting"
+          @click="requestDisplayCondition"
+        >
+          {{ t.blockSettings.addCondition }}
+        </button>
+      </div>
+      <div v-else class="tpl:space-y-2">
         <FieldRow
           path="displayCondition"
           :label="t.blockSettings.displayCondition"

@@ -439,6 +439,7 @@ export type {
   ColorsConfig,
   CustomFont,
   DisplayCondition,
+  DisplayConditionRequestContext,
   DisplayConditionsConfig,
   ExportResult,
   FontsConfig,

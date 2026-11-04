@@ -98,30 +98,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "columns": {
           "$ref": "#/definitions/ColumnLayout"
@@ -265,6 +242,36 @@
         "mobile"
       ],
       "additionalProperties": false
+    },
+    "DisplayCondition": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "before": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "data": {
+          "description": "Opaque host state. The editor stores it and hands it back as `current` when the host builder reopens, and never reads it. It must survive `JSON.stringify` — content is cloned with `safeClone`, so values that JSON drops (functions, `undefined` keys, a `Date` becoming an ISO string) do not round-trip."
+        }
+      },
+      "required": [
+        "label",
+        "before",
+        "after"
+      ],
+      "additionalProperties": false,
+      "description": "A display condition wraps a block in host-owned before/after markup so the block renders only when the condition holds."
     },
     "ColumnLayout": {
       "type": "string",
@@ -519,30 +526,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "content": {
           "type": "string"
@@ -609,30 +593,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "content": {
           "type": "string"
@@ -674,30 +635,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "src": {
           "type": "string"
@@ -791,30 +729,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "text": {
           "type": "string"
@@ -908,30 +823,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "lineStyle": {
           "type": "string",
@@ -1003,30 +895,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "url": {
           "type": "string"
@@ -1103,30 +972,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "icons": {
           "type": "array",
@@ -1263,30 +1109,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "height": {
           "type": "number"
@@ -1324,30 +1147,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "content": {
           "type": "string"
@@ -1385,30 +1185,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "items": {
           "type": "array",
@@ -1519,30 +1296,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "rows": {
           "type": "array",
@@ -1657,30 +1411,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "targetDate": {
           "type": "string"
@@ -1798,30 +1529,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "customType": {
           "type": "string"
@@ -1874,30 +1582,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         }
       },
       "required": [
@@ -1932,30 +1617,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "children": {
           "type": "array",

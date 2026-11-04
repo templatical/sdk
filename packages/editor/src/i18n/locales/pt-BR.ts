@@ -622,6 +622,8 @@ const ptBR: typeof en = {
     displayCondition: "Condição de Exibição",
     selectCondition: "Selecionar condição",
     removeCondition: "Remover condição",
+    addCondition: "Adicionar condição",
+    editCondition: "Editar",
     noCondition: "Sempre visível",
     conditionApplied: "Condição aplicada",
     customCondition: "Condição personalizada",

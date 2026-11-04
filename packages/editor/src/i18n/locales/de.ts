@@ -622,6 +622,8 @@ const de: typeof en = {
     displayCondition: "Anzeigebedingung",
     selectCondition: "Bedingung auswählen",
     removeCondition: "Bedingung entfernen",
+    addCondition: "Bedingung hinzufügen",
+    editCondition: "Bearbeiten",
     noCondition: "Immer sichtbar",
     conditionApplied: "Bedingung angewendet",
     customCondition: "Eigene Bedingung",

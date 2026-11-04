@@ -44,6 +44,7 @@ interface DisplayCondition {
   after: string;
   group?: string;
   description?: string;
+  data?: unknown;
 }
 ```
 
@@ -54,17 +55,53 @@ interface DisplayCondition {
 | `after` | Yes | Markup inserted after the block output |
 | `group` | No | Group name for organizing conditions in the dropdown |
 | `description` | No | Explanatory text shown below the label |
+| `data` | No | Opaque host state. The editor stores it and hands it back as `current.data` when the host builder reopens. It must survive `JSON.stringify` (content is cloned with `safeClone`). The editor never reads it. |
 
 ## DisplayConditionsConfig
 
 ```ts
+interface DisplayConditionRequestContext {
+  current?: DisplayCondition;
+  block: Block;
+}
+
 interface DisplayConditionsConfig {
-  conditions: DisplayCondition[];
+  conditions?: DisplayCondition[];
   allowCustom?: boolean;
+  onRequest?: (
+    context: DisplayConditionRequestContext,
+  ) => Promise<DisplayCondition | null>;
 }
 ```
 
-When `allowCustom` is `true`, users can write their own `before` and `after` strings directly in the editor instead of choosing from the predefined list. Defaults to `false`.
+When `allowCustom` is `true`, users can write their own `before` and `after` strings directly in the editor instead of choosing from the predefined list. Defaults to `false`. `conditions` may be omitted.
+
+## Host condition builder
+
+`displayConditions.onRequest` replaces the built-in condition list. The block settings show **Add condition**, and **Edit** plus **Remove condition** when a condition is set. The callback receives `{ block }` when the block has no condition, and `{ current, block }` when one is set. Both values are copies. Return a `DisplayCondition`, or `null` to leave the block unchanged.
+
+`current.data` is the opaque state from the condition, so the builder can reopen filled in. A resolved value needs string `label`, `before` and `after`. Empty strings are valid. `description`, `group` and `data` are kept. With `onRequest` set, `conditions` and `allowCustom` are ignored.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  displayConditions: {
+    onRequest: async ({ block, current }) => {
+      const chosen = await openConditionBuilder({
+        blockId: block.id,
+        data: current?.data,
+      });
+      if (!chosen) return null;
+      return {
+        label: chosen.label,
+        before: chosen.before,
+        after: chosen.after,
+        data: chosen.data,
+      };
+    },
+  },
+});
+```
 
 ## Grouping conditions
 
@@ -162,3 +199,18 @@ Two ways, and they answer different questions:
 The **Display conditions** setup passes `displayConditions`, so any block can be shown or hidden per recipient.
 
 [Open in playground](https://play.templatical.com/scenes/display-conditions)
+
+## Check it
+
+Mount an editor with `displayConditions.onRequest` and open a block's settings. The section shows an **Add condition** button. Resolve the callback with a condition that includes `data`, then read the stored block from `getContent()`:
+
+```ts
+const stored = editor.getContent().blocks.find((block) => block.id === 'title');
+if (stored?.displayCondition?.label !== 'VIP') {
+  throw new Error('expected label VIP');
+}
+const data = stored.displayCondition.data as { tier: string };
+if (data.tier !== 'vip') {
+  throw new Error('expected displayCondition.data.tier vip');
+}
+```
