@@ -14,7 +14,7 @@ import {
 } from "@templatical/types";
 import { useEditor } from "@templatical/core";
 import { createDefaultTemplateContent, createParagraphBlock } from "@templatical/types";
-import { RenderContext } from "@templatical/renderer";
+import { RenderContext, renderBlock } from "@templatical/renderer";
 import BlockPreviewCanvas from "../src/components/BlockPreviewCanvas.vue";
 import Canvas from "../src/components/Canvas.vue";
 import ButtonBlock from "../src/components/blocks/ButtonBlock.vue";
@@ -131,6 +131,47 @@ describe("canvas font parity with the renderer", () => {
       }
     });
   });
+});
+
+describe("button weight parity with the renderer", () => {
+  const renderer = new RenderContext(600, [], "Arial, sans-serif", true);
+
+  function canvasWeight(fontWeight?: "regular" | "medium" | "bold"): string {
+    const block = createButtonBlock(
+      fontWeight === undefined ? { text: "Go" } : { text: "Go", fontWeight },
+    );
+    const wrapper = mountEditor(ButtonBlock, {
+      props: { block, viewport: "desktop" as const },
+      provides: {
+        [FONTS_MANAGER_KEY]: useFonts(),
+        [EDITOR_KEY]: { selectBlock: vi.fn(), updateBlock: vi.fn() },
+      },
+    });
+    return (wrapper.find("a").element as HTMLElement).style.fontWeight;
+  }
+
+  function renderedWeight(fontWeight?: "regular" | "medium" | "bold"): string {
+    const block = createButtonBlock(
+      fontWeight === undefined ? { text: "Go" } : { text: "Go", fontWeight },
+    );
+    const match = renderBlock(block, renderer).match(/font-weight="([^"]*)"/);
+    if (!match) throw new Error("button mjml has no font-weight");
+    return match[1];
+  }
+
+  it.each([
+    ["absent", undefined, "bold"],
+    ["regular", "regular", "400"],
+    ["medium", "medium", "500"],
+    ["bold", "bold", "700"],
+  ] as const)(
+    "a %s weight matches the email (%s)",
+    (_label, fontWeight, css) => {
+      expect(canvasWeight(fontWeight)).toBe(css);
+      expect(renderedWeight(fontWeight)).toBe(css);
+      expect(canvasWeight(fontWeight)).toBe(renderedWeight(fontWeight));
+    },
+  );
 });
 
 describe("canvas template font parity with the renderer", () => {

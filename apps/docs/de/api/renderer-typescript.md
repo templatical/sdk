@@ -227,7 +227,7 @@ In einer [Hero-Sektion](/de/guide/sections-and-columns#hero) hat der Inhalt kein
 
 ### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}
 
-Gibt `' fluid-on-mobile="true"'` für ein Bild zurück, das seine Spalte auf dem Desktop füllt, sonst `''`. Ein Bild füllt seine Spalte, wenn seine `width` `'full'` ist oder eine Pixelbreite, die `context.contentWidth` abzüglich des seitlichen Paddings und Rahmens des Blocks erreicht oder überschreitet. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones).
+Gibt `' fluid-on-mobile="true"'` oder `''` zurück. `fluidOnMobile: true` an einem Bild gibt das Attribut immer zurück, `false` immer `''`. Ohne das Feld wird das Attribut nur gesetzt, wenn das Bild seine Spalte auf dem Desktop füllt: `width` `'full'` oder eine Pixelbreite, die `context.contentWidth` abzüglich des seitlichen Paddings und Rahmens des Blocks erreicht oder überschreitet. Ein Video-Thumbnail hat das Feld nicht und folgt dieser Regel. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones).
 
 Die eingebauten Bild- und Video-Renderer verwenden sie. Eine `blockRenderers`-Überschreibung, die ein eigenes `mj-image` ausgibt, ruft sie ebenfalls auf; ohne das Attribut behält das Bild auf dem Smartphone seine Desktop-Breite:
 

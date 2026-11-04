@@ -227,7 +227,7 @@ In a [hero section](/guide/sections-and-columns#hero), the content has no column
 
 ### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}
 
-Returns `' fluid-on-mobile="true"'` for an image that fills its column on desktop, and `''` otherwise. An image fills its column when its `width` is `'full'`, or a pixel width at or above `context.contentWidth` less the block's side padding and border. See [Width on phones](/guide/images#width-on-phones).
+Returns `' fluid-on-mobile="true"'` or `''`. An image's `fluidOnMobile: true` always returns the attribute and `false` always returns `''`. When the field is omitted, the attribute is set only for an image that fills its column on desktop: `width` `'full'`, or a pixel width at or above `context.contentWidth` less the block's side padding and border. A video thumbnail has no field and uses that rule. See [Width on phones](/guide/images#width-on-phones).
 
 The built-in image and video renderers use it. A `blockRenderers` override that emits its own `mj-image` calls it too; without the attribute, the image keeps its desktop width on a phone:
 

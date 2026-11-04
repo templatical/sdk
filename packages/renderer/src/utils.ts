@@ -96,22 +96,30 @@ export function horizontalInset(
 }
 
 /**
- * `fluid-on-mobile` for an `mj-image`, set only on an image that fills its
- * column on desktop: `"full"`, or a pixel width MJML caps at the room it gives
+ * `fluid-on-mobile` for an `mj-image`. An image fills its column on desktop
+ * when its width is `"full"`, or a pixel width MJML caps at the room it gives
  * the image (the column less the image's own side padding and border). On a
  * phone the attribute widens the image to the stacked column, so an image set
  * narrower must not carry it: a 120px logo would grow to the whole column, and
  * one with a set height would stretch out of shape. An image wider than the
  * phone shrinks to fit without it.
  *
+ * `fluidOnMobile: true` always emits the attribute and `false` never does.
+ * Omitted keeps the rule above. Video thumbnails have no such field and stay
+ * on the rule.
+ *
  * Exported for `blockRenderers` entries that emit their own `mj-image`. Pass
  * the context the renderer received, whose `contentWidth` already excludes the
  * wrappers and sections around the column.
  */
 export function fluidOnMobileAttr(
-  block: Pick<ImageBlock, "width" | "styles" | "border">,
+  block: Pick<ImageBlock, "width" | "styles" | "border"> & {
+    fluidOnMobile?: boolean;
+  },
   context: RenderContext,
 ): string {
+  if (block.fluidOnMobile === true) return ' fluid-on-mobile="true"';
+  if (block.fluidOnMobile === false) return "";
   const room =
     Math.floor(context.contentWidth) -
     horizontalInset(block.styles.padding, block.border);

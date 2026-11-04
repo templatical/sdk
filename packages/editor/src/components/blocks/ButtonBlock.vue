@@ -16,6 +16,17 @@ const props = defineProps<{
 
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "ButtonBlock");
 
+/**
+ * The same tokens the renderer writes on `mj-button`. An omitted weight stays
+ * `bold`.
+ */
+function buttonLabelWeight(weight: ButtonBlockType["fontWeight"]): string {
+  if (weight === "regular") return "400";
+  if (weight === "medium") return "500";
+  if (weight === "bold") return "700";
+  return "bold";
+}
+
 const buttonStyle = computed(() => {
   const style: Record<string, string> = {
     display: "inline-block",
@@ -23,7 +34,7 @@ const buttonStyle = computed(() => {
     backgroundColor: props.block.backgroundColor,
     color: props.block.textColor,
     fontSize: `${props.block.fontSize}px`,
-    fontWeight: "bold",
+    fontWeight: buttonLabelWeight(props.block.fontWeight),
     textDecoration: "none",
     // A plain number renders as-is, like the export; per-corner radii go
     // through the renderer's formatter.

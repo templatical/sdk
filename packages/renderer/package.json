@@ -11,6 +11,7 @@
     "@resvg/resvg-js": "^2.6.2",
     "liquidjs": "^10.30.1",
     "mjml": "^5.4.1",
+    "mjml-browser": "^5.4.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },
