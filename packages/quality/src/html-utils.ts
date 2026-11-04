@@ -1,3 +1,4 @@
+import { findOpenTagEnd } from "@templatical/types";
 import { Parser } from "htmlparser2";
 
 export interface AnchorInfo {
@@ -151,4 +152,216 @@ export function extractText(html: string): string {
   parser.write(html);
   parser.end();
   return text.trim();
+}
+
+/**
+ * One attribute inside an open tag's attribute string. `start` is the first
+ * character of the name; `end` is just after the value (closing quote
+ * included, or the end of an unquoted value).
+ */
+export interface AttrSpan {
+  start: number;
+  end: number;
+}
+
+function isHtmlWhitespace(char: string): boolean {
+  return (
+    char === " " ||
+    char === "\t" ||
+    char === "\n" ||
+    char === "\r" ||
+    char === "\f"
+  );
+}
+
+// Same name class as `getTagAttrValue`, so a span slice is the attribute it reads.
+function isAttrNameChar(char: string): boolean {
+  return (
+    char !== " " &&
+    char !== "\t" &&
+    char !== "\n" &&
+    char !== "\r" &&
+    char !== "\f" &&
+    char !== "=" &&
+    char !== ">" &&
+    char !== "/"
+  );
+}
+
+function isTagNameStart(char: string): boolean {
+  return (char >= "A" && char <= "Z") || (char >= "a" && char <= "z");
+}
+
+function isTagNameChar(char: string): boolean {
+  return (
+    isTagNameStart(char) ||
+    (char >= "0" && char <= "9") ||
+    char === ":" ||
+    char === "-" ||
+    char === "_"
+  );
+}
+
+/**
+ * `name="value"`. A `"` in the value is written as `&quot;` so it cannot
+ * close the attribute or start a sibling one. `&` and existing entities are
+ * copied as written. A double-quoted value contains no raw `"`, so passing
+ * its raw text through here leaves those bytes unchanged.
+ */
+export function doubleQuotedAttr(name: string, value: string): string {
+  return `${name}="${value.replace(/"/g, "&quot;")}"`;
+}
+
+/**
+ * Raw value text of one attribute span from `findAttrSpans`, with the
+ * surrounding quotes removed. Entities stay as written. Returns null when
+ * the span is a boolean attribute (no `=`) or its quoted value never closes.
+ */
+export function attrRawValue(attr: string): string | null {
+  let i = 0;
+  while (i < attr.length && isAttrNameChar(attr[i])) i++;
+  while (i < attr.length && isHtmlWhitespace(attr[i])) i++;
+  if (i >= attr.length || attr[i] !== "=") return null;
+  i++;
+  while (i < attr.length && isHtmlWhitespace(attr[i])) i++;
+  if (i >= attr.length) return null;
+  const quote = attr[i];
+  if (quote === '"' || quote === "'") {
+    const end = attr.indexOf(quote, i + 1);
+    if (end === -1) return null;
+    return attr.slice(i + 1, end);
+  }
+  return attr.slice(i);
+}
+
+/**
+ * Spans of `name` inside an open tag's attribute string (between the tag
+ * name and its `>`). Quote-aware, like `getTagAttrValue`: a single-quoted
+ * value may contain `"`, and an unquoted value ends at whitespace. Returns
+ * null when a quoted value never closes — the string is not safe to rewrite.
+ */
+export function findAttrSpans(attrs: string, name: string): AttrSpan[] | null {
+  const target = name.toLowerCase();
+  const spans: AttrSpan[] = [];
+  let i = 0;
+
+  while (i < attrs.length) {
+    while (
+      i < attrs.length &&
+      (isHtmlWhitespace(attrs[i]) || attrs[i] === "/")
+    ) {
+      i++;
+    }
+    if (i >= attrs.length) break;
+
+    const nameStart = i;
+    while (i < attrs.length && isAttrNameChar(attrs[i])) i++;
+    const attrName = attrs.slice(nameStart, i);
+    if (attrName === "") {
+      i++;
+      continue;
+    }
+    const nameEnd = i;
+
+    while (i < attrs.length && isHtmlWhitespace(attrs[i])) i++;
+    if (i >= attrs.length || attrs[i] !== "=") {
+      if (attrName.toLowerCase() === target) {
+        spans.push({ start: nameStart, end: nameEnd });
+      }
+      continue;
+    }
+    i++; // past `=`
+    while (i < attrs.length && isHtmlWhitespace(attrs[i])) i++;
+
+    const quote = attrs[i];
+    if (quote === '"' || quote === "'") {
+      const valueEnd = attrs.indexOf(quote, i + 1);
+      if (valueEnd === -1) return null;
+      const end = valueEnd + 1;
+      if (attrName.toLowerCase() === target)
+        spans.push({ start: nameStart, end });
+      i = end;
+      continue;
+    }
+
+    while (
+      i < attrs.length &&
+      !isHtmlWhitespace(attrs[i]) &&
+      attrs[i] !== ">"
+    ) {
+      i++;
+    }
+    if (attrName.toLowerCase() === target)
+      spans.push({ start: nameStart, end: i });
+  }
+
+  return spans;
+}
+
+/**
+ * Drop one attribute, including a single whitespace separator before its
+ * name when there is one. The rest of the attribute string stays byte for
+ * byte, so a removed `style` leaves `<p>` rather than `<p >`.
+ */
+export function removeAttrSpan(attrs: string, span: AttrSpan): string {
+  const from =
+    span.start > 0 && isHtmlWhitespace(attrs[span.start - 1])
+      ? span.start - 1
+      : span.start;
+  return attrs.slice(0, from) + attrs.slice(span.end);
+}
+
+/**
+ * Rewrite open tags in `html`. `visit` returns a replacement for the whole
+ * tag, angle brackets included, or null to keep the original bytes.
+ *
+ * The closing `>` comes from `findOpenTagEnd`, so a `>` inside a quoted
+ * attribute does not end the tag. A tag that never closes stops the walk
+ * and the rest of the string is copied unchanged.
+ */
+export function rewriteOpenTags(
+  html: string,
+  visit: (tag: {
+    name: string;
+    rawName: string;
+    attrs: string;
+  }) => string | null,
+): string {
+  let out = "";
+  let i = 0;
+  while (i < html.length) {
+    const open = html.indexOf("<", i);
+    if (open === -1 || open + 1 >= html.length) {
+      out += html.slice(i);
+      break;
+    }
+    const next = html[open + 1];
+    if (!isTagNameStart(next)) {
+      out += html.slice(i, open + 1);
+      i = open + 1;
+      continue;
+    }
+    let nameEnd = open + 1;
+    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
+    const tagEnd = findOpenTagEnd(html, nameEnd);
+    if (tagEnd === -1) {
+      out += html.slice(i);
+      break;
+    }
+    const rawName = html.slice(open + 1, nameEnd);
+    const attrs = html.slice(nameEnd, tagEnd);
+    const replacement = visit({
+      name: rawName.toLowerCase(),
+      rawName,
+      attrs,
+    });
+    if (replacement === null) {
+      out += html.slice(i, tagEnd + 1);
+    } else {
+      out += html.slice(i, open);
+      out += replacement;
+    }
+    i = tagEnd + 1;
+  }
+  return out;
 }

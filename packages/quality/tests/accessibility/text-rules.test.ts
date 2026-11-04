@@ -184,6 +184,22 @@ describe("a11y.text-justified", () => {
     ).toBe('<p>One.</p><p style="text-align: center">Two.</p>');
   });
 
+  it("fix rewrites a single-quoted style without injecting an attribute", () => {
+    expect(
+      applyFix(
+        `<p style='color:red" rel="opener; text-align: justify'>Body</p>`,
+      ),
+    ).toBe(`<p style="color:red&quot; rel=&quot;opener">Body</p>`);
+  });
+
+  it("fix keeps a double-quoted style entity as written", () => {
+    // `;` is also the declaration separator, so the entity semicolon is the
+    // split between `color` and `text-align`. The entity name stays literal.
+    expect(
+      applyFix('<p style="color: &copy;; text-align: justify">Body</p>'),
+    ).toBe('<p style="color: &copy">Body</p>');
+  });
+
   it("respects a severity override", () => {
     const { content } = build('<p style="text-align: justify">Body.</p>');
     const issues = lintAccessibility(content, {

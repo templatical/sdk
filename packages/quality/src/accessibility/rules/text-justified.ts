@@ -1,6 +1,13 @@
 import { isParagraph } from "@templatical/types";
 import type { Block } from "@templatical/types";
 import type { LintPatchContext, Rule, RuleMeta } from "../../types";
+import {
+  attrRawValue,
+  doubleQuotedAttr,
+  findAttrSpans,
+  removeAttrSpan,
+  rewriteOpenTags,
+} from "../../html-utils";
 
 export const meta: RuleMeta = {
   id: "a11y.text-justified",
@@ -25,16 +32,18 @@ export const meta: RuleMeta = {
  */
 const TEXT_ALIGN_DECL = /(^|;)\s*text-align\s*:\s*([^;]*)/i;
 
-/** Reads the `style` attribute value out of every tag in a fragment. */
-const STYLE_ATTR = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
-
+/** Raw `style` values from every open tag. An unquoted value is included. */
 function styleValues(html: string): string[] {
   const values: string[] = [];
-  const re = new RegExp(STYLE_ATTR.source, STYLE_ATTR.flags);
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(html)) !== null) {
-    values.push(match[1] ?? match[2] ?? "");
-  }
+  rewriteOpenTags(html, ({ attrs }) => {
+    const spans = findAttrSpans(attrs, "style");
+    if (spans === null) return null;
+    for (const span of spans) {
+      const value = attrRawValue(attrs.slice(span.start, span.end));
+      if (value !== null) values.push(value);
+    }
+    return null;
+  });
   return values;
 }
 
@@ -71,17 +80,35 @@ function removeTextAlign(style: string): string {
  * emits nothing when the attribute is null), so the paragraph goes back
  * to inheriting the document default — which is also the correct result
  * for right-to-left content, where a hardcoded `left` would be wrong.
+ *
+ * Each `style` is the raw attribute text and is written back double-quoted.
+ * A `"` in the value is escaped so it stays part of `style`; `&` and
+ * existing entities are copied as written. The tag boundary comes from
+ * `findOpenTagEnd`.
  */
 function unjustify(html: string): string {
-  return html.replace(
-    /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi,
-    (match, double: string | undefined, single: string | undefined) => {
-      const style = double ?? single ?? "";
-      if (!isJustified(style)) return match;
+  return rewriteOpenTags(html, ({ rawName, attrs }) => {
+    const spans = findAttrSpans(attrs, "style");
+    if (spans === null || spans.length === 0) return null;
+
+    let next = attrs;
+    let changed = false;
+    // Later spans first, so an edit does not shift the indexes still ahead.
+    for (let index = spans.length - 1; index >= 0; index--) {
+      const span = spans[index];
+      const style = attrRawValue(attrs.slice(span.start, span.end));
+      if (style === null || !isJustified(style)) continue;
       const remaining = removeTextAlign(style);
-      return remaining === "" ? "" : ` style="${remaining}"`;
-    },
-  );
+      next =
+        remaining === ""
+          ? removeAttrSpan(next, span)
+          : next.slice(0, span.start) +
+            doubleQuotedAttr("style", remaining) +
+            next.slice(span.end);
+      changed = true;
+    }
+    return changed ? `<${rawName}${next}>` : null;
+  });
 }
 
 export const textJustified: Rule = {
