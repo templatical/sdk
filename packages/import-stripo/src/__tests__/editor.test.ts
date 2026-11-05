@@ -492,7 +492,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
         status: "approximated",
-        note: "The band colour was imported as a section wrapper. Columns of 200px and 400px became two equal columns.",
+        note: "Columns of 200px and 400px became two equal columns.",
       },
     ]);
   });

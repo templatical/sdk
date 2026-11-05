@@ -169,7 +169,7 @@ banner.styles.backgroundColor = '#1f2937';
 
 ### Äußerer Rahmen (Wrapper)
 
-Um eine Sektion in einem farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius. Das Band ist so breit wie der E-Mail-Körper (`settings.width`), nicht wie das gesamte Fenster des Empfängers:
+Um eine Sektion in einem farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius. Das Band ist so breit wie der E-Mail-Körper (`settings.width`), es sei denn, Sie setzen `fullWidth`. `fullWidth: true` ist MJMLs `full-width="full-width"`: Hintergrundfarbe und Hintergrundbild des Bands reichen über das Fenster des Empfängers, die Sektion bleibt bei `settings.width`. Ein Eckenradius gilt nicht, solange `fullWidth` an ist — ein fensterbreites Band hat keine sichtbaren Ecken — und der gespeicherte Radius gilt wieder, wenn `fullWidth` aus ist:
 
 ```ts
 const card = createSectionBlock({ columns: '1', borderRadius: 12 });
@@ -182,4 +182,4 @@ card.wrapper = {
 };
 ```
 
-Das Padding des Wrappers sorgt dafür, dass das Band um die Sektion herum sichtbar wird. Aktivieren Sie es im Editor über das **Wrapper**-Panel in der Sektions-Symbolleiste. Der Wrapper ist eine Stilebene, kein Container — Sektionen können weiterhin nicht verschachtelt werden. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay.
+Das Padding des Wrappers sorgt dafür, dass das Band um die Sektion herum sichtbar wird. Aktivieren Sie es im Editor über das **Wrapper**-Panel in der Sektions-Symbolleiste. **Hintergrund über die volle Breite** im Panel **Hintergrund** setzt `fullWidth`. Gibt es noch keinen Wrapper, verschiebt das die eigene Hintergrundfarbe und das Hintergrundbild der Sektion auf einen neuen Wrapper und löscht sie an der Sektion, sodass der Inhalt transparent über dem Band liegt. Das Wrapper-Panel zeigt denselben Schalter. Schalten Sie ihn aus, wird `fullWidth` gelöscht; ein Wrapper, der nur diese verschobene Füllung trägt, wird entfernt und die Füllung kehrt auf die Sektion zurück. Der Wrapper ist eine Stilebene, kein Container — Sektionen können weiterhin nicht verschachtelt werden. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay.

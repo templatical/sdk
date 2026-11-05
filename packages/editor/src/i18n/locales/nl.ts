@@ -527,6 +527,7 @@ const nl: typeof en = {
     spacing: "Afstand",
     padding: "Binnenmarge",
     background: "Achtergrond",
+    fullWidthBackground: "Achtergrond over de volle breedte",
     borderWidth: "Randdikte",
     borderStyle: "Randstijl",
     borderColor: "Randkleur",

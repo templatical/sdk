@@ -2650,6 +2650,103 @@ describe("processTable — a section's background is the nearest fill", () => {
         (section) => section.styles.backgroundColor,
       ),
     ).toEqual(["#ffffff", "#ffffff"]);
+    expect(
+      (blocks as SectionBlock[]).map((section) => section.wrapper),
+    ).toEqual([
+      { backgroundColor: "#f3f4f6", fullWidth: true },
+      { backgroundColor: "#f3f4f6", fullWidth: true },
+    ]);
+  });
+
+  it("does not treat a fixed-width outer table as a viewport band", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" width="600" style="background-color:#f3f4f6"><tr><td>' +
+        '<table role="presentation" width="600" style="background-color:#ffffff">' +
+        "<tr><td><p>Copy</p></td></tr></table></td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toBeUndefined();
+  });
+
+  it("leaves a 100% table with no paint as packaging", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" width="100%"><tr><td>' +
+        '<table role="presentation" width="600"><tr><td><p>Copy</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toBeUndefined();
+  });
+
+  it("reads a viewport band from style widths", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" style="width:100%;background-color:#112233"><tr><td>' +
+        '<table role="presentation" style="width:600px" bgcolor="#ffffff"><tr><td><p>Copy</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#112233",
+      fullWidth: true,
+    });
+  });
+
+  it("reads a viewport band from the cell when the table states no width", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td width="100%" bgcolor="#112233">' +
+        '<table role="presentation" width="600" bgcolor="#ffffff"><tr><td><p>Copy</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#112233",
+      fullWidth: true,
+    });
+  });
+
+  it("puts a 100% table's image on each section's full-width wrapper", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" style="background-image:url(https://cdn.example/band.png);background-size:100%">' +
+        "<tr><td>" +
+        '<table role="presentation" width="600">' +
+        "<tr><td><p>One</p></td></tr>" +
+        "<tr><td><p>Two</p></td></tr>" +
+        "</table></td></tr></table>",
+    );
+    const sections = blocks as SectionBlock[];
+    expect(sections).toHaveLength(2);
+    expect(sections[0].styles.backgroundColor).toBeUndefined();
+    expect(sections[0].backgroundImage).toBeUndefined();
+    expect(sections[0].wrapper?.fullWidth).toBe(true);
+    expect(sections[0].wrapper?.backgroundImage?.url).toBe(
+      "https://cdn.example/band.png",
+    );
+    expect(sections[1].wrapper?.backgroundImage).not.toBe(
+      sections[0].wrapper?.backgroundImage,
+    );
+    const notes = entries
+      .filter((entry) => entry.templaticalBlockType === "section")
+      .map((entry) => entry.note);
+    expect(notes[0]).toContain("background-size");
+    expect(notes[0]).toContain("2 sections");
+    expect(notes[1]).toContain("2 sections");
+  });
+
+  it("does not bleed a band that sits inside a column", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        '<table role="presentation" width="100%" bgcolor="#112233"><tr><td>' +
+        '<table role="presentation" width="200"><tr><td><p>Nested</p></td></tr></table>' +
+        "</td></tr></table></td></tr></table>",
+      true,
+    );
+    expect(blocks.every((block) => block.type !== "section")).toBe(true);
+    expect(JSON.stringify(blocks)).toContain("Nested");
+    expect(JSON.stringify(blocks)).not.toContain("fullWidth");
   });
 
   it("gives cells that share one fill that fill", () => {

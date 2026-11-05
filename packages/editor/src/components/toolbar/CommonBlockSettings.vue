@@ -16,6 +16,7 @@ import {
   resolveHero,
   type Block,
   type DisplayCondition,
+  type SectionBlock,
 } from "@templatical/types";
 import { Monitor, Smartphone } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch, type Component } from "vue";
@@ -23,8 +24,14 @@ import {
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
   EDITOR_KEY,
+  LAYOUT_KEY,
   LOCALIZATION_KEY,
+  SECTION_WRAPPER_KEY,
 } from "../../keys";
+import {
+  applySectionFullWidth,
+  sectionFullWidthDisabled,
+} from "../../utils/sectionFullWidth";
 
 type SectionKey = "spacing" | "bg" | "display" | "condition";
 type VisibilityKey = "desktop" | "mobile";
@@ -52,6 +59,41 @@ const localeHidden = computed(
 
 const displayConditions = inject(DISPLAY_CONDITIONS_KEY, []);
 const allowCustomConditions = inject(ALLOW_CUSTOM_CONDITIONS_KEY, false);
+const layout = inject(LAYOUT_KEY, undefined);
+const sectionWrapperEnabled = inject(SECTION_WRAPPER_KEY, undefined);
+
+const showsFullWidth = computed(
+  () => props.block.type === "section" || props.block.type === "wrapper",
+);
+const fullWidthOn = computed(() => {
+  if (props.block.type === "wrapper") return props.block.fullWidth === true;
+  if (props.block.type === "section") {
+    return props.block.wrapper?.fullWidth === true;
+  }
+  return false;
+});
+const fullWidthDisabled = computed(
+  () =>
+    props.block.type === "section" &&
+    sectionFullWidthDisabled(props.block, {
+      sectionWrapper: sectionWrapperEnabled,
+      layout,
+    }),
+);
+const fullWidthTestId = computed(() =>
+  props.block.type === "wrapper"
+    ? "layout-wrapper-full-width"
+    : "section-background-full-width",
+);
+
+function setFullWidth(enabled: boolean): void {
+  if (props.block.type === "wrapper") {
+    emit("update", { fullWidth: enabled });
+    return;
+  }
+  if (props.block.type !== "section") return;
+  emit("update", applySectionFullWidth(props.block as SectionBlock, enabled));
+}
 
 const openSections = reactive(new Set<SectionKey>());
 const customConditionMode = ref(false);
@@ -197,6 +239,21 @@ function toggleVisibility(key: VisibilityKey): void {
           allow-transparent
           @update:model-value="updateStyle('backgroundColor', $event)"
       /></FieldRow>
+      <FieldRow
+        v-if="showsFullWidth"
+        :path="block.type === 'section' ? 'wrapper.fullWidth' : 'fullWidth'"
+        :label="t.blockSettings.fullWidthBackground"
+        ><template #label-actions="{ controlId }"
+          ><ToggleSwitch
+            :data-testid="fullWidthTestId"
+            :control-id="controlId"
+            hide-label
+            class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+            :model-value="fullWidthOn"
+            :disabled="fullWidthDisabled"
+            :label="t.blockSettings.fullWidthBackground"
+            @update:model-value="setFullWidth" /></template
+      ></FieldRow>
       <!-- Only sections take an image here: MJML has no background-url on
            columns or content elements. -->
       <FieldRow

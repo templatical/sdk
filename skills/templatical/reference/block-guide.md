@@ -91,11 +91,15 @@ Container that arranges blocks into columns.
   a regular one.
 - `verticalAlign` (inside `hero`) is one of `"top"`, `"middle"`, `"bottom"`.
 - `wrapper` is an outer band: `{ backgroundColor?, padding?, borderRadius?,
-  backgroundImage? }` (e.g. a white card on a colored band); its `borderRadius`
-  takes the same number-or-per-corner form. The band is as wide as
-  `settings.width`, not the recipient's viewport. Don't give both the wrapper
-  and its section a `backgroundImage`, and don't put a wrapper `backgroundColor`
-  behind a section image — Outlook on Windows breaks both.
+  backgroundImage?, fullWidth? }` (e.g. a white card on a colored band); its
+  `borderRadius` takes the same number-or-per-corner form. Omit `fullWidth` or
+  set it `false` and the band is as wide as `settings.width`. `fullWidth: true`
+  is MJML's `full-width="full-width"`: the band's background spans the
+  recipient's window and the section stays at `settings.width`. A corner radius
+  is ignored while `fullWidth` is on; the stored radius stays and applies again
+  when it is off. Don't give both the wrapper and its section a
+  `backgroundImage`, and don't put a wrapper `backgroundColor` behind a section
+  image — Outlook on Windows breaks both.
 
 Don't nest a section inside another section — MJML has no equivalent, so the
 renderer drops it on export.

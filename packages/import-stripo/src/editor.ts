@@ -16,6 +16,7 @@ import {
   readBoxPadding,
   resolveSectionImage,
   resolveSectionPaint,
+  sectionWrapper,
   withoutBandOverImage,
   type SectionPaint,
 } from "./css";
@@ -181,13 +182,18 @@ function bandColor($stripe: Cheerio<Element>): string {
     : "";
 }
 
-function paintFor($el: Cheerio<Element>, ctx: ConvertCtx): SectionPaint {
+function paintFor(
+  $el: Cheerio<Element>,
+  ctx: ConvertCtx,
+  bleed = false,
+): SectionPaint {
   const $stripe = enclosing($el, "[class~='esd-stripe']");
   const $body = enclosing($el, BODY_SELECTOR);
   return resolveSectionPaint(
     ctx.pageBackground ?? "#ffffff",
     $stripe ? bandColor($stripe) : "",
     $body ? colorFromPaint($body.attr("style"), $body.attr("bgcolor")) : "",
+    bleed,
   );
 }
 
@@ -253,7 +259,7 @@ function sectionFromStructure(
       : false,
   });
   const paint = withoutBandOverImage(
-    paintFor($structure, ctx),
+    paintFor($structure, ctx, $stripe !== null),
     image.image !== undefined,
   );
   const widthNote =
@@ -266,26 +272,28 @@ function sectionFromStructure(
   const notes = [...paint.notes, flattenNote, widthNote, ...image.notes].filter(
     (note): note is string => Boolean(note),
   );
-  if (notes.length > 0) {
-    const entry = pushEntry(
-      ctx,
-      "esd-structure",
-      "section",
-      "approximated",
-      notes.join(" "),
-    );
+  const entry =
+    notes.length > 0
+      ? pushEntry(
+          ctx,
+          "esd-structure",
+          "section",
+          "approximated",
+          notes.join(" "),
+        )
+      : frameCount <= 4
+        ? pushEntry(ctx, "esd-structure", "section", "converted")
+        : undefined;
+  if (entry) {
     recordImageSpan(ctx, image.source, entry);
-  } else if (frameCount <= 4) {
-    const entry = pushEntry(ctx, "esd-structure", "section", "converted");
-    recordImageSpan(ctx, image.source, entry);
+    recordImageSpan(ctx, image.bandSource, entry);
   }
+  const wrapper = sectionWrapper(paint, image.band);
   const section = createSectionBlock({
     columns: layout,
     children,
     styles: { padding },
-    ...(paint.wrapperColor
-      ? { wrapper: { backgroundColor: paint.wrapperColor } }
-      : {}),
+    ...(wrapper ? { wrapper } : {}),
     ...(image.image ? { backgroundImage: image.image } : {}),
   });
   return withBackground(section, paint.backgroundColor);
@@ -328,15 +336,15 @@ export function convertEditor(html: string, ctx: ConvertCtx): Block[] {
       notes.length > 0 ? notes.join(" ") : undefined,
     );
     recordImageSpan(ctx, image.source, entry);
+    recordImageSpan(ctx, image.bandSource, entry);
+    const wrapper = sectionWrapper(paint, image.band);
     const section = createSectionBlock({
       columns: "1",
       children: [
         blocksInContainer($stripe, $, ctx, columnRooms(600, "1", ZERO, 1)[0]),
       ],
       styles: { padding: { ...ZERO } },
-      ...(paint.wrapperColor
-        ? { wrapper: { backgroundColor: paint.wrapperColor } }
-        : {}),
+      ...(wrapper ? { wrapper } : {}),
       ...(image.image ? { backgroundImage: image.image } : {}),
     });
     return withBackground(section, paint.backgroundColor);

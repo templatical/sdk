@@ -489,15 +489,19 @@
         },
         "borderRadius": {
           "$ref": "#/definitions/BorderRadiusValue",
-          "description": "Corner radius in px for the outer frame — one number, or a radius per corner. Omitted/0 = square corners."
+          "description": "Corner radius in px for the outer frame — one number, or a radius per corner. Omitted/0 = square corners. Ignored while `fullWidth` is on: a viewport-wide band has no visible corners, so the renderer omits `border-radius`."
         },
         "backgroundImage": {
           "$ref": "#/definitions/BackgroundImage",
           "description": "Image behind the band; `backgroundColor` is its fallback."
+        },
+        "fullWidth": {
+          "type": "boolean",
+          "description": "When true, the band spans the recipient's viewport (`full-width` on `mj-wrapper`) while the section stays at the email width. Absent or false keeps the band at `settings.width`."
         }
       },
       "additionalProperties": false,
-      "description": "Optional outer frame for a section. When present, the section is rendered inside an `mj-wrapper` — a band (its own background + padding) that frames the section, e.g. a white card sitting on a colored band. The band is as wide as the email body (`settings.width`), not the recipient's viewport."
+      "description": "Optional outer frame for a section. When present, the section is rendered inside an `mj-wrapper` — a band (its own background + padding) that frames the section, e.g. a white card sitting on a colored band. The band is as wide as the email body (`settings.width`), not the recipient's viewport, unless `fullWidth` is set."
     },
     "TitleBlock": {
       "type": "object",
@@ -1982,11 +1986,16 @@
           }
         },
         "borderRadius": {
-          "type": "number"
+          "type": "number",
+          "description": "Corner radius in px. Ignored while `fullWidth` is on: a viewport-wide band has no visible corners, so the renderer omits `border-radius`."
         },
         "backgroundImage": {
           "$ref": "#/definitions/BackgroundImage",
           "description": "Image behind the band; `styles.backgroundColor` is its fallback."
+        },
+        "fullWidth": {
+          "type": "boolean",
+          "description": "When true, the band spans the recipient's viewport (`full-width` on `mj-wrapper`) while its children stay at the email width. Absent or false keeps the band at that width."
         }
       },
       "required": [
@@ -1996,7 +2005,7 @@
         "type"
       ],
       "additionalProperties": false,
-      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to the wrapper. Legal in layout only."
+      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to the wrapper. `fullWidth` spans the recipient's viewport; absent or false keeps the band at the email width. A corner radius is ignored while `fullWidth` is on. Legal in layout only."
     },
     "TemplateSettings": {
       "type": "object",

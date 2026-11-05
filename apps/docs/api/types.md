@@ -318,8 +318,9 @@ interface SectionBlock extends BaseBlock {
 interface SectionWrapper {
   backgroundColor?: string;
   padding?: SpacingValue;
-  borderRadius?: BorderRadiusValue;
+  borderRadius?: BorderRadiusValue; // ignored while fullWidth is on; the stored value stays
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: band spans the recipient's window; section stays at settings.width
 }
 
 type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
@@ -531,8 +532,9 @@ interface SlotBlock extends BaseBlock {
 interface WrapperBlock extends BaseBlock {
   type: 'wrapper';
   children: Block[];
-  borderRadius?: number;
+  borderRadius?: number; // ignored while fullWidth is on; the stored value stays
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: band spans the recipient's window; children stay at settings.width
 }
 ```
 

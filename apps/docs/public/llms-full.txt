@@ -2978,8 +2978,9 @@ interface SectionBlock extends BaseBlock {
 interface SectionWrapper {
   backgroundColor?: string;
   padding?: SpacingValue;
-  borderRadius?: BorderRadiusValue;
+  borderRadius?: BorderRadiusValue; // ignored while fullWidth is on; the stored value stays
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: band spans the recipient's window; section stays at settings.width
 }
 
 type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
@@ -3191,8 +3192,9 @@ interface SlotBlock extends BaseBlock {
 interface WrapperBlock extends BaseBlock {
   type: 'wrapper';
   children: Block[];
-  borderRadius?: number;
+  borderRadius?: number; // ignored while fullWidth is on; the stored value stays
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: band spans the recipient's window; children stay at settings.width
 }
 ```
 
@@ -9729,7 +9731,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
 | `backgroundImage` | `BackgroundImage` | Optional image behind the section — `{ url, size, position: { x, y }, repeat }` — rendered as `background-url` plus size, position and repeat on the `mj-section`. `size` is `"cover"`, `"contain"` or `"auto"`; `x` is `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`. `styles.backgroundColor` is its fallback. `naturalWidth` / `naturalHeight` (optional) are the image file's own size in px; a hero uses them to match its shape. |
 | `hero` | `SectionHero` | Optional. Renders a one-column section with a background image as an `mj-hero`, the image filling the box behind the content: `{ height, verticalAlign }`. `height` is `"image"` (the box is as tall as the image drawn across its desktop width, from `backgroundImage.naturalWidth` / `naturalHeight`) or a fixed height in px, padding included; `verticalAlign` is `"top"`, `"middle"` or `"bottom"`. The image always fills the box (`size` and `repeat` don't apply) and no `border` is drawn. With more than one column, no image, or `"image"` without the size, the section renders as a regular one, and the `structure.hero-not-applied` warning says why. |
-| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
+| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage?, fullWidth? }` — rendered as an `mj-wrapper` band around the section. `fullWidth: true` spans the recipient's window (`full-width` on `mj-wrapper`) while the section stays at `settings.width`; a corner radius is ignored while it is on. Absent or false keeps the band at the email width. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
 
 ::: tip Email client note: borders and corners in Outlook
 - Outlook on Windows ignores `border-radius`, including the four-value (per-corner) form.
@@ -11908,7 +11910,7 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 
 **`slot`** is where authored `content.blocks` land. Exactly one in the layout tree. Legal as a top-level `layout.blocks` child or as a `wrapper.children` child. Illegal in a section column, in a nested wrapper, and in editor content. The palette omits it. A `slot` that reaches `renderToMjml` without `layout` throws.
 
-**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to `mj-wrapper`. In Outlook on Windows, a band's background color paints over the background image of a section inside it — set the image on the band, or leave the band without a color. The editor's linter doesn't see the layout, so it can't warn about this. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
+**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` / `fullWidth` map to `mj-wrapper`. `fullWidth: true` spans the recipient's window while the children stay at `settings.width`; a corner radius is ignored while it is on. Absent or false keeps the band at the email width. In Outlook on Windows, a band's background color paints over the background image of a section inside it — set the image on the band, or leave the band without a color. The editor's linter doesn't see the layout, so it can't warn about this. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand. The same **Full-width background** switch is on the wrapper block's Background panel.
 
 Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) are exported from `@templatical/editor`. Headless rendering can import `applyLayout` from `@templatical/types` without the editor.
 
@@ -13427,12 +13429,12 @@ A multi-column row, including one flattened from five or more columns, adds each
 Global template settings are converted where possible:
 
 - **Width** -- `page.body.content.computedStyle.messageWidth` maps to `settings.width`, with `page.body.content.style.width` as the fallback and 600 when neither is set
-- **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor` (the inner box); a single-column row with one is wrapped in a one-column section so the color survives. A single column's own `background-color` replaces it when set. A row's `container.style.background-color` — the band outside that box — becomes `section.wrapper.backgroundColor`. The wrapper is as wide as the email (`settings.width`) and the section fill stays the content color, so the copy stays in the content box. The wrapper is omitted when the band is transparent or the same color as the section fill. Templatical has no viewport-bleed field, so the band does not extend into the gutters past the email width.
+- **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor` (the inner box); a single-column row with one is wrapped in a one-column section so the color survives. A single column's own `background-color` replaces it when set. A row's `container.style.background-color` — the band outside that box — becomes `section.wrapper.backgroundColor` with `wrapper.fullWidth: true`. The band runs to the window edge and the section fill stays the content color, so the copy stays in the content box. The wrapper is omitted when the band is transparent, or the same color as the section fill and the container has no image.
 - **Row visibility** -- `content.computedStyle.hideContentOnMobile` and `hideContentOnDesktop` set the section's `visibility` (`{ desktop, mobile }`). Either flag wraps the row in a section. Both unset or false leaves `visibility` unset.
 - **Mobile stacking** -- `content.computedStyle.rowColStackOnMobile: false` sets `stackOnMobile: false` on a multi-column section, so the columns stay side by side on a phone. `true` or an omitted flag leaves `stackOnMobile` unset, and the columns stack. On a one-column row, or a row flattened from five or more columns, the flag is dropped with one warning: `rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a multi-column section.`
 - **Row width** -- `content.style.width` is the content box. A px width other than `settings.width`, or a non-px width, adds one warning naming both and leaves the section at the email width. A section has no width of its own.
 - **Row border** -- `content.style` `border-top`, `border-right`, `border-bottom` and `border-left` map onto the section border with the same rules as a column border. On a single-column row the column border wins when both paint and they differ, with one warning: `Row border was dropped; the column border is kept on the section.` A multi-column row keeps the row border; a column border is still dropped.
-- **Background images** -- A row's `content.style` `background-image` becomes its section's `backgroundImage`, with `background-size`, `background-position` and `background-repeat` (CSS's initial values where unset), and wraps a single-column row in a section as a color does. The `container.style` band's image shows only while the content area has neither an image nor a color: then the section paints it at the content width; otherwise it's dropped. A size that fills a side (`100%`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom); `repeat-x` and `repeat-y` become `repeat`. `report.warnings` names every band image and every value with no exact keyword.
+- **Background images** -- A row's `content.style` `background-image` becomes its section's `backgroundImage`, with `background-size`, `background-position` and `background-repeat` (CSS's initial values where unset), and wraps a single-column row in a section as a color does. The `container.style` band's image becomes `wrapper.backgroundImage` with `wrapper.fullWidth: true`, including behind a painted content area. A content image stays on the section. A size that fills a side (`100%`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom); `repeat-x` and `repeat-y` become `repeat`. `report.warnings` names every value with no exact keyword.
 - **Text color** -- `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when it is unset. Text, paragraph, list, heading, menu and table modules with no color of their own follow it.
 - **Links** -- `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. `settings.linkUnderline` is `true`: BeeFree sets underlines per link, in each link's markup.
 - **Font family** -- The default font family carries over to `settings.fontFamily`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`. A heading keeps that family, plus its color and alignment (from the heading style, then the heading tag, then the module). The title block has no font size, weight, line height or letter spacing fields, so a heading's `font-size`, `font-weight`, `line-height` and `letter-spacing` are written on the text and override the level's size, the bold weight and the 1.3 line-height. The level is the nearest of h1–h4 (36, 28, 22 and 18px) to that font size — the module style, or the font-size on the heading tag when the style omits it — and a tie stays on the source level, so the line box follows the size. A chosen size more than 1px away is reported approximated (`h4 chosen for 16px (source h1); line box differs`). A percentage line-height becomes a unitless ratio. `letter-spacing` of `0` or `normal` is omitted. A `font-size` on the heading tag is kept when the style omits it.
@@ -13446,7 +13448,6 @@ Global template settings are converted where possible:
 - **Forms** -- BeeFree form modules have no Templatical equivalent. Each becomes an `html-fallback` HTML block, and the form's fields and submit action are not reproduced.
 - **Column box on multi-column rows** -- Padding is folded into the modules. Background and border are dropped, with one warning per row (see [Column Layout Conversion](#column-layout-conversion)). A spacer ignores `styles.padding`, so column padding folded onto a spacer does not render.
 - **Mobile breakpoint** -- BeeFree stacks at `messageWidth + 20` (620px when the email is 600px). Templatical keeps MJML's 480px breakpoint. Import does not change it.
-- **Viewport-bleed row background** -- The container color is the section wrapper, as wide as the email, not the area outside it.
 
 ## Verifying Converted Templates
 
@@ -13621,7 +13622,7 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 | Chamaileon | Templatical block | Notes |
 |---|---|---|
 | `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty; a `backgroundImage` is dropped and named in `report.warnings`. |
-| `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; the band's `backgroundImage` and colour follow [Background images](#background-images). |
+| `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor` with `wrapper.fullWidth: true`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; the band's `backgroundImage` and colour follow [Background images](#background-images). |
 | `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. A lone box's background image moves to the section when the fullwidth has no `contentBackgroundImage`; with one, or among siblings, the box image is dropped and noted, `approximated`. |
 | `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
@@ -13644,9 +13645,9 @@ A fullwidth's section image is, nearest first:
 
 1. `contentBackgroundImage`, the content area the section paints.
 2. The `backgroundImage` of a box that is the fullwidth's only child, which moves up while there is no `contentBackgroundImage`.
-3. The band's `backgroundImage`, only while the content area has no colour. The section paints it at the content width, takes the band colour as its fill, and the entry is `approximated`.
+3. The band's `backgroundImage` becomes `wrapper.backgroundImage` with `wrapper.fullWidth: true`, including behind a painted content area. When that image is the only paint, the band colour sits on the wrapper with it and the section background stays unset.
 
-A band image the content area covers is dropped, and the entry notes it. When the section has its own image, the band colour is dropped too, with a note, instead of becoming `wrapper.backgroundColor`: Outlook desktop paints a wrapper colour over the section's image.
+When the section has its own image, the band colour is dropped with a note instead of becoming `wrapper.backgroundColor`: Outlook desktop paints a wrapper colour over the section's image. The band image still sits on the wrapper.
 
 `backgroundSize`, `backgroundPosition` and `backgroundRepeat` (and their `content…` forms) come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge; `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
 
@@ -13888,7 +13889,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 
 ### Background images {#background-images}
 
-`background-url` on a `standard-section` becomes the section's `backgroundImage`, and on a `standard-wrapper` or a page header / footer band the `wrapper.backgroundImage` of each section it holds. `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, read through the same attribute cascade as every other attribute; one the node leaves out takes MJML's default (`auto`, `top center`, `repeat`), which is what Easy Email Pro renders.
+`background-url` on a `standard-section` becomes the section's `backgroundImage`, and on a `standard-wrapper` or a page header / footer band the `wrapper.backgroundImage` of each section it holds. `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, read through the same attribute cascade as every other attribute; one the node leaves out takes MJML's default (`auto`, `top center`, `repeat`), which is what Easy Email Pro renders. `full-width="full-width"` on a `standard-section` moves that section's own background colour and image onto `section.wrapper` with `fullWidth: true` and leaves the section background unset. The page `content-background-color` stays on the section when the section states no colour of its own. The same attribute on a `standard-wrapper`, page header or page footer sets `wrapper.fullWidth`. A full-width section inside a wrapper that is not full width keeps its background on the section.
 
 A value with no exact Templatical keyword maps to the nearest one, `approximated` with a note. A size that fills a side (`100%`, `100% auto`, `auto 100%`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
 
@@ -14126,6 +14127,8 @@ The section was imported as 3 equal columns.
 Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row's `style` sets no background colour, no background image and no padding — a row failing any of those becomes a section of its own, because the section is what carries a row's background and padding.
 
 A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it. So does a background image on the cell or the table; when one lands on more than one section, each of those entries is `approximated` with a note.
+
+A packaging row whose table or single cell has `width="100%"` (attribute or style), and a background colour or image, and whose every inner table has a fixed px width, is a full-width band. Each section inside it gets `section.wrapper` with that colour and image and `wrapper.fullWidth: true`, so the band runs to the window edge while the content stays at the email width. Fills on the inner tables stay on the sections. A band reached from inside a column is not viewport-wide. Page chrome that matches the pattern — an outer `width="100%"` table around a fixed-width content table — becomes a wrapper on each section; `settings.backgroundColor` still comes from the `<body>`.
 
 ### Gutter rows
 
@@ -14413,7 +14416,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-navbar` (with `mj-navbar-link`) | `MenuBlock` | Each link → `MenuItemData`. |
 | `mj-table` | `TableBlock` | Maps `<tr>`/`<td>`/`<th>` rows and cells to Templatical's table data; a leading `<th>` row sets `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
-| `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. `background-color`, `background-url` (with its size, position and repeat), `padding` and `border-radius` carry over; a `border` is dropped and reported. |
+| `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. `background-color`, `background-url` (with its size, position and repeat), `padding` and `border-radius` carry over; a `border` is dropped and reported. `full-width="full-width"` sets `wrapper.fullWidth`, so the band runs to the window edge. |
 | `mj-hero` | `SectionBlock` with `hero` | A one-column hero section. `fluid-height` → `height: "image"`, with `background-width` / `background-height` as the image's `naturalWidth` / `naturalHeight`; `fixed-height` → that `height`; a `fixed-height` hero as tall as its image drawn across the hero's box, which is how Templatical exports **Match image**, comes back as `height: "image"`. A `fluid-height` hero without `background-width` / `background-height` still imports as `height: "image"`, with a note: until its image has a size it renders as a regular section, and the `structure.hero-not-applied` warning gives the size as the reason. A `fixed-height` hero without a `height` (MJML's default) is a regular section with the background image. `background-position` carries over; `inner-padding` and `inner-background-color` are dropped and reported. Inside an `mj-wrapper`, the hero takes the wrapper's band. |
 | `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
 | `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
@@ -14473,7 +14476,7 @@ A side's own `border-<side>` wins over `border`, as it does in MJML. A missing c
 
 ### Background images {#background-images}
 
-`background-url` on an `mj-section` becomes the section's `backgroundImage`, and on an `mj-wrapper` the band's `wrapper.backgroundImage`. `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, and an attribute the element leaves out takes MJML's own default (`auto`, `top center`, `repeat`), so the image paints where it did.
+`background-url` on an `mj-section` becomes the section's `backgroundImage`, and on an `mj-wrapper` the band's `wrapper.backgroundImage`. `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, and an attribute the element leaves out takes MJML's own default (`auto`, `top center`, `repeat`), so the image paints where it did. An `mj-section` with `full-width="full-width"` and its own background moves that background onto `section.wrapper` with `fullWidth: true` and leaves the section background unset. A wrapper that already paints keeps its paint, and the section keeps its background. A full-width section inside a wrapper that is not itself full width keeps its background on the section.
 
 A value with no exact Templatical keyword maps to the nearest one, and the entry is `approximated` with a note:
 
@@ -14667,7 +14670,7 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 | `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
 | `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 
-`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. Background images, and what they do to that band colour, follow [Background images](#background-images).
+`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A stripe (`esd-stripe`, or `es-header` / `es-content` / `es-footer`) around that body whose colour differs from the page is a full-width band: the colour becomes `section.wrapper.backgroundColor` with `wrapper.fullWidth: true`, so the band runs to the window edge and the content stays at the email width, including when the stripe colour matches the body. A transparent body moves that colour off the section onto the wrapper. A stripe colour the same as the page stays off the wrapper. A stripe with no inner body keeps its colour on the section. Background images, and what they do to that band colour, follow [Background images](#background-images).
 
 The structure cell's padding is the section's padding. The default is 0. On plugin HTML, `es-p20` sets every side and `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` override one side; an inline padding overrides the sides it states. Those classes are read on the structure element.
 
@@ -14682,9 +14685,9 @@ An element's image is read from its inline `background-image`, the image in its 
 1. The structure's own image: the row cell, `esd-structure` in plugin HTML.
 2. The `es-*-body` image, the content area behind every structure in the stripe.
 3. The containers' images (`es-left` / `es-right`, or `esd-container-frame`), when there is one container or they all share the same image. Otherwise, or beside a nearer image, they're dropped, and the note names the columns.
-4. The stripe's image, only while the body is transparent. The section paints it at the content width, and the entry is `approximated`. A stripe image the body covers is dropped with a note.
+4. The stripe's image becomes `wrapper.backgroundImage` with `wrapper.fullWidth: true`, including when the body covers it. A stripe with no inner body keeps its colour on the section and still puts that image on the wrapper.
 
-An image behind several sections, such as a body image across several structures, is copied onto each, and each entry is `approximated` with a note. When a section has an image, a stripe colour that would have become `section.wrapper.backgroundColor` is dropped with a note instead, because Outlook desktop paints a wrapper colour over the section's image. An `es-wrapper` image has no Templatical equivalent, and `report.warnings` names it.
+An image behind several sections, such as a body image or a stripe image across several structures, is copied onto each, and each entry is `approximated` with a note. When a section has an image, a stripe colour that would have become `section.wrapper.backgroundColor` is dropped with a note instead, because Outlook desktop paints a wrapper colour over the section's image. The stripe image stays on the wrapper. An `es-wrapper` image has no Templatical equivalent, and `report.warnings` names it.
 
 `background-size`, `background-position` and `background-repeat` come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the body's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
 
@@ -14899,7 +14902,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 
 ## Things that don't map automatically
 
-- **`full-width`, `layout` and `vertical-align`** — `full-width` and `layout` on an `mj-section`, and `vertical-align` on `mj-column`, are never read, so nothing in `report.entries` points at them.
+- **`layout` and `vertical-align`** — `layout` on an `mj-section` and `vertical-align` on `mj-column` are never read, so nothing in `report.entries` points at them. `full-width="full-width"` on an `mj-section` moves that section's background colour and image onto `section.wrapper` with `fullWidth: true` and leaves the section background unset. With no background the attribute is ignored.
 - **A button's margin** — `ButtonBlock`'s `styles.padding` is its only outer-spacing field. Topol writes both `padding` and `margin` on every `mj-button`; `padding` fills that field, and `margin` is dropped rather than folded in, which would double the vertical space. The button's inner label padding (`buttonPadding`) keeps Templatical's default too, since Topol has no separate attribute for it.
 - **A paragraph's node-level color, font, and alignment** — `ParagraphBlock` accepts only `content` plus the block's `styles` (padding, background); there's no field for a node-level `color`, `font-family`, or `align`. An `mj-text` node that infers as a paragraph keeps those attributes only where the `content` HTML itself carries them inline — a bare node attribute is dropped silently, and the entry still reports `converted`, since there's nowhere in the block model to note the drop against. The asymmetry is worth knowing: a heading built from the same tag does honor a node's own `color` and `font-family` (`TitleBlock`, see the tag mapping table above), so a design that colours headings and paragraphs identically keeps that colour only on the headings after import.
 - **Imported webfonts** — Templatical has no webfont-import concept. The design root's top-level `fonts` array lists the webfonts imported into the Topol project (one design measures `["\"Cabin\", sans-serif"]`; another carries two entries), and the array is dropped — text that depended on it renders in its fallback face, with no warning at runtime. This is a different field from `attributes.fonts`, a comma-separated fallback stack on the same root that the importer does read, feeding the template's default `fontFamily` when nothing more specific sets one.
@@ -15113,12 +15116,12 @@ Cell ratios that don't match a layout above are mapped to the closest one with t
 | Unlayer row values | `section.styles.backgroundColor` |
 |---|---|
 | `columnsBackgroundColor` set | `columnsBackgroundColor` |
-| only `backgroundColor` set | `backgroundColor` |
+| only `backgroundColor` set | unset; the colour is the full-width wrapper |
 
-When a row sets both to different colours, the section takes `columnsBackgroundColor` and `report.warnings` names the dropped `backgroundColor`.
+When a row sets `backgroundColor`, that colour becomes `section.wrapper.backgroundColor` with `wrapper.fullWidth: true`, including when it matches `columnsBackgroundColor`. The section keeps `columnsBackgroundColor`. With no content colour the section background stays unset, so the band shows through the content box.
 
 ::: tip
-`columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it, and a Templatical section has no full-width band.
+`columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it and is stored on `section.wrapper` with `fullWidth: true`, so the band runs to the window edge.
 :::
 
 ### Section background image {#background-images}
@@ -15128,8 +15131,9 @@ A row's `backgroundImage` becomes the section's `backgroundImage`:
 | `backgroundImage.fullWidth` | Result |
 |---|---|
 | `false` (the content area) | The section's image, exactly. |
-| `true`, `columnsBackgroundColor` unset | The section's image, painted at the content width, and `report.warnings` says so. |
-| `true`, `columnsBackgroundColor` set | Dropped, since in Unlayer the content colour covers it inside the content width, and `report.warnings` names it. |
+| omitted or `true` | `wrapper.backgroundImage` with `wrapper.fullWidth: true`. The section keeps `columnsBackgroundColor`, or stays unset when that colour is absent. |
+
+A band colour is left off the wrapper when the section keeps a content-area image (`fullWidth: false`): Outlook desktop paints a wrapper colour over that image, and `report.warnings` names the dropped colour.
 
 `size` `cover` and `contain` carry over, and `custom` is the image at its own size (`auto`). The nine `position` keywords map to the matching grid point. A `custom` position's `customPosition` percentage snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x` and `repeat-y` become `repeat`. Older designs' `cover` and `center` flags are read when `size` and `position` are absent: `cover` maps to `cover` (`false` to `auto`), and `center` to center top (`false` to left top). Each value with no exact keyword adds a line to `report.warnings`.
 
@@ -15841,7 +15845,7 @@ banner.styles.backgroundColor = '#1f2937';
 
 ### Outer frame (wrapper)
 
-To frame a section in a colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius. The band is as wide as the email body (`settings.width`), not the recipient's whole window:
+To frame a section in a colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius. The band is as wide as the email body (`settings.width`), unless `fullWidth` is set. `fullWidth: true` is MJML's `full-width="full-width"`: the band's background color and background image span the recipient's window, and the section stays at `settings.width`. A corner radius is ignored while `fullWidth` is on — a window-wide band has no visible corners — and the stored radius is used again when `fullWidth` is off:
 
 ```ts
 const card = createSectionBlock({ columns: '1', borderRadius: 12 });
@@ -15854,7 +15858,7 @@ card.wrapper = {
 };
 ```
 
-The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. The wrapper is a styling layer, not a container — sections still cannot be nested. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay.
+The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. **Full-width background** in the section's **Background** panel sets `fullWidth`. With no wrapper yet, that moves the section's own background color and image onto a new wrapper and clears them on the section, so the content sits transparent over the band. The Wrapper panel shows the same switch. Turning it off clears `fullWidth`; a wrapper that holds only that moved fill is removed and the fill returns to the section. The wrapper is a styling layer, not a container — sections still cannot be nested. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay.
 
 ---
 

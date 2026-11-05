@@ -769,6 +769,14 @@
     pointer-events: none;
 }
 
+/* Full-width bands measure this box with `100cqw`. It is the canvas pane
+   (`.tpl-main`) and a preview stage, not `.tpl-body`: the sticky preview
+   overlay is a sibling of the pane inside the scroll box. */
+.tpl-canvas-pane {
+    container-type: inline-size;
+    container-name: tpl-canvas-pane;
+}
+
 .tpl-preview-mode .tpl-block-actions,
 .tpl-preview-mode .tpl-block-hidden-overlay,
 .tpl-preview-mode .tpl-condition-toggle,

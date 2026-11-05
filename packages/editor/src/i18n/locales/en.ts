@@ -579,6 +579,7 @@ export default {
     spacing: "Spacing",
     padding: "Padding",
     background: "Background",
+    fullWidthBackground: "Full-width background",
     borderWidth: "Border Width",
     borderStyle: "Border Style",
     borderColor: "Border Color",

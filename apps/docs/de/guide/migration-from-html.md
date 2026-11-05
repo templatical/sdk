@@ -199,6 +199,8 @@ Tabellenbasierte E-Mails umschließen ihr eigentliches Layout mit einzelligen Ta
 
 Eine Füllfarbe, die der Abstieg passiert, aus dem `bgcolor` der Zeile, der Zelle oder der Tabelle, geht an die Sections darunter über. Ebenso ein Hintergrundbild der Zelle oder der Tabelle; landet es auf mehr als einer Section, ist jeder dieser Einträge `approximated` mit einer Notiz.
 
+Eine Wrapper-Zeile, deren Tabelle oder einzige Zelle `width="100%"` trägt (Attribut oder Style) und eine Hintergrundfarbe oder ein Hintergrundbild hat, und deren innere Tabellen alle eine feste px-Breite haben, ist ein fensterbreites Band. Jede Section darin erhält `section.wrapper` mit dieser Farbe und diesem Bild sowie `wrapper.fullWidth: true`, sodass das Band bis zum Fensterrand läuft und der Inhalt auf der E-Mail-Breite bleibt. Füllfarben der inneren Tabellen bleiben auf den Sections. Ein Band, das aus einer Spalte heraus erreicht wird, gilt nicht als fensterbreit. Seitenrahmen, die dieses Muster erfüllen — eine äußere Tabelle mit `width="100%"` um eine Tabelle fester Breite —, werden zu einem Wrapper je Section; `settings.backgroundColor` kommt weiterhin vom `<body>`.
+
 ### Gutter-Zeilen
 
 Eine Zeile, die ihren Inhalt mit leeren Zellen umgibt — `&nbsp;` links und rechts von einem zentrierten Container —, wird als die eine Spalte gelesen, die sie layoutet, und nicht als eine Spalte pro Zelle. Das Signal ist der Inhalt: Eine Zelle ohne Inhalt nimmt an keinem Layout teil.

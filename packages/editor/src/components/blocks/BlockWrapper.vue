@@ -26,6 +26,7 @@ import { useEventListener, useResizeObserver } from "@vueuse/core";
 import { useResolvedBackgroundUrl } from "../../composables/useImageUrlResolver";
 import {
   backgroundImageHostClass,
+  fullWidthFrameStyle,
   getBlockWrapperStyle,
   getSectionWrapperStyle,
 } from "../../utils/blockComponentResolver";
@@ -389,6 +390,20 @@ const sectionWrapperStyle = computed(() =>
   }),
 );
 
+// The band bleeds to the pane; this column keeps the section at the email width
+// and holds the wrapper padding. Absent when the band is the email width, so
+// that DOM stays a frame with the section box directly inside it.
+const sectionFullWidth = computed(
+  () =>
+    display.value.type === "section" &&
+    display.value.wrapper?.fullWidth === true,
+);
+const sectionBandFrameStyle = computed(() =>
+  sectionFullWidth.value && display.value.type === "section"
+    ? fullWidthFrameStyle(display.value.wrapper?.padding)
+    : undefined,
+);
+
 function handleClick(event: MouseEvent): void {
   if (props.previewMode) {
     return;
@@ -586,6 +601,20 @@ function handleConditionToggle(): void {
       :class="backgroundImageHostClass(sectionWrapperStyle)"
     >
       <div
+        v-if="sectionFullWidth"
+        class="tpl-band-frame"
+        :style="sectionBandFrameStyle"
+      >
+        <div
+          class="tpl-block-content tpl-email-surface"
+          :style="contentStyle"
+          :class="backgroundImageHostClass(contentStyle)"
+        >
+          <slot />
+        </div>
+      </div>
+      <div
+        v-else
         class="tpl-block-content tpl-email-surface"
         :style="contentStyle"
         :class="backgroundImageHostClass(contentStyle)"

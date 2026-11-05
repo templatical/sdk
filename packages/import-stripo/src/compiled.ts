@@ -11,6 +11,7 @@ import {
   readBoxPadding,
   resolveSectionImage,
   resolveSectionPaint,
+  sectionWrapper,
   withoutBandOverImage,
   type ImageLayer,
   type ReadBackgroundImage,
@@ -478,13 +479,13 @@ function sectionsFromRow(
       notes.length > 0 ? notes.join(" ") : undefined,
     );
     recordImageSpan(ctx, image.source, entry);
+    recordImageSpan(ctx, image.bandSource, entry);
+    const wrapper = sectionWrapper(groupPaint, image.band);
     const section = createSectionBlock({
       columns: group.layout,
       children: group.children,
       styles: { padding: splitPadding(padding, rendered.length, index) },
-      ...(groupPaint.wrapperColor
-        ? { wrapper: { backgroundColor: groupPaint.wrapperColor } }
-        : {}),
+      ...(wrapper ? { wrapper } : {}),
       ...(image.image ? { backgroundImage: image.image } : {}),
     });
     return withBackground(section, groupPaint.backgroundColor);
@@ -506,6 +507,7 @@ function sectionsFromStripe(
     ctx.pageBackground ?? "#ffffff",
     bandColor($stripe),
     $body.length > 0 ? paintOf($body) : "",
+    $body.length > 0,
   );
   const images: StripeImages = {
     body: imageLayer($body, "Section", bodyWidth),

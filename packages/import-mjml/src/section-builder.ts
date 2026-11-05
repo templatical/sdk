@@ -4,6 +4,7 @@ import { createSectionBlock, resolveHero } from "@templatical/types";
 import type {
   Block,
   ColumnLayout,
+  SectionBlock,
   SectionWrapper,
   SpacingValue,
 } from "@templatical/types";
@@ -292,6 +293,42 @@ function columnWidthPercent(
   return px !== null && containerWidth > 0 ? (px / containerWidth) * 100 : null;
 }
 
+function isFullWidthAttr(value: string | undefined): boolean {
+  return value === "full-width";
+}
+
+/**
+ * A full-width section's own background is the viewport band, so it moves
+ * onto the wrapper and the section stays transparent over it.
+ *
+ * A wrapper that already paints keeps that paint: two stacked full-bleed
+ * backgrounds cannot both be represented, and the wrapper's wins. A wrapper
+ * that is not itself full width holds the section inside the email, so the
+ * section keeps its background.
+ */
+function liftSectionBand(
+  section: SectionBlock,
+  fullWidth: boolean,
+  wrapper: SectionWrapper | undefined,
+): SectionWrapper | undefined {
+  if (!fullWidth) return wrapper;
+  const color = section.styles.backgroundColor;
+  const image = section.backgroundImage;
+  if (!color && !image) return wrapper;
+  if (wrapper && (wrapper.backgroundColor || wrapper.backgroundImage)) {
+    return wrapper;
+  }
+  if (wrapper && wrapper.fullWidth !== true) return wrapper;
+  if (color) delete section.styles.backgroundColor;
+  if (image) delete section.backgroundImage;
+  return {
+    ...(wrapper ?? {}),
+    ...(color ? { backgroundColor: color } : {}),
+    ...(image ? { backgroundImage: image } : {}),
+    fullWidth: true,
+  };
+}
+
 /**
  * Build a `SectionBlock` (always exactly one) from an `mj-section`.
  *
@@ -376,12 +413,17 @@ export function buildSection(
     ...(borderRadius ? { borderRadius } : {}),
     ...(border ? { border } : {}),
     ...(background ? { backgroundImage: background.image } : {}),
-    ...(wrapper ? { wrapper } : {}),
     // "native": mj-section is the one element whose own background-color
     // attribute is its container fill (renderers/section.ts:32) — every other
     // baseFields caller reads container-background-color instead.
     ...sectionFields,
   });
+  const band = liftSectionBand(
+    section,
+    isFullWidthAttr(attrs["full-width"]),
+    wrapper,
+  );
+  if (band) section.wrapper = band;
 
   return [section];
 }
@@ -498,12 +540,14 @@ function readWrapper(
     );
   }
   if (background) notes.push(...background.notes);
+  const fullWidth = isFullWidthAttr(attrs["full-width"]);
 
   return {
     ...(backgroundColor ? { backgroundColor } : {}),
     padding,
     ...(borderRadius ? { borderRadius } : {}),
     ...(background ? { backgroundImage: background.image } : {}),
+    ...(fullWidth ? { fullWidth: true } : {}),
   };
 }
 

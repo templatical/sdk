@@ -170,33 +170,28 @@ export function buildFullwidth(
   if (fill) section.styles.backgroundColor = fill;
 
   const own = content ?? soleImage;
-  let backgroundImage = own?.image;
   if (own) reasons.push(...own.notes);
-  if (band) {
-    if (!own && fill === undefined) {
-      backgroundImage = band.image;
-      reasons.push(
-        ...band.notes,
-        "fullwidth background image spans the full width in Chamaileon; the section paints it at the content width.",
-      );
-    } else {
-      reasons.push(
-        "fullwidth background image outside the content width was dropped.",
-      );
-    }
-  }
-  if (backgroundImage) section.backgroundImage = backgroundImage;
+  if (band) reasons.push(...band.notes);
+  if (own?.image) section.backgroundImage = own.image;
 
-  if (outerFill) {
-    if (!backgroundImage) {
-      section.wrapper = { backgroundColor: outerFill };
-    } else if (backgroundImage === band?.image) {
-      section.styles.backgroundColor = outerFill;
-    } else {
-      reasons.push(
-        `fullwidth background colour ${outerFill} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`,
-      );
-    }
+  // The outer colour and image are the viewport band. A section image keeps
+  // the band colour off the wrapper: Outlook desktop paints a wrapper colour
+  // over that image. The band image still sits on the wrapper.
+  const wrapperColor = outerFill && !own?.image ? outerFill : undefined;
+  if (outerFill && own?.image) {
+    reasons.push(
+      `fullwidth background colour ${outerFill} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`,
+    );
+  }
+  if (wrapperColor || band?.image) {
+    const image = band?.image;
+    section.wrapper = {
+      ...(wrapperColor ? { backgroundColor: wrapperColor } : {}),
+      ...(image
+        ? { backgroundImage: { ...image, position: { ...image.position } } }
+        : {}),
+      fullWidth: true,
+    };
   }
 
   const visibility = readVisibility(attrs);

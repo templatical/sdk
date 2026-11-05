@@ -43,9 +43,11 @@ describe("block chrome structure", () => {
     // box, the section wrapper frame around it, or a layout band. A surface
     // without the marker sits outside the filter and stays light while the
     // email around it inverts — the wrapper frame and layout bands did.
+    // Two branches without a full-width band, plus the email-width column
+    // inside a full-width band. Each one still wraps the slot directly.
     expect(
       blockWrapper.match(/class="tpl-block-content tpl-email-surface"/g),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(blockWrapper).toMatch(
       /class="tpl-section-wrapper tpl-email-surface"/,
     );

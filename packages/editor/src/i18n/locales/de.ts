@@ -585,6 +585,7 @@ const de: typeof en = {
     spacing: "Abstände",
     padding: "Innenabstand",
     background: "Hintergrund",
+    fullWidthBackground: "Hintergrund über die volle Breite",
     borderWidth: "Rahmenbreite",
     borderStyle: "Rahmenstil",
     borderColor: "Rahmenfarbe",

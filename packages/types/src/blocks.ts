@@ -187,18 +187,27 @@ export type ColumnLayout =
  * Optional outer frame for a section. When present, the section is rendered
  * inside an `mj-wrapper` — a band (its own background + padding) that frames
  * the section, e.g. a white card sitting on a colored band. The band is as
- * wide as the email body (`settings.width`), not the recipient's viewport.
+ * wide as the email body (`settings.width`), not the recipient's viewport,
+ * unless `fullWidth` is set.
  */
 export interface SectionWrapper {
   backgroundColor?: string;
   padding?: SpacingValue;
   /**
    * Corner radius in px for the outer frame — one number, or a radius per
-   * corner. Omitted/0 = square corners.
+   * corner. Omitted/0 = square corners. Ignored while `fullWidth` is on: a
+   * viewport-wide band has no visible corners, so the renderer omits
+   * `border-radius`.
    */
   borderRadius?: BorderRadiusValue;
   /** Image behind the band; `backgroundColor` is its fallback. */
   backgroundImage?: BackgroundImage;
+  /**
+   * When true, the band spans the recipient's viewport (`full-width` on
+   * `mj-wrapper`) while the section stays at the email width. Absent or
+   * false keeps the band at `settings.width`.
+   */
+  fullWidth?: boolean;
 }
 
 export interface SectionBlock extends BaseBlock {
@@ -598,14 +607,26 @@ export interface SlotBlock extends BaseBlock {
 /**
  * Layout-only band rendered as `mj-wrapper`. The block is the band:
  * `styles.backgroundColor` / `styles.padding` / `borderRadius` /
- * `backgroundImage` map to the wrapper. Legal in layout only.
+ * `backgroundImage` map to the wrapper. `fullWidth` spans the recipient's
+ * viewport; absent or false keeps the band at the email width. A corner
+ * radius is ignored while `fullWidth` is on. Legal in layout only.
  */
 export interface WrapperBlock extends BaseBlock {
   type: "wrapper";
   children: Block[];
+  /**
+   * Corner radius in px. Ignored while `fullWidth` is on: a viewport-wide
+   * band has no visible corners, so the renderer omits `border-radius`.
+   */
   borderRadius?: number;
   /** Image behind the band; `styles.backgroundColor` is its fallback. */
   backgroundImage?: BackgroundImage;
+  /**
+   * When true, the band spans the recipient's viewport (`full-width` on
+   * `mj-wrapper`) while its children stay at the email width. Absent or
+   * false keeps the band at that width.
+   */
+  fullWidth?: boolean;
 }
 
 export type Block =
