@@ -2,11 +2,18 @@ import { load, type Cheerio, type CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
 import { createHtmlBlock, createSectionBlock } from "@templatical/types";
 import type { Block, SpacingValue } from "@templatical/types";
-import { isHidden, tokenStartingWith, topLevelWithToken } from "./classes";
+import {
+  hasAnyToken,
+  isHidden,
+  tokenStartingWith,
+  topLevelWithToken,
+} from "./classes";
 import {
   colorFromPaint,
   columnRooms,
   emailBodyWidth,
+  parsePxValue,
+  parseStyleAttribute,
   readBoxPadding,
   resolveSectionImage,
   resolveSectionPaint,
@@ -33,6 +40,10 @@ import {
 const ZERO: SpacingValue = { top: 0, right: 0, bottom: 0, left: 0 };
 const BODY_SELECTOR =
   "[class~='es-header-body'], [class~='es-content-body'], [class~='es-footer-body']";
+const COLUMN_TOKENS = ["es-left", "es-right"] as const;
+/** Widths within 1px count as the same column width. */
+const COLUMN_WIDTH_TOLERANCE = 1;
+const EQUAL_COLUMN_WORD = { "2": "two", "3": "three", "4": "four" } as const;
 
 function columnLayout(
   count: number,
@@ -45,6 +56,67 @@ function columnLayout(
   const flattenNote = `Row with ${count} columns was flattened to a single column. Templatical supports up to four columns per section.`;
   ctx.warnings.push(flattenNote);
   return { layout: "1", flattenNote };
+}
+
+/** Positive px from the `width` attribute, else the inline width. */
+function statedPx($el: Cheerio<Element>): number | undefined {
+  const raw = (
+    $el.attr("width") ||
+    parseStyleAttribute($el.attr("style")).width ||
+    ""
+  ).trim();
+  const n = parsePxValue(raw);
+  return n > 0 ? n : undefined;
+}
+
+/** The frame's `es-left` / `es-right` table, stopping at the structure. */
+function columnTable(
+  $frame: Cheerio<Element>,
+  $structure: Cheerio<Element>,
+): Cheerio<Element> | null {
+  const stop = $structure[0];
+  let $parent = $frame.parent();
+  while ($parent.length > 0 && $parent[0] !== stop) {
+    if (
+      $parent.is("table") &&
+      hasAnyToken($parent as Cheerio<Element>, COLUMN_TOKENS)
+    ) {
+      return $parent as Cheerio<Element>;
+    }
+    $parent = $parent.parent();
+  }
+  return null;
+}
+
+/** Column-table width, else the frame's. A non-px width is unread. */
+function frameWidth(
+  $frame: Cheerio<Element>,
+  $structure: Cheerio<Element>,
+): number | undefined {
+  const $table = columnTable($frame, $structure);
+  if ($table) {
+    const fromTable = statedPx($table);
+    if (fromTable !== undefined) return fromTable;
+  }
+  return statedPx($frame);
+}
+
+/** A note when every frame has a px width and the spread is over 1px. */
+function unequalWidthNote(
+  frames: Cheerio<Element>[],
+  $structure: Cheerio<Element>,
+  layout: "2" | "3" | "4",
+): string | undefined {
+  const widths: number[] = [];
+  for (const $frame of frames) {
+    const width = frameWidth($frame, $structure);
+    if (width === undefined) return undefined;
+    widths.push(width);
+  }
+  const spread = Math.max(...widths) - Math.min(...widths);
+  if (spread <= COLUMN_WIDTH_TOLERANCE) return undefined;
+  const listed = `${widths.slice(0, -1).join(", ")} and ${widths[widths.length - 1]}`;
+  return `Columns of ${listed}px became ${EQUAL_COLUMN_WORD[layout]} equal columns.`;
 }
 
 function esdBlockKind($el: Cheerio<Element>): string | undefined {
@@ -217,7 +289,9 @@ function sectionFromStructure(
     paintFor($structure, ctx),
     image.image !== undefined,
   );
-  const notes = [...paint.notes, flattenNote, ...image.notes].filter(
+  const widthNote =
+    layout === "1" ? undefined : unequalWidthNote(frames, $structure, layout);
+  const notes = [...paint.notes, flattenNote, widthNote, ...image.notes].filter(
     (note): note is string => Boolean(note),
   );
   if (notes.length > 0) {

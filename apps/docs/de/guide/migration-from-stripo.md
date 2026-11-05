@@ -182,7 +182,7 @@ Ein Bild hinter mehreren Abschnitten, etwa ein Body-Bild über mehrere Structure
 
 ## Wo das Mapping verlustbehaftet ist
 
-- **Spaltengeometrie** — Templatical unterstützt diese Spaltenlayouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Stripo nennt Spalten über ihre Anzahl, eine Zeile wird also dem gleichmäßigen Layout `1`, `2`, `3` oder `4` zugeordnet. Plugin-HTML mit 5 oder mehr Frames wird auf eine Spalte reduziert. Kompiliertes HTML mit 5 oder mehr gefloateten Tabellen in einer Zeile behält vier Slots und faltet den Rest in den letzten. Inhalt zwischen diesen Spalten wird ein eigener einspaltiger Abschnitt dahinter, und eine Zelle mit Padding, die über die entstehenden Abschnitte aufgeteilt wird, ist `approximated`.
+- **Spaltengeometrie** — Templatical unterstützt diese Spaltenlayouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Stripo nennt Spalten über ihre Anzahl, eine Zeile wird also dem gleichmäßigen Layout `1`, `2`, `3` oder `4` zugeordnet. Ungleiche Frame-Breiten werden als `approximated` gemeldet. Plugin-HTML mit 5 oder mehr Frames wird auf eine Spalte reduziert. Kompiliertes HTML mit 5 oder mehr gefloateten Tabellen in einer Zeile behält vier Slots und faltet den Rest in den letzten. Inhalt zwischen diesen Spalten wird ein eigener einspaltiger Abschnitt dahinter, und eine Zelle mit Padding, die über die entstehenden Abschnitte aufgeteilt wird, ist `approximated`.
 - **Social-Icon-`alt`** — Plattformen werden abgeleitet; der ursprüngliche `alt`-Text wird auf `SocialIcon` nicht gespeichert.
 - **Block-IDs** — jeder importierte Block bekommt eine neu erzeugte ID.
 - **AMP / Timer / Module** — kein Templatical-Äquivalent; inneres Markup landet als `html` oder wird mit Warnung übersprungen.
