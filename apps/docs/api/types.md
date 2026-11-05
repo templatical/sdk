@@ -322,7 +322,7 @@ interface SectionWrapper {
   backgroundImage?: BackgroundImage;
 }
 
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 
 interface BackgroundImage {
   url: string;

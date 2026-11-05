@@ -61,10 +61,10 @@ Container that arranges blocks into columns.
 **Optional** — `l10n` (object), `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `hero` (SectionHero), `wrapper` (SectionWrapper).
 <!-- END GENERATED FIELDS: section -->
 
-- `columns` is one of `"1"`, `"2"`, `"3"`, `"2-1"`, `"1-2"`.
+- `columns` is one of `"1"`, `"2"`, `"3"`, `"4"`, `"2-1"`, `"1-2"`, `"3-1"`, `"1-3"`, `"1-2-1"`.
 - `children` is an array of columns, each an array of blocks. The column count
-  must match `columns` (`"1"` → one inner array; `"2"` / `"2-1"` / `"1-2"` →
-  two; `"3"` → three).
+  must match `columns` (`"1"` → one inner array; `"2"` / `"2-1"` / `"1-2"` /
+  `"1-3"` / `"3-1"` → two; `"3"` / `"1-2-1"` → three; `"4"` → four).
 - `borderRadius` — a px number for all corners, or `{ topLeft, topRight,
   bottomRight, bottomLeft }` for a radius per corner. Omit or `0` for square.
 - `border` is `{ top, right, bottom, left }`, each side `{ width, style, color }`

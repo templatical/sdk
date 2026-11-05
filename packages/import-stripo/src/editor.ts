@@ -2,7 +2,13 @@ import { load, type Cheerio, type CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
 import { createHtmlBlock, createSectionBlock } from "@templatical/types";
 import type { Block, SpacingValue } from "@templatical/types";
-import { isHidden, tokenStartingWith, topLevelWithToken } from "./classes";
+import {
+  hasAnyToken,
+  isHidden,
+  tokenStartingWith,
+  topLevelWithToken,
+} from "./classes";
+import { statedPx, unequalWidthNote } from "./column-width";
 import {
   colorFromPaint,
   columnRooms,
@@ -33,17 +39,51 @@ import {
 const ZERO: SpacingValue = { top: 0, right: 0, bottom: 0, left: 0 };
 const BODY_SELECTOR =
   "[class~='es-header-body'], [class~='es-content-body'], [class~='es-footer-body']";
+const COLUMN_TOKENS = ["es-left", "es-right"] as const;
 
 function columnLayout(
   count: number,
   ctx: ConvertCtx,
-): { layout: "1" | "2" | "3"; flattenNote?: string } {
+): { layout: "1" | "2" | "3" | "4"; flattenNote?: string } {
   if (count <= 1) return { layout: "1" };
   if (count === 2) return { layout: "2" };
   if (count === 3) return { layout: "3" };
-  const flattenNote = `Row with ${count} columns was flattened to a single column. Templatical supports up to 3 columns per section.`;
+  if (count === 4) return { layout: "4" };
+  const flattenNote = `Row with ${count} columns was flattened to a single column. Templatical supports up to four columns per section.`;
   ctx.warnings.push(flattenNote);
   return { layout: "1", flattenNote };
+}
+
+/** The frame's `es-left` / `es-right` table, stopping at the structure. */
+function columnTable(
+  $frame: Cheerio<Element>,
+  $structure: Cheerio<Element>,
+): Cheerio<Element> | null {
+  const stop = $structure[0];
+  let $parent = $frame.parent();
+  while ($parent.length > 0 && $parent[0] !== stop) {
+    if (
+      $parent.is("table") &&
+      hasAnyToken($parent as Cheerio<Element>, COLUMN_TOKENS)
+    ) {
+      return $parent as Cheerio<Element>;
+    }
+    $parent = $parent.parent();
+  }
+  return null;
+}
+
+/** Column-table width, else the frame's. A non-px width is unread. */
+function frameWidth(
+  $frame: Cheerio<Element>,
+  $structure: Cheerio<Element>,
+): number | undefined {
+  const $table = columnTable($frame, $structure);
+  if ($table) {
+    const fromTable = statedPx($table.attr("width"), $table.attr("style"));
+    if (fromTable !== undefined) return fromTable;
+  }
+  return statedPx($frame.attr("width"), $frame.attr("style"));
 }
 
 function esdBlockKind($el: Cheerio<Element>): string | undefined {
@@ -184,7 +224,7 @@ function sectionFromStructure(
     bodyWidth,
     layout,
     padding,
-    layout === "1" ? 1 : Math.min(frameCount, 3),
+    layout === "1" ? 1 : frameCount,
   );
   let children: Block[][];
   if (layout === "1") {
@@ -216,7 +256,14 @@ function sectionFromStructure(
     paintFor($structure, ctx),
     image.image !== undefined,
   );
-  const notes = [...paint.notes, flattenNote, ...image.notes].filter(
+  const widthNote =
+    layout === "1"
+      ? undefined
+      : unequalWidthNote(
+          frames.map(($frame) => frameWidth($frame, $structure)),
+          layout,
+        );
+  const notes = [...paint.notes, flattenNote, widthNote, ...image.notes].filter(
     (note): note is string => Boolean(note),
   );
   if (notes.length > 0) {
@@ -228,7 +275,7 @@ function sectionFromStructure(
       notes.join(" "),
     );
     recordImageSpan(ctx, image.source, entry);
-  } else if (frameCount <= 3) {
+  } else if (frameCount <= 4) {
     const entry = pushEntry(ctx, "esd-structure", "section", "converted");
     recordImageSpan(ctx, image.source, entry);
   }

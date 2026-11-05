@@ -36,7 +36,17 @@ export function createGenerator(seed: number): Generator {
   };
 }
 
-const LAYOUTS = ["1", "2", "3", "2-1", "1-2"] as const;
+const LAYOUTS = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "2-1",
+  "1-2",
+  "3-1",
+  "1-3",
+  "1-2-1",
+] as const;
 const LEAF_TYPES = [
   "title",
   "paragraph",

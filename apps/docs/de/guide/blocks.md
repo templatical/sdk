@@ -249,7 +249,7 @@ Ein Layout-Container, der eine oder mehrere Spalten enthält. Siehe [Sektionen u
 
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
-| `columns` | `ColumnLayout` | Preset für das Spaltenlayout |
+| `columns` | `ColumnLayout` | Spaltenlayout-Preset: `"1"`, `"2"`, `"3"`, `"4"`, `"1-2"`, `"2-1"`, `"1-3"`, `"3-1"`, `"1-2-1"`. Breiten und Spaltenzahlen stehen unter [Sektionen und Spalten](/de/guide/sections-and-columns). |
 | `children` | `Block[][]` | Array von Block-Arrays, eines pro Spalte |
 | `stackOnMobile` | `boolean` | Weglassen oder `true`: Spalten stapeln auf Mobilgeräten (MJML-Standard). `false`: nebeneinander (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke (optional; weglassen oder `0` für keine Abrundung) |

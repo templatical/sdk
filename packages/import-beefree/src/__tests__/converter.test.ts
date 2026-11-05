@@ -406,7 +406,7 @@ describe("convertBeeFreeTemplate", () => {
     }
   });
 
-  it("flattens 4+ columns with warning", () => {
+  it("keeps four equal grid columns", () => {
     const template: BeeFreeTemplate = {
       page: {
         rows: [
@@ -435,10 +435,15 @@ describe("convertBeeFreeTemplate", () => {
     };
 
     const { content, report } = convertBeeFreeTemplate(template);
+    const section = content.blocks[0];
 
-    // Flattened — no section, just individual blocks
-    expect(content.blocks.some((b) => b.type === "spacer")).toBe(true);
-    expect(report.warnings.some((w) => w.includes("4 columns"))).toBe(true);
+    expect(section?.type).toBe("section");
+    if (section?.type === "section") {
+      expect(section.columns).toBe("4");
+      expect(section.children).toHaveLength(4);
+      expect(section.children[0][0]?.type).toBe("spacer");
+    }
+    expect(report.warnings.some((w) => w.includes("flattened"))).toBe(false);
   });
 
   it("converts button module", () => {
@@ -641,24 +646,47 @@ describe("convertBeeFreeTemplate", () => {
       expect(widthsOf(content.blocks)).toEqual([600]);
     });
 
-    // A 4+ column row is flattened, so its modules end up spanning the body.
-    it("measures a flattened row's dividers against the body width", () => {
+    // A quarter of 600 is 150, and the divider's 10px sides leave 130.
+    it("measures a four-column divider against its quarter column", () => {
+      const row = (width: string) =>
+        convertBeeFreeTemplate({
+          page: {
+            body: { content: { style: { width: "600px" } } },
+            rows: [
+              {
+                columns: [
+                  { "grid-columns": 3, modules: [divider(width)] },
+                  { "grid-columns": 3, modules: [] },
+                  { "grid-columns": 3, modules: [] },
+                  { "grid-columns": 3, modules: [] },
+                ],
+              },
+            ],
+          },
+        });
+      const filled = row("130px");
+      const narrow = row("129px");
+      const section = filled.content.blocks[0];
+      expect(section.type === "section" && section.columns).toBe("4");
+      expect(widthsOf(filled.content.blocks)).toEqual(["full"]);
+      expect(widthsOf(narrow.content.blocks)).toEqual([129]);
+    });
+
+    it("measures a five-column row's divider against the body width", () => {
       const { content } = convertBeeFreeTemplate({
         page: {
           body: { content: { style: { width: "600px" } } },
           rows: [
             {
-              columns: [
-                { "grid-columns": 3, modules: [divider("130px")] },
-                { "grid-columns": 3, modules: [] },
-                { "grid-columns": 3, modules: [] },
-                { "grid-columns": 3, modules: [] },
-              ],
+              columns: [1, 2, 3, 4, 5].map(() => ({
+                "grid-columns": 3,
+                modules: [divider("130px")],
+              })),
             },
           ],
         },
       });
-      expect(widthsOf(content.blocks)).toEqual([130]);
+      expect(widthsOf(content.blocks)).toEqual([130, 130, 130, 130, 130]);
     });
   });
 
@@ -1800,7 +1828,7 @@ describe("convertBeeFreeTemplate", () => {
       expect(paintedSection.styles.backgroundColor).toBeUndefined();
     });
 
-    it("folds a flattened row's column padding into each column's modules", () => {
+    it("folds a four-column row's padding into each column's modules", () => {
       const { content, report } = convertBeeFreeTemplate({
         page: {
           rows: [
@@ -1824,7 +1852,7 @@ describe("convertBeeFreeTemplate", () => {
 
       const section = content.blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
-      expect(section.columns).toBe("1");
+      expect(section.columns).toBe("4");
       expect(section.styles.padding).toEqual({
         top: 0,
         right: 0,
@@ -1832,7 +1860,10 @@ describe("convertBeeFreeTemplate", () => {
         left: 0,
       });
       expect(section.styles.backgroundColor).toBe("#eeeeee");
-      expect(section.children[0].map((block) => block.styles.padding)).toEqual([
+      expect(section.children).toHaveLength(4);
+      expect(
+        section.children.map((column) => column[0].styles.padding),
+      ).toEqual([
         { top: 5, right: 1, bottom: 6, left: 2 },
         { top: 0, right: 1, bottom: 6, left: 2 },
         { top: 0, right: 1, bottom: 6, left: 2 },
@@ -2024,7 +2055,7 @@ describe("convertBeeFreeTemplate", () => {
 
       expect(content.blocks[0].type).toBe("paragraph");
       expect(report.warnings).toEqual([
-        "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a 2- or 3-column section.",
+        "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a multi-column section.",
       ]);
     });
 
@@ -2082,6 +2113,39 @@ describe("convertBeeFreeTemplate", () => {
           { "grid-columns": 9, modules: [text("<p>R</p>")] },
         ],
       });
+      const nineThree = sectionOf({
+        columns: [
+          { "grid-columns": 9, modules: [text("<p>L</p>")] },
+          { "grid-columns": 3, modules: [text("<p>R</p>")] },
+        ],
+      });
+      const threeSixThree = sectionOf({
+        columns: [
+          { "grid-columns": 3, modules: [text("<p>L</p>")] },
+          { "grid-columns": 6, modules: [text("<p>M</p>")] },
+          { "grid-columns": 3, modules: [text("<p>R</p>")] },
+        ],
+      });
+      const sixFourTwo = sectionOf({
+        columns: [
+          { "grid-columns": 6, modules: [text()] },
+          { "grid-columns": 4, modules: [text()] },
+          { "grid-columns": 2, modules: [text()] },
+        ],
+      });
+      const fourThreeFive = sectionOf({
+        columns: [
+          { "grid-columns": 4, modules: [text()] },
+          { "grid-columns": 3, modules: [text()] },
+          { "grid-columns": 5, modules: [text()] },
+        ],
+      });
+      const fourEqual = sectionOf({
+        columns: [1, 2, 3, 4].map((n) => ({
+          "grid-columns": 3,
+          modules: [text(`<p>${n}</p>`)],
+        })),
+      });
       const sevenFive = sectionOf({
         columns: [
           { "grid-columns": 7, modules: [text()] },
@@ -2111,10 +2175,29 @@ describe("convertBeeFreeTemplate", () => {
       expect(ratioNotes(equal.report.warnings)).toEqual([]);
       expect(thirds.section.columns).toBe("3");
       expect(ratioNotes(thirds.report.warnings)).toEqual([]);
-      expect(threeNine.section.columns).toBe("1-2");
+      expect(threeNine.section.columns).toBe("1-3");
       expect(threeNine.section.children).toHaveLength(2);
-      expect(ratioNotes(threeNine.report.warnings)).toEqual([
-        'Column ratio 3-9 was mapped to the nearest layout "1-2".',
+      expect(ratioNotes(threeNine.report.warnings)).toEqual([]);
+      expect(nineThree.section.columns).toBe("3-1");
+      expect(nineThree.section.children).toHaveLength(2);
+      expect(ratioNotes(nineThree.report.warnings)).toEqual([]);
+      expect(threeSixThree.section.columns).toBe("1-2-1");
+      expect(threeSixThree.section.children).toHaveLength(3);
+      expect(ratioNotes(threeSixThree.report.warnings)).toEqual([]);
+      expect(fourEqual.section.columns).toBe("4");
+      expect(fourEqual.section.children).toHaveLength(4);
+      expect(
+        fourEqual.section.children.map((column) => column[0].type),
+      ).toEqual(["paragraph", "paragraph", "paragraph", "paragraph"]);
+      expect(ratioNotes(fourEqual.report.warnings)).toEqual([]);
+      expect(sixFourTwo.section.columns).toBe("3");
+      expect(sixFourTwo.section.children).toHaveLength(3);
+      expect(ratioNotes(sixFourTwo.report.warnings)).toEqual([
+        'Column ratio 6-4-2 was mapped to the nearest layout "3".',
+      ]);
+      expect(fourThreeFive.section.columns).toBe("3");
+      expect(ratioNotes(fourThreeFive.report.warnings)).toEqual([
+        'Column ratio 4-3-5 was mapped to the nearest layout "3".',
       ]);
       expect(sevenFive.section.columns).toBe("2");
       expect(ratioNotes(sevenFive.report.warnings)).toEqual([
@@ -2125,9 +2208,10 @@ describe("convertBeeFreeTemplate", () => {
       expect(ratioNotes(fiveSeven.report.warnings)).toEqual([
         'Column ratio 5-7 was mapped to the nearest layout "2".',
       ]);
-      expect(unevenThree.section.columns).toBe("3");
+      expect(unevenThree.section.columns).toBe("1-2-1");
+      expect(unevenThree.section.children).toHaveLength(3);
       expect(ratioNotes(unevenThree.report.warnings)).toEqual([
-        'Column ratio 2-8-2 was mapped to the nearest layout "3".',
+        'Column ratio 2-8-2 was mapped to the nearest layout "1-2-1".',
       ]);
     });
 
@@ -2587,9 +2671,32 @@ describe("convertBeeFreeTemplate", () => {
       ]);
     });
 
-    it("names the original ratio when four columns are flattened", () => {
+    it("keeps a zero-sum three-column row on the even layout", () => {
+      // Grid shares 0, 1 and -1 sum to zero and are not equal, so each
+      // thousandth stays 0.
+      const { section, report } = sectionOf({
+        columns: [
+          { "grid-columns": 0, modules: [text("<p>L</p>")] },
+          { "grid-columns": 1, modules: [text("<p>M</p>")] },
+          { "grid-columns": -1, modules: [text("<p>R</p>")] },
+        ],
+      });
+
+      expect(section.columns).toBe("3");
+      expect(section.children).toHaveLength(3);
+      expect(
+        section.children.map((column) =>
+          column[0].type === "paragraph" ? column[0].content : column[0].type,
+        ),
+      ).toEqual(["<p>L</p>", "<p>M</p>", "<p>R</p>"]);
+      expect(ratioNotes(report.warnings)).toEqual([
+        'Column ratio 0-1--1 was mapped to the nearest layout "3".',
+      ]);
+    });
+
+    it("flattens five columns and names the four-column limit", () => {
       const { content, report } = convertRow({
-        columns: [1, 2, 3, 4].map((n) => ({
+        columns: [1, 2, 3, 4, 5].map((n) => ({
           "grid-columns": 3,
           modules: [text(`<p>${n}</p>`)],
         })),
@@ -2600,9 +2707,25 @@ describe("convertBeeFreeTemplate", () => {
         "paragraph",
         "paragraph",
         "paragraph",
+        "paragraph",
       ]);
       expect(ratioNotes(report.warnings)).toEqual([
-        "Row with 4 columns (3-3-3-3) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to 3.",
+        "Row with 5 columns (3-3-3-3-3) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to four columns.",
+      ]);
+    });
+
+    it("names an unequal four-column row snapped onto 4", () => {
+      const { section, report } = sectionOf({
+        columns: [6, 2, 2, 2].map((grid) => ({
+          "grid-columns": grid,
+          modules: [text()],
+        })),
+      });
+
+      expect(section.columns).toBe("4");
+      expect(section.children).toHaveLength(4);
+      expect(ratioNotes(report.warnings)).toEqual([
+        'Column ratio 6-2-2-2 was mapped to the nearest layout "4".',
       ]);
     });
 
@@ -2902,7 +3025,7 @@ describe("image fluidOnMobile", () => {
     expect(image.fluidOnMobile).toBe(false);
   });
 
-  it("leaves a full-width row and a flattened row unset", () => {
+  it("leaves a full-width row unset and pins an image that fills a quarter column", () => {
     const [hero] = imagesIn({
       page: {
         body: { content: { computedStyle: { messageWidth: "600px" } } },
@@ -2916,12 +3039,28 @@ describe("image fluidOnMobile", () => {
     expect(hero.width).toBe("full");
     expect(hero.fluidOnMobile).toBeUndefined();
 
-    const [flat] = imagesIn({
+    const [quarter] = imagesIn({
       page: {
         body: { content: { computedStyle: { messageWidth: "600px" } } },
         rows: [
           {
             columns: [3, 3, 3, 3].map((grid) => ({
+              "grid-columns": grid,
+              modules: [photo("600px")],
+            })),
+          },
+        ],
+      },
+    });
+    expect(quarter.width).toBe("full");
+    expect(quarter.fluidOnMobile).toBe(false);
+
+    const [flat] = imagesIn({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            columns: [3, 3, 3, 3, 3].map((grid) => ({
               "grid-columns": grid,
               modules: [photo("600px")],
             })),

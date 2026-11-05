@@ -264,8 +264,9 @@ function resolveColumnLayout(
   if (cellCount <= 1) return "1";
   if (cellCount === 2) return "2";
   if (cellCount === 3) return "3";
+  if (cellCount === 4) return "4";
   warnings.push(
-    `Row with ${cellCount} columns was flattened to a single column. Templatical supports up to 3 columns per section.`,
+    `Row with ${cellCount} columns was flattened to a single column. Templatical supports up to four columns per section.`,
   );
   return "1";
 }
@@ -484,7 +485,7 @@ function sectionEntry(
   const notes: string[] = [];
   if (slotCount !== columnCount) {
     notes.push(
-      `Row of ${columnCount} columns was merged into a single column. Templatical sections hold at most 3 columns.`,
+      `Row of ${columnCount} columns was merged into a single column. Templatical supports up to four columns.`,
     );
   } else if (ratioNote) {
     notes.push(ratioNote);

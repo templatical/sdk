@@ -259,12 +259,14 @@ export interface OperationContext {
 }
 
 /**
- * The column count of a section layout: `"1"` → 1, `"3"` → 3, anything else
+ * The column count of a section layout. `"1"` → 1. `"3"` and `"1-2-1"` → 3.
+ * `"4"` → 4. `"2"`, `"1-2"`, `"2-1"`, `"1-3"` and `"3-1"` → 2. Anything else
  * → 2. The section toolbar and Templatical Cloud's engine use the same rule.
  */
 export function getColumnCount(layout: unknown): number {
   if (layout === "1") return 1;
-  if (layout === "3") return 3;
+  if (layout === "3" || layout === "1-2-1") return 3;
+  if (layout === "4") return 4;
   return 2;
 }
 

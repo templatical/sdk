@@ -288,12 +288,100 @@ describe("getColumnCount", () => {
     ["1", 1],
     ["2", 2],
     ["3", 3],
+    ["4", 4],
     ["2-1", 2],
     ["1-2", 2],
-    ["4", 2],
+    ["1-3", 2],
+    ["3-1", 2],
+    ["1-2-1", 3],
+    ["5", 2],
     [1, 2],
   ])("%s has %i columns", (layout, count) => {
     expect(getColumnCount(layout)).toBe(count);
+  });
+});
+
+describe("applyOperations section layouts", () => {
+  const section = (columns: string, children: unknown[][]): TemplateContent =>
+    ({
+      blocks: [{ id: "s1", type: "section", columns, children }],
+      settings: { width: 600 },
+    }) as unknown as TemplateContent;
+
+  const paragraph = (id: string) => ({ id, type: "paragraph", content: id });
+
+  it("grows a one-column section to four columns", () => {
+    const before = section("1", [[paragraph("a")]]);
+    const after = applyOperations(before, [
+      { op: "updateBlock", blockId: "s1", set: { columns: "4" } },
+    ]);
+    const block = after.blocks[0] as {
+      columns: string;
+      children: unknown[][];
+    };
+    expect(block.columns).toBe("4");
+    expect(block.children).toEqual([[paragraph("a")], [], [], []]);
+  });
+
+  it("grows two columns to the 1-2-1 layout by appending one empty column", () => {
+    const before = section("2", [[paragraph("a")], [paragraph("b")]]);
+    const after = applyOperations(before, [
+      { op: "updateBlock", blockId: "s1", set: { columns: "1-2-1" } },
+    ]);
+    const block = after.blocks[0] as { children: unknown[][] };
+    expect(block.children).toEqual([[paragraph("a")], [paragraph("b")], []]);
+  });
+
+  it("keeps both columns when switching between 2, 1-3 and 3-1", () => {
+    const before = section("2", [[paragraph("a")], [paragraph("b")]]);
+    const after = applyOperations(before, [
+      { op: "updateBlock", blockId: "s1", set: { columns: "1-3" } },
+      { op: "updateBlock", blockId: "s1", set: { columns: "3-1" } },
+    ]);
+    const block = after.blocks[0] as {
+      columns: string;
+      children: unknown[][];
+    };
+    expect(block.columns).toBe("3-1");
+    expect(block.children).toEqual([[paragraph("a")], [paragraph("b")]]);
+  });
+
+  it("drops an empty fourth column when shrinking 4 to 1-2-1", () => {
+    const before = section("4", [
+      [paragraph("a")],
+      [paragraph("b")],
+      [paragraph("c")],
+      [],
+    ]);
+    const after = applyOperations(before, [
+      { op: "updateBlock", blockId: "s1", set: { columns: "1-2-1" } },
+    ]);
+    const block = after.blocks[0] as {
+      columns: string;
+      children: unknown[][];
+    };
+    expect(block.columns).toBe("1-2-1");
+    expect(block.children).toEqual([
+      [paragraph("a")],
+      [paragraph("b")],
+      [paragraph("c")],
+    ]);
+  });
+
+  it("refuses to drop a filled column when shrinking 4 to 3", () => {
+    const before = section("4", [
+      [paragraph("a")],
+      [paragraph("b")],
+      [paragraph("c")],
+      [paragraph("d")],
+    ]);
+    expect(() =>
+      applyOperations(before, [
+        { op: "updateBlock", blockId: "s1", set: { columns: "3" } },
+      ]),
+    ).toThrow(
+      'Column 3 of section "s1" still holds blocks, so the layout can\'t drop it.',
+    );
   });
 });
 

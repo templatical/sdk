@@ -249,7 +249,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `columns` | `ColumnLayout` | Column layout preset |
+| `columns` | `ColumnLayout` | Column layout preset: `"1"`, `"2"`, `"3"`, `"4"`, `"1-2"`, `"2-1"`, `"1-3"`, `"3-1"`, `"1-2-1"`. Widths and column counts are in [Sections and Columns](/guide/sections-and-columns). |
 | `children` | `Block[][]` | Array of block arrays, one per column |
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |

@@ -80,7 +80,7 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
   if (!exact) {
     if (plan.columns.length > slots) {
       reasons.push(
-        `${plan.columns.length}-column layout has no exact Templatical equivalent; folded onto "${layout}".`,
+        `${plan.columns.length}-column layout has no exact Templatical equivalent; folded onto "${layout}". Templatical supports up to four columns.`,
       );
     } else {
       const shown = rawWidths

@@ -8,7 +8,17 @@ import {
 } from "../column-ratio";
 import type { ColumnWidth } from "../column-ratio";
 
-const ALL_LAYOUTS: ColumnLayout[] = ["1", "2", "3", "1-2", "2-1"];
+const ALL_LAYOUTS: ColumnLayout[] = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "1-2",
+  "2-1",
+  "1-3",
+  "3-1",
+  "1-2-1",
+];
 
 function px(value: number): ColumnWidth {
   return { unit: "px", value };
@@ -39,17 +49,18 @@ describe("column-ratio — the snap targets agree with the renderer", () => {
     }
   });
 
-  it("keys the table by every ColumnLayout", () => {
-    // `LAYOUT_SHARES` is annotated `Record<ColumnLayout, …>`, so a new layout
-    // is a compile error until it is added. This is the runtime half: it fails
-    // if that annotation is ever loosened to a plain object, which would let a
-    // layout exist that nothing can snap to.
+  it("keys the table by the layouts this importer snaps to", () => {
+    // These keys are the candidate list. Every ColumnLayout is one of them.
     expect((Object.keys(LAYOUT_SHARES) as ColumnLayout[]).sort()).toEqual([
       "1",
       "1-2",
+      "1-2-1",
+      "1-3",
       "2",
       "2-1",
       "3",
+      "3-1",
+      "4",
     ]);
     expect(ALL_LAYOUTS.length).toBe(Object.keys(LAYOUT_SHARES).length);
   });
@@ -66,8 +77,8 @@ describe("column-ratio — the snap targets agree with the renderer", () => {
 
   it("resolves a renderer percentage to the layout that emitted it", () => {
     // Read the other way round: each two-column layout's own widths must pick
-    // it out from among the three, so the table cannot be off by a column
-    // order (which would swap 1-2 and 2-1 while every symmetric case passed).
+    // it out from the others, so the table cannot be off by a column order
+    // (which would swap 1-2 and 2-1 while every symmetric case passed).
     const from = (layout: ColumnLayout) =>
       resolveColumnRatio(
         getWidthPercentages(layout).map((width) => percent(parseFloat(width))),
@@ -76,6 +87,8 @@ describe("column-ratio — the snap targets agree with the renderer", () => {
     expect(from("2")).toBe("2");
     expect(from("1-2")).toBe("1-2");
     expect(from("2-1")).toBe("2-1");
+    expect(from("1-3")).toBe("1-3");
+    expect(from("3-1")).toBe("3-1");
   });
 });
 
@@ -197,20 +210,58 @@ describe("resolveColumnRatio — widths choose the layout, never the count", () 
     expect("note" in resolved).toBe(false);
   });
 
-  it("names an 80/20 ratio it cannot express", () => {
+  it("reads 25/75, 75/25, 25/50/25 and four quarters as those layouts", () => {
+    expect(resolveColumnRatio([percent(25), percent(75)], "2")).toEqual({
+      layout: "1-3",
+    });
+    expect(resolveColumnRatio([percent(75), percent(25)], "2")).toEqual({
+      layout: "3-1",
+    });
+    expect(
+      resolveColumnRatio([percent(25), percent(50), percent(25)], "3"),
+    ).toEqual({ layout: "1-2-1" });
+    expect(
+      resolveColumnRatio(
+        [percent(25), percent(25), percent(25), percent(25)],
+        "4",
+      ),
+    ).toEqual({ layout: "4" });
+  });
+
+  it("snaps 80/20 onto 3-1, inside the same tolerance", () => {
     expect(resolveColumnRatio([percent(80), percent(20)], "2")).toEqual({
+      layout: "3-1",
+    });
+  });
+
+  it("snaps 72/28 to 3-1, the nearer of the two wide splits", () => {
+    expect(resolveColumnRatio([percent(72), percent(28)], "2")).toEqual({
+      layout: "3-1",
+    });
+  });
+
+  it("names a 90/10 ratio it cannot express", () => {
+    expect(resolveColumnRatio([percent(90), percent(10)], "2")).toEqual({
       layout: "2",
       note:
-        "Column widths 80% / 20% have no Templatical equivalent. " +
+        "Column widths 90% / 10% have no Templatical equivalent. " +
         "The section was imported as 2 equal columns.",
     });
   });
 
-  it("names a 130/280/130 ratio, which the model has no layout for", () => {
+  it("reads 130/280/130 as 1-2-1", () => {
     expect(resolveColumnRatio([px(130), px(280), px(130)], "3")).toEqual({
+      layout: "1-2-1",
+    });
+  });
+
+  it("names a 10/80/10 ratio, which no three-column layout is within tolerance of", () => {
+    expect(
+      resolveColumnRatio([percent(10), percent(80), percent(10)], "3"),
+    ).toEqual({
       layout: "3",
       note:
-        "Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent. " +
+        "Column widths 10% / 80% / 10% have no Templatical equivalent. " +
         "The section was imported as 3 equal columns.",
     });
   });
@@ -225,7 +276,7 @@ describe("resolveColumnRatio — widths choose the layout, never the count", () 
   });
 
   it("holds the tolerance either side of the widest real match", () => {
-    // 64.8 / 35.2 is 1.9pp from 2-1 and matches; the 80/20 above is 13.3pp
+    // 64.8 / 35.2 is 1.9pp from 2-1 and matches. 90/10 is 15pp from 3-1
     // and does not. These two pin the band: a 4pp-off ratio still snaps, and
     // a 10pp-off one does not.
     expect(

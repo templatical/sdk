@@ -124,7 +124,7 @@ export function buildFullwidth(
     );
     if (!exact) {
       reasons.push(
-        `Column widths ${formatWidths(widthsPx)} have no exact Templatical layout; resolved to "${layout}".`,
+        `Column widths ${formatWidths(widthsPx)} have no exact Templatical layout; resolved to "${layout}".${columns.length > 4 ? " Templatical supports up to four columns." : ""}`,
       );
     }
 

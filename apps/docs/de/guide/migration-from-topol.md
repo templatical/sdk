@@ -161,7 +161,7 @@ Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der un
 
 | Topol-Tag | Templatical-Block | Hinweise |
 |---|---|---|
-| `mj-section` (mit `mj-column`-Kindern) | `SectionBlock` mit `columns` | Spaltenbreiten kommen aus dem `width`-Prozentwert jeder Spalte oder werden gleichmäßig verteilt; ein Verhältnis außerhalb von Templaticals fünf Layouts wird auf das nächstliegende aufgelöst. `background-url` wird zu `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
+| `mj-section` (mit `mj-column`-Kindern) | `SectionBlock` mit `columns` | Spaltenbreiten kommen aus dem `width`-Prozentwert jeder Spalte oder werden gleichmäßig verteilt; ein Verhältnis außerhalb von Templaticals Layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) wird auf das nächstliegende derselben Spaltenzahl aufgelöst. `background-url` wird zu `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
 | `mj-column` | Section-Spalte | Hält eine Liste verschachtelter Blöcke. |
 | `mj-text` | `TitleBlock` oder `ParagraphBlock` | Eine einzelne Überschrift, die den gesamten Inhalt umschließt, wird zu `TitleBlock`; alles andere wird zu `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift und `padding` als äußerer Abstand des Blocks — sein `margin` überlebt nicht. |
@@ -183,7 +183,7 @@ Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende ab
 
 Jedes Blatt-Tag in der Mapping-Tabelle oben wird konvertiert — Topols eigener Editor erzeugt in der Praxis nichts, das dieser Importer als `html-fallback` behandelt. Innerhalb dessen sind einige Konvertierungen Näherungen statt exakter Treffer, jede davon als `approximated`-Eintrag mit einer `note` in `report.entries` festgehalten:
 
-- **Spalten-Geometrie** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol erlaubt eine beliebige Spaltenzahl bei beliebiger Breite, daher wird ein Verhältnis außerhalb dieser fünf — am häufigsten vier gleich breite Spalten — auf das nächstliegende Layout aufgelöst, und jede Spalte ab der vierten fließt in die letzte.
+- **Spalten-Geometrie** — Templatical unterstützt diese Spalten-Layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Topol erlaubt eine beliebige Spaltenzahl bei beliebiger Breite, daher wird ein Verhältnis außerhalb dieser Layouts auf das nächstliegende Layout derselben Spaltenzahl aufgelöst. Vier gleich breite Spalten bleiben `"4"`. Jede Spalte ab der fünften fließt in die letzte, und die `note` nennt die Obergrenze von vier Spalten.
 - **Hintergrundbilder** — ein `background-size`, `background-position` oder `background-repeat` ohne exaktes Schlüsselwort wird auf das nächstliegende abgebildet. Siehe [Hintergrundbilder](#hintergrundbilder).
 - **GIFs** — `mj-gif` wird als `ImageBlock` importiert, derselbe Block, den `mj-image` erzeugt. Templatical hat keinen eigenen GIF-Block.
 - **Überschriften-Ebenen** — `TitleBlock` unterstützt die Ebenen 1 bis 4. Ein `mj-text`, das ein einzelnes `<h5>` oder `<h6>` umschließt, wird auf Ebene 4 begrenzt.
