@@ -9495,7 +9495,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
 | Visual separation | [Divider](#divider) | Horizontal line with style options |
 | Vertical spacing | [Spacer](#spacer) | Empty space between blocks |
-| Social links | [Social Icons](#social-icons) | 18 platforms, 5 icon styles |
+| Social links | [Social Icons](#social-icons) | Platform list and six icon styles (solid, outlined, rounded, square, circle, plain) |
 | Navigation links | [Menu](#menu) | Horizontal link list with separators |
 | Tabular data | [Table](#table) | Data table with optional header styling |
 | Video preview | [Video](#video) | Clickable thumbnail (email clients don't support embedded video) |
@@ -9611,7 +9611,7 @@ A row of social media icons linking to platform profiles.
 
 Email clients that switch to dark mode, such as the Gmail app and Outlook, change the background but leave images as they are. A dark `plain` or `outlined` icon therefore carries a faint white halo that is barely visible on light backgrounds and keeps the icon visible as an outline once the background turns dark. Light icons have no halo, so they stay clean on colored bands, but clients that turn a dark background light (the Gmail app on iOS, Outlook for Windows) can hide a light `plain` or `outlined` icon. A filled shape avoids both, since its badge brings its own contrast.
 
-18 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
+These platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
 Each `SocialIcon` has:
 
@@ -13334,7 +13334,7 @@ The button's place in the column is the module's `text-align` (`left`, `center` 
 | no `computedStyle.width`                                       | `image.width`, by the same rule                      | Converted    |
 | no width at all                                                | `"full"`                                             | Converted    |
 
-`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at, for both of BeeFree's sizing classes: a `fixedwidth` image at the width set in the editor, and an `autowidth` image at its file's width, capped at the column. Older exports write `computedStyle.width` as a number of pixels (`187.5`) and class an image that fills its column `fullwidth`. Their computed width leaves out the column's padding, so the class decides. The image's room is its column's content width less the image's left and right padding. `ImageBlock` stores px, which keeps its size on a phone where a percentage would shrink with the column, so a percentage width is reported `approximated`. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
+`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at, for both of BeeFree's sizing classes: a `fixedwidth` image at the width set in the editor, and an `autowidth` image at its file's width, capped at the column. Older exports write `computedStyle.width` as a number of pixels (`187.5`) and class an image that fills its column `fullwidth`. Their computed width leaves out the column's padding, so the class decides. The image's room is its column's content width less the image's left and right padding. On a snapped row that room is the snapped column: padding given back from the inner edge is part of it, and column padding the module keeps on either side is not, including when none of that padding comes back. `ImageBlock` stores px, which keeps its size on a phone where a percentage would shrink with the column, so a percentage width is reported `approximated`. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
 
 BeeFree keeps an image at its desktop width on a phone when that image sits in a column narrower than the email. The import sets `fluidOnMobile` to `false` on such an image when it fills that column, so it does not grow to the stacked column. An image in a full-width row, and one that does not fill its column, leaves `fluidOnMobile` unset. See [Width on phones](/guide/images#width-on-phones).
 
@@ -14641,7 +14641,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
-| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`; unknown names become `website`. |
+| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched network becomes a website icon and the block is reported `approximated`. |
 | `esd-block-spacer` | `spacer` or `divider` | A visible `border-bottom` or `border-top` on the spacer or its inner cell becomes a divider (style, colour, thickness, and the width rule below). Otherwise a spacer: height from `style`, the `height` attribute, or vertical padding. |
 | `esd-block-html` | `html` | Inner markup preserved. |
 
@@ -14658,7 +14658,7 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 | `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
-| `table.es-social` | `social` | Same platform mapping as the plugin path. |
+| `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched network becomes a website icon and the block is reported `approximated`. |
 | `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
 | `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 

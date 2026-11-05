@@ -2179,6 +2179,399 @@ describe("convertBeeFreeTemplate", () => {
       });
     });
 
+    // 7/12 of 600 is 350 and the even column is 300, so 50px comes back from
+    // the left column's right padding. 60px there becomes 10px. The room
+    // before that return is 240px, and after it is 290px.
+    describe("widths after inner padding comes back", () => {
+      const padding = {
+        "padding-top": "0px",
+        "padding-right": "60px",
+        "padding-bottom": "0px",
+        "padding-left": "0px",
+      };
+      const returned = { top: 0, right: 10, bottom: 0, left: 0 };
+
+      function snapped(
+        module: BeeFreeeRow["columns"][number]["modules"][number],
+      ) {
+        return sectionOf({
+          columns: [
+            { "grid-columns": 7, modules: [module] },
+            { "grid-columns": 5, modules: [text()] },
+          ],
+        });
+      }
+
+      function leftBlock(
+        module: BeeFreeeRow["columns"][number]["modules"][number],
+      ) {
+        return snapped(module).section.children[0][0];
+      }
+
+      it("keeps a fixed image at the width the source shows", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: {
+              src: "https://example.com/photo.png",
+              alt: "Photo",
+              width: "999px",
+              height: "500px",
+            },
+            computedStyle: { class: "center fixedwidth", width: "240px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(240);
+        expect(block.naturalWidth).toBe(999);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a source width that only overflowed the column before padding came back", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: {
+              src: "https://example.com/photo.png",
+              alt: "Photo",
+              width: "999px",
+              height: "500px",
+            },
+            computedStyle: { class: "center fixedwidth", width: "260px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(260);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("still returns padding on an image that does not fill the column", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: { src: "https://example.com/photo.png", alt: "Photo" },
+            computedStyle: { class: "center fixedwidth", width: "200px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(200);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("stays full when the shown width fills the column after padding comes back", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: { src: "https://example.com/photo.png", alt: "Photo" },
+            computedStyle: { class: "center autowidth", width: "290px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe("full");
+        expect(block.styles.padding).toEqual(returned);
+        expect(block.fluidOnMobile).toBe(false);
+      });
+
+      it("converts an image percentage against the room after padding comes back", () => {
+        const { section, report } = snapped({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: { src: "https://example.com/photo.png", alt: "Photo" },
+            computedStyle: { class: "center autowidth", width: "50%" },
+            style: padding,
+          },
+        });
+        const block = section.children[0][0];
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(145);
+        expect(block.styles.padding).toEqual(returned);
+        expect(report.entries[0]).toMatchObject({
+          status: "approximated",
+          note: "Image width 50% was converted to 145px.",
+        });
+      });
+
+      it("keeps a lone icon at the width the source shows", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-icons",
+          descriptor: {
+            computedStyle: { iconHeight: "240px" },
+            iconsList: {
+              icons: [
+                {
+                  image: "https://example.com/icon.png",
+                  alt: "Icon",
+                  text: "",
+                  width: "100px",
+                  height: "100px",
+                },
+              ],
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(240);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a px divider at the width the source shows", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-divider",
+          descriptor: {
+            divider: {
+              style: { "border-top": "1px solid #cccccc", width: "240px" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("divider");
+        if (block.type !== "divider") throw new Error("expected a divider");
+        expect(block.width).toBe(240);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a percentage divider as that share and still returns padding", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-divider",
+          descriptor: {
+            divider: {
+              style: { "border-top": "1px solid #cccccc", width: "50%" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("divider");
+        if (block.type !== "divider") throw new Error("expected a divider");
+        expect(block.width).toBe("50%");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a full button as full and still returns padding", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-button",
+          descriptor: {
+            button: {
+              label: "Go",
+              href: "https://example.com",
+              style: { width: "100%" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("button");
+        if (block.type !== "button") throw new Error("expected a button");
+        expect(block.width).toBe("full");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a video at its stated px width and still returns padding", () => {
+        const narrow = leftBlock({
+          type: "mailup-bee-newsletter-modules-video",
+          descriptor: {
+            video: {
+              src: "https://www.youtube.com/watch?v=abcdefghijk",
+              style: { width: "240px" },
+            },
+            style: padding,
+          },
+        });
+        const wide = leftBlock({
+          type: "mailup-bee-newsletter-modules-video",
+          descriptor: {
+            video: {
+              src: "https://www.youtube.com/watch?v=abcdefghijk",
+              style: { width: "500px" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(narrow.type).toBe("video");
+        expect(wide.type).toBe("video");
+        if (narrow.type !== "video" || wide.type !== "video") {
+          throw new Error("expected video blocks");
+        }
+        expect(narrow.width).toBe(240);
+        expect(wide.width).toBe(500);
+        expect(narrow.styles.padding).toEqual(returned);
+        expect(wide.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a social row's icon size and still returns padding", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-social",
+          descriptor: {
+            computedStyle: { iconsDefaultWidth: "32px" },
+            iconsList: {
+              icons: [
+                {
+                  name: "facebook",
+                  image: { href: "https://facebook.com/example" },
+                },
+              ],
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("social");
+        if (block.type !== "social") throw new Error("expected a social block");
+        expect(block.iconSize).toBe("medium");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("returns padding on a menu", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-menu",
+          descriptor: {
+            menu: {
+              items: [{ text: "Home", link: "https://example.com" }],
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("menu");
+        if (block.type !== "menu") throw new Error("expected a menu");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      // 7/12 of 600 is 350 and the even column is 300. The facing edge has no
+      // padding, so none of the 50px shortfall comes back. 20px on the outer
+      // edge stays, and the image is measured in the 280px that remain.
+      describe("outer column padding that is not given back", () => {
+        function photo(shown: string) {
+          return {
+            type: "mailup-bee-newsletter-modules-image",
+            descriptor: {
+              image: {
+                src: "https://example.com/photo.png",
+                alt: "Photo",
+                width: "999px",
+                height: "500px",
+              },
+              computedStyle: { class: "center fixedwidth", width: shown },
+            },
+          };
+        }
+
+        function imageBlock(block: Block) {
+          expect(block.type).toBe("image");
+          if (block.type !== "image") throw new Error("expected an image");
+          return block;
+        }
+
+        it("measures a first column against the outer padding it keeps", () => {
+          const row = (shown: string) =>
+            sectionOf({
+              columns: [
+                {
+                  "grid-columns": 7,
+                  style: { "padding-left": "20px", "padding-right": "0px" },
+                  modules: [photo(shown)],
+                },
+                { "grid-columns": 5, modules: [text()] },
+              ],
+            }).section.children[0][0];
+
+          const fills = imageBlock(row("280px"));
+          const wider = imageBlock(row("290px"));
+          const short = imageBlock(row("279px"));
+          const kept = { top: 0, right: 0, bottom: 0, left: 20 };
+
+          expect(fills.width).toBe("full");
+          expect(fills.styles.padding).toEqual(kept);
+          expect(wider.width).toBe("full");
+          expect(wider.styles.padding).toEqual(kept);
+          expect(short.width).toBe(279);
+          expect(short.styles.padding).toEqual(kept);
+        });
+
+        it("measures a second column against the outer padding it keeps", () => {
+          const row = (shown: string) =>
+            sectionOf({
+              columns: [
+                { "grid-columns": 5, modules: [text()] },
+                {
+                  "grid-columns": 7,
+                  style: { "padding-left": "0px", "padding-right": "20px" },
+                  modules: [photo(shown)],
+                },
+              ],
+            }).section.children[1][0];
+
+          const fills = imageBlock(row("280px"));
+          const short = imageBlock(row("279px"));
+          const kept = { top: 0, right: 20, bottom: 0, left: 0 };
+
+          expect(fills.width).toBe("full");
+          expect(fills.styles.padding).toEqual(kept);
+          expect(short.width).toBe(279);
+          expect(short.styles.padding).toEqual(kept);
+        });
+
+        it("measures padding kept on both sides when none of it comes back", () => {
+          // The right column of a 7-5 row is wider than its 250px share, so
+          // none of its padding comes back. 10px on each side leaves 280px.
+          const row = (shown: string) =>
+            sectionOf({
+              columns: [
+                { "grid-columns": 7, modules: [text()] },
+                {
+                  "grid-columns": 5,
+                  style: { "padding-left": "10px", "padding-right": "10px" },
+                  modules: [photo(shown)],
+                },
+              ],
+            }).section.children[1][0];
+
+          const fills = imageBlock(row("280px"));
+          const short = imageBlock(row("279px"));
+          const kept = { top: 0, right: 10, bottom: 0, left: 10 };
+
+          expect(fills.width).toBe("full");
+          expect(fills.styles.padding).toEqual(kept);
+          expect(short.width).toBe(279);
+          expect(short.styles.padding).toEqual(kept);
+        });
+      });
+
+      it("returns padding on an HTML block and leaves its markup", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-html",
+          descriptor: {
+            html: { html: "<p>Hi</p>" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("html");
+        if (block.type !== "html") throw new Error("expected an html block");
+        expect(block.content).toBe("<p>Hi</p>");
+        expect(block.styles.padding).toEqual(returned);
+      });
+    });
+
     it("treats a non-positive column total as an even split", () => {
       const { section, report } = sectionOf({
         columns: [
