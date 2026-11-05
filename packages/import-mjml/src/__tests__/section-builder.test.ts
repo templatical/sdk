@@ -141,6 +141,13 @@ describe("matchColumnLayout", () => {
       exact: false,
     });
   });
+
+  it("folds five unset columns onto 4", () => {
+    expect(matchColumnLayout([null, null, null, null, null])).toEqual({
+      layout: "4",
+      exact: false,
+    });
+  });
 });
 
 describe("buildSection", () => {
@@ -347,6 +354,36 @@ describe("buildSection", () => {
   it("omits stackOnMobile when there is no mj-group", () => {
     const { blocks } = build("<mj-section><mj-column /></mj-section>");
     expect("stackOnMobile" in blocks[0]).toBe(false);
+  });
+
+  it("sizes a 3-1 row at three quarters and a quarter of the 600px body", () => {
+    const { blocks, entries } = build(`
+      <mj-section>
+        <mj-column width="75%">
+          <mj-divider width="450px" />
+          <mj-divider width="449px" />
+        </mj-column>
+        <mj-column width="25%">
+          <mj-divider width="150px" />
+          <mj-divider width="149px" />
+        </mj-column>
+      </mj-section>`);
+    const section = blocks[0] as SectionBlock;
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+
+    expect(section.columns).toBe("3-1");
+    expect(
+      section.children[0].map((block) =>
+        block.type === "divider" ? block.width : null,
+      ),
+    ).toEqual(["full", 449]);
+    expect(
+      section.children[1].map((block) =>
+        block.type === "divider" ? block.width : null,
+      ),
+    ).toEqual(["full", 149]);
+    expect(entry.status).toBe("converted");
+    expect(entry.note).toBeUndefined();
   });
 
   it("reads 25/75 as 1-3 with nothing lost", () => {

@@ -128,14 +128,15 @@ test.describe("Template import", () => {
     await expect(page.getByTestId("import-report-count-skipped")).toContainText(
       "1 skipped",
     );
-    await expect(
-      page.getByTestId("import-report-warnings-count"),
-    ).toContainText("Warnings: 1");
+    // The example's four equal columns import as a four-column section, so
+    // nothing is flattened and the report has no warnings.
+    await expect(page.getByTestId("import-report-warnings-count")).toHaveCount(
+      0,
+    );
 
     await page.getByTestId("import-report-toggle").click();
     const details = page.getByTestId("import-report-details");
-    await expect(details).toContainText("Warnings (1)");
-    await expect(details).toContainText("flattened to a single column");
+    await expect(details).not.toContainText("Warnings");
     await expect(details).toContainText("menu");
     await expect(details).toContainText("timer → html");
     await expect(details).toContainText("form");

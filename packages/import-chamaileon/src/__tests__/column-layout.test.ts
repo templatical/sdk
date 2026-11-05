@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { matchColumnLayout, widthsToPercents } from "../column-layout";
+import {
+  columnPixels,
+  matchColumnLayout,
+  widthsToPercents,
+} from "../column-layout";
 
 describe("widthsToPercents", () => {
   it("converts 300/300 in a 600 body to 50/50", () => {
@@ -46,6 +50,18 @@ describe("matchColumnLayout", () => {
       matchColumnLayout([16.67, 16.67, 16.67, 16.67, 16.67, 16.67]).exact,
     ).toBe(false);
   });
+  it("treats four unset columns as an exact 4", () => {
+    expect(matchColumnLayout([null, null, null, null])).toEqual({
+      layout: "4",
+      exact: true,
+    });
+  });
+  it("folds five unset columns onto 4, inexact", () => {
+    expect(matchColumnLayout([null, null, null, null, null])).toEqual({
+      layout: "4",
+      exact: false,
+    });
+  });
   it("does not call 60/40 an exact 2-1", () => {
     const r = matchColumnLayout([60, 40]);
     expect(r.exact).toBe(false);
@@ -55,5 +71,14 @@ describe("matchColumnLayout", () => {
       layout: "2",
       exact: true,
     });
+  });
+});
+
+describe("columnPixels", () => {
+  it("splits a 600px body into the 1-3, 3-1, 1-2-1 and 4 tables", () => {
+    expect(columnPixels("1-3", 600)).toEqual([150, 450]);
+    expect(columnPixels("3-1", 600)).toEqual([450, 150]);
+    expect(columnPixels("1-2-1", 600)).toEqual([150, 300, 150]);
+    expect(columnPixels("4", 600)).toEqual([150, 150, 150, 150]);
   });
 });

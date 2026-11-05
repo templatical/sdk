@@ -229,7 +229,7 @@ function sectionFromStructure(
       notes.join(" "),
     );
     recordImageSpan(ctx, image.source, entry);
-  } else if (frameCount <= 3) {
+  } else if (frameCount <= 4) {
     const entry = pushEntry(ctx, "esd-structure", "section", "converted");
     recordImageSpan(ctx, image.source, entry);
   }

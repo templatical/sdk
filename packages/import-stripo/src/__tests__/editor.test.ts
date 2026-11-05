@@ -80,6 +80,14 @@ ${frame("Frame One")}${frame("Frame Two")}${frame("Frame Three")}${frame("Frame 
     expect(
       report.warnings.some((w) => w.includes("flattened to a single column")),
     ).toBe(false);
+    expect(
+      report.entries.filter((e) => e.sourceTag === "esd-structure"),
+    ).toEqual([
+      expect.objectContaining({
+        templaticalBlockType: "section",
+        status: "converted",
+      }),
+    ]);
   });
 
   it("flattens five container-frames and names the four-column limit", () => {
