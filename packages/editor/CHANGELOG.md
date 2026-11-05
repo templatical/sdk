@@ -1,5 +1,31 @@
 # @templatical/editor
 
+## 0.55.0
+
+### Minor Changes
+
+- 200ab00: Two optional block fields. Leaving either out renders exactly as before.
+
+  - **Button `fontWeight`:** `"regular"` (400), `"medium"` (500) or `"bold"` (700), rendered as `mj-button font-weight`. Without it the label stays bold. The editor's button settings offer Regular, Medium and Bold (choosing Bold clears the field), with labels in all eight locales.
+  - **Image `fluidOnMobile`:** `true` always emits MJML `fluid-on-mobile="true"` and `false` never does. Without it an image still goes full width on a phone only when it fills its column on desktop; video thumbnails are unchanged. The editor's image settings offer Automatic, Always and Never, with labels in all eight locales.
+
+  The JSON schema, the `template-tools` validator and the agent skill's block guide include both fields.
+
+- e784e63: `SocialPlatform` includes `xing`. Social icon blocks can use a XING icon, drawn from the same glyph as the other platforms, in the editor and in every rendered style and tone.
+
+  BeeFree, MJML, Stripo, Unlayer, Topol and Chamaileon imports map a Xing icon onto `xing`. A BeeFree icon is recognized from its id, name, alt, title or a `xing.com` link, instead of being kept as an image.
+
+### Patch Changes
+
+- 9151730: Built-in merge-tag scanning, merge-tag span handling, and CSS rule parsing complete in linear time on malformed template input. Pixel value parsers reject long invalid whitespace suffixes without super-linear backtracking.
+  The types package exports `scanSyntaxMatches`, `scanCombinedSyntaxMatches`, and `SyntaxMatch`.
+- Updated dependencies [200ab00]
+- Updated dependencies [9151730]
+- Updated dependencies [6cc3685]
+- Updated dependencies [e784e63]
+  - @templatical/renderer@0.55.0
+  - @templatical/quality@0.55.0
+
 ## 0.54.2
 
 ### Patch Changes

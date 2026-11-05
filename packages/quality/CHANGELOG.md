@@ -1,5 +1,17 @@
 # @templatical/quality
 
+## 0.55.0
+
+### Patch Changes
+
+- 9151730: Built-in merge-tag scanning, merge-tag span handling, and CSS rule parsing complete in linear time on malformed template input. Pixel value parsers reject long invalid whitespace suffixes without super-linear backtracking.
+  The types package exports `scanSyntaxMatches`, `scanCombinedSyntaxMatches`, and `SyntaxMatch`.
+- 6cc3685: Lint auto-fixes now rewrite single-quoted attributes without adding attributes. Double-quoted values are copied as written, including entities, and a rewritten anchor tag is lowercase. Link and alignment fixes skip markup inside comments, link fixes use the same attribute decoding and HTML whitespace rules as detection, and alignment fixes split declarations on decoded CSS characters, so `&#59;` separates declarations, and keep the character references in the declarations they keep.
+- Updated dependencies [200ab00]
+- Updated dependencies [9151730]
+- Updated dependencies [e784e63]
+  - @templatical/types@0.55.0
+
 ## 0.54.2
 
 ### Patch Changes
