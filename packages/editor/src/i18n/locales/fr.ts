@@ -260,8 +260,12 @@ const fr: typeof en = {
     column1: "1 colonne",
     column2: "2 colonnes",
     column3: "3 colonnes",
+    column4: "4 colonnes",
     ratio12: "Ratio 1:2",
     ratio21: "Ratio 2:1",
+    ratio13: "Ratio 1:3",
+    ratio31: "Ratio 3:1",
+    ratio121: "Ratio 1:2:1",
     borderRadius: "Rayon de bordure",
     wrapperEnable: "Ajouter un conteneur",
     wrapperLayoutConflict:

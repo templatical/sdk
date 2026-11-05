@@ -177,18 +177,19 @@ Each `<tr>` in a layout table becomes a `SectionBlock`. The row's direct `<td>` 
 | Cells per row | Templatical Layout |
 |---|---|
 | 1 | `'1'` |
-| 2 | `'2'` or `'2-1'` / `'1-2'`, by declared width |
-| 3 | `'3'` |
-| 4+ | merged into `'1'`, with a warning and an `approximated` report entry |
+| 2 | `'2'`, `'2-1'`, `'1-2'`, `'3-1'` or `'1-3'`, by declared width |
+| 3 | `'3'` or `'1-2-1'`, by declared width |
+| 4 | `'4'` |
+| 5+ | merged into `'1'`, with a warning and an `approximated` report entry |
 
 ### Column ratios
 
-A two-cell row picks between `'2'`, `'2-1'` and `'1-2'` from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. The closest of those layouts wins, so `350` / `190` reads as `'2-1'` and `33.33%` / `66.66%` as `'1-2'`.
+A row picks among the layouts that hold its column count, from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. Two cells choose among `'2'`, `'2-1'`, `'1-2'`, `'3-1'` and `'1-3'`; three cells between `'3'` and `'1-2-1'`; four cells are `'4'`. The closest wins when it sits within 6 percentage points on the worst column, so `350` / `190` reads as `'2-1'`, `25%` / `75%` as `'1-3'` and `130` / `280` / `130` as `'1-2-1'`. Where two layouts are both that close, the smaller worst-column deviation wins.
 
-A ratio no layout expresses is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
+A ratio no layout is that close to is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
 
 ```txt
-Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent.
+Column widths 10% / 80% / 10% have no Templatical equivalent.
 The section was imported as 3 equal columns.
 ```
 
@@ -276,7 +277,7 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
-- **Rows of more than three cells** — `ColumnLayout` holds at most three columns, so a wider row is merged into one and reported. Ratios outside `'2'` / `'2-1'` / `'1-2'` / `'3'`, such as a `1-2-1` sidebar pair, have no equivalent either and import as the equal split.
+- **Rows of more than four cells** — `ColumnLayout` holds at most four columns, so a wider row is merged into one and reported. Ratios no layout is within 6 percentage points of, such as `90%` / `10%`, have no equivalent either and import as the equal split.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates

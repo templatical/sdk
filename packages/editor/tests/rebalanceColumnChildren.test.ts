@@ -88,6 +88,57 @@ describe("rebalanceColumnChildren", () => {
     expect(result[1]).toEqual([b, c]);
   });
 
+  it("grows 1 → 4 by appending three empty columns", () => {
+    const a = createParagraphBlock();
+    const result = rebalanceColumnChildren([[a]], "4");
+    expect(result).toHaveLength(4);
+    expect(result[0]).toEqual([a]);
+    expect(result[1]).toEqual([]);
+    expect(result[2]).toEqual([]);
+    expect(result[3]).toEqual([]);
+  });
+
+  it("treats 1-3 and 3-1 as 2 columns and 1-2-1 as 3", () => {
+    const a = createParagraphBlock();
+    const b = createParagraphBlock();
+    const two = [[a], [b]];
+    expect(rebalanceColumnChildren(two, "1-3")).toBe(two);
+    expect(rebalanceColumnChildren(two, "3-1")).toBe(two);
+    const three = [[a], [b], []];
+    expect(rebalanceColumnChildren(three, "1-2-1")).toBe(three);
+  });
+
+  it("shrinks 4 → 2 by merging the last two columns into the second", () => {
+    const a = createParagraphBlock();
+    const b = createParagraphBlock();
+    const c = createParagraphBlock();
+    const d = createParagraphBlock();
+    const result = rebalanceColumnChildren([[a], [b], [c], [d]], "2");
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual([a]);
+    expect(result[1]).toEqual([b, c, d]);
+  });
+
+  it("shrinks 4 → 1-2-1 by merging the fourth column into the third", () => {
+    const a = createParagraphBlock();
+    const b = createParagraphBlock();
+    const c = createParagraphBlock();
+    const d = createParagraphBlock();
+    const result = rebalanceColumnChildren([[a], [b], [c], [d]], "1-2-1");
+    expect(result).toHaveLength(3);
+    expect(result[0]).toEqual([a]);
+    expect(result[1]).toEqual([b]);
+    expect(result[2]).toEqual([c, d]);
+  });
+
+  it("grows 1-2-1 → 4 by appending one empty column", () => {
+    const a = createParagraphBlock();
+    const b = createParagraphBlock();
+    const c = createParagraphBlock();
+    const result = rebalanceColumnChildren([[a], [b], [c]], "4");
+    expect(result).toEqual([[a], [b], [c], []]);
+  });
+
   it("preserves all blocks across shrink+grow round-trip", () => {
     const a = createParagraphBlock();
     const b = createParagraphBlock();
@@ -109,6 +160,12 @@ describe("rebalanceColumnChildren under collaboration", () => {
     ["2", "1"],
     ["1", "3"],
     ["2-1", "3"],
+    ["2", "4"],
+    ["4", "2"],
+    ["4", "1-2-1"],
+    ["1-2-1", "4"],
+    ["3", "1-3"],
+    ["1-3", "4"],
   ] as const)(
     "%s → %s is reproduced by the operations sent for it",
     (from, to) => {

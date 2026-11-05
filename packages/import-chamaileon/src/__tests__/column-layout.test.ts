@@ -20,16 +20,28 @@ describe("matchColumnLayout", () => {
   it("matches 100 as 1", () => {
     expect(matchColumnLayout([100])).toEqual({ layout: "1", exact: true });
   });
-  it("folds four equal columns to 3, inexact", () => {
+  it("matches the four new layouts exactly", () => {
     expect(matchColumnLayout([25, 25, 25, 25])).toEqual({
-      layout: "3",
+      layout: "4",
+      exact: true,
+    });
+    expect(matchColumnLayout([25, 75])).toEqual({ layout: "1-3", exact: true });
+    expect(matchColumnLayout([75, 25])).toEqual({ layout: "3-1", exact: true });
+    expect(matchColumnLayout([25, 50, 25])).toEqual({
+      layout: "1-2-1",
+      exact: true,
+    });
+  });
+  it("snaps 20/60/20 to 1-2-1", () => {
+    expect(matchColumnLayout([20, 60, 20])).toEqual({
+      layout: "1-2-1",
       exact: false,
     });
   });
-  it("folds six columns to 3, inexact", () => {
+  it("folds six columns onto 4, inexact", () => {
     expect(
       matchColumnLayout([16.67, 16.67, 16.67, 16.67, 16.67, 16.67]).layout,
-    ).toBe("3");
+    ).toBe("4");
     expect(
       matchColumnLayout([16.67, 16.67, 16.67, 16.67, 16.67, 16.67]).exact,
     ).toBe(false);

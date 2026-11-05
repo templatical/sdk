@@ -25,14 +25,14 @@ describe("matchColumnLayout", () => {
     });
   });
 
-  it("folds 4 columns to 3, inexact", () => {
+  it("matches four equal columns exactly", () => {
     expect(matchColumnLayout([25, 25, 25, 25])).toEqual({
-      layout: "3",
-      exact: false,
+      layout: "4",
+      exact: true,
     });
   });
 
-  it("treats an empty list and all-unset 1/2 as exact, 4+ as inexact 3", () => {
+  it("treats an empty list and all-unset 1/2/4 as exact, and 5 as inexact 4", () => {
     expect(matchColumnLayout([])).toEqual({ layout: "1", exact: true });
     expect(matchColumnLayout([null])).toEqual({ layout: "1", exact: true });
     expect(matchColumnLayout([null, null])).toEqual({
@@ -40,7 +40,24 @@ describe("matchColumnLayout", () => {
       exact: true,
     });
     expect(matchColumnLayout([null, null, null, null])).toEqual({
-      layout: "3",
+      layout: "4",
+      exact: true,
+    });
+    expect(matchColumnLayout([null, null, null, null, null])).toEqual({
+      layout: "4",
+      exact: false,
+    });
+  });
+
+  it("matches the new layouts and a near 1-2-1", () => {
+    expect(matchColumnLayout([25, 75])).toEqual({ layout: "1-3", exact: true });
+    expect(matchColumnLayout([75, 25])).toEqual({ layout: "3-1", exact: true });
+    expect(matchColumnLayout([25, 50, 25])).toEqual({
+      layout: "1-2-1",
+      exact: true,
+    });
+    expect(matchColumnLayout([20, 60, 20])).toEqual({
+      layout: "1-2-1",
       exact: false,
     });
   });
@@ -74,7 +91,13 @@ describe("matchColumnLayout", () => {
     expect(columnPixels("3", 600)).toEqual([200, 200, 200]);
     expect(columnPixels("1-2", 600)).toEqual([200, 400]);
     expect(columnPixels("2-1", 600)).toEqual([400, 200]);
+    expect(columnPixels("4", 600)).toEqual([150, 150, 150, 150]);
+    expect(columnPixels("1-3", 600)).toEqual([150, 450]);
+    expect(columnPixels("3-1", 600)).toEqual([450, 150]);
+    expect(columnPixels("1-2-1", 600)).toEqual([150, 300, 150]);
     expect(COLUMN_COUNT["1-2"]).toBe(2);
+    expect(COLUMN_COUNT["4"]).toBe(4);
+    expect(COLUMN_COUNT["1-2-1"]).toBe(3);
     expect(widthsToPercents([300, undefined], 600)).toEqual([50, null]);
   });
 });

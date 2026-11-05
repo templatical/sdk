@@ -37,11 +37,12 @@ const BODY_SELECTOR =
 function columnLayout(
   count: number,
   ctx: ConvertCtx,
-): { layout: "1" | "2" | "3"; flattenNote?: string } {
+): { layout: "1" | "2" | "3" | "4"; flattenNote?: string } {
   if (count <= 1) return { layout: "1" };
   if (count === 2) return { layout: "2" };
   if (count === 3) return { layout: "3" };
-  const flattenNote = `Row with ${count} columns was flattened to a single column. Templatical supports up to 3 columns per section.`;
+  if (count === 4) return { layout: "4" };
+  const flattenNote = `Row with ${count} columns was flattened to a single column. Templatical supports up to four columns per section.`;
   ctx.warnings.push(flattenNote);
   return { layout: "1", flattenNote };
 }
@@ -184,7 +185,7 @@ function sectionFromStructure(
     bodyWidth,
     layout,
     padding,
-    layout === "1" ? 1 : Math.min(frameCount, 3),
+    layout === "1" ? 1 : frameCount,
   );
   let children: Block[][];
   if (layout === "1") {

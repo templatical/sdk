@@ -35,6 +35,23 @@ describe("structure.empty-column", () => {
     expect(issues[0].message).toContain("2");
   });
 
+  it("fires once per empty column in a 4-column section", () => {
+    const content = createDefaultTemplateContent();
+    const section = createSectionBlock();
+    section.columns = "4";
+    section.children = [[createParagraphBlock()], [], [], []];
+    content.blocks = [section];
+    const issues = lintStructure(content).filter(
+      (i) => i.ruleId === "structure.empty-column",
+    );
+    expect(issues).toHaveLength(3);
+    expect(issues.map((issue) => issue.message)).toEqual([
+      expect.stringContaining("2"),
+      expect.stringContaining("3"),
+      expect.stringContaining("4"),
+    ]);
+  });
+
   it("fires once per empty column in a 3-column section", () => {
     const content = createDefaultTemplateContent();
     const section = createSectionBlock();

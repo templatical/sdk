@@ -33,7 +33,9 @@
   refuse adding one. Use ids like `nav-shop`.
 - **Structure content in sections.** A `section` has `children`: an array of
   columns, each column an array of blocks. `columns` is `"1"`, `"2"`, `"3"`,
-  `"2-1"`, or `"1-2"`, and the column count in `children` must match. Don't nest
+  `"4"`, `"2-1"`, `"1-2"`, `"3-1"`, `"1-3"`, or `"1-2-1"`, and the column count
+  in `children` must match (`"1"` one, `"3"` and `"1-2-1"` three, `"4"` four,
+  every other two). Don't nest
   a section inside another section — MJML has no equivalent, so the renderer
   drops it on export.
 - **Rich text** (`title.content`, `paragraph.content`) is HTML — use inline tags

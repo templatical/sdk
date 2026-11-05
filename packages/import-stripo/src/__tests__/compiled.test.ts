@@ -210,7 +210,7 @@ describe("compiled pipeline", () => {
     expect(JSON.stringify(all)).toContain("Enter a new password");
   });
 
-  it("merges a fourth floated column into the third slot", () => {
+  it("keeps four floated columns", () => {
     const html = `<!DOCTYPE html><html><body>
 <table class="es-wrapper"><tr><td>
 <table class="es-content"><tr><td>
@@ -222,21 +222,44 @@ describe("compiled pipeline", () => {
 </td></tr></table>
 </body></html>`;
     const { content, report } = convertStripoTemplate(html);
-    const product = sections(content.blocks).find((s) => s.columns === "3");
+    const product = sections(content.blocks).find((s) => s.columns === "4");
     expect(product).toBeTruthy();
-    expect(product!.children).toHaveLength(3);
+    expect(product!.children).toHaveLength(4);
     expect(JSON.stringify(product!.children[0])).toContain("Col Alpha");
     expect(JSON.stringify(product!.children[1])).toContain("Col Beta");
     expect(JSON.stringify(product!.children[2])).toContain("Col Gamma");
-    expect(JSON.stringify(product!.children[2])).toContain("Col Delta");
-    expect(
-      report.warnings.some((w) => w.includes("4 columns was flattened")),
-    ).toBe(true);
+    expect(JSON.stringify(product!.children[3])).toContain("Col Delta");
+    expect(report.warnings.some((w) => w.includes("was flattened"))).toBe(
+      false,
+    );
     expect(
       report.entries.some(
         (e) => e.status === "approximated" && e.sourceTag === "es-content",
       ),
-    ).toBe(true);
+    ).toBe(false);
+  });
+
+  it("merges a fifth floated column into the fourth slot", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table class="es-wrapper"><tr><td>
+<table class="es-content"><tr><td>
+  <table class="es-left"><tr><td><p>Col Alpha</p></td></tr></table>
+  <table class="es-left"><tr><td><p>Col Beta</p></td></tr></table>
+  <table class="es-left"><tr><td><p>Col Gamma</p></td></tr></table>
+  <table class="es-left"><tr><td><p>Col Delta</p></td></tr></table>
+  <table class="es-right"><tr><td><p>Col Epsilon</p></td></tr></table>
+</td></tr></table>
+</td></tr></table>
+</body></html>`;
+    const { content, report } = convertStripoTemplate(html);
+    const product = sections(content.blocks).find((s) => s.columns === "4");
+    expect(product).toBeTruthy();
+    expect(product!.children).toHaveLength(4);
+    expect(JSON.stringify(product!.children[3])).toContain("Col Delta");
+    expect(JSON.stringify(product!.children[3])).toContain("Col Epsilon");
+    expect(report.warnings).toContain(
+      "Row with 5 columns was flattened; extra columns merged into the fourth slot. Templatical supports up to four columns per section.",
+    );
   });
 
   it("falls back to the root when there are no header/content/footer stripes", () => {

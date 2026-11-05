@@ -295,25 +295,23 @@ function columnChildren(
   padding: SpacingValue,
 ): { children: Block[][]; layout: ColumnLayout; flattenNote?: string } | null {
   const count = cols.length;
-  const layout: ColumnLayout = count >= 3 ? "3" : count === 2 ? "2" : "1";
-  const used = count >= 4 ? 3 : layout === "1" ? 1 : count;
-  const rooms = columnRooms(
-    bodyWidth,
-    count >= 4 ? "3" : layout,
-    padding,
-    used,
-  );
+  const layout: "1" | "2" | "3" | "4" =
+    count >= 4 ? "4" : count === 3 ? "3" : count === 2 ? "2" : "1";
+  const fold = count >= 5;
+  const used = fold ? 4 : layout === "1" ? 1 : count;
+  const rooms = columnRooms(bodyWidth, layout, padding, used);
   let children: Block[][];
-  if (count >= 4) {
+  if (fold) {
     const rest: Block[] = [];
-    for (const el of cols.slice(2)) {
+    for (const el of cols.slice(3)) {
       rest.push(
-        ...regionFromElement($(el) as Cheerio<Element>, $, ctx, rooms[2]),
+        ...regionFromElement($(el) as Cheerio<Element>, $, ctx, rooms[3]),
       );
     }
     children = [
       regionFromElement($(cols[0]) as Cheerio<Element>, $, ctx, rooms[0]),
       regionFromElement($(cols[1]) as Cheerio<Element>, $, ctx, rooms[1]),
+      regionFromElement($(cols[2]) as Cheerio<Element>, $, ctx, rooms[2]),
       rest,
     ];
   } else {
@@ -322,10 +320,10 @@ function columnChildren(
     );
   }
   if (!hasBlocks(children)) return null;
-  if (count < 4) return { children, layout: count >= 3 ? "3" : layout };
-  const flattenNote = `Row with ${count} columns was flattened; extra columns merged into the third slot. Templatical supports up to 3 columns per section.`;
+  if (!fold) return { children, layout };
+  const flattenNote = `Row with ${count} columns was flattened; extra columns merged into the fourth slot. Templatical supports up to four columns per section.`;
   ctx.warnings.push(flattenNote);
-  return { children, layout: "3", flattenNote };
+  return { children, layout, flattenNote };
 }
 
 function flowNodes(pieces: Piece[]): AnyNode[] {

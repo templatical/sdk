@@ -62,7 +62,7 @@ describe("editor pipeline", () => {
     );
   });
 
-  it("flattens four container-frames to a single column", () => {
+  it("keeps four container-frames as four columns", () => {
     const frame = (copy: string) =>
       `<table class="es-left" align="left"><tr><td class="esd-container-frame"><table><tr><td class="esd-block-text"><p>${copy}</p></td></tr></table></td></tr></table>`;
     const html = `<!DOCTYPE html><html><body>
@@ -73,14 +73,32 @@ ${frame("Frame One")}${frame("Frame Two")}${frame("Frame Three")}${frame("Frame 
     const { content, report } = convertStripoTemplate(html);
     const secs = sections(content.blocks);
     expect(secs).toHaveLength(1);
-    expect(secs[0].columns).toBe("1");
-    expect(secs[0].children).toHaveLength(1);
-    const col = JSON.stringify(secs[0].children[0]);
-    expect(col).toContain("Frame One");
-    expect(col).toContain("Frame Four");
+    expect(secs[0].columns).toBe("4");
+    expect(secs[0].children).toHaveLength(4);
+    expect(JSON.stringify(secs[0].children[0])).toContain("Frame One");
+    expect(JSON.stringify(secs[0].children[3])).toContain("Frame Four");
     expect(
       report.warnings.some((w) => w.includes("flattened to a single column")),
-    ).toBe(true);
+    ).toBe(false);
+  });
+
+  it("flattens five container-frames and names the four-column limit", () => {
+    const frame = (copy: string) =>
+      `<table class="es-left" align="left"><tr><td class="esd-container-frame"><table><tr><td class="esd-block-text"><p>${copy}</p></td></tr></table></td></tr></table>`;
+    const html = `<!DOCTYPE html><html><body>
+<table><tr><td class="esd-stripe"><table><tr><td class="esd-structure">
+${frame("Frame One")}${frame("Frame Two")}${frame("Frame Three")}${frame("Frame Four")}${frame("Frame Five")}
+</td></tr></table></td></tr></table>
+</body></html>`;
+    const { content, report } = convertStripoTemplate(html);
+    const secs = sections(content.blocks);
+    expect(secs).toHaveLength(1);
+    expect(secs[0].columns).toBe("1");
+    expect(secs[0].children).toHaveLength(1);
+    expect(JSON.stringify(secs[0].children[0])).toContain("Frame Five");
+    expect(report.warnings).toContain(
+      "Row with 5 columns was flattened to a single column. Templatical supports up to four columns per section.",
+    );
   });
 
   it("preserves an esd-block-html as html-fallback", () => {

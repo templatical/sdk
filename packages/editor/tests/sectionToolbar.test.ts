@@ -101,6 +101,76 @@ describe("SectionToolbar columns change", () => {
       "3",
     );
   });
+
+  it("offers every layout under its own accessible name", () => {
+    const wrapper = mountToolbar(createSectionBlock());
+    const options = wrapper.findAll("option");
+    expect(options.map((option) => option.attributes("value"))).toEqual([
+      "1",
+      "2",
+      "3",
+      "4",
+      "1-2",
+      "2-1",
+      "1-3",
+      "3-1",
+      "1-2-1",
+    ]);
+    expect(options.map((option) => option.text())).toEqual([
+      en.section.column1,
+      en.section.column2,
+      en.section.column3,
+      en.section.column4,
+      en.section.ratio12,
+      en.section.ratio21,
+      en.section.ratio13,
+      en.section.ratio31,
+      en.section.ratio121,
+    ]);
+  });
+
+  it("emits four columns for '4' and three for '1-2-1'", async () => {
+    const section = createSectionBlock();
+    section.columns = "1";
+    section.children = [[]];
+    const wrapper = mountToolbar(section);
+
+    await wrapper.find("select").setValue("4");
+    const four = wrapper.emitted("update")![0][0] as {
+      columns: string;
+      children: unknown[][];
+    };
+    expect(four.columns).toBe("4");
+    expect(four.children).toHaveLength(4);
+
+    await wrapper.find("select").setValue("1-2-1");
+    const sidebar = wrapper.emitted("update")![1][0] as {
+      columns: string;
+      children: unknown[][];
+    };
+    expect(sidebar.columns).toBe("1-2-1");
+    expect(sidebar.children).toHaveLength(3);
+  });
+
+  it("emits two columns for '1-3' and '3-1'", async () => {
+    const section = createSectionBlock();
+    section.columns = "1";
+    section.children = [[]];
+    const wrapper = mountToolbar(section);
+
+    await wrapper.find("select").setValue("1-3");
+    expect(
+      (wrapper.emitted("update")![0][0] as { children: unknown[][] }).children,
+    ).toHaveLength(2);
+
+    await wrapper.find("select").setValue("3-1");
+    const wide = wrapper.emitted("update")![1][0] as {
+      columns: string;
+      children: unknown[][];
+    };
+    expect(wide.columns).toBe("3-1");
+    expect(wide.children).toHaveLength(2);
+  });
 });
 
 describe("SectionToolbar border radius", () => {
@@ -223,6 +293,20 @@ describe("SectionToolbar stack-on-mobile toggle", () => {
     const wrapper = mountToolbar(createSectionBlock({ columns: "1" }));
     expect(stackToggle(wrapper)).toBeUndefined();
   });
+
+  it.each(["4", "1-3", "3-1", "1-2-1"] as const)(
+    "is shown for the %s layout",
+    (columns) => {
+      const count = { "4": 4, "1-3": 2, "3-1": 2, "1-2-1": 3 }[columns];
+      const wrapper = mountToolbar(
+        createSectionBlock({
+          columns,
+          children: Array.from({ length: count }, () => []),
+        }),
+      );
+      expect(stackToggle(wrapper)!.attributes("aria-checked")).toBe("true");
+    },
+  );
 
   it("is checked by default for a multi-column section (columns stack)", () => {
     const toggle = stackToggle(mountToolbar(twoCol()));

@@ -1685,7 +1685,7 @@ Positions name a sibling, never an index, so an operation means the same thing a
 - A section sits only at the top level. Adding or moving a section into a column is refused, and so is a new section with a section among its children.
 - `deleteBlock` on a section deletes its blocks with it.
 - `updateBlock` replaces each key in `set` whole, a `styles` object included, and removes the keys in `unset`. `id`, `type` and `children` can't be set or unset, and neither can a section's `columns` be unset.
-- `set: {"columns": …}` on a section resizes its `children` to the layout's column count: `"1"` has one column, `"3"` has three, and every other layout (`"2"`, `"2-1"`, `"1-2"`) has two. Growing appends empty columns. Shrinking drops trailing columns only when they are empty, so move their blocks out first.
+- `set: {"columns": …}` on a section resizes its `children` to the layout's column count: `"1"` has one column, `"3"` and `"1-2-1"` have three, `"4"` has four, and every other layout (`"2"`, `"2-1"`, `"1-2"`, `"1-3"`, `"3-1"`) has two. Growing appends empty columns. Shrinking drops trailing columns only when they are empty, so move their blocks out first.
 - A new block needs a non-empty string `id` and a string `type`, and every id in it, a new section's children included, must be new to the template.
 
 ### Preconditions
@@ -2982,7 +2982,7 @@ interface SectionWrapper {
   backgroundImage?: BackgroundImage;
 }
 
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 
 interface BackgroundImage {
   url: string;
@@ -9722,7 +9722,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `columns` | `ColumnLayout` | Column layout preset |
+| `columns` | `ColumnLayout` | Column layout preset: `"1"`, `"2"`, `"3"`, `"4"`, `"1-2"`, `"2-1"`, `"1-3"`, `"3-1"`, `"1-2-1"`. Widths and column counts are in [Sections and Columns](/guide/sections-and-columns). |
 | `children` | `Block[][]` | Array of block arrays, one per column |
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
@@ -13350,7 +13350,7 @@ BeeFree keeps an image at its desktop width on a phone when that image sits in a
 | a negative px width                                | `0`                                          | Approximated |
 | any other value                                    | `"full"`                                     | Approximated |
 
-A column's content width is its share of `settings.width`, by the section's column layout, less the divider's left and right padding. A row of four or more columns is flattened, and its modules span the whole `settings.width`. The warning names the source ratio.
+A column's content width is its share of `settings.width`, by the section's column layout, less the divider's left and right padding. A row of five or more columns is flattened, and its modules span the whole `settings.width`. A four-column row keeps four columns. The warning names the source ratio.
 
 Templatical centres every divider. A partial-width divider that BeeFree aligns left or right (`computedStyle.align`) is approximated, and its `note` names the alignment.
 
@@ -13411,12 +13411,16 @@ BeeFree organizes content into rows with columns. These map to Templatical's `Se
 | 3 equal columns    | `'3'`              |
 | 2 columns (~33/66) | `'1-2'`            |
 | 2 columns (~66/33) | `'2-1'`            |
+| 2 columns (25/75)  | `'1-3'`            |
+| 2 columns (75/25)  | `'3-1'`            |
+| 3 columns (25/50/25) | `'1-2-1'`        |
+| 4 equal columns    | `'4'`              |
 
-Column widths that don't match a standard ratio are mapped to the closest available layout, measured in the same thousandths as an exact match. A 7/12 row and a 5/12 row map to the even split `2` (7/12 is 583 thousandths: 83 from even, 84 from 2/3). That snap is one `report.warnings` line naming the source ratio, for example `Column ratio 3-9 was mapped to the nearest layout "1-2"`. `8-4`, `4-8`, `6-6` and an even `4-4-4` match `2-1`, `1-2`, `2` and `3` and do not warn. A row of four or more columns is still flattened to one column; the warning names that ratio too (`3-3-3-3`).
+Column widths that don't match a standard ratio are mapped to the closest layout of the same column count, measured in the same thousandths as an exact match. A 7/12 row and a 5/12 row map to the even split `2` (7/12 is 583 thousandths: 83 from even, 84 from 2/3). A 6-4-2 row maps to `3` and a 2-8-2 row maps to `1-2-1`. That snap is one `report.warnings` line naming the source ratio, for example `Column ratio 6-4-2 was mapped to the nearest layout "3"`. `8-4`, `4-8`, `6-6`, an even `4-4-4`, `3-9`, `9-3`, `3-6-3` and an even `3-3-3-3` match `2-1`, `1-2`, `2`, `3`, `1-3`, `3-1`, `1-2-1` and `4` and do not warn. A row of five or more columns is flattened to one column; the warning names that ratio too (`3-3-3-3-3`).
 
 A column's padding, background and border live on the column. A single-column row folds that padding into the section padding (added to the row's own padding, which is not imported, so it starts at 0), uses the column `background-color` when it is set and otherwise the row's content background, and maps `border-top` / `border-right` / `border-bottom` / `border-left` onto the section border. The row is wrapped in a one-column section when any of those is set. A non-px or negative padding is ignored. A border style other than `solid`, `dashed` or `dotted` is imported as `solid`.
 
-A multi-column row, including one flattened from 4 or more columns, adds each column's padding to its modules: left and right on every module, top on the first, bottom on the last. When the snapped layout makes a column narrower than its BeeFree grid share of the row, that shortfall comes back out of the padding facing the next column: the right side of a left column, the left side of a right column, and the right side then the left side of a middle column. The outer edge stays, and the padding does not go below 0. A column the snap makes wider, and a ratio that already matches, keep the summed padding. A column background or border has no per-column box, so it is dropped, with one `report.warnings` entry per row: `Column background/border was dropped; a multi-column row has no per-column box.` A transparent background or a border that paints nothing does not warn.
+A multi-column row, including one flattened from five or more columns, adds each column's padding to its modules: left and right on every module, top on the first, bottom on the last. When the snapped layout makes a column narrower than its BeeFree grid share of the row, that shortfall comes back out of the padding facing the next column: the right side of a left column, the left side of a right column, and the right side then the left side of a middle column. The outer edge stays, and the padding does not go below 0. A column the snap makes wider, and a ratio that already matches, keep the summed padding. A column background or border has no per-column box, so it is dropped, with one `report.warnings` entry per row: `Column background/border was dropped; a multi-column row has no per-column box.` A transparent background or a border that paints nothing does not warn.
 
 ## Template Settings
 
@@ -13425,7 +13429,7 @@ Global template settings are converted where possible:
 - **Width** -- `page.body.content.computedStyle.messageWidth` maps to `settings.width`, with `page.body.content.style.width` as the fallback and 600 when neither is set
 - **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor` (the inner box); a single-column row with one is wrapped in a one-column section so the color survives. A single column's own `background-color` replaces it when set. A row's `container.style.background-color` — the band outside that box — becomes `section.wrapper.backgroundColor`. The wrapper is as wide as the email (`settings.width`) and the section fill stays the content color, so the copy stays in the content box. The wrapper is omitted when the band is transparent or the same color as the section fill. Templatical has no viewport-bleed field, so the band does not extend into the gutters past the email width.
 - **Row visibility** -- `content.computedStyle.hideContentOnMobile` and `hideContentOnDesktop` set the section's `visibility` (`{ desktop, mobile }`). Either flag wraps the row in a section. Both unset or false leaves `visibility` unset.
-- **Mobile stacking** -- `content.computedStyle.rowColStackOnMobile: false` sets `stackOnMobile: false` on a 2- or 3-column section, so the columns stay side by side on a phone. `true` or an omitted flag leaves `stackOnMobile` unset, and the columns stack. On a one-column row, or a row flattened from four or more columns, the flag is dropped with one warning: `rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a 2- or 3-column section.`
+- **Mobile stacking** -- `content.computedStyle.rowColStackOnMobile: false` sets `stackOnMobile: false` on a multi-column section, so the columns stay side by side on a phone. `true` or an omitted flag leaves `stackOnMobile` unset, and the columns stack. On a one-column row, or a row flattened from five or more columns, the flag is dropped with one warning: `rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a multi-column section.`
 - **Row width** -- `content.style.width` is the content box. A px width other than `settings.width`, or a non-px width, adds one warning naming both and leaves the section at the email width. A section has no width of its own.
 - **Row border** -- `content.style` `border-top`, `border-right`, `border-bottom` and `border-left` map onto the section border with the same rules as a column border. On a single-column row the column border wins when both paint and they differ, with one warning: `Row border was dropped; the column border is kept on the section.` A multi-column row keeps the row border; a column border is still dropped.
 - **Background images** -- A row's `content.style` `background-image` becomes its section's `backgroundImage`, with `background-size`, `background-position` and `background-repeat` (CSS's initial values where unset), and wraps a single-column row in a section as a color does. The `container.style` band's image shows only while the content area has neither an image nor a color: then the section paints it at the content width; otherwise it's dropped. A size that fills a side (`100%`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom); `repeat-x` and `repeat-y` become `repeat`. `report.warnings` names every band image and every value with no exact keyword.
@@ -13619,7 +13623,7 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 | `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty; a `backgroundImage` is dropped and named in `report.warnings`. |
 | `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; the band's `backgroundImage` and colour follow [Background images](#background-images). |
 | `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. A lone box's background image moves to the section when the fullwidth has no `contentBackgroundImage`; with one, or among siblings, the box image is dropped and noted, `approximated`. |
-| `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's five layouts. Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
+| `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
 | `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
 | `button` | `ButtonBlock` | `href` → `url`; label stripped of tags. An unset fill is an outlined button — fill becomes `#ffffff` (not the factory `#333333`) and the entry is `approximated`. |
@@ -13649,7 +13653,7 @@ A band image the content area covers is dropped, and the entry notes it. When th
 ## Lossy conversions
 
 - **Nested `multicolumn`** — a row inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested multicolumn flattened (N columns)"`. Leaves convert; geometry is the loss.
-- **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column `multicolumn` folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
+- **5+ columns** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Four equal columns stay `"4"`. A `multicolumn` of five or more columns folds onto `"4"`; overflow children append onto the last slot, `approximated`, and the note names the four-column limit.
 - **Outlined buttons** — `background-color` unset plus a coloured border has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
 - **Loops and conditionals** — Chamaileon `attrs.expression` is not Liquid and is not MJML display-condition syntax. Empty nodes `skipped`. Populated nodes convert their children and drop the branching; stuffing the expression into `displayCondition` would lie about the dialect.
 - **Box paint among siblings** — a nested box with a real fill, padding, radius, or background image that is not the sole child of an otherwise unpainted fullwidth flattens. The paint is dropped, `approximated`, and a dropped background image is noted. A new top-level section would split the row; a nested section is illegal in a column.
@@ -13852,7 +13856,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 |---|---|---|
 | `page` | Template `settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` after `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` (the whole stack, so its fallbacks survive) / `textColor`; `link-color` → `linkColor` when set; `preheader` → `settings.preheaderText` when non-empty. `content-background-color` is the default section fill, not the page background. |
 | `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. `background-url` with its size, position and repeat → `backgroundImage` (see [Background images](#background-images)). |
-| `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`) match Templatical's five layouts. No report entry of its own. |
+| `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`, `"25%"`) match Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). No report entry of its own. |
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
 | `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / `background-url` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
 | `standard-hero` | 1-col `SectionBlock` with `hero` | Children walk as h1 / paragraph / button. `background-color` onto the section, `background-url` onto its `backgroundImage`, behind the content. `mode`, `height`, `background-width` / `background-height` and `vertical-align` map onto `hero` as for an MJML `mj-hero`; a `fixed-height` hero without a `height` (Easy Email Pro's default) is a regular section with the background image. `inner-padding` and `inner-background-color` are dropped (see [Lossy conversions](#lossy-conversions)). |
@@ -13895,7 +13899,7 @@ A `standard-hero`'s `background-url` becomes its section's `backgroundImage`, pa
 - **`$var` unresolved leftovers** — `$var(name)` resolves against widget `data.input`, then page `variables[]`. A name with no value is unset (`""` / leftover `$var(…)` do not become merge tags). One document-level warning names how many values resolved and how many were left unresolved.
 - **`mobileAttributes`** — a second attribute bag for the mobile viewport. Templatical has no per-viewport padding. Dropped. One document-level warning when any node carried them.
 - **Outlined buttons** — `border-enabled: true` plus an unset fill has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
-- **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column section folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
+- **5+ columns** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Four equal columns stay `"4"`. A section of five or more columns folds onto `"4"`; overflow children append onto the last slot, `approximated`, and the note names the four-column limit.
 - **Nested group flatten** — a `standard-group` inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested group flattened (N columns)"`. Leaves convert; geometry is the loss.
 - **Custom social PNGs** — `standard-social-element` carries a custom PNG `src`. `SocialIconsBlock` has no custom src — it picks an icon from `platform` + `iconStyle`. The PNG is the loss; the entry is `approximated` when a custom `src` was present.
 - **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
@@ -14101,18 +14105,19 @@ Each `<tr>` in a layout table becomes a `SectionBlock`. The row's direct `<td>` 
 | Cells per row | Templatical Layout |
 |---|---|
 | 1 | `'1'` |
-| 2 | `'2'` or `'2-1'` / `'1-2'`, by declared width |
-| 3 | `'3'` |
-| 4+ | merged into `'1'`, with a warning and an `approximated` report entry |
+| 2 | `'2'`, `'2-1'`, `'1-2'`, `'3-1'` or `'1-3'`, by declared width |
+| 3 | `'3'` or `'1-2-1'`, by declared width |
+| 4 | `'4'` |
+| 5+ | merged into `'1'`, with a warning and an `approximated` report entry |
 
 ### Column ratios
 
-A two-cell row picks between `'2'`, `'2-1'` and `'1-2'` from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. The closest of those layouts wins, so `350` / `190` reads as `'2-1'` and `33.33%` / `66.66%` as `'1-2'`.
+A row picks among the layouts that hold its column count, from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. Two cells choose among `'2'`, `'2-1'`, `'1-2'`, `'3-1'` and `'1-3'`; three cells between `'3'` and `'1-2-1'`; four cells are `'4'`. The closest wins when it sits within 6 percentage points on the worst column, so `350` / `190` reads as `'2-1'`, `25%` / `75%` as `'1-3'` and `130` / `280` / `130` as `'1-2-1'`. Where two layouts are both that close, the smaller worst-column deviation wins.
 
-A ratio no layout expresses is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
+A ratio no layout is that close to is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
 
 ```txt
-Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent.
+Column widths 10% / 80% / 10% have no Templatical equivalent.
 The section was imported as 3 equal columns.
 ```
 
@@ -14200,7 +14205,7 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
-- **Rows of more than three cells** — `ColumnLayout` holds at most three columns, so a wider row is merged into one and reported. Ratios outside `'2'` / `'2-1'` / `'1-2'` / `'3'`, such as a `1-2-1` sidebar pair, have no equivalent either and import as the equal split.
+- **Rows of more than four cells** — `ColumnLayout` holds at most four columns, so a wider row is merged into one and reported. Ratios no layout is within 6 percentage points of, such as `90%` / `10%`, have no equivalent either and import as the equal split.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
@@ -14482,7 +14487,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the entry
 
 MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
 
-- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). MJML allows any number of columns at any width, so a ratio outside those five resolves to the nearest layout, and a fourth or later column's content folds into the last column.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). MJML allows any number of columns at any width, so a ratio outside those layouts resolves to the nearest layout of the same column count, and a fifth or later column's content folds into the fourth column. The note names the four-column limit only on that overflow.
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
@@ -14634,8 +14639,8 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
-| `esd-structure` with 4+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
+| `esd-structure` with 1–4 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"` / `"4"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
+| `esd-structure` with 5+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
 | `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`, including its [width rule](/guide/migration-from-html#image-width). |
 | `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
@@ -14653,8 +14658,8 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 |---|---|---|
 | `es-header` / `es-content` / `es-footer` | one or more `SectionBlock`s | One section per direct row of the stripe's `es-*-body`. A stripe with no `es-*-body` uses its own rows. An empty row is skipped. |
 | Content beside the columns in the same cell | one-column `SectionBlock` | Leading content stays before the column section and trailing content after it. Content that sat between the columns is placed after the column section (`approximated`). Splitting one padded cell into more than one section is `approximated`; the top padding stays on the first section, the bottom on the last, and the sides on each. |
-| 1–3 `es-left` / `es-right` in one row | `columns` `"1"` / `"2"` / `"3"` | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
-| 4+ floated tables in one row | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
+| 1–4 `es-left` / `es-right` in one row | `columns` `"1"` / `"2"` / `"3"` / `"4"` | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
+| 5+ floated tables in one row | `columns: "4"` | Extra columns merge into the fourth slot; `approximated`. |
 | `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
@@ -14685,7 +14690,7 @@ An image behind several sections, such as a body image across several structures
 
 ## Where the mapping is lossy
 
-- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin HTML with 4+ frames flattens to one column. Compiled HTML with 4+ floated tables in one row keeps three slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Stripo states columns by count, so a row maps to the equal layout `1`, `2`, `3` or `4`. Plugin HTML with 5 or more frames flattens to one column. Compiled HTML with 5 or more floated tables in one row keeps four slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
 - **Social icon `alt`** — platforms are inferred; the original `alt` string is not stored on `SocialIcon`.
 - **Block IDs** — every imported block gets a freshly generated ID.
 - **AMP / timers / modules** — no Templatical equivalent; inner markup lands as `html` or is skipped with a warning.
@@ -14862,7 +14867,7 @@ A visual comparison catches what the report can't. Several of the losses below a
 
 | Topol tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's five layouts resolves to the nearest one. `background-url` becomes `backgroundImage` (see [Background images](#background-images)). |
+| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) resolves to the nearest one of the same column count. `background-url` becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | Holds a list of nested blocks. |
 | `mj-text` | `TitleBlock` or `ParagraphBlock` | A single heading wrapping the whole content becomes a `TitleBlock`; anything else becomes a `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. |
@@ -14884,7 +14889,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the secti
 
 Every leaf tag in the mapping table above converts — Topol's own editor doesn't emit anything this importer treats as `html-fallback` in practice. Within that, a few conversions are approximations rather than exact matches, each recorded as an `approximated` entry with a `note` in `report.entries`:
 
-- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol allows any column count at any width, so a shape outside those five — most often four equal columns — resolves to the nearest layout, and any column past the third folds its content into the last one.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Topol allows any column count at any width, so a shape outside those layouts resolves to the nearest layout of the same column count. Four equal columns stay `"4"`. Any column past the fourth folds its content into the last one, and the note names the four-column limit.
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact keyword maps to the nearest one. See [Background images](#background-images).
 - **GIFs** — `mj-gif` imports as an `ImageBlock`, the same block `mj-image` produces. Templatical has no dedicated GIF block.
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
@@ -15095,9 +15100,13 @@ Unlayer organizes content into rows with columns whose widths come from a `cells
 | `[1, 1, 1]` (equal thirds) | `'3'` |
 | `[1, 2]` | `'1-2'` |
 | `[2, 1]` | `'2-1'` |
-| 4+ cells | flattened to single column with a warning |
+| `[1, 3]` | `'1-3'` |
+| `[3, 1]` | `'3-1'` |
+| `[1, 2, 1]` | `'1-2-1'` |
+| `[1, 1, 1, 1]` (equal quarters) | `'4'` |
+| 5+ cells | flattened to a single column with a warning |
 
-Cell ratios that don't match a standard layout are mapped to the closest available one.
+Cell ratios that don't match a layout above are mapped to the closest one with the same column count. Four cells stay four columns, and unequal four-cell ratios (for example `[6, 2, 2, 2]`) are named in `report.warnings` because layout `4` is four equal quarters. Unlayer does not otherwise warn when the ratio is only near that layout.
 
 ### Section background
 
@@ -15673,21 +15682,25 @@ The `SectionBlock` is the layout primitive in Templatical. Every multi-column la
 ## Column layouts
 
 ::: tip Email best practice
-Stick to 1-2 columns for most emails. Three-column layouts become cramped on mobile when columns stack vertically, and some email clients handle 3-column layouts inconsistently.
+Stick to 1-2 columns for most emails. Three-column layouts become cramped on mobile when columns stack vertically, and some email clients handle 3-column layouts inconsistently. Four columns are tighter still.
 :::
 
-The `columns` property accepts one of five layout presets:
+The `columns` property accepts one of these layout presets:
 
 | Value | Description | Column widths |
 |-------|-------------|---------------|
 | `'1'` | Single column | 100% |
 | `'2'` | Two equal columns | 50% / 50% |
 | `'3'` | Three equal columns | 33% / 33% / 33% |
+| `'4'` | Four equal columns | 25% / 25% / 25% / 25% |
 | `'2-1'` | Two-thirds / one-third | 66% / 33% |
 | `'1-2'` | One-third / two-thirds | 33% / 66% |
+| `'3-1'` | Three-quarters / one-quarter | 75% / 25% |
+| `'1-3'` | One-quarter / three-quarters | 25% / 75% |
+| `'1-2-1'` | One-quarter / half / one-quarter | 25% / 50% / 25% |
 
 ```ts
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
 
 ## Creating sections
@@ -18299,7 +18312,7 @@ The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `structure.section-column-mismatch` | error | — | The section's `columns` value implies a column count that doesn't match `children.length`. `"1"` expects 1 inner array, `"2"`/`"2-1"`/`"1-2"` expect 2, `"3"` expects 3. A mismatch means either the layout key or the children array is wrong — both yield broken render output. The editor's section toolbar rebalances `children` automatically when the layout changes; this rule catches data that bypassed the toolbar (imports, manual JSON edits, stale snapshots). |
+| `structure.section-column-mismatch` | error | — | The section's `columns` value implies a column count that doesn't match `children.length`. `"1"` expects 1 inner array, `"2"`/`"2-1"`/`"1-2"`/`"1-3"`/`"3-1"` expect 2, `"3"`/`"1-2-1"` expect 3, `"4"` expects 4. A mismatch means either the layout key or the children array is wrong — both yield broken render output. The editor's section toolbar rebalances `children` automatically when the layout changes; this rule catches data that bypassed the toolbar (imports, manual JSON edits, stale snapshots). |
 
 ## Content presence
 

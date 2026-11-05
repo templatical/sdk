@@ -84,14 +84,16 @@ function ratioMilli(left: number, total: number): number {
 }
 
 function isExactLayout(
-  layout: Exclude<ColumnLayout, "1" | "3">,
+  layout: Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1">,
   left: number,
   total: number,
 ): boolean {
   const milli = ratioMilli(left, total);
   if (layout === "2") return milli === 500;
   if (layout === "2-1") return milli === 667;
-  return milli === 333;
+  if (layout === "1-2") return milli === 333;
+  if (layout === "3-1") return milli === 750;
+  return milli === 250;
 }
 
 function noteSnappedRatio(
@@ -106,21 +108,25 @@ function noteSnappedRatio(
 
 /**
  * Nearest two-column layout, in the same thousandths as `isExactLayout`.
- * `2` is listed first, so an equal distance stays on the even split. 7/12
- * rounds to 583: 83 from even, 84 from 2/3, so the narrower share is not
- * squeezed to a third.
+ * `2` is listed first and `1-3` / `3-1` last, so an equal distance stays on
+ * the split listed earlier. 7/12 rounds to 583: 83 from even, 84 from 2/3,
+ * so the narrower share is not squeezed to a third.
  */
 function nearestTwoColumn(
   left: number,
   total: number,
-): Exclude<ColumnLayout, "1" | "3"> {
+): Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1"> {
   const milli = ratioMilli(left, total);
-  const choices: Array<[Exclude<ColumnLayout, "1" | "3">, number]> = [
+  const choices: Array<
+    [Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1">, number]
+  > = [
     ["2", 500],
     ["2-1", 667],
     ["1-2", 333],
+    ["3-1", 750],
+    ["1-3", 250],
   ];
-  let best: Exclude<ColumnLayout, "1" | "3"> = "2";
+  let best: Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1"> = "2";
   let bestDistance = Math.abs(milli - 500);
   for (const [layout, target] of choices) {
     const distance = Math.abs(milli - target);
@@ -132,21 +138,59 @@ function nearestTwoColumn(
   return best;
 }
 
+/** Thousandths of each column's share of the row, the same scale as `ratioMilli`. */
+function columnMillis(columns: BeeFreeeColumn[]): number[] {
+  const units = columns.map(columnUnits);
+  const total = units.reduce((sum, share) => sum + share, 0);
+  if (total <= 0) return units.map(() => 0);
+  return units.map((share) => Math.round((share / total) * 1000));
+}
+
+function milliDistance(millis: number[], target: readonly number[]): number {
+  return millis.reduce(
+    (sum, value, index) => sum + Math.abs(value - (target[index] ?? 0)),
+    0,
+  );
+}
+
+/**
+ * Nearest three-column layout. An even split is `3` even when each
+ * thousandth is 333 rather than the renderer's 334 on the last column.
+ * `3` is listed first, so an equal distance stays on the even split.
+ */
+function nearestThreeColumn(columns: BeeFreeeColumn[]): "3" | "1-2-1" {
+  if (columnsEqual(columns)) return "3";
+  const millis = columnMillis(columns);
+  const choices: Array<["3" | "1-2-1", readonly number[]]> = [
+    ["3", [333, 333, 334]],
+    ["1-2-1", [250, 500, 250]],
+  ];
+  let best: "3" | "1-2-1" = "3";
+  let bestDistance = milliDistance(millis, choices[0][1]);
+  for (const [layout, target] of choices) {
+    const distance = milliDistance(millis, target);
+    if (distance < bestDistance) {
+      best = layout;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
 /**
  * Determines the Templatical ColumnLayout from BeeFree column grid values.
- * A split that is not exactly `2`, `1-2`, `2-1` or an even `3` keeps the
- * nearest of those and records one warning naming the source ratio. Four or
- * more columns flatten to one column, with that ratio in the same warning.
+ * A two-column split that is not exactly `2`, `1-2`, `2-1`, `1-3` or `3-1`
+ * keeps the nearest of those. A three-column split that is not an even `3`
+ * or exactly `1-2-1` keeps the nearer of those two. Four columns keep `4`.
+ * Each records one warning naming the source ratio when it is not exact.
+ * Five or more columns flatten to one column, with that ratio in the same
+ * warning.
  */
 function resolveColumnLayout(
   columns: BeeFreeeColumn[],
   warnings: string[],
 ): ColumnLayout | null {
   if (columns.length === 1) return null; // Single column — no section wrapper needed
-  if (columns.length === 3) {
-    if (!columnsEqual(columns)) noteSnappedRatio(columns, "3", warnings);
-    return "3";
-  }
 
   if (columns.length === 2) {
     const left = columnUnits(columns[0]);
@@ -163,9 +207,24 @@ function resolveColumnLayout(
     return layout;
   }
 
-  if (columns.length >= 4) {
+  if (columns.length === 3) {
+    const layout = nearestThreeColumn(columns);
+    const exact =
+      layout === "3"
+        ? columnsEqual(columns)
+        : milliDistance(columnMillis(columns), [250, 500, 250]) === 0;
+    if (!exact) noteSnappedRatio(columns, layout, warnings);
+    return layout;
+  }
+
+  if (columns.length === 4) {
+    if (!columnsEqual(columns)) noteSnappedRatio(columns, "4", warnings);
+    return "4";
+  }
+
+  if (columns.length >= 5) {
     warnings.push(
-      `Row with ${columns.length} columns (${gridLabel(columns)}) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to 3.`,
+      `Row with ${columns.length} columns (${gridLabel(columns)}) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to four columns.`,
     );
     return null; // Flatten to single column
   }
@@ -187,6 +246,21 @@ function columnPixels(layout: ColumnLayout, bodyWidth: number): number[] {
       return [bodyWidth / 3, (bodyWidth * 2) / 3].map(Math.floor);
     case "2-1":
       return [(bodyWidth * 2) / 3, bodyWidth / 3].map(Math.floor);
+    case "1-3":
+      return [bodyWidth * 0.25, bodyWidth * 0.75].map(Math.floor);
+    case "3-1":
+      return [bodyWidth * 0.75, bodyWidth * 0.25].map(Math.floor);
+    case "1-2-1":
+      return [bodyWidth * 0.25, bodyWidth * 0.5, bodyWidth * 0.25].map(
+        Math.floor,
+      );
+    case "4":
+      return [
+        bodyWidth * 0.25,
+        bodyWidth * 0.25,
+        bodyWidth * 0.25,
+        bodyWidth * 0.25,
+      ].map(Math.floor);
     default:
       return [Math.floor(bodyWidth)];
   }
@@ -361,7 +435,7 @@ const ROW_BORDER_DROPPED =
   "Row border was dropped; the column border is kept on the section.";
 
 const ROW_STACK_DROPPED =
-  "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a 2- or 3-column section.";
+  "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a multi-column section.";
 
 interface RowFrame {
   visibility?: BlockVisibility;
@@ -446,8 +520,12 @@ const COLUMN_BOX_DROPPED =
 const COLUMN_CONTENT_PERCENTS: Record<Exclude<ColumnLayout, "1">, string[]> = {
   "2": ["50%", "50%"],
   "3": ["33.33%", "33.33%", "33.34%"],
+  "4": ["25%", "25%", "25%", "25%"],
   "1-2": ["33.33%", "66.67%"],
   "2-1": ["66.67%", "33.33%"],
+  "1-3": ["25%", "75%"],
+  "3-1": ["75%", "25%"],
+  "1-2-1": ["25%", "50%", "25%"],
 };
 
 function drawnSide(side: BorderValue["left"] | undefined): number {
@@ -474,7 +552,10 @@ function layoutSnaps(
   columns: BeeFreeeColumn[],
   layout: Exclude<ColumnLayout, "1">,
 ): boolean {
-  if (layout === "3") return !columnsEqual(columns);
+  if (layout === "3" || layout === "4") return !columnsEqual(columns);
+  if (layout === "1-2-1") {
+    return milliDistance(columnMillis(columns), [250, 500, 250]) !== 0;
+  }
   const total = columns.reduce((sum, column) => sum + columnUnits(column), 0);
   return !isExactLayout(layout, columnUnits(columns[0]!), total);
 }
@@ -628,7 +709,7 @@ function processRow(
   );
 
   if (layout === null || layout === "1") {
-    // Single column, or 4+ columns flattened onto the body width.
+    // Single column, or five or more columns flattened onto the body width.
     const context = {
       columnWidth: settings.width,
       textColor: settings.textColor,
