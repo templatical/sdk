@@ -108,7 +108,14 @@ function writeCondition(
   blockId: string,
   displayCondition: DisplayCondition | undefined,
 ): void {
-  if (props.block.id === blockId) {
+  // Props flush after selectedBlockId. The toolbar emit is applied to whatever
+  // is selected at that moment, so a same-turn selection change (insertBlock
+  // selects synchronously) must take the id-targeted path while props are stale.
+  const selectedId = editor?.state?.selectedBlockId;
+  if (
+    props.block.id === blockId &&
+    (selectedId === undefined || selectedId === blockId)
+  ) {
     emit("update", { displayCondition });
     return;
   }
@@ -119,6 +126,9 @@ function writeCondition(
 async function requestDisplayCondition(): Promise<void> {
   if (!onRequest || requesting.value) return;
   const blockId = props.block.id;
+  // updateBlock stores this field on the active language's layer. A switch
+  // during the request would write that layer instead of the one the user opened.
+  const localeAtStart = editor?.activeLocale?.value ?? null;
   const block = safeClone(toRaw(props.block));
   const current = props.block.displayCondition
     ? safeClone(toRaw(props.block.displayCondition))
@@ -127,6 +137,7 @@ async function requestDisplayCondition(): Promise<void> {
   try {
     const result = await onRequest(current ? { current, block } : { block });
     if (!aliveFlag.alive) return;
+    if ((editor?.activeLocale?.value ?? null) !== localeAtStart) return;
     if (result === null) return;
     if (!isDisplayCondition(result)) {
       logger.warn(

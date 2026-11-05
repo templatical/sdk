@@ -526,12 +526,20 @@ describe("Editor.vue displayConditions.onRequest", () => {
     document.body.innerHTML = "";
   });
 
-  async function mountRealEditor(displayConditions: DisplayConditionsConfig) {
+  async function mountRealEditor(
+    displayConditions: DisplayConditionsConfig,
+    options?: {
+      localization?: { locales: string[] };
+      contentLocales?: string[];
+    },
+  ) {
     const content = createDefaultTemplateContent();
     content.blocks = [
       createTitleBlock({ id: "title", content: "Hello" }),
       createTitleBlock({ id: "other", content: "Other" }),
     ];
+    if (options?.contentLocales)
+      content.settings.locales = options.contentLocales;
     const wrapper = mount(Editor, {
       attachTo: document.body,
       props: {
@@ -539,6 +547,9 @@ describe("Editor.vue displayConditions.onRequest", () => {
           container: document.createElement("div"),
           content,
           displayConditions,
+          ...(options?.localization
+            ? { localization: options.localization }
+            : {}),
         },
         translations: await loadTranslations("en"),
         fontsManager: useFonts(undefined),
@@ -642,6 +653,106 @@ describe("Editor.vue displayConditions.onRequest", () => {
     await flushPromises();
 
     expect(blockById(editor, "title").displayCondition).toEqual(condition);
+    expect(blockById(editor, "other").displayCondition).toBeUndefined();
+  });
+
+  it("does not apply a late result to the block insertBlock selects before props flush", async () => {
+    const gate = deferred<DisplayCondition | null>();
+    const condition: DisplayCondition = {
+      label: "VIP",
+      before: "{% if vip %}",
+      after: "{% endif %}",
+      data: { tier: "vip" },
+    };
+    const { wrapper, editor } = await mountRealEditor({
+      onRequest: () => gate.promise,
+    });
+    await openTitle(wrapper, editor);
+    const pending = wrapper
+      .get('[data-testid="display-condition-request"]')
+      .trigger("click");
+    await nextTick();
+
+    // Queue the insert ahead of the resolution so selectBlock runs, and Vue's
+    // prop flush is still pending, when writeCondition reads props.block.
+    const inserted = Promise.resolve().then(() =>
+      (
+        wrapper.vm as unknown as {
+          insertBlock: (
+            block: ReturnType<typeof createTitleBlock>,
+          ) => string | null;
+        }
+      ).insertBlock(createTitleBlock({ content: "Inserted" })),
+    );
+    gate.resolve(condition);
+    const insertedId = await inserted;
+    await pending;
+    await flushPromises();
+
+    expect(insertedId).not.toBeNull();
+    expect(editor.state.selectedBlockId).toBe(insertedId);
+    expect(blockById(editor, "title").displayCondition).toEqual(condition);
+    expect(blockById(editor, insertedId!).displayCondition).toBeUndefined();
+  });
+
+  it("stores a display condition on the active locale layer", async () => {
+    const condition: DisplayCondition = {
+      label: "VIP",
+      before: "{% if vip %}",
+      after: "{% endif %}",
+      data: { tier: "vip" },
+    };
+    const { wrapper, editor } = await mountRealEditor(
+      { onRequest: async () => condition },
+      {
+        localization: { locales: ["en", "de"] },
+        contentLocales: ["de"],
+      },
+    );
+    editor.setActiveLocale?.("de");
+    await openTitle(wrapper, editor);
+
+    await wrapper.get('[data-testid="display-condition-request"]').trigger("click");
+    await flushPromises();
+
+    const title = blockById(editor, "title");
+    expect(editor.activeLocale?.value).toBe("de");
+    expect(title.displayCondition).toBeUndefined();
+    expect(title.l10n?.de?.set?.displayCondition).toEqual(condition);
+    expect(blockById(editor, "other").l10n?.de?.set?.displayCondition).toBeUndefined();
+  });
+
+  it("drops a late result when the active locale changed during the request", async () => {
+    const gate = deferred<DisplayCondition | null>();
+    const condition: DisplayCondition = {
+      label: "VIP",
+      before: "{% if vip %}",
+      after: "{% endif %}",
+      data: { tier: "vip" },
+    };
+    const { wrapper, editor } = await mountRealEditor(
+      { onRequest: () => gate.promise },
+      {
+        localization: { locales: ["en", "de"] },
+        contentLocales: ["de"],
+      },
+    );
+    await openTitle(wrapper, editor);
+    const pending = wrapper
+      .get('[data-testid="display-condition-request"]')
+      .trigger("click");
+    await nextTick();
+
+    editor.setActiveLocale?.("de");
+    await nextTick();
+    gate.resolve(condition);
+    await pending;
+    await flushPromises();
+
+    const title = blockById(editor, "title");
+    expect(editor.activeLocale?.value).toBe("de");
+    expect(title.displayCondition).toBeUndefined();
+    expect(title.l10n?.de?.set?.displayCondition).toBeUndefined();
     expect(blockById(editor, "other").displayCondition).toBeUndefined();
   });
 });
