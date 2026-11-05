@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Block, TemplateContent } from "@templatical/types";
-import { applyOperations } from "@templatical/types";
+import { applyOperations, invertOperations } from "@templatical/types";
 import { diffContent } from "../src/diff-content";
 import {
   createGenerator,
@@ -17,6 +17,8 @@ const leaf = (id: string, extra: Record<string, unknown> = {}): Block =>
   }) as unknown as Block;
 const section = (id: string, columns: string, children: Block[][]): Block =>
   ({ id, type: "section", columns, children }) as unknown as Block;
+const wrapper = (id: string, children: Block[]): Block =>
+  ({ id, type: "wrapper", children }) as unknown as Block;
 const content = (
   blocks: Block[],
   settings: Record<string, unknown> = { width: 600 },
@@ -32,6 +34,37 @@ function diff(before: TemplateContent, after: TemplateContent) {
 }
 
 describe("diffContent", () => {
+  it("moves a nested section child to its wrapper sibling list", () => {
+    const before = content([wrapper("A", [section("S", "1", [[leaf("X")]])])]);
+    const after = content([wrapper("A", [section("S", "1", [[]]), leaf("X")])]);
+    expect(diff(before, after)).toEqual([
+      { op: "moveBlock", blockId: "X", parent: { wrapperId: "A" }, after: "S" },
+    ]);
+  });
+
+  it("adds a wrapper with new children and moves an existing block into it", () => {
+    const before = content([leaf("X")]);
+    const after = content([wrapper("A", [leaf("N"), leaf("X")])]);
+    expect(diff(before, after)).toEqual([
+      {
+        op: "addBlock",
+        block: wrapper("A", [leaf("N")]),
+        parent: null,
+        after: null,
+      },
+      { op: "moveBlock", blockId: "X", parent: { wrapperId: "A" }, after: "N" },
+    ]);
+  });
+
+  it("moves a survivor out before deleting its old wrapper", () => {
+    const before = content([wrapper("A", [leaf("X")])]);
+    const after = content([leaf("X")]);
+    expect(diff(before, after)).toEqual([
+      { op: "moveBlock", blockId: "X", parent: null, after: null },
+      { op: "deleteBlock", blockId: "A" },
+    ]);
+  });
+
   it("is empty for equal content, whatever the key order", () => {
     const before = content([leaf("a", { color: "#000" })]);
     const after = content([
@@ -268,6 +301,91 @@ describe("diffContent", () => {
 });
 
 describe("diffContent localization", () => {
+  it("unhides a wrapper before moving a slot into its child list", () => {
+    const slot = { id: "slot", type: "slot" } as Block;
+    const before = content([slot, wrapper("A", [])], {
+      width: 600,
+      locale: "en",
+      locales: ["de"],
+    });
+    before.blocks[1].l10n = { de: { hidden: true } };
+    const after = content([wrapper("A", [slot])], {
+      width: 600,
+      locale: "en",
+      locales: ["de"],
+    });
+    expect(diff(before, after)).toEqual([
+      { op: "updateBlockLocale", blockId: "A", locale: "de", hidden: false },
+      {
+        op: "moveBlock",
+        blockId: "slot",
+        parent: { wrapperId: "A" },
+        after: null,
+      },
+    ]);
+  });
+
+  it.each(["add", "move"])(
+    "unhides an enclosing wrapper before a slot %s into its section",
+    (kind) => {
+      const slot = { id: "slot", type: "slot" } as Block;
+      const hidden = wrapper("A", [section("S", "1", [[]])]);
+      hidden.l10n = { de: { hidden: true } };
+      const settings = { width: 600, locale: "en", locales: ["de"] };
+      const before = content(
+        kind === "move" ? [slot, hidden] : [hidden],
+        settings,
+      );
+      const after = content(
+        [wrapper("A", [section("S", "1", [[slot]])])],
+        settings,
+      );
+
+      const ops = diffContent(before, after);
+      const applied = applyOperations(before, ops);
+      expect(ops).toEqual([
+        { op: "updateBlockLocale", blockId: "A", locale: "de", hidden: false },
+        kind === "move"
+          ? {
+              op: "moveBlock",
+              blockId: "slot",
+              parent: { sectionId: "S", column: 0 },
+              after: null,
+            }
+          : {
+              op: "addBlock",
+              block: slot,
+              parent: { sectionId: "S", column: 0 },
+              after: null,
+            },
+      ]);
+      expect(applied).toEqual(after);
+      expect(applyOperations(applied, invertOperations(before, ops))).toEqual(
+        before,
+      );
+    },
+  );
+
+  it("defers wrapper unhide after adding a non-slot block to its section", () => {
+    const hidden = { de: { hidden: true } };
+    const settings = { width: 600, locale: "en", locales: ["de"] };
+    const beforeWrapper = wrapper("A", [section("S", "1", [[]])]);
+    const afterWrapper = wrapper("A", [section("S", "1", [[leaf("text")]])]);
+    beforeWrapper.l10n = hidden;
+    const before = content([beforeWrapper], settings);
+    const after = content([afterWrapper], settings);
+
+    expect(diff(before, after)).toEqual([
+      {
+        op: "addBlock",
+        block: leaf("text"),
+        parent: { sectionId: "S", column: 0 },
+        after: null,
+      },
+      { op: "updateBlockLocale", blockId: "A", locale: "de", hidden: false },
+    ]);
+  });
+
   const settings = { width: 600, locale: "en", locales: ["de", "fr"] };
   const translated = { value: "Hallo", sourceHash: "12345678" };
 

@@ -1,0 +1,56 @@
+{
+  "name": "delete block in wrapper",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "deleteBlock",
+      "blockId": "X"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "A",
+          "type": "wrapper",
+          "children": [
+            {
+              "id": "Y",
+              "type": "paragraph",
+              "content": "y"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": ["de"]
+      }
+    }
+  }
+}

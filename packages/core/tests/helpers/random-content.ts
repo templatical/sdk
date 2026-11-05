@@ -72,15 +72,30 @@ function randomSection(gen: Generator): Block {
   } as Block;
 }
 
+function randomWrapper(gen: Generator): Block {
+  return {
+    id: gen.id(),
+    type: "wrapper",
+    children: Array.from({ length: gen.int(0, 3) }, () =>
+      gen.chance(0.3) ? randomSection(gen) : randomLeaf(gen),
+    ),
+  } as Block;
+}
+
 export function randomContent(gen: Generator): TemplateContent {
   return {
     blocks: Array.from({ length: gen.int(0, 6) }, () =>
-      gen.chance(0.4) ? randomSection(gen) : randomLeaf(gen),
+      gen.chance(0.25)
+        ? randomWrapper(gen)
+        : gen.chance(0.4)
+          ? randomSection(gen)
+          : randomLeaf(gen),
     ),
     settings: {
       width: gen.pick([600, 640]),
       backgroundColor: gen.pick(COLORS),
       ...(gen.chance(0.5) ? { linkColor: gen.pick(COLORS) } : {}),
+      ...(gen.chance(0.4) ? { locale: "en", locales: ["de"] } : {}),
     } as TemplateContent["settings"],
   };
 }
@@ -91,19 +106,44 @@ interface Slot {
 
 function containers(content: TemplateContent): Slot[] {
   const slots: Slot[] = [{ list: content.blocks }];
-  for (const block of content.blocks) {
-    if (block.type === "section") {
-      for (const column of block.children) slots.push({ list: column });
+  const visit = (blocks: Block[]): void => {
+    for (const block of blocks) {
+      if (block.type === "section") {
+        for (const column of block.children) {
+          slots.push({ list: column });
+          visit(column);
+        }
+      } else if (block.type === "wrapper") {
+        slots.push({ list: block.children });
+        visit(block.children);
+      }
     }
-  }
+  };
+  visit(content.blocks);
   return slots;
+}
+
+function sections(content: TemplateContent): Block[] {
+  return containers(content).flatMap(({ list }) =>
+    list.filter((block) => block.type === "section"),
+  );
+}
+
+function sectionSlots(content: TemplateContent): Slot[] {
+  return [
+    { list: content.blocks },
+    ...content.blocks
+      .filter((block) => block.type === "wrapper")
+      .map((block) => ({ list: block.children })),
+  ];
 }
 
 function leaves(content: TemplateContent): { list: Block[]; index: number }[] {
   const found: { list: Block[]; index: number }[] = [];
   for (const slot of containers(content)) {
     slot.list.forEach((block, index) => {
-      if (block.type !== "section") found.push({ list: slot.list, index });
+      if (block.type !== "section" && block.type !== "wrapper")
+        found.push({ list: slot.list, index });
     });
   }
   return found;
@@ -117,7 +157,7 @@ export function randomEdit(
   const after = safeClone(before);
   const steps = gen.int(1, 8);
   for (let step = 0; step < steps; step++) {
-    const kind = gen.int(0, 10);
+    const kind = gen.int(0, 15);
     const slots = containers(after);
     if (kind === 0) {
       // Add a leaf anywhere.
@@ -125,11 +165,8 @@ export function randomEdit(
       slot.list.splice(gen.int(0, slot.list.length), 0, randomLeaf(gen));
     } else if (kind === 1) {
       // Add a section at the top level.
-      after.blocks.splice(
-        gen.int(0, after.blocks.length),
-        0,
-        randomSection(gen),
-      );
+      const target = gen.pick(sectionSlots(after)).list;
+      target.splice(gen.int(0, target.length), 0, randomSection(gen));
     } else if (kind === 2) {
       // Delete a leaf.
       const all = leaves(after);
@@ -138,10 +175,14 @@ export function randomEdit(
       list.splice(index, 1);
     } else if (kind === 3) {
       // Delete a section, sometimes keeping some of its blocks elsewhere.
-      const sections = after.blocks.filter((block) => block.type === "section");
-      if (sections.length === 0) continue;
-      const section = gen.pick(sections);
-      after.blocks.splice(after.blocks.indexOf(section), 1);
+      const available = sectionSlots(after).flatMap(({ list }) =>
+        list
+          .filter((block) => block.type === "section")
+          .map((block) => ({ list, block })),
+      );
+      if (available.length === 0) continue;
+      const { list, block: section } = gen.pick(available);
+      list.splice(list.indexOf(section), 1);
       for (const column of (section as AnyBlock).children as Block[][]) {
         for (const child of column) {
           if (gen.chance(0.5)) {
@@ -168,9 +209,9 @@ export function randomEdit(
       after.blocks.splice(gen.int(0, after.blocks.length), 0, block);
     } else if (kind === 6) {
       // Change a layout the way the section toolbar does.
-      const sections = after.blocks.filter((block) => block.type === "section");
-      if (sections.length === 0) continue;
-      const section = gen.pick(sections) as AnyBlock;
+      const allSections = sections(after);
+      if (allSections.length === 0) continue;
+      const section = gen.pick(allSections) as AnyBlock;
       const columns = gen.pick(LAYOUTS);
       const target = getColumnCount(columns);
       const current = section.children as Block[][];
@@ -192,7 +233,7 @@ export function randomEdit(
       // Set, change and remove keys on any block.
       const all = [
         ...leaves(after).map(({ list, index }) => list[index]),
-        ...after.blocks,
+        ...containers(after).flatMap(({ list }) => list),
       ];
       if (all.length === 0) continue;
       const block = gen.pick(all) as AnyBlock;
@@ -219,7 +260,7 @@ export function randomEdit(
         ...list[index],
         type: list[index].type === "title" ? "paragraph" : "title",
       } as Block;
-    } else {
+    } else if (kind === 10) {
       // Move a block out of a section into a new section at the top.
       const all = leaves(after).filter(({ list }) => list !== after.blocks);
       if (all.length === 0) continue;
@@ -228,6 +269,51 @@ export function randomEdit(
       const section = randomSection(gen) as AnyBlock;
       (section.children as Block[][])[0].push(block);
       after.blocks.splice(gen.int(0, after.blocks.length), 0, section);
+    } else if (kind === 11) {
+      after.blocks.splice(
+        gen.int(0, after.blocks.length),
+        0,
+        randomWrapper(gen),
+      );
+    } else if (kind === 12) {
+      const wrappers = after.blocks.filter((block) => block.type === "wrapper");
+      if (wrappers.length === 0) continue;
+      const wrapper = gen.pick(wrappers);
+      after.blocks.splice(after.blocks.indexOf(wrapper), 1);
+      for (const child of wrapper.children) {
+        if (!gen.chance(0.5)) continue;
+        const target =
+          child.type === "section"
+            ? gen.pick(sectionSlots(after))
+            : gen.pick(containers(after));
+        target.list.splice(gen.int(0, target.list.length), 0, child);
+      }
+    } else if (kind === 13) {
+      const available = sectionSlots(after).flatMap(({ list }) =>
+        list
+          .filter((block) => block.type === "section")
+          .map((block) => ({ list, block })),
+      );
+      if (available.length === 0) continue;
+      const { list, block } = gen.pick(available);
+      list.splice(list.indexOf(block), 1);
+      const target = gen.pick(sectionSlots(after)).list;
+      target.splice(gen.int(0, target.length), 0, block);
+    } else if (kind === 14) {
+      const wrappers = after.blocks.filter(
+        (block) => block.type === "wrapper" && block.children.length > 1,
+      );
+      if (wrappers.length === 0) continue;
+      const children = gen.pick(wrappers).children;
+      const [block] = children.splice(gen.int(0, children.length - 1), 1);
+      children.splice(gen.int(0, children.length), 0, block);
+    } else {
+      if (!after.settings.locales?.includes("de")) continue;
+      const all = leaves(after);
+      if (all.length === 0) continue;
+      const { list, index } = gen.pick(all);
+      const block = list[index];
+      block.l10n = gen.chance(0.5) ? { de: { hidden: true } } : undefined;
     }
   }
   return after;

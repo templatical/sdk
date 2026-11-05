@@ -32,13 +32,28 @@ Ein Batch ist eine Liste von Operationen. Er wird der Reihe nach angewendet, jed
 
 Positionen nennen einen Nachbarblock, nie einen Index, sodass eine Operation dasselbe bedeutet, auch wenn vorher die Änderung eines anderen ankommt.
 
-- `parent` ist `null` für die oberste Ebene oder `{"sectionId": "…", "column": 0}` für eine Spalte einer Sektion. `column` ist ein 0-basierter Index in die `children` der Sektion.
+- `parent` ist `null` für die oberste Ebene, `{"sectionId": "…", "column": 0}` für eine Sektionsspalte oder `{"wrapperId": "…"}` für die direkte `children`-Liste eines Wrappers. `column` ist ein 0-basierter Index in den Sektionskindern. Die bisherige Sektionsform bleibt im Wire-Format unverändert. Ein gültiges Paar aus `sectionId`/`column` hat Vorrang vor einem zusätzlichen `wrapperId`, auch in `moveBlock.expect.parent`.
 - `after` ist die ID des Blocks, hinter dem der Block landet, oder `null`, damit er als erster landet. Bei `moveBlock` zählen die Nachbarn im Zielcontainer ohne den verschobenen Block.
 - `parent` und `after` sind bei `addBlock` und `moveBlock` Pflicht, auch wenn sie `null` sind.
 
+<!-- wrapper-example:start -->
+
+Bei `A.children = [S]` und `S.children = [[X]]` verschiebt diese Operation `X` direkt hinter `S` in `A.children`:
+
+```json
+{
+  "op": "moveBlock",
+  "blockId": "X",
+  "parent": { "wrapperId": "A" },
+  "after": "S"
+}
+```
+
+<!-- wrapper-example:end -->
+
 ### Sektionen und Spalten
 
-- Eine Sektion steht nur auf der obersten Ebene. Eine Sektion in eine Spalte hinzuzufügen oder zu verschieben wird abgelehnt, ebenso eine neue Sektion mit einer Sektion unter ihren Kindern.
+- Eine Sektion steht oben oder direkt in einem Wrapper. Sektionen in Spalten werden abgelehnt. Wrapper stehen nur oben; Wrapper in Spalten oder Wrappern werden abgelehnt. Ein Block kann nicht in seine eigenen Nachfahren verschoben werden. `setContent` prüft nur die Form.
 - `deleteBlock` auf einer Sektion löscht ihre Blöcke mit.
 - `updateBlock` ersetzt jeden Schlüssel in `set` vollständig, ein `styles`-Objekt eingeschlossen, und entfernt die Schlüssel in `unset`. `id`, `type` und `children` lassen sich weder setzen noch entfernen, und `columns` einer Sektion lässt sich nicht entfernen.
 - `set: {"columns": …}` auf einer Sektion passt ihre `children` an die Spaltenzahl des Layouts an: `"1"` hat eine Spalte, `"3"` hat drei, jedes andere Layout (`"2"`, `"2-1"`, `"1-2"`) hat zwei. Beim Vergrößern kommen leere Spalten hinzu. Beim Verkleinern fallen hintere Spalten nur weg, wenn sie leer sind; verschieben Sie ihre Blöcke also zuerst.
@@ -57,11 +72,12 @@ Jede Operation außer `addBlock` und `setContent` kann `expect` mitführen, das 
 
 Ein Backend übergibt die Sperren, die es hält, und die handelnde Sitzung: `applyOperations(content, ops, { locks, session })`, mit `locks` als `[{ blockId, sessionId }]`.
 
-- `updateBlock`, `moveBlock` und `deleteBlock` auf einem Block, den eine andere Sitzung hält, werden mit `lock_held` abgelehnt. Beim Verschieben oder Löschen einer Sektion zählt auch jeder Block darin.
+- `updateBlock`, `moveBlock` und `deleteBlock` auf einem Block, den eine andere Sitzung hält, werden mit `lock_held` abgelehnt. Beim Verschieben oder Löschen einer Sektion oder eines Wrappers zählen alle Nachfahren, auch Sektionen in Wrappern. `addBlock` prüft keine Sperren; `updateBlock` prüft nur die eigene ID.
 - `setContent` wird mit `locked_by_others` abgelehnt, solange eine andere Sitzung eine Sperre hält.
 - Mit `session` gleich `null` (eine serverseitige Änderung) gehört jede Sperre jemand anderem.
 
 <!-- locale-operations:start -->
+
 ## Locale-Operationen
 
 `addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` und `updateSettingsLocale` verwalten Sprachversionen im gemeinsamen Baum des SDK. Aktualisieren Sie Renderer, Validator und Collaboration-Backend, bevor Sie lokalisierte Inhalte speichern.
@@ -75,13 +91,13 @@ Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprach
 {"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","sourceHash":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
 ```
 
-| Operation | Vertrag |
-|---|---|
-| `addLocale` | `locale: string`; `position?: number` fügt in `settings.locales` ein, standardmäßig am Ende. Die Position muss eine Ganzzahl von 0 bis zur aktuellen Länge sein. Standard (`settings.locale ?? "en"`) und vorhandene Versionen werden ohne Beachtung der Groß-/Kleinschreibung abgelehnt. |
-| `removeLocale` | `locale: string`; `expect?: { blocks: Record<string, BlockLocaleLayer>; settings?: SettingsLocaleLayer }` vergleicht alle Ebenen exakt. `blocks` enthält Ebenen nach Block-ID; eine fehlende ID bedeutet keine Ebene. Das separate Feld `settings` enthält die Einstellungsebene; fehlt es, gibt es keine. `expect: { blocks: {} }` verlangt keine Block- oder Einstellungsebenen, auch bei einem Block namens `"settings"`. Entfernt die Sprache und alle Block- und Einstellungsebenen, auch in Spalten. |
-| `setDefaultLocale` | `locale: string`; ein exakter Tag aus `settings.locales`. Übernimmt Text und Eigenschaften als Basis; die bisherige Standardsprache erhält die Listenposition und eine Ebene für abweichende Werte sowie nicht leeren übersetzbaren Text, einschließlich Lücken. Fehlende Felder behalten ihre Basiswerte und eine aktuelle Textkopie für die bisherige Standardsprache. Kollidiert mit jeder Sperre einer anderen Sitzung (`locked_by_others`). |
-| `updateBlockLocale` | `blockId: string`; `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `hidden?: boolean`; `expect?: LocaleLayerExpect`. Mindestens ein Änderungsfeld muss vorhanden sein. |
-| `updateSettingsLocale` | `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `expect?: Omit<LocaleLayerExpect, "hidden">`. Mindestens ein Änderungsfeld muss vorhanden sein. Kein Ausblendestatus und keine Sperren. |
+| Operation              | Vertrag                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addLocale`            | `locale: string`; `position?: number` fügt in `settings.locales` ein, standardmäßig am Ende. Die Position muss eine Ganzzahl von 0 bis zur aktuellen Länge sein. Standard (`settings.locale ?? "en"`) und vorhandene Versionen werden ohne Beachtung der Groß-/Kleinschreibung abgelehnt.                                                                                                                                                                                                                  |
+| `removeLocale`         | `locale: string`; `expect?: { blocks: Record<string, BlockLocaleLayer>; settings?: SettingsLocaleLayer }` vergleicht alle Ebenen exakt. `blocks` enthält Ebenen nach Block-ID; eine fehlende ID bedeutet keine Ebene. Das separate Feld `settings` enthält die Einstellungsebene; fehlt es, gibt es keine. `expect: { blocks: {} }` verlangt keine Block- oder Einstellungsebenen, auch bei einem Block namens `"settings"`. Entfernt die Sprache und alle Block- und Einstellungsebenen, auch in Spalten. |
+| `setDefaultLocale`     | `locale: string`; ein exakter Tag aus `settings.locales`. Übernimmt Text und Eigenschaften als Basis; die bisherige Standardsprache erhält die Listenposition und eine Ebene für abweichende Werte sowie nicht leeren übersetzbaren Text, einschließlich Lücken. Fehlende Felder behalten ihre Basiswerte und eine aktuelle Textkopie für die bisherige Standardsprache. Kollidiert mit jeder Sperre einer anderen Sitzung (`locked_by_others`).                                                           |
+| `updateBlockLocale`    | `blockId: string`; `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `hidden?: boolean`; `expect?: LocaleLayerExpect`. Mindestens ein Änderungsfeld muss vorhanden sein.                                                                                                                                                                                                                                                                      |
+| `updateSettingsLocale` | `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `expect?: Omit<LocaleLayerExpect, "hidden">`. Mindestens ein Änderungsfeld muss vorhanden sein. Kein Ausblendestatus und keine Sperren.                                                                                                                                                                                                                                                     |
 
 `locale` muss `isLocaleTag` erfüllen: `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/`. Tags außerhalb dieses Musters, darunter `x-acme` und `i-klingon`, werden abgelehnt. Jede Operation außer dem Hinzufügen verlangt den exakten Tag in `settings.locales`; ungültige Tags und unbekannte Versionen ergeben `invalid_operation`.
 
@@ -135,15 +151,15 @@ Führen Sie `pnpm --filter @templatical/types exec vitest run tests/operations.t
 
 Ein abgelehnter Batch wirft einen `OperationError` mit `code` und `opIndex`, dem 0-basierten Index der abgelehnten Operation.
 
-| Code | Wann | Templatical Cloud antwortet |
-|---|---|---|
-| `block_exists` | Die ID eines neuen Blocks oder eine ID darin gibt es im Template schon | 409 |
-| `block_missing` | Der Block oder die Eltern-Sektion fehlt | 409 |
-| `anchor_missing` | Der `after`-Block ist nicht im Zielcontainer | 409 |
-| `precondition_failed` | `expect` gilt nicht | 409 |
-| `lock_held` | Eine andere Sitzung hält den Block | 409 |
-| `locked_by_others` | Eine andere Sitzung hält eine Sperre, bei `setContent` oder einem Wechsel der Standardsprache | 409 |
-| `invalid_operation` | Die Operation ist fehlerhaft oder kann nie gelten | 422 |
+| Code                  | Wann                                                                                          | Templatical Cloud antwortet |
+| --------------------- | --------------------------------------------------------------------------------------------- | --------------------------- |
+| `block_exists`        | Die ID eines neuen Blocks oder eine ID darin gibt es im Template schon                        | 409                         |
+| `block_missing`       | Der Block, die Eltern-Sektion oder der Eltern-Wrapper fehlt                                   | 409                         |
+| `anchor_missing`      | Der `after`-Block ist nicht im Zielcontainer                                                  | 409                         |
+| `precondition_failed` | `expect` gilt nicht                                                                           | 409                         |
+| `lock_held`           | Eine andere Sitzung hält den Block                                                            | 409                         |
+| `locked_by_others`    | Eine andere Sitzung hält eine Sperre, bei `setContent` oder einem Wechsel der Standardsprache | 409                         |
+| `invalid_operation`   | Die Operation ist fehlerhaft oder kann nie gelten                                             | 422                         |
 
 ### Welcher Fehler gewinnt
 
@@ -153,8 +169,8 @@ Verletzt eine Operation mehrere Regeln, entscheidet die erste fehlschlagende Pr�
 2. Die Blöcke, die sie nennt (`block_missing`, `block_exists`).
 3. Sperren (`lock_held`, `locked_by_others`).
 4. Vorbedingungen (`precondition_failed`).
-5. Platzierung (`invalid_operation`): eine Sektion in eine Spalte, ein Block hinter sich selbst.
-6. Der Zielcontainer: `block_missing` für eine fehlende Eltern-Sektion; `invalid_operation` für Eltern, die keine Sektion sind, oder eine Spalte außerhalb des Bereichs.
+5. Platzierung (`invalid_operation`): eine Sektion in eine Spalte, ein Wrapper in eine Spalte oder einen Wrapper, ein Block in seine eigenen Nachfahren oder hinter sich selbst.
+6. Der Zielcontainer: `block_missing` für eine fehlende Eltern-Sektion oder einen fehlenden Eltern-Wrapper; `invalid_operation` für den falschen Containertyp oder eine Spalte außerhalb des Bereichs.
 7. Der Anker (`anchor_missing`).
 8. Die Änderung selbst (`invalid_operation`): ein Layout, das Spalten mit Blöcken wegfallen ließe.
 
@@ -167,15 +183,15 @@ import {
   applyOperations,
   OperationError,
   type Operation,
-} from '@templatical/types';
+} from "@templatical/types";
 
 const ops: Operation[] = [
-  { op: 'updateBlock', blockId: 'b1', set: { content: '<p>Hello</p>' } },
+  { op: "updateBlock", blockId: "b1", set: { content: "<p>Hello</p>" } },
 ];
 
 try {
   const next = applyOperations(template.content, ops, {
-    locks: [{ blockId: 'b4', sessionId: 'f7c1…' }],
+    locks: [{ blockId: "b4", sessionId: "f7c1…" }],
     session: requestSessionId,
   });
   // `next` speichern

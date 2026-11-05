@@ -1,0 +1,48 @@
+{
+  "name": "delete wrapper with locked descendant",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "deleteBlock",
+      "blockId": "A"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "lock_held",
+      "opIndex": 0,
+      "message": "Block \"X\" is being edited in another session.",
+      "blockId": "X"
+    }
+  },
+  "locks": [
+    {
+      "blockId": "X",
+      "sessionId": "other"
+    }
+  ]
+}

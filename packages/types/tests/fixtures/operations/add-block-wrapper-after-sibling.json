@@ -1,0 +1,74 @@
+{
+  "name": "add block wrapper after sibling",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "Z",
+        "type": "paragraph",
+        "content": "z"
+      },
+      "parent": {
+        "wrapperId": "A"
+      },
+      "after": "X"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "A",
+          "type": "wrapper",
+          "children": [
+            {
+              "id": "X",
+              "type": "paragraph",
+              "content": "x"
+            },
+            {
+              "id": "Z",
+              "type": "paragraph",
+              "content": "z"
+            },
+            {
+              "id": "Y",
+              "type": "paragraph",
+              "content": "y"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": ["de"]
+      }
+    }
+  }
+}

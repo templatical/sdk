@@ -1,0 +1,57 @@
+{
+  "name": "add block wrapper duplicate inner ids",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "C",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "N",
+            "type": "spacer"
+          },
+          {
+            "id": "N",
+            "type": "spacer"
+          }
+        ]
+      },
+      "parent": null,
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "block_exists",
+      "opIndex": 0,
+      "message": "A block with id \"N\" already exists.",
+      "blockId": "N"
+    }
+  }
+}

@@ -54,6 +54,64 @@ function check(
 }
 
 describe("mapLocalizedOperations", () => {
+  it("strips locale layers from descendants of an added wrapper", () => {
+    const block = {
+      id: "A",
+      type: "wrapper",
+      children: [{ ...paragraph("X"), l10n: { de: { hidden: true } } }],
+    } as Block;
+    expect(
+      mapLocalizedOperations(content([]), "de", [
+        { op: "addBlock", block, parent: null, after: null },
+      ]),
+    ).toEqual([
+      {
+        op: "addBlock",
+        block: {
+          id: "A",
+          type: "wrapper",
+          children: [paragraph("X")],
+        },
+        parent: null,
+        after: null,
+      },
+    ]);
+  });
+
+  it("maps a wrapper child move and locale edit against the shared tree", () => {
+    const base = content([
+      { id: "A", type: "wrapper", children: [paragraph("X")] } as Block,
+      { id: "B", type: "wrapper", children: [] } as Block,
+    ]);
+    const ops: Operation[] = [
+      {
+        op: "moveBlock",
+        blockId: "X",
+        parent: { wrapperId: "B" },
+        after: null,
+      },
+      { op: "updateBlock", blockId: "X", set: { content: "Hallo" } },
+    ];
+    const mapped = mapLocalizedOperations(base, "de", ops);
+    expect(mapped).toEqual([
+      {
+        op: "moveBlock",
+        blockId: "X",
+        parent: { wrapperId: "B" },
+        after: null,
+      },
+      {
+        op: "updateBlockLocale",
+        blockId: "X",
+        locale: "de",
+        text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
+      },
+    ]);
+    expect(resolveLocale(applyOperations(base, mapped), "de")).toEqual(
+      applyOperations(resolveLocale(base, "de"), ops),
+    );
+  });
+
   it("maps paragraph content to text stamped with the default value's hash", () => {
     const base = content();
     base.blocks[0].l10n = {
@@ -68,7 +126,9 @@ describe("mapLocalizedOperations", () => {
           op: "updateBlockLocale",
           blockId: "p1",
           locale: "de",
-          text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
+          text: {
+            content: { value: "Hallo", sourceHash: sourceHash("Hello") },
+          },
         },
       ],
     );
@@ -165,7 +225,10 @@ describe("mapLocalizedOperations", () => {
           op: "updateSettingsLocale",
           locale: "de",
           text: {
-            preheaderText: { value: "Vorschau", sourceHash: sourceHash("Preview") },
+            preheaderText: {
+              value: "Vorschau",
+              sourceHash: sourceHash("Preview"),
+            },
           },
           set: { direction: "rtl" },
         },
@@ -193,7 +256,10 @@ describe("mapLocalizedOperations", () => {
           blockId: "menu",
           locale: "de",
           text: {
-            "items.home.text": { value: "Start", sourceHash: sourceHash("Home") },
+            "items.home.text": {
+              value: "Start",
+              sourceHash: sourceHash("Home"),
+            },
           },
         },
       ],
@@ -285,7 +351,9 @@ describe("mapLocalizedOperations", () => {
           op: "updateBlockLocale",
           blockId: "p1",
           locale: "de",
-          text: { content: { value: "Hallo", sourceHash: sourceHash("Hello") } },
+          text: {
+            content: { value: "Hallo", sourceHash: sourceHash("Hello") },
+          },
         },
       ],
     );

@@ -1,0 +1,76 @@
+{
+  "name": "add section into wrapper",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "S",
+        "type": "section",
+        "columns": "1",
+        "children": [[]]
+      },
+      "parent": {
+        "wrapperId": "A"
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "A",
+          "type": "wrapper",
+          "children": [
+            {
+              "id": "S",
+              "type": "section",
+              "columns": "1",
+              "children": [[]]
+            },
+            {
+              "id": "X",
+              "type": "paragraph",
+              "content": "x"
+            },
+            {
+              "id": "Y",
+              "type": "paragraph",
+              "content": "y"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": ["de"]
+      }
+    }
+  }
+}

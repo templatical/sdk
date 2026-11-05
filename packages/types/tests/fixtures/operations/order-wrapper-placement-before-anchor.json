@@ -1,0 +1,35 @@
+{
+  "name": "wrapper placement before missing anchor and hidden slot",
+  "content": {
+    "blocks": [
+      {
+        "id": "W",
+        "type": "wrapper",
+        "children": [{ "id": "slot", "type": "slot" }]
+      },
+      {
+        "id": "S",
+        "type": "section",
+        "columns": "1",
+        "children": [[]],
+        "l10n": { "de": { "hidden": true } }
+      }
+    ],
+    "settings": { "width": 600, "locale": "en", "locales": ["de"] }
+  },
+  "ops": [
+    {
+      "op": "moveBlock",
+      "blockId": "W",
+      "parent": { "sectionId": "S", "column": 0 },
+      "after": "missing"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "message": "Wrappers can only be placed at the top level."
+    }
+  }
+}

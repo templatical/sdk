@@ -25,10 +25,10 @@ import {
   createWrapperBlock,
   createParagraphBlock,
   createDefaultTemplateContent,
-} from '@templatical/editor';
+} from "@templatical/editor";
 
 const layout = createDefaultTemplateContent();
-layout.settings.backgroundColor = '#f3f4f6';
+layout.settings.backgroundColor = "#f3f4f6";
 layout.blocks = [
   createParagraphBlock({
     content:
@@ -36,7 +36,7 @@ layout.blocks = [
   }),
   createWrapperBlock({
     styles: {
-      backgroundColor: '#ffffff',
+      backgroundColor: "#ffffff",
       padding: { top: 24, right: 24, bottom: 24, left: 24 },
     },
     borderRadius: 12,
@@ -49,7 +49,7 @@ layout.blocks = [
 ];
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   layout,
   sectionWrapper: false,
 });
@@ -89,6 +89,8 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 **`slot`** is where authored `content.blocks` land. Exactly one in the layout tree. Legal as a top-level `layout.blocks` child or as a `wrapper.children` child. Illegal in a section column, in a nested wrapper, and in editor content. The palette omits it. A `slot` that reaches `renderToMjml` without `layout` throws.
 
 **`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to `mj-wrapper`. In Outlook on Windows, a band's background color paints over the background image of a section inside it — set the image on the band, or leave the band without a color. The editor's linter doesn't see the layout, so it can't warn about this. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
+
+Headless `applyOperations` and `template-tools edit` can address existing wrapper children with `parent: { wrapperId: string }`; sections may be direct wrapper children. This edits a layout tree outside the visual editor. The visual editor still refuses authored wrappers. Run `validateLayout` on a layout after applying operations; `setContent` itself checks shape only.
 
 Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) are exported from `@templatical/editor`. Headless rendering can import `applyLayout` from `@templatical/types` without the editor.
 
