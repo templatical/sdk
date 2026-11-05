@@ -29,7 +29,7 @@
     "happy-dom": "^21.0.4",
     "jsdom": "30.1.3",
     "liquidjs": "^10.30.1",
-    "tailwindcss": "^4.3.3",
+    "tailwindcss": "^4.3.4",
     "typescript": "^6.0.3",
     "vanilla-colorful": "^0.7.2",
     "vite": "^8.3.5",
