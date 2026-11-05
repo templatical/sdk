@@ -1,5 +1,28 @@
 # @templatical/import-stripo
 
+## 0.55.0
+
+### Minor Changes
+
+- e784e63: `SocialPlatform` includes `xing`. Social icon blocks can use a XING icon, drawn from the same glyph as the other platforms, in the editor and in every rendered style and tone.
+
+  BeeFree, MJML, Stripo, Unlayer, Topol and Chamaileon imports map a Xing icon onto `xing`. A BeeFree icon is recognized from its id, name, alt, title or a `xing.com` link, instead of being kept as an image.
+
+### Patch Changes
+
+- ed7d96f: Two importer corrections.
+
+  - **Beefree.** When a 7/12 or 5/12 row snaps to an even split, the padding returned to a column no longer changes what a module displays. A 240px image keeps its width, a lone icon, divider, video and button keep theirs, and text still gets the padding back. Column padding a snapped column keeps, including padding only on its outer edge, still narrows the room an image is measured in, so an image as wide as that room is full width.
+  - **Stripo.** A social icon is identified by the file name of its `src`, not by the host or folders of the URL, so `https://xing.com.evil.example/icons/other.png` stays a website link. A URL with no file name, such as `https://xing.com.evil.example?file=other.png`, stays a website link too; the query and hash are not the file name. An icon whose name matches no network becomes a website icon, and that social block is reported approximated.
+
+- 9151730: Built-in merge-tag scanning, merge-tag span handling, and CSS rule parsing complete in linear time on malformed template input. Pixel value parsers reject long invalid whitespace suffixes without super-linear backtracking.
+  The types package exports `scanSyntaxMatches`, `scanCombinedSyntaxMatches`, and `SyntaxMatch`.
+- Updated dependencies [200ab00]
+- Updated dependencies [9151730]
+- Updated dependencies [e784e63]
+  - @templatical/types@0.55.0
+  - @templatical/import-html@0.55.0
+
 ## 0.54.2
 
 ### Patch Changes

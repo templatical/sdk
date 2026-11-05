@@ -1,5 +1,20 @@
 # @templatical/import-topol
 
+## 0.55.0
+
+### Minor Changes
+
+- e784e63: `SocialPlatform` includes `xing`. Social icon blocks can use a XING icon, drawn from the same glyph as the other platforms, in the editor and in every rendered style and tone.
+
+  BeeFree, MJML, Stripo, Unlayer, Topol and Chamaileon imports map a Xing icon onto `xing`. A BeeFree icon is recognized from its id, name, alt, title or a `xing.com` link, instead of being kept as an image.
+
+### Patch Changes
+
+- Updated dependencies [200ab00]
+- Updated dependencies [9151730]
+- Updated dependencies [e784e63]
+  - @templatical/types@0.55.0
+
 ## 0.54.2
 
 ### Patch Changes
