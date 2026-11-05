@@ -194,7 +194,8 @@ export interface BaseBlock {
   displayCondition?: DisplayCondition;
 }
 
-export type ColumnLayout = "1" | "2" | "3" | "2-1" | "1-2";
+export type ColumnLayout =
+  "1" | "2" | "3" | "4" | "2-1" | "1-2" | "3-1" | "1-3" | "1-2-1";
 
 /**
  * Optional outer frame for a section. When present, the section is rendered

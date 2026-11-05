@@ -281,8 +281,12 @@ const ptBR: typeof en = {
     column1: "1 Coluna",
     column2: "2 Colunas",
     column3: "3 Colunas",
+    column4: "4 Colunas",
     ratio12: "Proporção 1:2",
     ratio21: "Proporção 2:1",
+    ratio13: "Proporção 1:3",
+    ratio31: "Proporção 3:1",
+    ratio121: "Proporção 1:2:1",
     borderRadius: "Arredondamento das Bordas",
     wrapperEnable: "Adicionar wrapper",
     wrapperLayoutConflict:

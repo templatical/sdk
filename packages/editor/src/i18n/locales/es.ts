@@ -282,8 +282,12 @@ const es: typeof en = {
     column1: "1 columna",
     column2: "2 columnas",
     column3: "3 columnas",
+    column4: "4 columnas",
     ratio12: "Proporción 1:2",
     ratio21: "Proporción 2:1",
+    ratio13: "Proporción 1:3",
+    ratio31: "Proporción 3:1",
+    ratio121: "Proporción 1:2:1",
     borderRadius: "Radio del borde",
     wrapperEnable: "Añadir contenedor",
     wrapperLayoutConflict:

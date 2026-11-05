@@ -40,17 +40,21 @@ const LAYOUT_SHAPES: Array<{ layout: ColumnLayout; percents: number[] }> = [
   { layout: "2", percents: [50, 50] },
   { layout: "1-2", percents: [33.33, 66.67] },
   { layout: "2-1", percents: [66.67, 33.33] },
+  { layout: "1-3", percents: [25, 75] },
+  { layout: "3-1", percents: [75, 25] },
   { layout: "3", percents: [33.33, 33.33, 33.34] },
+  { layout: "1-2-1", percents: [25, 50, 25] },
+  { layout: "4", percents: [25, 25, 25, 25] },
 ];
 
 /** Percentage points of drift tolerated per column before a match is inexact. */
 const WIDTH_TOLERANCE = 2;
 
 /**
- * Resolve MJML column widths to one of the five layouts `ColumnLayout` allows.
+ * Resolve MJML column widths to one of the layouts this importer emits.
  *
  * `exact: false` means the caller must report `approximated` — MJML permits any
- * number of columns at any width and this union permits five shapes, so this is
+ * number of columns at any width and this importer emits nine layouts, so this is
  * the importer's main irreducible loss (§8.1).
  */
 export function matchColumnLayout(percents: Array<number | null>): {
@@ -66,7 +70,8 @@ export function matchColumnLayout(percents: Array<number | null>): {
     if (count === 1) return { layout: "1", exact: true };
     if (count === 2) return { layout: "2", exact: true };
     if (count === 3) return { layout: "3", exact: true };
-    return { layout: "3", exact: false };
+    if (count === 4) return { layout: "4", exact: true };
+    return { layout: "4", exact: false };
   }
 
   // A partial mix of known and absent widths fills each absent column with
@@ -91,11 +96,11 @@ export function matchColumnLayout(percents: Array<number | null>): {
   }
 
   // Nearest same-count shape by total absolute error; if the count itself has
-  // no shape (4+), collapse to "3" and let the caller fold the overflow.
+  // no shape (5+), collapse to "4" and let the caller fold the overflow.
   const candidates =
     sameCount.length > 0
       ? sameCount
-      : LAYOUT_SHAPES.filter((shape) => shape.layout === "3");
+      : LAYOUT_SHAPES.filter((shape) => shape.layout === "4");
 
   let best = candidates[0];
   let bestError = Infinity;
@@ -117,8 +122,12 @@ const COLUMN_COUNT: Record<ColumnLayout, number> = {
   "1": 1,
   "2": 2,
   "3": 3,
+  "4": 4,
   "2-1": 2,
   "1-2": 2,
+  "3-1": 2,
+  "1-3": 2,
+  "1-2-1": 3,
 };
 
 /**
@@ -130,8 +139,12 @@ const COLUMN_PERCENTS: Record<ColumnLayout, number[]> = {
   "1": [100],
   "2": [50, 50],
   "3": [33.33, 33.33, 33.34],
+  "4": [25, 25, 25, 25],
   "1-2": [33.33, 66.67],
   "2-1": [66.67, 33.33],
+  "1-3": [25, 75],
+  "3-1": [75, 25],
+  "1-2-1": [25, 50, 25],
 };
 
 /** Column pixel widths per layout, mirroring `renderer/src/columns.ts`. */
@@ -145,6 +158,23 @@ function columnPixels(layout: ColumnLayout, containerWidth: number): number[] {
       return [containerWidth / 3, (containerWidth * 2) / 3];
     case "2-1":
       return [(containerWidth * 2) / 3, containerWidth / 3];
+    case "1-3":
+      return [containerWidth * 0.25, containerWidth * 0.75];
+    case "3-1":
+      return [containerWidth * 0.75, containerWidth * 0.25];
+    case "1-2-1":
+      return [
+        containerWidth * 0.25,
+        containerWidth * 0.5,
+        containerWidth * 0.25,
+      ];
+    case "4":
+      return [
+        containerWidth * 0.25,
+        containerWidth * 0.25,
+        containerWidth * 0.25,
+        containerWidth * 0.25,
+      ];
     default:
       return [containerWidth];
   }
@@ -300,7 +330,7 @@ export function buildSection(
   const notes: string[] = exact
     ? []
     : [
-        `Column widths ${shown} have no exact Templatical layout; resolved to "${layout}".`,
+        `Column widths ${shown} have no exact Templatical layout; resolved to "${layout}".${columns.length > 4 ? " Templatical supports up to four columns." : ""}`,
       ];
   const borderRadius = readBorderRadius(attrs, "Section", notes);
   const border = readBorder(attrs, "Section", notes);
@@ -324,7 +354,7 @@ export function buildSection(
   const children: Block[][] = Array.from({ length: slots }, () => []);
 
   columns.forEach(($column, index) => {
-    // A 4th+ column folds into the last slot rather than becoming an html
+    // A fifth or later column folds into the last slot rather than becoming an html
     // block: its content converts perfectly and only the geometry is lost.
     const slot = Math.min(index, slots - 1);
     const { left, right } = parsePaddingShorthand(columnAttrs[index].padding);

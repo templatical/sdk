@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SectionBlock, SpacerBlock } from "@templatical/types";
+import type { ImageBlock, SectionBlock, SpacerBlock } from "@templatical/types";
 import { buildSection, matchColumnLayout } from "../section-builder";
 import { readGlobalStyle } from "../global-style";
 import type { MapContext } from "../block-mapper";
@@ -25,6 +25,12 @@ const column = (width: string | null, ...children: TopolNode[]): TopolNode =>
 
 const spacer = (height: number): TopolNode =>
   ({ tagName: "mj-spacer", attributes: { height } }) as TopolNode;
+
+const image = (width: number): TopolNode =>
+  ({
+    tagName: "mj-image",
+    attributes: { src: "https://cdn.test/a.png", alt: "", width },
+  }) as TopolNode;
 
 const section = (
   attributes: Record<string, unknown>,
@@ -77,14 +83,50 @@ describe("matchColumnLayout", () => {
     });
   });
   it("clamps a remainder that would go negative", () => {
+    // 70 + 50 already pass 100, so the unset column is 0. That shape is
+    // nearer 25/50/25 than equal thirds.
     expect(matchColumnLayout([70, 50, null])).toEqual({
-      layout: "3",
+      layout: "1-2-1",
       exact: false,
     });
   });
-  it("folds four columns to three", () => {
+  it("matches the four new layouts exactly", () => {
     expect(matchColumnLayout([25, 25, 25, 25])).toEqual({
-      layout: "3",
+      layout: "4",
+      exact: true,
+    });
+    expect(matchColumnLayout([25, 75])).toEqual({ layout: "1-3", exact: true });
+    expect(matchColumnLayout([75, 25])).toEqual({ layout: "3-1", exact: true });
+    expect(matchColumnLayout([25, 50, 25])).toEqual({
+      layout: "1-2-1",
+      exact: true,
+    });
+  });
+
+  it("snaps 20/60/20 to 1-2-1, the nearer three-column layout", () => {
+    expect(matchColumnLayout([20, 60, 20])).toEqual({
+      layout: "1-2-1",
+      exact: false,
+    });
+  });
+
+  it("folds five columns onto 4", () => {
+    expect(matchColumnLayout([20, 20, 20, 20, 20])).toEqual({
+      layout: "4",
+      exact: false,
+    });
+  });
+
+  it("treats four unset columns as an exact 4", () => {
+    expect(matchColumnLayout([null, null, null, null])).toEqual({
+      layout: "4",
+      exact: true,
+    });
+  });
+
+  it("folds five unset columns onto 4", () => {
+    expect(matchColumnLayout([null, null, null, null, null])).toEqual({
+      layout: "4",
       exact: false,
     });
   });
@@ -144,7 +186,7 @@ describe("buildSection", () => {
     ]);
   });
 
-  it("folds a fourth column's children into the third slot", () => {
+  it("keeps four equal columns in four slots", () => {
     const { blocks, entries } = build(
       section(
         {},
@@ -155,13 +197,91 @@ describe("buildSection", () => {
       ),
     );
     const s = blocks[0] as SectionBlock;
-    expect(s.columns).toBe("3");
-    expect(s.children).toHaveLength(3);
-    expect(s.children[2]).toHaveLength(2);
+    expect(s.columns).toBe("4");
+    expect(s.children).toHaveLength(4);
+    expect(
+      s.children.map((column) => (column[0] as SpacerBlock).height),
+    ).toEqual([1, 2, 3, 4]);
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+    expect(entry.status).toBe("converted");
+    expect(entry.note).toBeUndefined();
+  });
+
+  it("folds a fifth column into the fourth slot and names the limit", () => {
+    const { blocks, entries } = build(
+      section(
+        {},
+        column("20%", spacer(1)),
+        column("20%", spacer(2)),
+        column("20%", spacer(3)),
+        column("20%", spacer(4)),
+        column("20%", spacer(5)),
+      ),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.columns).toBe("4");
+    expect(s.children).toHaveLength(4);
+    expect(s.children[3]).toHaveLength(2);
     const entry = entries.find((e) => e.sourceTag === "mj-section")!;
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      'Column widths 25%, 25%, 25%, 25% have no exact Templatical layout; resolved to "3".',
+      'Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.',
+    );
+  });
+
+  it("sizes a 1-3 row at a quarter and three quarters of the 600px body", () => {
+    const { blocks, entries } = build(
+      section(
+        {},
+        column("25%", image(150), image(149)),
+        column("75%", image(450), image(449)),
+      ),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.columns).toBe("1-3");
+    expect(s.children[0].map((block) => (block as ImageBlock).width)).toEqual([
+      "full",
+      149,
+    ]);
+    expect(s.children[1].map((block) => (block as ImageBlock).width)).toEqual([
+      "full",
+      449,
+    ]);
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+    expect(entry.status).toBe("converted");
+    expect(entry.note).toBeUndefined();
+  });
+
+  it("sizes a 3-1 row at three quarters and a quarter of the 600px body", () => {
+    const { blocks } = build(
+      section(
+        {},
+        column("75%", image(450), image(449)),
+        column("25%", image(150), image(149)),
+      ),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.columns).toBe("3-1");
+    expect(s.children[0].map((block) => (block as ImageBlock).width)).toEqual([
+      "full",
+      449,
+    ]);
+    expect(s.children[1].map((block) => (block as ImageBlock).width)).toEqual([
+      "full",
+      149,
+    ]);
+  });
+
+  it("names a 20/60/20 snap to 1-2-1", () => {
+    const { blocks, entries } = build(
+      section({}, column("20%", spacer(1)), column("60%"), column("20%")),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.columns).toBe("1-2-1");
+    expect(s.children).toHaveLength(3);
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+    expect(entry.note).toBe(
+      'Column widths 20%, 60%, 20% have no exact Templatical layout; resolved to "1-2-1".',
     );
   });
 

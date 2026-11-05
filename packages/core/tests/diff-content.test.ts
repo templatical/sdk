@@ -123,6 +123,51 @@ describe("diffContent", () => {
     ]);
   });
 
+  it("grows to four columns before a block can land in a new one", () => {
+    const before = content([section("s", "2", [[leaf("a")], [leaf("b")]])]);
+    const after = content([
+      section("s", "4", [[leaf("a")], [leaf("b")], [], [leaf("c")]]),
+    ]);
+
+    expect(diff(before, after)).toEqual([
+      { op: "updateBlock", blockId: "s", set: { columns: "4" } },
+      {
+        op: "addBlock",
+        block: leaf("c"),
+        parent: { sectionId: "s", column: 3 },
+        after: null,
+      },
+    ]);
+  });
+
+  it("moves blocks out of a shrinking four-column section before the columns change", () => {
+    const before = content([
+      section("s", "4", [[leaf("a")], [leaf("b")], [leaf("c")], [leaf("d")]]),
+    ]);
+    const after = content([
+      section("s", "1-2-1", [[leaf("a")], [leaf("b")], [leaf("c"), leaf("d")]]),
+    ]);
+
+    expect(diff(before, after)).toEqual([
+      {
+        op: "moveBlock",
+        blockId: "d",
+        parent: { sectionId: "s", column: 2 },
+        after: "c",
+      },
+      { op: "updateBlock", blockId: "s", set: { columns: "1-2-1" } },
+    ]);
+  });
+
+  it("changes a two-column layout to 1-3 without moving children", () => {
+    const before = content([section("s", "2", [[leaf("a")], [leaf("b")]])]);
+    const after = content([section("s", "1-3", [[leaf("a")], [leaf("b")]])]);
+
+    expect(diff(before, after)).toEqual([
+      { op: "updateBlock", blockId: "s", set: { columns: "1-3" } },
+    ]);
+  });
+
   it("changes a layout with the same column count as a plain key change", () => {
     const before = content([section("s", "2", [[leaf("a")], []])]);
     const after = content([section("s", "2-1", [[leaf("a")], []])]);

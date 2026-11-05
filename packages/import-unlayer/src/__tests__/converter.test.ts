@@ -278,14 +278,26 @@ describe("convertUnlayerTemplate", () => {
       expect(dividerWidthIn([1], 0, { width: "600px" }, "-600px")).toBe("full");
     });
 
-    // A 4+ column row flattens into one column as wide as the body.
-    it("measures a divider in a flattened row against the whole body", () => {
+    // A quarter of 600 is 150, so a 150px line fills its column.
+    it("measures a four-column divider against its quarter column", () => {
       expect(dividerWidthIn([1, 1, 1, 1], 0, { width: "150px" }, "600px")).toBe(
-        150,
-      );
-      expect(dividerWidthIn([1, 1, 1, 1], 3, { width: "600px" }, "600px")).toBe(
         "full",
       );
+      expect(dividerWidthIn([1, 1, 1, 1], 0, { width: "149px" }, "600px")).toBe(
+        149,
+      );
+      expect(dividerWidthIn([1, 1, 1, 1], 3, { width: "150px" }, "600px")).toBe(
+        "full",
+      );
+    });
+
+    it("measures a five-column divider against the whole body", () => {
+      expect(
+        dividerWidthIn([1, 1, 1, 1, 1], 0, { width: "150px" }, "600px"),
+      ).toBe(150);
+      expect(
+        dividerWidthIn([1, 1, 1, 1, 1], 4, { width: "600px" }, "600px"),
+      ).toBe("full");
     });
 
     // The renderer draws a column past the layout's last slot at the whole
@@ -366,15 +378,19 @@ describe("convertUnlayerTemplate", () => {
 
     expect(blocks[4].type).toBe("section");
     if (blocks[4].type === "section") {
-      expect(blocks[4].columns).toBe("1");
+      expect(blocks[4].columns).toBe("4");
+      expect(blocks[4].children).toHaveLength(4);
     }
   });
 
-  it("flattens 4+ column rows and warns", () => {
-    const { report } = convertUnlayerTemplate(template);
+  it("keeps the example's four equal columns", () => {
+    const { content, report } = convertUnlayerTemplate(template);
+    const section = content.blocks[4];
+    expect(section.type).toBe("section");
+    if (section.type === "section") expect(section.columns).toBe("4");
     expect(
       report.warnings.some((w) => w.includes("flattened to a single column")),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("reports correct status counts", () => {
@@ -669,7 +685,7 @@ describe("convertUnlayerTemplate", () => {
     );
   });
 
-  it("wraps 4+ column rows in a single-column section instead of dropping the wrapper", () => {
+  it("keeps four equal columns and their content in four slots", () => {
     const { content } = convertUnlayerTemplate({
       body: {
         values: {},
@@ -698,10 +714,116 @@ describe("convertUnlayerTemplate", () => {
     const section = content.blocks[0];
     expect(section.type).toBe("section");
     if (section.type === "section") {
-      expect(section.columns).toBe("1");
+      expect(section.columns).toBe("4");
       expect(section.styles?.backgroundColor).toBe("#eeeeee");
-      expect(section.children[0]).toHaveLength(2);
+      expect(section.children).toHaveLength(4);
+      expect(section.children[0]).toHaveLength(1);
+      expect(section.children[1]).toHaveLength(1);
+      expect(section.children[2]).toEqual([]);
+      expect(section.children[3]).toEqual([]);
     }
+  });
+
+  it("warns when an unequal four-cell row becomes four equal columns", () => {
+    const row = (cells: number[]) => ({
+      cells,
+      columns: cells.map(() => ({ contents: [], values: {} })),
+      values: {},
+    });
+    const unequal = convertUnlayerTemplate({
+      body: { values: {}, rows: [row([6, 2, 2, 2])] },
+    });
+    const section = unequal.content.blocks[0];
+    expect(section.type === "section" && section.columns).toBe("4");
+    expect(unequal.report.warnings).toContain(
+      "Row with four columns at ratio 6:2:2:2 was converted to four equal columns.",
+    );
+
+    const equal = convertUnlayerTemplate({
+      body: { values: {}, rows: [row([1, 1, 1, 1])] },
+    });
+    expect(
+      equal.report.warnings.filter((w) => w.includes("four columns at ratio")),
+    ).toEqual([]);
+  });
+
+  it("flattens a five-column row and names the four-column limit", () => {
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1, 1, 1, 1, 1],
+            columns: [1, 2, 3, 4, 5].map((n) => ({
+              contents: [{ type: "text", values: { text: `<p>${n}</p>` } }],
+              values: {},
+            })),
+            values: { backgroundColor: "#eeeeee" },
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.columns).toBe("1");
+      expect(section.children).toHaveLength(1);
+      expect(section.children[0]).toHaveLength(5);
+    }
+    expect(report.warnings).toContain(
+      "Row with 5 columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to four columns.",
+    );
+  });
+
+  it("maps 25/75, 75/25 and 25/50/25 onto the new layouts", () => {
+    const layoutFor = (cells: number[]) => {
+      const { content, report } = convertUnlayerTemplate({
+        body: {
+          values: {},
+          rows: [
+            {
+              cells,
+              columns: cells.map(() => ({ contents: [], values: {} })),
+              values: {},
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      return { columns: section.columns, warnings: report.warnings };
+    };
+
+    expect(layoutFor([1, 3])).toEqual({ columns: "1-3", warnings: [] });
+    expect(layoutFor([3, 1])).toEqual({ columns: "3-1", warnings: [] });
+    expect(layoutFor([1, 2, 1])).toEqual({ columns: "1-2-1", warnings: [] });
+    expect(layoutFor([1, 1, 1, 1])).toEqual({ columns: "4", warnings: [] });
+  });
+
+  it("snaps a near 25/50/25 row to 1-2-1 without a ratio warning", () => {
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [2, 5, 2],
+            columns: [
+              { contents: [], values: {} },
+              { contents: [], values: {} },
+              { contents: [], values: {} },
+            ],
+            values: {},
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.columns).toBe("1-2-1");
+      expect(section.children).toHaveLength(3);
+    }
+    expect(report.warnings).toEqual([]);
   });
 
   it("emits a visible placeholder for unsupported block fallbacks", () => {

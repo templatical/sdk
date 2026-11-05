@@ -1,5 +1,22 @@
 # @templatical/import-mjml
 
+## 0.55.0
+
+### Minor Changes
+
+- e784e63: `SocialPlatform` includes `xing`. Social icon blocks can use a XING icon, drawn from the same glyph as the other platforms, in the editor and in every rendered style and tone.
+
+  BeeFree, MJML, Stripo, Unlayer, Topol and Chamaileon imports map a Xing icon onto `xing`. A BeeFree icon is recognized from its id, name, alt, title or a `xing.com` link, instead of being kept as an image.
+
+### Patch Changes
+
+- 9151730: Built-in merge-tag scanning, merge-tag span handling, and CSS rule parsing complete in linear time on malformed template input. Pixel value parsers reject long invalid whitespace suffixes without super-linear backtracking.
+  The types package exports `scanSyntaxMatches`, `scanCombinedSyntaxMatches`, and `SyntaxMatch`.
+- Updated dependencies [200ab00]
+- Updated dependencies [9151730]
+- Updated dependencies [e784e63]
+  - @templatical/types@0.55.0
+
 ## 0.54.2
 
 ### Patch Changes

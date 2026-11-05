@@ -241,8 +241,12 @@ const translations: typeof en = {
     column1: "1列",
     column2: "2列",
     column3: "3列",
+    column4: "4列",
     ratio12: "比率 1:2",
     ratio21: "比率 2:1",
+    ratio13: "比率 1:3",
+    ratio31: "比率 3:1",
+    ratio121: "比率 1:2:1",
     borderRadius: "角の丸み",
     wrapperEnable: "外枠を追加",
     wrapperLayoutConflict:

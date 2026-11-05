@@ -10,21 +10,25 @@ Der `SectionBlock` ist das Layout-Primitiv in Templatical. Jedes mehrspaltige La
 ## Spaltenlayouts
 
 ::: tip E-Mail-Best-Practice
-Bleiben Sie für die meisten E-Mails bei 1-2 Spalten. Dreispaltige Layouts werden auf Mobilgeräten beim vertikalen Stapeln der Spalten beengt, und einige E-Mail-Clients behandeln 3-spaltige Layouts inkonsistent.
+Bleiben Sie für die meisten E-Mails bei 1-2 Spalten. Dreispaltige Layouts werden auf Mobilgeräten beim vertikalen Stapeln der Spalten beengt, und einige E-Mail-Clients behandeln 3-spaltige Layouts inkonsistent. Vier Spalten sind noch enger.
 :::
 
-Die Eigenschaft `columns` akzeptiert eines von fünf Layout-Presets:
+Die Eigenschaft `columns` akzeptiert eines dieser Layout-Presets:
 
 | Wert | Beschreibung | Spaltenbreiten |
 |-------|-------------|---------------|
 | `'1'` | Einzelne Spalte | 100% |
 | `'2'` | Zwei gleiche Spalten | 50% / 50% |
 | `'3'` | Drei gleiche Spalten | 33% / 33% / 33% |
+| `'4'` | Vier gleiche Spalten | 25% / 25% / 25% / 25% |
 | `'2-1'` | Zwei Drittel / ein Drittel | 66% / 33% |
 | `'1-2'` | Ein Drittel / zwei Drittel | 33% / 66% |
+| `'3-1'` | Drei Viertel / ein Viertel | 75% / 25% |
+| `'1-3'` | Ein Viertel / drei Viertel | 25% / 75% |
+| `'1-2-1'` | Ein Viertel / Hälfte / ein Viertel | 25% / 50% / 25% |
 
 ```ts
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
 
 ## Sektionen erstellen
