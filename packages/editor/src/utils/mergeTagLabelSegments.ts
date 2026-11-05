@@ -4,6 +4,7 @@ import {
   getMergeTagSample,
   isLogicMergeTagValue,
   isMergeTagValue,
+  scanCombinedSyntaxMatches,
   type MergeTag,
   type SyntaxPreset,
 } from "@templatical/types";
@@ -35,15 +36,9 @@ export function splitMergeTagLabelSegments(
 ): MergeTagLabelSegment[] {
   if (!text) return [];
 
-  const regex = new RegExp(
-    `(${syntax.value.source}|${syntax.logic.source})`,
-    "g",
-  );
   const segments: MergeTagLabelSegment[] = [];
   let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(text)) !== null) {
+  for (const match of scanCombinedSyntaxMatches(text, syntax)) {
     if (match.index > lastIndex) {
       segments.push({
         type: "text",
@@ -51,7 +46,7 @@ export function splitMergeTagLabelSegments(
       });
     }
 
-    const matched = match[0];
+    const matched = match.value;
     if (isMergeTagValue(matched, syntax)) {
       const sample = useSamples
         ? getMergeTagSample(matched, mergeTags)

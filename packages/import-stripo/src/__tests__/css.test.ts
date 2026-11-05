@@ -12,6 +12,7 @@ import {
   withoutBandOverImage,
 } from "../css";
 import type { ReadBackgroundImage } from "../css";
+import { expectLinear } from "./expectLinear";
 
 describe("parseColor", () => {
   it("normalizes 6-digit hex", () => {
@@ -40,6 +41,18 @@ describe("parseColor", () => {
 });
 
 describe("parsePxValue", () => {
+  it("rejects a long invalid whitespace suffix linearly", () => {
+    expect(parsePxValue("1" + " ".repeat(80_000) + "x")).toBe(0);
+    expect(parsePxValue("12 px ")).toBe(12);
+    expectLinear(
+      (n) => {
+        const value = "1" + " ".repeat(n) + "x";
+        return () => parsePxValue(value);
+      },
+      250,
+      8_000,
+    );
+  });
   it("reads a px length", () => {
     expect(parsePxValue("30px")).toBe(30);
   });

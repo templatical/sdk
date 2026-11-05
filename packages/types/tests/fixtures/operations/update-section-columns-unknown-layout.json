@@ -1,5 +1,5 @@
 {
-  "name": "any layout other than 1 and 3 counts as two columns",
+  "name": "an unknown layout counts as two columns",
   "content": {
     "blocks": [
       {
@@ -44,7 +44,7 @@
       "op": "updateBlock",
       "blockId": "s1",
       "set": {
-        "columns": "4"
+        "columns": "5"
       }
     }
   ],
@@ -59,7 +59,7 @@
         {
           "id": "s1",
           "type": "section",
-          "columns": "4",
+          "columns": "5",
           "children": [
             [
               {

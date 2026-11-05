@@ -260,12 +260,14 @@ export interface OperationContext {
 }
 
 /**
- * The column count of a section layout: `"1"` → 1, `"3"` → 3, anything else
+ * The column count of a section layout. `"1"` → 1. `"3"` and `"1-2-1"` → 3.
+ * `"4"` → 4. `"2"`, `"1-2"`, `"2-1"`, `"1-3"` and `"3-1"` → 2. Anything else
  * → 2. The section toolbar and Templatical Cloud's engine use the same rule.
  */
 export function getColumnCount(layout: unknown): number {
   if (layout === "1") return 1;
-  if (layout === "3") return 3;
+  if (layout === "3" || layout === "1-2-1") return 3;
+  if (layout === "4") return 4;
   return 2;
 }
 
@@ -392,41 +394,42 @@ function columnsOf(section: Json): unknown[][] {
   return children.map((column) => (Array.isArray(column) ? column : []));
 }
 
-function locate(content: TemplateContent, blockId: string): Location | null {
-  const walk = (list: unknown[], parent: BlockParent): Location | null => {
-    for (let index = 0; index < list.length; index++) {
-      const block = list[index];
-      if (!isRecord(block)) continue;
-      if (block.id === blockId) return { block, list, index, parent };
-      if (typeof block.id !== "string") continue;
-      if (isSection(block)) {
-        for (const [column, children] of columnsOf(block).entries()) {
-          const found = walk(children, { sectionId: block.id, column });
-          if (found) return found;
-        }
-      } else if (block.type === "wrapper" && Array.isArray(block.children)) {
-        const found = walk(block.children, { wrapperId: block.id });
-        if (found) return found;
+/** Locations in document order, including children of wrappers and sections. */
+function* walkLocations(
+  list: unknown[],
+  parent: BlockParent,
+): Generator<Location> {
+  for (let index = 0; index < list.length; index++) {
+    const block = list[index];
+    if (!isRecord(block)) continue;
+    yield { block, list, index, parent };
+    if (typeof block.id !== "string") continue;
+    if (isSection(block)) {
+      for (const [column, children] of columnsOf(block).entries()) {
+        yield* walkLocations(children, { sectionId: block.id, column });
       }
+    } else if (block.type === "wrapper" && Array.isArray(block.children)) {
+      yield* walkLocations(block.children, { wrapperId: block.id });
     }
-    return null;
-  };
-  return walk(topLevelOf(content), null);
+  }
+}
+
+function locate(content: TemplateContent, blockId: string): Location | null {
+  for (const location of walkLocations(topLevelOf(content), null)) {
+    if (location.block.id === blockId) return location;
+  }
+  return null;
 }
 
 /** A block's id and every id inside it, in document order. */
 function idsOf(block: Json): string[] {
-  const ids = typeof block.id === "string" ? [block.id] : [];
-  if (isSection(block)) {
-    for (const column of columnsOf(block)) ids.push(...idsIn(column));
-  } else if (block.type === "wrapper" && Array.isArray(block.children)) {
-    ids.push(...idsIn(block.children));
-  }
-  return ids;
+  return idsIn([block]);
 }
 
-function idsIn(blocks: readonly unknown[]): string[] {
-  return blocks.flatMap((block) => (isRecord(block) ? idsOf(block) : []));
+function idsIn(blocks: unknown[]): string[] {
+  return [...walkLocations(blocks, null)]
+    .map(({ block }) => block.id)
+    .filter((id): id is string => typeof id === "string");
 }
 
 // --- 1. Shape ----------------------------------------------------------------

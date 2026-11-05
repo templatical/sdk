@@ -22,7 +22,7 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 | Mehrspaltiges Layout | [Section](#section) | Der einzige Block, der andere Blöcke enthält |
 | Visuelle Trennung | [Divider](#divider) | Horizontale Linie mit Stiloptionen |
 | Vertikaler Abstand | [Spacer](#spacer) | Leerraum zwischen Blöcken |
-| Social Links | [Social Icons](#social-icons) | 17 Plattformen, 5 Icon-Stile |
+| Social Links | [Social Icons](#social-icons) | Plattformliste und sechs Icon-Stile (solid, outlined, rounded, square, circle, plain) |
 | Navigationslinks | [Menu](#menu) | Horizontale Linkliste mit Trennzeichen |
 | Tabellarische Daten | [Table](#table) | Datentabelle mit optionaler Kopfzeilenformatierung |
 | Video-Vorschau | [Video](#video) | Klickbares Thumbnail (E-Mail-Clients unterstützen keine eingebetteten Videos) |
@@ -138,7 +138,7 @@ Eine Reihe von Social-Media-Icons, die zu Plattformprofilen verlinken.
 
 E-Mail-Clients, die in den Dunkelmodus wechseln, etwa die Gmail-App und Outlook, ändern den Hintergrund, lassen Bilder aber unverändert. Ein dunkles `plain`- oder `outlined`-Icon trägt deshalb einen dezenten weißen Rand, der auf hellen Hintergründen kaum zu sehen ist und das Icon als Umriss sichtbar hält, sobald der Hintergrund dunkel wird. Helle Icons haben keinen Rand, damit sie auf farbigen Flächen sauber bleiben. Clients, die einen dunklen Hintergrund hell machen (die Gmail-App unter iOS, Outlook für Windows), können ein helles `plain`- oder `outlined`-Icon aber verschwinden lassen. Eine gefüllte Form vermeidet beides, da ihr Hintergrund für den Kontrast sorgt.
 
-17 Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
+Diese Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
 
 Jedes `SocialIcon` hat:
 
@@ -249,7 +249,7 @@ Ein Layout-Container, der eine oder mehrere Spalten enthält. Siehe [Sektionen u
 
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
-| `columns` | `ColumnLayout` | Preset für das Spaltenlayout |
+| `columns` | `ColumnLayout` | Spaltenlayout-Preset: `"1"`, `"2"`, `"3"`, `"4"`, `"1-2"`, `"2-1"`, `"1-3"`, `"3-1"`, `"1-2-1"`. Breiten und Spaltenzahlen stehen unter [Sektionen und Spalten](/de/guide/sections-and-columns). |
 | `children` | `Block[][]` | Array von Block-Arrays, eines pro Spalte |
 | `stackOnMobile` | `boolean` | Weglassen oder `true`: Spalten stapeln auf Mobilgeräten (MJML-Standard). `false`: nebeneinander (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke (optional; weglassen oder `0` für keine Abrundung) |

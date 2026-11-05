@@ -49,8 +49,12 @@ const columnOptions = computed(() => [
   { value: "1" as ColumnLayout, label: t.section.column1 },
   { value: "2" as ColumnLayout, label: t.section.column2 },
   { value: "3" as ColumnLayout, label: t.section.column3 },
+  { value: "4" as ColumnLayout, label: t.section.column4 },
   { value: "1-2" as ColumnLayout, label: t.section.ratio12 },
   { value: "2-1" as ColumnLayout, label: t.section.ratio21 },
+  { value: "1-3" as ColumnLayout, label: t.section.ratio13 },
+  { value: "3-1" as ColumnLayout, label: t.section.ratio31 },
+  { value: "1-2-1" as ColumnLayout, label: t.section.ratio121 },
 ]);
 
 function handleColumnsChange(event: Event): void {

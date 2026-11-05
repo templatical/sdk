@@ -13,10 +13,9 @@ import type { ColumnLayout } from "@templatical/types";
  * copied rather than imported, and the agreement is asserted by the
  * renderer-agreement test in `column-ratio.test.ts`.
  *
- * Keyed by every `ColumnLayout`, so a new layout has to appear here before it
- * can be snapped to — and the candidate list below is derived from this table
- * rather than from a hand-written map of count to layouts, so adding one is a
- * single edit.
+ * The candidate list is this table's keys (`candidateLayouts` reads them).
+ * Every `ColumnLayout` is a key. Key order is the tie-break: an equal
+ * deviation keeps the earlier layout.
  *
  * Exported for that agreement test alone, which compares it against
  * `getWidthPercentages` value by value. Going through `resolveColumnRatio`
@@ -28,8 +27,12 @@ export const LAYOUT_SHARES: Record<ColumnLayout, readonly number[]> = {
   "1": [100],
   "2": [50, 50],
   "3": [33.33, 33.33, 33.34],
+  "4": [25, 25, 25, 25],
   "1-2": [33.33, 66.67],
   "2-1": [66.67, 33.33],
+  "1-3": [25, 75],
+  "3-1": [75, 25],
+  "1-2-1": [25, 50, 25],
 };
 
 /**
@@ -38,13 +41,13 @@ export const LAYOUT_SHARES: Record<ColumnLayout, readonly number[]> = {
  *
  * Measured against the corpus rather than chosen for roundness. The widest
  * real match is mailchimp's `width="350"` / `width="190"` sidebar row at
- * 64.8 / 35.2, **1.9pp** from `2-1`; the nearest declared ratio that must
- * *not* match is an 80 / 20 split at **13.3pp** from the same layout. Six sits
- * 3.2x above the first and 2.2x below the second.
+ * 64.8 / 35.2, **1.9pp** from `2-1`. A 90 / 10 split is **15pp** from `3-1`
+ * and stays the counted equal columns.
  *
- * It also has to stay under 8.33, which is half the 16.67pp gap between the
- * two closest two-column layouts (`2` at 50/50 and `2-1` at 66.67/33.33):
- * above that the snap windows overlap and one ratio matches two layouts.
+ * The closest layouts are 8.33pp apart (`2-1` at 66.67 and `3-1` at 75,
+ * `1-2` at 33.33 and `1-3` at 25). Six is wider than half that gap, so two
+ * windows can cover one ratio; the smaller worst-column deviation wins, and
+ * an equal deviation keeps the earlier key.
  */
 const SNAP_TOLERANCE_PP = 6;
 
@@ -203,8 +206,8 @@ function formatShare(share: number): string {
 /**
  * What snapping could not express, named as the reader sees it.
  *
- * "equal columns" is true because the layouts a count alone produces — `2` and
- * `3` — are both equal splits; `resolveColumnRatio` is the only caller and
+ * "equal columns" is true because the layouts a count alone produces — `2`,
+ * `3` and `4` — are equal splits; `resolveColumnRatio` is the only caller and
  * never reaches here for any other. Naming the layout's own percentages
  * instead would leak the renderer's 33.34 rounding column into a report.
  */

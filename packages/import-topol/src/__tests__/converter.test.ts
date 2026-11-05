@@ -168,22 +168,25 @@ describe("convertTopolTemplate end to end", () => {
     ]);
   });
 
-  it("folds the four-column section to three and reports it", () => {
+  it("keeps the four equal columns and does not approximate the section", () => {
     const { content, report } = convertTopolTemplate(NEWSLETTER);
     const third = content.blocks[2] as SectionBlock;
-    expect(third.columns).toBe("3");
-    expect(third.children).toHaveLength(3);
-    const approximated = report.entries.filter(
-      (e) => e.status === "approximated",
-    );
-    expect(approximated.some((e) => e.sourceTag === "mj-section")).toBe(true);
+    expect(third.columns).toBe("4");
+    expect(third.children).toHaveLength(4);
+    expect(third.children[3].map((block) => block.type)).toEqual(["social"]);
+    expect(
+      report.entries.some(
+        (entry) =>
+          entry.status === "approximated" && entry.sourceTag === "mj-section",
+      ),
+    ).toBe(false);
   });
 
   it("imports only the social platforms named in display", () => {
     const { content } = convertTopolTemplate(NEWSLETTER);
     const third = content.blocks[2] as SectionBlock;
     expect(elementIdIssues(content)).toEqual([]);
-    const social = third.children[2].find(
+    const social = third.children[3].find(
       (b) => b.type === "social",
     ) as SocialIconsBlock;
     expect(social.icons.map((i) => i.platform)).toEqual([
@@ -205,11 +208,12 @@ describe("convertTopolTemplate end to end", () => {
     ).toEqual([]);
     // Three sections + 3 + 3 + 2 leaves. Counted by hand from the fixture —
     // never assert `summary.total === entries.length`, which is how `total` is
-    // computed and so can never fail.
+    // computed and so can never fail. The four equal columns convert; one
+    // leaf stays approximated.
     expect(report.summary).toEqual({
       total: 11,
-      converted: 9,
-      approximated: 2,
+      converted: 10,
+      approximated: 1,
       htmlFallback: 0,
       skipped: 0,
     });

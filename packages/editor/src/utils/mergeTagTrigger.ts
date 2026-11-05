@@ -1,3 +1,5 @@
+import { scanSyntaxMatches, SYNTAX_PRESETS } from "@templatical/types";
+
 /**
  * Result of a merge-tag trigger scan — the caret sits inside an open tag.
  */
@@ -62,6 +64,14 @@ export function findOpenMergeTagTrigger(
  * a non-global one, and sticky (`y`) would stop at the first gap.
  */
 function lastCompleteTagEnd(text: string, complete: RegExp): number {
+  const preset = Object.values(SYNTAX_PRESETS).find(
+    (candidate) => candidate.value === complete,
+  );
+  if (preset) {
+    const matches = scanSyntaxMatches(text, preset, "value");
+    const last = matches[matches.length - 1];
+    return last ? last.index + last.value.length : 0;
+  }
   const scan = new RegExp(
     complete.source,
     `${complete.flags.replace(/[gy]/g, "")}g`,

@@ -137,7 +137,7 @@ describe("buildFullwidth", () => {
     );
   });
 
-  it("folds a 4-col row onto 3 and appends overflow onto the last slot", () => {
+  it("keeps a 4-col row of equal quarters in four slots", () => {
     const { section, entries } = sectionOf({
       type: "fullwidth",
       children: [
@@ -150,19 +150,41 @@ describe("buildFullwidth", () => {
       ],
     });
 
-    expect(section.columns).toBe("3");
-    expect(section.children).toHaveLength(3);
-    expect(section.children[0]).toHaveLength(1);
-    expect(section.children[1]).toHaveLength(1);
-    expect(section.children[2]).toHaveLength(2);
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
     expect(
-      section.children[2].map((b) => (b as ParagraphBlock).content),
-    ).toEqual(["<p>3</p>", "<p>4</p>"]);
+      section.children.map((column) => (column[0] as ParagraphBlock).content),
+    ).toEqual(["<p>1</p>", "<p>2</p>", "<p>3</p>", "<p>4</p>"]);
+
+    const entry = entries.find((e) => e.sourceTag === "fullwidth");
+    expect(entry?.status).toBe("converted");
+    expect(entry?.note).toBeUndefined();
+  });
+
+  it("folds a fifth column into the fourth slot and names the limit", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      children: [
+        multicolumn(
+          column("120px", text("<p>1</p>")),
+          column("120px", text("<p>2</p>")),
+          column("120px", text("<p>3</p>")),
+          column("120px", text("<p>4</p>")),
+          column("120px", text("<p>5</p>")),
+        ),
+      ],
+    });
+
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
+    expect(section.children[3]).toHaveLength(2);
+    expect((section.children[3][0] as ParagraphBlock).content).toBe("<p>4</p>");
+    expect((section.children[3][1] as ParagraphBlock).content).toBe("<p>5</p>");
 
     const entry = entries.find((e) => e.sourceTag === "fullwidth");
     expect(entry?.status).toBe("approximated");
     expect(entry?.note).toBe(
-      'Column widths 150px, 150px, 150px, 150px have no exact Templatical layout; resolved to "3".',
+      'Column widths 120px, 120px, 120px, 120px, 120px have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.',
     );
   });
 

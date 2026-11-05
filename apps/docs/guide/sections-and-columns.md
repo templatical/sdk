@@ -10,21 +10,25 @@ The `SectionBlock` is the layout primitive in Templatical. Every multi-column la
 ## Column layouts
 
 ::: tip Email best practice
-Stick to 1-2 columns for most emails. Three-column layouts become cramped on mobile when columns stack vertically, and some email clients handle 3-column layouts inconsistently.
+Stick to 1-2 columns for most emails. Three-column layouts become cramped on mobile when columns stack vertically, and some email clients handle 3-column layouts inconsistently. Four columns are tighter still.
 :::
 
-The `columns` property accepts one of five layout presets:
+The `columns` property accepts one of these layout presets:
 
 | Value | Description | Column widths |
 |-------|-------------|---------------|
 | `'1'` | Single column | 100% |
 | `'2'` | Two equal columns | 50% / 50% |
 | `'3'` | Three equal columns | 33% / 33% / 33% |
+| `'4'` | Four equal columns | 25% / 25% / 25% / 25% |
 | `'2-1'` | Two-thirds / one-third | 66% / 33% |
 | `'1-2'` | One-third / two-thirds | 33% / 66% |
+| `'3-1'` | Three-quarters / one-quarter | 75% / 25% |
+| `'1-3'` | One-quarter / three-quarters | 25% / 75% |
+| `'1-2-1'` | One-quarter / half / one-quarter | 25% / 50% / 25% |
 
 ```ts
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
 
 ## Creating sections

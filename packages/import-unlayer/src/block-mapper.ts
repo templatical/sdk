@@ -44,6 +44,7 @@ const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
   x: "twitter",
   instagram: "instagram",
   linkedin: "linkedin",
+  xing: "xing",
   youtube: "youtube",
   tiktok: "tiktok",
   pinterest: "pinterest",

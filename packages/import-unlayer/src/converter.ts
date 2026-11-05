@@ -43,7 +43,22 @@ function resolveColumnLayout(
   warnings: string[],
 ): ColumnLayout {
   if (cells.length <= 1) return "1";
-  if (cells.length === 3) return "3";
+  if (cells.length === 4) {
+    // Layout "4" is four equal quarters, so unequal cells lose their ratio.
+    if (cells.some((cell) => cell !== cells[0])) {
+      warnings.push(
+        `Row with four columns at ratio ${cells.join(":")} was converted to four equal columns.`,
+      );
+    }
+    return "4";
+  }
+
+  if (cells.length > 4) {
+    warnings.push(
+      `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to four columns.`,
+    );
+    return "1";
+  }
 
   if (cells.length === 2) {
     const left = cells[0] ?? 1;
@@ -51,15 +66,27 @@ function resolveColumnLayout(
     const total = left + right;
     const ratio = left / total;
 
+    // 0.71 / 0.29 sit just past the midpoint of 2/3 and 3/4, so 7/10 stays 2-1.
+    if (ratio > 0.71) return "3-1";
     if (ratio > 0.58) return "2-1";
+    if (ratio < 0.29) return "1-3";
     if (ratio < 0.42) return "1-2";
     return "2";
   }
 
-  warnings.push(
-    `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to 3.`,
-  );
-  return "1";
+  const total = cells.reduce((sum, cell) => sum + cell, 0);
+  if (total <= 0) return "3";
+  const shares = cells.map((cell) => cell / total);
+  const distance = (target: readonly number[]) =>
+    shares.reduce(
+      (sum, share, index) => sum + Math.abs(share - (target[index] ?? 0)),
+      0,
+    );
+  // "3" wins a tie: an equal distance stays on the even split.
+  if (distance([0.25, 0.5, 0.25]) < distance([1 / 3, 1 / 3, 1 / 3])) {
+    return "1-2-1";
+  }
+  return "3";
 }
 
 export interface ConvertUnlayerOptions {
@@ -72,8 +99,12 @@ const COLUMN_SHARES: Record<ColumnLayout, number[]> = {
   "1": [1],
   "2": [1 / 2, 1 / 2],
   "3": [1 / 3, 1 / 3, 1 / 3],
+  "4": [1 / 4, 1 / 4, 1 / 4, 1 / 4],
   "1-2": [1 / 3, 2 / 3],
   "2-1": [2 / 3, 1 / 3],
+  "1-3": [1 / 4, 3 / 4],
+  "3-1": [3 / 4, 1 / 4],
+  "1-2-1": [1 / 4, 1 / 2, 1 / 4],
 };
 
 /**

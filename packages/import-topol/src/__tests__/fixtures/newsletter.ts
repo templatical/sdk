@@ -3,7 +3,7 @@ import type { TopolDesign } from "../../types";
 /**
  * A hand-authored Topol design covering every construct the importer handles:
  * the global-style cascade, a one-column section, a two-column section, a
- * four-column section (which must fold), each leaf type, and a social block
+ * four equal columns, each leaf type, and a social block
  * whose `display` omits a configured platform.
  */
 export const NEWSLETTER: TopolDesign = {

@@ -56,7 +56,7 @@ Given `A.children = [S]` and `S.children = [[X]]`, this operation moves `X` dire
 - A section sits at the top level or directly inside a wrapper. A section in a column is refused. A wrapper sits only at the top level; wrappers in columns or wrappers are refused. Moving a block into itself or its descendants is refused. `setContent` checks shape only, not these nesting rules.
 - `deleteBlock` on a section deletes its blocks with it.
 - `updateBlock` replaces each key in `set` whole, a `styles` object included, and removes the keys in `unset`. `id`, `type` and `children` can't be set or unset, and neither can a section's `columns` be unset.
-- `set: {"columns": …}` on a section resizes its `children` to the layout's column count: `"1"` has one column, `"3"` has three, and every other layout (`"2"`, `"2-1"`, `"1-2"`) has two. Growing appends empty columns. Shrinking drops trailing columns only when they are empty, so move their blocks out first.
+- `set: {"columns": …}` on a section resizes its `children` to the layout's column count: `"1"` has one column, `"3"` and `"1-2-1"` have three, `"4"` has four, and every other layout (`"2"`, `"2-1"`, `"1-2"`, `"1-3"`, `"3-1"`) has two. Growing appends empty columns. Shrinking drops trailing columns only when they are empty, so move their blocks out first.
 - A new block needs a non-empty string `id` and a string `type`, and every id in it, a new section's children included, must be new to the template.
 
 ### Preconditions

@@ -41,12 +41,12 @@ function indexBlocks(blocks: Block[]): Map<string, Block> {
 
 function container(content: TemplateContent, parent: BlockParent): Block[] {
   if (parent === null) return content.blocks;
-  const target = indexBlocks(content.blocks).get(
-    "wrapperId" in parent ? parent.wrapperId : parent.sectionId,
-  )!;
-  if ("wrapperId" in parent)
-    return target.type === "wrapper" ? target.children : [];
-  return target.type === "section" ? target.children[parent.column] : [];
+  if ("sectionId" in parent) {
+    const section = indexBlocks(content.blocks).get(parent.sectionId);
+    return section?.type === "section" ? section.children[parent.column] : [];
+  }
+  const wrapper = indexBlocks(content.blocks).get(parent.wrapperId);
+  return wrapper?.type === "wrapper" ? wrapper.children : [];
 }
 
 function placement(
@@ -196,6 +196,8 @@ export function mapLocalizedOperations(
       if (target.type === "section" && block.type === "section") {
         target.children = block.children;
         target.columns = block.columns;
+      } else if (target.type === "wrapper" && block.type === "wrapper") {
+        target.children = block.children;
       }
     } else {
       const structuralView =

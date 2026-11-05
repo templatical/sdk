@@ -1,5 +1,16 @@
 # @templatical/import-html
 
+## 0.55.0
+
+### Patch Changes
+
+- 9151730: Built-in merge-tag scanning, merge-tag span handling, and CSS rule parsing complete in linear time on malformed template input. Pixel value parsers reject long invalid whitespace suffixes without super-linear backtracking.
+  The types package exports `scanSyntaxMatches`, `scanCombinedSyntaxMatches`, and `SyntaxMatch`.
+- Updated dependencies [200ab00]
+- Updated dependencies [9151730]
+- Updated dependencies [e784e63]
+  - @templatical/types@0.55.0
+
 ## 0.54.2
 
 ### Patch Changes

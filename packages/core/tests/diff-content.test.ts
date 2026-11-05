@@ -156,6 +156,51 @@ describe("diffContent", () => {
     ]);
   });
 
+  it("grows to four columns before a block can land in a new one", () => {
+    const before = content([section("s", "2", [[leaf("a")], [leaf("b")]])]);
+    const after = content([
+      section("s", "4", [[leaf("a")], [leaf("b")], [], [leaf("c")]]),
+    ]);
+
+    expect(diff(before, after)).toEqual([
+      { op: "updateBlock", blockId: "s", set: { columns: "4" } },
+      {
+        op: "addBlock",
+        block: leaf("c"),
+        parent: { sectionId: "s", column: 3 },
+        after: null,
+      },
+    ]);
+  });
+
+  it("moves blocks out of a shrinking four-column section before the columns change", () => {
+    const before = content([
+      section("s", "4", [[leaf("a")], [leaf("b")], [leaf("c")], [leaf("d")]]),
+    ]);
+    const after = content([
+      section("s", "1-2-1", [[leaf("a")], [leaf("b")], [leaf("c"), leaf("d")]]),
+    ]);
+
+    expect(diff(before, after)).toEqual([
+      {
+        op: "moveBlock",
+        blockId: "d",
+        parent: { sectionId: "s", column: 2 },
+        after: "c",
+      },
+      { op: "updateBlock", blockId: "s", set: { columns: "1-2-1" } },
+    ]);
+  });
+
+  it("changes a two-column layout to 1-3 without moving children", () => {
+    const before = content([section("s", "2", [[leaf("a")], [leaf("b")]])]);
+    const after = content([section("s", "1-3", [[leaf("a")], [leaf("b")]])]);
+
+    expect(diff(before, after)).toEqual([
+      { op: "updateBlock", blockId: "s", set: { columns: "1-3" } },
+    ]);
+  });
+
   it("changes a layout with the same column count as a plain key change", () => {
     const before = content([section("s", "2", [[leaf("a")], []])]);
     const after = content([section("s", "2-1", [[leaf("a")], []])]);
@@ -301,6 +346,25 @@ describe("diffContent", () => {
 });
 
 describe("diffContent localization", () => {
+  it("keeps an already visible wrapper visible when moving a slot into it", () => {
+    const slot = { id: "slot", type: "slot" } as Block;
+    const beforeWrapper = wrapper("A", []);
+    beforeWrapper.l10n = { de: { hidden: false } };
+    const afterWrapper = wrapper("A", [slot]);
+    afterWrapper.l10n = { de: { hidden: false } };
+    const settings = { width: 600, locale: "en", locales: ["de"] };
+    const before = content([slot, beforeWrapper], settings);
+    const after = content([afterWrapper], settings);
+    expect(diff(before, after)).toEqual([
+      {
+        op: "moveBlock",
+        blockId: "slot",
+        parent: { wrapperId: "A" },
+        after: null,
+      },
+    ]);
+  });
+
   it("unhides a wrapper before moving a slot into its child list", () => {
     const slot = { id: "slot", type: "slot" } as Block;
     const before = content([slot, wrapper("A", [])], {

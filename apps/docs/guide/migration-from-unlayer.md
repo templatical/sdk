@@ -184,9 +184,13 @@ Unlayer organizes content into rows with columns whose widths come from a `cells
 | `[1, 1, 1]` (equal thirds) | `'3'` |
 | `[1, 2]` | `'1-2'` |
 | `[2, 1]` | `'2-1'` |
-| 4+ cells | flattened to single column with a warning |
+| `[1, 3]` | `'1-3'` |
+| `[3, 1]` | `'3-1'` |
+| `[1, 2, 1]` | `'1-2-1'` |
+| `[1, 1, 1, 1]` (equal quarters) | `'4'` |
+| 5+ cells | flattened to a single column with a warning |
 
-Cell ratios that don't match a standard layout are mapped to the closest available one.
+Cell ratios that don't match a layout above are mapped to the closest one with the same column count. Four cells stay four columns, and unequal four-cell ratios (for example `[6, 2, 2, 2]`) are named in `report.warnings` because layout `4` is four equal quarters. Unlayer does not otherwise warn when the ratio is only near that layout.
 
 ### Section background
 

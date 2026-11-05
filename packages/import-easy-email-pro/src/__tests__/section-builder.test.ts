@@ -104,7 +104,7 @@ describe("buildTopLevel", () => {
     expect(entries.some((e) => e.sourceTag === "standard-group")).toBe(false);
   });
 
-  it("folds 4 columns to 3 and approximates", () => {
+  it("keeps 4 equal columns", () => {
     const { blocks, entries } = build({
       type: "standard-section",
       data: {},
@@ -116,11 +116,50 @@ describe("buildTopLevel", () => {
         col([para("d")], "25%"),
       ],
     });
-    expect((blocks[0] as SectionBlock).columns).toBe("3");
-    expect((blocks[0] as SectionBlock).children[2]).toHaveLength(2);
-    expect(
-      entries.some((e) => e.status === "approximated" && e.note?.includes("4")),
-    ).toBe(true);
+    const section = blocks[0] as SectionBlock;
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
+    expect(section.children.map((column) => column)).toHaveLength(4);
+    expect(entries[0].status).toBe("converted");
+  });
+
+  it("folds 5 columns onto 4 and names the limit", () => {
+    const { blocks, entries } = build({
+      type: "standard-section",
+      data: {},
+      attributes: {},
+      children: [
+        col([para("a")], "20%"),
+        col([para("b")], "20%"),
+        col([para("c")], "20%"),
+        col([para("d")], "20%"),
+        col([para("e")], "20%"),
+      ],
+    });
+    const section = blocks[0] as SectionBlock;
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
+    expect(section.children[3]).toHaveLength(2);
+    expect(entries[0].note).toBe(
+      '5-column layout has no exact Templatical equivalent; folded onto "4". Templatical supports up to four columns.',
+    );
+  });
+
+  it("snaps 20/60/20 to 1-2-1 and names the widths", () => {
+    const { blocks, entries } = build({
+      type: "standard-section",
+      data: {},
+      attributes: {},
+      children: [
+        col([para("a")], "20%"),
+        col([para("b")], "60%"),
+        col([para("c")], "20%"),
+      ],
+    });
+    expect((blocks[0] as SectionBlock).columns).toBe("1-2-1");
+    expect(entries[0].note).toBe(
+      'Column widths 20%, 60%, 20% have no exact Templatical layout; resolved to "1-2-1".',
+    );
   });
 
   it("skips a placeholder-only column as an empty slot", () => {

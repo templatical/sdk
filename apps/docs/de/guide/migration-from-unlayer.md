@@ -182,9 +182,13 @@ Unlayer organisiert Inhalte in Reihen mit Spalten, deren Breiten aus einem `cell
 | `[1, 1, 1]` (gleiche Drittel) | `'3'` |
 | `[1, 2]` | `'1-2'` |
 | `[2, 1]` | `'2-1'` |
-| 4+ Zellen | auf eine einzelne Spalte reduziert, mit Warnung |
+| `[1, 3]` | `'1-3'` |
+| `[3, 1]` | `'3-1'` |
+| `[1, 2, 1]` | `'1-2-1'` |
+| `[1, 1, 1, 1]` (gleiche Viertel) | `'4'` |
+| 5+ Zellen | auf eine einzelne Spalte reduziert, mit Warnung |
 
-Zellverhältnisse, die keinem Standardlayout entsprechen, werden auf das nächstliegende verfügbare abgebildet.
+Zellverhältnisse, die keinem Layout oben entsprechen, werden auf das nächstliegende mit derselben Spaltenzahl abgebildet. Vier Zellen bleiben vier Spalten; ungleiche Viererverhältnisse (zum Beispiel `[6, 2, 2, 2]`) werden in `report.warnings` genannt, da Layout `4` aus vier gleichen Vierteln besteht. Sonst warnt Unlayer nicht, wenn das Verhältnis diesem Layout nur nahekommt.
 
 ### Section-Hintergrund
 

@@ -110,14 +110,14 @@ describe("convertHtmlTemplate — multi-column", () => {
     expect(second.children).toHaveLength(3);
   });
 
-  it("4+ column row flattens to '1' and emits a warning", () => {
+  it("four-column row keeps columns='4' and does not flatten", () => {
     const third = result.content.blocks[2] as SectionBlock;
     expect(third.type).toBe("section");
-    expect(third.columns).toBe("1");
-    const flattenWarn = result.report.warnings.find((w) =>
-      w.includes("flattened"),
-    );
-    expect(flattenWarn).toBeDefined();
+    expect(third.columns).toBe("4");
+    expect(third.children).toHaveLength(4);
+    expect(
+      result.report.warnings.find((w) => w.includes("flattened")),
+    ).toBeUndefined();
   });
 });
 
