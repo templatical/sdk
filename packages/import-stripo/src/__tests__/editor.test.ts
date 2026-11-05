@@ -207,12 +207,12 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
         status: "approximated",
-        note: "Columns of 180, 220, 100 and 100px became four equal columns.",
+        note: "Columns of 180px, 220px, 100px and 100px became four equal columns.",
       },
     ]);
   });
 
-  it("reports two unequal column-table widths as two equal columns", () => {
+  it("treats equal inline column-table widths as converted", () => {
     const html = structureDoc(
       [
         sizedFrame("Left", {
@@ -236,8 +236,67 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
       {
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("reports unequal inline column-table widths over the width attributes", () => {
+    const html = structureDoc(
+      [
+        sizedFrame("Left", {
+          table: "400",
+          tableStyle: "width:180px",
+          frame: "100",
+        }),
+        sizedFrame("Right", {
+          table: "180",
+          tableStyle: "width:420px",
+          frame: "100",
+          side: "es-right",
+        }),
+      ].join(""),
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(
+      report.entries.filter((e) => e.sourceTag === "esd-structure"),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
         status: "approximated",
-        note: "Columns of 200 and 400px became two equal columns.",
+        note: "Columns of 180px and 420px became two equal columns.",
+      },
+    ]);
+  });
+
+  it("uses the width attribute when the inline width is not a px length", () => {
+    const html = structureDoc(
+      [
+        sizedFrame("Left", {
+          table: "200",
+          tableStyle: "width:50%",
+          frame: "10",
+        }),
+        sizedFrame("Right", {
+          table: "400",
+          tableStyle: "width:80%",
+          frame: "10",
+          side: "es-right",
+        }),
+      ].join(""),
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(
+      report.entries.filter((e) => e.sourceTag === "esd-structure"),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "Columns of 200px and 400px became two equal columns.",
       },
     ]);
   });
@@ -262,7 +321,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
         status: "approximated",
-        note: "Columns of 180 and 420px became two equal columns.",
+        note: "Columns of 180px and 420px became two equal columns.",
       },
     ]);
   });
@@ -305,7 +364,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
         status: "approximated",
-        note: "Columns of 201, 200 and 202px became three equal columns.",
+        note: "Columns of 201px, 200px and 202px became three equal columns.",
       },
     ]);
   });
@@ -328,11 +387,76 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     ]);
   });
 
-  it("stays converted when a frame states no width", () => {
+  it("names an unstated width when the readable widths differ", () => {
     const html = structureDoc(
       [
         sizedFrame("A", { frame: "200" }),
         sizedFrame("B", { frame: "400" }),
+        sizedFrame("C"),
+      ].join(""),
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].columns).toBe("3");
+    expect(
+      report.entries.filter((e) => e.sourceTag === "esd-structure"),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "Columns of 200px, 400px and an unstated width became three equal columns.",
+      },
+    ]);
+  });
+
+  it("keeps an unstated width in its column's place", () => {
+    const html = structureDoc(
+      [
+        sizedFrame("A", { frame: "200" }),
+        sizedFrame("B"),
+        sizedFrame("C", { frame: "400" }),
+      ].join(""),
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].columns).toBe("3");
+    expect(
+      report.entries.filter((e) => e.sourceTag === "esd-structure"),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "Columns of 200px, an unstated width and 400px became three equal columns.",
+      },
+    ]);
+  });
+
+  it("stays converted when fewer than two frames state a width", () => {
+    const html = structureDoc(
+      [
+        sizedFrame("A", { frame: "200" }),
+        sizedFrame("B"),
+        sizedFrame("C"),
+      ].join(""),
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].columns).toBe("3");
+    expect(
+      report.entries.filter((e) => e.sourceTag === "esd-structure"),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("stays converted when readable widths are within 1px and one is unstated", () => {
+    const html = structureDoc(
+      [
+        sizedFrame("A", { frame: "200" }),
+        sizedFrame("B", { frame: "201" }),
         sizedFrame("C"),
       ].join(""),
     );
@@ -368,7 +492,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
         status: "approximated",
-        note: "The band colour was imported as a section wrapper. Columns of 200 and 400px became two equal columns.",
+        note: "The band colour was imported as a section wrapper. Columns of 200px and 400px became two equal columns.",
       },
     ]);
   });

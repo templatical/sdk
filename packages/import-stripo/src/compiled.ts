@@ -3,6 +3,7 @@ import type { AnyNode, Element } from "domhandler";
 import { createSectionBlock } from "@templatical/types";
 import type { Block, ColumnLayout, SpacingValue } from "@templatical/types";
 import { hasAnyToken, hasToken, isHidden } from "./classes";
+import { statedPx, unequalWidthNote } from "./column-width";
 import {
   colorFromPaint,
   columnRooms,
@@ -287,13 +288,26 @@ function hasBlocks(children: Block[][]): boolean {
   return children.some((column) => column.length > 0);
 }
 
+/** The column table's px width, else its cell's. A non-px length is unread. */
+function declaredColumnPx($col: Cheerio<Element>): number | undefined {
+  const fromTable = statedPx($col.attr("width"), $col.attr("style"));
+  if (fromTable !== undefined) return fromTable;
+  const $cell = directCell($col);
+  return statedPx($cell.attr("width"), $cell.attr("style"));
+}
+
 function columnChildren(
   cols: Element[],
   $: CheerioAPI,
   ctx: ConvertCtx,
   bodyWidth: number,
   padding: SpacingValue,
-): { children: Block[][]; layout: ColumnLayout; flattenNote?: string } | null {
+): {
+  children: Block[][];
+  layout: ColumnLayout;
+  flattenNote?: string;
+  widthNote?: string;
+} | null {
   const count = cols.length;
   const layout: "1" | "2" | "3" | "4" =
     count >= 4 ? "4" : count === 3 ? "3" : count === 2 ? "2" : "1";
@@ -320,10 +334,17 @@ function columnChildren(
     );
   }
   if (!hasBlocks(children)) return null;
-  if (!fold) return { children, layout };
+  const widthNote =
+    layout === "1"
+      ? undefined
+      : unequalWidthNote(
+          cols.map((el) => declaredColumnPx($(el) as Cheerio<Element>)),
+          layout,
+        );
+  if (!fold) return { children, layout, widthNote };
   const flattenNote = `Row with ${count} columns was flattened; extra columns merged into the fourth slot. Templatical supports up to four columns per section.`;
   ctx.warnings.push(flattenNote);
-  return { children, layout, flattenNote };
+  return { children, layout, flattenNote, widthNote };
 }
 
 function flowNodes(pieces: Piece[]): AnyNode[] {
@@ -393,6 +414,7 @@ function sectionsFromRow(
     children: Block[][];
     layout: ColumnLayout;
     extra?: string;
+    widthNote?: string;
     columnImages: Array<ReadBackgroundImage | null>;
   }> = [];
   for (const group of groupsFromPieces(pieces)) {
@@ -406,6 +428,7 @@ function sectionsFromRow(
         children: built.children,
         layout: built.layout,
         extra: built.flattenNote,
+        widthNote: built.widthNote,
         columnImages: cols.map((el) =>
           columnImage($(el) as Cheerio<Element>, bodyWidth),
         ),
@@ -443,6 +466,7 @@ function sectionsFromRow(
     const notes = [
       ...groupPaint.notes,
       group.extra,
+      group.widthNote,
       ...image.notes,
       seam,
     ].filter((note): note is string => Boolean(note));
