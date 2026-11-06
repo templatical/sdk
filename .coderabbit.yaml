@@ -107,7 +107,7 @@ reviews:
     - path: "packages/types/**"
       instructions: |
         - `@templatical/types` has no runtime dependencies and must not gain one, including another workspace package.
-        - `src/operations.ts` and `tests/fixtures/operations/**` are a contract with Templatical Cloud's PHP engine, which copies the fixtures verbatim. Flag any fixture change, and any change to the engine's check order or error codes, so the maintainer can confirm it ships together with Cloud.
+        - `src/operations.ts` defines the operations contract, and `tests/fixtures/operations/**` are its test cases (one case per file, run by `tests/operations.test.ts`). The SDK owns this contract and may change cases. Templatical Cloud isn't live; its engine will be built against the fixtures as they stand, so don't ask for Cloud parity or hold a release for Cloud. Do flag a change to the check order, an error code or the accepted wire shapes that the changeset doesn't list as a breaking change, and a fixture change without a regenerated `MANIFEST.sha256`.
         - The operations engine writes by assigning and deleting keys, so a Vue proxy's traps see each change. `Object.defineProperty` is used only for a key named `__proto__`.
 
     - path: "packages/import-*/src/**"
@@ -165,7 +165,7 @@ reviews:
 
   merge_risk_instructions: |
     High risk:
-    - `packages/types/src/operations.ts` and `packages/types/tests/fixtures/operations/**`: a contract shared byte for byte with Templatical Cloud's PHP engine.
+    - `packages/types/src/operations.ts` and `packages/types/tests/fixtures/operations/**`: the operations contract that collaboration, the AI kit and `template-tools edit` all apply, and that a server engine replays in order.
     - `packages/editor/package.json`, `packages/editor/vite.config.ts`, `packages/editor/vite.cdn.config.ts`, `packages/editor/api-extractor.json`: the editor bundles Vue, core and types and has no runtime dependencies. A moved dependency or external breaks consumer installs or reactivity, and the unit tests resolve one shared Vue, so they don't catch it.
     - `.github/workflows/publish.yml`, `.changeset/config.json`, `packages/template-tools/scripts/sync-pins.mjs` and the root `changeset:version` script: the release chain, which PR CI does not run.
     - `packages/types/src/url-policy.ts` and code that writes imported or user-supplied URLs into HTML.
