@@ -12,6 +12,7 @@ import type {
   WrapperBlock,
 } from "@templatical/types";
 import {
+  builtInPresetOf,
   sourceHash,
   readPath,
   deepEqual,
@@ -22,6 +23,7 @@ import {
   OperationError,
   resolveSyntax,
   safeClone,
+  scanSyntaxMatches,
 } from "@templatical/types";
 
 /**
@@ -83,46 +85,63 @@ function globalRegex(pattern: RegExp): RegExp {
   return new RegExp(pattern.source, flags);
 }
 
-function collectHits(
+export function collectHits(
   text: string,
   mergeTags: MergeTag[],
   syntax: SyntaxPreset,
 ): TagHit[] {
   const hits: TagHit[] = [];
+  const builtin = builtInPresetOf(syntax) !== undefined;
+  const logicHits: TagHit[] = [];
+  let logicIndex = 0;
 
   const scan = (
     pattern: RegExp,
+    kind: "logic" | "value",
     attr: string,
     label: (match: string) => string,
   ): void => {
-    const regex = globalRegex(pattern);
-    let match = regex.exec(text);
-    while (match !== null) {
-      const start = match.index;
-      const end = start + match[0].length;
-      // A zero-length match would spin `exec` forever on the same index.
-      if (match[0].length === 0) {
-        regex.lastIndex++;
-      } else if (!hits.some((hit) => start < hit.end && end > hit.start)) {
-        hits.push({
-          start,
-          end,
-          attr,
-          value: match[0],
-          label: label(match[0]),
-        });
+    if (kind === "value") logicIndex = 0;
+    const regex = builtin ? null : globalRegex(pattern);
+    const matches = builtin ? scanSyntaxMatches(text, syntax, kind) : null;
+    let match = regex?.exec(text) ?? null;
+    let index = 0;
+    while (builtin ? index < matches!.length : match !== null) {
+      const start = builtin ? matches![index].index : match!.index;
+      const value = builtin ? matches![index].value : match![0];
+      const end = start + value.length;
+      if (value.length === 0) {
+        regex!.lastIndex++;
+      } else {
+        if (kind === "value") {
+          while (logicHits[logicIndex]?.end <= start) logicIndex++;
+        }
+        const other =
+          kind === "value" ? logicHits[logicIndex] : hits[hits.length - 1];
+        if (!other || start >= other.end || end <= other.start) {
+          const hit = {
+            start,
+            end,
+            attr,
+            value,
+            label: label(value),
+          };
+          hits.push(hit);
+          if (kind === "logic") logicHits.push(hit);
+        }
       }
-      match = regex.exec(text);
+      if (builtin) index++;
+      else match = regex!.exec(text);
     }
   };
 
   // Logic first, so it wins any overlap. Some syntaxes' value regex is liberal
   // enough to also match a logic tag — handlebars' `{{.+?}}` swallows
   // `{{#each items}}` — and `isMergeTagValue` resolves that same way.
-  scan(syntax.logic, "data-logic-merge-tag", (value) =>
+  scan(syntax.logic, "logic", "data-logic-merge-tag", (value) =>
     getLogicMergeTagKeyword(value, syntax),
   );
-  scan(syntax.value, "data-merge-tag", (value) =>
+  scan(syntax.value, "value", "data-merge-tag", (value) =>
     getMergeTagLabel(value, mergeTags),
   );
 

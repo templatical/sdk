@@ -25,12 +25,14 @@ export interface ConvertTopolOptions {
 }
 
 const ROOT_TAG = "mj-global-style";
+// Designs saved by Topol's editor hold their sections under either tag.
+const CONTAINER_TAGS = new Set(["mj-container", "mj-body"]);
 
 const INVALID_DESIGN_MESSAGE =
   'Invalid Topol template: expected the design JSON object — Topol hands you this directly from its editor\'s onSave callback, or under "definition" (template API) or "json" (predefined-templates API) in its API response.';
 
 const EMPTY_DESIGN_WARNING =
-  "No convertible content was found in the Topol design. Check that the mj-container holds at least one mj-section.";
+  "No convertible content was found in the Topol design. Check that its mj-container (or mj-body) holds at least one mj-section.";
 
 /**
  * Convert a Topol.io design into a Templatical template.
@@ -78,8 +80,8 @@ export function convertTopolTemplate(
     );
   }
 
-  const container = (topolDesign.children ?? []).find(
-    (child) => child.tagName === "mj-container",
+  const container = (topolDesign.children ?? []).find((child) =>
+    CONTAINER_TAGS.has(child.tagName),
   );
 
   const entries: ImportReportEntry[] = [];

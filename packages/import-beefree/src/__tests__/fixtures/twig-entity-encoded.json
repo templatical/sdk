@@ -1,0 +1,23 @@
+{
+  "page": {
+    "rows": [
+      {
+        "columns": [
+          {
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-text",
+                "descriptor": {
+                  "text": {
+                    "html": "<div class=\"txtTinyMce-wrapper\" style=\"font-size: 14px; line-height: 120%;\"><p>{% if guest.sex == &#39;female&#39; %}Dear Ms{% elseif guest.sex == &#39;male&#39; %}Dear Mr{% endif %} {{ guest.first_name|default(&quot;guest&quot;) }}</p><p>{% if item.quantity &gt; 1 %}Tickets{% endif %}</p></div>"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

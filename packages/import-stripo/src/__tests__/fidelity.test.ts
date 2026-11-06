@@ -535,15 +535,17 @@ describe("compiled paint and padding", () => {
     const { content, report } = convertStripoTemplate(html);
     const section = sections(content.blocks)[0];
     expect(section.styles.backgroundColor).toBe("#ffffff");
-    expect(section.wrapper).toEqual({ backgroundColor: "#0f766e" });
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#0f766e",
+      fullWidth: true,
+    });
     expect(content.settings.backgroundColor).toBe("#f3f4f6");
     expect(
       report.entries.some(
         (e) =>
-          e.status === "approximated" &&
-          e.note === "The band colour was imported as a section wrapper.",
+          e.templaticalBlockType === "section" && e.status === "approximated",
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("uses the band as the section fill when the body is transparent", () => {
@@ -555,8 +557,11 @@ describe("compiled paint and padding", () => {
       "#f3f4f6",
     );
     const section = sections(convertStripoTemplate(html).content.blocks)[0];
-    expect(section.styles.backgroundColor).toBe("#112233");
-    expect(section.wrapper).toBeUndefined();
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#112233",
+      fullWidth: true,
+    });
   });
 
   it("drops a stripe image the body covers, and keeps the colours", () => {
@@ -569,16 +574,24 @@ describe("compiled paint and padding", () => {
     const { content, report } = convertStripoTemplate(html);
     const section = sections(content.blocks)[0];
     expect(section.styles.backgroundColor).toBe("#ffffff");
-    expect(section.wrapper).toEqual({ backgroundColor: "#222222" });
     expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#222222",
+      backgroundImage: {
+        url: "https://cdn.example/stripe.png",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
+    });
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "The band colour was imported as a section wrapper. The stripe's background image outside the content width was dropped.",
+        status: "converted",
       },
     ]);
   });
@@ -690,17 +703,19 @@ describe("compiled background images", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     const section = sections(content.blocks)[0];
-    expect(section.backgroundImage).toEqual({
-      url: "https://cdn.example/stripe.png",
-      size: "auto",
-      position: { x: "left", y: "top" },
-      repeat: true,
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#222222",
+      backgroundImage: {
+        url: "https://cdn.example/stripe.png",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
     });
-    expect(section.styles.backgroundColor).toBe("#222222");
-    expect(section.wrapper).toBeUndefined();
-    expect(sectionEntries(report.entries)[0].note).toBe(
-      "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
-    );
+    expect(sectionEntries(report.entries)[0].status).toBe("converted");
   });
 
   it("drops the band colour when the section has an image", () => {
@@ -796,12 +811,17 @@ describe("compiled background images", () => {
       </td></tr></table>`,
     );
     const { content, report } = convertStripoTemplate(html);
-    expect(sections(content.blocks)[0].backgroundImage?.url).toBe(
-      "https://cdn.example/cell.png",
-    );
-    expect(sectionEntries(report.entries)[0].note).toBe(
-      "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
-    );
+    expect(sections(content.blocks)[0].backgroundImage).toBeUndefined();
+    expect(sections(content.blocks)[0].wrapper).toEqual({
+      backgroundImage: {
+        url: "https://cdn.example/cell.png",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
+    });
+    expect(sectionEntries(report.entries)[0].status).toBe("converted");
   });
 
   it("drops the page's background image with a warning", () => {
@@ -891,7 +911,10 @@ ${structure}
       bottom: 12,
       left: 12,
     });
-    expect(section.wrapper).toEqual({ backgroundColor: "#0f766e" });
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#0f766e",
+      fullWidth: true,
+    });
   });
 
   it("wraps a stripe colour around a white body", () => {
@@ -915,14 +938,48 @@ ${structure}
       bottom: 40,
       left: 40,
     });
-    expect(section.wrapper).toEqual({ backgroundColor: "#0f766e" });
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#0f766e",
+      fullWidth: true,
+    });
     expect(content.settings.backgroundColor).toBe("#ffffff");
     expect(
-      report.entries.some(
-        (e) =>
-          e.status === "approximated" && /section wrapper/.test(e.note ?? ""),
+      report.entries.filter((e) => e.templaticalBlockType === "section"),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("keeps a stripe colour on the section when the stripe has a structure but no body", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table><tr><td class="esd-stripe" bgcolor="#112233">
+<table><tr><td class="esd-structure">
+<table><tr><td class="esd-container-frame"><table><tr>
+<td class="esd-block-text"><p>Stripe copy</p></td>
+</tr></table></td></tr></table>
+</td></tr></table>
+</td></tr></table>
+</body></html>`;
+    const { content, report } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.styles.backgroundColor).toBe("#112233");
+    expect(section.wrapper).toBeUndefined();
+    expect(JSON.stringify(section)).toContain("Stripe copy");
+    expect(
+      report.entries.filter(
+        (entry) => entry.templaticalBlockType === "section",
       ),
-    ).toBe(true);
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
   });
 
   it("paints a stripe that has no body and no structure", () => {
@@ -948,13 +1005,21 @@ ${structure}
 </body></html>`;
     const { content, report } = convertStripoTemplate(html);
     const section = sections(content.blocks)[0];
-    expect(section.backgroundImage?.url).toBe("https://cdn.example/band.png");
+    expect(section.backgroundImage).toBeUndefined();
     expect(section.styles.backgroundColor).toBe("#112233");
+    expect(section.wrapper).toEqual({
+      backgroundImage: {
+        url: "https://cdn.example/band.png",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
+    });
     expect(report.entries.find((e) => e.sourceTag === "esd-stripe")).toEqual({
       sourceTag: "esd-stripe",
       templaticalBlockType: "section",
-      status: "approximated",
-      note: "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
+      status: "converted",
     });
   });
 
@@ -1044,20 +1109,24 @@ ${structure}
     );
   });
 
-  it("drops a stripe image the painted body covers", () => {
-    const { report } = convertStripoTemplate(
+  it("keeps a stripe image on the wrapper when the body is painted", () => {
+    const { content, report } = convertStripoTemplate(
       editorDoc(
         `<td class="esd-structure es-p20"><table><tr><td class="esd-container-frame"><table><tr><td class="esd-block-text"><p>Hero</p></td></tr></table></td></tr></table></td>`,
         ' style="background-image:url(https://cdn.example/stripe.png)"',
       ),
     );
+    expect(sections(content.blocks)[0].wrapper?.backgroundImage?.url).toBe(
+      "https://cdn.example/stripe.png",
+    );
+    expect(sections(content.blocks)[0].wrapper?.fullWidth).toBe(true);
+    expect(sections(content.blocks)[0].styles.backgroundColor).toBe("#ffffff");
     expect(
       report.entries.find((e) => e.templaticalBlockType === "section"),
     ).toEqual({
       sourceTag: "esd-structure",
       templaticalBlockType: "section",
-      status: "approximated",
-      note: "The stripe's background image outside the content width was dropped.",
+      status: "converted",
     });
   });
 });

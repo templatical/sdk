@@ -238,6 +238,214 @@ describe('useEditor', () => {
 });
 
 describe('locked blocks', () => {
+    function editorWithContainer(kind: 'section' | 'wrapper', locked: boolean) {
+        const child = createParagraphBlock({ content: '<p>Held</p>' });
+        const container =
+            kind === 'section'
+                ? createSectionBlock({ children: [[child]] })
+                : createWrapperBlock({ children: [child] });
+        const sibling = createParagraphBlock({ content: '<p>Free</p>' });
+        const content = createDefaultTemplateContent();
+        content.blocks = [container, sibling];
+        const original = structuredClone(content.blocks);
+        const originalContent = structuredClone(content);
+        const lockedBlocks = ref(
+            new Map(locked ? [[child.id, { id: 'peer' }]] : []),
+        );
+        const editor = useEditor({
+            content:
+                kind === 'wrapper' ? createDefaultTemplateContent() : content,
+            lockedBlocks,
+        });
+        if (kind === 'wrapper') editor.content.value = content;
+        return { editor, container, sibling, original, originalContent };
+    }
+
+    it.each(['section', 'wrapper'] as const)(
+        'removeBlock preserves a %s with a peer-locked descendant',
+        (kind) => {
+            const { editor, container, original } = editorWithContainer(
+                kind,
+                true,
+            );
+            editor.removeBlock(container.id);
+            expect(editor.state.content.blocks).toEqual(original);
+
+            const unlocked = editorWithContainer(kind, false);
+            unlocked.editor.removeBlock(unlocked.container.id);
+            expect(unlocked.editor.state.content.blocks).toEqual([
+                unlocked.sibling,
+            ]);
+        },
+    );
+
+    it.each(['section', 'wrapper'] as const)(
+        'moveBlock preserves a %s with a peer-locked descendant',
+        (kind) => {
+            const { editor, container, original } = editorWithContainer(
+                kind,
+                true,
+            );
+            editor.moveBlock(container.id, 1);
+            expect(editor.state.content.blocks).toEqual(original);
+
+            const unlocked = editorWithContainer(kind, false);
+            unlocked.editor.moveBlock(unlocked.container.id, 1);
+            expect(unlocked.editor.state.content.blocks).toEqual([
+                unlocked.sibling,
+                unlocked.container,
+            ]);
+        },
+    );
+
+    it('updateBlock preserves section children held by a peer', () => {
+        const { editor, container, original } = editorWithContainer(
+            'section',
+            true,
+        );
+        editor.updateBlock(container.id, { children: [[]] } as Partial<Block>);
+        expect(editor.state.content.blocks).toEqual(original);
+    });
+
+    it('updateBlock refuses a type change that hides a peer-locked descendant', () => {
+        const { editor, container, originalContent } = editorWithContainer(
+            'section',
+            true,
+        );
+
+        editor.updateBlock(container.id, { type: 'paragraph' });
+
+        expect(editor.state.content).toEqual(originalContent);
+        expect(editor.state.isDirty).toBe(false);
+
+        const unlocked = editorWithContainer('section', false);
+        unlocked.editor.updateBlock(unlocked.container.id, { type: 'paragraph' });
+        expect(unlocked.editor.state.content.blocks).toEqual([
+            { ...unlocked.original[0], type: 'paragraph' },
+            unlocked.original[1],
+        ]);
+        expect(unlocked.editor.state.isDirty).toBe(true);
+    });
+
+    it('updateBlock refuses a nested incoming child whose ID is peer-locked', () => {
+        const held = createParagraphBlock({ id: 'held', content: '<p>Held</p>' });
+        const target = createSectionBlock({ id: 'target', children: [[]] });
+        const content = createDefaultTemplateContent();
+        content.blocks = [target];
+        const original = structuredClone(content);
+        const lockedBlocks = ref(new Map([[held.id, { id: 'peer' }]]));
+        const editor = useEditor({ content, lockedBlocks });
+
+        editor.updateBlock(target.id, {
+            children: [[createSectionBlock({
+                id: 'incoming',
+                children: [[{ ...held, content: '<p>Replacement</p>' }]],
+            })]],
+        });
+
+        expect(editor.state.content).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
+
+        lockedBlocks.value = new Map();
+        const fresh = createParagraphBlock({ id: 'fresh', content: '<p>Fresh</p>' });
+        const nested = createSectionBlock({
+            id: 'new-section',
+            children: [[fresh]],
+        });
+        editor.updateBlock(target.id, { children: [[nested]] });
+        expect(editor.state.content).toEqual({
+            ...original,
+            blocks: [{ ...original.blocks[0], children: [[nested]] }],
+        });
+        expect(editor.state.isDirty).toBe(true);
+    });
+
+    it('updateBlock refuses an incoming child ID already outside the target in a locale', () => {
+        const existing = createParagraphBlock({ id: 'existing', content: '<p>Elsewhere</p>' });
+        const target = createSectionBlock({ id: 'target', children: [[]] });
+        const other = createSectionBlock({ id: 'other', children: [[existing]] });
+        const content = createDefaultTemplateContent();
+        content.settings.locales = ['de'];
+        content.blocks = [target, other];
+        const original = structuredClone(content);
+        const editor = useEditor({ content });
+        editor.setActiveLocale('de');
+
+        editor.updateBlock(target.id, {
+            children: [[{ ...existing, content: '<p>Duplicate</p>' }]],
+        });
+
+        expect(editor.state.content).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
+    });
+
+    it('updateBlock refuses repeated new child IDs without changing content', () => {
+        const target = createSectionBlock({ id: 'target', children: [[]] });
+        const content = createDefaultTemplateContent();
+        content.blocks = [target];
+        const original = structuredClone(content);
+        const editor = useEditor({ content });
+        const first = createParagraphBlock({
+            id: 'new-child',
+            content: '<p>First</p>',
+        });
+        const second = createParagraphBlock({
+            id: 'new-child',
+            content: '<p>Second</p>',
+        });
+
+        editor.updateBlock(target.id, { children: [[first, second]] });
+
+        expect(editor.state.content).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
+    });
+
+    it('updateBlock refuses a same-id children payload that overwrites a peer-locked child', () => {
+        const { editor, container, original } = editorWithContainer(
+            'section',
+            true,
+        );
+        if (container.type !== 'section') throw new Error('Expected section');
+        const child = container.children[0][0];
+
+        editor.updateBlock(container.id, {
+            children: [[{ ...child, content: '<p>Overwritten</p>' }]],
+        } as Partial<Block>);
+
+        expect(editor.state.content.blocks).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
+    });
+
+    it('updateBlock checks a descendant lock acquired after the editor was created', () => {
+        const child = createParagraphBlock({ content: '<p>Held</p>' });
+        const section = createSectionBlock({ children: [[child]] });
+        const content = createDefaultTemplateContent();
+        content.blocks = [section];
+        const original = structuredClone(content.blocks);
+        const lockedBlocks = ref(new Map<string, { id: string }>());
+        const editor = useEditor({ content, lockedBlocks });
+
+        lockedBlocks.value = new Map([[child.id, { id: 'peer' }]]);
+        editor.updateBlock(section.id, {
+            children: [[{ ...child, content: '<p>Overwritten</p>' }]],
+        });
+
+        expect(editor.state.content.blocks).toEqual(original);
+        expect(editor.state.isDirty).toBe(false);
+
+        lockedBlocks.value = new Map();
+        editor.updateBlock(section.id, {
+            children: [[{ ...child, content: '<p>Overwritten</p>' }]],
+        });
+        const updated = editor.state.content.blocks[0];
+        if (updated.type !== 'section') throw new Error('Expected section');
+        expect(updated.children[0][0]).toMatchObject({
+            id: child.id,
+            content: '<p>Overwritten</p>',
+        });
+        expect(editor.state.isDirty).toBe(true);
+    });
+
     function createEditorWithLockedBlocks() {
         const content = createDefaultTemplateContent();
         content.blocks = [
@@ -770,6 +978,66 @@ describe('column index validation', () => {
         const sec = editor.state.content.blocks[0];
         if (sec.type === 'section') {
             expect(sec.children[2]).toHaveLength(1);
+            expect(sec.children[2][0].id).toBe(added.id);
+        }
+    });
+
+
+    it('addBlock accepts columnIndex 3 for a "4" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '4',
+            children: [[], [], [], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 3);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children).toHaveLength(4);
+            expect(sec.children[3]).toHaveLength(1);
+            expect(sec.children[3][0].id).toBe(added.id);
+        }
+    });
+
+    it('addBlock rejects columnIndex 4 for a "4" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '4',
+            children: [[], [], [], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        editor.addBlock(
+            createParagraphBlock({ content: '<p>X</p>' }),
+            section.id,
+            4,
+        );
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children.every((column) => column.length === 0)).toBe(true);
+        }
+    });
+
+    it('addBlock accepts columnIndex 2 for a "1-2-1" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '1-2-1',
+            children: [[], [], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 2);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
             expect(sec.children[2][0].id).toBe(added.id);
         }
     });

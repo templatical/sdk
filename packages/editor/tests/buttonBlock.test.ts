@@ -67,6 +67,28 @@ describe("ButtonBlock alignment", () => {
   });
 });
 
+describe("ButtonBlock font weight", () => {
+  it("paints an omitted weight bold", () => {
+    const style = (
+      mountButton(createButtonBlock({ text: "Go" })).find("a")
+        .element as HTMLElement
+    ).style;
+    expect(style.fontWeight).toBe("bold");
+  });
+
+  it.each([
+    ["regular", "400"],
+    ["medium", "500"],
+    ["bold", "700"],
+  ] as const)("paints %s as %s", (fontWeight, css) => {
+    const style = (
+      mountButton(createButtonBlock({ text: "Go", fontWeight })).find("a")
+        .element as HTMLElement
+    ).style;
+    expect(style.fontWeight).toBe(css);
+  });
+});
+
 describe("ButtonBlock border", () => {
   it("borders the button itself, like the exported mj-button", () => {
     const wrapper = mountButton(

@@ -43,9 +43,11 @@ describe("block chrome structure", () => {
     // box, the section wrapper frame around it, or a layout band. A surface
     // without the marker sits outside the filter and stays light while the
     // email around it inverts — the wrapper frame and layout bands did.
+    // Two branches without a full-width band, plus the email-width column
+    // inside a full-width band. Each one still wraps the slot directly.
     expect(
       blockWrapper.match(/class="tpl-block-content tpl-email-surface"/g),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(blockWrapper).toMatch(
       /class="tpl-section-wrapper tpl-email-surface"/,
     );
@@ -789,6 +791,27 @@ describe("preview-mode visibility gate", () => {
     // SectionBlock reads it off the injected editor state. Drop it and
     // nested blocks hidden on a viewport would still show in preview.
     expect(sectionBlock).toMatch(/:preview-mode="editor\.state\.previewMode"/);
+  });
+
+  it("hides the lint issue badge with the rest of the block chrome", () => {
+    // `.tpl-preview-mode` is the canvas class. The badge stays mounted in
+    // preview (BlockIssueBadge has no preview v-if), so this rule is what
+    // takes the warning and error icons off the email.
+    const styles = read("styles/index.css");
+    const match = styles.match(
+      /^(\.tpl-preview-mode \.tpl-block-actions\s*(?:,[^{]*)?)\{([^}]*)\}/m,
+    );
+    expect(match).not.toBeNull();
+    const selectors = match![1].split(",").map((selector) => selector.trim());
+    expect(selectors).toEqual([
+      ".tpl-preview-mode .tpl-block-actions",
+      ".tpl-preview-mode .tpl-block-hidden-overlay",
+      ".tpl-preview-mode .tpl-condition-toggle",
+      ".tpl-preview-mode .tpl-comment-indicator",
+      ".tpl-preview-mode .tpl-collab-lock",
+      ".tpl-preview-mode .tpl-block-issue-badge",
+    ]);
+    expect(match![2].trim()).toBe("display: none;");
   });
 });
 

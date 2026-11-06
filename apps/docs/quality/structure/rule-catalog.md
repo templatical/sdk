@@ -17,7 +17,7 @@ The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `structure.section-column-mismatch` | error | — | The section's `columns` value implies a column count that doesn't match `children.length`. `"1"` expects 1 inner array, `"2"`/`"2-1"`/`"1-2"` expect 2, `"3"` expects 3. A mismatch means either the layout key or the children array is wrong — both yield broken render output. The editor's section toolbar rebalances `children` automatically when the layout changes; this rule catches data that bypassed the toolbar (imports, manual JSON edits, stale snapshots). |
+| `structure.section-column-mismatch` | error | — | The section's `columns` value implies a column count that doesn't match `children.length`. `"1"` expects 1 inner array, `"2"`/`"2-1"`/`"1-2"`/`"1-3"`/`"3-1"` expect 2, `"3"`/`"1-2-1"` expect 3, `"4"` expects 4. A mismatch means either the layout key or the children array is wrong — both yield broken render output. The editor's section toolbar rebalances `children` automatically when the layout changes; this rule catches data that bypassed the toolbar (imports, manual JSON edits, stale snapshots). |
 
 ## Content presence
 

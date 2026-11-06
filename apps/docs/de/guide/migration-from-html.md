@@ -177,18 +177,19 @@ Jeder `<tr>` einer Layout-Tabelle wird zu einem `SectionBlock`. Die direkten `<t
 | Zellen pro Zeile | Templatical-Layout |
 |---|---|
 | 1 | `'1'` |
-| 2 | `'2'` bzw. `'2-1'` / `'1-2'`, je nach deklarierter Breite |
-| 3 | `'3'` |
-| 4+ | auf `'1'` zusammengefasst, mit Warnung und einem `approximated`-Eintrag im Bericht |
+| 2 | `'2'`, `'2-1'`, `'1-2'`, `'3-1'` oder `'1-3'`, je nach deklarierter Breite |
+| 3 | `'3'` oder `'1-2-1'`, je nach deklarierter Breite |
+| 4 | `'4'` |
+| 5+ | auf `'1'` zusammengefasst, mit Warnung und einem `approximated`-Eintrag im Bericht |
 
 ### Spaltenverhältnisse
 
-Eine zweizellige Zeile wählt zwischen `'2'`, `'2-1'` und `'1-2'` anhand der Breiten, die ihre Zellen deklarieren — ein `width`-Attribut, ein `style="width:…"` oder der Anteil im Klassennamen `mj-column-per-*`. Das nächstgelegene dieser Layouts gewinnt: `350` / `190` wird zu `'2-1'`, `33,33 %` / `66,66 %` zu `'1-2'`.
+Eine Zeile wählt unter den Layouts, die ihre Spaltenzahl halten, anhand der Breiten, die ihre Zellen deklarieren — ein `width`-Attribut, ein `style="width:…"` oder der Anteil im Klassennamen `mj-column-per-*`. Zwei Zellen wählen unter `'2'`, `'2-1'`, `'1-2'`, `'3-1'` und `'1-3'`; drei Zellen zwischen `'3'` und `'1-2-1'`; vier Zellen sind `'4'`. Das nächstgelegene gewinnt, wenn es auf der am weitesten abweichenden Spalte innerhalb von 6 Prozentpunkten liegt: `350` / `190` wird zu `'2-1'`, `25 %` / `75 %` zu `'1-3'` und `130` / `280` / `130` zu `'1-2-1'`. Liegen zwei Layouts gleich nah, gewinnt die kleinere Abweichung der schlechtesten Spalte.
 
-Ein Verhältnis, das kein Layout ausdrückt, wird als gleichmäßige Teilung dieser Zellenzahl importiert und als `approximated` gemeldet, mit einer Notiz, die die gemessenen Breiten nennt:
+Ein Verhältnis, dem kein Layout so nah kommt, wird als gleichmäßige Teilung dieser Zellenzahl importiert und als `approximated` gemeldet, mit einer Notiz, die die gemessenen Breiten nennt:
 
 ```txt
-Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent.
+Column widths 10% / 80% / 10% have no Templatical equivalent.
 The section was imported as 3 equal columns.
 ```
 
@@ -197,6 +198,8 @@ The section was imported as 3 equal columns.
 Tabellenbasierte E-Mails umschließen ihr eigentliches Layout mit einzelligen Tabellen. Eine Zeile mit einer einzigen Zelle, deren Inhalt ausschließlich aus Tabellen besteht, wird durchlaufen, statt eine Section zu werden — die Spaltenzahl wird so an der Zeile gelesen, die sie deklariert. Das gilt nur, wenn diese Zelle neben ihren Tabellen keinen Inhalt trägt und der `style` der Zeile weder eine Hintergrundfarbe noch ein Hintergrundbild noch ein Padding setzt. Eine Zeile, die eine dieser Bedingungen nicht erfüllt, wird eine eigene Section, denn die Section trägt Hintergrund und Padding der Zeile.
 
 Eine Füllfarbe, die der Abstieg passiert, aus dem `bgcolor` der Zeile, der Zelle oder der Tabelle, geht an die Sections darunter über. Ebenso ein Hintergrundbild der Zelle oder der Tabelle; landet es auf mehr als einer Section, ist jeder dieser Einträge `approximated` mit einer Notiz.
+
+Eine Wrapper-Zeile, deren Tabelle oder einzige Zelle `width="100%"` trägt (Attribut oder Style) und eine Hintergrundfarbe oder ein Hintergrundbild hat, und deren innere Tabellen alle eine feste px-Breite haben, ist ein fensterbreites Band. Jede Section darin erhält `section.wrapper` mit dieser Farbe und diesem Bild sowie `wrapper.fullWidth: true`, sodass das Band bis zum Fensterrand läuft und der Inhalt auf der E-Mail-Breite bleibt. Füllfarben der inneren Tabellen bleiben auf den Sections. Eine Bandfarbe bleibt von diesem Wrapper, wenn die Section ihr eigenes Hintergrundbild behält; der Eintrag dieser Section ist dann `approximated` mit einer Notiz, weil Outlook auf dem Desktop eine Wrapper-Farbe über das Bild der Section malt. Das Bild des Bandes liegt weiterhin auf dem Wrapper. Ein Band, das aus einer Spalte heraus erreicht wird, gilt nicht als fensterbreit. Seitenrahmen, die dieses Muster erfüllen — eine äußere Tabelle mit `width="100%"` um eine Tabelle fester Breite —, werden zu einem Wrapper je Section; `settings.backgroundColor` kommt weiterhin vom `<body>`.
 
 ### Gutter-Zeilen
 
@@ -276,7 +279,7 @@ Globale Template-Einstellungen werden aus dem Dokument gelesen:
 - **Externe Ressourcen** — `<link>`, externe Stylesheets, Web Fonts und Remote-Bilder werden nicht geladen. Bild-`src`-URLs bleiben unverändert.
 - **Outlook-MSO-Conditionals** — bleiben innerhalb des umgebenden Blocks als HTML erhalten (in Nicht-Outlook-Clients ohnehin inert).
 - **Formularelemente (`<form>`/`<input>`/`<button>`)** — bleiben als HTML-Fallback. Die meisten Mail-Clients blockieren Formular-Submits ohnehin; bauen Sie den CTA als Button mit Link auf eine gehostete Seite.
-- **Zeilen mit mehr als drei Zellen** — `ColumnLayout` fasst höchstens drei Spalten, eine breitere Zeile wird also auf eine zusammengefasst und gemeldet. Auch Verhältnisse außerhalb von `'2'` / `'2-1'` / `'1-2'` / `'3'` — etwa ein Sidebar-Paar im Verhältnis `1-2-1` — haben keine Entsprechung und werden als gleichmäßige Teilung importiert.
+- **Zeilen mit mehr als vier Zellen** — `ColumnLayout` fasst höchstens vier Spalten, eine breitere Zeile wird also auf eine zusammengefasst und gemeldet. Auch Verhältnisse, denen kein Layout innerhalb von 6 Prozentpunkten nahekommt — etwa `90 %` / `10 %` — haben keine Entsprechung und werden als gleichmäßige Teilung importiert.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 
 ## Konvertierte Templates prüfen

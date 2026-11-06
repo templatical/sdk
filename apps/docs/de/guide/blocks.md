@@ -22,7 +22,7 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 | Mehrspaltiges Layout | [Section](#section) | Der einzige Block, der andere Blöcke enthält |
 | Visuelle Trennung | [Divider](#divider) | Horizontale Linie mit Stiloptionen |
 | Vertikaler Abstand | [Spacer](#spacer) | Leerraum zwischen Blöcken |
-| Social Links | [Social Icons](#social-icons) | 17 Plattformen, 5 Icon-Stile |
+| Social Links | [Social Icons](#social-icons) | Plattformliste und sechs Icon-Stile (solid, outlined, rounded, square, circle, plain) |
 | Navigationslinks | [Menu](#menu) | Horizontale Linkliste mit Trennzeichen |
 | Tabellarische Daten | [Table](#table) | Datentabelle mit optionaler Kopfzeilenformatierung |
 | Video-Vorschau | [Video](#video) | Klickbares Thumbnail (E-Mail-Clients unterstützen keine eingebetteten Videos) |
@@ -61,6 +61,7 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 | `src` | `string` | Bild-URL |
 | `alt` | `string` | Alternativtext |
 | `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100%. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
+| `fluidOnMobile` | `boolean` | Ohne Angabe gilt die automatische Regel: volle Breite auf dem Smartphone nur, wenn das Bild seine Spalte auf dem Desktop füllt. `true` setzt immer MJML `fluid-on-mobile`; `false` nie. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder `{ topLeft, topRight, bottomRight, bottomLeft }` pro Ecke. Ohne Angabe oder 0 bleiben die Ecken eckig |
@@ -86,6 +87,7 @@ Eine Call-to-Action-Schaltfläche mit anpassbarem Erscheinungsbild.
 | `fontSize` | `number` | Schriftgröße in px |
 | `buttonPadding` | `SpacingValue` | Innerer Abstand |
 | `fontFamily` | `string` | Überschreibung der Schriftfamilie |
+| `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Schriftstärke der Beschriftung: 400, 500 oder 700. Weglassen für fett, so wie eine Schaltfläche ohne Stärke rendert. |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |
 | `width` | `number \| 'full'` | Feste Breite in px oder `'full'` für 100%. Weglassen, um an den Inhalt anzupassen. |
 | `align` | `'left' \| 'center' \| 'right'` | Ausrichtung innerhalb der Spalte. Ohne sichtbare Wirkung, wenn `width` auf `'full'` steht. |
@@ -136,7 +138,7 @@ Eine Reihe von Social-Media-Icons, die zu Plattformprofilen verlinken.
 
 E-Mail-Clients, die in den Dunkelmodus wechseln, etwa die Gmail-App und Outlook, ändern den Hintergrund, lassen Bilder aber unverändert. Ein dunkles `plain`- oder `outlined`-Icon trägt deshalb einen dezenten weißen Rand, der auf hellen Hintergründen kaum zu sehen ist und das Icon als Umriss sichtbar hält, sobald der Hintergrund dunkel wird. Helle Icons haben keinen Rand, damit sie auf farbigen Flächen sauber bleiben. Clients, die einen dunklen Hintergrund hell machen (die Gmail-App unter iOS, Outlook für Windows), können ein helles `plain`- oder `outlined`-Icon aber verschwinden lassen. Eine gefüllte Form vermeidet beides, da ihr Hintergrund für den Kontrast sorgt.
 
-17 Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
+Diese Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
 
 Jedes `SocialIcon` hat:
 
@@ -247,14 +249,14 @@ Ein Layout-Container, der eine oder mehrere Spalten enthält. Siehe [Sektionen u
 
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
-| `columns` | `ColumnLayout` | Preset für das Spaltenlayout |
+| `columns` | `ColumnLayout` | Spaltenlayout-Preset: `"1"`, `"2"`, `"3"`, `"4"`, `"1-2"`, `"2-1"`, `"1-3"`, `"3-1"`, `"1-2-1"`. Breiten und Spaltenzahlen stehen unter [Sektionen und Spalten](/de/guide/sections-and-columns). |
 | `children` | `Block[][]` | Array von Block-Arrays, eines pro Spalte |
 | `stackOnMobile` | `boolean` | Weglassen oder `true`: Spalten stapeln auf Mobilgeräten (MJML-Standard). `false`: nebeneinander (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke (optional; weglassen oder `0` für keine Abrundung) |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um die Sektion gezeichnet (optional; weglassen für keinen Rahmen) |
 | `backgroundImage` | `BackgroundImage` | Optionales Bild hinter der Sektion — `{ url, size, position: { x, y }, repeat }` — gerendert als `background-url` mit Größe, Position und Wiederholung an der `mj-section`. `size` ist `"cover"`, `"contain"` oder `"auto"`; `x` ist `"left"`, `"center"` oder `"right"`; `y` ist `"top"`, `"center"` oder `"bottom"`. `styles.backgroundColor` dient als Fallback. `naturalWidth` / `naturalHeight` (optional) sind die eigene Größe der Bilddatei in px; ein Hero übernimmt damit deren Form. |
 | `hero` | `SectionHero` | Optional. Stellt eine einspaltige Sektion mit Hintergrundbild als `mj-hero` dar, bei dem das Bild die Box hinter dem Inhalt füllt: `{ height, verticalAlign }`. `height` ist `"image"` (die Box ist so hoch wie das über ihre Desktop-Breite gezeichnete Bild, aus `backgroundImage.naturalWidth` / `naturalHeight`) oder eine feste Höhe in px, Innenabstand eingeschlossen; `verticalAlign` ist `"top"`, `"middle"` oder `"bottom"`. Das Bild füllt die Box immer (`size` und `repeat` gelten nicht), und es wird kein `border` gezeichnet. Mit mehr als einer Spalte, ohne Bild oder bei `"image"` ohne Größe wird die Sektion als normale Sektion dargestellt, und die Warnung `structure.hero-not-applied` nennt den Grund. |
-| `wrapper` | `SectionWrapper` | Optionaler äußerer Rahmen — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — gerendert als `mj-wrapper`-Band um die Sektion. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay. |
+| `wrapper` | `SectionWrapper` | Optionaler äußerer Rahmen — `{ backgroundColor?, padding?, borderRadius?, backgroundImage?, fullWidth? }` — gerendert als `mj-wrapper`-Band um die Sektion. `fullWidth: true` reicht über das Fenster des Empfängers (`full-width` an `mj-wrapper`), während die Sektion bei `settings.width` bleibt; ein Eckenradius gilt nicht, solange es an ist. Weglassen oder `false` hält das Band auf der E-Mail-Breite. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay. |
 
 ::: tip Hinweis zu E-Mail-Clients: Rahmen und Ecken in Outlook
 - Outlook unter Windows ignoriert `border-radius`, auch die Form mit vier Werten (pro Ecke).

@@ -5,6 +5,7 @@ import {
   getBackgroundImageStyle,
   getBlockWrapperStyle,
   getCachedBlockWrapperStyle,
+  fullWidthFrameStyle,
   getSectionWrapperStyle,
   getWrapperStyle,
   getDocumentStyle,
@@ -390,6 +391,31 @@ describe("getSectionWrapperStyle", () => {
     const style = getSectionWrapperStyle(block);
     expect(style).toEqual({ padding: "10px 10px 10px 10px" });
   });
+
+  it("bleeds a full-width band and drops its padding and radius", () => {
+    const block = createSectionBlock({
+      wrapper: {
+        backgroundColor: "#112233",
+        padding: { top: 24, right: 20, bottom: 24, left: 20 },
+        borderRadius: 8,
+        fullWidth: true,
+      },
+    });
+    expect(getSectionWrapperStyle(block)).toEqual({
+      backgroundColor: "#112233",
+      width: "100cqw",
+      maxWidth: "none",
+      marginInline: "calc(50% - 50cqw)",
+      boxSizing: "border-box",
+    });
+    expect(fullWidthFrameStyle(block.wrapper?.padding)).toEqual({
+      width: "var(--tpl-email-frame-width)",
+      maxWidth: "100%",
+      marginInline: "auto",
+      boxSizing: "border-box",
+      padding: "24px 20px 24px 20px",
+    });
+  });
 });
 
 describe("getWrapperStyle", () => {
@@ -421,6 +447,24 @@ describe("getWrapperStyle", () => {
     });
     expect(getWrapperStyle(block)).toEqual({
       padding: "10px 10px 10px 10px",
+    });
+  });
+
+  it("bleeds a full-width layout band and drops its padding and radius", () => {
+    const block = createWrapperBlock({
+      fullWidth: true,
+      borderRadius: 12,
+      styles: {
+        backgroundColor: "#112233",
+        padding: { top: 16, right: 16, bottom: 16, left: 16 },
+      },
+    });
+    expect(getWrapperStyle(block)).toEqual({
+      backgroundColor: "#112233",
+      width: "100cqw",
+      maxWidth: "none",
+      marginInline: "calc(50% - 50cqw)",
+      boxSizing: "border-box",
     });
   });
 });

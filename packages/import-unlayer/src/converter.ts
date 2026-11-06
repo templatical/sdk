@@ -13,6 +13,7 @@ import type {
   BackgroundImage,
   Block,
   ColumnLayout,
+  SectionWrapper,
   TemplateContent,
 } from "@templatical/types";
 import type {
@@ -43,7 +44,22 @@ function resolveColumnLayout(
   warnings: string[],
 ): ColumnLayout {
   if (cells.length <= 1) return "1";
-  if (cells.length === 3) return "3";
+  if (cells.length === 4) {
+    // Layout "4" is four equal quarters, so unequal cells lose their ratio.
+    if (cells.some((cell) => cell !== cells[0])) {
+      warnings.push(
+        `Row with four columns at ratio ${cells.join(":")} was converted to four equal columns.`,
+      );
+    }
+    return "4";
+  }
+
+  if (cells.length > 4) {
+    warnings.push(
+      `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to four columns.`,
+    );
+    return "1";
+  }
 
   if (cells.length === 2) {
     const left = cells[0] ?? 1;
@@ -51,15 +67,27 @@ function resolveColumnLayout(
     const total = left + right;
     const ratio = left / total;
 
+    // 0.71 / 0.29 sit just past the midpoint of 2/3 and 3/4, so 7/10 stays 2-1.
+    if (ratio > 0.71) return "3-1";
     if (ratio > 0.58) return "2-1";
+    if (ratio < 0.29) return "1-3";
     if (ratio < 0.42) return "1-2";
     return "2";
   }
 
-  warnings.push(
-    `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to 3.`,
-  );
-  return "1";
+  const total = cells.reduce((sum, cell) => sum + cell, 0);
+  if (total <= 0) return "3";
+  const shares = cells.map((cell) => cell / total);
+  const distance = (target: readonly number[]) =>
+    shares.reduce(
+      (sum, share, index) => sum + Math.abs(share - (target[index] ?? 0)),
+      0,
+    );
+  // "3" wins a tie: an equal distance stays on the even split.
+  if (distance([0.25, 0.5, 0.25]) < distance([1 / 3, 1 / 3, 1 / 3])) {
+    return "1-2-1";
+  }
+  return "3";
 }
 
 export interface ConvertUnlayerOptions {
@@ -72,8 +100,12 @@ const COLUMN_SHARES: Record<ColumnLayout, number[]> = {
   "1": [1],
   "2": [1 / 2, 1 / 2],
   "3": [1 / 3, 1 / 3, 1 / 3],
+  "4": [1 / 4, 1 / 4, 1 / 4, 1 / 4],
   "1-2": [1 / 3, 2 / 3],
   "2-1": [2 / 3, 1 / 3],
+  "1-3": [1 / 4, 3 / 4],
+  "3-1": [3 / 4, 1 / 4],
+  "1-2-1": [1 / 4, 1 / 2, 1 / 4],
 };
 
 /**
@@ -115,57 +147,61 @@ function convertColumnContents(
 }
 
 /**
- * The section's fill. `columnsBackgroundColor` covers the content width, the
- * area a section paints; `backgroundColor` is the band outside it, used only
- * when the row sets no content colour.
+ * Where a row's colour and image land.
+ *
+ * `columnsBackgroundColor` is the content box and stays on the section.
+ * `backgroundColor` is the band outside that box. A `backgroundImage` with
+ * `fullWidth` left unset or `true` (Unlayer's default) is that same band;
+ * `fullWidth: false` is the content box. The band goes on a viewport-wide
+ * wrapper. With no content colour the section stays unset, so the band
+ * shows through the content box. A wrapper colour is left off when the
+ * section keeps its own image: Outlook desktop paints a wrapper colour over
+ * that image. Losses go to `warnings`, since rows have no report entry.
  */
-function resolveRowBackground(
-  row: UnlayerRow,
-  warnings: string[],
-): string | undefined {
-  const content = parseColor(row.values?.columnsBackgroundColor);
-  const band = parseColor(row.values?.backgroundColor);
-  if (content && band && content !== band) {
-    warnings.push(
-      `Row background ${band} outside the content width was dropped; the section keeps the content background ${content}.`,
-    );
-  }
-  return content || band || undefined;
-}
-
-/**
- * The image a row's section paints. `fullWidth: false` is the content area
- * a section paints, so it maps exactly. A full-width band (Unlayer's
- * default) shows through the content area only while
- * `columnsBackgroundColor` leaves it transparent: then the section paints it
- * at the content width, and otherwise it's dropped. Losses go to `warnings`,
- * since rows have no report entry.
- */
-function resolveRowBackgroundImage(
+function resolveRowPaint(
   row: UnlayerRow,
   width: number,
   warnings: string[],
-): BackgroundImage | undefined {
+): {
+  backgroundColor?: string;
+  backgroundImage?: BackgroundImage;
+  wrapper?: SectionWrapper;
+} {
+  const content = parseColor(row.values?.columnsBackgroundColor);
+  const band = parseColor(row.values?.backgroundColor);
   const bg = row.values?.backgroundImage;
   const read = readUnlayerBackgroundImage(bg, "Row", width);
-  if (!read) return undefined;
+  const imageIsBand = Boolean(read) && bg?.fullWidth !== false;
 
-  const band = bg?.fullWidth !== false;
-  const content = parseColor(row.values?.columnsBackgroundColor);
-  if (band && content) {
-    warnings.push(
-      `Row background image "${read.image.url}" outside the content width was dropped; the section keeps the content background ${content}.`,
-    );
-    return undefined;
+  let sectionImage: BackgroundImage | undefined;
+  const wrapper: SectionWrapper = {};
+  if (read && !imageIsBand) {
+    warnings.push(...read.notes);
+    sectionImage = read.image;
+  }
+  if (read && imageIsBand) {
+    warnings.push(...read.notes);
+    wrapper.backgroundImage = read.image;
+    wrapper.fullWidth = true;
   }
 
-  warnings.push(...read.notes);
   if (band) {
-    warnings.push(
-      `Row background image "${read.image.url}" spans the full width in Unlayer; the section paints it at the content width.`,
-    );
+    if (sectionImage) {
+      warnings.push(
+        `Row background ${band} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`,
+      );
+    } else {
+      wrapper.backgroundColor = band;
+      wrapper.fullWidth = true;
+    }
   }
-  return read.image;
+
+  const hasWrapper = wrapper.fullWidth === true;
+  return {
+    ...(content ? { backgroundColor: content } : {}),
+    ...(sectionImage ? { backgroundImage: sectionImage } : {}),
+    ...(hasWrapper ? { wrapper } : {}),
+  };
 }
 
 /**
@@ -205,22 +241,22 @@ function processRow(
     );
   }
 
-  const background = resolveRowBackground(row, warnings);
   const padding = parsePaddingShorthand(row.values?.padding);
-  const backgroundImage = resolveRowBackgroundImage(
-    row,
-    settings.width,
-    warnings,
-  );
+  const paint = resolveRowPaint(row, settings.width, warnings);
 
   const section = createSectionBlock({
     columns: layout,
     children,
     styles: {
       padding,
-      ...(background ? { backgroundColor: background } : {}),
+      ...(paint.backgroundColor
+        ? { backgroundColor: paint.backgroundColor }
+        : {}),
     },
-    ...(backgroundImage ? { backgroundImage } : {}),
+    ...(paint.backgroundImage
+      ? { backgroundImage: paint.backgroundImage }
+      : {}),
+    ...(paint.wrapper ? { wrapper: paint.wrapper } : {}),
   });
 
   const languages = row.values?._languages as
@@ -233,19 +269,25 @@ function processRow(
         ...row.values?.backgroundImage,
         ...values.backgroundImage,
       };
+      const translatedIsBand = backgroundImage.fullWidth !== false;
+      const imagePath = translatedIsBand
+        ? "wrapper.backgroundImage"
+        : "backgroundImage";
       if (
         typeof backgroundImage.url === "string" &&
         backgroundImage.url.trim() === ""
       ) {
-        set(section, locale, "backgroundImage", null);
+        set(section, locale, imagePath, null);
       } else {
-        const image = resolveRowBackgroundImage(
-          { ...row, values: { ...row.values, ...values, backgroundImage } },
+        const read = readUnlayerBackgroundImage(
+          backgroundImage,
+          "Row",
           settings.width,
-          warnings,
         );
-        if (image) set(section, locale, "backgroundImage", image);
-        else if (typeof backgroundImage.url !== "string")
+        if (read) {
+          warnings.push(...read.notes);
+          set(section, locale, imagePath, read.image);
+        } else if (typeof backgroundImage.url !== "string")
           warn(
             warnings,
             `Dropped language "${locale}" key "backgroundImage.url": unreadable translated URL.`,

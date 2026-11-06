@@ -53,6 +53,22 @@ function title(id: string, content: string, extra: object = {}) {
 }
 
 describe("validateTemplate — happy path", () => {
+  it("accepts fullWidth on a section wrapper and a layout wrapper", () => {
+    const section = createSectionBlock({
+      wrapper: { fullWidth: true, backgroundColor: "#112233", borderRadius: 12 },
+    });
+    const band = createWrapperBlock({
+      fullWidth: true,
+      borderRadius: 16,
+      styles: { backgroundColor: "#112233", padding },
+      children: [createSlotBlock()],
+    });
+    const doc = { ...createDefaultTemplateContent(), blocks: [section, band] };
+    const { valid, errors } = validateTemplate(doc);
+    expect(errors).toEqual([]);
+    expect(valid).toBe(true);
+  });
+
   it("accepts a minimal valid template", () => {
     const result = validateTemplate(template([title("title_1", "Hi")]));
     expect(result).toEqual({ valid: true, errors: [] });
@@ -103,6 +119,57 @@ describe("validateTemplate — divider width", () => {
   });
 });
 
+describe("validateTemplate — image fluid on mobile", () => {
+  const image = (fluidOnMobile: unknown) =>
+    validateTemplate(
+      template([
+        {
+          ...createImageBlock({ src: "https://example.com/a.png" }),
+          fluidOnMobile,
+        },
+      ]),
+    );
+
+  it("accepts true, false and an omitted field", () => {
+    expect(image(true).errors).toEqual([]);
+    expect(image(false).errors).toEqual([]);
+    expect(validateTemplate(template([createImageBlock()])).errors).toEqual([]);
+  });
+
+  it("rejects a string", () => {
+    const result = image("true");
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("fluidOnMobile");
+  });
+});
+
+describe("validateTemplate — button font weight", () => {
+  const button = (fontWeight: unknown) =>
+    validateTemplate(template([{ ...createButtonBlock(), fontWeight }]));
+
+  it("accepts regular, medium and bold", () => {
+    expect(button("regular").errors).toEqual([]);
+    expect(button("medium").errors).toEqual([]);
+    expect(button("bold").errors).toEqual([]);
+  });
+
+  it("rejects a number or any other word", () => {
+    for (const weight of [400, "normal", "semibold", ""]) {
+      const result = button(weight);
+      expect(result.valid, JSON.stringify(weight)).toBe(false);
+      expect(result.errors.join("\n"), JSON.stringify(weight)).toContain(
+        "fontWeight",
+      );
+    }
+  });
+
+  it("accepts a button that omits the weight", () => {
+    expect(validateTemplate(template([createButtonBlock()])).errors).toEqual(
+      [],
+    );
+  });
+});
+
 describe("validateTemplate — unhappy path", () => {
   it("rejects a non-object root", () => {
     expect(validateTemplate(null)).toEqual({
@@ -130,7 +197,9 @@ describe("validateTemplate — unhappy path", () => {
     });
     expect(result.valid).toBe(false);
     expect(
-      result.errors.some((e) => e.startsWith("settings") && e.includes("width")),
+      result.errors.some(
+        (e) => e.startsWith("settings") && e.includes("width"),
+      ),
     ).toBe(true);
   });
 
@@ -160,15 +229,15 @@ describe("validateTemplate — unhappy path", () => {
   });
 
   it("reports a missing block type as unknown rather than crashing", () => {
-    const result = validateTemplate(template([{ id: "x", styles: { padding } }]));
+    const result = validateTemplate(
+      template([{ id: "x", styles: { padding } }]),
+    );
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain("unknown or missing block type");
   });
 
   it("rejects unknown properties", () => {
-    const result = validateTemplate(
-      template([title("t", "Hi", { bogus: 1 })]),
-    );
+    const result = validateTemplate(template([title("t", "Hi", { bogus: 1 })]));
     expect(result.valid).toBe(false);
     // Otherwise-valid block: the only complaint must be the unknown property.
     expect(result.errors).toHaveLength(1);

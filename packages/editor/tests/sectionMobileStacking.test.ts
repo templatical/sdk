@@ -71,4 +71,25 @@ describe("section mobile stacking preview (#395/#396)", () => {
     expect(rowClass).not.toContain("tpl:flex-col");
     expect(widths).toEqual(["50%", "50%"]);
   });
+
+  it("stacks a four-column section to full width on mobile", () => {
+    const block = createSectionBlock({
+      columns: "4",
+      children: [[], [], [], []],
+    });
+    const { rowClass, widths } = readLayout(mountSection(block, "mobile"));
+    expect(rowClass).toContain("tpl:flex-col");
+    expect(widths).toEqual(["100%", "100%", "100%", "100%"]);
+  });
+
+  it("keeps a 1-3 section side by side on mobile when stacking is off", () => {
+    const block = createSectionBlock({
+      columns: "1-3",
+      stackOnMobile: false,
+      children: [[], []],
+    });
+    const { rowClass, widths } = readLayout(mountSection(block, "mobile"));
+    expect(rowClass).not.toContain("tpl:flex-col");
+    expect(widths).toEqual(["25%", "75%"]);
+  });
 });

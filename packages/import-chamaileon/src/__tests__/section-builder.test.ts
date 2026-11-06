@@ -101,7 +101,10 @@ describe("buildFullwidth", () => {
       bottom: 12,
       left: 16,
     });
-    expect(section.wrapper).toEqual({ backgroundColor: "#f4f4f4" });
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#f4f4f4",
+      fullWidth: true,
+    });
     expect(section.children.flat().map((b) => b.type)).not.toContain("button");
 
     const entry = entries.find((e) => e.sourceTag === "fullwidth");
@@ -137,7 +140,7 @@ describe("buildFullwidth", () => {
     );
   });
 
-  it("folds a 4-col row onto 3 and appends overflow onto the last slot", () => {
+  it("keeps a 4-col row of equal quarters in four slots", () => {
     const { section, entries } = sectionOf({
       type: "fullwidth",
       children: [
@@ -150,19 +153,41 @@ describe("buildFullwidth", () => {
       ],
     });
 
-    expect(section.columns).toBe("3");
-    expect(section.children).toHaveLength(3);
-    expect(section.children[0]).toHaveLength(1);
-    expect(section.children[1]).toHaveLength(1);
-    expect(section.children[2]).toHaveLength(2);
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
     expect(
-      section.children[2].map((b) => (b as ParagraphBlock).content),
-    ).toEqual(["<p>3</p>", "<p>4</p>"]);
+      section.children.map((column) => (column[0] as ParagraphBlock).content),
+    ).toEqual(["<p>1</p>", "<p>2</p>", "<p>3</p>", "<p>4</p>"]);
+
+    const entry = entries.find((e) => e.sourceTag === "fullwidth");
+    expect(entry?.status).toBe("converted");
+    expect(entry?.note).toBeUndefined();
+  });
+
+  it("folds a fifth column into the fourth slot and names the limit", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      children: [
+        multicolumn(
+          column("120px", text("<p>1</p>")),
+          column("120px", text("<p>2</p>")),
+          column("120px", text("<p>3</p>")),
+          column("120px", text("<p>4</p>")),
+          column("120px", text("<p>5</p>")),
+        ),
+      ],
+    });
+
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
+    expect(section.children[3]).toHaveLength(2);
+    expect((section.children[3][0] as ParagraphBlock).content).toBe("<p>4</p>");
+    expect((section.children[3][1] as ParagraphBlock).content).toBe("<p>5</p>");
 
     const entry = entries.find((e) => e.sourceTag === "fullwidth");
     expect(entry?.status).toBe("approximated");
     expect(entry?.note).toBe(
-      'Column widths 150px, 150px, 150px, 150px have no exact Templatical layout; resolved to "3".',
+      'Column widths 120px, 120px, 120px, 120px, 120px have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.',
     );
   });
 
@@ -466,23 +491,26 @@ describe("buildFullwidth background images", () => {
       },
       children: [text("<p>Hi</p>")],
     });
-    expect(section.backgroundImage).toEqual({
-      url: "https://cdn.test/band.jpg",
-      size: "auto",
-      position: { x: "center", y: "center" },
-      repeat: true,
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#222222",
+      backgroundImage: {
+        url: "https://cdn.test/band.jpg",
+        size: "auto",
+        position: { x: "center", y: "center" },
+        repeat: true,
+      },
+      fullWidth: true,
     });
-    expect(section.styles.backgroundColor).toBe("#222222");
-    expect(section.wrapper).toBeUndefined();
     expect(fullwidthEntry(entries)).toEqual({
       sourceTag: "fullwidth",
       templaticalBlockType: "section",
-      status: "approximated",
-      note: "fullwidth background image spans the full width in Chamaileon; the section paints it at the content width.",
+      status: "converted",
     });
   });
 
-  it("drops the band's image behind a painted content area", () => {
+  it("keeps the band image on the wrapper behind a painted content area", () => {
     const { section, entries } = sectionOf({
       type: "fullwidth",
       style: {
@@ -492,8 +520,42 @@ describe("buildFullwidth background images", () => {
       children: [text("<p>Hi</p>")],
     });
     expect(section.backgroundImage).toBeUndefined();
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toEqual({
+      backgroundImage: {
+        url: "https://cdn.test/band.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
+    });
+    expect(fullwidthEntry(entries)?.status).toBe("converted");
+  });
+
+  it("keeps the band image when the section image drops the band colour", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: {
+        backgroundColor: "#f4f4f4",
+        backgroundImage: "url(https://cdn.test/band.jpg)",
+        contentBackgroundImage: "url(https://cdn.test/hero.jpg)",
+      },
+      children: [text("<p>Hi</p>")],
+    });
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundImage: {
+        url: "https://cdn.test/band.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
+    });
     expect(fullwidthEntry(entries)?.note).toBe(
-      "fullwidth background image outside the content width was dropped.",
+      "fullwidth background colour #f4f4f4 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
     );
   });
 
@@ -518,7 +580,10 @@ describe("buildFullwidth background images", () => {
       style: { backgroundColor: "#f4f4f4", contentBackgroundColor: "#ffffff" },
       children: [text("<p>Hi</p>")],
     });
-    expect(section.wrapper).toEqual({ backgroundColor: "#f4f4f4" });
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#f4f4f4",
+      fullWidth: true,
+    });
   });
 
   it("reports a box image it can't keep", () => {

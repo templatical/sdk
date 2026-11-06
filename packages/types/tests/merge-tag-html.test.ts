@@ -3,9 +3,32 @@ import {
   convertMergeTagsToValues,
   getTagAttrValue,
   replaceMergeTagSpans,
+  scanMergeTagSpans,
 } from "../src";
+import { expectLinear } from "./helpers/expectLinear";
 
 describe("merge-tag HTML scanning", () => {
+  it("scans malformed span prefixes linearly and finds a later chip", () => {
+    expectLinear(
+      (n) => {
+        const text = "<span ".repeat(n) + "<span></span>";
+        return () => scanMergeTagSpans(text);
+      },
+      100,
+      1_000,
+    );
+    const html = "<span ".repeat(16_000) + "<span></span>";
+    expect(scanMergeTagSpans(html)).toEqual([]);
+    const prefix = "<span ".repeat(16_000);
+    const withChip = prefix + '<span data-merge-tag="{{x}}">X</span>';
+    expect(scanMergeTagSpans(withChip)).toEqual([
+      {
+        start: prefix.length,
+        end: withChip.length,
+        markup: '<span data-merge-tag="{{x}}">X</span>',
+      },
+    ]);
+  });
   it("replaces nested chip labels completely while preserving surrounding markup", () => {
     const html =
       '<p>Hi <span class="chip" data-merge-tag="[[a&lt;b]]"><b>First</b><span>name</span></span>!</p>';

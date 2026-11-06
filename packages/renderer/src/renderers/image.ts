@@ -27,8 +27,9 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
-  const width =
-    block.width === "full" ? context.containerWidth + "px" : block.width + "px";
+  const width = escapeAttr(
+    block.width === "full" ? context.containerWidth + "px" : block.width + "px",
+  );
   const height = heightAttr(block.height);
   const fluid = fluidOnMobileAttr(block, context);
 
@@ -48,7 +49,7 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
   const src = escapeAttr(block.src);
   const decorative = block.decorative === true;
   const alt = decorative ? "" : escapeAttr(block.alt);
-  const align = block.align;
+  const align = escapeAttr(block.align);
   const roleAttr = decorative ? ' role="presentation"' : "";
 
   return `<mj-image

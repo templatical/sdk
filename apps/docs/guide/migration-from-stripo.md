@@ -131,14 +131,14 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
-| `esd-structure` with 4+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
+| `esd-structure` with 1–4 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"` / `"4"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
+| `esd-structure` with 5+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
 | `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`, including its [width rule](/guide/migration-from-html#image-width). |
 | `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
-| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`; unknown names become `website`. |
+| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched network becomes a website icon and the block is reported `approximated`. |
 | `esd-block-spacer` | `spacer` or `divider` | A visible `border-bottom` or `border-top` on the spacer or its inner cell becomes a divider (style, colour, thickness, and the width rule below). Otherwise a spacer: height from `style`, the `height` attribute, or vertical padding. |
 | `esd-block-html` | `html` | Inner markup preserved. |
 
@@ -150,16 +150,16 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 |---|---|---|
 | `es-header` / `es-content` / `es-footer` | one or more `SectionBlock`s | One section per direct row of the stripe's `es-*-body`. A stripe with no `es-*-body` uses its own rows. An empty row is skipped. |
 | Content beside the columns in the same cell | one-column `SectionBlock` | Leading content stays before the column section and trailing content after it. Content that sat between the columns is placed after the column section (`approximated`). Splitting one padded cell into more than one section is `approximated`; the top padding stays on the first section, the bottom on the last, and the sides on each. |
-| 1–3 `es-left` / `es-right` in one row | `columns` `"1"` / `"2"` / `"3"` | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
-| 4+ floated tables in one row | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
+| 1–4 `es-left` / `es-right` in one row | `columns` `"1"` / `"2"` / `"3"` / `"4"` | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
+| 5+ floated tables in one row | `columns: "4"` | Extra columns merge into the fourth slot; `approximated`. |
 | `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
-| `table.es-social` | `social` | Same platform mapping as the plugin path. |
+| `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched network becomes a website icon and the block is reported `approximated`. |
 | `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
 | `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 
-`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. Background images, and what they do to that band colour, follow [Background images](#background-images).
+`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A stripe (`esd-stripe`, or `es-header` / `es-content` / `es-footer`) around that body whose colour differs from the page is a full-width band: the colour becomes `section.wrapper.backgroundColor` with `wrapper.fullWidth: true`, so the band runs to the window edge and the content stays at the email width, including when the stripe colour matches the body. A transparent body moves that colour off the section onto the wrapper. A stripe colour the same as the page stays off the wrapper. A stripe with no inner body keeps its colour on the section. Background images, and what they do to that band colour, follow [Background images](#background-images).
 
 The structure cell's padding is the section's padding. The default is 0. On plugin HTML, `es-p20` sets every side and `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` override one side; an inline padding overrides the sides it states. Those classes are read on the structure element.
 
@@ -174,15 +174,15 @@ An element's image is read from its inline `background-image`, the image in its 
 1. The structure's own image: the row cell, `esd-structure` in plugin HTML.
 2. The `es-*-body` image, the content area behind every structure in the stripe.
 3. The containers' images (`es-left` / `es-right`, or `esd-container-frame`), when there is one container or they all share the same image. Otherwise, or beside a nearer image, they're dropped, and the note names the columns.
-4. The stripe's image, only while the body is transparent. The section paints it at the content width, and the entry is `approximated`. A stripe image the body covers is dropped with a note.
+4. The stripe's image becomes `wrapper.backgroundImage` with `wrapper.fullWidth: true`, including when the body covers it. A stripe with no inner body keeps its colour on the section and still puts that image on the wrapper.
 
-An image behind several sections, such as a body image across several structures, is copied onto each, and each entry is `approximated` with a note. When a section has an image, a stripe colour that would have become `section.wrapper.backgroundColor` is dropped with a note instead, because Outlook desktop paints a wrapper colour over the section's image. An `es-wrapper` image has no Templatical equivalent, and `report.warnings` names it.
+An image behind several sections, such as a body image or a stripe image across several structures, is copied onto each, and each entry is `approximated` with a note. When a section has an image, a stripe colour that would have become `section.wrapper.backgroundColor` is dropped with a note instead, because Outlook desktop paints a wrapper colour over the section's image. The stripe image stays on the wrapper. An `es-wrapper` image has no Templatical equivalent, and `report.warnings` names it.
 
 `background-size`, `background-position` and `background-repeat` come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the body's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
 
 ## Where the mapping is lossy
 
-- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin HTML with 4+ frames flattens to one column. Compiled HTML with 4+ floated tables in one row keeps three slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Stripo states columns by count, so a row maps to the equal layout `1`, `2`, `3` or `4`. Unequal px widths on a plugin frame or a compiled `es-left` / `es-right` column are reported `approximated`. A column with no readable width is named in that note when the readable widths differ; fewer than two readable widths, or readable widths within 1px, stay `converted`. Plugin HTML with 5 or more frames flattens to one column. Compiled HTML with 5 or more floated tables in one row keeps four slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
 - **Social icon `alt`** — platforms are inferred; the original `alt` string is not stored on `SocialIcon`.
 - **Block IDs** — every imported block gets a freshly generated ID.
 - **AMP / timers / modules** — no Templatical equivalent; inner markup lands as `html` or is skipped with a warning.

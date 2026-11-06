@@ -16,6 +16,7 @@ const EXPECTED_PLATFORMS = [
   "twitter",
   "instagram",
   "linkedin",
+  "xing",
   "youtube",
   "tiktok",
   "pinterest",
@@ -32,7 +33,7 @@ const EXPECTED_PLATFORMS = [
 ];
 
 describe("SOCIAL_ICON_GLYPHS", () => {
-  it("covers exactly the 17 supported platforms", () => {
+  it("covers exactly the 18 supported platforms", () => {
     expect(Object.keys(SOCIAL_ICON_GLYPHS).sort()).toEqual(
       [...EXPECTED_PLATFORMS].sort(),
     );
@@ -51,6 +52,8 @@ describe("SOCIAL_ICON_GLYPHS", () => {
   it("pins known brand colors (regression guard against accidental edits)", () => {
     expect(SOCIAL_ICON_GLYPHS.facebook.color).toBe("#1877F2");
     expect(SOCIAL_ICON_GLYPHS.youtube.color).toBe("#FF0000");
+    expect(SOCIAL_ICON_GLYPHS.xing.color).toBe("#006567");
+    expect(SOCIAL_ICON_GLYPHS.xing.path.startsWith("M18.188")).toBe(true);
     // website + email share the neutral grey so the globe doesn't read heavy.
     expect(SOCIAL_ICON_GLYPHS.website.color).toBe("#6B7280");
     expect(SOCIAL_ICON_GLYPHS.email.color).toBe("#6B7280");

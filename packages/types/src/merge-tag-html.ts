@@ -1,15 +1,16 @@
-import { findOpenTagEnd, getTagAttrValue } from "./html-scan";
+import {
+  findOpenSpanBoundary,
+  findOpenTagEnd,
+  getTagAttrValue,
+} from "./html-scan";
 
 /**
  * Replace merge tag span elements with their data attribute values.
  * Converts `<span data-merge-tag="{{name}}">Label</span>` to `{{name}}`.
  * Also handles `data-logic-merge-tag` attributes.
  *
- * Uses a single-pass linear scan instead of an `[^>]*…[^>]*` regex because
- * the latter is polynomial-ReDoS over inputs that contain many `<span`
- * starts but no closing `>` — the engine retries `[^>]*` at every span
- * position. The scan below resolves each `<span>` open tag with a bounded,
- * quote-aware `findOpenTagEnd`, keeping the work strictly O(n).
+ * Each span opening tag is scanned once, with quoted attribute values kept
+ * intact and malformed prefixes skipped before a later span candidate.
  */
 export function convertMergeTagsToValues(html: string): string {
   // Preserve the renderer's existing first-close handling of nested spans.
@@ -73,7 +74,12 @@ function rewriteMergeTagSpans(
       i = open + 5;
       continue;
     }
-    const openEnd = findOpenTagEnd(html, open + 5);
+    const { end: openEnd, nextSpan } = findOpenSpanBoundary(html, open + 5);
+    if (nextSpan !== -1) {
+      out += html.substring(i, nextSpan);
+      i = nextSpan;
+      continue;
+    }
     if (openEnd === -1) {
       out += html.substring(i);
       break;
@@ -83,11 +89,10 @@ function rewriteMergeTagSpans(
       findAttr(attrs, "data-merge-tag") ??
       findAttr(attrs, "data-logic-merge-tag");
     if (value === null) {
-      // This `<span>` isn't a merge-tag — emit up to and including the
-      // `<span` literal and let the next iteration scan inward, so any
-      // nested merge-tag span still gets a chance to match.
-      out += html.substring(i, open + 5);
-      i = open + 5;
+      // Keep this opening tag and continue through its contents, where a
+      // nested merge-tag span may appear.
+      out += html.substring(i, openEnd + 1);
+      i = openEnd + 1;
       continue;
     }
     const closeEnd = findSpanClose(html, openEnd + 1, wholeElement);

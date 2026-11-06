@@ -184,21 +184,25 @@ Unlayer organizes content into rows with columns whose widths come from a `cells
 | `[1, 1, 1]` (equal thirds) | `'3'` |
 | `[1, 2]` | `'1-2'` |
 | `[2, 1]` | `'2-1'` |
-| 4+ cells | flattened to single column with a warning |
+| `[1, 3]` | `'1-3'` |
+| `[3, 1]` | `'3-1'` |
+| `[1, 2, 1]` | `'1-2-1'` |
+| `[1, 1, 1, 1]` (equal quarters) | `'4'` |
+| 5+ cells | flattened to a single column with a warning |
 
-Cell ratios that don't match a standard layout are mapped to the closest available one.
+Cell ratios that don't match a layout above are mapped to the closest one with the same column count. Four cells stay four columns, and unequal four-cell ratios (for example `[6, 2, 2, 2]`) are named in `report.warnings` because layout `4` is four equal quarters. Unlayer does not otherwise warn when the ratio is only near that layout.
 
 ### Section background
 
 | Unlayer row values | `section.styles.backgroundColor` |
 |---|---|
 | `columnsBackgroundColor` set | `columnsBackgroundColor` |
-| only `backgroundColor` set | `backgroundColor` |
+| only `backgroundColor` set | unset; the colour is the full-width wrapper |
 
-When a row sets both to different colours, the section takes `columnsBackgroundColor` and `report.warnings` names the dropped `backgroundColor`.
+When a row sets `backgroundColor`, that colour becomes `section.wrapper.backgroundColor` with `wrapper.fullWidth: true`, including when it matches `columnsBackgroundColor`. The section keeps `columnsBackgroundColor`. With no content colour the section background stays unset, so the band shows through the content box.
 
 ::: tip
-`columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it, and a Templatical section has no full-width band.
+`columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it and is stored on `section.wrapper` with `fullWidth: true`, so the band runs to the window edge.
 :::
 
 ### Section background image {#background-images}
@@ -208,8 +212,9 @@ A row's `backgroundImage` becomes the section's `backgroundImage`:
 | `backgroundImage.fullWidth` | Result |
 |---|---|
 | `false` (the content area) | The section's image, exactly. |
-| `true`, `columnsBackgroundColor` unset | The section's image, painted at the content width, and `report.warnings` says so. |
-| `true`, `columnsBackgroundColor` set | Dropped, since in Unlayer the content colour covers it inside the content width, and `report.warnings` names it. |
+| omitted or `true` | `wrapper.backgroundImage` with `wrapper.fullWidth: true`. The section keeps `columnsBackgroundColor`, or stays unset when that colour is absent. |
+
+A band colour is left off the wrapper when the section keeps a content-area image (`fullWidth: false`): Outlook desktop paints a wrapper colour over that image, and `report.warnings` names the dropped colour.
 
 `size` `cover` and `contain` carry over, and `custom` is the image at its own size (`auto`). The nine `position` keywords map to the matching grid point. A `custom` position's `customPosition` percentage snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x` and `repeat-y` become `repeat`. Older designs' `cover` and `center` flags are read when `size` and `position` are absent: `cover` maps to `cover` (`false` to `auto`), and `center` to center top (`false` to left top). Each value with no exact keyword adds a line to `report.warnings`.
 

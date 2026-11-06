@@ -2,6 +2,26 @@ import { describe, expect, it } from "vitest";
 import { findOpenTagEnd, getTagAttrValue } from "../src/html-scan";
 
 describe("findOpenTagEnd", () => {
+  it("treats a quote inside an unquoted value as an ordinary character", () => {
+    const html = "<p title=don't>Don't <strong>miss</strong></p>";
+    expect(findOpenTagEnd(html, 2)).toBe(html.indexOf(">"));
+  });
+
+  it("opens a quoted value after = and whitespace", () => {
+    const html = '<p title = "2 > 1">x</p>';
+    expect(findOpenTagEnd(html, 2)).toBe(html.indexOf(">x"));
+  });
+
+  it("ends an unquoted value at whitespace, so a later quoted value still counts", () => {
+    const html = '<p a=b c="d>e">x</p>';
+    expect(findOpenTagEnd(html, 2)).toBe(html.indexOf(">x"));
+  });
+
+  it("does not open a quote for a quote that follows an unquoted value's =", () => {
+    const html = "<p href=a='x>y'</p>";
+    expect(findOpenTagEnd(html, 2)).toBe(html.indexOf(">"));
+  });
+
   it("returns the index of the `>` that closes the open tag", () => {
     const html = '<span data-merge-tag="{{a}}">L</span>';
     const end = findOpenTagEnd(html, 5);
