@@ -301,6 +301,133 @@ describe("editing session locale type guard", () => {
     expect(session.batches).toEqual([]);
   });
 
+  it("refuses German children that give a base block's id another type", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "addBlock",
+          block: {
+            id: "s1",
+            type: "section",
+            columns: "1",
+            children: [[{ id: "x1", type: "paragraph", content: "<p>Hi</p>" }]],
+            l10n: {
+              de: {
+                set: {
+                  children: [
+                    [{ id: "x1", type: "title", content: "<p>Hallo</p>" }],
+                  ],
+                },
+              },
+            },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback:
+        "Refused: op 0 (addBlock s1) was refused: you can't change a block's type",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+
+    const translated = session.apply([
+      {
+        op: "addBlock",
+        block: {
+          id: "s1",
+          type: "section",
+          columns: "1",
+          children: [[{ id: "x1", type: "paragraph", content: "<p>Hi</p>" }]],
+          l10n: {
+            de: {
+              set: {
+                children: [
+                  [{ id: "x1", type: "paragraph", content: "<p>Hallo</p>" }],
+                ],
+              },
+            },
+          },
+        },
+        parent: null,
+        after: "p1",
+      },
+    ]);
+    expect(translated.ok).toBe(true);
+    expect(
+      resolveLocale(session.content as never, "de").blocks[1],
+    ).toMatchObject({
+      id: "s1",
+      children: [[{ id: "x1", type: "paragraph", content: "<p>Hallo</p>" }]],
+    });
+  });
+
+  it("refuses German children that give another existing block's id another type", () => {
+    expectRefusal(
+      content(),
+      [
+        {
+          op: "addBlock",
+          block: {
+            id: "s1",
+            type: "section",
+            columns: "1",
+            children: [[]],
+            l10n: {
+              de: {
+                set: {
+                  children: [
+                    [{ id: "p1", type: "title", content: "<p>Hallo</p>" }],
+                  ],
+                },
+              },
+            },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ],
+      "Refused: op 0 (addBlock s1) was refused: you can't change a block's type",
+    );
+  });
+
+  it("refuses a batch while an existing German layer gives a child another type", () => {
+    const start = {
+      ...content(),
+      blocks: [
+        ...content().blocks,
+        {
+          id: "s1",
+          type: "section",
+          columns: "1",
+          children: [[{ id: "x1", type: "paragraph", content: "<p>Hi</p>" }]],
+          l10n: {
+            de: {
+              set: {
+                children: [
+                  [{ id: "x1", type: "title", content: "<p>Hallo</p>" }],
+                ],
+              },
+            },
+          },
+        },
+      ],
+    };
+    expectRefusal(
+      start,
+      [{ op: "updateBlock", blockId: "p1", set: { content: "<p>Hey</p>" } }],
+      "Refused: you can't change a block's type",
+    );
+  });
+
   it("refuses localized custom children supplied through setContent", () => {
     const start = content();
     const session = createEditingSession({

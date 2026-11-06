@@ -24,7 +24,11 @@ function list(types: readonly string[]): string {
     : `${types.slice(0, -1).join(", ")} or ${types.at(-1)}`;
 }
 
-/** A locale may not change block type or custom schema or add forbidden children. */
+/**
+ * A locale may not change block type or custom schema or add forbidden children.
+ * A localized child keeps the type of the block with its id, in the layer's own
+ * base children or elsewhere in the content.
+ */
 export function localeLayerRuleRefusal(
   block: Record<string, unknown>,
   layer: unknown,
@@ -51,6 +55,16 @@ export function localeLayerRuleRefusal(
         block.customType)
   )
     return "you can't change a block's customType";
+  const base = new Map<string, Record<string, unknown>>();
+  for (const child of walkBlocks(block.children)) {
+    if (typeof child.id === "string") base.set(child.id, child);
+  }
+  for (const child of walkBlocks(setFields.children)) {
+    if (typeof child.id !== "string") continue;
+    const original = base.get(child.id) ?? existing.get(child.id);
+    if (original !== undefined && original.type !== child.type)
+      return "you can't change a block's type";
+  }
   return contentRuleRefusal(setFields.children, existing, forbidden);
 }
 

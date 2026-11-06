@@ -335,6 +335,8 @@ export function createEditingSession(
       for (const block of walkBlocks(view.blocks)) {
         const original =
           typeof block.id === "string" ? baseBlocks.get(block.id) : undefined;
+        if (original !== undefined && block.type !== original.type)
+          return refuse("you can't change a block's type");
         if (
           original?.type === "custom" &&
           block.type === "custom" &&
