@@ -87,6 +87,14 @@ describe("built-in paste rules", () => {
     const customValue = { ...spread, value: /\{\{[\s\S]+?\}\}/g };
     expect(typeof pasteFinder("value", spread)).toBe("function");
     expect(typeof pasteFinder("logic", spread)).toBe("function");
+    expect(matches("value", spread, "a {{x}} b {{ y }}")).toEqual([
+      { index: 2, text: "{{x}}" },
+      { index: 10, text: "{{ y }}" },
+    ]);
+    expect(matches("logic", spread, "{% if vip %}VIP{% endif %}")).toEqual([
+      { index: 0, text: "{% if vip %}" },
+      { index: 15, text: "{% endif %}" },
+    ]);
     expect(pasteFinder("value", changedFlags)).toBeInstanceOf(RegExp);
     expect(pasteFinder("value", customValue)).toBeInstanceOf(RegExp);
   });
