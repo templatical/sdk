@@ -1,6 +1,7 @@
 import LogicMergeTagNodeView from "./LogicMergeTagNodeView.vue";
 import type { SyntaxPreset } from "@templatical/types";
 import {
+  builtInPresetOf,
   getLogicMergeTagKeyword,
   isLogicMergeTagValue,
   scanSyntaxMatches,
@@ -120,9 +121,7 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
 
   addPasteRules() {
     const syntax = this.options.syntax;
-    const find = Object.values(SYNTAX_PRESETS).includes(
-      syntax as Required<SyntaxPreset>,
-    )
+    const find = builtInPresetOf(syntax)
       ? (text: string) =>
           scanSyntaxMatches(text, syntax, "logic").map((match) => ({
             index: match.index,

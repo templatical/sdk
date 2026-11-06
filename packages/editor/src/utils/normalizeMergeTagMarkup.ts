@@ -12,6 +12,7 @@ import type {
   WrapperBlock,
 } from "@templatical/types";
 import {
+  builtInPresetOf,
   sourceHash,
   readPath,
   deepEqual,
@@ -23,7 +24,6 @@ import {
   resolveSyntax,
   safeClone,
   scanSyntaxMatches,
-  SYNTAX_PRESETS,
 } from "@templatical/types";
 
 /**
@@ -91,9 +91,7 @@ export function collectHits(
   syntax: SyntaxPreset,
 ): TagHit[] {
   const hits: TagHit[] = [];
-  const builtin = Object.values(SYNTAX_PRESETS).includes(
-    syntax as Required<SyntaxPreset>,
-  );
+  const builtin = builtInPresetOf(syntax) !== undefined;
   const logicHits: TagHit[] = [];
   let logicIndex = 0;
 

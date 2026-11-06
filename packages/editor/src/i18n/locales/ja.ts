@@ -562,6 +562,8 @@ const translations: typeof en = {
     displayCondition: "表示条件",
     selectCondition: "条件を選択",
     removeCondition: "条件を削除",
+    addCondition: "条件を追加",
+    editCondition: "編集",
     noCondition: "常に表示",
     conditionApplied: "条件を適用しました",
     customCondition: "カスタム条件",
