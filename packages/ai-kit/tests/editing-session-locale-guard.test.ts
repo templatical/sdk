@@ -8,6 +8,13 @@ const content = () => ({
   settings: { width: 600, locale: "en", locales: ["en", "de"] },
 });
 
+function expectRefusal(start: unknown, ops: unknown, feedback: string): void {
+  const session = createEditingSession({ content: start as never, mergeTags });
+  expect(session.apply(ops)).toEqual({ ok: false, feedback });
+  expect(session.content).toEqual(start);
+  expect(session.batches).toEqual([]);
+}
+
 describe("editing session locale type guard", () => {
   it("refuses the first step of type promotion and accepts translated text", () => {
     const start = content();
@@ -625,4 +632,191 @@ describe("editing session locale type guard", () => {
       expect(session.batches).toEqual([]);
     },
   );
+
+  it.each([
+    { name: "null map", l10n: null },
+    { name: "array map", l10n: [] },
+    { name: "string map", l10n: "invalid" },
+    {
+      name: "missing text value",
+      l10n: { de: { text: { preheaderText: { sourceHash: "hash" } } } },
+    },
+    {
+      name: "non-string text value",
+      l10n: {
+        de: { text: { preheaderText: { value: 42, sourceHash: "hash" } } },
+      },
+    },
+    {
+      name: "missing source hash",
+      l10n: { de: { text: { preheaderText: { value: "Hallo" } } } },
+    },
+    {
+      name: "non-string source hash",
+      l10n: {
+        de: { text: { preheaderText: { value: "Hallo", sourceHash: 42 } } },
+      },
+    },
+    { name: "false hidden flag", l10n: { de: { hidden: false } } },
+  ])("refuses settings with $name", ({ l10n }) => {
+    const start = content();
+    expectRefusal(
+      start,
+      [
+        {
+          op: "setContent",
+          content: { ...start, settings: { ...start.settings, l10n } },
+        },
+      ],
+      "Refused: the template has an invalid locale layer",
+    );
+  });
+
+  it.each([
+    { name: "null map", l10n: null },
+    { name: "array map", l10n: [] },
+    { name: "string map", l10n: "invalid" },
+    { name: "array layer", l10n: { de: [] } },
+    { name: "string layer", l10n: { de: "invalid" } },
+    { name: "array set", l10n: { de: { set: [] } } },
+    { name: "string text", l10n: { de: { text: "invalid" } } },
+    {
+      name: "non-string text value",
+      l10n: { de: { text: { content: { value: 42, sourceHash: "hash" } } } },
+    },
+    {
+      name: "non-string source hash",
+      l10n: { de: { text: { content: { value: "Hallo", sourceHash: 42 } } } },
+    },
+    { name: "false hidden flag", l10n: { de: { hidden: false } } },
+  ])("refuses an added block with $name", ({ l10n }) => {
+    const start = content();
+    expectRefusal(
+      start,
+      [
+        {
+          op: "addBlock",
+          block: {
+            id: "p2",
+            type: "paragraph",
+            content: "<p>Second</p>",
+            l10n,
+          },
+          parent: null,
+          after: "p1",
+        },
+      ],
+      "Refused: the template has an invalid locale layer",
+    );
+  });
+
+  it.each([
+    {
+      name: "non-object child",
+      children: [[null, { id: "c1", type: "custom", customType: "qr" }]],
+    },
+    {
+      name: "nested section without columns",
+      children: [[{ id: "s2", type: "section", children: null }]],
+    },
+    {
+      name: "nested wrapper without children",
+      children: [[{ id: "w1", type: "wrapper", children: null }]],
+    },
+    {
+      name: "non-object wrapper child",
+      children: [[{ id: "w1", type: "wrapper", children: [null] }]],
+    },
+    {
+      name: "wrapper containing a malformed section",
+      children: [
+        [
+          {
+            id: "w1",
+            type: "wrapper",
+            children: [{ id: "s2", type: "section", children: [[null]] }],
+          },
+        ],
+      ],
+    },
+  ])("refuses localized section children with a $name", ({ children }) => {
+    const start = content();
+    expectRefusal(
+      start,
+      [
+        {
+          op: "addBlock",
+          block: {
+            id: "s1",
+            type: "section",
+            columns: "1",
+            children: [[]],
+            l10n: { de: { set: { children } } },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ],
+      "Refused: the template has an invalid locale layer",
+    );
+  });
+
+  it("refuses a malformed locale layer inside a non-container override", () => {
+    const start = content();
+    expectRefusal(
+      start,
+      [
+        {
+          op: "addBlock",
+          block: {
+            id: "p2",
+            type: "paragraph",
+            content: "<p>Second</p>",
+            l10n: {
+              de: {
+                set: {
+                  children: [
+                    { id: "p3", type: "paragraph", l10n: { fr: null } },
+                  ],
+                },
+              },
+            },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ],
+      "Refused: the template has an invalid locale layer",
+    );
+  });
+
+  it("refuses a translated customType override on an existing block", () => {
+    const start = {
+      ...content(),
+      blocks: [{ id: "c1", type: "custom", customType: "qr", fieldValues: {} }],
+    };
+    expectRefusal(
+      start,
+      [
+        {
+          op: "updateBlockLocale",
+          blockId: "c1",
+          locale: "de",
+          text: {
+            customType: { value: "barcode", sourceHash: sourceHash("qr") },
+          },
+        },
+      ],
+      "Refused: op 0 (updateBlockLocale) was refused: you can't change a block's customType",
+    );
+  });
+
+  it("refuses content that locale resolution cannot project", () => {
+    const start = { ...content(), blocks: [null] };
+    expectRefusal(
+      start,
+      [{ op: "updateSettings", set: { width: 640 } }],
+      "Refused: the template has an invalid locale layer",
+    );
+  });
 });
