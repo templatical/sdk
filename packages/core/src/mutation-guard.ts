@@ -2,6 +2,7 @@ import { isRef } from "@vue/reactivity";
 import {
   assertNoSlotInContent,
   assertNoWrapperInContent,
+  blockIdsOf,
   getColumnCount,
   type Block,
   type TemplateContent,
@@ -48,6 +49,15 @@ export function canEditStructure(
   const source = adding ? null : context.findBlockLocation?.(id);
   if (!adding && context.findBlockLocation && !source) return false;
   if (!adding && context.isBlockLocked(id, true)) return false;
+  if (
+    !adding &&
+    block &&
+    blockIdsOf(block).some(
+      (descendantId) =>
+        descendantId !== id && context.isBlockLocked(descendantId, true),
+    )
+  )
+    return false;
   if (
     source?.targetSectionId &&
     context.isBlockLocked(source.targetSectionId, true)
