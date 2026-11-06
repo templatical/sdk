@@ -66,9 +66,9 @@ function tagRanges(
   const attributes = format === "html" ? attributeRanges(text) : [];
   const ranges: Range[] = chips.map((chip) => ({ ...chip, attribute: false }));
   let attributeIndex = 0;
+  const builtin = builtInPresetOf(syntax) !== undefined;
   const raw = (start: number, end: number) => {
     const segment = text.slice(start, end);
-    const builtin = builtInPresetOf(syntax) !== undefined;
     const kinds = ["logic", "value"] as const;
     const nextMatches = builtin
       ? kinds.map((kind) => scanSyntaxMatches(segment, syntax, kind, 0, 1)[0])
