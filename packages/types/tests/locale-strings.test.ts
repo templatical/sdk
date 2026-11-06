@@ -78,6 +78,19 @@ describe("maskTags", () => {
       40,
     );
   });
+  it("masks unclosed openers from a spread preset linearly", () => {
+    const syntax = { ...liquid, opener: "<<" };
+    const text = "{{".repeat(90_000);
+    expect(maskTags(text, syntax, "text")).toEqual({ text, tokens: [] });
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => maskTags(value, syntax, "text");
+      },
+      5_000,
+      40,
+    );
+  });
   it("masks many complete tags followed by unclosed openers linearly", () => {
     const text = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
     expect(maskTags(text, liquid, "text").tokens).toHaveLength(20_000);

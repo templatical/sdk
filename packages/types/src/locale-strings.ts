@@ -12,8 +12,8 @@ import {
 } from "./localization";
 import { scanMergeTagSpans } from "./merge-tag-html";
 import {
+  builtInPresetOf,
   scanSyntaxMatches,
-  SYNTAX_PRESETS,
   type SyntaxPreset,
 } from "./merge-tags";
 import type { Operation } from "./operations";
@@ -66,11 +66,9 @@ function tagRanges(
   const attributes = format === "html" ? attributeRanges(text) : [];
   const ranges: Range[] = chips.map((chip) => ({ ...chip, attribute: false }));
   let attributeIndex = 0;
+  const builtin = builtInPresetOf(syntax) !== undefined;
   const raw = (start: number, end: number) => {
     const segment = text.slice(start, end);
-    const builtin = Object.values(SYNTAX_PRESETS).includes(
-      syntax as Required<SyntaxPreset>,
-    );
     const kinds = ["logic", "value"] as const;
     const nextMatches = builtin
       ? kinds.map((kind) => scanSyntaxMatches(segment, syntax, kind, 0, 1)[0])

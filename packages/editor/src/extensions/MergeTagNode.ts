@@ -1,6 +1,7 @@
 import MergeTagNodeView from "./MergeTagNodeView.vue";
 import type { MergeTag, SyntaxPreset } from "@templatical/types";
 import {
+  builtInPresetOf,
   getMergeTagLabel,
   scanSyntaxMatches,
   SYNTAX_PRESETS,
@@ -144,9 +145,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
 
   addPasteRules() {
     const syntax = this.options.syntax;
-    const find = Object.values(SYNTAX_PRESETS).includes(
-      syntax as Required<SyntaxPreset>,
-    )
+    const find = builtInPresetOf(syntax)
       ? (text: string) =>
           scanSyntaxMatches(text, syntax, "value").map((match) => ({
             index: match.index,
