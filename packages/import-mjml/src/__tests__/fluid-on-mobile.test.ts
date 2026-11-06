@@ -4,6 +4,7 @@ import {
   createDefaultTemplateContent,
   createImageBlock,
   createSectionBlock,
+  getColumnCount,
   uniformBorder,
 } from "@templatical/types";
 import type {
@@ -110,7 +111,7 @@ describe("the renderer's own output re-imports as converted at the room", () => 
     image: ImageBlock,
     partial: Partial<SectionBlock> = {},
   ): SectionBlock {
-    const count = { "1": 1, "2": 2, "3": 3, "1-2": 2, "2-1": 2 }[columns];
+    const count = getColumnCount(columns);
     const children: Block[][] = Array.from({ length: count }, () => []);
     children[0] = [image];
     return createSectionBlock({ columns, children, ...partial });

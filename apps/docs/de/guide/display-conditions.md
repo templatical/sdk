@@ -44,6 +44,7 @@ interface DisplayCondition {
   after: string;
   group?: string;
   description?: string;
+  data?: unknown;
 }
 ```
 
@@ -54,17 +55,76 @@ interface DisplayCondition {
 | `after` | Ja | Markup, das nach der Blockausgabe eingefügt wird |
 | `group` | Nein | Gruppenname zur Organisation von Bedingungen im Dropdown |
 | `description` | Nein | Erklärender Text, der unter dem Label angezeigt wird |
+| `data` | Nein | Opaker Zustand des Hosts. Der Editor speichert ihn und gibt ihn als `current.data` zurück, wenn der Dialog erneut geöffnet wird. Der Wert muss `JSON.stringify` überstehen (der Inhalt wird mit `safeClone` kopiert). Der Editor liest ihn nicht. |
 
 ## DisplayConditionsConfig
 
 ```ts
+interface DisplayConditionRequestContext {
+  current?: DisplayCondition;
+  block: Block;
+}
+
 interface DisplayConditionsConfig {
-  conditions: DisplayCondition[];
+  conditions?: DisplayCondition[];
   allowCustom?: boolean;
+  onRequest?: (
+    context: DisplayConditionRequestContext,
+  ) => Promise<DisplayCondition | null>;
 }
 ```
 
-Wenn `allowCustom` auf `true` gesetzt ist, können Benutzer ihre eigenen `before`- und `after`-Zeichenketten direkt im Editor schreiben, anstatt aus der vordefinierten Liste zu wählen. Standardwert ist `false`.
+Wenn `allowCustom` auf `true` gesetzt ist, können Benutzer ihre eigenen `before`- und `after`-Zeichenketten direkt im Editor schreiben, anstatt aus der vordefinierten Liste zu wählen. Standardwert ist `false`. `conditions` kann entfallen.
+
+## Eigener Bedingungsdialog
+
+`displayConditions.onRequest` ersetzt die eingebaute Bedingungsliste. In den Blockeinstellungen erscheint **Bedingung hinzufügen**, und bei gesetzter Bedingung **Bearbeiten** sowie **Bedingung entfernen**. Der Callback erhält `{ block }`, wenn der Block keine Bedingung hat, und `{ current, block }`, wenn eine gesetzt ist. Beide Werte sind Kopien. Geben Sie eine `DisplayCondition` zurück, oder `null`, damit der Block unverändert bleibt.
+
+`current.data` ist der opake Zustand der Bedingung, damit Ihr Dialog wieder ausgefüllt öffnet. Ein aufgelöster Wert braucht die Zeichenketten `label`, `before` und `after`. Leere Zeichenketten sind gültig. `description`, `group` und `data` bleiben erhalten. Ist `onRequest` gesetzt, werden `conditions` und `allowCustom` ignoriert.
+
+```ts
+import { init } from '@templatical/editor';
+
+function openConditionBuilder({
+  data,
+}: {
+  blockId: string;
+  data?: unknown;
+}) {
+  const saved =
+    data !== null && typeof data === 'object'
+      ? (data as { field?: string; operator?: string; value?: string })
+      : undefined;
+  const field = saved?.field ?? 'customer.vip';
+  const operator = saved?.operator ?? '==';
+  const value = saved?.value ?? 'true';
+  return Promise.resolve({
+    label: `${field} ${operator} ${value}`,
+    before: `{% if ${field} ${operator} ${value} %}`,
+    after: '{% endif %}',
+    data: { field, operator, value },
+  });
+}
+
+const editor = await init({
+  container: '#editor',
+  displayConditions: {
+    onRequest: async ({ block, current }) => {
+      const chosen = await openConditionBuilder({
+        blockId: block.id,
+        data: current?.data,
+      });
+      if (!chosen) return null;
+      return {
+        label: chosen.label,
+        before: chosen.before,
+        after: chosen.after,
+        data: chosen.data,
+      };
+    },
+  },
+});
+```
 
 ## Bedingungen gruppieren
 
@@ -162,3 +222,18 @@ Zwei Wege, die unterschiedliche Fragen beantworten:
 Das Setup **Display conditions** übergibt `displayConditions`, sodass sich jeder Block pro Empfänger ein- oder ausblenden lässt.
 
 [Im Playground öffnen](https://play.templatical.com/scenes/display-conditions)
+
+## Prüfen
+
+Mounten Sie den Editor mit `displayConditions.onRequest` und öffnen Sie die Einstellungen eines Blocks. Der Abschnitt zeigt die Schaltfläche **Bedingung hinzufügen**. Lösen Sie den Callback mit einer Bedingung auf, die `data` enthält, und lesen Sie den gespeicherten Block aus `getContent()`:
+
+```ts
+const stored = editor.getContent().blocks.find((block) => block.id === 'title');
+if (stored?.displayCondition?.label !== 'VIP') {
+  throw new Error('expected label VIP');
+}
+const data = stored.displayCondition.data as { tier: string };
+if (data.tier !== 'vip') {
+  throw new Error('expected displayCondition.data.tier vip');
+}
+```

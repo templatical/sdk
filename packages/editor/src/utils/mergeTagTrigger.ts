@@ -1,3 +1,9 @@
+import {
+  builtInPresetOf,
+  scanSyntaxMatches,
+  type SyntaxPreset,
+} from "@templatical/types";
+
 /**
  * Result of a merge-tag trigger scan — the caret sits inside an open tag.
  */
@@ -22,7 +28,7 @@ export interface OpenMergeTagTrigger {
  * delimiter inside that run means the tag is already complete (`{{first_name}}`)
  * so the popup must not reappear over it.
  *
- * `complete` is the syntax's `value` regex. An opener inside a tag it matches
+ * `complete` is the syntax or its `value` regex. An opener inside a tag it matches
  * never counts, which is what keeps a syntax whose opener and closer are the
  * same (`%FIRSTNAME%`) from reading its own closer as a new opener. The closer
  * check stays for text the regex rejects, such as liquid's `{{}}`.
@@ -32,7 +38,7 @@ export function findOpenMergeTagTrigger(
   caret: number,
   triggerChar: string,
   closingChar: string | null,
-  complete?: RegExp,
+  complete?: RegExp | SyntaxPreset,
 ): OpenMergeTagTrigger | null {
   if (!triggerChar) return null;
 
@@ -57,14 +63,25 @@ export function findOpenMergeTagTrigger(
 
 /**
  * Where the last tag `complete` matches in `text` ends, or 0 when none does.
- * It scans a fresh global copy that keeps the other flags (`i` included):
+ * Built-in syntaxes use the linear scanner. Other patterns use a fresh global
+ * copy that keeps the other flags (`i` included):
  * `matchAll` on the caller's regex would start from its `lastIndex`, throws on
  * a non-global one, and sticky (`y`) would stop at the first gap.
  */
-function lastCompleteTagEnd(text: string, complete: RegExp): number {
+function lastCompleteTagEnd(
+  text: string,
+  complete: RegExp | SyntaxPreset,
+): number {
+  const syntax = complete instanceof RegExp ? undefined : complete;
+  if (syntax && builtInPresetOf(syntax)) {
+    const matches = scanSyntaxMatches(text, syntax, "value");
+    const last = matches[matches.length - 1];
+    return last ? last.index + last.value.length : 0;
+  }
+  const pattern = syntax?.value ?? (complete as RegExp);
   const scan = new RegExp(
-    complete.source,
-    `${complete.flags.replace(/[gy]/g, "")}g`,
+    pattern.source,
+    `${pattern.flags.replace(/[gy]/g, "")}g`,
   );
   let end = 0;
   for (const match of text.matchAll(scan)) {

@@ -1,8 +1,10 @@
 import LogicMergeTagNodeView from "./LogicMergeTagNodeView.vue";
 import type { SyntaxPreset } from "@templatical/types";
 import {
+  builtInPresetOf,
   getLogicMergeTagKeyword,
   isLogicMergeTagValue,
+  scanSyntaxMatches,
   SYNTAX_PRESETS,
 } from "@templatical/types";
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
@@ -118,11 +120,18 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
   },
 
   addPasteRules() {
-    const pasteRegex = new RegExp(this.options.syntax.logic.source, "g");
+    const syntax = this.options.syntax;
+    const find = builtInPresetOf(syntax)
+      ? (text: string) =>
+          scanSyntaxMatches(text, syntax, "logic").map((match) => ({
+            index: match.index,
+            text: match.value,
+          }))
+      : new RegExp(syntax.logic.source, "g");
 
     return [
       new PasteRule({
-        find: pasteRegex,
+        find,
         handler: ({ state, range, match }) => {
           const fullValue = match[0];
           if (!isLogicMergeTagValue(fullValue, this.options.syntax)) {

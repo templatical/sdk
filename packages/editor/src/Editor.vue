@@ -917,7 +917,7 @@ defineExpose({
              itself with auto margins and keeps its own clearance
              (Canvas.vue). A flex-centred child that overflows sticks out on
              both sides, and the left side can never be scrolled to. -->
-        <main class="tpl-main tpl:flex tpl:py-8">
+        <main class="tpl-main tpl-canvas-pane tpl:flex tpl:py-8">
           <Canvas
             :viewport="editor.state.viewport"
             :content="core.previewResolution.content.value"

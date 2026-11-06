@@ -27,7 +27,7 @@ import {
   type ParsedBorder,
 } from "./css";
 import { blocksFromHtml, pushEntry, type ConvertCtx } from "./fragment";
-import { normalizePlatform } from "./platform";
+import { matchPlatform } from "./platform";
 
 const ZERO: SpacingValue = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -320,6 +320,12 @@ export function menuFrom(
   return createMenuBlock({ items });
 }
 
+function genericWebsiteNote(count: number): string {
+  return count === 1
+    ? "1 icon became a generic website icon."
+    : `${count} icons became generic website icons.`;
+}
+
 export function socialFrom(
   $el: Cheerio<Element>,
   $: CheerioAPI,
@@ -327,18 +333,27 @@ export function socialFrom(
   ctx: ConvertCtx,
 ): Block {
   const icons: SocialIcon[] = [];
+  let generic = 0;
   $el.find("a").each((_, a) => {
     const $a = $(a) as Cheerio<Element>;
     const $img = $a.find("img").first();
     const url = $a.attr("href") ?? "#";
-    const platform = normalizePlatform(
+    const platform = matchPlatform(
       $img.attr("title"),
       $img.attr("src"),
       $img.attr("alt"),
     );
-    icons.push({ id: generateId(), platform, url });
+    if (!platform) generic += 1;
+    icons.push({ id: generateId(), platform: platform ?? "website", url });
   });
-  pushEntry(ctx, sourceTag, "social", "converted");
+  const note = generic > 0 ? genericWebsiteNote(generic) : undefined;
+  pushEntry(
+    ctx,
+    sourceTag,
+    "social",
+    note ? "approximated" : "converted",
+    note,
+  );
   return createSocialIconsBlock({ icons });
 }
 

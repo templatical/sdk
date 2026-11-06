@@ -60,15 +60,16 @@ export function renderVideo(block: VideoBlock, context: RenderContext): string {
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
-  const width =
-    block.width === "full" ? context.containerWidth + "px" : block.width + "px";
+  const width = escapeAttr(
+    block.width === "full" ? context.containerWidth + "px" : block.width + "px",
+  );
   const height = heightAttr(block.height);
   const fluid = fluidOnMobileAttr(block, context);
   const visibilityAttr = getCssClassAttr(block);
 
   const src = escapeAttr(thumbnailUrl);
   const alt = escapeAttr(block.alt);
-  const align = block.align;
+  const align = escapeAttr(block.align);
   const href = escapeAttr(block.url);
 
   return `<mj-image

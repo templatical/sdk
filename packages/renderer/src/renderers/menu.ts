@@ -27,7 +27,7 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const visibilityAttr = getCssClassAttr(block);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
-  const align = block.textAlign;
+  const align = escapeAttr(block.textAlign);
   const fontSize = block.fontSize;
   // Emit the color only when set; otherwise the `mj-text` inherits the
   // document `textColor` and the item anchors below inherit it in turn.
@@ -36,7 +36,7 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
   const content = renderMenuItems(block);
 
   return `<mj-text
-  font-size="${fontSize}px"${colorAttr}
+  font-size="${escapeAttr(String(fontSize))}px"${colorAttr}
   align="${align}"
   line-height="1.5"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
@@ -58,7 +58,7 @@ function renderMenuItems(block: MenuBlock): string {
 
     if (index < itemCount - 1) {
       parts.push(
-        `<span style="color: ${separatorColor}; padding: 0 ${spacing}px;">${separator}</span>`,
+        `<span style="color: ${separatorColor}; padding: 0 ${escapeCssValue(String(spacing))}px;">${separator}</span>`,
       );
     }
   }

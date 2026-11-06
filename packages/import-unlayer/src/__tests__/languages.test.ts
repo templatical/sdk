@@ -155,6 +155,45 @@ describe("Unlayer languages", () => {
     );
   });
 
+  it("stores a translated full-width image on the wrapper", () => {
+    const source = structuredClone(multilingual) as any;
+    const row = source.body.rows[0];
+    row.values.backgroundImage.fullWidth = true;
+    row.values._languages.es_ES.backgroundImage = {
+      url: "https://example.com/es-band.png",
+      fullWidth: true,
+    };
+    const { section } = converted(source);
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundImage: {
+        url: "https://example.com/en-bg.png",
+        size: "auto",
+        position: { x: "center", y: "center" },
+        repeat: false,
+      },
+      fullWidth: true,
+    });
+    expect(section.l10n?.["es-ES"].set?.["wrapper.backgroundImage"]).toEqual({
+      url: "https://example.com/es-band.png",
+      size: "auto",
+      position: { x: "center", y: "center" },
+      repeat: false,
+    });
+  });
+
+  it("clears a translated full-width image when the URL is empty", () => {
+    const source = structuredClone(multilingual) as any;
+    const row = source.body.rows[0];
+    row.values.backgroundImage.fullWidth = true;
+    row.values._languages.es_ES.backgroundImage = { url: "" };
+    const { section } = converted(source);
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper?.fullWidth).toBe(true);
+    expect(section.l10n?.["es-ES"].set?.["wrapper.backgroundImage"]).toBeNull();
+    expect(section.l10n?.["es-ES"].set?.backgroundImage).toBeUndefined();
+  });
+
   it("removes a background image only in the language with an empty URL", () => {
     const source = structuredClone(multilingual);
     source.body.rows[0].values._languages.es_ES.backgroundImage.url = "";

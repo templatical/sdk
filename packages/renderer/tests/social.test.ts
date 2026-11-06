@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import nodeMjml from "mjml";
 import {
   createSocialIconsBlock,
   SOCIAL_ICON_TONES,
@@ -10,6 +11,46 @@ import {
   RenderContext,
   DEFAULT_SOCIAL_ICONS_BASE_URL,
 } from "../src";
+
+type CompileOptions = {
+  minify?: boolean;
+  beautify?: boolean;
+};
+
+type Mjml2Html = (
+  source: string,
+  options?: CompileOptions,
+) => Promise<{ html: string; errors: unknown[] }>;
+
+function resolveCompiler(value: unknown): Mjml2Html | undefined {
+  if (typeof value === "function") return value as Mjml2Html;
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as { default?: unknown; mjml?: unknown };
+  return resolveCompiler(record.default) ?? resolveCompiler(record.mjml);
+}
+
+const browserMjml: Promise<Mjml2Html> = import("mjml-browser").then((mod) => {
+  const compile = resolveCompiler(mod);
+  if (!compile) throw new Error("mjml-browser did not export a compiler");
+  return compile;
+});
+
+function wrapSocial(blockMjml: string): string {
+  return `<mjml><mj-body><mj-section><mj-column>${blockMjml}</mj-column></mj-section></mj-body></mjml>`;
+}
+
+function xingImage(html: string): { src: string; alt: string } {
+  const tag = html
+    .match(/<img\b[^>]*>/g)
+    ?.find((candidate) => candidate.includes("/xing.png"));
+  if (!tag) throw new Error("compiled HTML has no Xing img");
+  const src = tag.match(/\bsrc="([^"]*)"/)?.[1];
+  const alt = tag.match(/\balt="([^"]*)"/)?.[1];
+  if (src === undefined || alt === undefined) {
+    throw new Error(`Xing img is missing src or alt: ${tag}`);
+  }
+  return { src, alt };
+}
 
 const ctx = new RenderContext(600, [], "Arial, sans-serif", true);
 
@@ -190,6 +231,7 @@ describe("renderSocialIcons", () => {
       "twitter",
       "instagram",
       "linkedin",
+      "xing",
       "youtube",
       "tiktok",
       "pinterest",
@@ -256,5 +298,29 @@ describe("renderSocialIcons", () => {
     });
     const result = renderBlock(block, ctx);
     expect(result).toContain('href="https://example.com/path?a=1&amp;b=2"');
+  });
+
+  it("compiles a Xing icon to the same img src and alt in mjml and mjml-browser", async () => {
+    const block = createSocialIconsBlock({
+      icons: [{ platform: "xing", url: "https://www.xing.com/pages/example" }],
+      iconStyle: "circle",
+    });
+    const mjml = renderBlock(block, ctx);
+    const src = `${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/xing.png`;
+    expect(mjml).toContain("<mj-social-element");
+    expect(mjml).toContain(`src="${src}"`);
+    expect(mjml).toContain('href="https://www.xing.com/pages/example"');
+
+    const source = wrapSocial(mjml);
+    const nodeResult = await nodeMjml(source);
+    const browserResult = await (await browserMjml)(source);
+    expect(nodeResult.errors).toEqual([]);
+    expect(browserResult.errors).toEqual([]);
+
+    const nodeImage = xingImage(nodeResult.html);
+    const browserImage = xingImage(browserResult.html);
+    expect(browserImage).toEqual(nodeImage);
+    expect(nodeImage.src).toBe(src);
+    expect(nodeImage.alt).toBe("");
   });
 });

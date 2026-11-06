@@ -1,6 +1,13 @@
-import { isParagraph } from "@templatical/types";
+import { decodeHtmlEntities, isParagraph } from "@templatical/types";
 import type { Block } from "@templatical/types";
 import type { LintPatchContext, Rule, RuleMeta } from "../../types";
+import {
+  attrRawValue,
+  doubleQuotedAttr,
+  findAttrSpans,
+  removeAttrSpan,
+  rewriteOpenTags,
+} from "../../html-utils";
 
 export const meta: RuleMeta = {
   id: "a11y.text-justified",
@@ -8,40 +15,74 @@ export const meta: RuleMeta = {
   severity: "warning",
 };
 
-/**
- * Matches a `text-align` declaration and captures its value. Anchored on
- * the property name with a `(^|;)` prefix so it can only ever match a
- * declaration boundary.
- *
- * That anchor is the whole point: `justify-content: center` is common in
- * the `html` block's flexbox markup, and a rule that searched for the
- * bare token `justify` would flag every one of them. Matching the
- * property — never the value alone — is what makes the rule specific.
- *
- * Whitespace is permitted around `:` and the value because imported
- * templates aren't normalized; content that round-trips through TipTap
- * is always `text-align: <value>`, but content loaded via `init()` or an
- * importer can carry any spacing or casing.
- */
-const TEXT_ALIGN_DECL = /(^|;)\s*text-align\s*:\s*([^;]*)/i;
+const TEXT_ALIGN_DECL = /^\s*text-align\s*:\s*([^;]*)/i;
+const CHARACTER_REFERENCE =
+  /^&(?:[A-Za-z][A-Za-z0-9]*|#[0-9]+|#[xX][0-9a-fA-F]+);/;
 
-/** Reads the `style` attribute value out of every tag in a fragment. */
-const STYLE_ATTR = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+/** Split at decoded declaration boundaries while retaining raw source slices. */
+function splitDeclarations(style: string): string[] {
+  const declarations: string[] = [];
+  let start = 0;
+  let depth = 0;
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+  for (let i = 0; i < style.length;) {
+    let chars = style[i];
+    let end = i + 1;
+    if (chars === "&") {
+      const reference = CHARACTER_REFERENCE.exec(style.slice(i));
+      if (reference !== null) {
+        const decoded = decodeHtmlEntities(reference[0]);
+        if (decoded !== reference[0]) {
+          chars = decoded;
+          end = i + reference[0].length;
+        }
+      }
+    }
+    for (const char of chars) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (quote !== null) {
+        if (char === quote) quote = null;
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === "(") {
+        depth++;
+      } else if (char === ")" && depth > 0) {
+        depth--;
+      } else if (char === ";" && depth === 0) {
+        declarations.push(style.slice(start, i));
+        start = end;
+      }
+    }
+    i = end;
+  }
+  declarations.push(style.slice(start));
+  return declarations;
+}
 
+/** Raw `style` values from every open tag. An unquoted value is included. */
 function styleValues(html: string): string[] {
   const values: string[] = [];
-  const re = new RegExp(STYLE_ATTR.source, STYLE_ATTR.flags);
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(html)) !== null) {
-    values.push(match[1] ?? match[2] ?? "");
-  }
+  rewriteOpenTags(html, ({ attrs }) => {
+    const spans = findAttrSpans(attrs, "style");
+    if (spans === null) return null;
+    for (const span of spans) {
+      const value = attrRawValue(attrs.slice(span.start, span.end));
+      if (value !== null) values.push(value);
+    }
+    return null;
+  });
   return values;
 }
 
 function isJustified(style: string): boolean {
-  const match = TEXT_ALIGN_DECL.exec(style);
-  if (match === null) return false;
-  return match[2].trim().toLowerCase() === "justify";
+  return splitDeclarations(style).some((decl) => {
+    const match = TEXT_ALIGN_DECL.exec(decodeHtmlEntities(decl));
+    return match !== null && match[1].trim().toLowerCase() === "justify";
+  });
 }
 
 /**
@@ -54,9 +95,8 @@ function isJustified(style: string): boolean {
  * attribute wholesale would silently discard the line height.
  */
 function removeTextAlign(style: string): string {
-  return style
-    .split(";")
-    .filter((decl) => !/^\s*text-align\s*:/i.test(decl))
+  return splitDeclarations(style)
+    .filter((decl) => !/^\s*text-align\s*:/i.test(decodeHtmlEntities(decl)))
     .map((decl) => decl.trim())
     .filter((decl) => decl !== "")
     .join("; ");
@@ -71,17 +111,35 @@ function removeTextAlign(style: string): string {
  * emits nothing when the attribute is null), so the paragraph goes back
  * to inheriting the document default — which is also the correct result
  * for right-to-left content, where a hardcoded `left` would be wrong.
+ *
+ * Each `style` is the raw attribute text and is written back double-quoted.
+ * A `"` in the value is escaped so it stays part of `style`; `&` and
+ * existing entities are copied as written. The parser supplies the tag
+ * boundary.
  */
 function unjustify(html: string): string {
-  return html.replace(
-    /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi,
-    (match, double: string | undefined, single: string | undefined) => {
-      const style = double ?? single ?? "";
-      if (!isJustified(style)) return match;
+  return rewriteOpenTags(html, ({ rawName, attrs }) => {
+    const spans = findAttrSpans(attrs, "style");
+    if (spans === null || spans.length === 0) return null;
+
+    let next = attrs;
+    let changed = false;
+    // Later spans first, so an edit does not shift the indexes still ahead.
+    for (let index = spans.length - 1; index >= 0; index--) {
+      const span = spans[index];
+      const style = attrRawValue(attrs.slice(span.start, span.end));
+      if (style === null || !isJustified(style)) continue;
       const remaining = removeTextAlign(style);
-      return remaining === "" ? "" : ` style="${remaining}"`;
-    },
-  );
+      next =
+        remaining === ""
+          ? removeAttrSpan(next, span)
+          : next.slice(0, span.start) +
+            doubleQuotedAttr("style", remaining) +
+            next.slice(span.end);
+      changed = true;
+    }
+    return changed ? `<${rawName}${next}>` : null;
+  });
 }
 
 export const textJustified: Rule = {

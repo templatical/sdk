@@ -3,6 +3,7 @@ import type { AnyNode, Element } from "domhandler";
 import { createSectionBlock } from "@templatical/types";
 import type { Block, ColumnLayout, SpacingValue } from "@templatical/types";
 import { hasAnyToken, hasToken, isHidden } from "./classes";
+import { statedPx, unequalWidthNote } from "./column-width";
 import {
   colorFromPaint,
   columnRooms,
@@ -10,6 +11,7 @@ import {
   readBoxPadding,
   resolveSectionImage,
   resolveSectionPaint,
+  sectionWrapper,
   withoutBandOverImage,
   type ImageLayer,
   type ReadBackgroundImage,
@@ -287,33 +289,44 @@ function hasBlocks(children: Block[][]): boolean {
   return children.some((column) => column.length > 0);
 }
 
+/** The column table's px width, else its cell's. A non-px length is unread. */
+function declaredColumnPx($col: Cheerio<Element>): number | undefined {
+  const fromTable = statedPx($col.attr("width"), $col.attr("style"));
+  if (fromTable !== undefined) return fromTable;
+  const $cell = directCell($col);
+  return statedPx($cell.attr("width"), $cell.attr("style"));
+}
+
 function columnChildren(
   cols: Element[],
   $: CheerioAPI,
   ctx: ConvertCtx,
   bodyWidth: number,
   padding: SpacingValue,
-): { children: Block[][]; layout: ColumnLayout; flattenNote?: string } | null {
+): {
+  children: Block[][];
+  layout: ColumnLayout;
+  flattenNote?: string;
+  widthNote?: string;
+} | null {
   const count = cols.length;
-  const layout: ColumnLayout = count >= 3 ? "3" : count === 2 ? "2" : "1";
-  const used = count >= 4 ? 3 : layout === "1" ? 1 : count;
-  const rooms = columnRooms(
-    bodyWidth,
-    count >= 4 ? "3" : layout,
-    padding,
-    used,
-  );
+  const layout: "1" | "2" | "3" | "4" =
+    count >= 4 ? "4" : count === 3 ? "3" : count === 2 ? "2" : "1";
+  const fold = count >= 5;
+  const used = fold ? 4 : layout === "1" ? 1 : count;
+  const rooms = columnRooms(bodyWidth, layout, padding, used);
   let children: Block[][];
-  if (count >= 4) {
+  if (fold) {
     const rest: Block[] = [];
-    for (const el of cols.slice(2)) {
+    for (const el of cols.slice(3)) {
       rest.push(
-        ...regionFromElement($(el) as Cheerio<Element>, $, ctx, rooms[2]),
+        ...regionFromElement($(el) as Cheerio<Element>, $, ctx, rooms[3]),
       );
     }
     children = [
       regionFromElement($(cols[0]) as Cheerio<Element>, $, ctx, rooms[0]),
       regionFromElement($(cols[1]) as Cheerio<Element>, $, ctx, rooms[1]),
+      regionFromElement($(cols[2]) as Cheerio<Element>, $, ctx, rooms[2]),
       rest,
     ];
   } else {
@@ -322,10 +335,17 @@ function columnChildren(
     );
   }
   if (!hasBlocks(children)) return null;
-  if (count < 4) return { children, layout: count >= 3 ? "3" : layout };
-  const flattenNote = `Row with ${count} columns was flattened; extra columns merged into the third slot. Templatical supports up to 3 columns per section.`;
+  const widthNote =
+    layout === "1"
+      ? undefined
+      : unequalWidthNote(
+          cols.map((el) => declaredColumnPx($(el) as Cheerio<Element>)),
+          layout,
+        );
+  if (!fold) return { children, layout, widthNote };
+  const flattenNote = `Row with ${count} columns was flattened; extra columns merged into the fourth slot. Templatical supports up to four columns per section.`;
   ctx.warnings.push(flattenNote);
-  return { children, layout: "3", flattenNote };
+  return { children, layout, flattenNote, widthNote };
 }
 
 function flowNodes(pieces: Piece[]): AnyNode[] {
@@ -395,6 +415,7 @@ function sectionsFromRow(
     children: Block[][];
     layout: ColumnLayout;
     extra?: string;
+    widthNote?: string;
     columnImages: Array<ReadBackgroundImage | null>;
   }> = [];
   for (const group of groupsFromPieces(pieces)) {
@@ -408,6 +429,7 @@ function sectionsFromRow(
         children: built.children,
         layout: built.layout,
         extra: built.flattenNote,
+        widthNote: built.widthNote,
         columnImages: cols.map((el) =>
           columnImage($(el) as Cheerio<Element>, bodyWidth),
         ),
@@ -445,6 +467,7 @@ function sectionsFromRow(
     const notes = [
       ...groupPaint.notes,
       group.extra,
+      group.widthNote,
       ...image.notes,
       seam,
     ].filter((note): note is string => Boolean(note));
@@ -456,13 +479,13 @@ function sectionsFromRow(
       notes.length > 0 ? notes.join(" ") : undefined,
     );
     recordImageSpan(ctx, image.source, entry);
+    recordImageSpan(ctx, image.bandSource, entry);
+    const wrapper = sectionWrapper(groupPaint, image.band);
     const section = createSectionBlock({
       columns: group.layout,
       children: group.children,
       styles: { padding: splitPadding(padding, rendered.length, index) },
-      ...(groupPaint.wrapperColor
-        ? { wrapper: { backgroundColor: groupPaint.wrapperColor } }
-        : {}),
+      ...(wrapper ? { wrapper } : {}),
       ...(image.image ? { backgroundImage: image.image } : {}),
     });
     return withBackground(section, groupPaint.backgroundColor);
@@ -484,6 +507,7 @@ function sectionsFromStripe(
     ctx.pageBackground ?? "#ffffff",
     bandColor($stripe),
     $body.length > 0 ? paintOf($body) : "",
+    $body.length > 0,
   );
   const images: StripeImages = {
     body: imageLayer($body, "Section", bodyWidth),

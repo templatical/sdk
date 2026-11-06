@@ -1,4 +1,5 @@
 import type { Block } from "@templatical/types";
+import { escapeAttr } from "./escape";
 
 /**
  * Check if a block is hidden on all viewports.
@@ -33,7 +34,7 @@ export function getCssClassAttr(
     return "";
   }
 
-  return ` css-class="${classes}"`;
+  return ` css-class="${escapeAttr(classes)}"`;
 }
 
 /**

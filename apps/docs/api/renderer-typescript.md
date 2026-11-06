@@ -123,7 +123,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-The exact filenames the renderer expects are `{dir}/{platform}.png`, where `dir` is a `style` of `solid | outlined | rounded | square | circle | plain`, followed by `-dark` or `-light` for those colors (a brand-colored icon has no suffix), and `platform` is one of `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website`. The shipped 144×144 PNGs are a reasonable starting point if you want to mirror them.
+The exact filenames the renderer expects are `{dir}/{platform}.png`, where `dir` is a `style` of `solid | outlined | rounded | square | circle | plain`, followed by `-dark` or `-light` for those colors (a brand-colored icon has no suffix), and `platform` is one of `facebook | twitter | instagram | linkedin | xing | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website`. The shipped 144×144 PNGs are a reasonable starting point if you want to mirror them.
 
 The package also exports `DEFAULT_SOCIAL_ICONS_BASE_URL` if you want to compose URLs against the same default:
 
@@ -227,7 +227,7 @@ In a [hero section](/guide/sections-and-columns#hero), the content has no column
 
 ### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}
 
-Returns `' fluid-on-mobile="true"'` for an image that fills its column on desktop, and `''` otherwise. An image fills its column when its `width` is `'full'`, or a pixel width at or above `context.contentWidth` less the block's side padding and border. See [Width on phones](/guide/images#width-on-phones).
+Returns `' fluid-on-mobile="true"'` or `''`. An image's `fluidOnMobile: true` always returns the attribute and `false` always returns `''`. When the field is omitted, the attribute is set only for an image that fills its column on desktop: `width` `'full'`, or a pixel width at or above `context.contentWidth` less the block's side padding and border. A video thumbnail has no field and uses that rule. See [Width on phones](/guide/images#width-on-phones).
 
 The built-in image and video renderers use it. A `blockRenderers` override that emits its own `mj-image` calls it too; without the attribute, the image keeps its desktop width on a phone:
 
