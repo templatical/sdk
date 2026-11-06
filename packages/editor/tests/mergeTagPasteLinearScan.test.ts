@@ -77,4 +77,17 @@ describe("built-in paste rules", () => {
       { index: 3, text: "[[name]]" },
     ]);
   });
+
+  it("uses the scanner for a spread preset and regexes for changed patterns", () => {
+    const spread = { ...SYNTAX_PRESETS.liquid, opener: "<<" };
+    const changedFlags = {
+      ...spread,
+      value: new RegExp(spread.value.source, "gs"),
+    };
+    const customValue = { ...spread, value: /\{\{[\s\S]+?\}\}/g };
+    expect(typeof pasteFinder("value", spread)).toBe("function");
+    expect(typeof pasteFinder("logic", spread)).toBe("function");
+    expect(pasteFinder("value", changedFlags)).toBeInstanceOf(RegExp);
+    expect(pasteFinder("value", customValue)).toBeInstanceOf(RegExp);
+  });
 });

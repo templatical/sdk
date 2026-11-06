@@ -66,6 +66,20 @@ describe("built-in merge-tag consumers", () => {
     ]);
   });
 
+  it("collects a spread preset without retrying unclosed openers", () => {
+    const spread = { ...liquid, opener: "<<" };
+    const text = "{{".repeat(90_000);
+    expect(collectHits(text, [], spread)).toEqual([]);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => collectHits(value, [], spread);
+      },
+      500,
+      100,
+    );
+  });
+
   it("segments a field with unclosed openers linearly", () => {
     function segments(value: string) {
       let field: ReturnType<typeof useMergeTagField> | undefined;
@@ -138,13 +152,30 @@ describe("built-in merge-tag consumers", () => {
   it("checks complete tags before the caret linearly", () => {
     const value = unclosed + "\n{{done}}";
     expect(
-      findOpenMergeTagTrigger(value, value.length, "{{", "}}", liquid.value),
+      findOpenMergeTagTrigger(value, value.length, "{{", "}}", liquid),
     ).toBeNull();
     expectLinear(
       (n) => {
         const text = "{{".repeat(n) + "\n{{done}}";
         return () =>
-          findOpenMergeTagTrigger(text, text.length, "{{", "}}", liquid.value);
+          findOpenMergeTagTrigger(text, text.length, "{{", "}}", liquid);
+      },
+      500,
+      350,
+    );
+  });
+
+  it("checks complete tags with a spread syntax linearly", () => {
+    const spread = { ...liquid, opener: "<<" };
+    const value = "{{".repeat(90_000) + "\n{{done}}";
+    expect(
+      findOpenMergeTagTrigger(value, value.length, "{{", "}}", spread),
+    ).toBeNull();
+    expectLinear(
+      (n) => {
+        const text = "{{".repeat(n) + "\n{{done}}";
+        return () =>
+          findOpenMergeTagTrigger(text, text.length, "{{", "}}", spread);
       },
       500,
       350,

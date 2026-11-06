@@ -61,6 +61,25 @@ export const SYNTAX_PRESETS: Record<
   },
 };
 
+/** The built-in scanner is valid when both tag patterns match a preset. */
+export function builtInPresetOf(
+  syntax: SyntaxPreset,
+): SyntaxPresetName | undefined {
+  return (Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]).find((name) => {
+    const preset = SYNTAX_PRESETS[name];
+    return (
+      (syntax.value === preset.value ||
+        (syntax.value.source === preset.value.source &&
+          syntax.value.flags.replace(/[gy]/g, "") ===
+            preset.value.flags.replace(/[gy]/g, ""))) &&
+      (syntax.logic === preset.logic ||
+        (syntax.logic.source === preset.logic.source &&
+          syntax.logic.flags.replace(/[gy]/g, "") ===
+            preset.logic.flags.replace(/[gy]/g, "")))
+    );
+  });
+}
+
 export interface SyntaxMatch {
   index: number;
   value: string;
@@ -91,9 +110,7 @@ export function scanSyntaxMatches(
   from = 0,
   limit = Infinity,
 ): SyntaxMatch[] {
-  const preset = (Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]).find(
-    (name) => SYNTAX_PRESETS[name] === syntax,
-  );
+  const preset = builtInPresetOf(syntax);
   if (!preset) {
     const regex = syntax[kind];
     const pattern = new RegExp(
@@ -201,9 +218,8 @@ export function scanCombinedSyntaxMatches(
   text: string,
   syntax: SyntaxPreset,
 ): SyntaxMatch[] {
-  if (
-    !Object.values(SYNTAX_PRESETS).includes(syntax as Required<SyntaxPreset>)
-  ) {
+  const preset = builtInPresetOf(syntax);
+  if (!preset) {
     const pattern = new RegExp(
       `(${syntax.value.source}|${syntax.logic.source})`,
       "g",
@@ -213,10 +229,10 @@ export function scanCombinedSyntaxMatches(
       value: match[0],
     }));
   }
-  if (syntax === SYNTAX_PRESETS.handlebars) {
+  if (preset === "handlebars") {
     return scanSyntaxMatches(text, syntax, "value");
   }
-  if (syntax === SYNTAX_PRESETS.mailchimp) {
+  if (preset === "mailchimp") {
     const matches: SyntaxMatch[] = [];
     const value = new RegExp(syntax.value.source, "y");
     const logic = new RegExp(syntax.logic.source, "y");
@@ -460,9 +476,7 @@ function escapeTagText(text: string): string {
 export function containsMergeTag(value: string, syntax: SyntaxPreset): boolean {
   if (!value) return false;
 
-  if (
-    Object.values(SYNTAX_PRESETS).includes(syntax as Required<SyntaxPreset>)
-  ) {
+  if (builtInPresetOf(syntax)) {
     return (
       scanSyntaxMatches(value, syntax, "value", 0, 1).length > 0 ||
       scanSyntaxMatches(value, syntax, "logic", 0, 1).length > 0
