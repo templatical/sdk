@@ -1,5 +1,23 @@
 # @templatical/quality
 
+## 0.56.0
+
+### Minor Changes
+
+- 2466654: Breaking changes:
+
+  - `ColumnLayout` gains `"4"`, `"1-3"`, `"3-1"` and `"1-2-1"`. Code that switches over every layout value, or validates `section.columns` against the previous five, must handle these four values. There is no replacement value: a section may now have four columns.
+
+  Section columns accept four more layouts: `"4"` (four equal columns, 25% each), `"1-3"` (25/75), `"3-1"` (75/25), and `"1-2-1"` (25/50/25). A four-column section stacks to one column on mobile, the same as the two- and three-column layouts. `stackOnMobile: false` keeps any of these layouts side by side.
+
+### Patch Changes
+
+- Updated dependencies [5744da5]
+- Updated dependencies [f9de817]
+- Updated dependencies [2466654]
+- Updated dependencies [be84dd0]
+  - @templatical/types@0.56.0
+
 ## 0.55.0
 
 ### Patch Changes

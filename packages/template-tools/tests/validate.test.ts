@@ -53,6 +53,22 @@ function title(id: string, content: string, extra: object = {}) {
 }
 
 describe("validateTemplate — happy path", () => {
+  it("accepts fullWidth on a section wrapper and a layout wrapper", () => {
+    const section = createSectionBlock({
+      wrapper: { fullWidth: true, backgroundColor: "#112233", borderRadius: 12 },
+    });
+    const band = createWrapperBlock({
+      fullWidth: true,
+      borderRadius: 16,
+      styles: { backgroundColor: "#112233", padding },
+      children: [createSlotBlock()],
+    });
+    const doc = { ...createDefaultTemplateContent(), blocks: [section, band] };
+    const { valid, errors } = validateTemplate(doc);
+    expect(errors).toEqual([]);
+    expect(valid).toBe(true);
+  });
+
   it("accepts a minimal valid template", () => {
     const result = validateTemplate(template([title("title_1", "Hi")]));
     expect(result).toEqual({ valid: true, errors: [] });

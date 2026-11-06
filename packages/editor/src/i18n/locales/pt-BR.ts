@@ -585,6 +585,8 @@ const ptBR: typeof en = {
     spacing: "Espaçamento",
     padding: "Preenchimento",
     background: "Plano de Fundo",
+    fullWidthBackground: "Fundo na largura da tela",
+    contentBackground: "Fundo do conteúdo",
     borderWidth: "Largura da borda",
     borderStyle: "Estilo da borda",
     borderColor: "Cor da borda",

@@ -626,6 +626,106 @@ describe("convertColumnChildren display conditions", () => {
   });
 });
 
+describe("full-width bands", () => {
+  it("moves a full-width section background onto the wrapper", () => {
+    const { blocks } = build(
+      '<mj-section full-width="full-width" background-color="#111111"><mj-column><mj-text>Hi</mj-text></mj-column></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#111111",
+      fullWidth: true,
+    });
+  });
+
+  it("moves a full-width section image onto the wrapper", () => {
+    const { blocks } = build(
+      '<mj-section full-width="full-width" background-url="https://cdn.test/band.jpg"><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper?.backgroundImage?.url).toBe(
+      "https://cdn.test/band.jpg",
+    );
+    expect(section.wrapper?.fullWidth).toBe(true);
+  });
+
+  it("leaves a full-width section with no background unwrapped", () => {
+    const { blocks } = build(
+      '<mj-section full-width="full-width"><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.wrapper).toBeUndefined();
+    expect(section.styles.backgroundColor).toBeUndefined();
+  });
+
+  it("keeps a section background when full-width is absent", () => {
+    const { blocks } = build(
+      '<mj-section background-color="#eeeeee"><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#eeeeee");
+    expect(section.wrapper).toBeUndefined();
+  });
+
+  it("sets fullWidth on an mj-wrapper that is full width", () => {
+    const { blocks } = build(
+      '<mj-wrapper full-width="full-width" background-color="#111111" padding="8px"><mj-section background-color="#ffffff"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#111111",
+      padding: { top: 8, right: 8, bottom: 8, left: 8 },
+      fullWidth: true,
+    });
+  });
+
+  it("keeps the section background when a painted wrapper already owns the band", () => {
+    const { blocks } = build(
+      '<mj-wrapper background-color="#222222"><mj-section full-width="full-width" background-color="#111111"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#111111");
+    expect(section.wrapper?.backgroundColor).toBe("#222222");
+    expect(section.wrapper?.fullWidth).toBeUndefined();
+  });
+
+  it("keeps the section background inside a wrapper that is not full width", () => {
+    const { blocks } = build(
+      '<mj-wrapper padding="12px"><mj-section full-width="full-width" background-color="#111111"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#111111");
+    expect(section.wrapper?.fullWidth).toBeUndefined();
+    expect(section.wrapper?.padding).toEqual({
+      top: 12,
+      right: 12,
+      bottom: 12,
+      left: 12,
+    });
+  });
+
+  it("lifts a full-width section onto a full-width wrapper that paints nothing", () => {
+    const { blocks } = build(
+      '<mj-wrapper full-width="full-width" padding="4px"><mj-section full-width="full-width" background-color="#111111"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#111111",
+      padding: { top: 4, right: 4, bottom: 4, left: 4 },
+      fullWidth: true,
+    });
+  });
+});
+
 describe("buildWrapper", () => {
   it("folds a single-section wrapper into that section's wrapper field", () => {
     const { blocks, entries } = build(

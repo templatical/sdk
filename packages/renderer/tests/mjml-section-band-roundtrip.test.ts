@@ -15,8 +15,8 @@ import { renderToMjml } from "../src";
  * content box. Compiling through mjml shows both tables at that width, with
  * the copy inside the content table.
  *
- * There is no field for a viewport-bleed band (`full-width` on `mj-wrapper`),
- * so the band stops at the email width.
+ * Without `wrapper.fullWidth`, the band stops at the email width. `fullWidth`
+ * is the viewport-bleed band (`full-width` on `mj-wrapper`).
  */
 
 const EMAIL_WIDTH = 600;

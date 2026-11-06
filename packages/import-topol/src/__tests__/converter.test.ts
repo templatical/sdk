@@ -1,6 +1,10 @@
 import { elementIdIssues } from "@templatical/types";
 import { describe, expect, it } from "vitest";
-import type { SectionBlock, SocialIconsBlock } from "@templatical/types";
+import type {
+  ParagraphBlock,
+  SectionBlock,
+  SocialIconsBlock,
+} from "@templatical/types";
 import { convertTopolTemplate } from "../converter";
 import { NEWSLETTER } from "./fixtures/newsletter";
 
@@ -9,6 +13,39 @@ const EMPTY_DESIGN = {
   attributes: {},
   children: [{ tagName: "mj-container", attributes: {}, children: [] }],
 };
+
+const make = (rootTag: string) => ({
+  tagName: "mj-global-style",
+  attributes: {},
+  children: [
+    {
+      tagName: rootTag,
+      attributes: {},
+      children: [
+        {
+          tagName: "mj-section",
+          attributes: {},
+          children: [
+            {
+              tagName: "mj-column",
+              attributes: { width: "100%" },
+              children: [
+                { tagName: "mj-text", attributes: {}, content: "<p>Hi</p>" },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+});
+
+const withoutIds = (value: unknown): unknown =>
+  JSON.parse(
+    JSON.stringify(value, (key: string, item: unknown) =>
+      key === "id" ? undefined : item,
+    ),
+  );
 
 const INVALID_INPUT_MESSAGE =
   'Invalid Topol template: expected the design JSON object — Topol hands you this directly from its editor\'s onSave callback, or under "definition" (template API) or "json" (predefined-templates API) in its API response.';
@@ -115,7 +152,7 @@ describe("convertTopolTemplate input guards", () => {
   it("warns when the design has no convertible content", () => {
     const { report } = convertTopolTemplate(EMPTY_DESIGN);
     expect(report.warnings).toEqual([
-      "No convertible content was found in the Topol design. Check that the mj-container holds at least one mj-section.",
+      "No convertible content was found in the Topol design. Check that its mj-container (or mj-body) holds at least one mj-section.",
     ]);
     expect(report.summary).toEqual({
       total: 0,
@@ -124,6 +161,19 @@ describe("convertTopolTemplate input guards", () => {
       htmlFallback: 0,
       skipped: 0,
     });
+  });
+
+  it("names both container tags when neither is present", () => {
+    const { content, report } = convertTopolTemplate({
+      tagName: "mj-global-style",
+      attributes: {},
+      children: [{ tagName: "mj-head", attributes: {}, children: [] }],
+    });
+    expect(content.blocks).toEqual([]);
+    expect(report.entries).toEqual([]);
+    expect(report.warnings).toEqual([
+      "No convertible content was found in the Topol design. Check that its mj-container (or mj-body) holds at least one mj-section.",
+    ]);
   });
 
   it("defaults every setting when the design declares none", () => {
@@ -137,6 +187,64 @@ describe("convertTopolTemplate input guards", () => {
 });
 
 describe("convertTopolTemplate end to end", () => {
+  it("converts mj-body sections like mj-container sections", () => {
+    const containerResult = convertTopolTemplate(make("mj-container"));
+    const bodyResult = convertTopolTemplate(make("mj-body"));
+
+    for (const result of [containerResult, bodyResult]) {
+      expect(result.content.blocks).toHaveLength(1);
+      const section = result.content.blocks[0] as SectionBlock;
+      expect(section.type).toBe("section");
+      expect(section.children[0]).toHaveLength(1);
+      const paragraph = section.children[0][0] as ParagraphBlock;
+      expect(paragraph.type).toBe("paragraph");
+      expect(paragraph.content).toContain("Hi");
+      expect(result.report.entries).toHaveLength(2);
+      expect(result.report.entries.map((entry) => entry.status)).toEqual([
+        "converted",
+        "converted",
+      ]);
+      expect(result.report.warnings).toEqual([]);
+    }
+
+    expect(withoutIds(bodyResult.content.blocks)).toEqual(
+      withoutIds(containerResult.content.blocks),
+    );
+    expect(bodyResult.report.entries).toEqual(containerResult.report.entries);
+  });
+
+  it("reads mj-body background-color into template settings", () => {
+    const design = make("mj-body");
+    design.children[0].attributes = { "background-color": "#abcdef" };
+
+    const { content } = convertTopolTemplate(design);
+    expect(content.settings.backgroundColor).toBe("#abcdef");
+  });
+
+  it("uses the first container tag in document order", () => {
+    const body = make("mj-body").children[0];
+    body.attributes = { "background-color": "#abcdef" };
+    const container = make("mj-container").children[0];
+    container.attributes = { "background-color": "#123456" };
+
+    const firstBody = convertTopolTemplate({
+      tagName: "mj-global-style",
+      attributes: {},
+      children: [body, container],
+    });
+    const firstContainer = convertTopolTemplate({
+      tagName: "mj-global-style",
+      attributes: {},
+      children: [container, body],
+    });
+    expect(firstBody.content.settings.backgroundColor).toBe("#abcdef");
+    expect(firstContainer.content.settings.backgroundColor).toBe("#123456");
+    expect(firstBody.content.blocks).toHaveLength(1);
+    expect(firstContainer.content.blocks).toHaveLength(1);
+    expect(firstBody.report.entries).toHaveLength(2);
+    expect(firstContainer.report.entries).toHaveLength(2);
+  });
+
   it("reads settings from the global style and the container", () => {
     const { content } = convertTopolTemplate(NEWSLETTER);
     expect(content.settings.width).toBe(600);

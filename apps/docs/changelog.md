@@ -15,6 +15,48 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.56.0
+
+<time datetime="2026-11-06">2026-11-06</time>
+
+### Features
+
+**Breaking changes:**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-easy-email-pro` · `@templatical/import-html` · `@templatical/import-mjml` · `@templatical/import-stripo` · `@templatical/import-topol` · `@templatical/import-unlayer` · `@templatical/quality` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+- Imported sections can now have `columns: "4"`, `"1-3"`, `"3-1"` or `"1-2-1"`. A four-cell row from HTML, Unlayer or Stripo that used to flatten into one column now keeps four columns. Callers that read `section.columns` or count `children` must handle these values and four child arrays.
+- The over-limit warning now says Templatical supports up to four columns, and folding importers fold rows of five or more columns onto `"4"` instead of `"3"`. Callers that match the old warning text or expect three columns after a fold must update.
+
+Importers map source rows onto the four new section layouts. Four equal columns become `"4"`, 25/75 becomes `"1-3"`, 75/25 becomes `"3-1"`, and 25/50/25 becomes `"1-2-1"`. A ratio that is not exact snaps to the nearest of the nine layouts and keeps that importer's existing note. Stripo rows keep the equal layout for their column count. Unequal px widths, on a plugin frame or a compiled column, are reported approximated, and a column with no readable width is named in that note when the readable widths differ. Rows with more than four columns still flatten or fold into the last column, and the warning says Templatical supports up to four columns.
+
+**`displayConditions.onRequest` lets a host open its own condition builder. The callback receives a copy of the block and, when one is set, the current condition including opaque `data`. `null` cancels. `conditions` is optional. With `onRequest` set, `conditions` and `allowCustom` are ignored. `DisplayCondition.data` round-trips through the template.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/template-tools` · `@templatical/types`
+
+**Spread syntax presets with matching value and logic patterns use the built-in linear merge-tag scanner across localization and editor parsing. Different pattern sources or flags other than `g` and `y` keep custom regex matching. `@templatical/types` exports `builtInPresetOf(syntax)`, which returns the built-in preset name whose patterns a syntax uses.**
+
+`@templatical/editor` · `@templatical/types`
+
+**A section wrapper or a layout wrapper can span the recipient's window. Set `fullWidth: true` on `section.wrapper` or on a layout `wrapper` block and the renderer emits MJML's `full-width="full-width"` on that `mj-wrapper`: the band's background color and background image run edge to edge, and the section or the wrapper's children stay at `settings.width`. Omit `fullWidth`, or set it `false`, and the band stays the email width, exactly as before. A corner radius is not rendered while full width is on; the stored radius remains and comes back when full width is off.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+In the editor, **Full-width background** in a section's Background panel sets this. With no wrapper yet, turning it on moves the section's own background color and image onto a new wrapper and clears them on the section. While the switch is on, that panel's color and image edit the band, and **Content background** sets the section fill. Turning it off clears the flag; a wrapper that holds only that band is removed and its color and image return to the section, unless the section already has a content fill, which keeps the wrapper so neither color is discarded. The Wrapper panel shows the same switch and the same band color and image. A layout wrapper block has the same switch on its Background panel. On the canvas, and in preview, the band reaches the edges of the pane while the content stays at the email width.
+
+This is the band people migrating from Topol have been asking for (sdk#1105). Importers set `fullWidth` when the source states that band.
+
+**Breaking changes:**
+
+`@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-easy-email-pro` · `@templatical/import-html` · `@templatical/import-mjml` · `@templatical/import-stripo` · `@templatical/import-topol` · `@templatical/import-unlayer`
+
+- An imported full-width section whose only background is the source band now carries that colour and image on `section.wrapper` (`backgroundColor`, `backgroundImage`, with `fullWidth: true`) instead of `section.styles.backgroundColor` and `section.backgroundImage`. Code that reads an imported section's background must also read `section.wrapper`.
+- When an imported section keeps its own background image, the Chamaileon, Stripo, HTML and Unlayer importers no longer apply the source band colour, because Outlook desktop paints a wrapper colour over that image. There is no replacement colour. Chamaileon, Stripo and HTML report the section `approximated` with a note; Unlayer names the dropped colour in `report.warnings`. The BeeFree importer keeps a distinct container colour on the wrapper, and Topol, MJML and Easy Email Pro move the colour together with the image.
+
+Importers map a source full-width background band onto `section.wrapper` with `fullWidth: true`, so the colour and image run to the window edge and the content stays at the email width.
+
+BeeFree row container backgrounds, Unlayer row backgrounds (`backgroundImage.fullWidth` not `false`), Chamaileon `fullwidth` bands, Topol and MJML and Easy Email Pro `full-width="full-width"`, Stripo stripes around an inner body, and an HTML 100% table wrapped around a fixed-width table all set that flag. A full-width section whose only background is the band moves that background onto the wrapper and leaves the section background unset. Content-area backgrounds stay on the section. When the section keeps its own background image, the band colour is left off the wrapper and the import notes it, because Outlook desktop paints a wrapper colour over that image; the band image still goes on the wrapper. A Stripo stripe with no inner body keeps its colour on the section.
+
 ## 0.55.0
 
 <time datetime="2026-11-05">2026-11-05</time>

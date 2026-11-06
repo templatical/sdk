@@ -199,6 +199,8 @@ Table-based emails wrap their real layout in one-cell tables. A row holding a si
 
 A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it. So does a background image on the cell or the table; when one lands on more than one section, each of those entries is `approximated` with a note.
 
+A packaging row whose table or single cell has `width="100%"` (attribute or style), and a background colour or image, and whose every inner table has a fixed px width, is a full-width band. Each section inside it gets `section.wrapper` with that colour and image and `wrapper.fullWidth: true`, so the band runs to the window edge while the content stays at the email width. Fills on the inner tables stay on the sections. A band colour is left off that wrapper when the section keeps its own background image, and that section's report entry is `approximated` with a note: Outlook desktop paints a wrapper colour over the section image. The band image still sits on the wrapper. A band reached from inside a column is not viewport-wide. Page chrome that matches the pattern — an outer `width="100%"` table around a fixed-width content table — becomes a wrapper on each section; `settings.backgroundColor` still comes from the `<body>`.
+
 ### Gutter rows
 
 A row that pads its content with empty cells — `&nbsp;` either side of a centred container — is read as the single column it lays out, not as one column per cell. The signal is content: a cell holding nothing takes part in no layout.

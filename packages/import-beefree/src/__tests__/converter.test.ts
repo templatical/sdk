@@ -1136,28 +1136,33 @@ describe("convertBeeFreeTemplate", () => {
       expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
     });
 
-    it("paints a band image at the content width while the content area is transparent", () => {
+    it("puts a band image on a full-width wrapper while the content area is transparent", () => {
       const { blocks, warnings } = convertRow({
         container: {
           "background-image": "url(https://cdn.test/band.jpg)",
           "background-repeat": "repeat",
+          "background-color": "#112233",
         },
         content: { "background-color": "transparent" },
       });
       const section = blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
-      expect(section.backgroundImage).toEqual({
-        url: "https://cdn.test/band.jpg",
-        size: "auto",
-        position: { x: "left", y: "top" },
-        repeat: true,
+      expect(section.backgroundImage).toBeUndefined();
+      expect(section.styles.backgroundColor).toBeUndefined();
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#112233",
+        backgroundImage: {
+          url: "https://cdn.test/band.jpg",
+          size: "auto",
+          position: { x: "left", y: "top" },
+          repeat: true,
+        },
+        fullWidth: true,
       });
-      expect(warnings).toEqual([
-        'Row container background image "https://cdn.test/band.jpg" spans the full width in BeeFree; the section paints it at the content width.',
-      ]);
+      expect(warnings).toEqual([]);
     });
 
-    it("drops a band image behind a painted content area", () => {
+    it("keeps a band image on the wrapper behind a painted content area", () => {
       const { blocks, warnings } = convertRow({
         container: { "background-image": "url(https://cdn.test/band.jpg)" },
         content: { "background-color": "#ffffff" },
@@ -1165,12 +1170,20 @@ describe("convertBeeFreeTemplate", () => {
       const section = blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
       expect(section.backgroundImage).toBeUndefined();
-      expect(warnings).toEqual([
-        'Row container background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background #ffffff.',
-      ]);
+      expect(section.styles.backgroundColor).toBe("#ffffff");
+      expect(section.wrapper).toEqual({
+        backgroundImage: {
+          url: "https://cdn.test/band.jpg",
+          size: "auto",
+          position: { x: "left", y: "top" },
+          repeat: true,
+        },
+        fullWidth: true,
+      });
+      expect(warnings).toEqual([]);
     });
 
-    it("keeps the content image over a band image", () => {
+    it("keeps the content image on the section and the band image on the wrapper", () => {
       const { blocks, warnings } = convertRow({
         container: { "background-image": "url(https://cdn.test/band.jpg)" },
         content: HERO,
@@ -1178,9 +1191,11 @@ describe("convertBeeFreeTemplate", () => {
       const section = blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
       expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
-      expect(warnings).toEqual([
-        'Row container background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background image.',
-      ]);
+      expect(section.wrapper?.backgroundImage?.url).toBe(
+        "https://cdn.test/band.jpg",
+      );
+      expect(section.wrapper?.fullWidth).toBe(true);
+      expect(warnings).toEqual([]);
     });
 
     it("reports a value with no exact keyword in warnings", () => {
@@ -1932,7 +1947,10 @@ describe("convertBeeFreeTemplate", () => {
       expect(content.settings.backgroundColor).toBe("#f1f2f7");
       expect(content.settings.width).toBe(600);
       expect(section.styles.backgroundColor).toBeUndefined();
-      expect(section.wrapper).toEqual({ backgroundColor: "#ffffff" });
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#ffffff",
+        fullWidth: true,
+      });
       expect(section.children[0][0].type).toBe("paragraph");
     });
 
@@ -1944,7 +1962,10 @@ describe("convertBeeFreeTemplate", () => {
       });
 
       expect(section.styles.backgroundColor).toBe("#abcdef");
-      expect(section.wrapper).toEqual({ backgroundColor: "#f9f9f9" });
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#f9f9f9",
+        fullWidth: true,
+      });
     });
 
     it("omits the band when it is the same colour as the section fill", () => {
@@ -1972,7 +1993,10 @@ describe("convertBeeFreeTemplate", () => {
       });
 
       expect(section.styles.backgroundColor).toBe("#abcdef");
-      expect(section.wrapper).toEqual({ backgroundColor: "#f9f9f9" });
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#f9f9f9",
+        fullWidth: true,
+      });
     });
 
     it("does not wrap a row whose container and content paint nothing", () => {

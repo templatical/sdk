@@ -24,6 +24,7 @@ import type {
   ColumnLayout,
   CustomFont,
   ImageBlock,
+  SectionWrapper,
   SpacingValue,
   TemplateContent,
 } from "@templatical/types";
@@ -293,19 +294,17 @@ function convertColumnModules(
 }
 
 /**
- * The image a row's section paints. `content.style` is the content area a
- * section paints, so its image maps exactly. `container.style` is the
- * full-width band: it shows through only while the content area has neither
- * an image nor a colour, and then the section paints it at the content
- * width; otherwise it's dropped. Losses go to `warnings`, since rows have no
- * report entry.
+ * The images a row paints. `content.style` is the content area, so its image
+ * stays on the section. `container.style` is the band outside that box, so
+ * its image stays on the full-width wrapper and still shows in the margins
+ * when the content area paints its own fill. Losses go to `warnings`, since
+ * rows have no report entry.
  */
 function resolveRowBackgroundImage(
   row: BeeFreeeRow,
-  rowBg: string,
   width: number,
   warnings: string[],
-): BackgroundImage | undefined {
+): { content?: BackgroundImage; band?: BackgroundImage } {
   const content = readBeefreeBackgroundImage(row.content?.style, "Row", width);
   const band = readBeefreeBackgroundImage(
     row.container?.style,
@@ -316,27 +315,12 @@ function resolveRowBackgroundImage(
   if (content) content.image.url = decodeEntitiesInTokens(content.image.url);
   if (band) band.image.url = decodeEntitiesInTokens(band.image.url);
 
-  if (content) {
-    warnings.push(...content.notes);
-    if (band) {
-      warnings.push(
-        `Row container background image "${band.image.url}" outside the content width was dropped; the section keeps the content background image.`,
-      );
-    }
-    return content.image;
-  }
-  if (!band) return undefined;
-  if (rowBg) {
-    warnings.push(
-      `Row container background image "${band.image.url}" outside the content width was dropped; the section keeps the content background ${rowBg}.`,
-    );
-    return undefined;
-  }
-  warnings.push(
-    ...band.notes,
-    `Row container background image "${band.image.url}" spans the full width in BeeFree; the section paints it at the content width.`,
-  );
-  return band.image;
+  if (content) warnings.push(...content.notes);
+  if (band) warnings.push(...band.notes);
+  return {
+    ...(content ? { content: content.image } : {}),
+    ...(band ? { band: band.image } : {}),
+  };
 }
 
 function zeroPadding(): SpacingValue {
@@ -440,15 +424,16 @@ const ROW_STACK_DROPPED =
 interface RowFrame {
   visibility?: BlockVisibility;
   stackOnMobile?: false;
-  wrapper?: { backgroundColor: string };
+  wrapper?: SectionWrapper;
   border?: BorderValue;
 }
 
 /**
- * Row chrome the section can hold. The container colour is the band outside
- * the content box (`wrapper`); the section fill stays the content colour the
- * caller already chose. A band the same colour as that fill adds nothing. A
- * column border already chosen for the section wins over the row border.
+ * Row chrome the section can hold. The container colour and image are the
+ * band outside the content box (`wrapper`, viewport-wide); the section fill
+ * stays the content colour the caller already chose. A container colour the
+ * same as the section fill is not repeated on the wrapper. A column border
+ * already chosen for the section wins over the row border.
  */
 function rowFrame(
   row: BeeFreeeRow,
@@ -456,11 +441,19 @@ function rowFrame(
   columnBorderValue: BorderValue | undefined,
   applyStack: boolean,
   warnings: string[],
+  bandImage?: BackgroundImage,
 ): RowFrame {
   const visibility = rowVisibility(row);
   const band = parseColor(row.container?.style?.["background-color"]);
-  const wrapper =
-    band && band !== sectionBackground ? { backgroundColor: band } : undefined;
+  const bandColor = band && band !== sectionBackground ? band : undefined;
+  const wrapper: SectionWrapper | undefined =
+    bandColor || bandImage
+      ? {
+          ...(bandColor ? { backgroundColor: bandColor } : {}),
+          ...(bandImage ? { backgroundImage: bandImage } : {}),
+          fullWidth: true,
+        }
+      : undefined;
 
   let border = columnBorderValue;
   const rowBorder = columnBorder(row.content?.style);
@@ -701,12 +694,8 @@ function processRow(
   // The content colour is the inner box. The container colour, when it
   // differs, is the band outside that box.
   const rowBg = parseColor(row.content?.style?.["background-color"]);
-  const backgroundImage = resolveRowBackgroundImage(
-    row,
-    rowBg,
-    settings.width,
-    warnings,
-  );
+  const images = resolveRowBackgroundImage(row, settings.width, warnings);
+  const backgroundImage = images.content;
 
   if (layout === null || layout === "1") {
     // Single column, or five or more columns flattened onto the body width.
@@ -728,6 +717,7 @@ function processRow(
         columnBorder(column.style),
         false,
         warnings,
+        images.band,
       );
       // A background, a border, padding or row chrome can't survive on bare modules.
       if (
@@ -764,7 +754,7 @@ function processRow(
       blocks.push(...converted);
     }
     warnIfColumnBoxDropped(columns, warnings);
-    const frame = rowFrame(row, rowBg, undefined, false, warnings);
+    const frame = rowFrame(row, rowBg, undefined, false, warnings, images.band);
     if (rowBg || backgroundImage || frameNeedsSection(frame)) {
       return [
         createSectionBlock({
@@ -785,7 +775,7 @@ function processRow(
   // Multi-column — wrap in a SectionBlock. Each column's padding folds into
   // its modules; a column background or border has no per-column box.
   const widths = columnPixels(layout, settings.width);
-  const frame = rowFrame(row, rowBg, undefined, true, warnings);
+  const frame = rowFrame(row, rowBg, undefined, true, warnings, images.band);
   const contentWidths = renderedColumnContentWidths(
     layout,
     settings.width,
