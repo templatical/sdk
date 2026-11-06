@@ -393,16 +393,39 @@ export function diffContent(
       earlyUnhidden.add(JSON.stringify([id, locale]));
     }
   }
-  ops.unshift(...unhide);
+  // A section can't enter a layout wrapper while it has its own `wrapper`, so
+  // that key goes before any move.
+  const unwrapped = new Set<string>();
+  const unwrap: Operation[] = [];
+  for (const [id, previous] of was) {
+    const next = now.get(id);
+    if (
+      !next ||
+      !survives(previous.block) ||
+      previous.block.type !== "section" ||
+      (previous.block as SectionBlock).wrapper === undefined ||
+      (next.block as SectionBlock).wrapper !== undefined ||
+      next.parent === null ||
+      !("wrapperId" in next.parent)
+    )
+      continue;
+    unwrapped.add(id);
+    unwrap.push({ op: "updateBlock", blockId: id, unset: ["wrapper"] });
+  }
+  ops.unshift(...unhide, ...unwrap);
 
   // 7. Key changes, in document order.
   for (const [id, placement] of now) {
     if (!exists(id)) continue;
-    const { set, unset } = keyChanges(
+    const changes = keyChanges(
       was.get(id)!.block as unknown as Json,
       placement.block as unknown as Json,
       resized.has(id) ? RESIZED_SECTION_SKIP : BLOCK_SKIP,
     );
+    const { set } = changes;
+    const unset = unwrapped.has(id)
+      ? changes.unset.filter((key) => key !== "wrapper")
+      : changes.unset;
     if (Object.keys(set).length === 0 && unset.length === 0) continue;
     ops.push({
       op: "updateBlock",

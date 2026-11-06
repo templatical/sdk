@@ -65,6 +65,33 @@ describe("diffContent", () => {
     ]);
   });
 
+  it("removes a section's own wrapper before moving it into a layout wrapper", () => {
+    const framed = { ...section("S", "1", [[]]), wrapper: { padding: "8px" } };
+    const before = content([wrapper("A", [leaf("X")]), framed as Block]);
+    const after = content([wrapper("A", [leaf("X"), section("S", "1", [[]])])]);
+    const ops = diff(before, after);
+    expect(ops).toEqual([
+      { op: "updateBlock", blockId: "S", unset: ["wrapper"] },
+      { op: "moveBlock", blockId: "S", parent: { wrapperId: "A" }, after: "X" },
+    ]);
+    const applied = applyOperations(before, ops);
+    expect(applyOperations(applied, invertOperations(before, ops))).toEqual(
+      JSON.parse(JSON.stringify(before)),
+    );
+  });
+
+  it("moves a section out of a layout wrapper before giving it its own wrapper", () => {
+    const framed = { ...section("S", "1", [[]]), wrapper: { padding: "8px" } };
+    const before = content([
+      wrapper("A", [leaf("X"), section("S", "1", [[]])]),
+    ]);
+    const after = content([wrapper("A", [leaf("X")]), framed as Block]);
+    expect(diff(before, after)).toEqual([
+      { op: "moveBlock", blockId: "S", parent: null, after: "A" },
+      { op: "updateBlock", blockId: "S", set: { wrapper: { padding: "8px" } } },
+    ]);
+  });
+
   it("is empty for equal content, whatever the key order", () => {
     const before = content([leaf("a", { color: "#000" })]);
     const after = content([
