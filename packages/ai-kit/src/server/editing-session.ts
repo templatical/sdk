@@ -265,6 +265,30 @@ export function createEditingSession(
     );
     if (contentReason !== null) return refuse(contentReason);
 
+    if (
+      ops.some((op) => op.op === "setDefaultLocale") &&
+      !ops.some((op) => op.op === "setContent")
+    ) {
+      const deleted = new Set<string>();
+      for (const op of ops) {
+        if (op.op !== "deleteBlock") continue;
+        const previous = existing.get(op.blockId);
+        if (!previous) continue;
+        for (const block of walkBlocks([previous])) {
+          if (typeof block.id === "string") deleted.add(block.id);
+        }
+      }
+      for (const block of walkBlocks(next.blocks)) {
+        if (typeof block.id !== "string") continue;
+        const previous = existing.get(block.id);
+        if (!previous || deleted.has(block.id)) continue;
+        if (block.type !== previous.type)
+          return refuse("you can't change a block's type");
+        if (block.type === "custom" && block.customType !== previous.customType)
+          return refuse("you can't change a block's customType");
+      }
+    }
+
     if (hasInvalidLocaleLayers(next.blocks, next.settings))
       return refuse("the template has an invalid locale layer");
 

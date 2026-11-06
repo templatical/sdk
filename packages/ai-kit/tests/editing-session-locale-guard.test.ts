@@ -112,6 +112,124 @@ describe("editing session locale type guard", () => {
     expect(session.batches).toEqual([]);
   });
 
+  it("refuses a type promotion even when the old default locale is removed", () => {
+    const start = {
+      ...content(),
+      blocks: [
+        {
+          id: "p1",
+          type: "paragraph",
+          content: "<p>Hello</p>",
+          l10n: { de: { set: { type: "title" } } },
+        },
+      ],
+    };
+    expectRefusal(
+      start,
+      [
+        { op: "setDefaultLocale", locale: "de" },
+        { op: "removeLocale", locale: "en" },
+      ],
+      "Refused: you can't change a block's type",
+    );
+  });
+
+  it("refuses a custom schema promotion when custom blocks are allowed", () => {
+    const start = {
+      ...content(),
+      blocks: [
+        {
+          id: "c1",
+          type: "custom",
+          customType: "qr",
+          fieldValues: {},
+          l10n: { de: { set: { customType: "barcode" } } },
+        },
+      ],
+    };
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+      limits: { forbiddenBlockTypes: [] },
+    });
+
+    expect(
+      session.apply([
+        { op: "setDefaultLocale", locale: "de" },
+        { op: "removeLocale", locale: "en" },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback: "Refused: you can't change a block's customType",
+    });
+    expect(session.content).toEqual(start);
+    expect(session.batches).toEqual([]);
+  });
+
+  it("accepts replacing a bad layer before promoting its locale", () => {
+    const start = {
+      ...content(),
+      blocks: [
+        {
+          id: "p1",
+          type: "paragraph",
+          content: "<p>Hello</p>",
+          l10n: { de: { set: { type: "title" } } },
+        },
+      ],
+    };
+    const replacement = {
+      ...content(),
+      blocks: [{ id: "p1", type: "title", content: "<h1>Hello</h1>" }],
+    };
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        { op: "setContent", content: replacement },
+        { op: "setDefaultLocale", locale: "de" },
+        { op: "removeLocale", locale: "en" },
+      ]).ok,
+    ).toBe(true);
+    expect(session.content.blocks).toEqual(replacement.blocks);
+    expect(session.content.settings.locale).toBe("de");
+    expect(session.batches).toHaveLength(1);
+  });
+
+  it("accepts deleting a block and adding a new one of a different type", () => {
+    const start = {
+      ...content(),
+      blocks: [
+        {
+          id: "p1",
+          type: "paragraph",
+          content: "<p>Hello</p>",
+          l10n: { de: { set: { type: "title" } } },
+        },
+      ],
+    };
+    const title = { id: "p1", type: "title", content: "<h1>Hello</h1>" };
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
+
+    expect(
+      session.apply([
+        { op: "deleteBlock", blockId: "p1" },
+        { op: "addBlock", block: title, parent: null, after: null },
+        { op: "setDefaultLocale", locale: "de" },
+        { op: "removeLocale", locale: "en" },
+      ]).ok,
+    ).toBe(true);
+    expect(session.content.blocks).toEqual([title]);
+    expect(session.content.settings.locale).toBe("de");
+    expect(session.batches).toHaveLength(1);
+  });
+
   it("refuses a locale type override supplied through setContent", () => {
     const start = content();
     const session = createEditingSession({
