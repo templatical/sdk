@@ -370,6 +370,42 @@ describe("editing session locale type guard", () => {
     });
   });
 
+  it("accepts a German title child with an id the base doesn't use", () => {
+    const session = createEditingSession({
+      content: content() as never,
+      mergeTags,
+    });
+    const result = session.apply([
+      {
+        op: "addBlock",
+        block: {
+          id: "s1",
+          type: "section",
+          columns: "1",
+          children: [[{ id: "x1", type: "paragraph", content: "<p>Hi</p>" }]],
+          l10n: {
+            de: {
+              set: {
+                children: [
+                  [{ id: "x1-de", type: "title", content: "<p>Hallo</p>" }],
+                ],
+              },
+            },
+          },
+        },
+        parent: null,
+        after: "p1",
+      },
+    ]);
+    expect(result.ok).toBe(true);
+    expect(
+      resolveLocale(session.content as never, "de").blocks[1],
+    ).toMatchObject({
+      id: "s1",
+      children: [[{ id: "x1-de", type: "title", content: "<p>Hallo</p>" }]],
+    });
+  });
+
   it("refuses German children that give another existing block's id another type", () => {
     expectRefusal(
       content(),
