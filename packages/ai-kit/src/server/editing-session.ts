@@ -291,6 +291,24 @@ export function createEditingSession(
 
     if (hasInvalidLocaleLayers(next.blocks, next.settings))
       return refuse("the template has an invalid locale layer");
+    const declared = next.settings.locales;
+    if (
+      declared !== undefined &&
+      (!Array.isArray(declared) ||
+        declared.some((locale) => typeof locale !== "string"))
+    )
+      return refuse(
+        "the template's settings.locales must be a list of locale tags",
+      );
+
+    // Every locale below is a full projection of the template, so the size
+    // limit bounds that work before it starts.
+    const bytes = new TextEncoder().encode(JSON.stringify(next)).length;
+    if (bytes > limits.maxContentBytes) {
+      return refuse(
+        `the template would be larger than ${limits.maxContentBytes} bytes. Change less at once.`,
+      );
+    }
 
     const defaultLocale = defaultLocaleOf(next);
     const locales = new Set<string>([
@@ -312,14 +330,16 @@ export function createEditingSession(
       ...next,
       settings: { ...next.settings, locales: [...locales] },
     };
-    const views = new Map<string, TemplateContent>();
-    try {
-      for (const locale of locales)
-        views.set(locale, resolveLocale(resolvable, locale));
-    } catch {
+    const resolve = (locale: string): TemplateContent | null => {
+      try {
+        return resolveLocale(resolvable, locale);
+      } catch {
+        return null;
+      }
+    };
+    const base = resolve(defaultLocale);
+    if (base === null)
       return refuse("the template has an invalid locale layer");
-    }
-    const base = views.get(defaultLocale)!;
     const baseBlocks = new Map<string, Record<string, unknown>>();
     for (const block of walkBlocks(base.blocks)) {
       if (typeof block.id === "string") baseBlocks.set(block.id, block);
@@ -330,8 +350,11 @@ export function createEditingSession(
       limits.forbiddenBlockTypes,
     );
     if (baseReason !== null) return refuse(baseReason);
-    for (const [locale, view] of views) {
+    for (const locale of locales) {
       if (locale === defaultLocale) continue;
+      const view = resolve(locale);
+      if (view === null)
+        return refuse("the template has an invalid locale layer");
       for (const block of walkBlocks(view.blocks)) {
         const original =
           typeof block.id === "string" ? baseBlocks.get(block.id) : undefined;
@@ -350,13 +373,6 @@ export function createEditingSession(
         limits.forbiddenBlockTypes,
       );
       if (reason !== null) return refuse(reason);
-    }
-
-    const bytes = new TextEncoder().encode(JSON.stringify(next)).length;
-    if (bytes > limits.maxContentBytes) {
-      return refuse(
-        `the template would be larger than ${limits.maxContentBytes} bytes. Change less at once.`,
-      );
     }
 
     content = next;

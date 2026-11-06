@@ -679,6 +679,74 @@ describe("editing session locale type guard", () => {
     expect(session.batches).toEqual([]);
   });
 
+  it.each([
+    ["a string", "de"],
+    ["a number", 5],
+    ["a list holding a number", ["de", 5]],
+  ])(
+    "refuses settings.locales set to %s without throwing",
+    (_label, locales) => {
+      const start = content();
+      expectRefusal(
+        start,
+        [
+          {
+            op: "setContent",
+            content: { ...start, settings: { ...start.settings, locales } },
+          },
+        ],
+        "Refused: the template's settings.locales must be a list of locale tags",
+      );
+    },
+  );
+
+  it("checks the size limit before resolving each locale", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+      limits: { forbiddenBlockTypes: [], maxContentBytes: 200 },
+    });
+    expect(
+      session.apply([
+        {
+          op: "addBlock",
+          block: {
+            id: "s1",
+            type: "section",
+            columns: "1",
+            children: [
+              [{ id: "c1", type: "custom", customType: "qr", fieldValues: {} }],
+            ],
+            l10n: {
+              de: {
+                set: {
+                  children: [
+                    [
+                      {
+                        id: "c1",
+                        type: "custom",
+                        customType: "barcode",
+                        fieldValues: {},
+                      },
+                    ],
+                  ],
+                },
+              },
+            },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback:
+        "Refused: the template would be larger than 200 bytes. Change less at once.",
+    });
+    expect(session.content).toEqual(start);
+  });
+
   it("refuses a malformed locale layer without throwing", () => {
     const start = content();
     const session = createEditingSession({
