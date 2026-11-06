@@ -100,6 +100,14 @@ const STRINGS: Record<string, ContentDefaultStrings> = {
     seconds: "秒",
     expired: "このオファーは終了しました",
   },
+  da: {
+    video: "Video",
+    days: "Dage",
+    hours: "Timer",
+    minutes: "Minutter",
+    seconds: "Sekunder",
+    expired: "Dette tilbud er udløbet",
+  },
 };
 
 /** The locales this table covers. Asserted against the UI bundles in tests. */
