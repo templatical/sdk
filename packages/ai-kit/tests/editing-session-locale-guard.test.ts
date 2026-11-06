@@ -809,6 +809,108 @@ describe("editing session locale type guard", () => {
     expect(session.content).toEqual(start);
   });
 
+  describe("a wrapper whose German layer replaces its children", () => {
+    const badSection = (id: string) => ({
+      id,
+      type: "section",
+      columns: "1",
+      children: [
+        [{ id: `${id}-c`, type: "custom", customType: "qr", fieldValues: {} }],
+      ],
+      l10n: {
+        de: {
+          set: {
+            children: [
+              [
+                {
+                  id: `${id}-c`,
+                  type: "custom",
+                  customType: "barcode",
+                  fieldValues: {},
+                },
+              ],
+            ],
+          },
+        },
+      },
+    });
+    const addWrapper = (base: unknown[], replacement: unknown[]) => {
+      const session = createEditingSession({
+        content: content() as never,
+        mergeTags,
+        limits: { forbiddenBlockTypes: [] },
+      });
+      return {
+        session,
+        result: session.apply([
+          {
+            op: "addBlock",
+            block: {
+              id: "w1",
+              type: "wrapper",
+              children: base,
+              l10n: { de: { set: { children: replacement } } },
+            },
+            parent: null,
+            after: "p1",
+          },
+        ]),
+      };
+    };
+
+    it("doesn't check a base child the German view never shows", () => {
+      const { result } = addWrapper(
+        [badSection("s1")],
+        [{ id: "p9", type: "paragraph", content: "<p>Hallo</p>" }],
+      );
+      expect(result.ok).toBe(true);
+    });
+
+    it("checks the replacement children's own German layers", () => {
+      const { session, result } = addWrapper(
+        [
+          {
+            id: "s1",
+            type: "section",
+            columns: "1",
+            children: [
+              [{ id: "c1", type: "custom", customType: "qr", fieldValues: {} }],
+            ],
+          },
+        ],
+        [
+          {
+            id: "s2",
+            type: "section",
+            columns: "1",
+            children: [[]],
+            l10n: {
+              de: {
+                set: {
+                  children: [
+                    [
+                      {
+                        id: "c1",
+                        type: "custom",
+                        customType: "barcode",
+                        fieldValues: {},
+                      },
+                    ],
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      );
+      expect(result).toEqual({
+        ok: false,
+        feedback: "Refused: you can't change a block's customType",
+      });
+      expect(session.content).toEqual(content());
+    });
+  });
+
   it("checks every locale in time linear in the template size", () => {
     expectLinear((n) => {
       const locales = Array.from({ length: n }, (_, i) => `x${i}`);
