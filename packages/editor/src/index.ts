@@ -1663,6 +1663,7 @@ export type {
   LogicTagsConfig,
   LogicTag,
   LogicPair,
+  DisplayConditionRequestContext,
   DisplayConditionsConfig,
   CustomBlockDefinition,
   ViewportSize,

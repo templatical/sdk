@@ -53,6 +53,7 @@ import type { BaseEditorReturn } from '../src/composables/useEditorCore';
 import de from '../src/i18n/locales/de';
 import en from '../src/i18n/locales/en';
 import { _resetActiveEditorTrackerForTests } from '../src/utils/activeEditorTracker';
+import { logger } from '../src/utils/logger';
 import {
   TRANSLATIONS_KEY,
   EDITOR_KEY,
@@ -73,6 +74,7 @@ import {
   CAN_DROP_MEDIA_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
+  ON_REQUEST_DISPLAY_CONDITION_KEY,
   CAPABILITIES_KEY,
   KEYBOARD_REORDER_KEY,
 } from '../src/keys';
@@ -97,6 +99,7 @@ const ALL_KEYS: Array<{ key: InjectionKey<unknown>; label: string }> = [
   { key: CAN_DROP_MEDIA_KEY, label: 'canDropMedia' },
   { key: DISPLAY_CONDITIONS_KEY, label: 'displayConditions' },
   { key: ALLOW_CUSTOM_CONDITIONS_KEY, label: 'allowCustomConditions' },
+  { key: ON_REQUEST_DISPLAY_CONDITION_KEY, label: 'onRequestDisplayCondition' },
   { key: CAPABILITIES_KEY, label: 'capabilities' },
   { key: KEYBOARD_REORDER_KEY, label: 'keyboardReorder' },
 ];
@@ -584,6 +587,71 @@ describe('useEditorCore', () => {
       });
       expect(captured.injected!.displayConditions).toEqual(conditions);
       expect(captured.injected!.allowCustomConditions).toBe(true);
+    });
+
+    it('provides onRequestDisplayCondition null when unset', () => {
+      const { captured } = mountCore();
+      expect(captured.injected!.onRequestDisplayCondition).toBeNull();
+    });
+
+    it('provides onRequestDisplayCondition and keeps the conditions array', () => {
+      const onRequest = vi.fn(async () => null);
+      const conditions = [{ label: 'VIP', before: '{% if vip %}', after: '{% endif %}' }];
+      const { captured } = mountCore({
+        config: { displayConditions: { onRequest, conditions } } as any,
+      });
+      expect(captured.injected!.onRequestDisplayCondition).toBe(onRequest);
+      expect(captured.injected!.displayConditions).toEqual(conditions);
+    });
+
+    it('warns once per editor when onRequest is combined with the built-in list', () => {
+      const message =
+        'config.displayConditions.onRequest replaces the built-in condition list — conditions and allowCustom are ignored.';
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      const onRequest = async () => null;
+      const hits = () => warn.mock.calls.filter((call) => call[0] === message);
+      const wrappers = [];
+      try {
+        wrappers.push(
+          mountCore({
+            config: { displayConditions: { onRequest, conditions: [] } } as any,
+          }).wrapper,
+        );
+        expect(hits()).toHaveLength(1);
+
+        wrappers.push(
+          mountCore({
+            config: { displayConditions: { onRequest, allowCustom: false } } as any,
+          }).wrapper,
+        );
+        expect(hits()).toHaveLength(2);
+
+        wrappers.push(
+          mountCore({
+            config: {
+              displayConditions: { onRequest, conditions: [], allowCustom: false },
+            } as any,
+          }).wrapper,
+        );
+        expect(hits()).toHaveLength(3);
+
+        wrappers.push(
+          mountCore({
+            config: { displayConditions: { onRequest } } as any,
+          }).wrapper,
+        );
+        wrappers.push(
+          mountCore({
+            config: {
+              displayConditions: { conditions: [], allowCustom: true },
+            } as any,
+          }).wrapper,
+        );
+        expect(hits()).toHaveLength(3);
+      } finally {
+        for (const wrapper of wrappers) wrapper.unmount();
+        warn.mockRestore();
+      }
     });
 
     it('provides empty capabilities when not configured', () => {

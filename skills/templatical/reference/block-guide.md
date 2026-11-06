@@ -45,7 +45,8 @@ Every block has these, so the per-block lists below leave them out:
 - `visibility` (_optional_) — `{ desktop: bool, mobile: bool }` to hide per
   device.
 - `displayCondition` (_optional_) — editor-managed conditional wrapper. Never
-  emit it; the editor writes it when a user adds a display condition.
+  emit it; the editor writes it when a user adds a display condition. `data` is
+  opaque host state that round-trips.
 
 Do **not** add fields beyond those listed per type — the schema rejects unknown
 properties.
