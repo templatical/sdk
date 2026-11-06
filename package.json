@@ -11,7 +11,7 @@
     "@microsoft/api-extractor": "^7.60.1",
     "@playwright/mcp": "^0.0.84",
     "@playwright/test": "^1.64.1",
-    "@tailwindcss/vite": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.4",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-chamaileon": "workspace:*",
