@@ -848,3 +848,30 @@ describe("locale unset path safety", () => {
     });
   });
 });
+
+describe("wide containers", () => {
+  it("deletes and moves a wrapper with more children than the argument limit", () => {
+    const children = Array.from({ length: 200_000 }, (_, i) => ({
+      id: `c${i}`,
+      type: "spacer",
+      height: 1,
+    }));
+    const content = {
+      blocks: [
+        { id: "w", type: "wrapper", children },
+        { id: "p", type: "paragraph", content: "<p>x</p>" },
+      ],
+      settings: { width: 600 },
+    } as unknown as TemplateContent;
+
+    const moved = applyOperations(content, [
+      { op: "moveBlock", blockId: "w", parent: null, after: "p" },
+    ]);
+    expect(moved.blocks.map((block) => block.id)).toEqual(["p", "w"]);
+
+    const deleted = applyOperations(content, [
+      { op: "deleteBlock", blockId: "w" },
+    ]);
+    expect(deleted.blocks.map((block) => block.id)).toEqual(["p"]);
+  });
+});

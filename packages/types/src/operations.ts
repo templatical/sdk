@@ -429,10 +429,13 @@ function locate(content: TemplateContent, blockId: string): Location | null {
 export function blockIdsOf(block: unknown): string[] {
   if (!isRecord(block)) return [];
   const ids = typeof block.id === "string" ? [block.id] : [];
+  // One push per id: spreading a wide container's ids into push() passes them
+  // as arguments and throws past the engine's argument limit.
   if (isSection(block)) {
-    for (const column of columnsOf(block)) ids.push(...idsIn(column));
+    for (const column of columnsOf(block))
+      for (const id of idsIn(column)) ids.push(id);
   } else if (block.type === "wrapper" && Array.isArray(block.children)) {
-    ids.push(...idsIn(block.children));
+    for (const id of idsIn(block.children)) ids.push(id);
   }
   return ids;
 }
