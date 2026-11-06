@@ -1,0 +1,42 @@
+{
+  "name": "set wrapper on section inside wrapper",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "S",
+            "type": "section",
+            "columns": "1",
+            "children": [[]]
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "S",
+      "set": {
+        "wrapper": {
+          "backgroundColor": "#fff"
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "message": "Sections with a wrapper cannot be placed inside wrappers."
+    }
+  }
+}

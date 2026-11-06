@@ -90,7 +90,7 @@ mj-body                         ← grauer Untergrund (layout.settings.backgroun
 
 **`wrapper`** ist die Layout-Karte: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` / `fullWidth` werden zu `mj-wrapper`. `fullWidth: true` reicht über das Fenster des Empfängers, während die Kinder bei `settings.width` bleiben; ein Eckenradius gilt nicht, solange es an ist. Weglassen oder `false` hält das Band auf der E-Mail-Breite. In Outlook unter Windows überdeckt die Hintergrundfarbe eines Bands das Hintergrundbild einer darin liegenden Sektion — setzen Sie das Bild auf das Band, oder lassen Sie das Band ohne Farbe. Der Linter des Editors sieht das Layout nicht und kann deshalb nicht davor warnen. Nur im Layout. Im Editor-Inhalt abgelehnt (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Autorinnen nutzen weiterhin `section.wrapper` als Kurzform pro Sektion. Derselbe Schalter **Hintergrund über die volle Breite** liegt im Hintergrund-Panel des Wrapper-Blocks.
 
-Headless-`applyOperations` und `template-tools edit` adressieren vorhandene Wrapper-Kinder mit `parent: { wrapperId: string }`; Sektionen dürfen direkte Wrapper-Kinder sein. Das bearbeitet einen Layout-Baum außerhalb des visuellen Editors. Der visuelle Editor lehnt selbst verfasste Wrapper weiterhin ab. Prüfen Sie ein Layout nach Operationen mit `validateLayout`; `setContent` prüft selbst nur die Form.
+Headless-`applyOperations` und `template-tools edit` adressieren vorhandene Wrapper-Kinder mit `parent: { wrapperId: string }`; Sektionen ohne `section.wrapper` dürfen direkte Wrapper-Kinder sein. Sektionen mit `section.wrapper` müssen auf der obersten Ebene bleiben: `addBlock`, `moveBlock` und `updateBlock` lehnen ihre Platzierung in einem Wrapper ab. Das bearbeitet einen Layout-Baum außerhalb des visuellen Editors. Der visuelle Editor lehnt selbst verfasste Wrapper weiterhin ab. Prüfen Sie ein Layout nach Operationen mit `validateLayout`; es lehnt auch verschachtelte Sektions-Wrapper ab. `setContent` prüft selbst nur die Form.
 
 Layout-Factories und -Helfer (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) werden aus `@templatical/editor` exportiert. Headless-Rendering kann `applyLayout` aus `@templatical/types` ohne den Editor importieren.
 
@@ -100,6 +100,7 @@ Layout-Factories und -Helfer (`createSlotBlock`, `createWrapperBlock`, `createPa
 [Templatical] layout: must contain exactly one slot block
 [Templatical] layout: slot must be a top-level or wrapper child, not nested in a section
 [Templatical] layout: a wrapper cannot contain a wrapper
+[Templatical] layout: a wrapper cannot contain a section with its own wrapper (section.wrapper)
 ```
 
 `setContent` / `load` / `addBlock` lehnen `slot` und `wrapper` im Inhalt ab.

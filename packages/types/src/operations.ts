@@ -26,6 +26,9 @@ import type { TemplateContent, TemplateSettings } from "./template";
 export type BlockParent =
   null | { sectionId: string; column: number } | { wrapperId: string };
 
+const SECTION_WRAPPER_IN_WRAPPER =
+  "Sections with a wrapper cannot be placed inside wrappers.";
+
 /** Insert `block` into `parent`, after the sibling `after` (`null`: first). */
 export interface AddBlockOperation {
   op: "addBlock";
@@ -577,6 +580,9 @@ function assertNewBlock(
       "Sections can only be placed at the top level.",
     );
   }
+  if (placement === "wrapper" && block.wrapper) {
+    fail("invalid_operation", index, SECTION_WRAPPER_IN_WRAPPER);
+  }
   const columns = block.children;
   if (
     !Array.isArray(columns) ||
@@ -1004,6 +1010,14 @@ function moveBlock(
       "Sections can only be placed at the top level.",
     );
   }
+  if (
+    isSection(location.block) &&
+    location.block.wrapper &&
+    parent !== null &&
+    "wrapperId" in parent
+  ) {
+    fail("invalid_operation", index, SECTION_WRAPPER_IN_WRAPPER);
+  }
   if (location.block.type === "wrapper" && parent !== null) {
     fail(
       "invalid_operation",
@@ -1093,6 +1107,14 @@ function updateBlock(
   }
   assertUnlocked(engine, [blockId], index);
   if (expect) assertExpected(block, expect, index, blockId);
+  if (
+    section &&
+    location.parent !== null &&
+    "wrapperId" in location.parent &&
+    set.wrapper
+  ) {
+    fail("invalid_operation", index, SECTION_WRAPPER_IN_WRAPPER);
+  }
   const next = { ...block };
   change(next, set, unset);
   assertElementIds(
