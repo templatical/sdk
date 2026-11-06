@@ -134,6 +134,53 @@ describe("editing session locale type guard", () => {
     );
   });
 
+  it("refuses a German custom child with another customType when custom blocks are allowed", () => {
+    const session = createEditingSession({
+      content: content() as never,
+      mergeTags,
+      limits: { forbiddenBlockTypes: [] },
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "addBlock",
+          block: {
+            id: "s1",
+            type: "section",
+            columns: "1",
+            children: [
+              [{ id: "c1", type: "custom", customType: "qr", fieldValues: {} }],
+            ],
+            l10n: {
+              de: {
+                set: {
+                  children: [
+                    [
+                      {
+                        id: "c1",
+                        type: "custom",
+                        customType: "barcode",
+                        fieldValues: {},
+                      },
+                    ],
+                  ],
+                },
+              },
+            },
+          },
+          parent: null,
+          after: "p1",
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback: "Refused: you can't change a block's customType",
+    });
+    expect(session.content).toEqual(content());
+    expect(session.batches).toEqual([]);
+  });
+
   it("refuses a custom schema promotion when custom blocks are allowed", () => {
     const start = {
       ...content(),
