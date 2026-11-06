@@ -464,6 +464,28 @@ describe("editing session locale type guard", () => {
     );
   });
 
+  it("accepts a batch that deletes the block holding a bad German layer", () => {
+    const bad = {
+      id: "s1",
+      type: "section",
+      columns: "1",
+      children: [[{ id: "x1", type: "paragraph", content: "<p>Hi</p>" }]],
+      l10n: {
+        de: {
+          set: {
+            children: [[{ id: "x1", type: "title", content: "<p>Hallo</p>" }]],
+          },
+        },
+      },
+    };
+    const session = createEditingSession({
+      content: { ...content(), blocks: [...content().blocks, bad] } as never,
+      mergeTags,
+    });
+    expect(session.apply([{ op: "deleteBlock", blockId: "s1" }]).ok).toBe(true);
+    expect(session.content).toEqual(content());
+  });
+
   it("refuses localized custom children supplied through setContent", () => {
     const start = content();
     const session = createEditingSession({
