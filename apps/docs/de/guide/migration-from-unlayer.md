@@ -182,21 +182,25 @@ Unlayer organisiert Inhalte in Reihen mit Spalten, deren Breiten aus einem `cell
 | `[1, 1, 1]` (gleiche Drittel) | `'3'` |
 | `[1, 2]` | `'1-2'` |
 | `[2, 1]` | `'2-1'` |
-| 4+ Zellen | auf eine einzelne Spalte reduziert, mit Warnung |
+| `[1, 3]` | `'1-3'` |
+| `[3, 1]` | `'3-1'` |
+| `[1, 2, 1]` | `'1-2-1'` |
+| `[1, 1, 1, 1]` (gleiche Viertel) | `'4'` |
+| 5+ Zellen | auf eine einzelne Spalte reduziert, mit Warnung |
 
-Zellverhältnisse, die keinem Standardlayout entsprechen, werden auf das nächstliegende verfügbare abgebildet.
+Zellverhältnisse, die keinem Layout oben entsprechen, werden auf das nächstliegende mit derselben Spaltenzahl abgebildet. Vier Zellen bleiben vier Spalten; ungleiche Viererverhältnisse (zum Beispiel `[6, 2, 2, 2]`) werden in `report.warnings` genannt, da Layout `4` aus vier gleichen Vierteln besteht. Sonst warnt Unlayer nicht, wenn das Verhältnis diesem Layout nur nahekommt.
 
 ### Section-Hintergrund
 
 | Unlayer-Reihenwerte | `section.styles.backgroundColor` |
 |---|---|
 | `columnsBackgroundColor` gesetzt | `columnsBackgroundColor` |
-| nur `backgroundColor` gesetzt | `backgroundColor` |
+| nur `backgroundColor` gesetzt | ungesetzt; die Farbe liegt auf dem fensterbreiten Wrapper |
 
-Setzt eine Reihe beide auf unterschiedliche Farben, übernimmt die Section `columnsBackgroundColor`, und `report.warnings` nennt das verworfene `backgroundColor`.
+Setzt eine Reihe `backgroundColor`, wird diese Farbe zu `section.wrapper.backgroundColor` mit `wrapper.fullWidth: true`, auch wenn sie mit `columnsBackgroundColor` übereinstimmt. Die Section behält `columnsBackgroundColor`. Ohne Inhaltsfarbe bleibt der Section-Hintergrund ungesetzt, sodass der Streifen durch die Inhaltsbox scheint.
 
 ::: tip
-`columnsBackgroundColor` füllt die Inhaltsbreite, also die Fläche, die eine Section einfärbt. `backgroundColor` füllt den Streifen außerhalb davon, und eine Templatical-Section hat keinen Streifen über die volle Breite.
+`columnsBackgroundColor` füllt die Inhaltsbreite, also die Fläche, die eine Section einfärbt. `backgroundColor` füllt den Streifen außerhalb davon und liegt auf `section.wrapper` mit `fullWidth: true`, sodass der Streifen bis zum Fensterrand läuft.
 :::
 
 ### Hintergrundbild der Section
@@ -206,8 +210,9 @@ Das `backgroundImage` einer Reihe wird zum `backgroundImage` der Section:
 | `backgroundImage.fullWidth` | Ergebnis |
 |---|---|
 | `false` (die Inhaltsfläche) | Das Bild der Section, exakt. |
-| `true`, `columnsBackgroundColor` nicht gesetzt | Das Bild der Section, in Inhaltsbreite gezeichnet; `report.warnings` vermerkt das. |
-| `true`, `columnsBackgroundColor` gesetzt | Verworfen, da in Unlayer die Inhaltsfarbe es innerhalb der Inhaltsbreite verdeckt; `report.warnings` nennt es. |
+| weggelassen oder `true` | `wrapper.backgroundImage` mit `wrapper.fullWidth: true`. Die Section behält `columnsBackgroundColor` oder bleibt ungesetzt, wenn diese Farbe fehlt. |
+
+Eine Streifenfarbe bleibt vom Wrapper, wenn die Section ein Bild der Inhaltsfläche behält (`fullWidth: false`): Outlook für Desktop malt eine Wrapper-Farbe über dieses Bild, und `report.warnings` nennt die verworfene Farbe.
 
 `size` `cover` und `contain` werden übernommen, `custom` ist das Bild in Originalgröße (`auto`). Die neun `position`-Schlüsselwörter werden auf den passenden Rasterpunkt abgebildet. Bei einer `custom`-Position rastet ein Prozentwert in `customPosition` auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x` und `repeat-y` werden zu `repeat`. Die Flags `cover` und `center` älterer Designs werden gelesen, wenn `size` und `position` fehlen: `cover` wird zu `cover` (`false` zu `auto`), `center` zu oben mittig (`false` zu links oben). Jeder Wert ohne exaktes Schlüsselwort fügt `report.warnings` eine Zeile hinzu.
 

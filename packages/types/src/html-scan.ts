@@ -18,7 +18,10 @@ const QUOTES = new Set(['"', "'"]);
  * Index of the `>` that closes the open tag whose name ends at `from`, or `-1`
  * when the tag never closes.
  *
- * Quote-aware: a `>` inside a quoted attribute value does not end the tag.
+ * Quote-aware: a `>` inside a quoted attribute value does not end the tag. As
+ * in the HTML tokenizer, a quote opens a value only right after `=`; inside an
+ * unquoted value (`title=don't`) it is an ordinary character, or the scan would
+ * run past the real tag end into the content.
  * That matters because a consumer may configure a merge-tag syntax whose tag
  * values contain `<` / `>` — Smarty-style `<% $email %>` — and HTML attribute
  * serialization escapes only `&`, `"` and U+00A0, so those characters reach the
@@ -31,19 +34,55 @@ const QUOTES = new Set(['"', "'"]);
  */
 export function findOpenTagEnd(html: string, from: number): number {
   let quote: string | null = null;
+  let state: "tag" | "beforeValue" | "unquotedValue" = "tag";
   for (let i = from; i < html.length; i++) {
     const char = html[i];
     if (quote !== null) {
       if (char === quote) quote = null;
       continue;
     }
-    if (QUOTES.has(char)) {
-      quote = char;
+    if (state === "beforeValue") {
+      if (isWhitespace(char)) continue;
+      if (QUOTES.has(char)) {
+        quote = char;
+        state = "tag";
+        continue;
+      }
+      state = "unquotedValue";
+    }
+    if (state === "unquotedValue") {
+      if (char === ">") return i;
+      if (isWhitespace(char)) state = "tag";
+      continue;
+    }
+    if (char === "=") {
+      state = "beforeValue";
       continue;
     }
     if (char === ">") return i;
   }
   return -1;
+}
+
+/** End of a span's opening tag, or the next span start if this one is malformed. */
+export function findOpenSpanBoundary(
+  html: string,
+  from: number,
+): { end: number; nextSpan: number } {
+  let quote: string | null = null;
+  for (let i = from; i < html.length; i++) {
+    const char = html[i];
+    if (quote !== null) {
+      if (char === quote) quote = null;
+    } else if (QUOTES.has(char)) {
+      quote = char;
+    } else if (char === ">") {
+      return { end: i, nextSpan: -1 };
+    } else if (char === "<" && html.startsWith("<span", i)) {
+      return { end: -1, nextSpan: i };
+    }
+  }
+  return { end: -1, nextSpan: -1 };
 }
 
 function isAttrNameChar(char: string): boolean {

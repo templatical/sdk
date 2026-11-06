@@ -774,6 +774,66 @@ describe('column index validation', () => {
         }
     });
 
+
+    it('addBlock accepts columnIndex 3 for a "4" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '4',
+            children: [[], [], [], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 3);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children).toHaveLength(4);
+            expect(sec.children[3]).toHaveLength(1);
+            expect(sec.children[3][0].id).toBe(added.id);
+        }
+    });
+
+    it('addBlock rejects columnIndex 4 for a "4" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '4',
+            children: [[], [], [], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        editor.addBlock(
+            createParagraphBlock({ content: '<p>X</p>' }),
+            section.id,
+            4,
+        );
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children.every((column) => column.length === 0)).toBe(true);
+        }
+    });
+
+    it('addBlock accepts columnIndex 2 for a "1-2-1" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '1-2-1',
+            children: [[], [], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 2);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children[2][0].id).toBe(added.id);
+        }
+    });
+
     it('addBlock accepts columnIndex 1 for "2-1" layout section', () => {
         const content = createDefaultTemplateContent();
         const section = createSectionBlock({

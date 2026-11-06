@@ -82,6 +82,12 @@ const heightMode = computed(() =>
   typeof props.block.height === "number" ? "custom" : "auto",
 );
 
+const fluidOnMobileMode = computed(() => {
+  if (props.block.fluidOnMobile === true) return "always";
+  if (props.block.fluidOnMobile === false) return "never";
+  return "auto";
+});
+
 function updateField(field: string, value: unknown): void {
   emit("update", { [field]: value } as Partial<ImageBlock>);
 }
@@ -102,6 +108,13 @@ function updateWidthMode(value: string): void {
 
 function updateHeightMode(value: string): void {
   updateField("height", value === "custom" ? DEFAULT_CUSTOM_HEIGHT : undefined);
+}
+
+function updateFluidOnMobile(value: string): void {
+  updateField(
+    "fluidOnMobile",
+    value === "always" ? true : value === "never" ? false : undefined,
+  );
 }
 
 function updateCustomHeight(raw: string): void {
@@ -317,6 +330,22 @@ function updateLockedHeight(raw: string): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
+  </FieldRow>
+  <FieldRow
+    :label="t.image.fluidOnMobile"
+    class="tpl:mb-3.5"
+    path="fluidOnMobile"
+  >
+    <select
+      :class="inputClass"
+      data-testid="image-fluid-on-mobile"
+      :value="fluidOnMobileMode"
+      @change="updateFluidOnMobile(($event.target as HTMLSelectElement).value)"
+    >
+      <option value="auto">{{ t.image.fluidOnMobileAuto }}</option>
+      <option value="always">{{ t.image.fluidOnMobileAlways }}</option>
+      <option value="never">{{ t.image.fluidOnMobileNever }}</option>
+    </select>
   </FieldRow>
   <FieldRow class="tpl:mb-3.5" path="height" :label="t.image.height">
     <template v-if="aspectLockAvailable" #label-actions>

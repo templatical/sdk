@@ -4,6 +4,7 @@ import type {
   Block,
   BorderValue,
   HeroVerticalAlign,
+  SpacingValue,
   SyntaxPreset,
   TemplateSettings,
 } from "@templatical/types";
@@ -113,6 +114,12 @@ export interface CanvasStyleOptions {
  * `background-*` declarations next to it.
  */
 const BACKGROUND_LAYER_VAR = "--tpl-block-bg-layer";
+
+/**
+ * Email-column width inside a full-width band. The canvas and the preview
+ * stage set it to `getEmailFrameWidth`; the band's inner frame reads it.
+ */
+export const EMAIL_FRAME_WIDTH_VAR = "--tpl-email-frame-width";
 
 /** Marks a surface that paints a background image, for Canvas.vue's dark-preview rules. */
 const BACKGROUND_IMAGE_HOST_CLASS = "tpl-has-bg-image";
@@ -301,10 +308,48 @@ export function getBorderStyle(
 }
 
 /**
+ * Bleed a full-width band out to the canvas pane (`100cqw` on
+ * `.tpl-canvas-pane`). The email-width column is {@link fullWidthFrameStyle},
+ * not this element: padding on the bled box would sit outside the body width.
+ */
+const FULL_WIDTH_BLEED: Record<string, string> = {
+  width: "100cqw",
+  maxWidth: "none",
+  marginInline: "calc(50% - 50cqw)",
+  boxSizing: "border-box",
+};
+
+function paddingCss(padding: SpacingValue): string {
+  return `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`;
+}
+
+/**
+ * Email-width column inside a full-width band. Carries the wrapper padding
+ * (MJML's padding is inside the body-width box) and stays at
+ * {@link EMAIL_FRAME_WIDTH_VAR}, which the canvas sets to `getEmailFrameWidth`.
+ */
+export function fullWidthFrameStyle(
+  padding: SpacingValue | undefined,
+): Record<string, string> {
+  const style: Record<string, string> = {
+    width: "var(--tpl-email-frame-width)",
+    maxWidth: "100%",
+    marginInline: "auto",
+    boxSizing: "border-box",
+  };
+  if (padding) style.padding = paddingCss(padding);
+  return style;
+}
+
+/**
  * Outer-frame style for a section's `wrapper` — the canvas equivalent of the
  * exported `mj-wrapper` (a band with its own background + padding + radius that
  * frames the section's box). Returns `null` for non-sections and for sections
  * without a wrapper, so callers can skip the extra element entirely.
+ *
+ * `fullWidth` bleeds the band to the pane and omits padding and corner radius:
+ * a viewport-wide band has no visible corners, and the padding moves to
+ * {@link fullWidthFrameStyle}.
  */
 export function getSectionWrapperStyle(
   block: Block,
@@ -314,17 +359,20 @@ export function getSectionWrapperStyle(
   const w = block.wrapper;
   const style: Record<string, string> = {};
   if (w.backgroundColor) style.backgroundColor = w.backgroundColor;
-  if (w.padding) {
-    style.padding = `${w.padding.top}px ${w.padding.right}px ${w.padding.bottom}px ${w.padding.left}px`;
+  if (w.padding && !w.fullWidth) {
+    style.padding = paddingCss(w.padding);
   }
-  const radius = toBorderRadiusCss(w.borderRadius);
-  if (radius !== null) {
-    style.borderRadius = radius;
+  if (!w.fullWidth) {
+    const radius = toBorderRadiusCss(w.borderRadius);
+    if (radius !== null) {
+      style.borderRadius = radius;
+    }
   }
   Object.assign(
     style,
     getBackgroundImageStyle(w.backgroundImage, options.backgroundImageUrl),
   );
+  if (w.fullWidth) Object.assign(style, FULL_WIDTH_BLEED);
   return style;
 }
 
@@ -332,7 +380,8 @@ export function getSectionWrapperStyle(
  * Band style for a layout `wrapper` block — the same shape as
  * {@link getSectionWrapperStyle} (background + padding + radius), but the
  * block *is* the band: values come from `styles` / `borderRadius`, not
- * `section.wrapper`.
+ * `section.wrapper`. `fullWidth` bleeds to the pane and drops padding and
+ * corner radius, the same way a section wrapper does.
  */
 export function getWrapperStyle(
   block: Block,
@@ -343,16 +392,16 @@ export function getWrapperStyle(
   if (block.styles.backgroundColor) {
     style.backgroundColor = block.styles.backgroundColor;
   }
-  if (block.styles.padding) {
-    const p = block.styles.padding;
-    style.padding = `${p.top}px ${p.right}px ${p.bottom}px ${p.left}px`;
+  if (block.styles.padding && !block.fullWidth) {
+    style.padding = paddingCss(block.styles.padding);
   }
-  if (block.borderRadius && block.borderRadius > 0) {
+  if (!block.fullWidth && block.borderRadius && block.borderRadius > 0) {
     style.borderRadius = `${block.borderRadius}px`;
   }
   Object.assign(
     style,
     getBackgroundImageStyle(block.backgroundImage, options.backgroundImageUrl),
   );
+  if (block.fullWidth) Object.assign(style, FULL_WIDTH_BLEED);
   return style;
 }

@@ -200,7 +200,9 @@ describe("border round-trip through MJML compiler", () => {
     });
 
     const mjml = renderBlock(block, ctx);
-    expect(mjml).not.toContain(";");
+    // Character references (`&#039;`) end in `;`; no other `;` may remain.
+    expect(mjml.replace(/&#?\w+;/g, "")).not.toContain(";");
+    expect(mjml).toContain("red background: url(&#039;//attacker/log&#039;)");
 
     // The payload survives only as part of one (invalid) `border-top` value,
     // never as a declaration of its own.

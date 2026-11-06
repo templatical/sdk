@@ -173,6 +173,28 @@ describe("mj-social", () => {
     expect(result.entry.status).toBe("converted");
   });
 
+  it("maps xing from the name, the src filename, and the alt", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element name="xing" href="https://www.xing.com/pages/a" />
+         <mj-social-element src="https://cdn.test/icons/circle/xing.png" href="https://www.xing.com/pages/b" />
+         <mj-social-element src="https://cdn.test/pack/icon-9.png" alt="XING" href="https://www.xing.com/pages/c" />
+       </mj-social>`,
+      "mj-social",
+    );
+    expect(
+      (result.block as SocialIconsBlock).icons.map((icon) => [
+        icon.platform,
+        icon.url,
+      ]),
+    ).toEqual([
+      ["xing", "https://www.xing.com/pages/a"],
+      ["xing", "https://www.xing.com/pages/b"],
+      ["xing", "https://www.xing.com/pages/c"],
+    ]);
+    expect(result.entry.status).toBe("converted");
+  });
+
   it("falls back to website for an unknown platform and reports it", () => {
     const { result } = convert(
       '<mj-social><mj-social-element name="mastodon" href="https://m.test/a" /></mj-social>',

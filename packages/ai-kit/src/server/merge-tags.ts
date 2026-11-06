@@ -2,23 +2,20 @@ import type { AiMergeTagSyntax } from "@templatical/types";
 import {
   findOpenTagEnd,
   getTagAttrValue,
+  scanSyntaxMatches,
   SYNTAX_PRESETS,
 } from "@templatical/types";
-
-/** The value pattern of a built-in syntax, as the editor matches it; none for `custom`. */
-function patternOf(syntax: AiMergeTagSyntax): RegExp | null {
-  if (syntax === "custom") return null;
-  const preset = SYNTAX_PRESETS[syntax];
-  return preset ? new RegExp(preset.value.source, "g") : null;
-}
 
 /** The tag-shaped tokens in a text, in order. Nothing for `custom`. */
 export function mergeTagTokens(
   text: string,
   syntax: AiMergeTagSyntax,
 ): string[] {
-  const pattern = patternOf(syntax);
-  return pattern ? [...text.matchAll(pattern)].map((match) => match[0]) : [];
+  if (syntax === "custom") return [];
+  const preset = SYNTAX_PRESETS[syntax];
+  return preset
+    ? scanSyntaxMatches(text, preset, "value").map((match) => match.value)
+    : [];
 }
 
 /** The tag-shaped tokens in every string inside a JSON value. */

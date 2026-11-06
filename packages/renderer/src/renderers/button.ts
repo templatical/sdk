@@ -38,7 +38,8 @@ export function renderButton(
   const backgroundColor = buttonBackgroundAttr(block.backgroundColor);
   const textColor = escapeAttr(block.textColor);
   const fontSize = block.fontSize;
-  const borderRadius = renderButtonRadius(block.borderRadius);
+  const fontWeight = renderFontWeight(block.fontWeight);
+  const borderRadius = escapeAttr(renderButtonRadius(block.borderRadius));
   const text = escapeHtml(block.text);
   const targetAttr = block.openInNewTab
     ? ' target="_blank" rel="noopener"'
@@ -52,13 +53,13 @@ export function renderButton(
   const borderAttrStr = borderAttr(block.border);
   // Templates stored before `align` existed have no value for it. Fall back to
   // MJML's own default so they keep rendering exactly as they did.
-  const align = block.align ?? "center";
+  const align = escapeAttr(block.align ?? "center");
 
   return `<mj-button${hrefAttr}${targetAttr}
   background-color="${backgroundColor}"
   color="${textColor}"
-  font-size="${fontSize}px"
-  font-weight="bold"
+  font-size="${escapeAttr(String(fontSize))}px"
+  font-weight="${fontWeight}"
   border-radius="${borderRadius}"${borderAttrStr}
   inner-padding="${buttonPadding}"
   align="${align}"
@@ -73,6 +74,17 @@ export function renderButton(
 function buttonBackgroundAttr(color: string): string {
   if (color.trim() === "") return "transparent";
   return escapeAttr(color);
+}
+
+/**
+ * Omitted weight stays `bold`, the attribute a button has always rendered
+ * with. A stored weight is that step's CSS number.
+ */
+function renderFontWeight(weight: ButtonBlock["fontWeight"]): string {
+  if (weight === "regular") return "400";
+  if (weight === "medium") return "500";
+  if (weight === "bold") return "700";
+  return "bold";
 }
 
 function renderFontFamilyAttr(
@@ -108,5 +120,5 @@ function renderWidthAttr(width: number | "full" | undefined): string {
 
   const value = width === "full" ? "100%" : `${width}px`;
 
-  return ` width="${value}"`;
+  return ` width="${escapeAttr(value)}"`;
 }

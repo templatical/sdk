@@ -12,7 +12,7 @@
     "@codemirror/view": "^6.43.15",
     "@lezer/highlight": "^1.2.5",
     "@lezer/javascript": "^1.5.6",
-    "@lucide/vue": "^1.66.0",
+    "@lucide/vue": "^1.67.0",
     "@templatical/ai-kit": "workspace:*",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
@@ -34,14 +34,14 @@
     "vue": "^3.5.44"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.4",
     "@types/mjml-browser": "^5.0.0",
     "@vitejs/plugin-vue": "^6.0.10",
-    "tailwindcss": "^4.3.3",
+    "tailwindcss": "^4.3.4",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5",
+    "vitest": "^5.1.0",
     "vue-tsc": "^3.3.14"
   },
   "private": true,

@@ -18,6 +18,7 @@ import {
   readPaddingFromStyles,
   serializeStyleAttribute,
 } from "../style-parser";
+import { expectLinear } from "./expectLinear";
 
 describe("parseStyleAttribute", () => {
   it("parses semicolon-separated declarations into a record", () => {
@@ -60,6 +61,18 @@ describe("serializeStyleAttribute", () => {
 });
 
 describe("parsePxValue", () => {
+  it("rejects a long invalid whitespace suffix linearly", () => {
+    expect(parsePxValue("1" + " ".repeat(80_000) + "x")).toBe(0);
+    expect(parsePxValue("12 px ")).toBe(12);
+    expectLinear(
+      (n) => {
+        const value = "1" + " ".repeat(n) + "x";
+        return () => parsePxValue(value);
+      },
+      250,
+      8_000,
+    );
+  });
   it("parses px-suffixed values", () => {
     expect(parsePxValue("12px")).toBe(12);
     expect(parsePxValue("12.6px")).toBe(13);

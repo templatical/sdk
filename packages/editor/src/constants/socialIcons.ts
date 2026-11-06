@@ -19,6 +19,7 @@ export const socialPlatformOptions: SocialPlatform[] = [
   "twitter",
   "instagram",
   "linkedin",
+  "xing",
   "youtube",
   "tiktok",
   "pinterest",

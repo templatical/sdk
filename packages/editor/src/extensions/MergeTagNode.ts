@@ -1,6 +1,11 @@
 import MergeTagNodeView from "./MergeTagNodeView.vue";
 import type { MergeTag, SyntaxPreset } from "@templatical/types";
-import { getMergeTagLabel, SYNTAX_PRESETS } from "@templatical/types";
+import {
+  builtInPresetOf,
+  getMergeTagLabel,
+  scanSyntaxMatches,
+  SYNTAX_PRESETS,
+} from "@templatical/types";
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
 import { isNodeSelected } from "./isNodeSelected";
 import { renderVueNodeView } from "./renderVueNodeView";
@@ -139,11 +144,18 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
   },
 
   addPasteRules() {
-    const pasteRegex = new RegExp(this.options.syntax.value.source, "g");
+    const syntax = this.options.syntax;
+    const find = builtInPresetOf(syntax)
+      ? (text: string) =>
+          scanSyntaxMatches(text, syntax, "value").map((match) => ({
+            index: match.index,
+            text: match.value,
+          }))
+      : new RegExp(syntax.value.source, "g");
 
     return [
       new PasteRule({
-        find: pasteRegex,
+        find,
         handler: ({ state, range, match }) => {
           const fullValue = match[0];
           const label = getMergeTagLabel(fullValue, this.options.mergeTags());
