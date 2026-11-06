@@ -514,6 +514,98 @@ describe("OperationError", () => {
   });
 });
 
+describe("structural operations with descendant locks", () => {
+  it.each(["deleteBlock", "moveBlock"] as const)(
+    "refuses %s of a wrapper with a locked child",
+    (action) => {
+      const wrapper = {
+        id: "w1",
+        type: "wrapper",
+        children: [{ id: "p1", type: "paragraph", content: "Held" }],
+      };
+      const sibling = { id: "p2", type: "paragraph", content: "Free" };
+      const content = {
+        blocks: [wrapper, sibling],
+        settings: {},
+      } as unknown as TemplateContent;
+      const before = structuredClone(content.blocks);
+      const operation: Operation =
+        action === "deleteBlock"
+          ? { op: action, blockId: "w1" }
+          : { op: action, blockId: "w1", parent: null, after: "p2" };
+      let thrown: unknown = null;
+
+      try {
+        applyOperationsInPlace(content, [operation], {
+          locks: [{ blockId: "p1", sessionId: "peer" }],
+          session: "me",
+        });
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toMatchObject({
+        code: "lock_held",
+        opIndex: 0,
+        blockId: "p1",
+      });
+      expect(content.blocks).toEqual(before);
+    },
+  );
+
+  it.each(["deleteBlock", "moveBlock"] as const)(
+    "refuses %s of a wrapper around a section and nested wrapper with a locked leaf",
+    (action) => {
+      const wrapper = {
+        id: "w1",
+        type: "wrapper",
+        children: [
+          {
+            id: "s1",
+            type: "section",
+            children: [
+              [
+                {
+                  id: "w2",
+                  type: "wrapper",
+                  children: [{ id: "p1", type: "paragraph", content: "Held" }],
+                },
+              ],
+            ],
+          },
+        ],
+      };
+      const sibling = { id: "p2", type: "paragraph", content: "Free" };
+      const content = {
+        blocks: [wrapper, sibling],
+        settings: {},
+      } as unknown as TemplateContent;
+      const before = structuredClone(content.blocks);
+      const operation: Operation =
+        action === "deleteBlock"
+          ? { op: action, blockId: "w1" }
+          : { op: action, blockId: "w1", parent: null, after: "p2" };
+      let thrown: unknown = null;
+
+      try {
+        applyOperationsInPlace(content, [operation], {
+          locks: [{ blockId: "p1", sessionId: "peer" }],
+          session: "me",
+        });
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toMatchObject({
+        code: "lock_held",
+        opIndex: 0,
+        blockId: "p1",
+      });
+      expect(content.blocks).toEqual(before);
+    },
+  );
+});
+
 describe("getColumnCount", () => {
   it.each([
     ["1", 1],
@@ -985,5 +1077,32 @@ describe("locale unset path safety", () => {
       blocks: [{ id: "t1", type: "title", content: "Hi" }],
       settings: { width: 600, locale: "en", locales: ["de"] },
     });
+  });
+});
+
+describe("wide containers", () => {
+  it("deletes and moves a wrapper with more children than the argument limit", () => {
+    const children = Array.from({ length: 200_000 }, (_, i) => ({
+      id: `c${i}`,
+      type: "spacer",
+      height: 1,
+    }));
+    const content = {
+      blocks: [
+        { id: "w", type: "wrapper", children },
+        { id: "p", type: "paragraph", content: "<p>x</p>" },
+      ],
+      settings: { width: 600 },
+    } as unknown as TemplateContent;
+
+    const moved = applyOperations(content, [
+      { op: "moveBlock", blockId: "w", parent: null, after: "p" },
+    ]);
+    expect(moved.blocks.map((block) => block.id)).toEqual(["p", "w"]);
+
+    const deleted = applyOperations(content, [
+      { op: "deleteBlock", blockId: "w" },
+    ]);
+    expect(deleted.blocks.map((block) => block.id)).toEqual(["p"]);
   });
 });

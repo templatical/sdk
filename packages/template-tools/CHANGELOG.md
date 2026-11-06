@@ -1,5 +1,22 @@
 # @templatical/template-tools
 
+## 0.56.1
+
+### Patch Changes
+
+- Updated dependencies [59d0859]
+  - @templatical/import-topol@0.56.1
+  - @templatical/import-beefree@0.56.1
+  - @templatical/import-chamaileon@0.56.1
+  - @templatical/import-easy-email-pro@0.56.1
+  - @templatical/import-html@0.56.1
+  - @templatical/import-mjml@0.56.1
+  - @templatical/import-stripo@0.56.1
+  - @templatical/import-unlayer@0.56.1
+  - @templatical/quality@0.56.1
+  - @templatical/renderer@0.56.1
+  - @templatical/types@0.56.1
+
 ## 0.56.0
 
 ### Minor Changes

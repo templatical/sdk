@@ -1,43 +1,57 @@
 {
-  "name": "add block wrapper duplicate inner ids",
+  "name": "addBlock refuses a wrapper that repeats an id inside itself",
   "content": {
     "blocks": [
       {
-        "id": "A",
-        "type": "wrapper",
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
         "children": [
-          {
-            "id": "X",
-            "type": "paragraph",
-            "content": "x"
-          },
-          {
-            "id": "Y",
-            "type": "paragraph",
-            "content": "y"
-          }
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
         ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
       }
     ],
     "settings": {
       "width": 600,
-      "locale": "en",
-      "locales": ["de"]
+      "backgroundColor": "#ffffff"
     }
   },
   "ops": [
     {
       "op": "addBlock",
       "block": {
-        "id": "C",
+        "id": "w1",
         "type": "wrapper",
         "children": [
           {
-            "id": "N",
+            "id": "n2",
             "type": "spacer"
           },
           {
-            "id": "N",
+            "id": "n2",
             "type": "spacer"
           }
         ]
@@ -50,8 +64,7 @@
     "error": {
       "code": "block_exists",
       "opIndex": 0,
-      "message": "A block with id \"N\" already exists.",
-      "blockId": "N"
+      "blockId": "n2"
     }
   }
 }
