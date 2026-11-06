@@ -23,7 +23,12 @@ function backgroundWithoutFallback(scan: Scan): CssMatch | undefined {
   const sources = new Map<string, CssMatch[]>();
   for (const declaration of scan.css) {
     const key = declaration.group;
-    sources.set(key, [...(sources.get(key) ?? []), declaration]);
+    let group = sources.get(key);
+    if (!group) {
+      group = [];
+      sources.set(key, group);
+    }
+    group.push(declaration);
   }
   for (const declarations of sources.values()) {
     const image = declarations.find(

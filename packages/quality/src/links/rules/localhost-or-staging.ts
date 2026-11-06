@@ -9,15 +9,29 @@ export const meta: RuleMeta = {
 };
 
 /**
- * Glob → RegExp for the `nonProductionHosts` pattern set. `*` is a wildcard
+ * Match a `nonProductionHosts` glob. `*` is a wildcard
  * that matches any run of characters (including `.`) so `*.staging.*`
  * matches `app.staging.example.com` and `*.local` matches both `acme.local`
  * and `a.b.c.local`. Case-insensitive.
  */
-function globToRegex(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
-  const expanded = escaped.replace(/\*/g, ".*");
-  return new RegExp(`^${expanded}$`, "i");
+export function matchesHostGlob(pattern: string, host: string): boolean {
+  const segments = pattern.toLowerCase().split("*");
+  if (segments.length === 1) return host === segments[0];
+
+  const first = segments[0];
+  const last = segments[segments.length - 1];
+  if (!host.startsWith(first) || !host.endsWith(last)) return false;
+  const lastStart = host.length - last.length;
+  let position = first.length;
+  if (position > lastStart) return false;
+
+  for (let i = 1; i < segments.length - 1; i++) {
+    const segment = segments[i];
+    const found = host.indexOf(segment, position);
+    if (found === -1 || found + segment.length > lastStart) return false;
+    position = found + segment.length;
+  }
+  return true;
 }
 
 function extractHost(url: string): string | null {
@@ -37,13 +51,12 @@ export const localhostOrStaging: Rule = {
   template(content, opts: ResolvedOptions): RuleHit[] {
     const patterns = opts.links.nonProductionHosts;
     if (patterns.length === 0) return [];
-    const regexes = patterns.map(globToRegex);
     const hits: RuleHit[] = [];
 
     for (const occ of walkUrls(content)) {
       const host = extractHost(occ.url);
       if (host === null) continue;
-      if (regexes.some((re) => re.test(host))) {
+      if (patterns.some((pattern) => matchesHostGlob(pattern, host))) {
         hits.push({ blockId: occ.blockId, params: { host } });
       }
     }
