@@ -1,5 +1,12 @@
 # @templatical/import-topol
 
+## 0.56.1
+
+### Patch Changes
+
+- 59d0859: `convertTopolTemplate()` accepts designs whose sections sit under `mj-body` and converts them like `mj-container` designs, including the container's `background-color`. When a design has neither, the empty-design warning names both tags.
+- @templatical/types@0.56.1
+
 ## 0.56.0
 
 ### Minor Changes

@@ -18,8 +18,23 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.56.0",
+  "latest": "0.56.1",
   "versions": [
+    {
+      "version": "0.56.1",
+      "date": "2026-11-06",
+      "changes": [
+        {
+          "hash": "59d0859",
+          "level": "patch",
+          "title": "`convertTopolTemplate()` accepts designs whose sections sit under `mj-body` and converts them like `mj-container` designs, including the container's `background-color`. When a design has neither, the empty-design warning names both tags.",
+          "body": "",
+          "packages": [
+            "@templatical/import-topol"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.56.0",
       "date": "2026-11-06",
