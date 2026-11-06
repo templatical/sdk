@@ -11,7 +11,11 @@ import {
   type LocalizedText,
 } from "./localization";
 import { scanMergeTagSpans } from "./merge-tag-html";
-import type { SyntaxPreset } from "./merge-tags";
+import {
+  builtInPresetOf,
+  scanSyntaxMatches,
+  type SyntaxPreset,
+} from "./merge-tags";
 import type { Operation } from "./operations";
 import type { TemplateContent } from "./template";
 
@@ -61,37 +65,67 @@ function tagRanges(
   const chips = format === "html" ? scanMergeTagSpans(text) : [];
   const attributes = format === "html" ? attributeRanges(text) : [];
   const ranges: Range[] = chips.map((chip) => ({ ...chip, attribute: false }));
+  let attributeIndex = 0;
+  const builtin = builtInPresetOf(syntax) !== undefined;
   const raw = (start: number, end: number) => {
     const segment = text.slice(start, end);
-    const patterns = [syntax.logic, syntax.value].map(
-      (pattern) =>
-        new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, "") + "g"),
-    );
+    const kinds = ["logic", "value"] as const;
+    const nextMatches = builtin
+      ? kinds.map((kind) => scanSyntaxMatches(segment, syntax, kind, 0, 1)[0])
+      : null;
+    const regexes = builtin
+      ? null
+      : [syntax.logic, syntax.value].map(
+          (pattern) =>
+            new RegExp(
+              pattern.source,
+              pattern.flags.replace(/[gy]/g, "") + "g",
+            ),
+        );
     let cursor = 0;
     while (cursor < segment.length) {
-      const matches = patterns.flatMap((pattern) => {
-        pattern.lastIndex = cursor;
-        let match = pattern.exec(segment);
-        while (match && match[0].length === 0) {
-          pattern.lastIndex = match.index + 1;
-          match = pattern.exec(segment);
-        }
-        return match ? [match] : [];
-      });
-      matches.sort((a, b) => a.index - b.index || a[0].length - b[0].length);
+      const matches = builtin
+        ? nextMatches!.flatMap((match) => (match ? [match] : []))
+        : regexes!.flatMap((pattern) => {
+            pattern.lastIndex = cursor;
+            let match = pattern.exec(segment);
+            while (match && match[0].length === 0) {
+              pattern.lastIndex = match.index + 1;
+              match = pattern.exec(segment);
+            }
+            return match ? [{ index: match.index, value: match[0] }] : [];
+          });
+      matches.sort(
+        (a, b) => a.index - b.index || a.value.length - b.value.length,
+      );
       const match = matches[0];
       if (!match) break;
       const from = start + match.index;
-      const to = from + match[0].length;
+      const to = from + match.value.length;
+      while (attributes[attributeIndex]?.end <= from) attributeIndex++;
       ranges.push({
         start: from,
         end: to,
-        markup: match[0],
-        attribute: attributes.some(
-          (attr) => from >= attr.start && to <= attr.end,
-        ),
+        markup: match.value,
+        attribute:
+          attributes[attributeIndex] !== undefined &&
+          from >= attributes[attributeIndex].start &&
+          to <= attributes[attributeIndex].end,
       });
-      cursor = match.index + match[0].length;
+      cursor = match.index + match.value.length;
+      if (builtin) {
+        for (let index = 0; index < kinds.length; index++) {
+          if (nextMatches![index] && nextMatches![index]!.index < cursor) {
+            nextMatches![index] = scanSyntaxMatches(
+              segment,
+              syntax,
+              kinds[index],
+              cursor,
+              1,
+            )[0];
+          }
+        }
+      }
     }
   };
   let cursor = 0;

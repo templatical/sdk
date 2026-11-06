@@ -170,6 +170,106 @@ describe("a11y.text-justified", () => {
     ).toBe('<p style="line-height: 1.8">Body copy.</p>');
   });
 
+  it("fix preserves semicolons inside a URL in an unquoted style", () => {
+    expect(
+      applyFix(
+        "<p style=background:url(data:text/css,foo;text-align:justify;color:red);text-align:justify>Body</p>",
+      ),
+    ).toBe(
+      '<p style="background:url(data:text/css,foo;text-align:justify;color:red)">Body</p>',
+    );
+  });
+
+  it("fix preserves semicolons inside a CSS string", () => {
+    expect(
+      applyFix(
+        `<p style="content:'one;text-align:justify;two';text-align:justify">Body</p>`,
+      ),
+    ).toBe(`<p style="content:'one;text-align:justify;two'">Body</p>`);
+  });
+
+  it("fix preserves named character references in a sibling declaration", () => {
+    expect(
+      applyFix(
+        '<p style="font-family: &quot;Open Sans&quot;; text-align: justify">Body</p>',
+      ),
+    ).toBe('<p style="font-family: &quot;Open Sans&quot;">Body</p>');
+  });
+
+  it("fix preserves decimal character references in a sibling declaration", () => {
+    expect(
+      applyFix(
+        '<p style="font-family: &#39;Open Sans&#39;; text-align: justify">Body</p>',
+      ),
+    ).toBe('<p style="font-family: &#39;Open Sans&#39;">Body</p>');
+  });
+
+  it("fix preserves hex character references in a sibling declaration", () => {
+    expect(
+      applyFix(
+        '<p style="font-family: &#x27;Open Sans&#x27;; text-align: justify">Body</p>',
+      ),
+    ).toBe('<p style="font-family: &#x27;Open Sans&#x27;">Body</p>');
+  });
+
+  it("reports and fixes a declaration separated by a decimal character reference", () => {
+    const html = '<p style="color:red&#59;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe('<p style="color:red">Body</p>');
+  });
+
+  it("reports and fixes a declaration separated by a hex character reference", () => {
+    const html = '<p style="color:&#35;123&#x3b;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe('<p style="color:&#35;123">Body</p>');
+  });
+
+  it("fix preserves literal semicolons inside a character-reference-quoted value", () => {
+    const html =
+      '<p style="content:&quot;one;text-align:justify;two&quot;; text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe(
+      '<p style="content:&quot;one;text-align:justify;two&quot;">Body</p>',
+    );
+  });
+
+  it("does not report text-align inside a character-reference-quoted value", () => {
+    expect(
+      lint(
+        '<p style="content:&quot;one;text-align:justify;two&quot;">Body</p>',
+      ),
+    ).toEqual([]);
+  });
+
+  it("fix preserves semicolons inside a function with encoded parentheses", () => {
+    const html =
+      '<p style="background:url&#40;foo;text-align:justify&#41;;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe(
+      '<p style="background:url&#40;foo;text-align:justify&#41;">Body</p>',
+    );
+  });
+
+  it("fix preserves a semicolon escaped by an encoded backslash", () => {
+    const html = '<p style="content:one&#92;;two;text-align:justify">Body</p>';
+    expect(lint(html)).toHaveLength(1);
+    expect(applyFix(html)).toBe('<p style="content:one&#92;;two">Body</p>');
+  });
+
+  it("does not treat text-align inside a URL as a declaration", () => {
+    expect(
+      lint(
+        '<p style="background:url(data:text/css,foo;text-align:justify;color:red)">Body</p>',
+      ),
+    ).toEqual([]);
+  });
+
+  it("fix skips commented markup before a justified tag", () => {
+    expect(
+      applyFix('<!-- <p style=" --> <p style="text-align:justify">Body</p>'),
+    ).toBe('<!-- <p style=" --> <p>Body</p>');
+  });
+
   it("fix unsets rather than forcing left, so the paragraph inherits", () => {
     expect(applyFix('<p style="text-align: justify">Body.</p>')).not.toContain(
       "text-align",
@@ -182,6 +282,21 @@ describe("a11y.text-justified", () => {
         '<p style="text-align: justify">One.</p><p style="text-align: center">Two.</p>',
       ),
     ).toBe('<p>One.</p><p style="text-align: center">Two.</p>');
+  });
+
+  it("fix rewrites a single-quoted style without injecting an attribute", () => {
+    expect(
+      applyFix(
+        `<p style='color:red" rel="opener; text-align: justify'>Body</p>`,
+      ),
+    ).toBe(`<p style="color:red&quot; rel=&quot;opener">Body</p>`);
+  });
+
+  it("fix keeps a double-quoted style entity as written", () => {
+    // The first semicolon ends the entity; the second ends the declaration.
+    expect(
+      applyFix('<p style="color: &copy;; text-align: justify">Body</p>'),
+    ).toBe('<p style="color: &copy;">Body</p>');
   });
 
   it("respects a severity override", () => {

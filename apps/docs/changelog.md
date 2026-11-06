@@ -15,6 +15,104 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.56.0
+
+<time datetime="2026-11-06">2026-11-06</time>
+
+### Features
+
+**Breaking changes:**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-easy-email-pro` · `@templatical/import-html` · `@templatical/import-mjml` · `@templatical/import-stripo` · `@templatical/import-topol` · `@templatical/import-unlayer` · `@templatical/quality` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+- Imported sections can now have `columns: "4"`, `"1-3"`, `"3-1"` or `"1-2-1"`. A four-cell row from HTML, Unlayer or Stripo that used to flatten into one column now keeps four columns. Callers that read `section.columns` or count `children` must handle these values and four child arrays.
+- The over-limit warning now says Templatical supports up to four columns, and folding importers fold rows of five or more columns onto `"4"` instead of `"3"`. Callers that match the old warning text or expect three columns after a fold must update.
+
+Importers map source rows onto the four new section layouts. Four equal columns become `"4"`, 25/75 becomes `"1-3"`, 75/25 becomes `"3-1"`, and 25/50/25 becomes `"1-2-1"`. A ratio that is not exact snaps to the nearest of the nine layouts and keeps that importer's existing note. Stripo rows keep the equal layout for their column count. Unequal px widths, on a plugin frame or a compiled column, are reported approximated, and a column with no readable width is named in that note when the readable widths differ. Rows with more than four columns still flatten or fold into the last column, and the warning says Templatical supports up to four columns.
+
+**`displayConditions.onRequest` lets a host open its own condition builder. The callback receives a copy of the block and, when one is set, the current condition including opaque `data`. `null` cancels. `conditions` is optional. With `onRequest` set, `conditions` and `allowCustom` are ignored. `DisplayCondition.data` round-trips through the template.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/template-tools` · `@templatical/types`
+
+**Spread syntax presets with matching value and logic patterns use the built-in linear merge-tag scanner across localization and editor parsing. Different pattern sources or flags other than `g` and `y` keep custom regex matching. `@templatical/types` exports `builtInPresetOf(syntax)`, which returns the built-in preset name whose patterns a syntax uses.**
+
+`@templatical/editor` · `@templatical/types`
+
+**A section wrapper or a layout wrapper can span the recipient's window. Set `fullWidth: true` on `section.wrapper` or on a layout `wrapper` block and the renderer emits MJML's `full-width="full-width"` on that `mj-wrapper`: the band's background color and background image run edge to edge, and the section or the wrapper's children stay at `settings.width`. Omit `fullWidth`, or set it `false`, and the band stays the email width, exactly as before. A corner radius is not rendered while full width is on; the stored radius remains and comes back when full width is off.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+In the editor, **Full-width background** in a section's Background panel sets this. With no wrapper yet, turning it on moves the section's own background color and image onto a new wrapper and clears them on the section. While the switch is on, that panel's color and image edit the band, and **Content background** sets the section fill. Turning it off clears the flag; a wrapper that holds only that band is removed and its color and image return to the section, unless the section already has a content fill, which keeps the wrapper so neither color is discarded. The Wrapper panel shows the same switch and the same band color and image. A layout wrapper block has the same switch on its Background panel. On the canvas, and in preview, the band reaches the edges of the pane while the content stays at the email width.
+
+This is the band people migrating from Topol have been asking for (sdk#1105). Importers set `fullWidth` when the source states that band.
+
+**Breaking changes:**
+
+`@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-easy-email-pro` · `@templatical/import-html` · `@templatical/import-mjml` · `@templatical/import-stripo` · `@templatical/import-topol` · `@templatical/import-unlayer`
+
+- An imported full-width section whose only background is the source band now carries that colour and image on `section.wrapper` (`backgroundColor`, `backgroundImage`, with `fullWidth: true`) instead of `section.styles.backgroundColor` and `section.backgroundImage`. Code that reads an imported section's background must also read `section.wrapper`.
+- When an imported section keeps its own background image, the Chamaileon, Stripo, HTML and Unlayer importers no longer apply the source band colour, because Outlook desktop paints a wrapper colour over that image. There is no replacement colour. Chamaileon, Stripo and HTML report the section `approximated` with a note; Unlayer names the dropped colour in `report.warnings`. The BeeFree importer keeps a distinct container colour on the wrapper, and Topol, MJML and Easy Email Pro move the colour together with the image.
+
+Importers map a source full-width background band onto `section.wrapper` with `fullWidth: true`, so the colour and image run to the window edge and the content stays at the email width.
+
+BeeFree row container backgrounds, Unlayer row backgrounds (`backgroundImage.fullWidth` not `false`), Chamaileon `fullwidth` bands, Topol and MJML and Easy Email Pro `full-width="full-width"`, Stripo stripes around an inner body, and an HTML 100% table wrapped around a fixed-width table all set that flag. A full-width section whose only background is the band moves that background onto the wrapper and leaves the section background unset. Content-area backgrounds stay on the section. When the section keeps its own background image, the band colour is left off the wrapper and the import notes it, because Outlook desktop paints a wrapper colour over that image; the band image still goes on the wrapper. A Stripo stripe with no inner body keeps its colour on the section.
+
+## 0.55.0
+
+<time datetime="2026-11-05">2026-11-05</time>
+
+### Features
+
+**A real-design audit of the BeeFree importer found it converts every design but loses fidelity and, in one case, breaks Twig at send time. This release closes the gaps it found.**
+
+`@templatical/import-beefree`
+
+- **Merge tags.** HTML character references inside `{{ }}`, `{% %}` and `{# #}` are decoded, so `&#39;`, `&quot;` and `&gt;` no longer reach Twig or Liquid (`&nbsp;` inside a token becomes a plain space). A double quote inside a token in an HTML attribute stays encoded as `&quot;`. References outside a token stay encoded. BeeFree's `<code data-bee-type="mergetag">` wrapper is removed so the token keeps its formatting and no longer renders monospace. A chip that holds only a space becomes one plain space; a leading space before a single token in a chip is dropped.
+- **Text.** Line-height (a percentage becomes a unitless ratio), letter-spacing and per-link colour are kept, and module text styles also apply to lists, headings and divs. The module font size is written on each paragraph, list and heading element so the line box matches. A paragraph module keeps `computedStyle.paragraphSpacing` (zero when absent), a blank paragraph stays one empty line, and a list imports BeeFree's list box inline (zero margins, indent from `liIndent`).
+- **Headings.** The heading level is the title level whose size is nearest the BeeFree font size, with the exact size on the text. A level more than 1px off is reported approximated.
+- **Layout.** A single-column row keeps its column padding, background and border on the section; a multi-column row adds each column's padding to its modules and warns when a column background or border is dropped. A fully transparent column background is unset, so it does not replace the row background and does not warn. A row's container background becomes a band as wide as the email. Hide-on-mobile and hide-on-desktop set visibility, `rowColStackOnMobile: false` keeps 2- and 3-column sections side by side, and a row border maps to the section border. Column ratios with no exact layout and row widths that differ from the email width are named in the warnings.
+- **Buttons.** A label line-height above 120% of the font size is split into top and bottom padding. `width: 100%` becomes full width, a px width stays pixels and a drawn border is kept. Font weight maps to the nearest `fontWeight` (`regular`, `medium`, `bold`). A letter-spacing or a percentage width other than 100% is not carried: the button is reported approximated with one short note.
+- **Images.** An image in a multi-column section that the renderer would widen on mobile imports with `fluidOnMobile: false`, because BeeFree does not stretch it.
+- **Social and fonts.** A social icon whose id is a UUID is recognised from its name or link host, and an unknown network is kept as an image or a link. A link or image with a rejected scheme is dropped; a recognised icon then uses `#`. Social icons keep alignment, spacing, size and a circle, rounded or square set. `convertBeeFreeTemplate` returns `customFonts` (`{ name, url }[]`) from web fonts that have a URL, and warns only when a used font has no URL and is not a system stack.
+
+**Two optional block fields. Leaving either out renders exactly as before.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+- **Button `fontWeight`:** `"regular"` (400), `"medium"` (500) or `"bold"` (700), rendered as `mj-button font-weight`. Without it the label stays bold. The editor's button settings offer Regular, Medium and Bold (choosing Bold clears the field), with labels in all eight locales.
+- **Image `fluidOnMobile`:** `true` always emits MJML `fluid-on-mobile="true"` and `false` never does. Without it an image still goes full width on a phone only when it fills its column on desktop; video thumbnails are unchanged. The editor's image settings offer Automatic, Always and Never, with labels in all eight locales.
+
+The JSON schema, the `template-tools` validator and the agent skill's block guide include both fields.
+
+**Built-in merge-tag scanning, merge-tag span handling, and CSS rule parsing complete in linear time on malformed template input. Pixel value parsers reject long invalid whitespace suffixes without super-linear backtracking.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/import-html` · `@templatical/import-mjml` · `@templatical/import-stripo` · `@templatical/quality` · `@templatical/types`
+
+The types package exports `scanSyntaxMatches`, `scanCombinedSyntaxMatches`, and `SyntaxMatch`.
+
+**`SocialPlatform` includes `xing`. Social icon blocks can use a XING icon, drawn from the same glyph as the other platforms, in the editor and in every rendered style and tone.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-mjml` · `@templatical/import-stripo` · `@templatical/import-topol` · `@templatical/import-unlayer` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+BeeFree, MJML, Stripo, Unlayer, Topol and Chamaileon imports map a Xing icon onto `xing`. A BeeFree icon is recognized from its id, name, alt, title or a `xing.com` link, instead of being kept as an image.
+
+### Fixes and improvements
+
+**Lint auto-fixes now rewrite single-quoted attributes without adding attributes. Double-quoted values are copied as written, including entities, and a rewritten anchor tag is lowercase. Link and alignment fixes skip markup inside comments, link fixes use the same attribute decoding and HTML whitespace rules as detection, and alignment fixes split declarations on decoded CSS characters, so `&#59;` separates declarations, and keep the character references in the declarations they keep.**
+
+`@templatical/quality`
+
+**A 7/12 or 5/12 BeeFree column row imports as an even two-column section. When a snapped column is narrower than its grid share, the shortfall comes back from the padding that faces the next column, so a one-line footer stays one line.**
+
+`@templatical/import-beefree`
+
+**Two importer corrections.**
+
+`@templatical/import-beefree` · `@templatical/import-stripo`
+
+- **Beefree.** When a 7/12 or 5/12 row snaps to an even split, the padding returned to a column no longer changes what a module displays. A 240px image keeps its width, a lone icon, divider, video and button keep theirs, and text still gets the padding back. Column padding a snapped column keeps, including padding only on its outer edge, still narrows the room an image is measured in, so an image as wide as that room is full width.
+- **Stripo.** A social icon is identified by the file name of its `src`, not by the host or folders of the URL, so `https://xing.com.evil.example/icons/other.png` stays a website link. A URL with no file name, such as `https://xing.com.evil.example?file=other.png`, stays a website link too; the query and hash are not the file name. An icon whose name matches no network becomes a website icon, and that social block is reported approximated.
+
 ## 0.54.2
 
 <time datetime="2026-11-04">2026-11-04</time>

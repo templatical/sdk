@@ -24,6 +24,7 @@ import type {
   ColumnLayout,
   CustomFont,
   ImageBlock,
+  SectionWrapper,
   SpacingValue,
   TemplateContent,
 } from "@templatical/types";
@@ -84,14 +85,16 @@ function ratioMilli(left: number, total: number): number {
 }
 
 function isExactLayout(
-  layout: Exclude<ColumnLayout, "1" | "3">,
+  layout: Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1">,
   left: number,
   total: number,
 ): boolean {
   const milli = ratioMilli(left, total);
   if (layout === "2") return milli === 500;
   if (layout === "2-1") return milli === 667;
-  return milli === 333;
+  if (layout === "1-2") return milli === 333;
+  if (layout === "3-1") return milli === 750;
+  return milli === 250;
 }
 
 function noteSnappedRatio(
@@ -105,20 +108,90 @@ function noteSnappedRatio(
 }
 
 /**
+ * Nearest two-column layout, in the same thousandths as `isExactLayout`.
+ * `2` is listed first and `1-3` / `3-1` last, so an equal distance stays on
+ * the split listed earlier. 7/12 rounds to 583: 83 from even, 84 from 2/3,
+ * so the narrower share is not squeezed to a third.
+ */
+function nearestTwoColumn(
+  left: number,
+  total: number,
+): Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1"> {
+  const milli = ratioMilli(left, total);
+  const choices: Array<
+    [Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1">, number]
+  > = [
+    ["2", 500],
+    ["2-1", 667],
+    ["1-2", 333],
+    ["3-1", 750],
+    ["1-3", 250],
+  ];
+  let best: Exclude<ColumnLayout, "1" | "3" | "4" | "1-2-1"> = "2";
+  let bestDistance = Math.abs(milli - 500);
+  for (const [layout, target] of choices) {
+    const distance = Math.abs(milli - target);
+    if (distance < bestDistance) {
+      best = layout;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+/** Thousandths of each column's share of the row, the same scale as `ratioMilli`. */
+function columnMillis(columns: BeeFreeeColumn[]): number[] {
+  const units = columns.map(columnUnits);
+  const total = units.reduce((sum, share) => sum + share, 0);
+  if (total <= 0) return units.map(() => 0);
+  return units.map((share) => Math.round((share / total) * 1000));
+}
+
+function milliDistance(millis: number[], target: readonly number[]): number {
+  return millis.reduce(
+    (sum, value, index) => sum + Math.abs(value - (target[index] ?? 0)),
+    0,
+  );
+}
+
+/**
+ * Nearest three-column layout. An even split is `3` even when each
+ * thousandth is 333 rather than the renderer's 334 on the last column.
+ * `3` is listed first, so an equal distance stays on the even split.
+ */
+function nearestThreeColumn(columns: BeeFreeeColumn[]): "3" | "1-2-1" {
+  if (columnsEqual(columns)) return "3";
+  const millis = columnMillis(columns);
+  const choices: Array<["3" | "1-2-1", readonly number[]]> = [
+    ["3", [333, 333, 334]],
+    ["1-2-1", [250, 500, 250]],
+  ];
+  let best: "3" | "1-2-1" = "3";
+  let bestDistance = milliDistance(millis, choices[0][1]);
+  for (const [layout, target] of choices) {
+    const distance = milliDistance(millis, target);
+    if (distance < bestDistance) {
+      best = layout;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+/**
  * Determines the Templatical ColumnLayout from BeeFree column grid values.
- * A split that is not exactly `2`, `1-2`, `2-1` or an even `3` keeps the
- * nearest of those and records one warning naming the source ratio. Four or
- * more columns flatten to one column, with that ratio in the same warning.
+ * A two-column split that is not exactly `2`, `1-2`, `2-1`, `1-3` or `3-1`
+ * keeps the nearest of those. A three-column split that is not an even `3`
+ * or exactly `1-2-1` keeps the nearer of those two. Four columns keep `4`.
+ * Each records one warning naming the source ratio when it is not exact.
+ * Five or more columns flatten to one column, with that ratio in the same
+ * warning.
  */
 function resolveColumnLayout(
   columns: BeeFreeeColumn[],
   warnings: string[],
 ): ColumnLayout | null {
   if (columns.length === 1) return null; // Single column — no section wrapper needed
-  if (columns.length === 3) {
-    if (!columnsEqual(columns)) noteSnappedRatio(columns, "3", warnings);
-    return "3";
-  }
 
   if (columns.length === 2) {
     const left = columnUnits(columns[0]);
@@ -128,19 +201,31 @@ function resolveColumnLayout(
       noteSnappedRatio(columns, "2", warnings);
       return "2";
     }
-    const ratio = left / total;
-    let layout: ColumnLayout = "2";
-    if (ratio > 0.58) layout = "2-1";
-    else if (ratio < 0.42) layout = "1-2";
+    const layout = nearestTwoColumn(left, total);
     if (!isExactLayout(layout, left, total)) {
       noteSnappedRatio(columns, layout, warnings);
     }
     return layout;
   }
 
-  if (columns.length >= 4) {
+  if (columns.length === 3) {
+    const layout = nearestThreeColumn(columns);
+    const exact =
+      layout === "3"
+        ? columnsEqual(columns)
+        : milliDistance(columnMillis(columns), [250, 500, 250]) === 0;
+    if (!exact) noteSnappedRatio(columns, layout, warnings);
+    return layout;
+  }
+
+  if (columns.length === 4) {
+    if (!columnsEqual(columns)) noteSnappedRatio(columns, "4", warnings);
+    return "4";
+  }
+
+  if (columns.length >= 5) {
     warnings.push(
-      `Row with ${columns.length} columns (${gridLabel(columns)}) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to 3.`,
+      `Row with ${columns.length} columns (${gridLabel(columns)}) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to four columns.`,
     );
     return null; // Flatten to single column
   }
@@ -162,6 +247,21 @@ function columnPixels(layout: ColumnLayout, bodyWidth: number): number[] {
       return [bodyWidth / 3, (bodyWidth * 2) / 3].map(Math.floor);
     case "2-1":
       return [(bodyWidth * 2) / 3, bodyWidth / 3].map(Math.floor);
+    case "1-3":
+      return [bodyWidth * 0.25, bodyWidth * 0.75].map(Math.floor);
+    case "3-1":
+      return [bodyWidth * 0.75, bodyWidth * 0.25].map(Math.floor);
+    case "1-2-1":
+      return [bodyWidth * 0.25, bodyWidth * 0.5, bodyWidth * 0.25].map(
+        Math.floor,
+      );
+    case "4":
+      return [
+        bodyWidth * 0.25,
+        bodyWidth * 0.25,
+        bodyWidth * 0.25,
+        bodyWidth * 0.25,
+      ].map(Math.floor);
     default:
       return [Math.floor(bodyWidth)];
   }
@@ -194,19 +294,17 @@ function convertColumnModules(
 }
 
 /**
- * The image a row's section paints. `content.style` is the content area a
- * section paints, so its image maps exactly. `container.style` is the
- * full-width band: it shows through only while the content area has neither
- * an image nor a colour, and then the section paints it at the content
- * width; otherwise it's dropped. Losses go to `warnings`, since rows have no
- * report entry.
+ * The images a row paints. `content.style` is the content area, so its image
+ * stays on the section. `container.style` is the band outside that box, so
+ * its image stays on the full-width wrapper and still shows in the margins
+ * when the content area paints its own fill. Losses go to `warnings`, since
+ * rows have no report entry.
  */
 function resolveRowBackgroundImage(
   row: BeeFreeeRow,
-  rowBg: string,
   width: number,
   warnings: string[],
-): BackgroundImage | undefined {
+): { content?: BackgroundImage; band?: BackgroundImage } {
   const content = readBeefreeBackgroundImage(row.content?.style, "Row", width);
   const band = readBeefreeBackgroundImage(
     row.container?.style,
@@ -217,27 +315,12 @@ function resolveRowBackgroundImage(
   if (content) content.image.url = decodeEntitiesInTokens(content.image.url);
   if (band) band.image.url = decodeEntitiesInTokens(band.image.url);
 
-  if (content) {
-    warnings.push(...content.notes);
-    if (band) {
-      warnings.push(
-        `Row container background image "${band.image.url}" outside the content width was dropped; the section keeps the content background image.`,
-      );
-    }
-    return content.image;
-  }
-  if (!band) return undefined;
-  if (rowBg) {
-    warnings.push(
-      `Row container background image "${band.image.url}" outside the content width was dropped; the section keeps the content background ${rowBg}.`,
-    );
-    return undefined;
-  }
-  warnings.push(
-    ...band.notes,
-    `Row container background image "${band.image.url}" spans the full width in BeeFree; the section paints it at the content width.`,
-  );
-  return band.image;
+  if (content) warnings.push(...content.notes);
+  if (band) warnings.push(...band.notes);
+  return {
+    ...(content ? { content: content.image } : {}),
+    ...(band ? { band: band.image } : {}),
+  };
 }
 
 function zeroPadding(): SpacingValue {
@@ -336,20 +419,21 @@ const ROW_BORDER_DROPPED =
   "Row border was dropped; the column border is kept on the section.";
 
 const ROW_STACK_DROPPED =
-  "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a 2- or 3-column section.";
+  "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a multi-column section.";
 
 interface RowFrame {
   visibility?: BlockVisibility;
   stackOnMobile?: false;
-  wrapper?: { backgroundColor: string };
+  wrapper?: SectionWrapper;
   border?: BorderValue;
 }
 
 /**
- * Row chrome the section can hold. The container colour is the band outside
- * the content box (`wrapper`); the section fill stays the content colour the
- * caller already chose. A band the same colour as that fill adds nothing. A
- * column border already chosen for the section wins over the row border.
+ * Row chrome the section can hold. The container colour and image are the
+ * band outside the content box (`wrapper`, viewport-wide); the section fill
+ * stays the content colour the caller already chose. A container colour the
+ * same as the section fill is not repeated on the wrapper. A column border
+ * already chosen for the section wins over the row border.
  */
 function rowFrame(
   row: BeeFreeeRow,
@@ -357,11 +441,19 @@ function rowFrame(
   columnBorderValue: BorderValue | undefined,
   applyStack: boolean,
   warnings: string[],
+  bandImage?: BackgroundImage,
 ): RowFrame {
   const visibility = rowVisibility(row);
   const band = parseColor(row.container?.style?.["background-color"]);
-  const wrapper =
-    band && band !== sectionBackground ? { backgroundColor: band } : undefined;
+  const bandColor = band && band !== sectionBackground ? band : undefined;
+  const wrapper: SectionWrapper | undefined =
+    bandColor || bandImage
+      ? {
+          ...(bandColor ? { backgroundColor: bandColor } : {}),
+          ...(bandImage ? { backgroundImage: bandImage } : {}),
+          fullWidth: true,
+        }
+      : undefined;
 
   let border = columnBorderValue;
   const rowBorder = columnBorder(row.content?.style);
@@ -421,12 +513,70 @@ const COLUMN_BOX_DROPPED =
 const COLUMN_CONTENT_PERCENTS: Record<Exclude<ColumnLayout, "1">, string[]> = {
   "2": ["50%", "50%"],
   "3": ["33.33%", "33.33%", "33.34%"],
+  "4": ["25%", "25%", "25%", "25%"],
   "1-2": ["33.33%", "66.67%"],
   "2-1": ["66.67%", "33.33%"],
+  "1-3": ["25%", "75%"],
+  "3-1": ["75%", "25%"],
+  "1-2-1": ["25%", "50%", "25%"],
 };
 
 function drawnSide(side: BorderValue["left"] | undefined): number {
   return toBorderCss(side) === null ? 0 : Math.trunc(side!.width);
+}
+
+/**
+ * BeeFree's grid share of the section box, in whole pixels. The same floor
+ * the renderer uses, so an exact layout and this share differ only where
+ * the percentage rounding does.
+ */
+function columnShareWidths(columns: BeeFreeeColumn[], box: number): number[] {
+  const units = columns.map(columnUnits);
+  const total = units.reduce((sum, share) => sum + share, 0);
+  if (total <= 0) {
+    const each = Math.floor(box / Math.max(columns.length, 1));
+    return columns.map(() => each);
+  }
+  return units.map((share) => Math.floor((box * share) / total));
+}
+
+/** True when `layout` is not the source ratio, so a column may be narrower. */
+function layoutSnaps(
+  columns: BeeFreeeColumn[],
+  layout: Exclude<ColumnLayout, "1">,
+): boolean {
+  if (layout === "3" || layout === "4") return !columnsEqual(columns);
+  if (layout === "1-2-1") {
+    return milliDistance(columnMillis(columns), [250, 500, 250]) !== 0;
+  }
+  const total = columns.reduce((sum, column) => sum + columnUnits(column), 0);
+  return !isExactLayout(layout, columnUnits(columns[0]!), total);
+}
+
+/**
+ * A snapped column is narrower than its grid share. The missing pixels come
+ * back from the padding that faces the next column, and the outer edge stays.
+ * Nothing is taken past 0, and a wider column is left alone. Image, lone-icon
+ * and divider widths are measured with this padding already returned.
+ */
+function giveBackInnerPadding(
+  blocks: Block[],
+  deficit: number,
+  sides: Array<"left" | "right">,
+): void {
+  if (deficit <= 0) return;
+  for (const block of blocks) {
+    const padding = block.styles.padding;
+    let remaining = deficit;
+    for (const side of sides) {
+      if (remaining <= 0) break;
+      const have = padding[side];
+      if (have <= 0) continue;
+      const give = Math.min(remaining, have);
+      padding[side] = have - give;
+      remaining -= give;
+    }
+  }
 }
 
 /**
@@ -544,15 +694,11 @@ function processRow(
   // The content colour is the inner box. The container colour, when it
   // differs, is the band outside that box.
   const rowBg = parseColor(row.content?.style?.["background-color"]);
-  const backgroundImage = resolveRowBackgroundImage(
-    row,
-    rowBg,
-    settings.width,
-    warnings,
-  );
+  const images = resolveRowBackgroundImage(row, settings.width, warnings);
+  const backgroundImage = images.content;
 
   if (layout === null || layout === "1") {
-    // Single column, or 4+ columns flattened onto the body width.
+    // Single column, or five or more columns flattened onto the body width.
     const context = {
       columnWidth: settings.width,
       textColor: settings.textColor,
@@ -571,6 +717,7 @@ function processRow(
         columnBorder(column.style),
         false,
         warnings,
+        images.band,
       );
       // A background, a border, padding or row chrome can't survive on bare modules.
       if (
@@ -607,7 +754,7 @@ function processRow(
       blocks.push(...converted);
     }
     warnIfColumnBoxDropped(columns, warnings);
-    const frame = rowFrame(row, rowBg, undefined, false, warnings);
+    const frame = rowFrame(row, rowBg, undefined, false, warnings, images.band);
     if (rowBg || backgroundImage || frameNeedsSection(frame)) {
       return [
         createSectionBlock({
@@ -628,24 +775,66 @@ function processRow(
   // Multi-column — wrap in a SectionBlock. Each column's padding folds into
   // its modules; a column background or border has no per-column box.
   const widths = columnPixels(layout, settings.width);
-  const children: Block[][] = columns.map((col, index) => {
-    const blocks = convertColumnModules(
-      col,
-      { columnWidth: widths[index], textColor: settings.textColor },
-      entries,
-      warnings,
-    );
-    foldColumnPadding(blocks, extractPadding(col.style));
-    return blocks;
-  });
-  warnIfColumnBoxDropped(columns, warnings);
-  const frame = rowFrame(row, rowBg, undefined, true, warnings);
+  const frame = rowFrame(row, rowBg, undefined, true, warnings, images.band);
   const contentWidths = renderedColumnContentWidths(
     layout,
     settings.width,
     frame.border,
   );
+  const sectionBox =
+    Math.floor(settings.width) -
+    drawnSide(frame.border?.left) -
+    drawnSide(frame.border?.right);
+  const sourceWidths = layoutSnaps(columns, layout)
+    ? columnShareWidths(columns, sectionBox)
+    : null;
+  const facing = (index: number): Array<"left" | "right"> => {
+    const last = columns.length - 1;
+    if (index === 0) return ["right"];
+    if (index === last) return ["left"];
+    return ["right", "left"];
+  };
+  const children: Block[][] = columns.map((col, index) => {
+    const deficit = sourceWidths
+      ? sourceWidths[index]! - (contentWidths[index] ?? 0)
+      : 0;
+    const columnPadding = extractPadding(col.style);
+    const blocks = convertColumnModules(
+      col,
+      {
+        columnWidth: widths[index],
+        textColor: settings.textColor,
+        ...(sourceWidths
+          ? {
+              paddingReturn: {
+                deficit: Math.max(0, deficit),
+                sides: facing(index),
+                columnPadding,
+              },
+            }
+          : {}),
+      },
+      entries,
+      warnings,
+    );
+    foldColumnPadding(blocks, columnPadding);
+    return blocks;
+  });
+  warnIfColumnBoxDropped(columns, warnings);
+  // Widths that are a length of this room — an image, a lone icon, a px
+  // divider — are chosen with the padding already returned, so giving it
+  // back does not resize them. A full button, a percentage divider, a menu
+  // and an HTML block are a share of the column; the returned padding is
+  // what makes that share the source column. A video keeps its stated px
+  // width and a social row keeps its icon size.
   children.forEach((column, index) => {
+    if (sourceWidths) {
+      giveBackInnerPadding(
+        column,
+        sourceWidths[index]! - (contentWidths[index] ?? 0),
+        facing(index),
+      );
+    }
     keepColumnImagesAtDesktopWidth(column, contentWidths[index] ?? 0);
   });
 

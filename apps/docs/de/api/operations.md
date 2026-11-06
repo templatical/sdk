@@ -41,7 +41,7 @@ Positionen nennen einen Nachbarblock, nie einen Index, sodass eine Operation das
 - Eine Sektion steht nur auf der obersten Ebene. Eine Sektion in eine Spalte hinzuzufügen oder zu verschieben wird abgelehnt, ebenso eine neue Sektion mit einer Sektion unter ihren Kindern.
 - `deleteBlock` auf einer Sektion löscht ihre Blöcke mit.
 - `updateBlock` ersetzt jeden Schlüssel in `set` vollständig, ein `styles`-Objekt eingeschlossen, und entfernt die Schlüssel in `unset`. `id`, `type` und `children` lassen sich weder setzen noch entfernen, und `columns` einer Sektion lässt sich nicht entfernen.
-- `set: {"columns": …}` auf einer Sektion passt ihre `children` an die Spaltenzahl des Layouts an: `"1"` hat eine Spalte, `"3"` hat drei, jedes andere Layout (`"2"`, `"2-1"`, `"1-2"`) hat zwei. Beim Vergrößern kommen leere Spalten hinzu. Beim Verkleinern fallen hintere Spalten nur weg, wenn sie leer sind; verschieben Sie ihre Blöcke also zuerst.
+- `set: {"columns": …}` auf einer Sektion passt ihre `children` an die Spaltenzahl des Layouts an: `"1"` hat eine Spalte, `"3"` und `"1-2-1"` haben drei, `"4"` hat vier, jedes andere Layout (`"2"`, `"2-1"`, `"1-2"`, `"1-3"`, `"3-1"`) hat zwei. Beim Vergrößern kommen leere Spalten hinzu. Beim Verkleinern fallen hintere Spalten nur weg, wenn sie leer sind; verschieben Sie ihre Blöcke also zuerst.
 - Ein neuer Block braucht eine nicht leere String-`id` und einen String-`type`, und jede ID darin, die Kinder einer neuen Sektion eingeschlossen, muss im Template neu sein.
 
 ### Vorbedingungen

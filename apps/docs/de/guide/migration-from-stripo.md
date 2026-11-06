@@ -131,14 +131,14 @@ Plugin-Speicher ist ein Tabellenbaum mit `esd-*`-Klassen. Jedes `esd-structure` 
 
 | Stripo-Marker | Templatical-Block | Hinweise |
 |---|---|---|
-| `esd-structure` mit 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames sind die Spalten. Das Padding kommt von `es-p*` an der Structure (Standard 0); ein Inline-`padding` überschreibt die Seiten, die es nennt. |
-| `esd-structure` mit 4+ Frames | `SectionBlock` `columns: "1"` | Auf eine Spalte reduziert; `approximated`. |
+| `esd-structure` mit 1–4 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"` / `"4"`) | Frames sind die Spalten. Das Padding kommt von `es-p*` an der Structure (Standard 0); ein Inline-`padding` überschreibt die Seiten, die es nennt. |
+| `esd-structure` mit 5+ Frames | `SectionBlock` `columns: "1"` | Auf eine Spalte reduziert; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generisches HTML-Mapping des inneren Markups. |
 | `esd-block-image` | `image` | Generisches HTML-Mapping des inneren `<img>`, einschließlich seiner [Breitenregel](/de/guide/migration-from-html#image-width). |
 | `esd-block-button` | `button` | `href`, Text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius`, sofern vorhanden. |
 | `esd-block-menu` (2+ Item-Zellen) | `menu` | Ein `MenuItemData` je Item-Zelle. |
 | `esd-block-menu` (1 Item-Zelle) | `paragraph` (oder das innere Mapping) | Ein gestapelter Schritt, keine Navigation — Password-Reset-Zeilen bleiben Fließtext. |
-| `esd-block-social` | `social` | Plattform aus `title` / `src` / `alt`; unbekannte Namen werden `website`. |
+| `esd-block-social` | `social` | Plattform aus `title` / `src` / `alt`. Ein unbekanntes Netzwerk wird ein Website-Icon, und der Block wird als `approximated` gemeldet. |
 | `esd-block-spacer` | `spacer` oder `divider` | Ein sichtbarer `border-bottom` oder `border-top` am Spacer oder in der inneren Zelle wird ein Trenner (Stil, Farbe, Stärke und die Breitenregel unten). Sonst ein Spacer: Höhe aus `style`, dem `height`-Attribut oder dem vertikalen Padding. |
 | `esd-block-html` | `html` | Inneres Markup bleibt erhalten. |
 
@@ -150,16 +150,16 @@ Der kompilierte Export entfernt `esd-*` von den Elementen und behält `es-*`-Res
 |---|---|---|
 | `es-header` / `es-content` / `es-footer` | ein oder mehrere `SectionBlock`s | Ein Abschnitt je direkter Zeile des `es-*-body` im Streifen. Ein Streifen ohne `es-*-body` verwendet seine eigenen Zeilen. Eine leere Zeile entfällt. |
 | Inhalt neben den Spalten in derselben Zelle | einspaltiger `SectionBlock` | Führender Inhalt bleibt vor dem Spaltenabschnitt, nachfolgender Inhalt danach. Inhalt, der zwischen den Spalten stand, wird hinter den Spaltenabschnitt gesetzt (`approximated`). Eine Zelle mit Padding, die in mehr als einen Abschnitt zerfällt, ist `approximated`: das obere Padding bleibt am ersten Abschnitt, das untere am letzten, die Seiten an jedem. |
-| 1–3 `es-left` / `es-right` in einer Zeile | `columns` `"1"` / `"2"` / `"3"` | Gefloatete Tabellen in dieser Zeile, auch Tabellen in einem Wrapper. Spalten innerhalb eines weiteren `es-left` / `es-right` bleiben darin. |
-| 4+ gefloatete Tabellen in einer Zeile | `columns: "3"` | Weitere Spalten landen im dritten Slot; `approximated`. |
+| 1–4 `es-left` / `es-right` in einer Zeile | `columns` `"1"` / `"2"` / `"3"` / `"4"` | Gefloatete Tabellen in dieser Zeile, auch Tabellen in einem Wrapper. Spalten innerhalb eines weiteren `es-left` / `es-right` bleiben darin. |
+| 5+ gefloatete Tabellen in einer Zeile | `columns: "4"` | Weitere Spalten landen im vierten Slot; `approximated`. |
 | `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, einschließlich vom umschließenden `es-button-border`. Widgets bleiben in Dokumentreihenfolge beim Text um sie herum. |
 | `table.es-menu` (2+ Item-Zellen) | `menu` | |
 | `table.es-menu` (1 Item-Zelle) | inneres Mapping | Eine Schrittzeile, dieselbe Regel wie beim Plugin-Pfad. |
-| `table.es-social` | `social` | Dasselbe Plattform-Mapping wie beim Plugin-Pfad. |
+| `table.es-social` | `social` | Dasselbe Plattform-Mapping wie beim Plugin-Pfad. Ein unbekanntes Netzwerk wird ein Website-Icon, und der Block wird als `approximated` gemeldet. |
 | `es-spacer` mit sichtbarem Rahmen | `divider` | Stil, Farbe und Stärke aus `border-bottom` oder `border-top`. Die Breite folgt der Regel unten. |
 | `es-spacer` ohne Rahmen | `spacer` | Höhe aus `style`, dem `height`-Attribut oder dem vertikalen Padding. |
 
-`settings.backgroundColor` ist die erste gesetzte Farbe von `es-wrapper` oder `es-wrapper-color` (`#ffffff`, wenn keine gesetzt ist). Eine `es-*-body`-Füllung ist der Hintergrund des Abschnitts. Ein transparenter Body lässt die Streifenfüllung auf dem Abschnitt. Eine Streifenfüllung, die sich von Seite und Body unterscheidet, wird `section.wrapper.backgroundColor`; dieser Abschnitt ist `approximated`. Hintergrundbilder, und was sie mit dieser Streifenfarbe tun, folgen [Hintergrundbilder](#hintergrundbilder).
+`settings.backgroundColor` ist die erste gesetzte Farbe von `es-wrapper` oder `es-wrapper-color` (`#ffffff`, wenn keine gesetzt ist). Eine `es-*-body`-Füllung ist der Hintergrund des Abschnitts. Ein Streifen (`esd-stripe` oder `es-header` / `es-content` / `es-footer`) um diesen Body, dessen Farbe von der Seite abweicht, ist ein fensterbreites Band: die Farbe wird `section.wrapper.backgroundColor` mit `wrapper.fullWidth: true`, sodass das Band bis zum Fensterrand läuft und der Inhalt auf der E-Mail-Breite bleibt, auch wenn die Streifenfarbe der Body-Farbe entspricht. Ein transparenter Body verschiebt diese Farbe vom Abschnitt auf den Wrapper. Eine Streifenfarbe, die der Seite entspricht, bleibt vom Wrapper. Ein Streifen ohne inneren Body behält seine Farbe auf dem Abschnitt. Hintergrundbilder, und was sie mit dieser Streifenfarbe tun, folgen [Hintergrundbilder](#hintergrundbilder).
 
 Das Padding der Strukturzelle ist das Padding des Abschnitts. Der Standard ist 0. Im Plugin-HTML setzt `es-p20` jede Seite und `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` überschreibt eine Seite; ein Inline-Padding überschreibt die Seiten, die es nennt. Diese Klassen werden am Structure-Element gelesen.
 
@@ -174,15 +174,15 @@ Das Bild eines Elements wird aus seinem Inline-`background-image`, dem Bild in s
 1. Das eigene Bild der Structure: die Zeilenzelle, `esd-structure` im Plugin-HTML.
 2. Das Bild des `es-*-body`, der Inhaltsfläche hinter jeder Structure im Streifen.
 3. Die Bilder der Container (`es-left` / `es-right` oder `esd-container-frame`), wenn es nur einen Container gibt oder alle dasselbe Bild teilen. Andernfalls, oder neben einem näheren Bild, werden sie verworfen, und die Notiz nennt die Spalten.
-4. Das Bild des Streifens, nur solange der Body transparent ist. Der Abschnitt zeichnet es in Inhaltsbreite, und der Eintrag ist `approximated`. Ein Streifenbild, das der Body verdeckt, wird mit einer Notiz verworfen.
+4. Das Bild des Streifens wird `wrapper.backgroundImage` mit `wrapper.fullWidth: true`, auch wenn der Body es verdeckt. Ein Streifen ohne inneren Body behält seine Farbe auf dem Abschnitt und legt dieses Bild trotzdem auf den Wrapper.
 
-Ein Bild hinter mehreren Abschnitten, etwa ein Body-Bild über mehrere Structures, wird auf jeden kopiert, und jeder dieser Einträge ist `approximated` mit einer Notiz. Hat ein Abschnitt ein Bild, wird eine Streifenfarbe, die `section.wrapper.backgroundColor` geworden wäre, stattdessen mit einer Notiz verworfen, denn Outlook für Desktop malt eine Wrapper-Farbe über das Bild des Abschnitts. Ein Bild am `es-wrapper` hat keine Templatical-Entsprechung, und `report.warnings` nennt es.
+Ein Bild hinter mehreren Abschnitten, etwa ein Body-Bild oder ein Streifenbild über mehrere Structures, wird auf jeden kopiert, und jeder dieser Einträge ist `approximated` mit einer Notiz. Hat ein Abschnitt ein Bild, wird eine Streifenfarbe, die `section.wrapper.backgroundColor` geworden wäre, stattdessen mit einer Notiz verworfen, denn Outlook für Desktop malt eine Wrapper-Farbe über das Bild des Abschnitts. Das Streifenbild bleibt auf dem Wrapper. Ein Bild am `es-wrapper` hat keine Templatical-Entsprechung, und `report.warnings` nennt es.
 
 `background-size`, `background-position` und `background-repeat` werden mitgenommen, wo nicht gesetzt mit den CSS-Anfangswerten. Eine Größe, die eine Seite füllt (`100%`, `100% auto` oder eine px-Breite mindestens so groß wie der Body), wird `cover`, jede andere Länge oder Prozentangabe `auto`. Eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`. Jeder solche Wert wird vermerkt.
 
 ## Wo das Mapping verlustbehaftet ist
 
-- **Spaltengeometrie** — Templatical unterstützt fünf Spaltenlayouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin-HTML mit 4+ Frames wird auf eine Spalte reduziert. Kompiliertes HTML mit 4+ gefloateten Tabellen in einer Zeile behält drei Slots und faltet den Rest in den letzten. Inhalt zwischen diesen Spalten wird ein eigener einspaltiger Abschnitt dahinter, und eine Zelle mit Padding, die über die entstehenden Abschnitte aufgeteilt wird, ist `approximated`.
+- **Spaltengeometrie** — Templatical unterstützt diese Spaltenlayouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Stripo nennt Spalten über ihre Anzahl, eine Zeile wird also dem gleichmäßigen Layout `1`, `2`, `3` oder `4` zugeordnet. Ungleiche px-Breiten an einem Plugin-Frame oder einer kompilierten Spalte `es-left` / `es-right` werden als `approximated` gemeldet. Eine Spalte ohne lesbare Breite wird in dieser Notiz genannt, wenn die lesbaren Breiten voneinander abweichen; weniger als zwei lesbare Breiten, oder lesbare Breiten innerhalb von 1px, bleiben `converted`. Plugin-HTML mit 5 oder mehr Frames wird auf eine Spalte reduziert. Kompiliertes HTML mit 5 oder mehr gefloateten Tabellen in einer Zeile behält vier Slots und faltet den Rest in den letzten. Inhalt zwischen diesen Spalten wird ein eigener einspaltiger Abschnitt dahinter, und eine Zelle mit Padding, die über die entstehenden Abschnitte aufgeteilt wird, ist `approximated`.
 - **Social-Icon-`alt`** — Plattformen werden abgeleitet; der ursprüngliche `alt`-Text wird auf `SocialIcon` nicht gespeichert.
 - **Block-IDs** — jeder importierte Block bekommt eine neu erzeugte ID.
 - **AMP / Timer / Module** — kein Templatical-Äquivalent; inneres Markup landet als `html` oder wird mit Warnung übersprungen.

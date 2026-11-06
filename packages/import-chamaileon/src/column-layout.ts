@@ -5,7 +5,11 @@ const LAYOUT_SHAPES: Array<{ layout: ColumnLayout; percents: number[] }> = [
   { layout: "2", percents: [50, 50] },
   { layout: "1-2", percents: [33.33, 66.67] },
   { layout: "2-1", percents: [66.67, 33.33] },
+  { layout: "1-3", percents: [25, 75] },
+  { layout: "3-1", percents: [75, 25] },
   { layout: "3", percents: [33.33, 33.33, 33.34] },
+  { layout: "1-2-1", percents: [25, 50, 25] },
+  { layout: "4", percents: [25, 25, 25, 25] },
 ];
 
 const WIDTH_TOLERANCE = 2;
@@ -14,8 +18,12 @@ export const COLUMN_COUNT: Record<ColumnLayout, number> = {
   "1": 1,
   "2": 2,
   "3": 3,
+  "4": 4,
   "2-1": 2,
   "1-2": 2,
+  "3-1": 2,
+  "1-3": 2,
+  "1-2-1": 3,
 };
 
 export function columnPixels(
@@ -31,16 +39,24 @@ export function columnPixels(
       return [container / 3, (container * 2) / 3];
     case "2-1":
       return [(container * 2) / 3, container / 3];
+    case "1-3":
+      return [container / 4, (container * 3) / 4];
+    case "3-1":
+      return [(container * 3) / 4, container / 4];
+    case "1-2-1":
+      return [container / 4, container / 2, container / 4];
+    case "4":
+      return [container / 4, container / 4, container / 4, container / 4];
     default:
       return [container];
   }
 }
 
 /**
- * Resolve column widths to one of the five layouts `ColumnLayout` allows.
+ * Resolve column widths to one of the layouts this importer emits.
  *
  * `exact: false` means the caller reports `approximated` — Chamaileon permits
- * any column count at any width and this union permits five shapes, so this is
+ * any column count at any width and this importer emits nine layouts, so this is
  * the importer's main irreducible loss.
  */
 export function matchColumnLayout(percents: Array<number | null>): {
@@ -56,7 +72,8 @@ export function matchColumnLayout(percents: Array<number | null>): {
     if (count === 1) return { layout: "1", exact: true };
     if (count === 2) return { layout: "2", exact: true };
     if (count === 3) return { layout: "3", exact: true };
-    return { layout: "3", exact: false };
+    if (count === 4) return { layout: "4", exact: true };
+    return { layout: "4", exact: false };
   }
 
   const known = percents.filter((p): p is number => p !== null);
@@ -82,7 +99,7 @@ export function matchColumnLayout(percents: Array<number | null>): {
   const candidates =
     sameCount.length > 0
       ? sameCount
-      : LAYOUT_SHAPES.filter((s) => s.layout === "3");
+      : LAYOUT_SHAPES.filter((s) => s.layout === "4");
 
   let best = candidates[0];
   let bestError = Infinity;

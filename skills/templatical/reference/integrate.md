@@ -161,6 +161,10 @@ needs to implement is in [docs.md](docs.md) → `cloud/getting-started`.
 Countdown is Cloud-only. `paletteBlocks` (or any other `init()` key) cannot
 turn it on under a plain `init()` — see [failure-modes.md](failure-modes.md).
 
+## Display conditions
+
+`init({ displayConditions })` offers a preset list and, with `allowCustom`, raw before/after boxes. `displayConditions.onRequest` replaces that UI: the block settings show Add condition, and Edit when one is set. The callback receives `{ block }` or `{ current, block }` (copies) and returns a `DisplayCondition` or `null` to cancel. `current.data` is opaque host state, returned so a builder can reopen filled in; it must survive `JSON.stringify`. With `onRequest` set, `conditions` and `allowCustom` are ignored. A resolved value needs string `label`, `before` and `after`. The Remove condition button clears the condition. See [docs.md](docs.md) → `guide/display-conditions`.
+
 ## Theming
 
 Set `--tpl-user-*` on the container or any ancestor — inheritance crosses the

@@ -775,6 +775,27 @@ describe("convertContent", () => {
       expect(warnings[0]).toContain("MySpace");
       expect(entry.status).toBe("converted");
     });
+
+    it("maps a Xing icon by name", () => {
+      const warnings: string[] = [];
+      const { block } = convertContent(
+        makeContent("social", {
+          icons: {
+            icons: [
+              { name: "Xing", url: "https://www.xing.com/pages/example" },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(warnings).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") throw new Error("expected a social block");
+      expect(block.icons).toHaveLength(1);
+      expect(block.icons[0].platform).toBe("xing");
+      expect(block.icons[0].url).toBe("https://www.xing.com/pages/example");
+    });
   });
 
   describe("video", () => {

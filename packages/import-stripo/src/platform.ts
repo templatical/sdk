@@ -8,6 +8,7 @@ const NAMED: Record<string, SocialPlatform> = {
   instagram: "instagram",
   inst: "instagram",
   linkedin: "linkedin",
+  xing: "xing",
   youtube: "youtube",
   yt: "youtube",
   tiktok: "tiktok",
@@ -33,6 +34,67 @@ function peel(raw: string): string {
 }
 
 /**
+ * The file name of an icon src. An absolute URL contributes its last path
+ * segment, so the host is not a name; an empty path has none. A relative or
+ * protocol-relative src resolves against a placeholder base for the same
+ * reason. The query and hash are not part of the name.
+ */
+function srcFileName(src: string): string {
+  try {
+    const url = new URL(src, "https://placeholder.invalid");
+    return url.pathname.split("/").pop() || "";
+  } catch {
+    return "";
+  }
+}
+
+/** A Stripo website icon is named website, web, or link. */
+const WEBSITE_NAMES = new Set(["website", "web", "link"]);
+
+function namedPlatform(
+  candidate: string | undefined,
+): SocialPlatform | undefined {
+  if (!candidate) return undefined;
+  for (const w of peel(candidate).split(/\s+/)) {
+    const hit = NAMED[w];
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
+function explicitWebsite(candidate: string | undefined): boolean {
+  if (!candidate) return false;
+  for (const w of peel(candidate).split(/\s+/)) {
+    if (WEBSITE_NAMES.has(w)) return true;
+  }
+  return false;
+}
+
+/**
+ * The platform named by a Stripo icon's title, alt, or src file name.
+ * An explicit website, web, or link name is `website`. Undefined when none
+ * of those names a platform.
+ */
+export function matchPlatform(
+  name?: string,
+  src?: string,
+  alt?: string,
+): SocialPlatform | undefined {
+  for (const candidate of [name, alt]) {
+    const hit = namedPlatform(candidate);
+    if (hit) return hit;
+    // An explicit website label outranks the platform a file name suggests.
+    if (explicitWebsite(candidate)) return "website";
+  }
+  // Only the file name identifies an icon; the host and folders of a URL do not.
+  const file = src ? srcFileName(src) : "";
+  const fromFile = namedPlatform(file);
+  if (fromFile) return fromFile;
+  if (explicitWebsite(file)) return "website";
+  return undefined;
+}
+
+/**
  * Map a Stripo icon's title, alt, or src stem onto a SocialPlatform.
  * Unknown names become `website` — same floor as the MJML importer.
  */
@@ -41,16 +103,5 @@ export function normalizePlatform(
   src?: string,
   alt?: string,
 ): SocialPlatform {
-  for (const candidate of [name, alt, src]) {
-    if (!candidate) continue;
-    const words = peel(candidate).split(/\s+/);
-    for (const w of words) {
-      if (NAMED[w]) return NAMED[w];
-    }
-    const stem = peel(candidate.split("/").pop() ?? "");
-    for (const w of stem.split(/\s+/)) {
-      if (NAMED[w]) return NAMED[w];
-    }
-  }
-  return "website";
+  return matchPlatform(name, src, alt) ?? "website";
 }

@@ -1,5 +1,5 @@
 import type { MergeTag } from "./config";
-import { findOpenTagEnd, getTagAttrValue } from "./html-scan";
+import { findOpenSpanBoundary, getTagAttrValue } from "./html-scan";
 
 // --- Syntax Presets ---
 
@@ -60,6 +60,236 @@ export const SYNTAX_PRESETS: Record<
     closer: "=%%",
   },
 };
+
+/** The built-in scanner is valid when both tag patterns match a preset. */
+export function builtInPresetOf(
+  syntax: SyntaxPreset,
+): SyntaxPresetName | undefined {
+  return (Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]).find((name) => {
+    const preset = SYNTAX_PRESETS[name];
+    return (
+      (syntax.value === preset.value ||
+        (syntax.value.source === preset.value.source &&
+          syntax.value.flags.replace(/[gy]/g, "") ===
+            preset.value.flags.replace(/[gy]/g, ""))) &&
+      (syntax.logic === preset.logic ||
+        (syntax.logic.source === preset.logic.source &&
+          syntax.logic.flags.replace(/[gy]/g, "") ===
+            preset.logic.flags.replace(/[gy]/g, "")))
+    );
+  });
+}
+
+export interface SyntaxMatch {
+  index: number;
+  value: string;
+}
+
+function findCloserOnLine(
+  text: string,
+  closer: string,
+  from: number,
+): { close: number; lineBreak: number } {
+  for (let index = from; index < text.length; index++) {
+    const code = text.charCodeAt(index);
+    if (code === 10 || code === 13 || code === 0x2028 || code === 0x2029) {
+      return { close: -1, lineBreak: index };
+    }
+    if (text.startsWith(closer, index)) {
+      return { close: index, lineBreak: -1 };
+    }
+  }
+  return { close: -1, lineBreak: -1 };
+}
+
+/** Find global matches without retrying a built-in regex at each opener. */
+export function scanSyntaxMatches(
+  text: string,
+  syntax: SyntaxPreset,
+  kind: "value" | "logic",
+  from = 0,
+  limit = Infinity,
+): SyntaxMatch[] {
+  const preset = builtInPresetOf(syntax);
+  if (!preset) {
+    const regex = syntax[kind];
+    const pattern = new RegExp(
+      regex.source,
+      regex.flags.replace(/[gy]/g, "") + "g",
+    );
+    pattern.lastIndex = from;
+    return [...text.matchAll(pattern)].slice(0, limit).map((match) => ({
+      index: match.index,
+      value: match[0],
+    }));
+  }
+
+  const pattern = syntax[kind];
+  const opener =
+    preset === "ampscript"
+      ? kind === "value"
+        ? "%%="
+        : "%%["
+      : preset === "liquid" && kind === "logic"
+        ? "{%"
+        : preset === "mailchimp"
+          ? "*|"
+          : "{{";
+  const closer =
+    preset === "ampscript"
+      ? kind === "value"
+        ? "=%%"
+        : "]%%"
+      : preset === "liquid" && kind === "logic"
+        ? "%}"
+        : preset === "mailchimp"
+          ? "|*"
+          : "}}";
+  const prefixSource =
+    kind === "logic"
+      ? {
+          liquid: String.raw`\{%-?\s*\w+`,
+          handlebars: String.raw`\{\{[#/]\w+`,
+          mailchimp: String.raw`\*\|\w+[:|]`,
+          ampscript: String.raw`%%\[\s*\w+`,
+        }[preset]
+      : preset === "mailchimp"
+        ? String.raw`\*\|\w+`
+        : null;
+  const prefix = prefixSource ? new RegExp(prefixSource, "y") : null;
+  const sticky = new RegExp(pattern.source, "y");
+  const matches: SyntaxMatch[] = [];
+  let cursor = from;
+  while (cursor < text.length && matches.length < limit) {
+    const open = text.indexOf(opener, cursor);
+    if (open < 0) break;
+    if (prefix) {
+      prefix.lastIndex = open;
+      if (!prefix.exec(text)) {
+        cursor = open + 1;
+        continue;
+      }
+    }
+    const afterPrefix = prefix?.lastIndex ?? open + opener.length;
+    const closeSearch =
+      preset === "mailchimp" && kind === "value"
+        ? {
+            close: text.startsWith(closer, afterPrefix) ? afterPrefix : -1,
+            lineBreak: -1,
+          }
+        : findCloserOnLine(
+            text,
+            closer,
+            Math.max(
+              afterPrefix,
+              open + opener.length + (kind === "value" ? 1 : 0),
+            ),
+          );
+    if (closeSearch.lineBreak >= 0) {
+      const breakAt = closeSearch.lineBreak;
+      const next =
+        kind === "logic" && (preset === "liquid" || preset === "ampscript")
+          ? text.lastIndexOf(opener, breakAt)
+          : -1;
+      cursor = next > open ? next : breakAt + 1;
+      continue;
+    }
+    if (closeSearch.close < 0) {
+      if (preset === "mailchimp" && kind === "value") {
+        cursor = open + 1;
+        continue;
+      }
+      break;
+    }
+    sticky.lastIndex = open;
+    const match = sticky.exec(text);
+    if (match) {
+      matches.push({ index: open, value: match[0] });
+      cursor = sticky.lastIndex;
+    } else {
+      cursor = open + 1;
+    }
+  }
+  return matches;
+}
+
+/** Match the value-first alternation used by plain-text field displays. */
+export function scanCombinedSyntaxMatches(
+  text: string,
+  syntax: SyntaxPreset,
+): SyntaxMatch[] {
+  const preset = builtInPresetOf(syntax);
+  if (!preset) {
+    const pattern = new RegExp(
+      `(${syntax.value.source}|${syntax.logic.source})`,
+      "g",
+    );
+    return [...text.matchAll(pattern)].map((match) => ({
+      index: match.index,
+      value: match[0],
+    }));
+  }
+  if (preset === "handlebars") {
+    return scanSyntaxMatches(text, syntax, "value");
+  }
+  if (preset === "mailchimp") {
+    const matches: SyntaxMatch[] = [];
+    const value = new RegExp(syntax.value.source, "y");
+    const logic = new RegExp(syntax.logic.source, "y");
+    const logicPrefix = /\*\|\w+[:|]/y;
+    let cursor = 0;
+    while (cursor < text.length) {
+      const open = text.indexOf("*|", cursor);
+      if (open < 0) break;
+      value.lastIndex = open;
+      const valueMatch = value.exec(text);
+      if (valueMatch) {
+        matches.push({ index: open, value: valueMatch[0] });
+        cursor = value.lastIndex;
+        continue;
+      }
+      logicPrefix.lastIndex = open;
+      if (!logicPrefix.exec(text)) {
+        cursor = open + 2;
+        continue;
+      }
+      const closeSearch = findCloserOnLine(text, "|*", logicPrefix.lastIndex);
+      if (closeSearch.lineBreak >= 0) {
+        cursor = closeSearch.lineBreak + 1;
+        continue;
+      }
+      if (closeSearch.close < 0) break;
+      logic.lastIndex = open;
+      const logicMatch = logic.exec(text);
+      if (logicMatch) {
+        matches.push({ index: open, value: logicMatch[0] });
+        cursor = logic.lastIndex;
+      } else {
+        cursor = open + 2;
+      }
+    }
+    return matches;
+  }
+  const matches: SyntaxMatch[] = [];
+  let cursor = 0;
+  let nextValue = scanSyntaxMatches(text, syntax, "value", cursor, 1)[0];
+  let nextLogic = scanSyntaxMatches(text, syntax, "logic", cursor, 1)[0];
+  while (nextValue || nextLogic) {
+    const next =
+      !nextLogic || (nextValue && nextValue.index <= nextLogic.index)
+        ? nextValue
+        : nextLogic;
+    matches.push(next);
+    cursor = next.index + next.value.length;
+    if (next === nextValue || (nextValue && nextValue.index < cursor)) {
+      nextValue = scanSyntaxMatches(text, syntax, "value", cursor, 1)[0];
+    }
+    if (next === nextLogic || (nextLogic && nextLogic.index < cursor)) {
+      nextLogic = scanSyntaxMatches(text, syntax, "logic", cursor, 1)[0];
+    }
+  }
+  return matches;
+}
 
 /** A declared delimiter counts only when it has a non-whitespace character. */
 function declaredDelimiter(value: string | undefined): string | null {
@@ -246,6 +476,13 @@ function escapeTagText(text: string): string {
 export function containsMergeTag(value: string, syntax: SyntaxPreset): boolean {
   if (!value) return false;
 
+  if (builtInPresetOf(syntax)) {
+    return (
+      scanSyntaxMatches(value, syntax, "value", 0, 1).length > 0 ||
+      scanSyntaxMatches(value, syntax, "logic", 0, 1).length > 0
+    );
+  }
+
   const valueRegex = new RegExp(syntax.value.source, syntax.value.flags);
   const logicRegex = new RegExp(syntax.logic.source, syntax.logic.flags);
 
@@ -286,11 +523,7 @@ export function resolveHtmlLogicMergeTagLabels(
  * each `indexOf` advances the cursor monotonically, and no regex backtracking
  * can run over the whole string.
  *
- * Replaces the original `/<span[^>]*…[^>]*>(.*?)<\/span>/g` pattern, which
- * was polynomial-ReDoS over inputs that contained many `<span` starts with
- * no closing `>`.
- *
- * Tag boundaries and attribute values are resolved by `findOpenTagEnd` /
+ * Tag boundaries and attribute values are resolved by `findOpenSpanBoundary` /
  * `getTagAttrValue`, which are quote-aware. A merge-tag value may itself
  * contain `<` / `>` when the consumer configures a custom syntax — Smarty-style
  * `<% $email %>` — and those characters survive attribute serialization
@@ -324,26 +557,29 @@ function rewriteSpanByAttr(
       i = open + 5;
       continue;
     }
-    const openEnd = findOpenTagEnd(html, open + 5);
-    if (openEnd === -1) {
-      out += html.substring(i);
-      break;
+    const { end: openEnd, nextSpan } = findOpenSpanBoundary(html, open + 5);
+    if (nextSpan !== -1) {
+      out += html.substring(i, nextSpan);
+      i = nextSpan;
+      continue;
     }
-    const closeStart = html.indexOf("</span>", openEnd + 1);
-    if (closeStart === -1) {
+    if (openEnd === -1) {
       out += html.substring(i);
       break;
     }
     const attrs = html.substring(open + 5, openEnd);
     const value = getTagAttrValue(attrs, attrName);
     if (value === null) {
-      // This `<span>` isn't the one we're looking for — emit up to and
-      // including the `<span` literal and let the next iteration scan
-      // inward. Skipping straight to the matching `</span>` would swallow
-      // any nested merge-tag span in the same loop iteration.
-      out += html.substring(i, open + 5);
-      i = open + 5;
+      // Keep this opening tag and continue through its contents, where a
+      // nested merge-tag span may appear.
+      out += html.substring(i, openEnd + 1);
+      i = openEnd + 1;
       continue;
+    }
+    const closeStart = html.indexOf("</span>", openEnd + 1);
+    if (closeStart === -1) {
+      out += html.substring(i);
+      break;
     }
     const newLabel = relabel(value);
     if (options?.unwrap?.(value)) {

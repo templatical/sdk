@@ -104,6 +104,7 @@ import {
   IMAGE_URL_RESOLVER_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
+  ON_REQUEST_DISPLAY_CONDITION_KEY,
   CAPABILITIES_KEY,
   KEYBOARD_REORDER_KEY,
   TEMPLATE_LINT_KEY,
@@ -841,10 +842,25 @@ export function useEditorCore(
       : null,
   );
 
+  // `onRequest` replaces the built-in list. The conditions array stays as
+  // configured so a host can read it; the settings panel ignores it.
+  if (
+    config.displayConditions?.onRequest &&
+    (config.displayConditions.conditions !== undefined ||
+      config.displayConditions.allowCustom !== undefined)
+  ) {
+    logger.warn(
+      "config.displayConditions.onRequest replaces the built-in condition list — conditions and allowCustom are ignored.",
+    );
+  }
   provide(DISPLAY_CONDITIONS_KEY, config.displayConditions?.conditions ?? []);
   provide(
     ALLOW_CUSTOM_CONDITIONS_KEY,
     config.displayConditions?.allowCustom ?? false,
+  );
+  provide(
+    ON_REQUEST_DISPLAY_CONDITION_KEY,
+    config.displayConditions?.onRequest ?? null,
   );
 
   // Default empty capabilities for OSS mode. Cloud contributes its entries by

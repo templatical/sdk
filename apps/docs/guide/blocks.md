@@ -22,7 +22,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
 | Visual separation | [Divider](#divider) | Horizontal line with style options |
 | Vertical spacing | [Spacer](#spacer) | Empty space between blocks |
-| Social links | [Social Icons](#social-icons) | 17 platforms, 5 icon styles |
+| Social links | [Social Icons](#social-icons) | Platform list and six icon styles (solid, outlined, rounded, square, circle, plain) |
 | Navigation links | [Menu](#menu) | Horizontal link list with separators |
 | Tabular data | [Table](#table) | Data table with optional header styling |
 | Video preview | [Video](#video) | Clickable thumbnail (email clients don't support embedded video) |
@@ -138,7 +138,7 @@ A row of social media icons linking to platform profiles.
 
 Email clients that switch to dark mode, such as the Gmail app and Outlook, change the background but leave images as they are. A dark `plain` or `outlined` icon therefore carries a faint white halo that is barely visible on light backgrounds and keeps the icon visible as an outline once the background turns dark. Light icons have no halo, so they stay clean on colored bands, but clients that turn a dark background light (the Gmail app on iOS, Outlook for Windows) can hide a light `plain` or `outlined` icon. A filled shape avoids both, since its badge brings its own contrast.
 
-17 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
+These platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
 Each `SocialIcon` has:
 
@@ -249,14 +249,14 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `columns` | `ColumnLayout` | Column layout preset |
+| `columns` | `ColumnLayout` | Column layout preset: `"1"`, `"2"`, `"3"`, `"4"`, `"1-2"`, `"2-1"`, `"1-3"`, `"3-1"`, `"1-2-1"`. Widths and column counts are in [Sections and Columns](/guide/sections-and-columns). |
 | `children` | `Block[][]` | Array of block arrays, one per column |
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
 | `backgroundImage` | `BackgroundImage` | Optional image behind the section — `{ url, size, position: { x, y }, repeat }` — rendered as `background-url` plus size, position and repeat on the `mj-section`. `size` is `"cover"`, `"contain"` or `"auto"`; `x` is `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`. `styles.backgroundColor` is its fallback. `naturalWidth` / `naturalHeight` (optional) are the image file's own size in px; a hero uses them to match its shape. |
 | `hero` | `SectionHero` | Optional. Renders a one-column section with a background image as an `mj-hero`, the image filling the box behind the content: `{ height, verticalAlign }`. `height` is `"image"` (the box is as tall as the image drawn across its desktop width, from `backgroundImage.naturalWidth` / `naturalHeight`) or a fixed height in px, padding included; `verticalAlign` is `"top"`, `"middle"` or `"bottom"`. The image always fills the box (`size` and `repeat` don't apply) and no `border` is drawn. With more than one column, no image, or `"image"` without the size, the section renders as a regular one, and the `structure.hero-not-applied` warning says why. |
-| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
+| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage?, fullWidth? }` — rendered as an `mj-wrapper` band around the section. `fullWidth: true` spans the recipient's window (`full-width` on `mj-wrapper`) while the section stays at `settings.width`; a corner radius is ignored while it is on. Absent or false keeps the band at the email width. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
 
 ::: tip Email client note: borders and corners in Outlook
 - Outlook on Windows ignores `border-radius`, including the four-value (per-corner) form.

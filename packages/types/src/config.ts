@@ -1,5 +1,8 @@
+import type { Block, DisplayCondition } from "./blocks";
 import type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 import type { TemplateSettings } from "./template";
+
+export type { DisplayCondition };
 
 export type ViewportSize = "desktop" | "mobile";
 
@@ -231,17 +234,32 @@ export interface LogicTagsConfig {
   onRequest?: () => Promise<LogicTag | LogicPair | null>;
 }
 
-export interface DisplayCondition {
-  label: string;
-  before: string;
-  after: string;
-  group?: string;
-  description?: string;
+/**
+ * What {@link DisplayConditionsConfig.onRequest} receives. `current` and
+ * `block` are copies; mutating them changes nothing in the editor.
+ */
+export interface DisplayConditionRequestContext {
+  /** The block's current condition, or absent when it has none. A copy. */
+  current?: DisplayCondition;
+  /** The block the condition is for. A copy; mutating it changes nothing. */
+  block: Block;
 }
 
 export interface DisplayConditionsConfig {
-  conditions: DisplayCondition[];
+  /**
+   * Preset conditions for the built-in list. Ignored when `onRequest` is set.
+   */
+  conditions?: DisplayCondition[];
+  /** Raw before/after boxes in the built-in list. Ignored when `onRequest` is set. */
   allowCustom?: boolean;
+  /**
+   * Host-owned condition builder. When set, the block settings call this
+   * instead of the built-in condition list — `conditions` and `allowCustom`
+   * are ignored. Return the condition to store, or `null` to cancel.
+   */
+  onRequest?: (
+    context: DisplayConditionRequestContext,
+  ) => Promise<DisplayCondition | null>;
 }
 
 export interface ThemeOverrides {

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   extractAnchors,
   extractText,
+  findAttrSpans,
   hasNestedAnchors,
+  rewriteOpenTags,
 } from "../src/html-utils";
 
 describe("extractAnchors", () => {
@@ -91,16 +93,14 @@ describe("extractAnchors", () => {
 describe("hasNestedAnchors", () => {
   it("returns true when an anchor opens inside another", () => {
     expect(
-      hasNestedAnchors(
-        '<a href="/outer">x<a href="/inner">y</a></a>',
-      ),
+      hasNestedAnchors('<a href="/outer">x<a href="/inner">y</a></a>'),
     ).toBe(true);
   });
 
   it("returns false for sibling anchors", () => {
-    expect(
-      hasNestedAnchors('<a href="/a">a</a><a href="/b">b</a>'),
-    ).toBe(false);
+    expect(hasNestedAnchors('<a href="/a">a</a><a href="/b">b</a>')).toBe(
+      false,
+    );
   });
 
   it("returns false for a single anchor", () => {
@@ -112,11 +112,9 @@ describe("hasNestedAnchors", () => {
   });
 
   it("ignores anchor-like tokens inside HTML comments", () => {
-    expect(
-      hasNestedAnchors(
-        '<a href="/x">y<!-- <a href="/z"> --></a>',
-      ),
-    ).toBe(false);
+    expect(hasNestedAnchors('<a href="/x">y<!-- <a href="/z"> --></a>')).toBe(
+      false,
+    );
   });
 
   it("returns true when nesting follows a closed earlier anchor", () => {
@@ -133,9 +131,7 @@ describe("hasNestedAnchors", () => {
     // comment would still be counted. The scanner now drops the rest of
     // the input when no closing `-->` exists.
     expect(
-      hasNestedAnchors(
-        '<a href="/outer"><!-- <a href="/inner">never closed',
-      ),
+      hasNestedAnchors('<a href="/outer"><!-- <a href="/inner">never closed'),
     ).toBe(false);
   });
 
@@ -165,5 +161,52 @@ describe("extractText", () => {
 
   it("returns empty string for empty content", () => {
     expect(extractText("<p></p>")).toBe("");
+  });
+});
+
+describe("findAttrSpans", () => {
+  it("returns the span of a valueless attribute and skips other valueless ones", () => {
+    const attrs = ' download rel target="_blank"';
+    expect(findAttrSpans(attrs, "rel")).toEqual([{ start: 10, end: 13 }]);
+    expect(attrs.slice(10, 13)).toBe("rel");
+  });
+
+  it("skips a stray = that has no attribute name", () => {
+    const attrs = ' = rel="a"';
+    expect(findAttrSpans(attrs, "rel")).toEqual([{ start: 3, end: 10 }]);
+    expect(attrs.slice(3, 10)).toBe('rel="a"');
+  });
+
+  it("returns null when a quoted value never closes", () => {
+    expect(findAttrSpans(' rel="a', "rel")).toBe(null);
+  });
+});
+
+describe("rewriteOpenTags", () => {
+  const rewriteAnchors = (html: string) =>
+    rewriteOpenTags(html, ({ name, attrs }) =>
+      name === "a" ? `<a${attrs} rel="noopener">` : null,
+    );
+
+  it("preserves comments and rewrites the real tag after them", () => {
+    const html = '<!-- <a title=" --> <a href="/x">Buy</a>';
+    expect(rewriteAnchors(html)).toBe(
+      '<!-- <a title=" --> <a href="/x" rel="noopener">Buy</a>',
+    );
+  });
+
+  it("leaves an unterminated comment unchanged", () => {
+    const html = '<a href="/x">Buy</a><!-- <a href="/y">';
+    expect(rewriteAnchors(html)).toBe(
+      '<a href="/x" rel="noopener">Buy</a><!-- <a href="/y">',
+    );
+  });
+
+  it("does not visit tag-like text inside script or CDATA", () => {
+    const html =
+      '<script><a href="/script"></script><![CDATA[<a href="/cdata">]]><a href="/real">Buy</a>';
+    expect(rewriteAnchors(html)).toBe(
+      '<script><a href="/script"></script><![CDATA[<a href="/cdata">]]><a href="/real" rel="noopener">Buy</a>',
+    );
   });
 });

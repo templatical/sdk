@@ -278,14 +278,26 @@ describe("convertUnlayerTemplate", () => {
       expect(dividerWidthIn([1], 0, { width: "600px" }, "-600px")).toBe("full");
     });
 
-    // A 4+ column row flattens into one column as wide as the body.
-    it("measures a divider in a flattened row against the whole body", () => {
+    // A quarter of 600 is 150, so a 150px line fills its column.
+    it("measures a four-column divider against its quarter column", () => {
       expect(dividerWidthIn([1, 1, 1, 1], 0, { width: "150px" }, "600px")).toBe(
-        150,
-      );
-      expect(dividerWidthIn([1, 1, 1, 1], 3, { width: "600px" }, "600px")).toBe(
         "full",
       );
+      expect(dividerWidthIn([1, 1, 1, 1], 0, { width: "149px" }, "600px")).toBe(
+        149,
+      );
+      expect(dividerWidthIn([1, 1, 1, 1], 3, { width: "150px" }, "600px")).toBe(
+        "full",
+      );
+    });
+
+    it("measures a five-column divider against the whole body", () => {
+      expect(
+        dividerWidthIn([1, 1, 1, 1, 1], 0, { width: "150px" }, "600px"),
+      ).toBe(150);
+      expect(
+        dividerWidthIn([1, 1, 1, 1, 1], 4, { width: "600px" }, "600px"),
+      ).toBe("full");
     });
 
     // The renderer draws a column past the layout's last slot at the whole
@@ -344,7 +356,11 @@ describe("convertUnlayerTemplate", () => {
       expect(blocks[1].children).toHaveLength(2);
       expect(blocks[1].children[0][0].type).toBe("image");
       expect(blocks[1].children[1][0].type).toBe("button");
-      expect(blocks[1].styles?.backgroundColor).toBe("#fafafa");
+      expect(blocks[1].styles?.backgroundColor).toBeUndefined();
+      expect(blocks[1].wrapper).toEqual({
+        backgroundColor: "#fafafa",
+        fullWidth: true,
+      });
     }
 
     expect(blocks[2].type).toBe("section");
@@ -366,15 +382,19 @@ describe("convertUnlayerTemplate", () => {
 
     expect(blocks[4].type).toBe("section");
     if (blocks[4].type === "section") {
-      expect(blocks[4].columns).toBe("1");
+      expect(blocks[4].columns).toBe("4");
+      expect(blocks[4].children).toHaveLength(4);
     }
   });
 
-  it("flattens 4+ column rows and warns", () => {
-    const { report } = convertUnlayerTemplate(template);
+  it("keeps the example's four equal columns", () => {
+    const { content, report } = convertUnlayerTemplate(template);
+    const section = content.blocks[4];
+    expect(section.type).toBe("section");
+    if (section.type === "section") expect(section.columns).toBe("4");
     expect(
       report.warnings.some((w) => w.includes("flattened to a single column")),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("reports correct status counts", () => {
@@ -478,7 +498,11 @@ describe("convertUnlayerTemplate", () => {
     expect(section.type).toBe("section");
     if (section.type === "section") {
       expect(section.columns).toBe("1");
-      expect(section.styles?.backgroundColor).toBe("#abcdef");
+      expect(section.styles?.backgroundColor).toBeUndefined();
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#abcdef",
+        fullWidth: true,
+      });
       expect(section.children[0]).toHaveLength(1);
       expect(section.children[0][0].type).toBe("paragraph");
     }
@@ -536,6 +560,7 @@ describe("convertUnlayerTemplate", () => {
     expect(section.type).toBe("section");
     if (section.type === "section") {
       expect(section.styles?.backgroundColor).toBe("#123456");
+      expect(section.wrapper).toBeUndefined();
     }
     expect(report.warnings).toEqual([]);
   });
@@ -559,15 +584,17 @@ describe("convertUnlayerTemplate", () => {
   }
 
   describe("row backgrounds", () => {
-    it("prefers the content background and warns naming the dropped row background", () => {
+    it("keeps the content colour on the section and the row colour on a full-width wrapper", () => {
       const { section, warnings } = convertRow({
         backgroundColor: "#1d1d1f",
         columnsBackgroundColor: "#000000",
       });
       expect(section.styles.backgroundColor).toBe("#000000");
-      expect(warnings).toEqual([
-        "Row background #1d1d1f outside the content width was dropped; the section keeps the content background #000000.",
-      ]);
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#1d1d1f",
+        fullWidth: true,
+      });
+      expect(warnings).toEqual([]);
     });
 
     it("does not warn when both backgrounds are the same colour", () => {
@@ -576,19 +603,32 @@ describe("convertUnlayerTemplate", () => {
         columnsBackgroundColor: "#ffffff",
       });
       expect(section.styles.backgroundColor).toBe("#ffffff");
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#ffffff",
+        fullWidth: true,
+      });
       expect(warnings).toEqual([]);
     });
 
-    it("falls back to the row background when the content background is empty or transparent", () => {
-      expect(
-        convertRow({ backgroundColor: "#abcdef", columnsBackgroundColor: "" })
-          .section.styles.backgroundColor,
-      ).toBe("#abcdef");
+    it("leaves the section unset when only the row background is set", () => {
+      const empty = convertRow({
+        backgroundColor: "#abcdef",
+        columnsBackgroundColor: "",
+      });
+      expect(empty.section.styles.backgroundColor).toBeUndefined();
+      expect(empty.section.wrapper).toEqual({
+        backgroundColor: "#abcdef",
+        fullWidth: true,
+      });
       const transparent = convertRow({
         backgroundColor: "#abcdef",
         columnsBackgroundColor: "transparent",
       });
-      expect(transparent.section.styles.backgroundColor).toBe("#abcdef");
+      expect(transparent.section.styles.backgroundColor).toBeUndefined();
+      expect(transparent.section.wrapper).toEqual({
+        backgroundColor: "#abcdef",
+        fullWidth: true,
+      });
       expect(transparent.warnings).toEqual([]);
     });
   });
@@ -610,10 +650,11 @@ describe("convertUnlayerTemplate", () => {
         position: { x: "center", y: "top" },
         repeat: false,
       });
+      expect(section.wrapper).toBeUndefined();
       expect(warnings).toEqual([]);
     });
 
-    it("paints a full-width band image at the content width while the content area is transparent", () => {
+    it("puts a full-width band image on the wrapper and leaves the section unset", () => {
       const { section, warnings } = convertRow({
         backgroundColor: "#1d1d1f",
         columnsBackgroundColor: "",
@@ -624,21 +665,47 @@ describe("convertUnlayerTemplate", () => {
           position: "center",
         },
       });
-      expect(section.backgroundImage?.url).toBe("https://cdn.test/band.jpg");
-      expect(section.styles.backgroundColor).toBe("#1d1d1f");
-      expect(warnings).toEqual([
-        'Row background image "https://cdn.test/band.jpg" spans the full width in Unlayer; the section paints it at the content width.',
-      ]);
+      expect(section.backgroundImage).toBeUndefined();
+      expect(section.styles.backgroundColor).toBeUndefined();
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#1d1d1f",
+        backgroundImage: {
+          url: "https://cdn.test/band.jpg",
+          size: "cover",
+          position: { x: "center", y: "center" },
+          repeat: false,
+        },
+        fullWidth: true,
+      });
+      expect(warnings).toEqual([]);
     });
 
-    it("drops a full-width band image behind a painted content area", () => {
+    it("keeps a full-width band image on the wrapper behind a painted content area", () => {
       const { section, warnings } = convertRow({
         columnsBackgroundColor: "#ffffff",
         backgroundImage: { url: "https://cdn.test/band.jpg", fullWidth: true },
       });
       expect(section.backgroundImage).toBeUndefined();
+      expect(section.styles.backgroundColor).toBe("#ffffff");
+      expect(section.wrapper?.fullWidth).toBe(true);
+      expect(section.wrapper?.backgroundImage?.url).toBe(
+        "https://cdn.test/band.jpg",
+      );
+      expect(warnings).toEqual([]);
+    });
+
+    it("drops a band colour that would cover a content-width image", () => {
+      const { section, warnings } = convertRow({
+        backgroundColor: "#1d1d1f",
+        backgroundImage: {
+          url: "https://cdn.test/hero.jpg",
+          fullWidth: false,
+        },
+      });
+      expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+      expect(section.wrapper).toBeUndefined();
       expect(warnings).toEqual([
-        'Row background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background #ffffff.',
+        "Row background #1d1d1f was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
       ]);
     });
 
@@ -669,7 +736,7 @@ describe("convertUnlayerTemplate", () => {
     );
   });
 
-  it("wraps 4+ column rows in a single-column section instead of dropping the wrapper", () => {
+  it("keeps four equal columns and their content in four slots", () => {
     const { content } = convertUnlayerTemplate({
       body: {
         values: {},
@@ -698,10 +765,120 @@ describe("convertUnlayerTemplate", () => {
     const section = content.blocks[0];
     expect(section.type).toBe("section");
     if (section.type === "section") {
-      expect(section.columns).toBe("1");
-      expect(section.styles?.backgroundColor).toBe("#eeeeee");
-      expect(section.children[0]).toHaveLength(2);
+      expect(section.columns).toBe("4");
+      expect(section.styles?.backgroundColor).toBeUndefined();
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#eeeeee",
+        fullWidth: true,
+      });
+      expect(section.children).toHaveLength(4);
+      expect(section.children[0]).toHaveLength(1);
+      expect(section.children[1]).toHaveLength(1);
+      expect(section.children[2]).toEqual([]);
+      expect(section.children[3]).toEqual([]);
     }
+  });
+
+  it("warns when an unequal four-cell row becomes four equal columns", () => {
+    const row = (cells: number[]) => ({
+      cells,
+      columns: cells.map(() => ({ contents: [], values: {} })),
+      values: {},
+    });
+    const unequal = convertUnlayerTemplate({
+      body: { values: {}, rows: [row([6, 2, 2, 2])] },
+    });
+    const section = unequal.content.blocks[0];
+    expect(section.type === "section" && section.columns).toBe("4");
+    expect(unequal.report.warnings).toContain(
+      "Row with four columns at ratio 6:2:2:2 was converted to four equal columns.",
+    );
+
+    const equal = convertUnlayerTemplate({
+      body: { values: {}, rows: [row([1, 1, 1, 1])] },
+    });
+    expect(
+      equal.report.warnings.filter((w) => w.includes("four columns at ratio")),
+    ).toEqual([]);
+  });
+
+  it("flattens a five-column row and names the four-column limit", () => {
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1, 1, 1, 1, 1],
+            columns: [1, 2, 3, 4, 5].map((n) => ({
+              contents: [{ type: "text", values: { text: `<p>${n}</p>` } }],
+              values: {},
+            })),
+            values: { backgroundColor: "#eeeeee" },
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.columns).toBe("1");
+      expect(section.children).toHaveLength(1);
+      expect(section.children[0]).toHaveLength(5);
+    }
+    expect(report.warnings).toContain(
+      "Row with 5 columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to four columns.",
+    );
+  });
+
+  it("maps 25/75, 75/25 and 25/50/25 onto the new layouts", () => {
+    const layoutFor = (cells: number[]) => {
+      const { content, report } = convertUnlayerTemplate({
+        body: {
+          values: {},
+          rows: [
+            {
+              cells,
+              columns: cells.map(() => ({ contents: [], values: {} })),
+              values: {},
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      return { columns: section.columns, warnings: report.warnings };
+    };
+
+    expect(layoutFor([1, 3])).toEqual({ columns: "1-3", warnings: [] });
+    expect(layoutFor([3, 1])).toEqual({ columns: "3-1", warnings: [] });
+    expect(layoutFor([1, 2, 1])).toEqual({ columns: "1-2-1", warnings: [] });
+    expect(layoutFor([1, 1, 1, 1])).toEqual({ columns: "4", warnings: [] });
+  });
+
+  it("snaps a near 25/50/25 row to 1-2-1 without a ratio warning", () => {
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [2, 5, 2],
+            columns: [
+              { contents: [], values: {} },
+              { contents: [], values: {} },
+              { contents: [], values: {} },
+            ],
+            values: {},
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.columns).toBe("1-2-1");
+      expect(section.children).toHaveLength(3);
+    }
+    expect(report.warnings).toEqual([]);
   });
 
   it("emits a visible placeholder for unsupported block fallbacks", () => {

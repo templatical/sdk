@@ -4,6 +4,7 @@ import {
   createDefaultTemplateContent,
   createImageBlock,
   createSectionBlock,
+  getColumnCount,
   createSlotBlock,
   createVideoBlock,
   createWrapperBlock,
@@ -49,7 +50,7 @@ function section(
   probe: Block,
   partial: Partial<SectionBlock> = {},
 ): SectionBlock {
-  const count = { "1": 1, "2": 2, "3": 3, "1-2": 2, "2-1": 2 }[columns];
+  const count = getColumnCount(columns);
   const children: Block[][] = Array.from({ length: count }, () => []);
   children[index] = [probe];
   return createSectionBlock({ columns, children, ...partial });

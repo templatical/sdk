@@ -264,8 +264,9 @@ function resolveColumnLayout(
   if (cellCount <= 1) return "1";
   if (cellCount === 2) return "2";
   if (cellCount === 3) return "3";
+  if (cellCount === 4) return "4";
   warnings.push(
-    `Row with ${cellCount} columns was flattened to a single column. Templatical supports up to 3 columns per section.`,
+    `Row with ${cellCount} columns was flattened to a single column. Templatical supports up to four columns per section.`,
   );
   return "1";
 }
@@ -484,7 +485,7 @@ function sectionEntry(
   const notes: string[] = [];
   if (slotCount !== columnCount) {
     notes.push(
-      `Row of ${columnCount} columns was merged into a single column. Templatical sections hold at most 3 columns.`,
+      `Row of ${columnCount} columns was merged into a single column. Templatical supports up to four columns.`,
     );
   } else if (ratioNote) {
     notes.push(ratioNote);
@@ -905,6 +906,41 @@ function hostRooms(
   });
 }
 
+function isFullBleedWidth($el: Cheerio<Element>): boolean {
+  const attr = ($el.attr("width") ?? "").trim();
+  if (attr === "100%") return true;
+  return (getStyles($el).width?.trim() ?? "") === "100%";
+}
+
+function fixedContentWidth($el: Cheerio<Element>): boolean {
+  return (
+    parsePxValue($el.attr("width")) > 0 ||
+    parsePxValue(getStyles($el).width) > 0
+  );
+}
+
+/**
+ * A 100% table or cell painted around fixed-width inner tables is a viewport
+ * band. The nearer of the cell and the table supplies the colour and image.
+ * Anything else is packaging and keeps the carry-down it has today.
+ */
+function readFullWidthBand(
+  $table: Cheerio<Element>,
+  $cell: Cheerio<Element>,
+  inners: Cheerio<Element>[],
+  room: number | undefined,
+): { color?: string; image?: ReadBackgroundImage } | null {
+  if (!inners.every((inner) => fixedContentWidth(inner))) return null;
+  if (!isFullBleedWidth($table) && !isFullBleedWidth($cell)) return null;
+  const color = fillOf($cell) || fillOf($table);
+  const image = imageOf($cell, room) ?? imageOf($table, room);
+  if (!color && !image) return null;
+  return {
+    ...(color ? { color } : {}),
+    ...(image ? { image } : {}),
+  };
+}
+
 /**
  * Walk a `<table>` and produce Section blocks (one per row).
  *
@@ -976,7 +1012,78 @@ export function processTable(
       // stopped at the cell, and narrows their room with it.
       const wrapperPadding = readHostPadding(cells[0]);
       const innerRoom = flattenInline ? narrow(room, wrapperPadding) : room;
+      const band = !flattenInline
+        ? readFullWidthBand($table, cells[0], packaging, innerRoom)
+        : null;
       const descended: Block[] = [];
+      if (band) {
+        const before = entries.length;
+        for (const $inner of packaging) {
+          descended.push(
+            ...processTable(
+              $inner,
+              $,
+              entries,
+              warnings,
+              flattenInline,
+              "",
+              innerRoom,
+              null,
+            ),
+          );
+        }
+        const sectionEntries = entries
+          .slice(before)
+          .filter((entry) => entry.templaticalBlockType === "section");
+        // A section image keeps the band colour off the wrapper: Outlook
+        // desktop paints a wrapper colour over that image. The band image
+        // still sits on the wrapper.
+        const droppedBand: number[] = [];
+        let sectionIndex = 0;
+        for (const block of descended) {
+          if (block.type !== "section") continue;
+          const image = band.image ? copyImage(band.image.image) : undefined;
+          const dropColor =
+            Boolean(band.color) && Boolean(block.backgroundImage);
+          if ((band.color && !dropColor) || image) {
+            block.wrapper = {
+              ...(band.color && !dropColor
+                ? { backgroundColor: band.color }
+                : {}),
+              ...(image ? { backgroundImage: image } : {}),
+              fullWidth: true,
+            };
+          }
+          if (dropColor) droppedBand.push(sectionIndex);
+          sectionIndex += 1;
+        }
+        if (band.image && band.image.notes.length > 0) {
+          for (const entry of sectionEntries) {
+            entry.status = "approximated";
+            entry.note = [entry.note, ...band.image.notes]
+              .filter(Boolean)
+              .join(" ");
+          }
+        }
+        if (droppedBand.length > 0) {
+          const note = `The band colour ${band.color} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`;
+          for (const index of droppedBand) {
+            const entry = sectionEntries[index];
+            entry.status = "approximated";
+            entry.note = entry.note ? `${entry.note} ${note}` : note;
+          }
+        }
+        if (band.image && sectionEntries.length > 1) {
+          const note = `A background image behind ${sectionEntries.length} sections was applied to each of them — Templatical has no multi-section band.`;
+          for (const entry of sectionEntries) {
+            entry.status = "approximated";
+            entry.note = entry.note ? `${entry.note} ${note}` : note;
+          }
+        }
+        if (cellImage && carriedImage) noteSpread(carriedImage);
+        sections.push(...descended);
+        continue;
+      }
       for (const $inner of packaging) {
         descended.push(
           ...processTable(

@@ -45,7 +45,8 @@ Every block has these, so the per-block lists below leave them out:
 - `visibility` (_optional_) — `{ desktop: bool, mobile: bool }` to hide per
   device.
 - `displayCondition` (_optional_) — editor-managed conditional wrapper. Never
-  emit it; the editor writes it when a user adds a display condition.
+  emit it; the editor writes it when a user adds a display condition. `data` is
+  opaque host state that round-trips.
 
 Do **not** add fields beyond those listed per type — the schema rejects unknown
 properties.
@@ -61,10 +62,10 @@ Container that arranges blocks into columns.
 **Optional** — `l10n` (object), `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `hero` (SectionHero), `wrapper` (SectionWrapper).
 <!-- END GENERATED FIELDS: section -->
 
-- `columns` is one of `"1"`, `"2"`, `"3"`, `"2-1"`, `"1-2"`.
+- `columns` is one of `"1"`, `"2"`, `"3"`, `"4"`, `"2-1"`, `"1-2"`, `"3-1"`, `"1-3"`, `"1-2-1"`.
 - `children` is an array of columns, each an array of blocks. The column count
-  must match `columns` (`"1"` → one inner array; `"2"` / `"2-1"` / `"1-2"` →
-  two; `"3"` → three).
+  must match `columns` (`"1"` → one inner array; `"2"` / `"2-1"` / `"1-2"` /
+  `"1-3"` / `"3-1"` → two; `"3"` / `"1-2-1"` → three; `"4"` → four).
 - `borderRadius` — a px number for all corners, or `{ topLeft, topRight,
   bottomRight, bottomLeft }` for a radius per corner. Omit or `0` for square.
 - `border` is `{ top, right, bottom, left }`, each side `{ width, style, color }`
@@ -91,11 +92,15 @@ Container that arranges blocks into columns.
   a regular one.
 - `verticalAlign` (inside `hero`) is one of `"top"`, `"middle"`, `"bottom"`.
 - `wrapper` is an outer band: `{ backgroundColor?, padding?, borderRadius?,
-  backgroundImage? }` (e.g. a white card on a colored band); its `borderRadius`
-  takes the same number-or-per-corner form. The band is as wide as
-  `settings.width`, not the recipient's viewport. Don't give both the wrapper
-  and its section a `backgroundImage`, and don't put a wrapper `backgroundColor`
-  behind a section image — Outlook on Windows breaks both.
+  backgroundImage?, fullWidth? }` (e.g. a white card on a colored band); its
+  `borderRadius` takes the same number-or-per-corner form. Omit `fullWidth` or
+  set it `false` and the band is as wide as `settings.width`. `fullWidth: true`
+  is MJML's `full-width="full-width"`: the band's background spans the
+  recipient's window and the section stays at `settings.width`. A corner radius
+  is ignored while `fullWidth` is on; the stored radius stays and applies again
+  when it is off. Don't give both the wrapper and its section a
+  `backgroundImage`, and don't put a wrapper `backgroundColor` behind a section
+  image — Outlook on Windows breaks both.
 
 Don't nest a section inside another section — MJML has no equivalent, so the
 renderer drops it on export.
@@ -242,8 +247,8 @@ underline: bool, color?: hex }`.
 
 - `icons` — each is `{ id, platform, url }`.
 - `platform` is one of: `facebook`, `twitter`, `instagram`, `linkedin`,
-  `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`, `discord`,
-  `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
+  `xing`, `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`,
+  `discord`, `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
 - `iconStyle` is one of `"solid"`, `"outlined"`, `"rounded"`, `"square"`,
   `"circle"`, `"plain"` (the glyph alone, no badge).
 - `iconTone` is one of `"brand"` (each platform's color, the default),

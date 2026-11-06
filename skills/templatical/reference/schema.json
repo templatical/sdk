@@ -98,30 +98,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "columns": {
           "$ref": "#/definitions/ColumnLayout"
@@ -266,14 +243,48 @@
       ],
       "additionalProperties": false
     },
+    "DisplayCondition": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "before": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "data": {
+          "description": "Opaque host state. The editor stores it and hands it back as `current` when the host builder reopens, and never reads it. It must survive `JSON.stringify` — content is cloned with `safeClone`, so values that JSON drops (functions, `undefined` keys, a `Date` becoming an ISO string) do not round-trip."
+        }
+      },
+      "required": [
+        "label",
+        "before",
+        "after"
+      ],
+      "additionalProperties": false,
+      "description": "A display condition wraps a block in host-owned before/after markup so the block renders only when the condition holds."
+    },
     "ColumnLayout": {
       "type": "string",
       "enum": [
         "1",
         "2",
         "3",
+        "4",
         "2-1",
-        "1-2"
+        "1-2",
+        "3-1",
+        "1-3",
+        "1-2-1"
       ]
     },
     "BorderRadiusValue": {
@@ -485,15 +496,19 @@
         },
         "borderRadius": {
           "$ref": "#/definitions/BorderRadiusValue",
-          "description": "Corner radius in px for the outer frame — one number, or a radius per corner. Omitted/0 = square corners."
+          "description": "Corner radius in px for the outer frame — one number, or a radius per corner. Omitted/0 = square corners. Ignored while `fullWidth` is on: a viewport-wide band has no visible corners, so the renderer omits `border-radius`."
         },
         "backgroundImage": {
           "$ref": "#/definitions/BackgroundImage",
           "description": "Image behind the band; `backgroundColor` is its fallback."
+        },
+        "fullWidth": {
+          "type": "boolean",
+          "description": "When true, the band spans the recipient's viewport (`full-width` on `mj-wrapper`) while the section stays at the email width. Absent or false keeps the band at `settings.width`."
         }
       },
       "additionalProperties": false,
-      "description": "Optional outer frame for a section. When present, the section is rendered inside an `mj-wrapper` — a band (its own background + padding) that frames the section, e.g. a white card sitting on a colored band. The band is as wide as the email body (`settings.width`), not the recipient's viewport."
+      "description": "Optional outer frame for a section. When present, the section is rendered inside an `mj-wrapper` — a band (its own background + padding) that frames the section, e.g. a white card sitting on a colored band. The band is as wide as the email body (`settings.width`), not the recipient's viewport, unless `fullWidth` is set."
     },
     "TitleBlock": {
       "type": "object",
@@ -519,30 +534,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "content": {
           "type": "string"
@@ -609,30 +601,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "content": {
           "type": "string"
@@ -674,30 +643,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "src": {
           "type": "string"
@@ -795,30 +741,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "text": {
           "type": "string"
@@ -921,30 +844,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "lineStyle": {
           "type": "string",
@@ -1016,30 +916,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "url": {
           "type": "string"
@@ -1116,30 +993,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "icons": {
           "type": "array",
@@ -1208,6 +1062,7 @@
         "twitter",
         "instagram",
         "linkedin",
+        "xing",
         "youtube",
         "tiktok",
         "pinterest",
@@ -1276,30 +1131,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "height": {
           "type": "number"
@@ -1337,30 +1169,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "content": {
           "type": "string"
@@ -1398,30 +1207,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "items": {
           "type": "array",
@@ -1532,30 +1318,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "rows": {
           "type": "array",
@@ -1670,30 +1433,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "targetDate": {
           "type": "string"
@@ -1811,30 +1551,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "customType": {
           "type": "string"
@@ -1887,30 +1604,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         }
       },
       "required": [
@@ -1945,30 +1639,7 @@
           "$ref": "#/definitions/BlockVisibility"
         },
         "displayCondition": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string"
-            },
-            "before": {
-              "type": "string"
-            },
-            "after": {
-              "type": "string"
-            },
-            "group": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "label",
-            "before",
-            "after"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/DisplayCondition"
         },
         "children": {
           "type": "array",
@@ -1977,11 +1648,16 @@
           }
         },
         "borderRadius": {
-          "type": "number"
+          "type": "number",
+          "description": "Corner radius in px. Ignored while `fullWidth` is on: a viewport-wide band has no visible corners, so the renderer omits `border-radius`."
         },
         "backgroundImage": {
           "$ref": "#/definitions/BackgroundImage",
           "description": "Image behind the band; `styles.backgroundColor` is its fallback."
+        },
+        "fullWidth": {
+          "type": "boolean",
+          "description": "When true, the band spans the recipient's viewport (`full-width` on `mj-wrapper`) while its children stay at the email width. Absent or false keeps the band at that width."
         }
       },
       "required": [
@@ -1991,7 +1667,7 @@
         "type"
       ],
       "additionalProperties": false,
-      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to the wrapper. Legal in layout only."
+      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to the wrapper. `fullWidth` spans the recipient's viewport; absent or false keeps the band at the email width. A corner radius is ignored while `fullWidth` is on. Legal in layout only."
     },
     "TemplateSettings": {
       "type": "object",

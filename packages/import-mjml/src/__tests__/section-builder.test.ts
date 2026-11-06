@@ -102,9 +102,28 @@ describe("matchColumnLayout", () => {
     });
   });
 
-  it("approximates a two-column ratio outside the tolerance", () => {
+  it("matches 25/75, 75/25, 25/50/25 and four quarters exactly", () => {
     expect(matchColumnLayout([25, 75])).toEqual({
-      layout: "1-2",
+      layout: "1-3",
+      exact: true,
+    });
+    expect(matchColumnLayout([75, 25])).toEqual({
+      layout: "3-1",
+      exact: true,
+    });
+    expect(matchColumnLayout([25, 50, 25])).toEqual({
+      layout: "1-2-1",
+      exact: true,
+    });
+    expect(matchColumnLayout([25, 25, 25, 25])).toEqual({
+      layout: "4",
+      exact: true,
+    });
+  });
+
+  it("snaps 20/60/20 to the nearer three-column layout", () => {
+    expect(matchColumnLayout([20, 60, 20])).toEqual({
+      layout: "1-2-1",
       exact: false,
     });
   });
@@ -116,9 +135,16 @@ describe("matchColumnLayout", () => {
     });
   });
 
-  it("approximates four or more columns down to three", () => {
-    expect(matchColumnLayout([25, 25, 25, 25])).toEqual({
-      layout: "3",
+  it("folds five columns onto 4", () => {
+    expect(matchColumnLayout([20, 20, 20, 20, 20])).toEqual({
+      layout: "4",
+      exact: false,
+    });
+  });
+
+  it("folds five unset columns onto 4", () => {
+    expect(matchColumnLayout([null, null, null, null, null])).toEqual({
+      layout: "4",
       exact: false,
     });
   });
@@ -330,15 +356,60 @@ describe("buildSection", () => {
     expect("stackOnMobile" in blocks[0]).toBe(false);
   });
 
-  it("reports an approximated layout with the original widths in the note", () => {
-    const { entries } = build(
+  it("sizes a 3-1 row at three quarters and a quarter of the 600px body", () => {
+    const { blocks, entries } = build(`
+      <mj-section>
+        <mj-column width="75%">
+          <mj-divider width="450px" />
+          <mj-divider width="449px" />
+        </mj-column>
+        <mj-column width="25%">
+          <mj-divider width="150px" />
+          <mj-divider width="149px" />
+        </mj-column>
+      </mj-section>`);
+    const section = blocks[0] as SectionBlock;
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+
+    expect(section.columns).toBe("3-1");
+    expect(
+      section.children[0].map((block) =>
+        block.type === "divider" ? block.width : null,
+      ),
+    ).toEqual(["full", 449]);
+    expect(
+      section.children[1].map((block) =>
+        block.type === "divider" ? block.width : null,
+      ),
+    ).toEqual(["full", 149]);
+    expect(entry.status).toBe("converted");
+    expect(entry.note).toBeUndefined();
+  });
+
+  it("reads 25/75 as 1-3 with nothing lost", () => {
+    const { blocks, entries } = build(
       '<mj-section><mj-column width="25%" /><mj-column width="75%" /></mj-section>',
     );
     const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+    const section = blocks[0] as SectionBlock;
 
+    expect(section.columns).toBe("1-3");
+    expect(section.children).toHaveLength(2);
+    expect(entry.status).toBe("converted");
+    expect(entry.note).toBeUndefined();
+  });
+
+  it("names a 20/60/20 snap to 1-2-1", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column width="20%" /><mj-column width="60%" /><mj-column width="20%" /></mj-section>',
+    );
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.columns).toBe("1-2-1");
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      'Column widths 25%, 75% have no exact Templatical layout; resolved to "1-2".',
+      'Column widths 20%, 60%, 20% have no exact Templatical layout; resolved to "1-2-1".',
     );
   });
 
@@ -361,12 +432,12 @@ describe("buildSection", () => {
 
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      'Column widths 100px, auto have no exact Templatical layout; resolved to "1-2".',
+      'Column widths 100px, auto have no exact Templatical layout; resolved to "1-3".',
     );
   });
 
-  it("folds a fourth column's children into the third", () => {
-    const { blocks } = build(`
+  it("keeps four equal columns in four slots", () => {
+    const { blocks, entries } = build(`
       <mj-section>
         <mj-column><mj-spacer height="1px" /></mj-column>
         <mj-column><mj-spacer height="2px" /></mj-column>
@@ -374,10 +445,37 @@ describe("buildSection", () => {
         <mj-column><mj-spacer height="4px" /></mj-column>
       </mj-section>`);
     const section = blocks[0] as SectionBlock;
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
 
-    expect(section.columns).toBe("3");
-    expect(section.children).toHaveLength(3);
-    expect(section.children[2]).toHaveLength(2);
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
+    expect(section.children.map((column) => column[0])).toMatchObject([
+      { type: "spacer", height: 1 },
+      { type: "spacer", height: 2 },
+      { type: "spacer", height: 3 },
+      { type: "spacer", height: 4 },
+    ]);
+    expect(entry.status).toBe("converted");
+  });
+
+  it("folds a fifth column into the fourth slot and names the limit", () => {
+    const { blocks, entries } = build(`
+      <mj-section>
+        <mj-column width="20%"><mj-spacer height="1px" /></mj-column>
+        <mj-column width="20%"><mj-spacer height="2px" /></mj-column>
+        <mj-column width="20%"><mj-spacer height="3px" /></mj-column>
+        <mj-column width="20%"><mj-spacer height="4px" /></mj-column>
+        <mj-column width="20%"><mj-spacer height="5px" /></mj-column>
+      </mj-section>`);
+    const section = blocks[0] as SectionBlock;
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
+    expect(section.children[3]).toHaveLength(2);
+    expect(entry.note).toBe(
+      'Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.',
+    );
   });
 
   it("refuses a nested section, falling it back to html", () => {
@@ -524,6 +622,106 @@ describe("convertColumnChildren display conditions", () => {
       sourceTag: "mj-raw",
       templaticalBlockType: "html",
       status: "converted",
+    });
+  });
+});
+
+describe("full-width bands", () => {
+  it("moves a full-width section background onto the wrapper", () => {
+    const { blocks } = build(
+      '<mj-section full-width="full-width" background-color="#111111"><mj-column><mj-text>Hi</mj-text></mj-column></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#111111",
+      fullWidth: true,
+    });
+  });
+
+  it("moves a full-width section image onto the wrapper", () => {
+    const { blocks } = build(
+      '<mj-section full-width="full-width" background-url="https://cdn.test/band.jpg"><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper?.backgroundImage?.url).toBe(
+      "https://cdn.test/band.jpg",
+    );
+    expect(section.wrapper?.fullWidth).toBe(true);
+  });
+
+  it("leaves a full-width section with no background unwrapped", () => {
+    const { blocks } = build(
+      '<mj-section full-width="full-width"><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.wrapper).toBeUndefined();
+    expect(section.styles.backgroundColor).toBeUndefined();
+  });
+
+  it("keeps a section background when full-width is absent", () => {
+    const { blocks } = build(
+      '<mj-section background-color="#eeeeee"><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#eeeeee");
+    expect(section.wrapper).toBeUndefined();
+  });
+
+  it("sets fullWidth on an mj-wrapper that is full width", () => {
+    const { blocks } = build(
+      '<mj-wrapper full-width="full-width" background-color="#111111" padding="8px"><mj-section background-color="#ffffff"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#111111",
+      padding: { top: 8, right: 8, bottom: 8, left: 8 },
+      fullWidth: true,
+    });
+  });
+
+  it("keeps the section background when a painted wrapper already owns the band", () => {
+    const { blocks } = build(
+      '<mj-wrapper background-color="#222222"><mj-section full-width="full-width" background-color="#111111"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#111111");
+    expect(section.wrapper?.backgroundColor).toBe("#222222");
+    expect(section.wrapper?.fullWidth).toBeUndefined();
+  });
+
+  it("keeps the section background inside a wrapper that is not full width", () => {
+    const { blocks } = build(
+      '<mj-wrapper padding="12px"><mj-section full-width="full-width" background-color="#111111"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#111111");
+    expect(section.wrapper?.fullWidth).toBeUndefined();
+    expect(section.wrapper?.padding).toEqual({
+      top: 12,
+      right: 12,
+      bottom: 12,
+      left: 12,
+    });
+  });
+
+  it("lifts a full-width section onto a full-width wrapper that paints nothing", () => {
+    const { blocks } = build(
+      '<mj-wrapper full-width="full-width" padding="4px"><mj-section full-width="full-width" background-color="#111111"><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#111111",
+      padding: { top: 4, right: 4, bottom: 4, left: 4 },
+      fullWidth: true,
     });
   });
 });

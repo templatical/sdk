@@ -406,7 +406,7 @@ describe("convertBeeFreeTemplate", () => {
     }
   });
 
-  it("flattens 4+ columns with warning", () => {
+  it("keeps four equal grid columns", () => {
     const template: BeeFreeTemplate = {
       page: {
         rows: [
@@ -435,10 +435,15 @@ describe("convertBeeFreeTemplate", () => {
     };
 
     const { content, report } = convertBeeFreeTemplate(template);
+    const section = content.blocks[0];
 
-    // Flattened — no section, just individual blocks
-    expect(content.blocks.some((b) => b.type === "spacer")).toBe(true);
-    expect(report.warnings.some((w) => w.includes("4 columns"))).toBe(true);
+    expect(section?.type).toBe("section");
+    if (section?.type === "section") {
+      expect(section.columns).toBe("4");
+      expect(section.children).toHaveLength(4);
+      expect(section.children[0][0]?.type).toBe("spacer");
+    }
+    expect(report.warnings.some((w) => w.includes("flattened"))).toBe(false);
   });
 
   it("converts button module", () => {
@@ -641,24 +646,47 @@ describe("convertBeeFreeTemplate", () => {
       expect(widthsOf(content.blocks)).toEqual([600]);
     });
 
-    // A 4+ column row is flattened, so its modules end up spanning the body.
-    it("measures a flattened row's dividers against the body width", () => {
+    // A quarter of 600 is 150, and the divider's 10px sides leave 130.
+    it("measures a four-column divider against its quarter column", () => {
+      const row = (width: string) =>
+        convertBeeFreeTemplate({
+          page: {
+            body: { content: { style: { width: "600px" } } },
+            rows: [
+              {
+                columns: [
+                  { "grid-columns": 3, modules: [divider(width)] },
+                  { "grid-columns": 3, modules: [] },
+                  { "grid-columns": 3, modules: [] },
+                  { "grid-columns": 3, modules: [] },
+                ],
+              },
+            ],
+          },
+        });
+      const filled = row("130px");
+      const narrow = row("129px");
+      const section = filled.content.blocks[0];
+      expect(section.type === "section" && section.columns).toBe("4");
+      expect(widthsOf(filled.content.blocks)).toEqual(["full"]);
+      expect(widthsOf(narrow.content.blocks)).toEqual([129]);
+    });
+
+    it("measures a five-column row's divider against the body width", () => {
       const { content } = convertBeeFreeTemplate({
         page: {
           body: { content: { style: { width: "600px" } } },
           rows: [
             {
-              columns: [
-                { "grid-columns": 3, modules: [divider("130px")] },
-                { "grid-columns": 3, modules: [] },
-                { "grid-columns": 3, modules: [] },
-                { "grid-columns": 3, modules: [] },
-              ],
+              columns: [1, 2, 3, 4, 5].map(() => ({
+                "grid-columns": 3,
+                modules: [divider("130px")],
+              })),
             },
           ],
         },
       });
-      expect(widthsOf(content.blocks)).toEqual([130]);
+      expect(widthsOf(content.blocks)).toEqual([130, 130, 130, 130, 130]);
     });
   });
 
@@ -1108,28 +1136,33 @@ describe("convertBeeFreeTemplate", () => {
       expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
     });
 
-    it("paints a band image at the content width while the content area is transparent", () => {
+    it("puts a band image on a full-width wrapper while the content area is transparent", () => {
       const { blocks, warnings } = convertRow({
         container: {
           "background-image": "url(https://cdn.test/band.jpg)",
           "background-repeat": "repeat",
+          "background-color": "#112233",
         },
         content: { "background-color": "transparent" },
       });
       const section = blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
-      expect(section.backgroundImage).toEqual({
-        url: "https://cdn.test/band.jpg",
-        size: "auto",
-        position: { x: "left", y: "top" },
-        repeat: true,
+      expect(section.backgroundImage).toBeUndefined();
+      expect(section.styles.backgroundColor).toBeUndefined();
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#112233",
+        backgroundImage: {
+          url: "https://cdn.test/band.jpg",
+          size: "auto",
+          position: { x: "left", y: "top" },
+          repeat: true,
+        },
+        fullWidth: true,
       });
-      expect(warnings).toEqual([
-        'Row container background image "https://cdn.test/band.jpg" spans the full width in BeeFree; the section paints it at the content width.',
-      ]);
+      expect(warnings).toEqual([]);
     });
 
-    it("drops a band image behind a painted content area", () => {
+    it("keeps a band image on the wrapper behind a painted content area", () => {
       const { blocks, warnings } = convertRow({
         container: { "background-image": "url(https://cdn.test/band.jpg)" },
         content: { "background-color": "#ffffff" },
@@ -1137,12 +1170,20 @@ describe("convertBeeFreeTemplate", () => {
       const section = blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
       expect(section.backgroundImage).toBeUndefined();
-      expect(warnings).toEqual([
-        'Row container background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background #ffffff.',
-      ]);
+      expect(section.styles.backgroundColor).toBe("#ffffff");
+      expect(section.wrapper).toEqual({
+        backgroundImage: {
+          url: "https://cdn.test/band.jpg",
+          size: "auto",
+          position: { x: "left", y: "top" },
+          repeat: true,
+        },
+        fullWidth: true,
+      });
+      expect(warnings).toEqual([]);
     });
 
-    it("keeps the content image over a band image", () => {
+    it("keeps the content image on the section and the band image on the wrapper", () => {
       const { blocks, warnings } = convertRow({
         container: { "background-image": "url(https://cdn.test/band.jpg)" },
         content: HERO,
@@ -1150,9 +1191,11 @@ describe("convertBeeFreeTemplate", () => {
       const section = blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
       expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
-      expect(warnings).toEqual([
-        'Row container background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background image.',
-      ]);
+      expect(section.wrapper?.backgroundImage?.url).toBe(
+        "https://cdn.test/band.jpg",
+      );
+      expect(section.wrapper?.fullWidth).toBe(true);
+      expect(warnings).toEqual([]);
     });
 
     it("reports a value with no exact keyword in warnings", () => {
@@ -1800,7 +1843,7 @@ describe("convertBeeFreeTemplate", () => {
       expect(paintedSection.styles.backgroundColor).toBeUndefined();
     });
 
-    it("folds a flattened row's column padding into each column's modules", () => {
+    it("folds a four-column row's padding into each column's modules", () => {
       const { content, report } = convertBeeFreeTemplate({
         page: {
           rows: [
@@ -1824,7 +1867,7 @@ describe("convertBeeFreeTemplate", () => {
 
       const section = content.blocks[0];
       if (section.type !== "section") throw new Error("expected a section");
-      expect(section.columns).toBe("1");
+      expect(section.columns).toBe("4");
       expect(section.styles.padding).toEqual({
         top: 0,
         right: 0,
@@ -1832,7 +1875,10 @@ describe("convertBeeFreeTemplate", () => {
         left: 0,
       });
       expect(section.styles.backgroundColor).toBe("#eeeeee");
-      expect(section.children[0].map((block) => block.styles.padding)).toEqual([
+      expect(section.children).toHaveLength(4);
+      expect(
+        section.children.map((column) => column[0].styles.padding),
+      ).toEqual([
         { top: 5, right: 1, bottom: 6, left: 2 },
         { top: 0, right: 1, bottom: 6, left: 2 },
         { top: 0, right: 1, bottom: 6, left: 2 },
@@ -1901,7 +1947,10 @@ describe("convertBeeFreeTemplate", () => {
       expect(content.settings.backgroundColor).toBe("#f1f2f7");
       expect(content.settings.width).toBe(600);
       expect(section.styles.backgroundColor).toBeUndefined();
-      expect(section.wrapper).toEqual({ backgroundColor: "#ffffff" });
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#ffffff",
+        fullWidth: true,
+      });
       expect(section.children[0][0].type).toBe("paragraph");
     });
 
@@ -1913,7 +1962,10 @@ describe("convertBeeFreeTemplate", () => {
       });
 
       expect(section.styles.backgroundColor).toBe("#abcdef");
-      expect(section.wrapper).toEqual({ backgroundColor: "#f9f9f9" });
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#f9f9f9",
+        fullWidth: true,
+      });
     });
 
     it("omits the band when it is the same colour as the section fill", () => {
@@ -1941,7 +1993,10 @@ describe("convertBeeFreeTemplate", () => {
       });
 
       expect(section.styles.backgroundColor).toBe("#abcdef");
-      expect(section.wrapper).toEqual({ backgroundColor: "#f9f9f9" });
+      expect(section.wrapper).toEqual({
+        backgroundColor: "#f9f9f9",
+        fullWidth: true,
+      });
     });
 
     it("does not wrap a row whose container and content paint nothing", () => {
@@ -2024,7 +2079,7 @@ describe("convertBeeFreeTemplate", () => {
 
       expect(content.blocks[0].type).toBe("paragraph");
       expect(report.warnings).toEqual([
-        "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a 2- or 3-column section.",
+        "rowColStackOnMobile false was dropped; Templatical keeps columns side by side only on a multi-column section.",
       ]);
     });
 
@@ -2082,10 +2137,52 @@ describe("convertBeeFreeTemplate", () => {
           { "grid-columns": 9, modules: [text("<p>R</p>")] },
         ],
       });
+      const nineThree = sectionOf({
+        columns: [
+          { "grid-columns": 9, modules: [text("<p>L</p>")] },
+          { "grid-columns": 3, modules: [text("<p>R</p>")] },
+        ],
+      });
+      const threeSixThree = sectionOf({
+        columns: [
+          { "grid-columns": 3, modules: [text("<p>L</p>")] },
+          { "grid-columns": 6, modules: [text("<p>M</p>")] },
+          { "grid-columns": 3, modules: [text("<p>R</p>")] },
+        ],
+      });
+      const sixFourTwo = sectionOf({
+        columns: [
+          { "grid-columns": 6, modules: [text()] },
+          { "grid-columns": 4, modules: [text()] },
+          { "grid-columns": 2, modules: [text()] },
+        ],
+      });
+      const fourThreeFive = sectionOf({
+        columns: [
+          { "grid-columns": 4, modules: [text()] },
+          { "grid-columns": 3, modules: [text()] },
+          { "grid-columns": 5, modules: [text()] },
+        ],
+      });
+      const fourEqual = sectionOf({
+        columns: [1, 2, 3, 4].map((n) => ({
+          "grid-columns": 3,
+          modules: [text(`<p>${n}</p>`)],
+        })),
+      });
       const sevenFive = sectionOf({
         columns: [
           { "grid-columns": 7, modules: [text()] },
           { "grid-columns": 5, modules: [text()] },
+        ],
+      });
+      // 7/12 rounds to 583 thousandths: 83 from an even split, 84 from 2/3.
+      // 5/12 rounds the same way. A third would narrow the smaller share
+      // enough to wrap a one-line footer.
+      const fiveSeven = sectionOf({
+        columns: [
+          { "grid-columns": 5, modules: [text("<p>L</p>")] },
+          { "grid-columns": 7, modules: [text("<p>R</p>")] },
         ],
       });
       const unevenThree = sectionOf({
@@ -2102,19 +2199,485 @@ describe("convertBeeFreeTemplate", () => {
       expect(ratioNotes(equal.report.warnings)).toEqual([]);
       expect(thirds.section.columns).toBe("3");
       expect(ratioNotes(thirds.report.warnings)).toEqual([]);
-      expect(threeNine.section.columns).toBe("1-2");
+      expect(threeNine.section.columns).toBe("1-3");
       expect(threeNine.section.children).toHaveLength(2);
-      expect(ratioNotes(threeNine.report.warnings)).toEqual([
-        'Column ratio 3-9 was mapped to the nearest layout "1-2".',
+      expect(ratioNotes(threeNine.report.warnings)).toEqual([]);
+      expect(nineThree.section.columns).toBe("3-1");
+      expect(nineThree.section.children).toHaveLength(2);
+      expect(ratioNotes(nineThree.report.warnings)).toEqual([]);
+      expect(threeSixThree.section.columns).toBe("1-2-1");
+      expect(threeSixThree.section.children).toHaveLength(3);
+      expect(ratioNotes(threeSixThree.report.warnings)).toEqual([]);
+      expect(fourEqual.section.columns).toBe("4");
+      expect(fourEqual.section.children).toHaveLength(4);
+      expect(
+        fourEqual.section.children.map((column) => column[0].type),
+      ).toEqual(["paragraph", "paragraph", "paragraph", "paragraph"]);
+      expect(ratioNotes(fourEqual.report.warnings)).toEqual([]);
+      expect(sixFourTwo.section.columns).toBe("3");
+      expect(sixFourTwo.section.children).toHaveLength(3);
+      expect(ratioNotes(sixFourTwo.report.warnings)).toEqual([
+        'Column ratio 6-4-2 was mapped to the nearest layout "3".',
       ]);
-      expect(sevenFive.section.columns).toBe("2-1");
+      expect(fourThreeFive.section.columns).toBe("3");
+      expect(ratioNotes(fourThreeFive.report.warnings)).toEqual([
+        'Column ratio 4-3-5 was mapped to the nearest layout "3".',
+      ]);
+      expect(sevenFive.section.columns).toBe("2");
       expect(ratioNotes(sevenFive.report.warnings)).toEqual([
-        'Column ratio 7-5 was mapped to the nearest layout "2-1".',
+        'Column ratio 7-5 was mapped to the nearest layout "2".',
       ]);
-      expect(unevenThree.section.columns).toBe("3");
+      expect(fiveSeven.section.columns).toBe("2");
+      expect(fiveSeven.section.children).toHaveLength(2);
+      expect(ratioNotes(fiveSeven.report.warnings)).toEqual([
+        'Column ratio 5-7 was mapped to the nearest layout "2".',
+      ]);
+      expect(unevenThree.section.columns).toBe("1-2-1");
+      expect(unevenThree.section.children).toHaveLength(3);
       expect(ratioNotes(unevenThree.report.warnings)).toEqual([
-        'Column ratio 2-8-2 was mapped to the nearest layout "3".',
+        'Column ratio 2-8-2 was mapped to the nearest layout "1-2-1".',
       ]);
+    });
+
+    it("returns inner padding when a snap narrows a column", () => {
+      const padding = (left: string, right: string) => ({
+        "padding-top": "10px",
+        "padding-right": right,
+        "padding-bottom": "10px",
+        "padding-left": left,
+      });
+      const paragraph = (align: string, box: Record<string, string>) => ({
+        type: "mailup-bee-newsletter-modules-text",
+        descriptor: {
+          text: { html: `<p style="text-align: ${align}">Hi</p>` },
+          style: box,
+        },
+      });
+      const { section } = sectionOf({
+        columns: [
+          {
+            "grid-columns": 7,
+            style: padding("40px", "5px"),
+            modules: [paragraph("left", padding("10px", "10px"))],
+          },
+          {
+            "grid-columns": 5,
+            style: padding("10px", "40px"),
+            modules: [paragraph("right", padding("10px", "10px"))],
+          },
+        ],
+      });
+
+      // 7/12 of 600 is 350 and the even column is 300, so the left side is
+      // 50px short. Its inner padding is the right side (15px) and that
+      // goes to 0; the outer 50px stays. The right column is wider than
+      // its 250px source, so its padding is unchanged.
+      expect(section.columns).toBe("2");
+      expect(section.children[0][0].styles.padding).toEqual({
+        top: 20,
+        right: 0,
+        bottom: 20,
+        left: 50,
+      });
+      expect(section.children[1][0].styles.padding).toEqual({
+        top: 20,
+        right: 50,
+        bottom: 20,
+        left: 20,
+      });
+    });
+
+    // 7/12 of 600 is 350 and the even column is 300, so 50px comes back from
+    // the left column's right padding. 60px there becomes 10px. The room
+    // before that return is 240px, and after it is 290px.
+    describe("widths after inner padding comes back", () => {
+      const padding = {
+        "padding-top": "0px",
+        "padding-right": "60px",
+        "padding-bottom": "0px",
+        "padding-left": "0px",
+      };
+      const returned = { top: 0, right: 10, bottom: 0, left: 0 };
+
+      function snapped(
+        module: BeeFreeeRow["columns"][number]["modules"][number],
+      ) {
+        return sectionOf({
+          columns: [
+            { "grid-columns": 7, modules: [module] },
+            { "grid-columns": 5, modules: [text()] },
+          ],
+        });
+      }
+
+      function leftBlock(
+        module: BeeFreeeRow["columns"][number]["modules"][number],
+      ) {
+        return snapped(module).section.children[0][0];
+      }
+
+      it("keeps a fixed image at the width the source shows", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: {
+              src: "https://example.com/photo.png",
+              alt: "Photo",
+              width: "999px",
+              height: "500px",
+            },
+            computedStyle: { class: "center fixedwidth", width: "240px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(240);
+        expect(block.naturalWidth).toBe(999);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a source width that only overflowed the column before padding came back", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: {
+              src: "https://example.com/photo.png",
+              alt: "Photo",
+              width: "999px",
+              height: "500px",
+            },
+            computedStyle: { class: "center fixedwidth", width: "260px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(260);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("still returns padding on an image that does not fill the column", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: { src: "https://example.com/photo.png", alt: "Photo" },
+            computedStyle: { class: "center fixedwidth", width: "200px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(200);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("stays full when the shown width fills the column after padding comes back", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: { src: "https://example.com/photo.png", alt: "Photo" },
+            computedStyle: { class: "center autowidth", width: "290px" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe("full");
+        expect(block.styles.padding).toEqual(returned);
+        expect(block.fluidOnMobile).toBe(false);
+      });
+
+      it("converts an image percentage against the room after padding comes back", () => {
+        const { section, report } = snapped({
+          type: "mailup-bee-newsletter-modules-image",
+          descriptor: {
+            image: { src: "https://example.com/photo.png", alt: "Photo" },
+            computedStyle: { class: "center autowidth", width: "50%" },
+            style: padding,
+          },
+        });
+        const block = section.children[0][0];
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(145);
+        expect(block.styles.padding).toEqual(returned);
+        expect(report.entries[0]).toMatchObject({
+          status: "approximated",
+          note: "Image width 50% was converted to 145px.",
+        });
+      });
+
+      it("keeps a lone icon at the width the source shows", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-icons",
+          descriptor: {
+            computedStyle: { iconHeight: "240px" },
+            iconsList: {
+              icons: [
+                {
+                  image: "https://example.com/icon.png",
+                  alt: "Icon",
+                  text: "",
+                  width: "100px",
+                  height: "100px",
+                },
+              ],
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("image");
+        if (block.type !== "image") throw new Error("expected an image");
+        expect(block.width).toBe(240);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a px divider at the width the source shows", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-divider",
+          descriptor: {
+            divider: {
+              style: { "border-top": "1px solid #cccccc", width: "240px" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("divider");
+        if (block.type !== "divider") throw new Error("expected a divider");
+        expect(block.width).toBe(240);
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a percentage divider as that share and still returns padding", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-divider",
+          descriptor: {
+            divider: {
+              style: { "border-top": "1px solid #cccccc", width: "50%" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("divider");
+        if (block.type !== "divider") throw new Error("expected a divider");
+        expect(block.width).toBe("50%");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a full button as full and still returns padding", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-button",
+          descriptor: {
+            button: {
+              label: "Go",
+              href: "https://example.com",
+              style: { width: "100%" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("button");
+        if (block.type !== "button") throw new Error("expected a button");
+        expect(block.width).toBe("full");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a video at its stated px width and still returns padding", () => {
+        const narrow = leftBlock({
+          type: "mailup-bee-newsletter-modules-video",
+          descriptor: {
+            video: {
+              src: "https://www.youtube.com/watch?v=abcdefghijk",
+              style: { width: "240px" },
+            },
+            style: padding,
+          },
+        });
+        const wide = leftBlock({
+          type: "mailup-bee-newsletter-modules-video",
+          descriptor: {
+            video: {
+              src: "https://www.youtube.com/watch?v=abcdefghijk",
+              style: { width: "500px" },
+            },
+            style: padding,
+          },
+        });
+
+        expect(narrow.type).toBe("video");
+        expect(wide.type).toBe("video");
+        if (narrow.type !== "video" || wide.type !== "video") {
+          throw new Error("expected video blocks");
+        }
+        expect(narrow.width).toBe(240);
+        expect(wide.width).toBe(500);
+        expect(narrow.styles.padding).toEqual(returned);
+        expect(wide.styles.padding).toEqual(returned);
+      });
+
+      it("keeps a social row's icon size and still returns padding", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-social",
+          descriptor: {
+            computedStyle: { iconsDefaultWidth: "32px" },
+            iconsList: {
+              icons: [
+                {
+                  name: "facebook",
+                  image: { href: "https://facebook.com/example" },
+                },
+              ],
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("social");
+        if (block.type !== "social") throw new Error("expected a social block");
+        expect(block.iconSize).toBe("medium");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      it("returns padding on a menu", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-menu",
+          descriptor: {
+            menu: {
+              items: [{ text: "Home", link: "https://example.com" }],
+            },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("menu");
+        if (block.type !== "menu") throw new Error("expected a menu");
+        expect(block.styles.padding).toEqual(returned);
+      });
+
+      // 7/12 of 600 is 350 and the even column is 300. The facing edge has no
+      // padding, so none of the 50px shortfall comes back. 20px on the outer
+      // edge stays, and the image is measured in the 280px that remain.
+      describe("outer column padding that is not given back", () => {
+        function photo(shown: string) {
+          return {
+            type: "mailup-bee-newsletter-modules-image",
+            descriptor: {
+              image: {
+                src: "https://example.com/photo.png",
+                alt: "Photo",
+                width: "999px",
+                height: "500px",
+              },
+              computedStyle: { class: "center fixedwidth", width: shown },
+            },
+          };
+        }
+
+        function imageBlock(block: Block) {
+          expect(block.type).toBe("image");
+          if (block.type !== "image") throw new Error("expected an image");
+          return block;
+        }
+
+        it("measures a first column against the outer padding it keeps", () => {
+          const row = (shown: string) =>
+            sectionOf({
+              columns: [
+                {
+                  "grid-columns": 7,
+                  style: { "padding-left": "20px", "padding-right": "0px" },
+                  modules: [photo(shown)],
+                },
+                { "grid-columns": 5, modules: [text()] },
+              ],
+            }).section.children[0][0];
+
+          const fills = imageBlock(row("280px"));
+          const wider = imageBlock(row("290px"));
+          const short = imageBlock(row("279px"));
+          const kept = { top: 0, right: 0, bottom: 0, left: 20 };
+
+          expect(fills.width).toBe("full");
+          expect(fills.styles.padding).toEqual(kept);
+          expect(wider.width).toBe("full");
+          expect(wider.styles.padding).toEqual(kept);
+          expect(short.width).toBe(279);
+          expect(short.styles.padding).toEqual(kept);
+        });
+
+        it("measures a second column against the outer padding it keeps", () => {
+          const row = (shown: string) =>
+            sectionOf({
+              columns: [
+                { "grid-columns": 5, modules: [text()] },
+                {
+                  "grid-columns": 7,
+                  style: { "padding-left": "0px", "padding-right": "20px" },
+                  modules: [photo(shown)],
+                },
+              ],
+            }).section.children[1][0];
+
+          const fills = imageBlock(row("280px"));
+          const short = imageBlock(row("279px"));
+          const kept = { top: 0, right: 20, bottom: 0, left: 0 };
+
+          expect(fills.width).toBe("full");
+          expect(fills.styles.padding).toEqual(kept);
+          expect(short.width).toBe(279);
+          expect(short.styles.padding).toEqual(kept);
+        });
+
+        it("measures padding kept on both sides when none of it comes back", () => {
+          // The right column of a 7-5 row is wider than its 250px share, so
+          // none of its padding comes back. 10px on each side leaves 280px.
+          const row = (shown: string) =>
+            sectionOf({
+              columns: [
+                { "grid-columns": 7, modules: [text()] },
+                {
+                  "grid-columns": 5,
+                  style: { "padding-left": "10px", "padding-right": "10px" },
+                  modules: [photo(shown)],
+                },
+              ],
+            }).section.children[1][0];
+
+          const fills = imageBlock(row("280px"));
+          const short = imageBlock(row("279px"));
+          const kept = { top: 0, right: 10, bottom: 0, left: 10 };
+
+          expect(fills.width).toBe("full");
+          expect(fills.styles.padding).toEqual(kept);
+          expect(short.width).toBe(279);
+          expect(short.styles.padding).toEqual(kept);
+        });
+      });
+
+      it("returns padding on an HTML block and leaves its markup", () => {
+        const block = leftBlock({
+          type: "mailup-bee-newsletter-modules-html",
+          descriptor: {
+            html: { html: "<p>Hi</p>" },
+            style: padding,
+          },
+        });
+
+        expect(block.type).toBe("html");
+        if (block.type !== "html") throw new Error("expected an html block");
+        expect(block.content).toBe("<p>Hi</p>");
+        expect(block.styles.padding).toEqual(returned);
+      });
     });
 
     it("treats a non-positive column total as an even split", () => {
@@ -2132,9 +2695,32 @@ describe("convertBeeFreeTemplate", () => {
       ]);
     });
 
-    it("names the original ratio when four columns are flattened", () => {
+    it("keeps a zero-sum three-column row on the even layout", () => {
+      // Grid shares 0, 1 and -1 sum to zero and are not equal, so each
+      // thousandth stays 0.
+      const { section, report } = sectionOf({
+        columns: [
+          { "grid-columns": 0, modules: [text("<p>L</p>")] },
+          { "grid-columns": 1, modules: [text("<p>M</p>")] },
+          { "grid-columns": -1, modules: [text("<p>R</p>")] },
+        ],
+      });
+
+      expect(section.columns).toBe("3");
+      expect(section.children).toHaveLength(3);
+      expect(
+        section.children.map((column) =>
+          column[0].type === "paragraph" ? column[0].content : column[0].type,
+        ),
+      ).toEqual(["<p>L</p>", "<p>M</p>", "<p>R</p>"]);
+      expect(ratioNotes(report.warnings)).toEqual([
+        'Column ratio 0-1--1 was mapped to the nearest layout "3".',
+      ]);
+    });
+
+    it("flattens five columns and names the four-column limit", () => {
       const { content, report } = convertRow({
-        columns: [1, 2, 3, 4].map((n) => ({
+        columns: [1, 2, 3, 4, 5].map((n) => ({
           "grid-columns": 3,
           modules: [text(`<p>${n}</p>`)],
         })),
@@ -2145,9 +2731,25 @@ describe("convertBeeFreeTemplate", () => {
         "paragraph",
         "paragraph",
         "paragraph",
+        "paragraph",
       ]);
       expect(ratioNotes(report.warnings)).toEqual([
-        "Row with 4 columns (3-3-3-3) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to 3.",
+        "Row with 5 columns (3-3-3-3-3) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to four columns.",
+      ]);
+    });
+
+    it("names an unequal four-column row snapped onto 4", () => {
+      const { section, report } = sectionOf({
+        columns: [6, 2, 2, 2].map((grid) => ({
+          "grid-columns": grid,
+          modules: [text()],
+        })),
+      });
+
+      expect(section.columns).toBe("4");
+      expect(section.children).toHaveLength(4);
+      expect(ratioNotes(report.warnings)).toEqual([
+        'Column ratio 6-2-2-2 was mapped to the nearest layout "4".',
       ]);
     });
 
@@ -2249,9 +2851,9 @@ describe("convertBeeFreeTemplate", () => {
                           {
                             name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
                             image: {
-                              alt: "Xing",
-                              href: "https://www.xing.com/pages/example",
-                              src: "https://cdn.example.com/xing.png",
+                              alt: "Vimeo",
+                              href: "https://vimeo.com/example",
+                              src: "https://cdn.example.com/vimeo.png",
                             },
                           },
                         ],
@@ -2272,16 +2874,68 @@ describe("convertBeeFreeTemplate", () => {
     ]);
     const image = content.blocks[1];
     expect(image.type === "image" && image.src).toBe(
-      "https://cdn.example.com/xing.png",
+      "https://cdn.example.com/vimeo.png",
     );
     expect(image.type === "image" && image.linkUrl).toBe(
-      "https://www.xing.com/pages/example",
+      "https://vimeo.com/example",
     );
     expect(report.entries).toHaveLength(1);
     expect(report.entries[0].status).toBe("approximated");
     expect(report.warnings).toEqual([
-      'Social network "Xing" has no Templatical icon; imported as an image.',
+      'Social network "Vimeo" has no Templatical icon; imported as an image.',
     ]);
+  });
+
+  it("keeps a Xing icon on the social block", () => {
+    const { content, report } = convertBeeFreeTemplate({
+      page: {
+        body: { content: { style: { width: "600px" } } },
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-social",
+                    descriptor: {
+                      iconsList: {
+                        icons: [
+                          {
+                            id: "facebook",
+                            name: "Facebook",
+                            image: { href: "https://facebook.com/page" },
+                          },
+                          {
+                            name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
+                            image: {
+                              alt: "Xing",
+                              href: "https://www.xing.com/pages/example",
+                              src: "https://cdn.example.com/xing.png",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(content.blocks.map((block) => block.type)).toEqual(["social"]);
+    const social = content.blocks[0];
+    expect(social.type).toBe("social");
+    if (social.type !== "social") return;
+    expect(social.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+      ["facebook", "https://facebook.com/page"],
+      ["xing", "https://www.xing.com/pages/example"],
+    ]);
+    expect(report.warnings).toEqual([]);
+    expect(report.entries[0].status).toBe("converted");
   });
 });
 
@@ -2395,7 +3049,7 @@ describe("image fluidOnMobile", () => {
     expect(image.fluidOnMobile).toBe(false);
   });
 
-  it("leaves a full-width row and a flattened row unset", () => {
+  it("leaves a full-width row unset and pins an image that fills a quarter column", () => {
     const [hero] = imagesIn({
       page: {
         body: { content: { computedStyle: { messageWidth: "600px" } } },
@@ -2409,12 +3063,28 @@ describe("image fluidOnMobile", () => {
     expect(hero.width).toBe("full");
     expect(hero.fluidOnMobile).toBeUndefined();
 
-    const [flat] = imagesIn({
+    const [quarter] = imagesIn({
       page: {
         body: { content: { computedStyle: { messageWidth: "600px" } } },
         rows: [
           {
             columns: [3, 3, 3, 3].map((grid) => ({
+              "grid-columns": grid,
+              modules: [photo("600px")],
+            })),
+          },
+        ],
+      },
+    });
+    expect(quarter.width).toBe("full");
+    expect(quarter.fluidOnMobile).toBe(false);
+
+    const [flat] = imagesIn({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            columns: [3, 3, 3, 3, 3].map((grid) => ({
               "grid-columns": grid,
               modules: [photo("600px")],
             })),

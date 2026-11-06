@@ -123,7 +123,7 @@ A `note` on an `approximated` entry always names the value it replaced, so diffi
 
 ## Conversion model
 
-Topol's own JSON tree already speaks in MJML-shaped tags — `mj-section`, `mj-column`, `mj-text`, `mj-button`, and so on — even though Topol is not MJML itself. Its root node is `mj-global-style`, not MJML's `<mjml>`/`<mj-body>` pair, and a few tags pack information differently: a single `mj-social` node carries every icon as `<platform>-href` attributes, rather than nesting child `mj-social-element`s the way hand-written MJML does. Rich content sits in a `content` field beside each node's `attributes`, not inside it.
+Topol's own JSON tree already speaks in MJML-shaped tags — `mj-section`, `mj-column`, `mj-text`, `mj-button`, and so on — even though Topol is not MJML itself. Its root node is `mj-global-style`, not MJML's `<mjml>`/`<mj-body>` pair. The root's sections may sit under `mj-container` or `mj-body`; the importer accepts both. A few tags pack information differently: a single `mj-social` node carries every icon as `<platform>-href` attributes, rather than nesting child `mj-social-element`s the way hand-written MJML does. Rich content sits in a `content` field beside each node's `attributes`, not inside it.
 
 - **Topol** stores a design as this tree of tag-shaped nodes, plus a root-level `attributes` object holding per-tag and per-selector style defaults — the same role MJML's `<mj-attributes>` plays, flattened onto the root instead of nested under `<mj-head>`.
 - **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
@@ -161,7 +161,7 @@ A visual comparison catches what the report can't. Several of the losses below a
 
 | Topol tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's five layouts resolves to the nearest one. `background-url` becomes `backgroundImage` (see [Background images](#background-images)). |
+| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) resolves to the nearest one of the same column count. `background-url` becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | Holds a list of nested blocks. |
 | `mj-text` | `TitleBlock` or `ParagraphBlock` | A single heading wrapping the whole content becomes a `TitleBlock`; anything else becomes a `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. |
@@ -170,7 +170,7 @@ A visual comparison catches what the report can't. Several of the losses below a
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` | `SocialIconsBlock` | Each platform named in the node's `display` list with a matching `<platform>-href` becomes a `SocialIcon`. Topol packs every icon onto this one node's attributes, rather than nesting `mj-social-element` children the way hand-written MJML does. |
-| Root `attributes` (plus `mj-container`'s `background-color`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. A font stack carries over whole, so its fallbacks survive. |
+| Root `attributes` (plus the `background-color` of `mj-container` or `mj-body`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. A font stack carries over whole, so its fallbacks survive. |
 | Anything else | `HtmlBlock` | No Templatical block exists for the tag; the raw node is preserved as JSON, flagged `html-fallback`. |
 
 ### Background images {#background-images}
@@ -183,7 +183,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the secti
 
 Every leaf tag in the mapping table above converts — Topol's own editor doesn't emit anything this importer treats as `html-fallback` in practice. Within that, a few conversions are approximations rather than exact matches, each recorded as an `approximated` entry with a `note` in `report.entries`:
 
-- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol allows any column count at any width, so a shape outside those five — most often four equal columns — resolves to the nearest layout, and any column past the third folds its content into the last one.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Topol allows any column count at any width, so a shape outside those layouts resolves to the nearest layout of the same column count. Four equal columns stay `"4"`. Any column past the fourth folds its content into the last one, and the note names the four-column limit.
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact keyword maps to the nearest one. See [Background images](#background-images).
 - **GIFs** — `mj-gif` imports as an `ImageBlock`, the same block `mj-image` produces. Templatical has no dedicated GIF block.
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
@@ -193,7 +193,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 
 ## Things that don't map automatically
 
-- **`full-width`, `layout` and `vertical-align`** — `full-width` and `layout` on an `mj-section`, and `vertical-align` on `mj-column`, are never read, so nothing in `report.entries` points at them.
+- **`layout` and `vertical-align`** — `layout` on an `mj-section` and `vertical-align` on `mj-column` are never read, so nothing in `report.entries` points at them. `full-width="full-width"` on an `mj-section` moves that section's background colour and image onto `section.wrapper` with `fullWidth: true` and leaves the section background unset. With no background the attribute is ignored.
 - **A button's margin** — `ButtonBlock`'s `styles.padding` is its only outer-spacing field. Topol writes both `padding` and `margin` on every `mj-button`; `padding` fills that field, and `margin` is dropped rather than folded in, which would double the vertical space. The button's inner label padding (`buttonPadding`) keeps Templatical's default too, since Topol has no separate attribute for it.
 - **A paragraph's node-level color, font, and alignment** — `ParagraphBlock` accepts only `content` plus the block's `styles` (padding, background); there's no field for a node-level `color`, `font-family`, or `align`. An `mj-text` node that infers as a paragraph keeps those attributes only where the `content` HTML itself carries them inline — a bare node attribute is dropped silently, and the entry still reports `converted`, since there's nowhere in the block model to note the drop against. The asymmetry is worth knowing: a heading built from the same tag does honor a node's own `color` and `font-family` (`TitleBlock`, see the tag mapping table above), so a design that colours headings and paragraphs identically keeps that colour only on the headings after import.
 - **Imported webfonts** — Templatical has no webfont-import concept. The design root's top-level `fonts` array lists the webfonts imported into the Topol project (one design measures `["\"Cabin\", sans-serif"]`; another carries two entries), and the array is dropped — text that depended on it renders in its fallback face, with no warning at runtime. This is a different field from `attributes.fonts`, a comma-separated fallback stack on the same root that the importer does read, feeding the template's default `fontFamily` when nothing more specific sets one.

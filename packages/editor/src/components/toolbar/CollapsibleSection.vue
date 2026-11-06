@@ -8,6 +8,7 @@ defineProps<{
   /**
    * Optional test hook on the header button. The title is the only other way to
    * address a section, and it is localized — which the e2e selector rules ban.
+   * The content gets the same id with `-content` appended.
    */
   headerTestId?: string;
 }>();
@@ -36,7 +37,11 @@ defineEmits<{
       />
       <span>{{ title }}</span>
     </button>
-    <div v-show="open" class="tpl:mt-3">
+    <div
+      v-show="open"
+      class="tpl:mt-3"
+      :data-testid="headerTestId ? `${headerTestId}-content` : undefined"
+    >
       <slot />
     </div>
   </div>

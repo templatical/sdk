@@ -318,11 +318,12 @@ interface SectionBlock extends BaseBlock {
 interface SectionWrapper {
   backgroundColor?: string;
   padding?: SpacingValue;
-  borderRadius?: BorderRadiusValue;
+  borderRadius?: BorderRadiusValue; // ignored while fullWidth is on; the stored value stays
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: band spans the recipient's window; section stays at settings.width
 }
 
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 
 interface BackgroundImage {
   url: string;
@@ -405,7 +406,7 @@ interface SocialIcon {
 }
 
 type SocialPlatform =
-  | 'facebook' | 'twitter' | 'instagram' | 'linkedin'
+  | 'facebook' | 'twitter' | 'instagram' | 'linkedin' | 'xing'
   | 'youtube' | 'tiktok' | 'pinterest' | 'email'
   | 'whatsapp' | 'telegram' | 'discord' | 'snapchat'
   | 'reddit' | 'github' | 'dribbble' | 'behance'
@@ -531,8 +532,9 @@ interface SlotBlock extends BaseBlock {
 interface WrapperBlock extends BaseBlock {
   type: 'wrapper';
   children: Block[];
-  borderRadius?: number;
+  borderRadius?: number; // ignored while fullWidth is on; the stored value stays
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: band spans the recipient's window; children stay at settings.width
 }
 ```
 
@@ -580,6 +582,16 @@ interface DisplayCondition {
   after: string;
   group?: string;
   description?: string;
+  data?: unknown; // opaque host state; must survive JSON.stringify
+}
+```
+
+### DisplayConditionRequestContext
+
+```ts
+interface DisplayConditionRequestContext {
+  current?: DisplayCondition; // copy of the block's condition, when one is set
+  block: Block;               // copy of the block
 }
 ```
 
@@ -587,8 +599,11 @@ interface DisplayCondition {
 
 ```ts
 interface DisplayConditionsConfig {
-  conditions: DisplayCondition[];
+  conditions?: DisplayCondition[];
   allowCustom?: boolean;
+  onRequest?: (
+    context: DisplayConditionRequestContext,
+  ) => Promise<DisplayCondition | null>;
 }
 ```
 

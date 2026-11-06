@@ -24,8 +24,8 @@ describe('socialIcons', () => {
     );
   });
 
-  it('has 17 platforms', () => {
-    expect(socialPlatformOptions).toHaveLength(17);
+  it('has 18 platforms', () => {
+    expect(socialPlatformOptions).toHaveLength(18);
   });
 
   it('includes common platforms', () => {
@@ -33,6 +33,7 @@ describe('socialIcons', () => {
     expect(socialPlatformOptions).toContain('twitter');
     expect(socialPlatformOptions).toContain('instagram');
     expect(socialPlatformOptions).toContain('linkedin');
+    expect(socialPlatformOptions).toContain('xing');
     expect(socialPlatformOptions).toContain('email');
     expect(socialPlatformOptions).toContain('website');
   });

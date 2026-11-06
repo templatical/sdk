@@ -409,8 +409,9 @@ export {
   replaceMergeTagSpans,
   scanMergeTagSpans,
 } from "./merge-tag-html";
-export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
+export type { SyntaxMatch, SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 export {
+  builtInPresetOf,
   containsMergeTag,
   getLogicMergeTagKeyword,
   getMergeTagLabel,
@@ -423,6 +424,8 @@ export {
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
   resolveSyntax,
+  scanCombinedSyntaxMatches,
+  scanSyntaxMatches,
   substituteHtmlMergeTagSamples,
   substituteTextMergeTagSamples,
   SYNTAX_PRESETS,
@@ -440,6 +443,7 @@ export type {
   ColorsConfig,
   CustomFont,
   DisplayCondition,
+  DisplayConditionRequestContext,
   DisplayConditionsConfig,
   ExportResult,
   FontsConfig,
