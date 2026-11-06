@@ -158,6 +158,62 @@ describe("buildSection", () => {
     ]);
   });
 
+  it("moves a full-width section background onto the wrapper", () => {
+    const { blocks, entries } = build(
+      section(
+        { "background-color": "#111111", "full-width": "full-width" },
+        column("100%", spacer(8)),
+      ),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.styles.backgroundColor).toBeUndefined();
+    expect(s.wrapper).toEqual({
+      backgroundColor: "#111111",
+      fullWidth: true,
+    });
+    expect(entries[0].status).toBe("converted");
+  });
+
+  it("moves a full-width section image onto the wrapper", () => {
+    const { blocks } = build(
+      section(
+        {
+          "full-width": "full-width",
+          "background-url": "https://cdn.test/band.jpg",
+          "background-size": "cover",
+          "background-position": "center center",
+          "background-repeat": "no-repeat",
+        },
+        column("100%"),
+      ),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.backgroundImage).toBeUndefined();
+    expect(s.wrapper).toEqual({
+      backgroundImage: {
+        url: "https://cdn.test/band.jpg",
+        size: "cover",
+        position: { x: "center", y: "center" },
+        repeat: false,
+      },
+      fullWidth: true,
+    });
+  });
+
+  it("leaves a full-width section with no background unwrapped", () => {
+    const s = build(section({ "full-width": "full-width" }, column("100%")))
+      .blocks[0] as SectionBlock;
+    expect(s.styles.backgroundColor).toBeUndefined();
+    expect(s.wrapper).toBeUndefined();
+  });
+
+  it("keeps a section background on the section when it is not full width", () => {
+    const s = build(section({ "background-color": "#eeeeee" }, column("100%")))
+      .blocks[0] as SectionBlock;
+    expect(s.styles.backgroundColor).toBe("#eeeeee");
+    expect(s.wrapper).toBeUndefined();
+  });
+
   it("ignores the stale camelCase styling keys", () => {
     const node = section(
       { "background-color": "#eeeeee", padding: "9px 0px 9px 0px" },

@@ -109,6 +109,7 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
     section.backgroundImage = background.image;
     reasons.push(...background.notes);
   }
+  liftFullWidthSection(section, node, map);
   entries.unshift(
     sectionEntry(
       node,
@@ -217,18 +218,41 @@ export function applyWrapper(
   if (sections.length === 0) return;
 
   const { wrapper, notes } = readWrapper(node, map);
+  const wrapperPaints = Boolean(
+    wrapper.backgroundColor || wrapper.backgroundImage,
+  );
   for (const section of sections) {
-    section.wrapper = {
-      ...wrapper,
-      ...(wrapper.backgroundImage
-        ? {
-            backgroundImage: {
-              ...wrapper.backgroundImage,
-              position: { ...wrapper.backgroundImage.position },
-            },
-          }
-        : {}),
-    };
+    const lifted =
+      section.wrapper?.fullWidth === true ? section.wrapper : undefined;
+    // A full-width section inside this wrapper does not bleed past it, unless
+    // the wrapper is itself the viewport band and paints nothing of its own.
+    if (lifted && wrapper.fullWidth === true && !wrapperPaints) {
+      const kept = cloneWrapper(lifted);
+      section.wrapper = {
+        ...cloneWrapper(wrapper),
+        ...(kept.backgroundColor
+          ? { backgroundColor: kept.backgroundColor }
+          : {}),
+        ...(kept.backgroundImage
+          ? { backgroundImage: kept.backgroundImage }
+          : {}),
+        fullWidth: true,
+      };
+      continue;
+    }
+    if (lifted) {
+      if (lifted.backgroundColor) {
+        section.styles.backgroundColor = lifted.backgroundColor;
+      }
+      if (lifted.backgroundImage) {
+        const image = lifted.backgroundImage;
+        section.backgroundImage = {
+          ...image,
+          position: { ...image.position },
+        };
+      }
+    }
+    section.wrapper = cloneWrapper(wrapper);
   }
   if (sections.length > 1) {
     const note = `${node.type ?? "standard-wrapper"} holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`;
@@ -369,6 +393,51 @@ function convertFlow(
   return { blocks, entries };
 }
 
+/**
+ * A full-width section's own background is the viewport band. The page
+ * content colour stays on the section when the section states no colour of
+ * its own.
+ */
+function liftFullWidthSection(
+  section: SectionBlock,
+  node: EasyEmailProNode,
+  map: MapContext,
+): void {
+  if (readAttr(node, "full-width", map.resolve) !== "full-width") return;
+  const ownFill = parseColor(readAttr(node, "background-color", map.resolve));
+  const image = section.backgroundImage;
+  if (!ownFill && !image) return;
+  section.wrapper = {
+    ...(ownFill ? { backgroundColor: ownFill } : {}),
+    ...(image
+      ? {
+          backgroundImage: {
+            ...image,
+            position: { ...image.position },
+          },
+        }
+      : {}),
+    fullWidth: true,
+  };
+  if (ownFill) delete section.styles.backgroundColor;
+  if (image) delete section.backgroundImage;
+}
+
+function cloneWrapper(wrapper: SectionWrapper): SectionWrapper {
+  const image = wrapper.backgroundImage;
+  return {
+    ...wrapper,
+    ...(image
+      ? {
+          backgroundImage: {
+            ...image,
+            position: { ...image.position },
+          },
+        }
+      : {}),
+  };
+}
+
 /** `createSectionBlock()` first, then mutate fill — never a partial `styles`. */
 function paintSection(
   section: SectionBlock,
@@ -413,12 +482,14 @@ function readWrapper(
     "Wrapper",
     map.contentWidth,
   );
+  const fullWidth = readAttr(node, "full-width", map.resolve) === "full-width";
   return {
     wrapper: {
       ...(backgroundColor ? { backgroundColor } : {}),
       padding,
       ...(radius !== undefined && radius > 0 ? { borderRadius: radius } : {}),
       ...(background ? { backgroundImage: background.image } : {}),
+      ...(fullWidth ? { fullWidth: true } : {}),
     },
     notes: background?.notes ?? [],
   };

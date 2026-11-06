@@ -297,6 +297,7 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
         padding: block.styles.padding,
         borderRadius: block.borderRadius,
         backgroundImage: block.backgroundImage,
+        fullWidth: block.fullWidth,
       },
       context.contentDirection,
     );
@@ -340,6 +341,11 @@ function insideWrapper(
  * `section.wrapper`. Padding is always explicit: MJML's wrapper default is
  * `20px 0`, ours is 0. Direction is explicit for the same reason: MJML's
  * default `ltr` would otherwise be inlined on the band of an RTL email.
+ * `fullWidth` is MJML's `full-width="full-width"`: the band spans the
+ * viewport and the children stay at the body width. A viewport-wide band has
+ * no visible corners, so `border-radius` is omitted while it is on. Background
+ * image attributes stay the ones `mj-wrapper` already takes; MJML places them
+ * on the full-width table and its Outlook VML fill.
  */
 function renderMjWrapper(
   inner: string,
@@ -351,9 +357,12 @@ function renderMjWrapper(
   const padding = ` padding="${
     wrapper.padding ? toPaddingString(wrapper.padding) : "0"
   }"`;
-  const radius = borderRadiusAttr(wrapper.borderRadius);
+  const radius = wrapper.fullWidth
+    ? ""
+    : borderRadiusAttr(wrapper.borderRadius);
+  const fullWidth = wrapper.fullWidth ? ' full-width="full-width"' : "";
   const dirAttr = direction === "rtl" ? ' direction="rtl"' : "";
-  return `<mj-wrapper${bg}${bgImage}${padding}${radius}${dirAttr}>
+  return `<mj-wrapper${bg}${bgImage}${padding}${radius}${fullWidth}${dirAttr}>
 ${inner}
 </mj-wrapper>`;
 }

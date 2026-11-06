@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   backgroundImageHostClass,
+  fullWidthFrameStyle,
   getCachedBlockWrapperStyle,
   getWrapperStyle,
   resolveBlockComponent,
@@ -47,6 +48,13 @@ const wrapperStyle = computed(
     getWrapperStyle(props.block, {
       backgroundImageUrl: bandBackgroundUrl.value,
     }) ?? {},
+);
+
+// Same split as a section wrapper: the root is the bled band, this column is
+// the email width and carries the band's padding. Bound only while fullWidth
+// is on, so the frame is absent when the band is the email width.
+const bandFrameStyle = computed(() =>
+  fullWidthFrameStyle(props.block.styles.padding),
 );
 
 // A child section sits in a plain box here, not a BlockWrapper, so nothing else
@@ -104,18 +112,35 @@ function getBlockComponent(block: Block) {
     :style="wrapperStyle"
     :class="backgroundImageHostClass(wrapperStyle)"
   >
-    <div
-      v-for="{ child, style } in childBoxes"
-      :key="child.id"
-      :data-block-id="child.id"
-      :style="style"
-      :class="backgroundImageHostClass(style)"
-    >
-      <component
-        :is="getBlockComponent(child)"
-        :block="child"
-        :viewport="viewport"
-      />
+    <div v-if="block.fullWidth" class="tpl-band-frame" :style="bandFrameStyle">
+      <div
+        v-for="{ child, style } in childBoxes"
+        :key="child.id"
+        :data-block-id="child.id"
+        :style="style"
+        :class="backgroundImageHostClass(style)"
+      >
+        <component
+          :is="getBlockComponent(child)"
+          :block="child"
+          :viewport="viewport"
+        />
+      </div>
     </div>
+    <template v-else>
+      <div
+        v-for="{ child, style } in childBoxes"
+        :key="child.id"
+        :data-block-id="child.id"
+        :style="style"
+        :class="backgroundImageHostClass(style)"
+      >
+        <component
+          :is="getBlockComponent(child)"
+          :block="child"
+          :viewport="viewport"
+        />
+      </div>
+    </template>
   </div>
 </template>

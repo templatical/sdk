@@ -78,6 +78,9 @@ describe("canvas background stage (regression: #230)", () => {
     // each side. The 192px difference is the band of global background a
     // full-width section can never cover.
     expect(column.style.width).toBe("600px");
+    expect(column.style.getPropertyValue("--tpl-email-frame-width")).toBe(
+      "600px",
+    );
     expect(stage.style.width).toBe(`${600 + GUTTER * 2}px`);
   });
 
@@ -101,7 +104,14 @@ describe("canvas background stage (regression: #230)", () => {
       .match(/<main class="([^"]+)"/)![1]
       .split(/\s+/);
 
-    expect(mainClasses).toEqual(["tpl-main", "tpl:flex", "tpl:py-8"]);
+    // `tpl-canvas-pane` is the container full-width bands measure with
+    // `100cqw`. It adds no padding and no centering of its own.
+    expect(mainClasses).toEqual([
+      "tpl-main",
+      "tpl-canvas-pane",
+      "tpl:flex",
+      "tpl:py-8",
+    ]);
   });
 
   it("paints the global background across the full stage, not inside the content column", () => {
@@ -144,6 +154,9 @@ describe("canvas background stage (regression: #230)", () => {
     const { column, stage } = getParts(wrapper);
 
     expect(column.style.width).toBe("375px");
+    expect(column.style.getPropertyValue("--tpl-email-frame-width")).toBe(
+      "375px",
+    );
     expect(stage.style.width).toBe(`${375 + GUTTER * 2}px`);
   });
 });

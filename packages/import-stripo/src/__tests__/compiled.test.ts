@@ -182,6 +182,30 @@ describe("compiled pipeline", () => {
     expect(secs[0].styles.backgroundColor).toBe("#e5fbf6");
   });
 
+  it("keeps a stripe colour on the section when the stripe has no body", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table class="es-wrapper"><tr><td>
+<table class="es-content" bgcolor="#112233"><tr><td><p>Stripe copy</p></td></tr></table>
+</td></tr></table>
+</body></html>`;
+    const { content, report } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.styles.backgroundColor).toBe("#112233");
+    expect(section.wrapper).toBeUndefined();
+    expect(JSON.stringify(section)).toContain("Stripe copy");
+    expect(
+      report.entries.filter(
+        (entry) => entry.templaticalBlockType === "section",
+      ),
+    ).toEqual([
+      {
+        sourceTag: "es-content",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
   it("copies es-button inline paint onto the button block", () => {
     const { content } = convertStripoTemplate(styledButton);
     const buttons = content.blocks

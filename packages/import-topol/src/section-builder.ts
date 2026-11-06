@@ -204,6 +204,11 @@ export function buildSection(
   });
 
   const backgroundColor = parseColor(attr(node, "background-color"));
+  // `full-width="full-width"` makes this section's own background the
+  // viewport band. The section stays transparent over it.
+  const fullWidth =
+    attr(node, "full-width") === "full-width" &&
+    Boolean(backgroundColor || background);
 
   return [
     createSectionBlock({
@@ -211,9 +216,20 @@ export function buildSection(
       children,
       styles: {
         padding: parsePadding(node),
-        ...(backgroundColor ? { backgroundColor } : {}),
+        ...(!fullWidth && backgroundColor ? { backgroundColor } : {}),
       },
-      ...(background ? { backgroundImage: background.image } : {}),
+      ...(!fullWidth && background
+        ? { backgroundImage: background.image }
+        : {}),
+      ...(fullWidth
+        ? {
+            wrapper: {
+              ...(backgroundColor ? { backgroundColor } : {}),
+              ...(background ? { backgroundImage: background.image } : {}),
+              fullWidth: true,
+            },
+          }
+        : {}),
     }),
   ];
 }
