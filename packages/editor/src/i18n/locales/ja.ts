@@ -513,6 +513,7 @@ const translations: typeof en = {
     padding: "内側の余白",
     background: "背景",
     fullWidthBackground: "画面幅いっぱいの背景",
+    contentBackground: "コンテンツの背景",
     borderWidth: "枠線の太さ",
     borderStyle: "枠線のスタイル",
     borderColor: "枠線の色",

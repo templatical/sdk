@@ -529,6 +529,7 @@ const fr: typeof en = {
     padding: "Marge intérieure",
     background: "Fond",
     fullWidthBackground: "Arrière-plan sur toute la largeur",
+    contentBackground: "Arrière-plan du contenu",
     borderWidth: "Largeur de la bordure",
     borderStyle: "Style de la bordure",
     borderColor: "Couleur de la bordure",

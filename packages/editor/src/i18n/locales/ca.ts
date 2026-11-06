@@ -588,6 +588,7 @@ const ca: typeof en = {
     padding: "Farciment",
     background: "Fons",
     fullWidthBackground: "Fons a tota l'amplada",
+    contentBackground: "Fons del contingut",
     borderWidth: "Amplada de la vora",
     borderStyle: "Estil de la vora",
     borderColor: "Color de la vora",

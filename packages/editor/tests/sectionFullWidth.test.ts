@@ -25,7 +25,9 @@ import BlockPreviewCanvas from "../src/components/BlockPreviewCanvas.vue";
 import BlockWrapper from "../src/components/blocks/BlockWrapper.vue";
 import WrapperBlockView from "../src/components/blocks/WrapperBlock.vue";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
+import ColorPicker from "../src/components/ColorPicker.vue";
 import CommonBlockSettings from "../src/components/toolbar/CommonBlockSettings.vue";
+import BackgroundImageControl from "../src/components/toolbar/BackgroundImageControl.vue";
 import SectionToolbar from "../src/components/toolbar/SectionToolbar.vue";
 import { BLOCK_REGISTRY_KEY, LAYOUT_KEY, TRANSLATIONS_KEY } from "../src/keys";
 import { mountEditor } from "./helpers/mount";
@@ -51,8 +53,12 @@ import type { UseBlockRegistryReturn } from "../src/composables/useBlockRegistry
 import type { Block } from "@templatical/types";
 
 const BAND = "#112233";
+const CONTENT = "#abcdef";
+const PICKED = "#445566";
 const IMAGE = "https://cdn.test/band.png";
+const EDITED_IMAGE = "https://cdn.test/edited.png";
 const PADDING = { top: 20, right: 20, bottom: 20, left: 20 };
+const ZERO = { top: 0, right: 0, bottom: 0, left: 0 };
 
 const LOCALES = [en, de, fr, es, ca, ptBR, nl, ja];
 
@@ -175,6 +181,32 @@ describe("applySectionFullWidth", () => {
       fullWidth: false,
       borderRadius: 8,
       backgroundColor: BAND,
+    });
+  });
+
+  it("is not toggle-owned unless full width is on", () => {
+    expect(isToggleOwnedWrapper({ backgroundColor: BAND })).toBe(false);
+    expect(
+      isToggleOwnedWrapper({ fullWidth: false, backgroundColor: BAND }),
+    ).toBe(false);
+  });
+
+  it("does nothing when full width turns off and the section has no wrapper", () => {
+    expect(applySectionFullWidth(section(), false)).toEqual({});
+  });
+
+  it("moves an image-only band back without adding a colour", () => {
+    const block = section({
+      styles: { padding: ZERO },
+      wrapper: {
+        fullWidth: true,
+        backgroundImage: createBackgroundImage(IMAGE),
+      },
+    });
+    expect(applySectionFullWidth(block, false)).toEqual({
+      wrapper: undefined,
+      styles: { padding: ZERO },
+      backgroundImage: createBackgroundImage(IMAGE),
     });
   });
 
@@ -323,6 +355,193 @@ describe("full-width background toggle", () => {
     expect(wrapper.emitted("update")).toEqual([
       [applySectionFullWidth(block, false)],
     ]);
+  });
+
+  it("shows an empty band colour when the full-width wrapper has none", async () => {
+    const block = section({
+      styles: { backgroundColor: CONTENT, padding: ZERO },
+      wrapper: { fullWidth: true },
+    });
+    const wrapper = mountSettings(block);
+    await openBackground(wrapper);
+    const pickers = wrapper.findAllComponents(ColorPicker);
+    expect(pickers.map((picker) => picker.props("modelValue"))).toEqual([
+      "",
+      CONTENT,
+    ]);
+  });
+
+  it("writes a colour picked while full width is on onto the wrapper", async () => {
+    const block = section({
+      styles: { backgroundColor: CONTENT, padding: ZERO },
+      wrapper: { fullWidth: true, backgroundColor: BAND },
+    });
+    const wrapper = mountSettings(block);
+    await openBackground(wrapper);
+    await wrapper
+      .findAllComponents(ColorPicker)[0]
+      .get("input")
+      .setValue(PICKED);
+    expect(wrapper.emitted("update")).toEqual([
+      [{ wrapper: { fullWidth: true, backgroundColor: PICKED } }],
+    ]);
+  });
+
+  it("writes an image picked while full width is on onto the wrapper", async () => {
+    const block = section({
+      styles: { padding: ZERO },
+      backgroundImage: createBackgroundImage("https://cdn.test/content.png"),
+      wrapper: {
+        fullWidth: true,
+        backgroundColor: BAND,
+        backgroundImage: createBackgroundImage(IMAGE),
+      },
+    });
+    const wrapper = mountSettings(block);
+    await openBackground(wrapper);
+    await wrapper
+      .get('[data-testid="section-bg-url"] input')
+      .setValue(EDITED_IMAGE);
+    expect(wrapper.emitted("update")!.at(-1)![0]).toEqual({
+      wrapper: {
+        fullWidth: true,
+        backgroundColor: BAND,
+        backgroundImage: createBackgroundImage(EDITED_IMAGE),
+      },
+    });
+  });
+
+  it("shows the moved band colour and image after full width turns on", async () => {
+    const block = filledSection();
+    const wrapper = mountSettings(block);
+    await openBackground(wrapper);
+    await switchIn(wrapper, "section-background-full-width").trigger("click");
+    const partial = wrapper.emitted("update")![0][0] as Partial<SectionBlock>;
+    await wrapper.setProps({ block: { ...block, ...partial } });
+
+    const pickers = wrapper.findAllComponents(ColorPicker);
+    expect(pickers).toHaveLength(2);
+    expect(pickers[0].props("modelValue")).toBe(BAND);
+    expect(pickers[1].props("modelValue")).toBe("");
+    expect(
+      wrapper.getComponent(BackgroundImageControl).props("modelValue"),
+    ).toEqual(createBackgroundImage(IMAGE));
+    expect(
+      wrapper.get('[data-locale-path="wrapper.backgroundColor"]').exists(),
+    ).toBe(true);
+    expect(
+      wrapper.get('[data-locale-path="wrapper.backgroundImage"]').exists(),
+    ).toBe(true);
+  });
+
+  it("writes content background onto the section fill only", async () => {
+    const block = section({
+      styles: { padding: ZERO },
+      wrapper: { fullWidth: true, backgroundColor: BAND },
+    });
+    const wrapper = mountSettings(block);
+    await openBackground(wrapper);
+    expect(wrapper.text()).toContain(en.blockSettings.contentBackground);
+    const pickers = wrapper.findAllComponents(ColorPicker);
+    expect(pickers.map((picker) => picker.props("modelValue"))).toEqual([
+      BAND,
+      "",
+    ]);
+    await pickers[1].get("input").setValue(CONTENT);
+    expect(wrapper.emitted("update")).toEqual([
+      [
+        {
+          styles: { padding: ZERO, backgroundColor: CONTENT },
+        },
+      ],
+    ]);
+
+    const off = mountSettings(
+      section({ styles: { backgroundColor: CONTENT, padding: ZERO } }),
+    );
+    await openBackground(off);
+    expect(off.text()).not.toContain(en.blockSettings.contentBackground);
+    expect(off.findAllComponents(ColorPicker)).toHaveLength(1);
+    expect(
+      off.get('[data-locale-path="styles.backgroundColor"]').exists(),
+    ).toBe(true);
+  });
+
+  it("moves a band colour edited in the background panel back onto the section", async () => {
+    const block = section({
+      styles: { padding: ZERO },
+      wrapper: { fullWidth: true, backgroundColor: BAND },
+    });
+    const wrapper = mountSettings(block);
+    await openBackground(wrapper);
+    await wrapper
+      .findAllComponents(ColorPicker)[0]
+      .get("input")
+      .setValue(PICKED);
+    const edited = {
+      ...block,
+      ...(wrapper.emitted("update")![0][0] as Partial<SectionBlock>),
+    } as SectionBlock;
+    expect(isToggleOwnedWrapper(edited.wrapper!)).toBe(true);
+    await wrapper.setProps({ block: edited });
+    await switchIn(wrapper, "section-background-full-width").trigger("click");
+    expect(wrapper.emitted("update")!.at(-1)![0]).toEqual({
+      wrapper: undefined,
+      styles: { padding: ZERO, backgroundColor: PICKED },
+      backgroundImage: undefined,
+    });
+  });
+
+  it("keeps the band and the content fill when full width turns off", () => {
+    const block = section({
+      styles: { backgroundColor: CONTENT, padding: ZERO },
+      wrapper: {
+        fullWidth: true,
+        backgroundColor: PICKED,
+        backgroundImage: createBackgroundImage(IMAGE),
+      },
+    });
+    expect(isToggleOwnedWrapper(block.wrapper!)).toBe(true);
+    expect(applySectionFullWidth(block, false)).toEqual({
+      wrapper: {
+        fullWidth: false,
+        backgroundColor: PICKED,
+        backgroundImage: createBackgroundImage(IMAGE),
+      },
+    });
+  });
+
+  it("shows the same band colour and image on the wrapper panel", async () => {
+    const block = section({
+      styles: { backgroundColor: CONTENT, padding: ZERO },
+      backgroundImage: createBackgroundImage("https://cdn.test/content.png"),
+      wrapper: {
+        fullWidth: true,
+        backgroundColor: BAND,
+        backgroundImage: createBackgroundImage(IMAGE),
+      },
+    });
+    const settings = mountSettings(block);
+    await openBackground(settings);
+    expect(
+      settings.get('[data-locale-path="wrapper.backgroundColor"]').get("input")
+        .element,
+    ).toHaveProperty("value", BAND);
+    expect(
+      settings.getComponent(BackgroundImageControl).props("modelValue"),
+    ).toEqual(createBackgroundImage(IMAGE));
+
+    const toolbar = mountEditor(SectionToolbar, {
+      props: { block },
+      provides: { [TRANSLATIONS_KEY]: en },
+    });
+    expect(
+      toolbar.get('[data-locale-path="wrapper.backgroundColor"]').get("input")
+        .element,
+    ).toHaveProperty("value", BAND);
+    expect(
+      toolbar.getComponent(BackgroundImageControl).props("modelValue"),
+    ).toEqual(createBackgroundImage(IMAGE));
   });
 
   it("sets fullWidth on a layout wrapper block", async () => {
@@ -489,6 +708,32 @@ describe("full-width background copy", () => {
     }
     const romance = [fr, es, ca, ptBR].map(
       (locale) => locale.blockSettings.fullWidthBackground,
+    );
+    expect(new Set(romance).size).toBe(romance.length);
+  });
+
+  it("names the content background in every locale, distinct from the other background labels", () => {
+    expect(
+      LOCALES.map((locale) => locale.blockSettings.contentBackground),
+    ).toEqual([
+      "Content background",
+      "Hintergrund des Inhalts",
+      "Arrière-plan du contenu",
+      "Fondo del contenido",
+      "Fons del contingut",
+      "Fundo do conteúdo",
+      "Achtergrond van de inhoud",
+      "コンテンツの背景",
+    ]);
+    for (const locale of LOCALES) {
+      const label = locale.blockSettings.contentBackground;
+      expect(label).not.toBe(locale.blockSettings.color);
+      expect(label).not.toBe(locale.blockSettings.background);
+      expect(label).not.toBe(locale.blockSettings.fullWidthBackground);
+      expect(label).not.toBe(locale.templateSettings.backgroundColor);
+    }
+    const romance = [fr, es, ca, ptBR].map(
+      (locale) => locale.blockSettings.contentBackground,
     );
     expect(new Set(romance).size).toBe(romance.length);
   });

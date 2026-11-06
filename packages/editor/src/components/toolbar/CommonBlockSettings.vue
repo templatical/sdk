@@ -14,8 +14,10 @@ import {
 } from "../../constants/styleConstants";
 import {
   resolveHero,
+  type BackgroundImage,
   type Block,
   type DisplayCondition,
+  type SectionWrapper,
 } from "@templatical/types";
 import { Monitor, Smartphone } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch, type Component } from "vue";
@@ -92,6 +94,61 @@ function setFullWidth(enabled: boolean): void {
   if (props.block.type === "section") {
     emit("update", applySectionFullWidth(props.block, enabled));
   }
+}
+
+// While a section's full-width band is on, colour and image edit that band
+// (`wrapper`), one partial per change. The section fill is the content
+// background over the band, empty meaning transparent.
+const editsFullWidthBand = computed(
+  () =>
+    props.block.type === "section" && props.block.wrapper?.fullWidth === true,
+);
+const backgroundColorPath = computed(() =>
+  editsFullWidthBand.value
+    ? "wrapper.backgroundColor"
+    : "styles.backgroundColor",
+);
+const backgroundImagePath = computed(() =>
+  editsFullWidthBand.value ? "wrapper.backgroundImage" : "backgroundImage",
+);
+const backgroundColorValue = computed(() => {
+  const block = props.block;
+  if (block.type === "section" && block.wrapper?.fullWidth === true) {
+    return block.wrapper.backgroundColor ?? "";
+  }
+  return block.styles.backgroundColor ?? "";
+});
+const backgroundImageValue = computed(() => {
+  const block = props.block;
+  if (block.type === "section" && block.wrapper?.fullWidth === true) {
+    return block.wrapper.backgroundImage;
+  }
+  return block.type === "section" ? block.backgroundImage : undefined;
+});
+
+function updateWrapper(
+  wrapper: SectionWrapper,
+  patch: Partial<SectionWrapper>,
+): void {
+  emit("update", { wrapper: { ...wrapper, ...patch } });
+}
+
+function setBackgroundColor(value: string): void {
+  const block = props.block;
+  if (block.type === "section" && block.wrapper?.fullWidth === true) {
+    updateWrapper(block.wrapper, { backgroundColor: value });
+    return;
+  }
+  updateStyle("backgroundColor", value);
+}
+
+function setBackgroundImage(image: BackgroundImage | undefined): void {
+  const block = props.block;
+  if (block.type === "section" && block.wrapper?.fullWidth === true) {
+    updateWrapper(block.wrapper, { backgroundImage: image });
+    return;
+  }
+  emit("update", { backgroundImage: image });
 }
 
 const openSections = reactive(new Set<SectionKey>());
@@ -232,11 +289,11 @@ function toggleVisibility(key: VisibilityKey): void {
       header-test-id="block-settings-background"
       @toggle="toggleSection('bg')"
     >
-      <FieldRow path="styles.backgroundColor" :label="t.blockSettings.color"
+      <FieldRow :path="backgroundColorPath" :label="t.blockSettings.color"
         ><ColorPicker
-          :model-value="block.styles.backgroundColor ?? ''"
+          :model-value="backgroundColorValue"
           allow-transparent
-          @update:model-value="updateStyle('backgroundColor', $event)"
+          @update:model-value="setBackgroundColor"
       /></FieldRow>
       <FieldRow
         v-if="showsFullWidth"
@@ -257,16 +314,26 @@ function toggleVisibility(key: VisibilityKey): void {
            columns or content elements. -->
       <FieldRow
         v-if="block.type === 'section'"
-        path="backgroundImage"
+        :path="backgroundImagePath"
         :label="t.blockSettings.backgroundImage"
         ><BackgroundImageControl
           hide-label
           class="tpl:mt-3.5"
-          :model-value="block.backgroundImage"
+          :model-value="backgroundImageValue"
           testid-prefix="section"
           measure
           :hero-mode="heroApplied"
-          @update:model-value="emit('update', { backgroundImage: $event })"
+          @update:model-value="setBackgroundImage"
+      /></FieldRow>
+      <FieldRow
+        v-if="editsFullWidthBand"
+        path="styles.backgroundColor"
+        :label="t.blockSettings.contentBackground"
+        ><ColorPicker
+          data-testid="section-content-background"
+          :model-value="block.styles.backgroundColor ?? ''"
+          allow-transparent
+          @update:model-value="updateStyle('backgroundColor', $event)"
       /></FieldRow>
       <FieldRow
         v-if="block.type === 'section'"

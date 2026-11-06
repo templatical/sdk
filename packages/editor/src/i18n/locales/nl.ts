@@ -528,6 +528,7 @@ const nl: typeof en = {
     padding: "Binnenmarge",
     background: "Achtergrond",
     fullWidthBackground: "Achtergrond over de volle breedte",
+    contentBackground: "Achtergrond van de inhoud",
     borderWidth: "Randdikte",
     borderStyle: "Randstijl",
     borderColor: "Randkleur",

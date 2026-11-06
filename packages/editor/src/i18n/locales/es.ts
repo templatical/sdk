@@ -587,6 +587,7 @@ const es: typeof en = {
     padding: "Relleno",
     background: "Fondo",
     fullWidthBackground: "Fondo a todo lo ancho",
+    contentBackground: "Fondo del contenido",
     borderWidth: "Ancho del borde",
     borderStyle: "Estilo del borde",
     borderColor: "Color del borde",

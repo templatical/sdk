@@ -91,8 +91,12 @@ function stylesWithoutColor(section: SectionBlock): SectionBlock["styles"] {
  * content area is transparent over the band.
  * On, with a wrapper: only `fullWidth` is set. The section fill stays.
  * Off: `fullWidth` becomes false. A toggle-owned wrapper whose section has
- * no fill of its own is removed and that fill moves back. Anything else
- * (padding, a corner radius, a section fill) keeps the wrapper.
+ * no fill of its own is removed and the wrapper's current colour and image
+ * move back onto the section. Editing that colour or image leaves the
+ * wrapper toggle-owned while it has no padding or radius of its own.
+ * When the section already has a content fill, the wrapper stays and only
+ * `fullWidth` is cleared, so the band colour and the content fill both
+ * remain. Padding or a corner radius keeps the wrapper the same way.
  */
 export function applySectionFullWidth(
   section: SectionBlock,
