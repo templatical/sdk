@@ -16,6 +16,7 @@ import type {
 } from "@templatical/types";
 import {
   applyOperationsInPlace,
+  blockIdsOf,
   defaultLocaleOf,
   deepEqual,
   isLocaleTag,
@@ -441,17 +442,6 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     return null;
   }
 
-  function collectBlockIds(block: Block, ids: Set<string>): void {
-    ids.add(block.id);
-    if (block.type === "section") {
-      for (const column of block.children) {
-        for (const child of column) {
-          collectBlockIds(child, ids);
-        }
-      }
-    }
-  }
-
   function findBlockParent(
     blocks: Block[],
     id: string,
@@ -518,14 +508,6 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     };
   }
 
-  // TODO(collab): the lock checks in addBlock/moveBlock/removeBlock/updateBlock
-  // are shallow — they only consider the directly-targeted block id. A section
-  // can still be removed, moved, or have its `children` array rewritten while a
-  // peer is editing one of its descendants, which silently disrupts that peer's
-  // edit. Add a `hasLockedDescendant(blockId)` helper and gate section-level
-  // operations on it (and on the parent of each affected child) so cascades
-  // through the tree are also blocked.
-
   function setContent(newContent: TemplateContent, markDirty = true): void {
     assertNoSlotInContent(newContent);
     assertNoWrapperInContent(newContent);
@@ -572,10 +554,44 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         "invalid_operation",
       );
     const next = { ...block, ...updates } as Block;
-    const structural = reconcileStructure(safeClone(block), next, (id) =>
+    const reconciled = safeClone(block);
+    const structural = reconcileStructure(reconciled, next, (id) =>
       findBlockById(state.content.blocks, id),
     );
-    return !isBlockLocked(blockId, structural);
+    const rewritesChildren = "children" in updates;
+    const affectsDescendants =
+      structural || rewritesChildren || next.type !== block.type;
+    if (
+      rewritesChildren &&
+      next.type === "section" &&
+      Array.isArray(next.children)
+    ) {
+      const currentDescendantIds = new Set(blockIdsOf(block).slice(1));
+      const seenChildIds = new Set<string>();
+      for (const column of next.children)
+        for (const child of column)
+          for (const id of blockIdsOf(child)) {
+            if (
+              seenChildIds.has(id) ||
+              isBlockLocked(id, true) ||
+              (findBlockById(state.content.blocks, id) !== null &&
+                !currentDescendantIds.has(id))
+            )
+              return false;
+            seenChildIds.add(id);
+          }
+      if (activeLocale.value) {
+        const reconciledIds = blockIdsOf(reconciled);
+        if (new Set(reconciledIds).size !== reconciledIds.length) return false;
+      }
+    }
+    return (
+      !isBlockLocked(blockId, affectsDescendants || "columns" in updates) &&
+      (!affectsDescendants ||
+        !blockIdsOf(block).some(
+          (id) => id !== blockId && isBlockLocked(id, true),
+        ))
+    );
   }
 
   function updateBlock(blockId: string, updates: Partial<Block>): void {
@@ -719,8 +735,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       if (index !== -1) {
         const [removed] = parent.blocks.splice(index, 1);
         if (state.selectedBlockId) {
-          const removedIds = new Set<string>();
-          collectBlockIds(removed, removedIds);
+          const removedIds = new Set(blockIdsOf(removed));
           if (removedIds.has(state.selectedBlockId)) {
             state.selectedBlockId = null;
           }
