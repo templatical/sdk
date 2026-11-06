@@ -410,6 +410,7 @@ export {
 } from "./merge-tag-html";
 export type { SyntaxMatch, SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 export {
+  builtInPresetOf,
   containsMergeTag,
   getLogicMergeTagKeyword,
   getMergeTagLabel,

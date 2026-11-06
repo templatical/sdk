@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  builtInPresetOf,
   containsMergeTag,
   resolveHtmlMergeTagLabels,
   scanCombinedSyntaxMatches,
@@ -9,6 +10,120 @@ import {
 import { expectLinear } from "./helpers/expectLinear";
 
 describe("built-in merge-tag scanning", () => {
+  it("matches the regex output for spreads of every built-in preset", () => {
+    const corpus = [
+      "{{first_name}} {{ first_name | capitalize }} {% if vip %}",
+      "{{{html}}} {{#each items}} {{/each}}",
+      "*|FNAME|* *|IF:VIP|* *|END:IF|*",
+      "%%=v(@name)=%% %%[ IF @name == 1 ]%%",
+      "{{}} {{{}} {{x}}} {% - if %}",
+      "{{\r{%x}}{{{*|{{{{{{{{*|%}{{ }}",
+      "one\ntwo {{x}}\r{% if x %}",
+    ];
+    for (const name of Object.keys(
+      SYNTAX_PRESETS,
+    ) as (keyof typeof SYNTAX_PRESETS)[]) {
+      const preset = SYNTAX_PRESETS[name];
+      const syntax = { ...preset, opener: "<<" };
+      expect(builtInPresetOf(syntax)).toBe(name);
+      for (const text of corpus) {
+        for (const kind of ["value", "logic"] as const) {
+          expect(scanSyntaxMatches(text, syntax, kind)).toEqual(
+            [...text.matchAll(preset[kind])].map((match) => ({
+              index: match.index,
+              value: match[0],
+            })),
+          );
+        }
+        const combined = new RegExp(
+          `(${preset.value.source}|${preset.logic.source})`,
+          "g",
+        );
+        expect(scanCombinedSyntaxMatches(text, syntax)).toEqual(
+          [...text.matchAll(combined)].map((match) => ({
+            index: match.index,
+            value: match[0],
+          })),
+        );
+      }
+    }
+  });
+
+  it("scans a spread liquid preset with unclosed openers linearly", () => {
+    const syntax = { ...SYNTAX_PRESETS.liquid, opener: "<<" };
+    const text = "{{".repeat(90_000);
+    expect(scanSyntaxMatches(text, syntax, "value")).toEqual([]);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => scanSyntaxMatches(value, syntax, "value");
+      },
+      500,
+      200,
+    );
+  });
+
+  it("keeps changed flags and custom value patterns on the regex path", () => {
+    const dotAll = {
+      ...SYNTAX_PRESETS.liquid,
+      value: new RegExp(SYNTAX_PRESETS.liquid.value.source, "gs"),
+    };
+    const customValue = {
+      ...SYNTAX_PRESETS.liquid,
+      value: /\{\{[\s\S]+?\}\}/g,
+    };
+    const text = "a {{first\nname}} b";
+    expect(scanSyntaxMatches(text, dotAll, "value")).toEqual([
+      { index: 2, value: "{{first\nname}}" },
+    ]);
+    expect(scanSyntaxMatches(text, customValue, "value")).toEqual([
+      { index: 2, value: "{{first\nname}}" },
+    ]);
+    expect(builtInPresetOf(dotAll)).toBe(undefined);
+    expect(builtInPresetOf(customValue)).toBe(undefined);
+    expect(
+      builtInPresetOf({
+        ...SYNTAX_PRESETS.liquid,
+        logic: /\{%-?\s*(\w+).*?-?%\}/gi,
+      }),
+    ).toBe(undefined);
+    expect(
+      builtInPresetOf({
+        ...SYNTAX_PRESETS.liquid,
+        logic: new RegExp(SYNTAX_PRESETS.liquid.logic.source, "y"),
+        value: new RegExp(SYNTAX_PRESETS.liquid.value.source, "y"),
+      }),
+    ).toBe("liquid");
+  });
+
+  it("combines a spread liquid preset with unclosed openers linearly", () => {
+    const syntax = { ...SYNTAX_PRESETS.liquid, opener: "<<" };
+    const text = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
+    expect(scanCombinedSyntaxMatches(text, syntax)).toHaveLength(20_000);
+    expectLinear(
+      (n) => {
+        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+        return () => scanCombinedSyntaxMatches(value, syntax);
+      },
+      100,
+      200,
+    );
+  });
+
+  it("rejects unclosed openers in a spread preset without a full regex scan", () => {
+    const syntax = { ...SYNTAX_PRESETS.liquid, opener: "<<" };
+    const text = "{{".repeat(90_000);
+    expect(containsMergeTag(text, syntax)).toBe(false);
+    expectLinear(
+      (n) => {
+        const value = "{{".repeat(n);
+        return () => containsMergeTag(value, syntax);
+      },
+      100,
+      2_000,
+    );
+  });
+
   it("scans custom syntax from an offset without changing its regex state", () => {
     const syntax = { value: /\[\[[a-z]+\]\]/iy, logic: /\[%[a-z]+%\]/iy };
     const text = "[[first]] [%if%] [[SECOND]]";
