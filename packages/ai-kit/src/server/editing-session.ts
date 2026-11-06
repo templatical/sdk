@@ -1,5 +1,6 @@
 import type {
   AiMergeTags,
+  Block,
   Operation,
   TemplateContent,
 } from "@templatical/types";
@@ -311,33 +312,93 @@ export function createEditingSession(
     }
 
     const defaultLocale = defaultLocaleOf(next);
-    const locales = new Set<string>([
-      defaultLocale,
-      ...(next.settings.locales ?? []),
-      ...Object.keys(next.settings.l10n ?? {}),
-    ]);
-    const pending = walkBlocks(next.blocks);
-    for (let index = 0; index < pending.length; index++) {
-      const block = pending[index];
-      if (typeof block.l10n !== "object" || block.l10n === null) continue;
-      for (const [locale, layer] of Object.entries(block.l10n)) {
-        locales.add(locale);
-        const set = (layer as { set?: { children?: unknown } }).set;
-        pending.push(...walkBlocks(set?.children));
-      }
-    }
-    const resolvable = {
-      ...next,
-      settings: { ...next.settings, locales: [...locales] },
+    // A locale's view differs from the default one only inside blocks that
+    // carry its layer, and projection works block by block. So each locale
+    // projects just the blocks with its layer, and a locale with no layer
+    // anywhere is the default view. A layer that doesn't touch `children`
+    // leaves them as they are by default, so that block is projected without
+    // them; its children's own layers are projected on their own.
+    const touchesChildren = (layer: unknown): boolean =>
+      isRecord(layer) &&
+      [layer.set, layer.text].some(
+        (fields) =>
+          isRecord(fields) &&
+          Object.keys(fields).some(
+            (path) => path === "children" || path.startsWith("children."),
+          ),
+      );
+    // The copy carries only this locale's layer: copying every layer for
+    // every locale grows with layers times locales.
+    const forLocale = (
+      block: Record<string, unknown>,
+      locale: string,
+      layer: unknown,
+      keepChildren: boolean,
+    ): Block => {
+      const copy: Record<string, unknown> = {
+        ...block,
+        l10n: { [locale]: layer },
+      };
+      if (!keepChildren && Array.isArray(block.children))
+        copy.children =
+          block.type === "section" ? block.children.map(() => []) : [];
+      return copy as unknown as Block;
     };
-    const resolve = (locale: string): TemplateContent | null => {
+    const layered = new Map<string, Block[]>();
+    const collect = (nodes: unknown, above: ReadonlySet<string>): void => {
+      if (!Array.isArray(nodes)) return;
+      for (const node of nodes) {
+        if (Array.isArray(node)) {
+          collect(node, above);
+          continue;
+        }
+        if (!isRecord(node)) continue;
+        const replaced: string[] = [];
+        if (isRecord(node.l10n)) {
+          for (const [locale, layer] of Object.entries(node.l10n)) {
+            if (locale === defaultLocale || above.has(locale)) continue;
+            const blocks = layered.get(locale) ?? [];
+            if (blocks.length === 0) layered.set(locale, blocks);
+            const keepChildren = touchesChildren(layer);
+            blocks.push(forLocale(node, locale, layer, keepChildren));
+            if (keepChildren) replaced.push(locale);
+          }
+        }
+        collect(
+          node.children,
+          replaced.length > 0 ? new Set([...above, ...replaced]) : above,
+        );
+      }
+    };
+    collect(next.blocks, new Set());
+    const settingsLayers = next.settings.l10n ?? {};
+    const {
+      l10n: _layers,
+      locales: _locales,
+      ...plainSettings
+    } = next.settings;
+    const resolve = (
+      locale: string,
+      blocks: Block[],
+      withSettings: boolean,
+    ): TemplateContent | null => {
+      const settings = withSettings
+        ? {
+            ...plainSettings,
+            locales: [locale],
+            l10n: { [locale]: settingsLayers[locale] },
+          }
+        : { locale: defaultLocale, locales: [locale] };
       try {
-        return resolveLocale(resolvable, locale);
+        return resolveLocale(
+          { blocks, settings } as unknown as TemplateContent,
+          locale,
+        );
       } catch {
         return null;
       }
     };
-    const base = resolve(defaultLocale);
+    const base = resolve(defaultLocale, next.blocks, true);
     if (base === null)
       return refuse("the template has an invalid locale layer");
     const baseBlocks = new Map<string, Record<string, unknown>>();
@@ -350,9 +411,17 @@ export function createEditingSession(
       limits.forbiddenBlockTypes,
     );
     if (baseReason !== null) return refuse(baseReason);
+    const locales = new Set([
+      ...layered.keys(),
+      ...Object.keys(settingsLayers),
+    ]);
+    locales.delete(defaultLocale);
     for (const locale of locales) {
-      if (locale === defaultLocale) continue;
-      const view = resolve(locale);
+      const view = resolve(
+        locale,
+        layered.get(locale) ?? [],
+        Object.hasOwn(settingsLayers, locale),
+      );
       if (view === null)
         return refuse("the template has an invalid locale layer");
       for (const block of walkBlocks(view.blocks)) {
