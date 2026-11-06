@@ -425,17 +425,23 @@ function locate(content: TemplateContent, blockId: string): Location | null {
   return null;
 }
 
-/** A block's id and every id inside it, in document order. */
-function idsOf(block: Json): string[] {
+/** A block's id and every descendant id, in document order. */
+export function blockIdsOf(block: unknown): string[] {
+  if (!isRecord(block)) return [];
   const ids = typeof block.id === "string" ? [block.id] : [];
+  // One push per id: spreading a wide container's ids into push() passes them
+  // as arguments and throws past the engine's argument limit.
   if (isSection(block)) {
-    for (const column of columnsOf(block)) ids.push(...idsIn(column));
+    for (const column of columnsOf(block))
+      for (const id of idsIn(column)) ids.push(id);
+  } else if (block.type === "wrapper" && Array.isArray(block.children)) {
+    for (const id of idsIn(block.children)) ids.push(id);
   }
   return ids;
 }
 
 function idsIn(blocks: readonly unknown[]): string[] {
-  return blocks.flatMap((block) => (isRecord(block) ? idsOf(block) : []));
+  return blocks.flatMap(blockIdsOf);
 }
 
 // --- 1. Shape ----------------------------------------------------------------
@@ -863,7 +869,7 @@ function addBlock(content: TemplateContent, op: Json, index: number): void {
 
   const existing = new Set(idsIn(topLevelOf(content)));
   const seen = new Set<string>();
-  for (const id of idsOf(block)) {
+  for (const id of blockIdsOf(block)) {
     if (existing.has(id) || seen.has(id)) {
       fail(
         "block_exists",
@@ -901,7 +907,7 @@ function moveBlock(
       blockId,
     );
   }
-  assertUnlocked(engine, idsOf(location.block), index);
+  assertUnlocked(engine, blockIdsOf(location.block), index);
   if (expect) {
     const previous =
       location.index > 0 ? location.list[location.index - 1] : null;
@@ -962,7 +968,7 @@ function deleteBlock(
       blockId,
     );
   }
-  assertUnlocked(engine, idsOf(location.block), index);
+  assertUnlocked(engine, blockIdsOf(location.block), index);
   if (expect && !deepEqual(location.block, expect.block ?? null)) {
     fail(
       "precondition_failed",
