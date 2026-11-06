@@ -5,6 +5,7 @@ import {
   TITLE_BLOCK_DEFAULTS,
 } from "@templatical/types";
 import ca from "../src/i18n/locales/ca";
+import da from "../src/i18n/locales/da";
 import de from "../src/i18n/locales/de";
 import en from "../src/i18n/locales/en";
 import es from "../src/i18n/locales/es";
@@ -60,6 +61,7 @@ describe("localizedBlockDefaults", () => {
 
   it.each([
     ["ca", ca],
+    ["da", da],
     ["de", de],
     ["en", en],
     ["es", es],
@@ -77,6 +79,7 @@ describe("localizedBlockDefaults", () => {
   // Every locale must differ from English, or the namespace is untranslated.
   it.each([
     ["ca", ca],
+    ["da", da],
     ["de", de],
     ["es", es],
     ["fr", fr],

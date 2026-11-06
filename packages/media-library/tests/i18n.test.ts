@@ -153,6 +153,14 @@ describe("loadMediaTranslations", () => {
     );
   });
 
+  it("loads Danish translations for regional locale codes", async () => {
+    const translations = await loadMediaTranslations("da-DK");
+    expect(translations.mediaLibrary.title).toBe("Mediebibliotek");
+    expect(translations.mediaLibrary.uploadingProgress).toBe(
+      "Uploader {current} af {total}...",
+    );
+  });
+
   it("resolves region variants of French and Dutch to the base locale", async () => {
     const frBE = await loadMediaTranslations("fr-BE");
     const nlBE = await loadMediaTranslations("nl-BE");
