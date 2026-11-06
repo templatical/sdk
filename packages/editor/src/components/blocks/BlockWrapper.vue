@@ -393,15 +393,14 @@ const sectionWrapperStyle = computed(() =>
 // The band bleeds to the pane; this column keeps the section at the email width
 // and holds the wrapper padding. Absent when the band is the email width, so
 // that DOM stays a frame with the section box directly inside it.
-const sectionFullWidth = computed(
-  () =>
-    display.value.type === "section" &&
-    display.value.wrapper?.fullWidth === true,
-);
+const fullWidthSection = computed(() => {
+  const block = display.value;
+  return block.type === "section" && block.wrapper?.fullWidth === true
+    ? block
+    : undefined;
+});
 const sectionBandFrameStyle = computed(() =>
-  sectionFullWidth.value && display.value.type === "section"
-    ? fullWidthFrameStyle(display.value.wrapper?.padding)
-    : undefined,
+  fullWidthFrameStyle(fullWidthSection.value?.wrapper?.padding),
 );
 
 function handleClick(event: MouseEvent): void {
@@ -601,7 +600,7 @@ function handleConditionToggle(): void {
       :class="backgroundImageHostClass(sectionWrapperStyle)"
     >
       <div
-        v-if="sectionFullWidth"
+        v-if="fullWidthSection"
         class="tpl-band-frame"
         :style="sectionBandFrameStyle"
       >

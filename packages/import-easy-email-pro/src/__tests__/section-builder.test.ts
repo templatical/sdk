@@ -267,6 +267,38 @@ describe("buildTopLevel", () => {
     expect(section.wrapper?.backgroundColor).toBeUndefined();
   });
 
+  it("restores a full-width section image inside a wrapper that is not full width", () => {
+    const { blocks } = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: { "background-color": "#f5f5f5" },
+      children: [
+        {
+          type: "standard-section",
+          data: {},
+          attributes: {
+            "full-width": "full-width",
+            "background-url": "https://cdn.test/hero.png",
+            "background-position": "center center",
+          },
+          children: [col([para("Hi")])],
+        },
+      ],
+    });
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.test/hero.png",
+      size: "auto",
+      position: { x: "center", y: "center" },
+      repeat: true,
+    });
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#f5f5f5",
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+  });
+
   it("restores a full-width section colour inside a wrapper that is not full width", () => {
     const { blocks } = build({
       type: "standard-wrapper",
@@ -351,6 +383,59 @@ describe("buildTopLevel", () => {
       bottom: 8,
       left: 8,
     });
+  });
+
+  it("keeps a full-width section image when its wrapper is full width and unpainted", () => {
+    const { blocks } = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: { "full-width": "full-width" },
+      children: [
+        {
+          type: "standard-section",
+          data: {},
+          attributes: {
+            "full-width": "full-width",
+            "background-url": "https://cdn.test/hero.png",
+            "background-position": "left top",
+          },
+          children: [col([para("Hi")])],
+        },
+      ],
+    });
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper?.backgroundColor).toBeUndefined();
+    expect(section.wrapper?.fullWidth).toBe(true);
+    expect(section.wrapper?.backgroundImage).toEqual({
+      url: "https://cdn.test/hero.png",
+      size: "auto",
+      position: { x: "left", y: "top" },
+      repeat: true,
+    });
+  });
+
+  it("leaves a full-width section that paints nothing of its own without a wrapper", () => {
+    const painted: EasyEmailProNode = {
+      type: "page",
+      data: {},
+      attributes: { "content-background-color": "#263D29" },
+      children: [],
+    };
+    const { blocks } = build(
+      {
+        type: "standard-section",
+        data: {},
+        attributes: { "full-width": "full-width" },
+        children: [col([para("Hi")])],
+      },
+      painted,
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.styles.backgroundColor).toBe("#263D29");
+    expect(section.backgroundImage).toBeUndefined();
+    expect(section.wrapper).toBeUndefined();
   });
 
   it("walks hero children and maps background-url onto a hero background", () => {

@@ -16,7 +16,6 @@ import {
   resolveHero,
   type Block,
   type DisplayCondition,
-  type SectionBlock,
 } from "@templatical/types";
 import { Monitor, Smartphone } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch, type Component } from "vue";
@@ -67,10 +66,9 @@ const showsFullWidth = computed(
 );
 const fullWidthOn = computed(() => {
   if (props.block.type === "wrapper") return props.block.fullWidth === true;
-  if (props.block.type === "section") {
-    return props.block.wrapper?.fullWidth === true;
-  }
-  return false;
+  return (
+    props.block.type === "section" && props.block.wrapper?.fullWidth === true
+  );
 });
 const fullWidthDisabled = computed(
   () =>
@@ -91,8 +89,9 @@ function setFullWidth(enabled: boolean): void {
     emit("update", { fullWidth: enabled });
     return;
   }
-  if (props.block.type !== "section") return;
-  emit("update", applySectionFullWidth(props.block as SectionBlock, enabled));
+  if (props.block.type === "section") {
+    emit("update", applySectionFullWidth(props.block, enabled));
+  }
 }
 
 const openSections = reactive(new Set<SectionKey>());

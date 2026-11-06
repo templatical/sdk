@@ -51,11 +51,10 @@ const wrapperStyle = computed(
 );
 
 // Same split as a section wrapper: the root is the bled band, this column is
-// the email width and carries the band's padding.
+// the email width and carries the band's padding. Bound only while fullWidth
+// is on, so the frame is absent when the band is the email width.
 const bandFrameStyle = computed(() =>
-  props.block.fullWidth
-    ? fullWidthFrameStyle(props.block.styles.padding)
-    : undefined,
+  fullWidthFrameStyle(props.block.styles.padding),
 );
 
 // A child section sits in a plain box here, not a BlockWrapper, so nothing else

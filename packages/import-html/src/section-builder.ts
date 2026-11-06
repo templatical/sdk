@@ -1032,24 +1032,45 @@ export function processTable(
             ),
           );
         }
-        for (const block of descended) {
-          if (block.type !== "section") continue;
-          const image = band.image ? copyImage(band.image.image) : undefined;
-          block.wrapper = {
-            ...(band.color ? { backgroundColor: band.color } : {}),
-            ...(image ? { backgroundImage: image } : {}),
-            fullWidth: true,
-          };
-        }
         const sectionEntries = entries
           .slice(before)
           .filter((entry) => entry.templaticalBlockType === "section");
+        // A section image keeps the band colour off the wrapper: Outlook
+        // desktop paints a wrapper colour over that image. The band image
+        // still sits on the wrapper.
+        const droppedBand: number[] = [];
+        let sectionIndex = 0;
+        for (const block of descended) {
+          if (block.type !== "section") continue;
+          const image = band.image ? copyImage(band.image.image) : undefined;
+          const dropColor =
+            Boolean(band.color) && Boolean(block.backgroundImage);
+          if ((band.color && !dropColor) || image) {
+            block.wrapper = {
+              ...(band.color && !dropColor
+                ? { backgroundColor: band.color }
+                : {}),
+              ...(image ? { backgroundImage: image } : {}),
+              fullWidth: true,
+            };
+          }
+          if (dropColor) droppedBand.push(sectionIndex);
+          sectionIndex += 1;
+        }
         if (band.image && band.image.notes.length > 0) {
           for (const entry of sectionEntries) {
             entry.status = "approximated";
             entry.note = [entry.note, ...band.image.notes]
               .filter(Boolean)
               .join(" ");
+          }
+        }
+        if (droppedBand.length > 0) {
+          const note = `The band colour ${band.color} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`;
+          for (const index of droppedBand) {
+            const entry = sectionEntries[index];
+            entry.status = "approximated";
+            entry.note = entry.note ? `${entry.note} ${note}` : note;
           }
         }
         if (band.image && sectionEntries.length > 1) {

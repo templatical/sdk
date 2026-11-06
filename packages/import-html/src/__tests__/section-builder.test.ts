@@ -2736,6 +2736,84 @@ describe("processTable — a section's background is the nearest fill", () => {
     expect(notes[1]).toContain("2 sections");
   });
 
+  it("drops a band colour that would cover the section's own image", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" bgcolor="#112233"><tr><td>' +
+        '<table role="presentation" width="600" background="https://cdn.test/hero.png">' +
+        "<tr><td><p>Copy</p></td></tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.png");
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toBeUndefined();
+    expect(sectionEntryOf(entries)).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "The band colour #112233 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+    });
+  });
+
+  it("keeps the band image when the section image drops the band colour", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" bgcolor="#112233" background="https://cdn.test/band.png"><tr><td>' +
+        '<table role="presentation" width="600" background="https://cdn.test/hero.png">' +
+        "<tr><td><p>Copy</p></td></tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.png");
+    expect(section.wrapper).toEqual({
+      backgroundImage: {
+        url: "https://cdn.test/band.png",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
+    });
+    expect(section.wrapper?.backgroundColor).toBeUndefined();
+    expect(sectionEntryOf(entries).status).toBe("approximated");
+    expect(sectionEntryOf(entries).note).toBe(
+      "The band colour #112233 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+    );
+  });
+
+  it("drops the band colour only on the section that keeps an image", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" bgcolor="#112233"><tr><td>' +
+        '<table role="presentation" width="600">' +
+        '<tr style="background-image:url(https://cdn.test/hero.png)"><td><p>One</p></td></tr>' +
+        "<tr><td><p>Two</p></td></tr>" +
+        "</table></td></tr></table>",
+    );
+    const [withImage, plain] = blocks as SectionBlock[];
+    expect(withImage.backgroundImage?.url).toBe("https://cdn.test/hero.png");
+    expect(withImage.wrapper).toBeUndefined();
+    expect(plain.backgroundImage).toBeUndefined();
+    expect(plain.wrapper).toEqual({
+      backgroundColor: "#112233",
+      fullWidth: true,
+    });
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toEqual([
+      {
+        sourceTag: "tr",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "The band colour #112233 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+      },
+      {
+        sourceTag: "tr",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
   it("does not bleed a band that sits inside a column", () => {
     const { blocks } = runTable(
       '<table role="presentation"><tr><td>' +

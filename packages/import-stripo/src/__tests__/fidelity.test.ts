@@ -954,6 +954,34 @@ ${structure}
     ]);
   });
 
+  it("keeps a stripe colour on the section when the stripe has a structure but no body", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table><tr><td class="esd-stripe" bgcolor="#112233">
+<table><tr><td class="esd-structure">
+<table><tr><td class="esd-container-frame"><table><tr>
+<td class="esd-block-text"><p>Stripe copy</p></td>
+</tr></table></td></tr></table>
+</td></tr></table>
+</td></tr></table>
+</body></html>`;
+    const { content, report } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.styles.backgroundColor).toBe("#112233");
+    expect(section.wrapper).toBeUndefined();
+    expect(JSON.stringify(section)).toContain("Stripe copy");
+    expect(
+      report.entries.filter(
+        (entry) => entry.templaticalBlockType === "section",
+      ),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
   it("paints a stripe that has no body and no structure", () => {
     const html = `<!DOCTYPE html><html><body>
 <table><tr><td class="esd-stripe" bgcolor="#112233">

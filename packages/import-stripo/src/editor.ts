@@ -258,8 +258,9 @@ function sectionFromStructure(
       ? colorFromPaint($body.attr("style"), $body.attr("bgcolor")) !== ""
       : false,
   });
+  // A stripe with no inner body keeps its colour on the section.
   const paint = withoutBandOverImage(
-    paintFor($structure, ctx, $stripe !== null),
+    paintFor($structure, ctx, $stripe !== null && $body !== null),
     image.image !== undefined,
   );
   const widthNote =
@@ -272,22 +273,15 @@ function sectionFromStructure(
   const notes = [...paint.notes, flattenNote, widthNote, ...image.notes].filter(
     (note): note is string => Boolean(note),
   );
-  const entry =
-    notes.length > 0
-      ? pushEntry(
-          ctx,
-          "esd-structure",
-          "section",
-          "approximated",
-          notes.join(" "),
-        )
-      : frameCount <= 4
-        ? pushEntry(ctx, "esd-structure", "section", "converted")
-        : undefined;
-  if (entry) {
-    recordImageSpan(ctx, image.source, entry);
-    recordImageSpan(ctx, image.bandSource, entry);
-  }
+  const entry = pushEntry(
+    ctx,
+    "esd-structure",
+    "section",
+    notes.length > 0 ? "approximated" : "converted",
+    notes.length > 0 ? notes.join(" ") : undefined,
+  );
+  recordImageSpan(ctx, image.source, entry);
+  recordImageSpan(ctx, image.bandSource, entry);
   const wrapper = sectionWrapper(paint, image.band);
   const section = createSectionBlock({
     columns: layout,
