@@ -1,6 +1,13 @@
 /** Centralized test selectors — prefer data-testid for stability */
 
 export const SELECTORS = {
+  // Section background settings
+  blockSettingsBackground: '[data-testid="block-settings-background"]',
+  blockSettingsBackgroundContent:
+    '[data-testid="block-settings-background-content"]',
+  sectionBackgroundFullWidth: '[data-testid="section-background-full-width"]',
+  wrapperBackgroundColorInput:
+    '[data-locale-path="wrapper.backgroundColor"] input',
   // Screens
   chooserScreen: '[data-testid="chooser-screen"]',
   editorScreen: '[data-testid="editor-screen"]',

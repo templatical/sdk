@@ -65,9 +65,9 @@ test.describe("full-width section band", () => {
       page.getByRole("switch", { name: "Stack on mobile" }),
     ).toBeVisible();
 
-    await page.locator('[data-testid="block-settings-background"]').click();
+    await page.locator(SELECTORS.blockSettingsBackground).click();
     const toggle = page
-      .locator('[data-testid="section-background-full-width"]')
+      .locator(SELECTORS.sectionBackgroundFullWidth)
       .getByRole("switch");
     await expect(toggle).toHaveAttribute("aria-checked", "false");
     await toggle.click();
@@ -108,12 +108,11 @@ test.describe("full-width section band", () => {
         }),
       );
 
-    const background = page
-      .locator('[data-testid="block-settings-background"]')
-      .locator("..");
-    const hex = background.locator(
-      '[data-locale-path="wrapper.backgroundColor"] input',
-    );
+    // The band colour in the Background panel; the Wrapper panel shows the
+    // same field.
+    const hex = page
+      .locator(SELECTORS.blockSettingsBackgroundContent)
+      .locator(SELECTORS.wrapperBackgroundColorInput);
     await hex.fill(BAND_HEX);
     const band = section.locator(".tpl-section-wrapper");
     await expect
