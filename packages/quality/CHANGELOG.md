@@ -1,5 +1,11 @@
 # @templatical/quality
 
+## 0.56.1
+
+### Patch Changes
+
+- @templatical/types@0.56.1
+
 ## 0.56.0
 
 ### Minor Changes
