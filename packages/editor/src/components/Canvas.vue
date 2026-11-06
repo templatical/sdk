@@ -25,6 +25,7 @@ import {
 } from "../keys";
 import { VueDraggable } from "vue-draggable-plus";
 import {
+  EMAIL_FRAME_WIDTH_VAR,
   getDocumentStyle,
   resolveBlockComponent,
 } from "../utils/blockComponentResolver";
@@ -329,8 +330,10 @@ function handleFetchData(
       }"
     />
     <!-- CONTENT COLUMN — the email content at its true width, centered in the
-         stage. A full-width section fills this column but not the surrounding
-         gutters, so the global background remains visible beside it. -->
+         stage. A section's own background fills this column but not the
+         surrounding gutters, so the global background remains visible beside
+         it. A wrapper with `fullWidth` paints past the column to the canvas
+         pane; `--tpl-email-frame-width` keeps that band's inner frame here. -->
     <div
       data-testid="canvas-wrapper"
       role="region"
@@ -338,6 +341,7 @@ function handleFetchData(
       class="tpl-canvas-wrapper tpl:relative"
       :style="{
         width: `${viewportWidth}px`,
+        [EMAIL_FRAME_WIDTH_VAR]: `${viewportWidth}px`,
         transition: EMAIL_FRAME_WIDTH_TRANSITION,
       }"
     >

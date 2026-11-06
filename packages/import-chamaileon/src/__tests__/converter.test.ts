@@ -131,23 +131,25 @@ describe("convertChamaileonTemplate end to end", () => {
     expect(two?.children).toHaveLength(2);
   });
 
-  it("folds a 4-col section onto columns 3 as approximated", () => {
+  it("keeps a 4-col section of equal quarters", () => {
     const { content, report } = convertChamaileonTemplate(NEWSLETTER);
-    const folded = sectionsOf(content.blocks).find(
-      (section) => section.columns === "3",
+    const quarters = sectionsOf(content.blocks).find(
+      (section) => section.columns === "4",
     );
-    expect(folded?.columns).toBe("3");
-    expect(folded?.children).toHaveLength(3);
-    expect(folded?.children[2]).toHaveLength(2);
+    expect(quarters?.columns).toBe("4");
+    expect(quarters?.children).toHaveLength(4);
+    expect(quarters?.children.every((column) => column.length === 1)).toBe(
+      true,
+    );
 
-    const entry = report.entries.find(
-      (e) =>
-        e.sourceTag === "fullwidth" &&
-        e.status === "approximated" &&
-        (e.note ?? "").includes("150px"),
-    );
-    expect(entry?.templaticalBlockType).toBe("section");
-    expect(entry?.status).toBe("approximated");
+    expect(
+      report.entries.some(
+        (e) =>
+          e.sourceTag === "fullwidth" &&
+          e.status === "approximated" &&
+          (e.note ?? "").includes("150px"),
+      ),
+    ).toBe(false);
   });
 
   it("does not produce a nested type: section for a nested multicolumn", () => {

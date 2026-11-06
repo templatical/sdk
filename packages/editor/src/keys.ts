@@ -15,6 +15,7 @@ import type {
   BlockDefaults,
   CustomBlockDefinition,
   DisplayCondition,
+  DisplayConditionRequestContext,
   LocaleCoverage,
   LogicPair,
   LogicTag,
@@ -387,6 +388,13 @@ export const DISPLAY_CONDITIONS_KEY: InjectionKey<DisplayCondition[]> =
 export const ALLOW_CUSTOM_CONDITIONS_KEY: InjectionKey<boolean> = Symbol(
   "allowCustomConditions",
 );
+
+export const ON_REQUEST_DISPLAY_CONDITION_KEY: InjectionKey<
+  | ((
+      context: DisplayConditionRequestContext,
+    ) => Promise<DisplayCondition | null>)
+  | null
+> = Symbol("onRequestDisplayCondition");
 
 export const CAPABILITIES_KEY: InjectionKey<EditorCapabilities> =
   Symbol("capabilities");

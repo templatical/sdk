@@ -4,9 +4,8 @@ import type {
   AiMergeTags,
   MergeTag,
   SyntaxPreset,
-  SyntaxPresetName,
 } from "@templatical/types";
-import { SYNTAX_PRESETS } from "@templatical/types";
+import { builtInPresetOf } from "@templatical/types";
 
 /** The wire's caps on merge tags, in code points (S7 Y5, S8 X4). */
 export const AI_MERGE_TAG_LIMITS = {
@@ -25,16 +24,7 @@ function truncate(text: string, max: number): string {
 
 /** The built-in preset whose patterns the syntax carries, or `custom`. */
 export function mergeTagSyntaxName(syntax: SyntaxPreset): AiMergeTagSyntax {
-  for (const name of Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]) {
-    const preset = SYNTAX_PRESETS[name];
-    if (
-      preset.value.source === syntax.value.source &&
-      preset.logic.source === syntax.logic.source
-    ) {
-      return name;
-    }
-  }
-  return "custom";
+  return builtInPresetOf(syntax) ?? "custom";
 }
 
 /**

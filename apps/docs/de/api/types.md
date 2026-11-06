@@ -266,6 +266,12 @@ interface ImageBlock extends BaseBlock {
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
   decorative?: boolean;
+  /**
+   * Volle Breite auf dem Smartphone. Ohne Angabe nur dann fluid, wenn das Bild
+   * seine Spalte auf dem Desktop füllt. `true` setzt immer MJML
+   * `fluid-on-mobile`; `false` nie. Video-Thumbnails haben kein Gegenstück.
+   */
+  fluidOnMobile?: boolean;
 }
 ```
 
@@ -284,6 +290,8 @@ interface ButtonBlock extends BaseBlock {
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
+  /** Schriftstärke der Beschriftung. `'regular'` ist 400, `'medium'` ist 500 und `'bold'` ist 700. Weggelassen wird fett gerendert, so wie eine Schaltfläche ohne Stärke. */
+  fontWeight?: 'regular' | 'medium' | 'bold';
   openInNewTab?: boolean;
   width?: number | 'full';
   align: 'left' | 'center' | 'right';
@@ -310,11 +318,12 @@ interface SectionBlock extends BaseBlock {
 interface SectionWrapper {
   backgroundColor?: string;
   padding?: SpacingValue;
-  borderRadius?: BorderRadiusValue;
+  borderRadius?: BorderRadiusValue; // gilt nicht, solange fullWidth an ist; der gespeicherte Wert bleibt
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: das Band reicht über das Fenster des Empfängers; die Sektion bleibt bei settings.width
 }
 
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 
 interface BackgroundImage {
   url: string;
@@ -397,7 +406,7 @@ interface SocialIcon {
 }
 
 type SocialPlatform =
-  | 'facebook' | 'twitter' | 'instagram' | 'linkedin'
+  | 'facebook' | 'twitter' | 'instagram' | 'linkedin' | 'xing'
   | 'youtube' | 'tiktok' | 'pinterest' | 'email'
   | 'whatsapp' | 'telegram' | 'discord' | 'snapchat'
   | 'reddit' | 'github' | 'dribbble' | 'behance'
@@ -523,8 +532,9 @@ interface SlotBlock extends BaseBlock {
 interface WrapperBlock extends BaseBlock {
   type: 'wrapper';
   children: Block[];
-  borderRadius?: number;
+  borderRadius?: number; // gilt nicht, solange fullWidth an ist; der gespeicherte Wert bleibt
   backgroundImage?: BackgroundImage;
+  fullWidth?: boolean; // true: das Band reicht über das Fenster des Empfängers; die Kinder bleiben bei settings.width
 }
 ```
 
@@ -572,6 +582,16 @@ interface DisplayCondition {
   after: string;
   group?: string;
   description?: string;
+  data?: unknown; // opaker Host-Zustand; muss JSON.stringify überstehen
+}
+```
+
+### DisplayConditionRequestContext
+
+```ts
+interface DisplayConditionRequestContext {
+  current?: DisplayCondition; // Kopie der Bedingung des Blocks, falls gesetzt
+  block: Block;               // Kopie des Blocks
 }
 ```
 
@@ -579,8 +599,11 @@ interface DisplayCondition {
 
 ```ts
 interface DisplayConditionsConfig {
-  conditions: DisplayCondition[];
+  conditions?: DisplayCondition[];
   allowCustom?: boolean;
+  onRequest?: (
+    context: DisplayConditionRequestContext,
+  ) => Promise<DisplayCondition | null>;
 }
 ```
 

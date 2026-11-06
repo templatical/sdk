@@ -13,10 +13,10 @@
     "prepare": "svelte-kit sync || echo ''"
   },
   "dependencies": {
-    "@templatical/editor": "^0.54.1",
-    "@templatical/quality": "^0.54.1",
-    "@templatical/renderer": "^0.54.1",
-    "@templatical/types": "^0.54.1",
+    "@templatical/editor": "^0.56.1",
+    "@templatical/quality": "^0.56.1",
+    "@templatical/renderer": "^0.56.1",
+    "@templatical/types": "^0.56.1",
     "mjml": "^5.4.1"
   },
   "devDependencies": {
@@ -26,7 +26,7 @@
     "@types/mjml": "~5.4.2",
     "@types/node": "^26.6.6",
     "svelte": "^5.57.3",
-    "svelte-check": "^4.7.7",
+    "svelte-check": "^4.7.8",
     "typescript": "^6.0.3",
     "vite": "^8.3.5"
   }

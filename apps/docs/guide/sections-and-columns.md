@@ -10,21 +10,25 @@ The `SectionBlock` is the layout primitive in Templatical. Every multi-column la
 ## Column layouts
 
 ::: tip Email best practice
-Stick to 1-2 columns for most emails. Three-column layouts become cramped on mobile when columns stack vertically, and some email clients handle 3-column layouts inconsistently.
+Stick to 1-2 columns for most emails. Three-column layouts become cramped on mobile when columns stack vertically, and some email clients handle 3-column layouts inconsistently. Four columns are tighter still.
 :::
 
-The `columns` property accepts one of five layout presets:
+The `columns` property accepts one of these layout presets:
 
 | Value | Description | Column widths |
 |-------|-------------|---------------|
 | `'1'` | Single column | 100% |
 | `'2'` | Two equal columns | 50% / 50% |
 | `'3'` | Three equal columns | 33% / 33% / 33% |
+| `'4'` | Four equal columns | 25% / 25% / 25% / 25% |
 | `'2-1'` | Two-thirds / one-third | 66% / 33% |
 | `'1-2'` | One-third / two-thirds | 33% / 66% |
+| `'3-1'` | Three-quarters / one-quarter | 75% / 25% |
+| `'1-3'` | One-quarter / three-quarters | 25% / 75% |
+| `'1-2-1'` | One-quarter / half / one-quarter | 25% / 50% / 25% |
 
 ```ts
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
 
 ## Creating sections
@@ -165,7 +169,7 @@ banner.styles.backgroundColor = '#1f2937';
 
 ### Outer frame (wrapper)
 
-To frame a section in a colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius. The band is as wide as the email body (`settings.width`), not the recipient's whole window:
+To frame a section in a colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius. The band is as wide as the email body (`settings.width`), unless `fullWidth` is set. `fullWidth: true` is MJML's `full-width="full-width"`: the band's background color and background image span the recipient's window, and the section stays at `settings.width`. A corner radius is ignored while `fullWidth` is on — a window-wide band has no visible corners — and the stored radius is used again when `fullWidth` is off:
 
 ```ts
 const card = createSectionBlock({ columns: '1', borderRadius: 12 });
@@ -178,4 +182,4 @@ card.wrapper = {
 };
 ```
 
-The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. The wrapper is a styling layer, not a container — sections still cannot be nested. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay.
+The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. **Full-width background** in the section's **Background** panel sets `fullWidth`. With no wrapper yet, turning it on moves the section's own background color and image onto a new wrapper and clears them on the section, so the content sits transparent over the band. While the switch is on, that panel's color and image edit the band (`wrapper.backgroundColor` and `wrapper.backgroundImage`), and **Content background** under them sets the section fill (`styles.backgroundColor`; empty leaves the content transparent over the band). The Wrapper panel shows the same band color and image. While the switch is off, color and image edit the section fill and **Content background** is hidden. Turning the switch off clears `fullWidth`. A wrapper that holds only that band is removed and its current color and image return to the section. If the section already has a content fill, the wrapper stays with `fullWidth` cleared so neither color is discarded. The wrapper is a styling layer, not a container — sections still cannot be nested. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay.

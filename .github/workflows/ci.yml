@@ -26,8 +26,9 @@ permissions:
 # branches) intentionally skip the real CI work — every check already ran on
 # the feature PR that produced the changeset. To keep branch-protection
 # happy, each required job still STARTS (so a status is reported) but its
-# steps no-op when the branch matches `changeset-release/*`. The job-level
-# env flag `IS_VP` drives that gate; do NOT replace it with a job-level `if:`
+# steps no-op for a same-repository `changeset-release/*` PR head or a
+# matching push ref. The job-level env flag `IS_VP` drives that gate; do NOT
+# replace it with a job-level `if:`
 # because a skipped job reports no status and required-check rules will
 # block the PR forever.
 #
@@ -38,7 +39,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -65,7 +66,7 @@ jobs:
   typecheck:
     runs-on: ubuntu-latest
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -81,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, typecheck]
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -127,7 +128,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -182,7 +183,7 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -229,7 +230,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     needs: [build]
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -260,7 +261,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -298,7 +299,7 @@ jobs:
       matrix:
         example: [nextjs, nuxt, sveltekit, react-router, react-vite]
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'
@@ -327,7 +328,7 @@ jobs:
     needs: [e2e]
     if: ${{ !cancelled() && needs.e2e.result != 'skipped' }}
     env:
-      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
+      IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
       - name: Skip on Version Packages PR
         if: env.IS_VP == 'true'

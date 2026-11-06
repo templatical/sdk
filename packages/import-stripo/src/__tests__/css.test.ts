@@ -9,9 +9,11 @@ import {
   readCssBackground,
   resolveSectionImage,
   resolveSectionPaint,
+  sectionWrapper,
   withoutBandOverImage,
 } from "../css";
 import type { ReadBackgroundImage } from "../css";
+import { expectLinear } from "./expectLinear";
 
 describe("parseColor", () => {
   it("normalizes 6-digit hex", () => {
@@ -40,6 +42,18 @@ describe("parseColor", () => {
 });
 
 describe("parsePxValue", () => {
+  it("rejects a long invalid whitespace suffix linearly", () => {
+    expect(parsePxValue("1" + " ".repeat(80_000) + "x")).toBe(0);
+    expect(parsePxValue("12 px ")).toBe(12);
+    expectLinear(
+      (n) => {
+        const value = "1" + " ".repeat(n) + "x";
+        return () => parsePxValue(value);
+      },
+      250,
+      8_000,
+    );
+  });
   it("reads a px length", () => {
     expect(parsePxValue("30px")).toBe(30);
   });
@@ -272,35 +286,30 @@ describe("resolveSectionImage", () => {
     });
   });
 
-  it("paints the stripe only while nothing else paints the content area", () => {
-    expect(
-      resolveSectionImage({ ...base, band: layer("stripe") }),
-    ).toMatchObject({
-      image: { url: "stripe" },
-      notes: [
-        "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
-      ],
+  it("returns the stripe image as the band, not the section image", () => {
+    const stripe = layer("stripe");
+    expect(resolveSectionImage({ ...base, band: stripe })).toMatchObject({
+      image: undefined,
+      band: { url: "stripe" },
+      notes: [],
+      bandSource: stripe.source,
     });
     expect(
       resolveSectionImage({
         ...base,
-        band: layer("stripe"),
+        band: stripe,
         bodyPainted: true,
-      }),
-    ).toMatchObject({
-      image: undefined,
-      notes: [
-        "The stripe's background image outside the content width was dropped.",
-      ],
+      }).band?.url,
+    ).toBe("stripe");
+    const overBody = resolveSectionImage({
+      ...base,
+      band: stripe,
+      body: layer("b"),
     });
-    expect(
-      resolveSectionImage({ ...base, band: layer("stripe"), body: layer("b") }),
-    ).toMatchObject({
-      image: { url: "b" },
-      notes: [
-        "The stripe's background image outside the content width was dropped.",
-      ],
-    });
+    expect(overBody.image?.url).toBe("b");
+    expect(overBody.band?.url).toBe("stripe");
+    expect(overBody.notes).toEqual([]);
+    expect(overBody.band).not.toBe(stripe.read.image);
   });
 
   it("names the element the image came from, and copies the image", () => {
@@ -328,6 +337,110 @@ describe("withoutBandOverImage", () => {
     expect(withoutBandOverImage(banded, false)).toBe(banded);
     const plain = resolveSectionPaint("#ffffff", "", "#f4f4f4");
     expect(withoutBandOverImage(plain, true)).toBe(plain);
+  });
+
+  it("keeps fullWidth when it drops the band colour", () => {
+    const bleed = resolveSectionPaint("#ffffff", "#222222", "#f4f4f4", true);
+    expect(withoutBandOverImage(bleed, true)).toEqual({
+      backgroundColor: "#f4f4f4",
+      fullWidth: true,
+      notes: [
+        "The band colour #222222 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+      ],
+    });
+  });
+});
+
+describe("resolveSectionPaint bleed", () => {
+  it("moves a transparent body's band onto a full-width wrapper", () => {
+    expect(resolveSectionPaint("#f3f4f6", "#112233", "", true)).toEqual({
+      backgroundColor: "",
+      wrapperColor: "#112233",
+      fullWidth: true,
+      notes: [],
+    });
+  });
+
+  it("keeps the body colour and marks a differing band full width", () => {
+    expect(resolveSectionPaint("#f3f4f6", "#0f766e", "#ffffff", true)).toEqual({
+      backgroundColor: "#ffffff",
+      wrapperColor: "#0f766e",
+      fullWidth: true,
+      notes: [],
+    });
+  });
+
+  it("still wraps a band that matches the body, so the margins keep the colour", () => {
+    expect(resolveSectionPaint("#f3f4f6", "#ffffff", "#ffffff", true)).toEqual({
+      backgroundColor: "#ffffff",
+      wrapperColor: "#ffffff",
+      fullWidth: true,
+      notes: [],
+    });
+  });
+
+  it("leaves a page-coloured band on the section", () => {
+    expect(resolveSectionPaint("#f3f4f6", "#f3f4f6", "", true)).toEqual({
+      backgroundColor: "#f3f4f6",
+      notes: [],
+    });
+  });
+
+  it("keeps the email-width approximation when bleed is off", () => {
+    expect(resolveSectionPaint("#ffffff", "#222222", "#f4f4f4")).toEqual({
+      backgroundColor: "#f4f4f4",
+      wrapperColor: "#222222",
+      notes: ["The band colour was imported as a section wrapper."],
+    });
+  });
+});
+
+describe("sectionWrapper", () => {
+  const image = {
+    url: "https://cdn.example/band.png",
+    size: "auto" as const,
+    position: { x: "left" as const, y: "top" as const },
+    repeat: true,
+  };
+
+  it("returns nothing when there is no band paint", () => {
+    expect(
+      sectionWrapper({ backgroundColor: "#fff", notes: [] }, undefined),
+    ).toBeUndefined();
+  });
+
+  it("keeps an email-width colour off fullWidth", () => {
+    expect(
+      sectionWrapper(
+        {
+          backgroundColor: "#fff",
+          wrapperColor: "#111111",
+          notes: [],
+        },
+        undefined,
+      ),
+    ).toEqual({ backgroundColor: "#111111" });
+  });
+
+  it("sets fullWidth for a bleed colour and for a stripe image", () => {
+    expect(
+      sectionWrapper(
+        {
+          backgroundColor: "#fff",
+          wrapperColor: "#111111",
+          fullWidth: true,
+          notes: [],
+        },
+        image,
+      ),
+    ).toEqual({
+      backgroundColor: "#111111",
+      backgroundImage: image,
+      fullWidth: true,
+    });
+    const imageOnly = sectionWrapper({ backgroundColor: "", notes: [] }, image);
+    expect(imageOnly).toEqual({ backgroundImage: image, fullWidth: true });
+    expect(imageOnly?.backgroundImage).not.toBe(image);
   });
 });
 

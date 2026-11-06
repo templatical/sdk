@@ -13,7 +13,7 @@ Die 8 Regeln, die `lintStructure` mitliefert. Jede Regel liegt in `packages/qual
 
 | Regel | Standardschweregrad | Auto-Fix | Was geprüft wird |
 |---|---|---|---|
-| `structure.section-column-mismatch` | error | — | Der `columns`-Wert der Sektion impliziert eine Spaltenanzahl, die nicht zu `children.length` passt. `"1"` erwartet 1 inner array, `"2"`/`"2-1"`/`"1-2"` erwarten 2, `"3"` erwartet 3. Ein Mismatch heißt: entweder der Layout-Key oder das Children-Array ist falsch — beides liefert kaputten Render-Output. Die Section-Toolbar des Editors balanciert `children` automatisch beim Layoutwechsel; diese Regel erwischt Daten, die an der Toolbar vorbei kamen (Importe, manuelle JSON-Edits, alte Snapshots). |
+| `structure.section-column-mismatch` | error | — | Der `columns`-Wert der Sektion impliziert eine Spaltenanzahl, die nicht zu `children.length` passt. `"1"` erwartet 1 inner array, `"2"`/`"2-1"`/`"1-2"`/`"1-3"`/`"3-1"` erwarten 2, `"3"`/`"1-2-1"` erwarten 3, `"4"` erwartet 4. Ein Mismatch heißt: entweder der Layout-Key oder das Children-Array ist falsch — beides liefert kaputten Render-Output. Die Section-Toolbar des Editors balanciert `children` automatisch beim Layoutwechsel; diese Regel erwischt Daten, die an der Toolbar vorbei kamen (Importe, manuelle JSON-Edits, alte Snapshots). |
 
 ## Inhaltspräsenz
 

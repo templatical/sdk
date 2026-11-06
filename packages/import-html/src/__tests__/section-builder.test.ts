@@ -1062,7 +1062,7 @@ describe("processTable — the section a row produces is in the report", () => {
     expect("note" in sectionEntries[0]).toBe(false);
   });
 
-  it("a row of four cells reports approximated and names the collapse", () => {
+  it("a row of four cells keeps four columns", () => {
     const { blocks, entries, warnings } = runTable(
       '<table role="presentation"><tr>' +
         "<td><h2>One</h2></td><td><p>Two</p></td>" +
@@ -1071,11 +1071,9 @@ describe("processTable — the section a row produces is in the report", () => {
     );
     const section = theSection(blocks);
 
-    // The block model tops out at three columns, so four cells merge into one
-    // slot. Every cell's content survives; only the layout is lost.
-    expect(section.columns).toBe("1");
-    expect(section.children).toHaveLength(1);
-    expect(section.children[0].map((block) => block.type)).toEqual([
+    expect(section.columns).toBe("4");
+    expect(section.children).toHaveLength(4);
+    expect(section.children.map((column) => column[0].type)).toEqual([
       "title",
       "paragraph",
       "paragraph",
@@ -1089,14 +1087,36 @@ describe("processTable — the section a row produces is in the report", () => {
     expect(sectionEntries[0]).toEqual({
       sourceTag: "tr",
       templaticalBlockType: "section",
-      status: "approximated",
-      note: "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns.",
+      status: "converted",
     });
+    expect(warnings).toEqual([]);
+  });
 
-    // The document-level warning is unchanged: a warning is context for the
-    // whole import, the entry is the per-block fact, and both have readers.
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("4 columns");
+  it("a row of five cells merges into one and names the four-column limit", () => {
+    const { blocks, entries, warnings } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td><h2>One</h2></td><td><p>Two</p></td>" +
+        "<td><p>Three</p></td><td><p>Four</p></td><td><p>Five</p></td>" +
+        "</tr></table>",
+    );
+    const section = theSection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0]).toHaveLength(5);
+
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries[0]).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "Row of 5 columns was merged into a single column. Templatical supports up to four columns.",
+    });
+    expect(warnings).toEqual([
+      "Row with 5 columns was flattened to a single column. Templatical supports up to four columns per section.",
+    ]);
   });
 
   it("a flattened nested multi-cell row reports the columns it lost", () => {
@@ -2056,38 +2076,32 @@ describe("processTable — declared widths choose between same-count layouts", (
     expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
   });
 
-  it("reports an 80/20 split as an approximation naming the observed ratio", () => {
+  it("reads an 80/20 split as 3-1 with nothing lost", () => {
     const { blocks, entries } = runTable(
       twoCellRow('width="80%"', 'width="20%"'),
     );
     const section = onlySection(blocks);
 
-    // 13.3pp from 2-1 and 30pp from an equal split: outside tolerance, so the
-    // counted layout stands and the loss is named.
-    expect(section.columns).toBe("2");
+    // 5pp from 3-1, inside tolerance, so the snap is silent.
+    expect(section.columns).toBe("3-1");
     expect(section.children.map((column) => column.length)).toEqual([1, 1]);
     const entry = sectionEntriesOf(entries)[0];
-    expect(entry.status).toBe("approximated");
-    expect(entry.note).toBe(
-      "Column widths 80% / 20% have no Templatical equivalent. The section was imported as 2 equal columns.",
-    );
+    expect(entry.status).toBe("converted");
+    expect("note" in entry).toBe(false);
   });
 
-  it("reports a 130/280/130 row as an approximation naming the observed ratio", () => {
+  it("reads a 130/280/130 row as 1-2-1 with nothing lost", () => {
     const { blocks, entries } = runTable(
       threeCellRow(['width="130"', 'width="280"', 'width="130"']),
     );
     const section = onlySection(blocks);
 
-    // Templatical has no 1-2-1 layout, so equal thirds is the closest the
-    // model can express and the report says so.
-    expect(section.columns).toBe("3");
+    // 24.1 / 51.9 / 24.1 is 1.9pp from 1-2-1, inside tolerance.
+    expect(section.columns).toBe("1-2-1");
     expect(section.children.map((column) => column.length)).toEqual([1, 1, 1]);
     const entry = sectionEntriesOf(entries)[0];
-    expect(entry.status).toBe("approximated");
-    expect(entry.note).toBe(
-      "Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent. The section was imported as 3 equal columns.",
-    );
+    expect(entry.status).toBe("converted");
+    expect("note" in entry).toBe(false);
   });
 
   it("derives no ratio from a partial declaration", () => {
@@ -2141,13 +2155,14 @@ describe("processTable — declared widths choose between same-count layouts", (
     expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
   });
 
-  it("reports the merge, not the ratio, when a row exceeds three columns", () => {
+  it("reports the merge, not the ratio, when a row exceeds four columns", () => {
     const { blocks, entries, warnings } = runTable(
       '<table role="presentation"><tr>' +
-        '<td width="300"><h2>A</h2></td>' +
+        '<td width="200"><h2>A</h2></td>' +
         '<td width="100"><h2>B</h2></td>' +
         '<td width="100"><h2>C</h2></td>' +
         '<td width="100"><h2>D</h2></td>' +
+        '<td width="100"><h2>E</h2></td>' +
         "</tr></table>",
     );
     const section = onlySection(blocks);
@@ -2156,18 +2171,15 @@ describe("processTable — declared widths choose between same-count layouts", (
     // section does not have.
     expect(section.columns).toBe("1");
     expect(section.children).toHaveLength(1);
-    expect(section.children[0].map((b) => b.type)).toEqual([
-      "title",
-      "title",
-      "title",
-      "title",
-    ]);
+    expect(section.children[0]).toHaveLength(5);
     const entry = sectionEntriesOf(entries)[0];
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns.",
+      "Row of 5 columns was merged into a single column. Templatical supports up to four columns.",
     );
-    expect(warnings).toHaveLength(1);
+    expect(warnings).toEqual([
+      "Row with 5 columns was flattened to a single column. Templatical supports up to four columns per section.",
+    ]);
   });
 
   it("reads no ratio from a centring row's declared gutters", () => {
@@ -2638,6 +2650,181 @@ describe("processTable — a section's background is the nearest fill", () => {
         (section) => section.styles.backgroundColor,
       ),
     ).toEqual(["#ffffff", "#ffffff"]);
+    expect(
+      (blocks as SectionBlock[]).map((section) => section.wrapper),
+    ).toEqual([
+      { backgroundColor: "#f3f4f6", fullWidth: true },
+      { backgroundColor: "#f3f4f6", fullWidth: true },
+    ]);
+  });
+
+  it("does not treat a fixed-width outer table as a viewport band", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" width="600" style="background-color:#f3f4f6"><tr><td>' +
+        '<table role="presentation" width="600" style="background-color:#ffffff">' +
+        "<tr><td><p>Copy</p></td></tr></table></td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toBeUndefined();
+  });
+
+  it("leaves a 100% table with no paint as packaging", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" width="100%"><tr><td>' +
+        '<table role="presentation" width="600"><tr><td><p>Copy</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toBeUndefined();
+  });
+
+  it("reads a viewport band from style widths", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" style="width:100%;background-color:#112233"><tr><td>' +
+        '<table role="presentation" style="width:600px" bgcolor="#ffffff"><tr><td><p>Copy</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#112233",
+      fullWidth: true,
+    });
+  });
+
+  it("reads a viewport band from the cell when the table states no width", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td width="100%" bgcolor="#112233">' +
+        '<table role="presentation" width="600" bgcolor="#ffffff"><tr><td><p>Copy</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(section.wrapper).toEqual({
+      backgroundColor: "#112233",
+      fullWidth: true,
+    });
+  });
+
+  it("puts a 100% table's image on each section's full-width wrapper", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" style="background-image:url(https://cdn.example/band.png);background-size:100%">' +
+        "<tr><td>" +
+        '<table role="presentation" width="600">' +
+        "<tr><td><p>One</p></td></tr>" +
+        "<tr><td><p>Two</p></td></tr>" +
+        "</table></td></tr></table>",
+    );
+    const sections = blocks as SectionBlock[];
+    expect(sections).toHaveLength(2);
+    expect(sections[0].styles.backgroundColor).toBeUndefined();
+    expect(sections[0].backgroundImage).toBeUndefined();
+    expect(sections[0].wrapper?.fullWidth).toBe(true);
+    expect(sections[0].wrapper?.backgroundImage?.url).toBe(
+      "https://cdn.example/band.png",
+    );
+    expect(sections[1].wrapper?.backgroundImage).not.toBe(
+      sections[0].wrapper?.backgroundImage,
+    );
+    const notes = entries
+      .filter((entry) => entry.templaticalBlockType === "section")
+      .map((entry) => entry.note);
+    expect(notes[0]).toContain("background-size");
+    expect(notes[0]).toContain("2 sections");
+    expect(notes[1]).toContain("2 sections");
+  });
+
+  it("drops a band colour that would cover the section's own image", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" bgcolor="#112233"><tr><td>' +
+        '<table role="presentation" width="600" background="https://cdn.test/hero.png">' +
+        "<tr><td><p>Copy</p></td></tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.png");
+    expect(section.styles.backgroundColor).toBeUndefined();
+    expect(section.wrapper).toBeUndefined();
+    expect(sectionEntryOf(entries)).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "The band colour #112233 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+    });
+  });
+
+  it("keeps the band image when the section image drops the band colour", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" bgcolor="#112233" background="https://cdn.test/band.png"><tr><td>' +
+        '<table role="presentation" width="600" background="https://cdn.test/hero.png">' +
+        "<tr><td><p>Copy</p></td></tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.png");
+    expect(section.wrapper).toEqual({
+      backgroundImage: {
+        url: "https://cdn.test/band.png",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      fullWidth: true,
+    });
+    expect(section.wrapper?.backgroundColor).toBeUndefined();
+    expect(sectionEntryOf(entries).status).toBe("approximated");
+    expect(sectionEntryOf(entries).note).toBe(
+      "The band colour #112233 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+    );
+  });
+
+  it("drops the band colour only on the section that keeps an image", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" width="100%" bgcolor="#112233"><tr><td>' +
+        '<table role="presentation" width="600">' +
+        '<tr style="background-image:url(https://cdn.test/hero.png)"><td><p>One</p></td></tr>' +
+        "<tr><td><p>Two</p></td></tr>" +
+        "</table></td></tr></table>",
+    );
+    const [withImage, plain] = blocks as SectionBlock[];
+    expect(withImage.backgroundImage?.url).toBe("https://cdn.test/hero.png");
+    expect(withImage.wrapper).toBeUndefined();
+    expect(plain.backgroundImage).toBeUndefined();
+    expect(plain.wrapper).toEqual({
+      backgroundColor: "#112233",
+      fullWidth: true,
+    });
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toEqual([
+      {
+        sourceTag: "tr",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "The band colour #112233 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+      },
+      {
+        sourceTag: "tr",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("does not bleed a band that sits inside a column", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        '<table role="presentation" width="100%" bgcolor="#112233"><tr><td>' +
+        '<table role="presentation" width="200"><tr><td><p>Nested</p></td></tr></table>' +
+        "</td></tr></table></td></tr></table>",
+      true,
+    );
+    expect(blocks.every((block) => block.type !== "section")).toBe(true);
+    expect(JSON.stringify(blocks)).toContain("Nested");
+    expect(JSON.stringify(blocks)).not.toContain("fullWidth");
   });
 
   it("gives cells that share one fill that fill", () => {
@@ -2691,7 +2878,7 @@ describe("processTable — a section's background is the nearest fill", () => {
     const { entries } = runTable(
       '<table role="presentation"><tr>' +
         '<td bgcolor="#ff0000"><p>A</p></td><td><p>B</p></td>' +
-        "<td><p>C</p></td><td><p>D</p></td>" +
+        "<td><p>C</p></td><td><p>D</p></td><td><p>E</p></td>" +
         "</tr></table>",
     );
 
@@ -2700,8 +2887,8 @@ describe("processTable — a section's background is the nearest fill", () => {
       templaticalBlockType: "section",
       status: "approximated",
       note:
-        "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns. " +
-        "Cell backgrounds #ff0000 / none / none / none differ from the section, which has no background. A Templatical section has one background colour.",
+        "Row of 5 columns was merged into a single column. Templatical supports up to four columns. " +
+        "Cell backgrounds #ff0000 / none / none / none / none differ from the section, which has no background. A Templatical section has one background colour.",
     });
   });
 

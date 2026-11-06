@@ -52,10 +52,18 @@ const columnWidths = computed(() => {
       return ["50%", "50%"];
     case "3":
       return ["33.33%", "33.33%", "33.33%"];
+    case "4":
+      return ["25%", "25%", "25%", "25%"];
     case "1-2":
       return ["33.33%", "66.67%"];
     case "2-1":
       return ["66.67%", "33.33%"];
+    case "1-3":
+      return ["25%", "75%"];
+    case "3-1":
+      return ["75%", "25%"];
+    case "1-2-1":
+      return ["25%", "50%", "25%"];
     default:
       return ["100%"];
   }

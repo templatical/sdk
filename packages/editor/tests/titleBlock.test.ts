@@ -54,6 +54,23 @@ describe("TitleBlock canvas rendering", () => {
     expect(heading.text()).toBe("Plain title");
   });
 
+  it("renders a quoted > in the wrapper as heading text only", () => {
+    const wrapper = mount({ content: '<p title="2 > 1">Hi</p>' });
+    const heading = wrapper.find("h2");
+    expect(heading.text()).toBe("Hi");
+    expect(heading.element.querySelector("p")).toBeNull();
+  });
+
+  it("does not render markup embedded in a title wrapper attribute", () => {
+    const wrapper = mount({
+      content: '<p title="><img src=x onerror=alert(1)>">ok</p>',
+    });
+    const heading = wrapper.find("h2");
+    expect(heading.element.querySelector("img")).toBeNull();
+    expect(heading.element.innerHTML).not.toContain("onerror");
+    expect(heading.text()).toBe("ok");
+  });
+
   it("preserves inline formatting inside the heading", () => {
     const wrapper = mount({
       content: "<p>Hello <strong>bold</strong> world</p>",

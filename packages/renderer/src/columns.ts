@@ -11,10 +11,18 @@ export function getWidthPercentages(layout: ColumnLayout): string[] {
       // 33.33 × 3 = 99.99% — let the last column absorb the rounding gap
       // so widths sum to exactly 100% in the compiled HTML.
       return ["33.33%", "33.33%", "33.34%"];
+    case "4":
+      return ["25%", "25%", "25%", "25%"];
     case "1-2":
       return ["33.33%", "66.67%"];
     case "2-1":
       return ["66.67%", "33.33%"];
+    case "1-3":
+      return ["25%", "75%"];
+    case "3-1":
+      return ["75%", "25%"];
+    case "1-2-1":
+      return ["25%", "50%", "25%"];
     default:
       return ["100%"];
   }
@@ -32,10 +40,27 @@ export function getWidthPixels(
       return [containerWidth * 0.5, containerWidth * 0.5];
     case "3":
       return [containerWidth / 3, containerWidth / 3, containerWidth / 3];
+    case "4":
+      return [
+        containerWidth * 0.25,
+        containerWidth * 0.25,
+        containerWidth * 0.25,
+        containerWidth * 0.25,
+      ];
     case "1-2":
       return [containerWidth / 3, (containerWidth * 2) / 3];
     case "2-1":
       return [(containerWidth * 2) / 3, containerWidth / 3];
+    case "1-3":
+      return [containerWidth * 0.25, containerWidth * 0.75];
+    case "3-1":
+      return [containerWidth * 0.75, containerWidth * 0.25];
+    case "1-2-1":
+      return [
+        containerWidth * 0.25,
+        containerWidth * 0.5,
+        containerWidth * 0.25,
+      ];
     default:
       return [containerWidth];
   }

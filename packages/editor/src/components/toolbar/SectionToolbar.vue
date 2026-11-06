@@ -20,6 +20,10 @@ import {
 import { computed, inject } from "vue";
 import { LAYOUT_KEY, SECTION_WRAPPER_KEY } from "../../keys";
 import { rebalanceColumnChildren } from "../../utils/rebalanceColumnChildren";
+import {
+  applySectionFullWidth,
+  clearSectionWrapper,
+} from "../../utils/sectionFullWidth";
 
 const props = defineProps<{
   block: SectionBlock;
@@ -49,8 +53,12 @@ const columnOptions = computed(() => [
   { value: "1" as ColumnLayout, label: t.section.column1 },
   { value: "2" as ColumnLayout, label: t.section.column2 },
   { value: "3" as ColumnLayout, label: t.section.column3 },
+  { value: "4" as ColumnLayout, label: t.section.column4 },
   { value: "1-2" as ColumnLayout, label: t.section.ratio12 },
   { value: "2-1" as ColumnLayout, label: t.section.ratio21 },
+  { value: "1-3" as ColumnLayout, label: t.section.ratio13 },
+  { value: "3-1" as ColumnLayout, label: t.section.ratio31 },
+  { value: "1-2-1" as ColumnLayout, label: t.section.ratio121 },
 ]);
 
 function handleColumnsChange(event: Event): void {
@@ -68,11 +76,17 @@ function handleBorderRadiusChange(borderRadius: BorderRadiusValue): void {
 }
 
 function setWrapperEnabled(enabled: boolean): void {
+  if (!enabled) {
+    emit("update", clearSectionWrapper(props.block));
+    return;
+  }
   emit("update", {
-    wrapper: enabled
-      ? { padding: { top: 20, right: 20, bottom: 20, left: 20 } }
-      : undefined,
+    wrapper: { padding: { top: 20, right: 20, bottom: 20, left: 20 } },
   });
+}
+
+function setFullWidth(enabled: boolean): void {
+  emit("update", applySectionFullWidth(props.block, enabled));
 }
 
 function updateWrapper(patch: Partial<SectionWrapper>): void {
@@ -156,6 +170,19 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
       v-if="block.wrapper"
       class="tpl:mt-3 tpl:ml-0.5 tpl:space-y-3 tpl:border-l tpl:border-[var(--tpl-border)] tpl:pl-3"
     >
+      <FieldRow
+        path="wrapper.fullWidth"
+        :label="t.blockSettings.fullWidthBackground"
+        ><template #label-actions="{ controlId }"
+          ><ToggleSwitch
+            data-testid="section-wrapper-full-width"
+            :control-id="controlId"
+            hide-label
+            class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+            :model-value="block.wrapper.fullWidth === true"
+            :label="t.blockSettings.fullWidthBackground"
+            @update:model-value="setFullWidth" /></template
+      ></FieldRow>
       <div>
         <FieldRow path="wrapper.backgroundColor" :label="t.blockSettings.color"
           ><ColorPicker

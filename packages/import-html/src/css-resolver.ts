@@ -98,12 +98,38 @@ export function parseStyleSheet(css: string): CssRule[] {
   const rules: CssRule[] = [];
   const cleaned = stripAtRules(stripComments(css));
 
-  // Greedily walk top-level `selectors { decls }` blocks.
-  const blockRe = /([^{}]+)\{([^{}]*)\}/g;
-  let match: RegExpExecArray | null;
-  while ((match = blockRe.exec(cleaned)) !== null) {
-    const selectorPart = match[1].trim();
-    const declarationPart = match[2];
+  // Walk brace-delimited blocks once, including malformed fragments.
+  let cursor = 0;
+  while (cursor < cleaned.length) {
+    while (
+      cursor < cleaned.length &&
+      (cleaned[cursor] === "{" || cleaned[cursor] === "}")
+    )
+      cursor++;
+    const selectorStart = cursor;
+    while (
+      cursor < cleaned.length &&
+      cleaned[cursor] !== "{" &&
+      cleaned[cursor] !== "}"
+    )
+      cursor++;
+    if (cursor === cleaned.length) break;
+    if (cleaned[cursor] !== "{") continue;
+    let selectorPart = cleaned.slice(selectorStart, cursor).trim();
+    let declarationStart = ++cursor;
+    while (cursor < cleaned.length) {
+      while (
+        cursor < cleaned.length &&
+        cleaned[cursor] !== "{" &&
+        cleaned[cursor] !== "}"
+      )
+        cursor++;
+      if (cleaned[cursor] !== "{") break;
+      selectorPart = cleaned.slice(declarationStart, cursor).trim();
+      declarationStart = ++cursor;
+    }
+    if (cursor === cleaned.length) break;
+    const declarationPart = cleaned.slice(declarationStart, cursor++);
     if (!selectorPart) continue;
 
     const selectors = selectorPart

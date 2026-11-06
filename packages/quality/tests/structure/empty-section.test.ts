@@ -33,6 +33,32 @@ describe("structure.empty-section", () => {
     expect(issues[0].blockId).toBe(section.id);
   });
 
+  it("fires for a four-column section whose columns are all empty", () => {
+    const content = createDefaultTemplateContent();
+    const section = createSectionBlock();
+    section.columns = "4";
+    section.children = [[], [], [], []];
+    content.blocks = [section];
+    const issues = lintStructure(content).filter(
+      (i) => i.ruleId === "structure.empty-section",
+    );
+    expect(issues).toHaveLength(1);
+    expect(issues[0].blockId).toBe(section.id);
+  });
+
+  it("does not fire for a 1-2-1 section with a block in the middle column", () => {
+    const content = createDefaultTemplateContent();
+    const section = createSectionBlock();
+    section.columns = "1-2-1";
+    section.children = [[], [createParagraphBlock()], []];
+    content.blocks = [section];
+    expect(
+      lintStructure(content).filter(
+        (i) => i.ruleId === "structure.empty-section",
+      ),
+    ).toEqual([]);
+  });
+
   it("does not fire when at least one column has a block", () => {
     const content = createDefaultTemplateContent();
     const section = createSectionBlock();

@@ -7,7 +7,7 @@ playbook assumes it and none repeat it.
 **Every command below runs through one pinned CLI, and the invocation always
 starts the same way:**
 ```
-npx -y @templatical/template-tools@0.54.1 validate <file> --json
+npx -y @templatical/template-tools@0.56.1 validate <file> --json
 ```
 `npx`, then `-y`, then the package name pinned to an exact version, is the
 fixed prefix — identical for `validate`, `render`, `edit`, `import`, `live`,
@@ -66,7 +66,7 @@ such as `{{lang}}`, is ignored with a warning). A template's default language ch
 every operation:
 
 ```bash
-npx -y @templatical/template-tools@0.54.1 edit template.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
+npx -y @templatical/template-tools@0.56.1 edit template.json --op '{"op":"setDefaultLocale","locale":"de"}' --json
 ```
 
 A refused operation exits `2` with `Operation N (op) was refused: <code> — <reason>`
@@ -84,9 +84,9 @@ below are in [localize.md](localize.md).
 For a saved template with German in `settings.locales`, export its missing/stale fields, edit each entry’s `text`, then import:
 
 ```bash
-npx -y @templatical/template-tools@0.54.1 strings export template.json --locale de --out strings.de.json --json
-npx -y @templatical/template-tools@0.54.1 strings import template.json strings.de.json --json
-npx -y @templatical/template-tools@0.54.1 validate template.json --locale de --json
+npx -y @templatical/template-tools@0.56.1 strings export template.json --locale de --out strings.de.json --json
+npx -y @templatical/template-tools@0.56.1 strings import template.json strings.de.json --json
+npx -y @templatical/template-tools@0.56.1 validate template.json --locale de --json
 ```
 
 The file is `{ "templatical": "strings/1", "sourceLocale": "en", "targetLocale": "de", "strings": [] }`. Its `LocaleString` entries have `id`, `format: "html" | "text"`, masked `source`, `sourceHash` and optional masked `text`. Keep the ids and hashes. An entry without `text` is skipped and listed in `skipped` below; empty `text` is applied only when the source has no placeholders, otherwise it is rejected as `tags_changed`. A stale entry has no `text`: its stored translation is in `previous` (masked like `source`), which import never reads, so write a new `text` from the current `source` or the entry stays stale. Tokens are regenerated from current defaults and are not stored in the file.

@@ -10,16 +10,18 @@ import type {
   BackgroundPositionY,
   BackgroundSize,
   DividerBlock,
+  SectionWrapper,
   SpacingValue,
 } from "@templatical/types";
 
 const ZERO: SpacingValue = { top: 0, right: 0, bottom: 0, left: 0 };
 
-/** Column shares of the body width. The third column takes the rounding remainder. */
+/** Column shares of the body width. The third column of `"3"` takes the rounding remainder. */
 const COLUMN_SHARES = {
   "1": [100],
   "2": [50, 50],
   "3": [33.33, 33.33, 33.34],
+  "4": [25, 25, 25, 25],
 } as const;
 
 const DIVIDER_WIDTH = /^(-?\d+(?:\.\d+)?)\s*(%|px)?$/i;
@@ -111,7 +113,7 @@ export function parseColor(value: string | undefined): string {
 
 export function parsePxValue(value: string | undefined): number {
   if (!value) return 0;
-  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?$/);
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 
@@ -244,19 +246,42 @@ export function readBoxPadding(
 export interface SectionPaint {
   backgroundColor: string;
   wrapperColor?: string;
+  /** The wrapper colour is a viewport band, not an email-width frame. */
+  fullWidth?: boolean;
   notes: string[];
 }
 
 /**
  * Body fill paints the section. A band that is neither the page nor the body
  * becomes the section wrapper. A transparent body leaves the band on the section.
+ *
+ * `bleed` is a stripe around a fixed-width body. The band is then a viewport
+ * wrapper, including when it matches the body, and a transparent body moves
+ * that single background off the section.
  */
 export function resolveSectionPaint(
   pageBackground: string,
   band: string,
   body: string,
+  bleed = false,
 ): SectionPaint {
   const page = pageBackground || "#ffffff";
+  if (bleed && band && band !== page) {
+    if (body) {
+      return {
+        backgroundColor: body,
+        wrapperColor: band,
+        fullWidth: true,
+        notes: [],
+      };
+    }
+    return {
+      backgroundColor: "",
+      wrapperColor: band,
+      fullWidth: true,
+      notes: [],
+    };
+  }
   if (body) {
     if (band && band !== page && band !== body) {
       return {
@@ -268,6 +293,30 @@ export function resolveSectionPaint(
     return { backgroundColor: body, notes: [] };
   }
   return { backgroundColor: band, notes: [] };
+}
+
+/**
+ * The section wrapper for a band colour and a stripe image. No paint, no
+ * wrapper. A stripe image is the viewport band even when the colour was
+ * approximated at the email width.
+ */
+export function sectionWrapper(
+  paint: SectionPaint,
+  bandImage: BackgroundImage | undefined,
+): SectionWrapper | undefined {
+  if (!paint.wrapperColor && !bandImage) return undefined;
+  return {
+    ...(paint.wrapperColor ? { backgroundColor: paint.wrapperColor } : {}),
+    ...(bandImage
+      ? {
+          backgroundImage: {
+            ...bandImage,
+            position: { ...bandImage.position },
+          },
+        }
+      : {}),
+    ...(paint.fullWidth || bandImage ? { fullWidth: true } : {}),
+  };
 }
 
 /** `es-*-body` width in px, or 600 when the document does not state one. */
@@ -288,7 +337,7 @@ export function emailBodyWidth(
  */
 export function columnRooms(
   bodyWidth: number,
-  layout: "1" | "2" | "3",
+  layout: "1" | "2" | "3" | "4",
   padding: SpacingValue,
   slotCount: number,
 ): Array<number | undefined> {
@@ -877,9 +926,13 @@ export interface SectionImageLayers {
 
 export interface SectionImage {
   image: BackgroundImage | undefined;
+  /** The stripe's image, copied. It paints the viewport band, not the section. */
+  band?: BackgroundImage;
   notes: string[];
   /** The element the image came from when other sections can share it; `null` for a container's. */
   source: object | null;
+  /** The stripe element, when it paints `band`. */
+  bandSource: object | null;
 }
 
 function sameImage(a: BackgroundImage, b: BackgroundImage): boolean {
@@ -901,11 +954,11 @@ function droppedColumnsNote(columns: number[]): string {
 /**
  * The image a section paints, nearest first: the structure's own, then the
  * body's, then the containers', moved up when there is one or all share the
- * same image, then the stripe's while the body leaves it showing. An image
- * that showed in the section but can't be kept is named in a note. A body
- * image beneath the structure's own is covered in this section, so it isn't
- * named; it still paints the stripe's other sections. The image is a copy,
- * so sections that share a source don't share an object.
+ * same image. The stripe's image is the viewport band (`band`), never the
+ * section's. An image that showed in the section but can't be kept is named
+ * in a note. A body image beneath the structure's own is covered in this
+ * section, so it isn't named; it still paints the stripe's other sections.
+ * The image is a copy, so sections that share a source don't share an object.
  */
 export function resolveSectionImage(layers: SectionImageLayers): SectionImage {
   const notes: string[] = [];
@@ -926,27 +979,35 @@ export function resolveSectionImage(layers: SectionImageLayers): SectionImage {
     else notes.push(droppedColumnsNote(withImage));
   }
 
+  let bandImage: BackgroundImage | undefined;
+  let bandSource: object | null = null;
   if (layers.band) {
-    if (!picked && !layers.bodyPainted) {
-      picked = layers.band;
-      notes.push(
-        "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
-      );
-    } else {
-      notes.push(
-        "The stripe's background image outside the content width was dropped.",
-      );
-    }
+    bandImage = {
+      ...layers.band.read.image,
+      position: { ...layers.band.read.image.position },
+    };
+    bandSource = layers.band.source;
+    notes.push(...layers.band.read.notes);
   }
 
-  if (!picked) return { image: undefined, notes, source: null };
+  if (!picked) {
+    return {
+      image: undefined,
+      ...(bandImage ? { band: bandImage } : {}),
+      notes,
+      source: null,
+      bandSource,
+    };
+  }
   return {
     image: {
       ...picked.read.image,
       position: { ...picked.read.image.position },
     },
+    ...(bandImage ? { band: bandImage } : {}),
     notes: [...picked.read.notes, ...notes],
     source: picked.source,
+    bandSource,
   };
 }
 
@@ -966,5 +1027,6 @@ export function withoutBandOverImage(
     notes: [
       `The band colour ${paint.wrapperColor} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`,
     ],
+    ...(paint.fullWidth ? { fullWidth: true } : {}),
   };
 }

@@ -210,6 +210,12 @@
       "prompt": "Our translation agency works with files. Export the German strings of our Templatical template with template-tools, protect the brand Sable, bring their translations back in and tell us how to check that nothing was lost.",
       "expected_output": "Follows localize.md and cli.md, using the pinned template-tools invocation, checking the installed SDK version. Runs strings export template.json --locale de --out strings.de.json with --do-not-translate pointing at a JSON array file containing Sable, and passes the same --do-not-translate file (and --definitions for custom blocks) to strings import. Explains the strings/1 file: sourceLocale, targetLocale and LocaleString entries whose text the agency fills, keeping id, sourceHash and placeholders unchanged (<x id=\"n\"/> in text, __xn__ in HTML attributes); --only gaps (default) or all and --block select fields. Runs strings import template.json strings.de.json --json and reads applied and the rejected list: stale (the default changed since export), tags_changed, unknown_field, not_translatable or unsafe_html; accepted strings are written even on exit 1, exit 0 means nothing was rejected, and exit 2 means misuse or an invalid file. Then runs validate --locale de, inspecting localization.untranslated, localization.stale and localization.merge-tags-differ even on exit 0, and checks Sable survives in the saved German text. Does not invent XLIFF or CSV support or edit the template JSON by hand.",
       "files": []
+    },
+    {
+      "id": 36,
+      "prompt": "We already have our own condition builder. Plug it into the Templatical editor so authors add and edit a block's display condition there, keep our builder state, and cancel without changing the block.",
+      "expected_output": "Follows reference/integrate.md and docs.md to guide/display-conditions. Uses init({ displayConditions: { onRequest } }). The callback receives { block } when the block has no condition and { current, block } when one is set; both are copies. Returns a DisplayCondition or null to cancel, with no undo step on null. current.data is opaque host state that must survive JSON.stringify and comes back on edit. With onRequest set, conditions and allowCustom are ignored. A resolved value needs string label, before and after. Remove condition clears it. Must not keep the built-in condition select alongside onRequest, and must not name an SDK version.",
+      "files": []
     }
   ]
 }

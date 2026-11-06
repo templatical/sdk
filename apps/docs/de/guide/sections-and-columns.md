@@ -10,21 +10,25 @@ Der `SectionBlock` ist das Layout-Primitiv in Templatical. Jedes mehrspaltige La
 ## Spaltenlayouts
 
 ::: tip E-Mail-Best-Practice
-Bleiben Sie für die meisten E-Mails bei 1-2 Spalten. Dreispaltige Layouts werden auf Mobilgeräten beim vertikalen Stapeln der Spalten beengt, und einige E-Mail-Clients behandeln 3-spaltige Layouts inkonsistent.
+Bleiben Sie für die meisten E-Mails bei 1-2 Spalten. Dreispaltige Layouts werden auf Mobilgeräten beim vertikalen Stapeln der Spalten beengt, und einige E-Mail-Clients behandeln 3-spaltige Layouts inkonsistent. Vier Spalten sind noch enger.
 :::
 
-Die Eigenschaft `columns` akzeptiert eines von fünf Layout-Presets:
+Die Eigenschaft `columns` akzeptiert eines dieser Layout-Presets:
 
 | Wert | Beschreibung | Spaltenbreiten |
 |-------|-------------|---------------|
 | `'1'` | Einzelne Spalte | 100% |
 | `'2'` | Zwei gleiche Spalten | 50% / 50% |
 | `'3'` | Drei gleiche Spalten | 33% / 33% / 33% |
+| `'4'` | Vier gleiche Spalten | 25% / 25% / 25% / 25% |
 | `'2-1'` | Zwei Drittel / ein Drittel | 66% / 33% |
 | `'1-2'` | Ein Drittel / zwei Drittel | 33% / 66% |
+| `'3-1'` | Drei Viertel / ein Viertel | 75% / 25% |
+| `'1-3'` | Ein Viertel / drei Viertel | 25% / 75% |
+| `'1-2-1'` | Ein Viertel / Hälfte / ein Viertel | 25% / 50% / 25% |
 
 ```ts
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
 
 ## Sektionen erstellen
@@ -165,7 +169,7 @@ banner.styles.backgroundColor = '#1f2937';
 
 ### Äußerer Rahmen (Wrapper)
 
-Um eine Sektion in einem farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius. Das Band ist so breit wie der E-Mail-Körper (`settings.width`), nicht wie das gesamte Fenster des Empfängers:
+Um eine Sektion in einem farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius. Das Band ist so breit wie der E-Mail-Körper (`settings.width`), es sei denn, Sie setzen `fullWidth`. `fullWidth: true` ist MJMLs `full-width="full-width"`: Hintergrundfarbe und Hintergrundbild des Bands reichen über das Fenster des Empfängers, die Sektion bleibt bei `settings.width`. Ein Eckenradius gilt nicht, solange `fullWidth` an ist — ein fensterbreites Band hat keine sichtbaren Ecken — und der gespeicherte Radius gilt wieder, wenn `fullWidth` aus ist:
 
 ```ts
 const card = createSectionBlock({ columns: '1', borderRadius: 12 });
@@ -178,4 +182,4 @@ card.wrapper = {
 };
 ```
 
-Das Padding des Wrappers sorgt dafür, dass das Band um die Sektion herum sichtbar wird. Aktivieren Sie es im Editor über das **Wrapper**-Panel in der Sektions-Symbolleiste. Der Wrapper ist eine Stilebene, kein Container — Sektionen können weiterhin nicht verschachtelt werden. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay.
+Das Padding des Wrappers sorgt dafür, dass das Band um die Sektion herum sichtbar wird. Aktivieren Sie es im Editor über das **Wrapper**-Panel in der Sektions-Symbolleiste. **Hintergrund über die volle Breite** im Panel **Hintergrund** setzt `fullWidth`. Gibt es noch keinen Wrapper, verschiebt das Einschalten die eigene Hintergrundfarbe und das Hintergrundbild der Sektion auf einen neuen Wrapper und löscht sie an der Sektion, sodass der Inhalt transparent über dem Band liegt. Solange der Schalter an ist, bearbeiten Farbe und Bild in diesem Panel das Band (`wrapper.backgroundColor` und `wrapper.backgroundImage`), und **Hintergrund des Inhalts** darunter setzt die Füllung der Sektion (`styles.backgroundColor`; leer lässt den Inhalt transparent über dem Band). Das Wrapper-Panel zeigt dieselbe Bandfarbe und dasselbe Bild. Solange der Schalter aus ist, bearbeiten Farbe und Bild die Füllung der Sektion, und **Hintergrund des Inhalts** bleibt ausgeblendet. Schalten Sie ihn aus, wird `fullWidth` gelöscht. Ein Wrapper, der nur dieses Band trägt, wird entfernt, und seine aktuelle Farbe und sein aktuelles Bild kehren auf die Sektion zurück. Hat die Sektion bereits eine Inhaltsfüllung, bleibt der Wrapper mit gelöschtem `fullWidth`, sodass keine der beiden Farben verworfen wird. Der Wrapper ist eine Stilebene, kein Container — Sektionen können weiterhin nicht verschachtelt werden. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay.
