@@ -1,5 +1,15 @@
 # @templatical/core
 
+## 0.56.0
+
+### Patch Changes
+
+- Updated dependencies [5744da5]
+- Updated dependencies [f9de817]
+- Updated dependencies [2466654]
+- Updated dependencies [be84dd0]
+  - @templatical/types@0.56.0
+
 ## 0.55.0
 
 ### Patch Changes
