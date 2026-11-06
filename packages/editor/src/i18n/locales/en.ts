@@ -629,6 +629,8 @@ export default {
     displayCondition: "Display Condition",
     selectCondition: "Select condition",
     removeCondition: "Remove condition",
+    addCondition: "Add condition",
+    editCondition: "Edit",
     noCondition: "Always visible",
     conditionApplied: "Condition applied",
     customCondition: "Custom condition",

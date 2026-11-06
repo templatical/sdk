@@ -636,6 +636,8 @@ const es: typeof en = {
     displayCondition: "Condición de visualización",
     selectCondition: "Seleccionar condición",
     removeCondition: "Eliminar condición",
+    addCondition: "Añadir condición",
+    editCondition: "Editar",
     noCondition: "Siempre visible",
     conditionApplied: "Condición aplicada",
     customCondition: "Condición personalizada",

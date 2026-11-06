@@ -580,6 +580,16 @@ interface DisplayCondition {
   after: string;
   group?: string;
   description?: string;
+  data?: unknown; // opaque host state; must survive JSON.stringify
+}
+```
+
+### DisplayConditionRequestContext
+
+```ts
+interface DisplayConditionRequestContext {
+  current?: DisplayCondition; // copy of the block's condition, when one is set
+  block: Block;               // copy of the block
 }
 ```
 
@@ -587,8 +597,11 @@ interface DisplayCondition {
 
 ```ts
 interface DisplayConditionsConfig {
-  conditions: DisplayCondition[];
+  conditions?: DisplayCondition[];
   allowCustom?: boolean;
+  onRequest?: (
+    context: DisplayConditionRequestContext,
+  ) => Promise<DisplayCondition | null>;
 }
 ```
 
