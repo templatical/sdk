@@ -639,6 +639,8 @@ const ca: typeof en = {
     displayCondition: "Condició de visualització",
     selectCondition: "Selecciona una condició",
     removeCondition: "Elimina la condició",
+    addCondition: "Afegeix una condició",
+    editCondition: "Edita",
     noCondition: "Sempre visible",
     conditionApplied: "Condició aplicada",
     customCondition: "Condició personalitzada",

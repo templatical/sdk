@@ -580,6 +580,8 @@ const fr: typeof en = {
     displayCondition: "Condition d'affichage",
     selectCondition: "Sélectionner une condition",
     removeCondition: "Supprimer la condition",
+    addCondition: "Ajouter une condition",
+    editCondition: "Modifier",
     noCondition: "Toujours visible",
     conditionApplied: "Condition appliquée",
     customCondition: "Condition personnalisée",

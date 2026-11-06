@@ -582,6 +582,16 @@ interface DisplayCondition {
   after: string;
   group?: string;
   description?: string;
+  data?: unknown; // opaker Host-Zustand; muss JSON.stringify überstehen
+}
+```
+
+### DisplayConditionRequestContext
+
+```ts
+interface DisplayConditionRequestContext {
+  current?: DisplayCondition; // Kopie der Bedingung des Blocks, falls gesetzt
+  block: Block;               // Kopie des Blocks
 }
 ```
 
@@ -589,8 +599,11 @@ interface DisplayCondition {
 
 ```ts
 interface DisplayConditionsConfig {
-  conditions: DisplayCondition[];
+  conditions?: DisplayCondition[];
   allowCustom?: boolean;
+  onRequest?: (
+    context: DisplayConditionRequestContext,
+  ) => Promise<DisplayCondition | null>;
 }
 ```
 

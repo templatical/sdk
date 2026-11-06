@@ -164,6 +164,26 @@ export interface BlockVisibility {
   mobile: boolean;
 }
 
+/**
+ * A display condition wraps a block in host-owned before/after markup so the
+ * block renders only when the condition holds.
+ */
+export interface DisplayCondition {
+  label: string;
+  before: string;
+  after: string;
+  group?: string;
+  description?: string;
+  /**
+   * Opaque host state. The editor stores it and hands it back as `current`
+   * when the host builder reopens, and never reads it. It must survive
+   * `JSON.stringify` — content is cloned with `safeClone`, so values that
+   * JSON drops (functions, `undefined` keys, a `Date` becoming an ISO string)
+   * do not round-trip.
+   */
+  data?: unknown;
+}
+
 export interface BaseBlock {
   /** Per-language layers, keyed by BCP 47 tag; see `resolveLocale`. */
   l10n?: Record<string, BlockLocaleLayer>;
@@ -171,13 +191,7 @@ export interface BaseBlock {
   type: string;
   styles: BlockStyles;
   visibility?: BlockVisibility;
-  displayCondition?: {
-    label: string;
-    before: string;
-    after: string;
-    group?: string;
-    description?: string;
-  };
+  displayCondition?: DisplayCondition;
 }
 
 export type ColumnLayout =

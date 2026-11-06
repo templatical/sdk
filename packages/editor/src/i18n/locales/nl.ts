@@ -579,6 +579,8 @@ const nl: typeof en = {
     displayCondition: "Weergavevoorwaarde",
     selectCondition: "Voorwaarde selecteren",
     removeCondition: "Voorwaarde verwijderen",
+    addCondition: "Voorwaarde toevoegen",
+    editCondition: "Bewerken",
     noCondition: "Altijd zichtbaar",
     conditionApplied: "Voorwaarde toegepast",
     customCondition: "Aangepaste voorwaarde",
