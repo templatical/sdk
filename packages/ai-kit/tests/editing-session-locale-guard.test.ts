@@ -819,4 +819,32 @@ describe("editing session locale type guard", () => {
       "Refused: the template has an invalid locale layer",
     );
   });
+
+  it("refuses an updateBlockLocale that changes an existing block's type", () => {
+    for (const layer of [
+      { set: { type: "title" } },
+      {
+        text: {
+          type: { value: "title", sourceHash: sourceHash("paragraph") },
+        },
+      },
+    ]) {
+      const start = content();
+      const session = createEditingSession({
+        content: start as never,
+        mergeTags,
+      });
+      expect(
+        session.apply([
+          { op: "updateBlockLocale", blockId: "p1", locale: "de", ...layer },
+        ] as never),
+      ).toEqual({
+        ok: false,
+        feedback:
+          "Refused: op 0 (updateBlockLocale) was refused: you can't change a block's type",
+      });
+      expect(session.content).toEqual(start);
+      expect(session.batches).toEqual([]);
+    }
+  });
 });
