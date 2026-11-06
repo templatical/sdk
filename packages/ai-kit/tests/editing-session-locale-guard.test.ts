@@ -1,6 +1,7 @@
 import { resolveLocale, sourceHash } from "@templatical/types";
 import { describe, expect, it } from "vitest";
 import { createEditingSession } from "../src/server";
+import { expectLinear } from "./helpers/expectLinear";
 
 const mergeTags = { syntax: "liquid" as const, tags: [] };
 const content = () => ({
@@ -746,6 +747,101 @@ describe("editing session locale type guard", () => {
     });
     expect(session.content).toEqual(start);
   });
+
+  it("checks a child's layer under a container whose layer keeps its children", () => {
+    const start = content();
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+      limits: { forbiddenBlockTypes: [] },
+    });
+
+    expect(
+      session.apply([
+        {
+          op: "addBlock",
+          block: {
+            id: "w1",
+            type: "wrapper",
+            l10n: { de: {} },
+            children: [
+              {
+                id: "s1",
+                type: "section",
+                columns: "1",
+                children: [
+                  [
+                    {
+                      id: "c1",
+                      type: "custom",
+                      customType: "qr",
+                      fieldValues: {},
+                    },
+                  ],
+                ],
+                l10n: {
+                  de: {
+                    set: {
+                      children: [
+                        [
+                          {
+                            id: "c1",
+                            type: "custom",
+                            customType: "barcode",
+                            fieldValues: {},
+                          },
+                        ],
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+          parent: null,
+          after: "p1",
+        },
+      ]),
+    ).toEqual({
+      ok: false,
+      feedback: "Refused: you can't change a block's customType",
+    });
+    expect(session.content).toEqual(start);
+  });
+
+  it("checks every locale in time linear in the template size", () => {
+    expectLinear((n) => {
+      const locales = Array.from({ length: n }, (_, i) => `x${i}`);
+      const session = createEditingSession({
+        content: {
+          blocks: [
+            {
+              id: "s1",
+              type: "section",
+              columns: "1",
+              children: [
+                Array.from({ length: n }, (_, i) => ({
+                  id: `p${i}`,
+                  type: "paragraph",
+                  content: "<p>Hello</p>",
+                })),
+              ],
+              l10n: Object.fromEntries(locales.map((locale) => [locale, {}])),
+            },
+          ],
+          settings: { width: 600, locale: "en", locales },
+        } as never,
+        mergeTags,
+        limits: { maxContentBytes: 100_000_000 },
+      });
+      return () => {
+        const result = session.apply([
+          { op: "updateSettings", set: { width: 640 } },
+        ]);
+        if (!result.ok) throw new Error(result.feedback);
+      };
+    }, 50);
+  }, 30_000);
 
   it("refuses a malformed locale layer without throwing", () => {
     const start = content();
