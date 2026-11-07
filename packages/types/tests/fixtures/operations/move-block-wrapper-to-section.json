@@ -1,0 +1,81 @@
+{
+  "name": "move block wrapper to section",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      },
+      {
+        "id": "S",
+        "type": "section",
+        "columns": "1",
+        "children": [[]]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "moveBlock",
+      "blockId": "X",
+      "parent": {
+        "sectionId": "S",
+        "column": 0
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "A",
+          "type": "wrapper",
+          "children": [
+            {
+              "id": "Y",
+              "type": "paragraph",
+              "content": "y"
+            }
+          ]
+        },
+        {
+          "id": "S",
+          "type": "section",
+          "columns": "1",
+          "children": [
+            [
+              {
+                "id": "X",
+                "type": "paragraph",
+                "content": "x"
+              }
+            ]
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": ["de"]
+      }
+    }
+  }
+}

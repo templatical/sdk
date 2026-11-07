@@ -32,13 +32,28 @@ A batch is a list of operations. It applies in order, each operation seeing the 
 
 Positions name a sibling, never an index, so an operation means the same thing after someone else's change lands first.
 
-- `parent` is `null` for the top level, or `{"sectionId": "…", "column": 0}` for a column of a section. `column` is a 0-based index into the section's `children`.
+- `parent` is `null` for the top level, `{"sectionId": "…", "column": 0}` for a section column, or `{"wrapperId": "…"}` for a wrapper’s direct `children` list. `column` is a 0-based section child index. The section shape retains its existing wire bytes. A valid `sectionId`/`column` pair takes precedence over an extra `wrapperId`, including in `moveBlock.expect.parent`.
 - `after` is the id of the block to land after, or `null` to land first. For `moveBlock`, the siblings are those of the target container with the moved block taken out.
 - `parent` and `after` are required on `addBlock` and `moveBlock`, even when they are `null`.
 
+<!-- wrapper-example:start -->
+
+Given `A.children = [S]` and `S.children = [[X]]`, this operation moves `X` directly after `S` in `A.children`:
+
+```json
+{
+  "op": "moveBlock",
+  "blockId": "X",
+  "parent": { "wrapperId": "A" },
+  "after": "S"
+}
+```
+
+<!-- wrapper-example:end -->
+
 ### Sections and columns
 
-- A section sits only at the top level. Adding or moving a section into a column is refused, and so is a new section with a section among its children.
+- A section sits at the top level or directly inside a wrapper. A section in a column is refused. A wrapper sits only at the top level; wrappers in columns or wrappers are refused. Moving a block into itself or its descendants is refused. `setContent` checks shape only, not these nesting rules.
 - `deleteBlock` on a section deletes its blocks with it.
 - `updateBlock` replaces each key in `set` whole, a `styles` object included, and removes the keys in `unset`. `id`, `type` and `children` can't be set or unset, and neither can a section's `columns` be unset.
 - `set: {"columns": …}` on a section resizes its `children` to the layout's column count: `"1"` has one column, `"3"` and `"1-2-1"` have three, `"4"` has four, and every other layout (`"2"`, `"2-1"`, `"1-2"`, `"1-3"`, `"3-1"`) has two. Growing appends empty columns. Shrinking drops trailing columns only when they are empty, so move their blocks out first.
@@ -57,7 +72,7 @@ Any operation but `addBlock` and `setContent` can carry `expect`, which must hol
 
 A backend passes the locks it holds and the acting session: `applyOperations(content, ops, { locks, session })`, with `locks` as `[{ blockId, sessionId }]`.
 
-- `updateBlock`, `moveBlock` and `deleteBlock` on a block another session holds are refused with `lock_held`. Moving or deleting a section also checks every block inside it.
+- `updateBlock`, `moveBlock` and `deleteBlock` on a block another session holds are refused with `lock_held`. Moving or deleting a section or wrapper also checks every descendant, including nested sections and wrapper children. `addBlock` checks no locks; `updateBlock` checks only its own id.
 - `setContent` is refused with `locked_by_others` while any other session holds a lock.
 - With `session` set to `null` (a server-side change), every lock belongs to someone else.
 
@@ -65,15 +80,15 @@ A backend passes the locks it holds and the acting session: `applyOperations(con
 
 A refused batch throws an `OperationError` with `code` and `opIndex`, the 0-based index of the refused operation.
 
-| Code | When | Templatical Cloud answers |
-|---|---|---|
-| `block_exists` | A new block's id, or an id inside it, is already in the template | 409 |
-| `block_missing` | The block, or the parent section, isn't there | 409 |
-| `anchor_missing` | The `after` block isn't in the target container | 409 |
-| `precondition_failed` | `expect` doesn't hold | 409 |
-| `lock_held` | Another session holds the block | 409 |
-| `locked_by_others` | Another session holds a lock, for `setContent` or a change of the default language | 409 |
-| `invalid_operation` | The operation is malformed or can never apply | 422 |
+| Code                  | When                                                                               | Templatical Cloud answers |
+| --------------------- | ---------------------------------------------------------------------------------- | ------------------------- |
+| `block_exists`        | A new block's id, or an id inside it, is already in the template                   | 409                       |
+| `block_missing`       | The block, parent section, or parent wrapper isn't there                           | 409                       |
+| `anchor_missing`      | The `after` block isn't in the target container                                    | 409                       |
+| `precondition_failed` | `expect` doesn't hold                                                              | 409                       |
+| `lock_held`           | Another session holds the block                                                    | 409                       |
+| `locked_by_others`    | Another session holds a lock, for `setContent` or a change of the default language | 409                       |
+| `invalid_operation`   | The operation is malformed or can never apply                                      | 422                       |
 
 ### Which error wins
 
@@ -83,8 +98,8 @@ When one operation breaks several rules, the first failing check decides:
 2. The blocks it names (`block_missing`, `block_exists`).
 3. Locks (`lock_held`, `locked_by_others`).
 4. Preconditions (`precondition_failed`).
-5. Placement (`invalid_operation`): a section into a column, a block after itself.
-6. The target container: `block_missing` for a missing parent section; `invalid_operation` for a parent that isn't a section or a column out of range.
+5. Placement (`invalid_operation`): a section into a column, a wrapper into a column or wrapper, a move into its own descendants, or a block after itself.
+6. The target container: `block_missing` for a missing parent section or wrapper; `invalid_operation` for the wrong container type or a column out of range.
 7. The anchor (`anchor_missing`).
 8. The change itself (`invalid_operation`): a layout that would drop columns that still hold blocks.
 
@@ -97,15 +112,15 @@ import {
   applyOperations,
   OperationError,
   type Operation,
-} from '@templatical/types';
+} from "@templatical/types";
 
 const ops: Operation[] = [
-  { op: 'updateBlock', blockId: 'b1', set: { content: '<p>Hello</p>' } },
+  { op: "updateBlock", blockId: "b1", set: { content: "<p>Hello</p>" } },
 ];
 
 try {
   const next = applyOperations(template.content, ops, {
-    locks: [{ blockId: 'b4', sessionId: 'f7c1…' }],
+    locks: [{ blockId: "b4", sessionId: "f7c1…" }],
     session: requestSessionId,
   });
   // store `next`

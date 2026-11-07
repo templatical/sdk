@@ -1,0 +1,49 @@
+{
+  "name": "addBlock refuses an existing id inside a wrapper parent",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "X",
+        "type": "spacer"
+      },
+      "parent": {
+        "wrapperId": "A"
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "block_exists",
+      "opIndex": 0,
+      "message": "A block with id \"X\" already exists.",
+      "blockId": "X"
+    }
+  }
+}

@@ -13,22 +13,30 @@ const WRAPPER_IN_WRAPPER =
 const NESTED_MJ_WRAPPER =
   "[Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)";
 const SLOT_IN_CONTENT = "[Templatical] slot is not a valid content block";
+const SECTION_WRAPPER_IN_WRAPPER =
+  "[Templatical] layout: a wrapper cannot contain a section with its own wrapper (section.wrapper)";
 const WRAPPER_IN_CONTENT = "[Templatical] wrapper is not a valid content block";
 
 function walkBlocks(
   blocks: Block[],
-  visit: (block: Block, parent: Block | null, insideSection: boolean) => void,
+  visit: (
+    block: Block,
+    parent: Block | null,
+    insideSection: boolean,
+    insideWrapper: boolean,
+  ) => void,
   parent: Block | null = null,
   insideSection = false,
+  insideWrapper = false,
 ): void {
   for (const block of blocks) {
-    visit(block, parent, insideSection);
+    visit(block, parent, insideSection, insideWrapper);
     if (isSection(block)) {
       for (const column of block.children) {
-        walkBlocks(column, visit, block, true);
+        walkBlocks(column, visit, block, true, insideWrapper);
       }
     } else if (isWrapper(block)) {
-      walkBlocks(block.children, visit, block, insideSection);
+      walkBlocks(block.children, visit, block, insideSection, true);
     }
   }
 }
@@ -36,7 +44,10 @@ function walkBlocks(
 /** Throw if `layout` does not contain exactly one legal slot. */
 export function validateLayout(layout: TemplateContent): void {
   let slotCount = 0;
-  walkBlocks(layout.blocks, (block, _parent, insideSection) => {
+  walkBlocks(layout.blocks, (block, _parent, insideSection, insideWrapper) => {
+    if (insideWrapper && isSection(block) && block.wrapper) {
+      throw new Error(SECTION_WRAPPER_IN_WRAPPER);
+    }
     if (isSlot(block)) {
       slotCount += 1;
       if (insideSection) {

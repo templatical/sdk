@@ -7,9 +7,95 @@ import {
   createParagraphBlock,
   createSectionBlock,
   resolveLocale,
+  validateLayout,
   type Operation,
+  type TemplateContent,
 } from "../../../packages/types/src/index";
 import { validateTemplate } from "../../../packages/template-tools/src/validate";
+
+it("EN and DE show the same runnable wrapper-parent move", () => {
+  const read = (rel: string) =>
+    readFileSync(join(import.meta.dirname, "..", rel), "utf8");
+  const example = (source: string) =>
+    JSON.parse(
+      source.match(
+        /<!-- wrapper-example:start -->[\s\S]*?```json\n([\s\S]*?)```/,
+      )?.[1] ?? "null",
+    ) as Operation;
+  const en = read("api/operations.md");
+  const de = read("de/api/operations.md");
+  expect(example(en)).toEqual({
+    op: "moveBlock",
+    blockId: "X",
+    parent: { wrapperId: "A" },
+    after: "S",
+  });
+  expect(example(de)).toEqual(example(en));
+  const before = {
+    blocks: [
+      {
+        id: "A",
+        type: "wrapper",
+        children: [
+          {
+            id: "S",
+            type: "section",
+            columns: "1",
+            children: [[{ id: "X", type: "paragraph", content: "x" }]],
+          },
+        ],
+      },
+    ],
+    settings: { width: 600 },
+  } as unknown as TemplateContent;
+  expect(applyOperations(before, [example(en)]).blocks).toEqual([
+    {
+      id: "A",
+      type: "wrapper",
+      children: [
+        { id: "S", type: "section", columns: "1", children: [[]] },
+        { id: "X", type: "paragraph", content: "x" },
+      ],
+    },
+  ]);
+  expect(
+    readFileSync(
+      join(
+        import.meta.dirname,
+        "..",
+        "../../skills/templatical/reference/edit.md",
+      ),
+      "utf8",
+    ),
+  ).toContain('{"wrapperId":"A"}');
+});
+
+it("headless layout guidance requires layout validation after an operation", () => {
+  const guidance = readFileSync(
+    join(import.meta.dirname, "../../../skills/templatical/reference/edit.md"),
+    "utf8",
+  );
+  expect(guidance).toContain("template-tools validate");
+  expect(guidance).toContain("validateLayout(editedLayout)");
+
+  const layout = {
+    blocks: [
+      {
+        id: "W",
+        type: "wrapper",
+        children: [{ id: "slot", type: "slot" }],
+      },
+    ],
+    settings: { width: 600 },
+  } as TemplateContent;
+  const edited = applyOperations(layout, [
+    { op: "deleteBlock", blockId: "slot" },
+  ]);
+  expect(() => validateLayout(layout)).not.toThrow();
+  expect(() => validateLayout(edited)).toThrow(
+    "[Templatical] layout: must contain exactly one slot block",
+  );
+});
 
 it("EN and DE operation examples are identical and each intermediate template validates", () => {
   const read = (rel: string) =>

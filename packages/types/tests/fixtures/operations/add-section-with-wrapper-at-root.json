@@ -1,0 +1,58 @@
+{
+  "name": "add section with wrapper at root",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": []
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "S",
+        "type": "section",
+        "columns": "1",
+        "children": [[]],
+        "wrapper": {
+          "backgroundColor": "#fff"
+        }
+      },
+      "parent": null,
+      "after": "A"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "A",
+          "type": "wrapper",
+          "children": []
+        },
+        {
+          "id": "S",
+          "type": "section",
+          "columns": "1",
+          "children": [[]],
+          "wrapper": {
+            "backgroundColor": "#fff"
+          }
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": ["de"]
+      }
+    }
+  }
+}

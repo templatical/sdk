@@ -33,6 +33,7 @@ function indexBlocks(blocks: Block[]): Map<string, Block> {
   const visit = (block: Block): void => {
     result.set(block.id, block);
     if (block.type === "section") block.children.flat().forEach(visit);
+    else if (block.type === "wrapper") block.children.forEach(visit);
   };
   blocks.forEach(visit);
   return result;
@@ -40,8 +41,12 @@ function indexBlocks(blocks: Block[]): Map<string, Block> {
 
 function container(content: TemplateContent, parent: BlockParent): Block[] {
   if (parent === null) return content.blocks;
-  const section = indexBlocks(content.blocks).get(parent.sectionId)!;
-  return section.type === "section" ? section.children[parent.column] : [];
+  if ("sectionId" in parent) {
+    const section = indexBlocks(content.blocks).get(parent.sectionId);
+    return section?.type === "section" ? section.children[parent.column] : [];
+  }
+  const wrapper = indexBlocks(content.blocks).get(parent.wrapperId);
+  return wrapper?.type === "wrapper" ? wrapper.children : [];
 }
 
 function placement(
@@ -58,10 +63,14 @@ function placement(
     const index = blocks.findIndex((block) => block.id === id);
     if (index >= 0) return { parent, after: blocks[index - 1]?.id ?? null };
     for (const block of blocks) {
-      if (block.type !== "section") continue;
-      for (const [column, children] of block.children.entries()) {
-        const result = find(children, { sectionId: block.id, column });
+      if (block.type === "wrapper") {
+        const result = find(block.children, { wrapperId: block.id });
         if (result) return result;
+      } else if (block.type === "section") {
+        for (const [column, children] of block.children.entries()) {
+          const result = find(children, { sectionId: block.id, column });
+          if (result) return result;
+        }
       }
     }
   };
@@ -104,6 +113,8 @@ function stripLayers(block: Block): Block {
   delete result.l10n;
   if (result.type === "section")
     result.children = result.children.map((column) => column.map(stripLayers));
+  else if (result.type === "wrapper")
+    result.children = result.children.map(stripLayers);
   return result;
 }
 
@@ -185,6 +196,8 @@ export function mapLocalizedOperations(
       if (target.type === "section" && block.type === "section") {
         target.children = block.children;
         target.columns = block.columns;
+      } else if (target.type === "wrapper" && block.type === "wrapper") {
+        target.children = block.children;
       }
     } else {
       const structuralView =

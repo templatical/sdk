@@ -111,6 +111,10 @@ describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () =
       "order-shape-before-block-missing.json",
       "order-shape-before-locked-by-others.json",
       "order-unset-columns-before-lock.json",
+      "order-wrapper-container-before-anchor.json",
+      "order-wrapper-placement-before-anchor.json",
+      "order-wrapper-placement-before-hidden-slot.json",
+      "order-wrapper-precondition-before-container.json",
     ]);
   });
 
@@ -161,6 +165,134 @@ describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () =
 });
 
 describe("applyOperationsInPlace", () => {
+  it("writes a wrapper child update into the supplied tree", () => {
+    const content = {
+      blocks: [
+        {
+          id: "A",
+          type: "wrapper",
+          children: [{ id: "X", type: "paragraph", content: "old" }],
+        },
+      ],
+      settings: { width: 600 },
+    } as unknown as TemplateContent;
+    applyOperationsInPlace(content, [
+      { op: "updateBlock", blockId: "X", set: { content: "new" } },
+    ]);
+    expect(content.blocks).toEqual([
+      {
+        id: "A",
+        type: "wrapper",
+        children: [{ id: "X", type: "paragraph", content: "new" }],
+      },
+    ]);
+  });
+
+  it("reads a mixed parent as its legacy section address", () => {
+    const content = {
+      blocks: [
+        { id: "S", type: "section", columns: "1", children: [[]] },
+        { id: "A", type: "wrapper", children: [{ id: "X", type: "spacer" }] },
+      ],
+      settings: { width: 600 },
+    } as unknown as TemplateContent;
+    expect(
+      applyOperations(content, [
+        {
+          op: "addBlock",
+          block: { id: "Y", type: "spacer" } as Block,
+          parent: { sectionId: "S", column: 0, wrapperId: "missing" } as never,
+          after: null,
+        },
+        {
+          op: "moveBlock",
+          blockId: "X",
+          parent: { sectionId: "S", column: 0, wrapperId: "missing" } as never,
+          after: "Y",
+        },
+      ]).blocks,
+    ).toEqual([
+      {
+        id: "S",
+        type: "section",
+        columns: "1",
+        children: [
+          [
+            { id: "Y", type: "spacer" },
+            { id: "X", type: "spacer" },
+          ],
+        ],
+      },
+      { id: "A", type: "wrapper", children: [] },
+    ]);
+  });
+
+  it("reads a mixed expect parent as its legacy section address", () => {
+    const content = {
+      blocks: [
+        {
+          id: "S",
+          type: "section",
+          columns: "1",
+          children: [[{ id: "X", type: "spacer" }]],
+        },
+      ],
+      settings: { width: 600 },
+    } as unknown as TemplateContent;
+    expect(
+      applyOperations(content, [
+        {
+          op: "moveBlock",
+          blockId: "X",
+          parent: null,
+          after: "S",
+          expect: {
+            parent: {
+              sectionId: "S",
+              column: 0,
+              wrapperId: "missing",
+            } as never,
+            after: null,
+          },
+        },
+      ]).blocks,
+    ).toEqual([
+      { id: "S", type: "section", columns: "1", children: [[]] },
+      { id: "X", type: "spacer" },
+    ]);
+  });
+
+  it.each([
+    {},
+    { wrapperId: "" },
+    { wrapperId: 3 },
+    { wrapperId: "A", column: 0 },
+  ])(
+    "rejects malformed wrapper parent %j before looking for the block",
+    (parent) => {
+      expect(() =>
+        applyOperations(
+          { blocks: [], settings: { width: 600 } } as TemplateContent,
+          [
+            {
+              op: "moveBlock",
+              blockId: "missing",
+              parent,
+              after: null,
+            } as unknown as Operation,
+          ],
+        ),
+      ).toThrowError(
+        expect.objectContaining({
+          code: "invalid_operation",
+          opIndex: 0,
+          message:
+            'parent must be null, { "sectionId", "column" }, or { "wrapperId" }.',
+        }),
+      );
+    },
+  );
+
   it("changes the content it is given", () => {
     const content: TemplateContent = {
       blocks: [{ id: "d1", type: "divider" } as never],
@@ -229,6 +361,105 @@ describe("applyOperationsInPlace on a reactive proxy", () => {
 });
 
 describe("applyOperations", () => {
+  const wrapperContent = (blocks: unknown[]): TemplateContent =>
+    ({
+      blocks,
+      settings: { width: 600, locale: "en", locales: ["de"] },
+    }) as TemplateContent;
+
+  it("rejects an added wrapper without a children list", () => {
+    expect(() =>
+      applyOperations(wrapperContent([]), [
+        {
+          op: "addBlock",
+          block: { id: "A", type: "wrapper" },
+          parent: null,
+          after: null,
+        } as unknown as Operation,
+      ]),
+    ).toThrow("A wrapper needs children: a list of blocks.");
+  });
+
+  it("rejects a wrapper parent whose existing block has no children list", () => {
+    expect(() =>
+      applyOperations(wrapperContent([{ id: "A", type: "wrapper" }]), [
+        {
+          op: "addBlock",
+          block: { id: "X", type: "spacer" } as Block,
+          parent: { wrapperId: "A" },
+          after: null,
+        },
+      ]),
+    ).toThrow('Wrapper "A" has no children list.');
+  });
+
+  it("rejects moving a wrapper into a descendant section", () => {
+    const before = wrapperContent([
+      {
+        id: "A",
+        type: "wrapper",
+        children: [{ id: "S", type: "section", columns: "1", children: [[]] }],
+      },
+    ]);
+    expect(() =>
+      applyOperations(before, [
+        {
+          op: "moveBlock",
+          blockId: "A",
+          parent: { sectionId: "S", column: 0 },
+          after: null,
+        },
+      ]),
+    ).toThrow("A block cannot be moved into itself or its descendants.");
+  });
+
+  it("prunes orphan locale layers from wrapper children during a wrapper update", () => {
+    const before = wrapperContent([
+      {
+        id: "A",
+        type: "wrapper",
+        children: [
+          {
+            id: "X",
+            type: "paragraph",
+            l10n: {
+              de: { text: { content: { value: "Hallo", sourceHash: "old" } } },
+            },
+          },
+        ],
+      },
+    ]);
+    const after = applyOperations(before, [
+      { op: "updateBlock", blockId: "A", set: { borderRadius: 8 } },
+    ]);
+    const wrapper = after.blocks[0] as Extract<Block, { type: "wrapper" }>;
+    expect(wrapper.children[0].l10n).toBeUndefined();
+    expect(wrapper.borderRadius).toBe(8);
+  });
+
+  it("rejects an added wrapper with a slot beneath a hidden section", () => {
+    const block = {
+      id: "A",
+      type: "wrapper",
+      children: [
+        {
+          id: "S",
+          type: "section",
+          columns: "1",
+          l10n: { de: { hidden: true } },
+          children: [[{ id: "slot", type: "slot" }]],
+        },
+      ],
+    } as unknown as Block;
+    expect(() =>
+      applyOperations(wrapperContent([]), [
+        { op: "addBlock", block, parent: null, after: null },
+      ]),
+    ).toThrow(
+      "A layout's slot block can't be placed inside a block that a language hides.",
+    );
+  });
+
   it("keeps a __proto__ key an ordinary key", () => {
     const content = {
       blocks: [{ id: "t1", type: "title" }],

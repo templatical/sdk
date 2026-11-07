@@ -25,10 +25,10 @@ import {
   createWrapperBlock,
   createParagraphBlock,
   createDefaultTemplateContent,
-} from '@templatical/editor';
+} from "@templatical/editor";
 
 const layout = createDefaultTemplateContent();
-layout.settings.backgroundColor = '#f3f4f6';
+layout.settings.backgroundColor = "#f3f4f6";
 layout.blocks = [
   createParagraphBlock({
     content:
@@ -36,7 +36,7 @@ layout.blocks = [
   }),
   createWrapperBlock({
     styles: {
-      backgroundColor: '#ffffff',
+      backgroundColor: "#ffffff",
       padding: { top: 24, right: 24, bottom: 24, left: 24 },
     },
     borderRadius: 12,
@@ -49,7 +49,7 @@ layout.blocks = [
 ];
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   layout,
   sectionWrapper: false,
 });
@@ -90,6 +90,8 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 
 **`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` / `fullWidth` map to `mj-wrapper`. `fullWidth: true` spans the recipient's window while the children stay at `settings.width`; a corner radius is ignored while it is on. Absent or false keeps the band at the email width. In Outlook on Windows, a band's background color paints over the background image of a section inside it — set the image on the band, or leave the band without a color. The editor's linter doesn't see the layout, so it can't warn about this. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand. The same **Full-width background** switch is on the wrapper block's Background panel.
 
+Headless `applyOperations` and `template-tools edit` can address existing wrapper children with `parent: { wrapperId: string }`; sections without `section.wrapper` may be direct wrapper children. Sections with `section.wrapper` must stay at the top level: `addBlock`, `moveBlock`, and `updateBlock` refuse to nest them in a wrapper. This edits a layout tree outside the visual editor. The visual editor still refuses authored wrappers. Run `validateLayout` on a layout after applying operations; it also rejects nested section wrappers. `setContent` itself checks shape only.
+
 Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) are exported from `@templatical/editor`. Headless rendering can import `applyLayout` from `@templatical/types` without the editor.
 
 `validateLayout` throws:
@@ -98,6 +100,7 @@ Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createPa
 [Templatical] layout: must contain exactly one slot block
 [Templatical] layout: slot must be a top-level or wrapper child, not nested in a section
 [Templatical] layout: a wrapper cannot contain a wrapper
+[Templatical] layout: a wrapper cannot contain a section with its own wrapper (section.wrapper)
 ```
 
 `setContent` / `load` / `addBlock` refuse `slot` and `wrapper` in content.
