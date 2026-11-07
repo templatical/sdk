@@ -28,12 +28,17 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   let wsClient: WebSocketClient | null = null;
   let socketReady: Promise<void> | null = null;
   let channelName: string | null = null;
+  // The channel the latest `connect` asked for. Recorded before any await, so
+  // a switch that resumes after a later request is dropped and the last
+  // request wins, including one for the channel already joined.
+  let requestedChannelName: string | null = null;
 
   async function connect(
     templateId: string,
     config: WebSocketConfig,
   ): Promise<void> {
     const nextChannelName = `presence-template.${templateId}`;
+    requestedChannelName = nextChannelName;
     if (wsClient && channelName === nextChannelName) return;
 
     if (!wsClient) {
@@ -46,6 +51,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
           wsClient = null;
           socketReady = null;
           channelName = null;
+          requestedChannelName = null;
         }
         throw error;
       });
@@ -59,7 +65,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       client.disconnect();
       return;
     }
-    if (channelName === nextChannelName) return;
+    if (
+      requestedChannelName !== nextChannelName ||
+      channelName === nextChannelName
+    )
+      return;
     if (channelName) client.unsubscribe(channelName);
 
     channelName = nextChannelName;
@@ -94,6 +104,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     wsClient = null;
     socketReady = null;
     channelName = null;
+    requestedChannelName = null;
     channel.value = null;
     isConnected.value = false;
   }

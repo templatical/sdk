@@ -172,6 +172,35 @@ describe('useWebSocket', () => {
       expect(ws.isConnected.value).toBe(true);
     });
 
+    it('keeps the current channel when it is requested again during a pending switch', async () => {
+      const ws = useWebSocket({ authManager: createMockAuthManager() });
+      await ws.connect('tmpl-1', mockConfig);
+
+      const toSecond = ws.connect('tmpl-2', mockConfig);
+      const backToFirst = ws.connect('tmpl-1', mockConfig);
+      await Promise.all([toSecond, backToFirst]);
+
+      expect(WebSocketClient.prototype.subscribePresence).toHaveBeenCalledTimes(1);
+      expect(WebSocketClient.prototype.subscribePresence).toHaveBeenCalledWith('presence-template.tmpl-1');
+      expect(WebSocketClient.prototype.unsubscribe).not.toHaveBeenCalled();
+    });
+
+    it('subscribes only the last template requested while the socket opens', async () => {
+      let release!: () => void;
+      vi.mocked(WebSocketClient.prototype.connect).mockImplementation(
+        () => new Promise<void>((resolve) => { release = resolve; }),
+      );
+      const ws = useWebSocket({ authManager: createMockAuthManager() });
+      const first = ws.connect('tmpl-1', mockConfig);
+      const second = ws.connect('tmpl-2', mockConfig);
+
+      release();
+      await Promise.all([first, second]);
+      expect(WebSocketClient.prototype.subscribePresence).toHaveBeenCalledTimes(1);
+      expect(WebSocketClient.prototype.subscribePresence).toHaveBeenCalledWith('presence-template.tmpl-2');
+      expect(WebSocketClient.prototype.unsubscribe).not.toHaveBeenCalled();
+    });
+
     it('closes a socket that finishes opening after disconnect', async () => {
       let release!: () => void;
       vi.mocked(WebSocketClient.prototype.connect).mockImplementation(
