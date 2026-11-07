@@ -1,5 +1,14 @@
 # @templatical/import-beefree
 
+## 0.57.0
+
+### Patch Changes
+
+- 59a17bc: The Unlayer, BeeFree and Topol importers check for a repeated warning in constant time, so a design with thousands of languages no longer slows the import quadratically. The Chamaileon importer looks up variable references in a table built once per document. The renderer escapes control characters in a block's type and id before it logs the missing-renderer warning. `templatical live` answers 400 to a request target it can't parse, where it used to exit.
+- Updated dependencies [0bdfeac]
+- Updated dependencies [a2f3ed8]
+  - @templatical/types@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes

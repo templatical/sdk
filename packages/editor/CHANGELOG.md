@@ -1,5 +1,18 @@
 # @templatical/editor
 
+## 0.57.0
+
+### Minor Changes
+
+- 3e1b6a3: Add Danish editor and media library translations and localized recipient-facing content defaults.
+
+### Patch Changes
+
+- Updated dependencies [59a17bc]
+- Updated dependencies [418a249]
+  - @templatical/renderer@0.57.0
+  - @templatical/quality@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes
