@@ -70,9 +70,10 @@ function tagRanges(
   const raw = (start: number, end: number) => {
     const segment = text.slice(start, end);
     const kinds = ["logic", "value"] as const;
-    const nextMatches = builtin
-      ? kinds.map((kind) => scanSyntaxMatches(segment, syntax, kind, 0, 1)[0])
-      : null;
+    const nextMatches: ({ index: number; value: string } | null | undefined)[] =
+      builtin
+        ? kinds.map((kind) => scanSyntaxMatches(segment, syntax, kind, 0, 1)[0])
+        : [undefined, undefined];
     const regexes = builtin
       ? null
       : [syntax.logic, syntax.value].map(
@@ -85,15 +86,24 @@ function tagRanges(
     let cursor = 0;
     while (cursor < segment.length) {
       const matches = builtin
-        ? nextMatches!.flatMap((match) => (match ? [match] : []))
-        : regexes!.flatMap((pattern) => {
-            pattern.lastIndex = cursor;
-            let match = pattern.exec(segment);
-            while (match && match[0].length === 0) {
-              pattern.lastIndex = match.index + 1;
-              match = pattern.exec(segment);
+        ? nextMatches.flatMap((match) => (match ? [match] : []))
+        : regexes!.flatMap((pattern, index) => {
+            const cached = nextMatches[index];
+            if (
+              cached === undefined ||
+              (cached !== null && cached.index < cursor)
+            ) {
+              pattern.lastIndex = cursor;
+              let match = pattern.exec(segment);
+              while (match && match[0].length === 0) {
+                pattern.lastIndex = match.index + 1;
+                match = pattern.exec(segment);
+              }
+              nextMatches[index] = match
+                ? { index: match.index, value: match[0] }
+                : null;
             }
-            return match ? [{ index: match.index, value: match[0] }] : [];
+            return nextMatches[index] ? [nextMatches[index]!] : [];
           });
       matches.sort(
         (a, b) => a.index - b.index || a.value.length - b.value.length,
@@ -115,8 +125,8 @@ function tagRanges(
       cursor = match.index + match.value.length;
       if (builtin) {
         for (let index = 0; index < kinds.length; index++) {
-          if (nextMatches![index] && nextMatches![index]!.index < cursor) {
-            nextMatches![index] = scanSyntaxMatches(
+          if (nextMatches[index] && nextMatches[index]!.index < cursor) {
+            nextMatches[index] = scanSyntaxMatches(
               segment,
               syntax,
               kinds[index],

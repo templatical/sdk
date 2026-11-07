@@ -283,3 +283,52 @@ describe("renderer — custom block stylesheets", () => {
     });
   });
 });
+
+describe("renderer — custom block stylesheets carry no markup", () => {
+  const closing =
+    "p{color:red}</mj-style><mj-raw><script>x</script></mj-raw><mj-style>";
+  const openingOnly = "p{color:red}<mj-raw><p>INJECTED";
+
+  async function render(source: "content" | "resolver", css: string) {
+    const block = createCustomBlock(definition("unsafe"));
+    block.renderedHtml = "<div>x</div>";
+    if (source === "content") block.renderedStylesheet = css;
+    return renderToMjml(contentWithCustomBlocks(block), {
+      ...(source === "resolver" ? { getCustomBlockStylesheet: () => css } : {}),
+    });
+  }
+
+  it.each(["content", "resolver"] as const)(
+    "writes every < in %s CSS as a CSS escape, so it cannot close its mj-style",
+    async (source) => {
+      const mjml = await render(source, closing);
+      expect(mjml).toContain(
+        String.raw`    <mj-style>
+p{color:red}\3c /mj-style>\3c mj-raw>\3c script>x\3c /script>\3c /mj-raw>\3c mj-style>
+    </mj-style>`,
+      );
+      expect(mjml).not.toContain("<mj-raw>");
+      const html = (await mjml2html(mjml)).html;
+      expect(html).not.toContain("<script");
+      expect(html).toContain("color:red");
+    },
+  );
+
+  it.each(["content", "resolver"] as const)(
+    "keeps an opening tag in %s CSS out of the compiled email",
+    async (source) => {
+      const mjml = await render(source, openingOnly);
+      expect(mjml).toContain(
+        String.raw`p{color:red}\3c mj-raw>\3c p>INJECTED`,
+      );
+      const html = (await mjml2html(mjml)).html;
+      expect(html).not.toMatch(/<p>INJECTED/);
+      expect(html).toContain("color:red");
+    },
+  );
+
+  it("leaves a stylesheet without < byte-identical", async () => {
+    const mjml = await render("content", "p{color:red}");
+    expect(mjml).toContain("\n    <mj-style>\np{color:red}\n    </mj-style>");
+  });
+});
