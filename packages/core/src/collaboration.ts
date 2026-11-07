@@ -295,11 +295,14 @@ function containsBlock(blocks: Block[], blockId: string): boolean {
     if (block.id === blockId) return true;
     const children = (block as { children?: unknown }).children;
     return (
-      block.type === "section" &&
-      Array.isArray(children) &&
-      (children as Block[][]).some(
-        (column) => Array.isArray(column) && containsBlock(column, blockId),
-      )
+      (block.type === "wrapper" &&
+        Array.isArray(children) &&
+        containsBlock(children as Block[], blockId)) ||
+      (block.type === "section" &&
+        Array.isArray(children) &&
+        (children as Block[][]).some(
+          (column) => Array.isArray(column) && containsBlock(column, blockId),
+        ))
     );
   });
 }

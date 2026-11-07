@@ -498,7 +498,7 @@ describe("localized template guide", () => {
     (page, cell) => {
       const row = readFileSync(join(DOCS, page), "utf8")
         .split("\n")
-        .find((line) => line.startsWith("| `locked_by_others` |"));
+        .find((line) => /^\|\s*`locked_by_others`\s*\|/.test(line));
       expect(row).toContain(cell);
     },
   );

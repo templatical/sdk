@@ -46,7 +46,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 //
 // Kept in step automatically by scripts/sync-pins.mjs at release time.
 // tests/cdn-pin.test.ts is the safety net that fails CI if it ever drifts.
-export const EDITOR_VERSION = "0.56.0";
+export const EDITOR_VERSION = "0.56.1";
 
 export const DEFAULT_PORT = 4747;
 export const WORKING_DIR = ".templatical";
@@ -549,10 +549,12 @@ export function startBridge({
   }
 
   const server = createServer(async (req, res) => {
-    const { pathname } = new URL(req.url ?? "/", "http://localhost");
     const method = req.method ?? "GET";
 
     try {
+      // Inside the try: a target such as `//[` throws, and an unhandled
+      // rejection here would end the bridge process.
+      const { pathname } = new URL(req.url ?? "/", "http://localhost");
       // Only this listener's own loopback names are served: a DNS-rebound
       // hostname would otherwise let any web page read the bridge as same-origin.
       const addr = server.address();

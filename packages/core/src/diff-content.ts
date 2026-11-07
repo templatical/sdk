@@ -12,6 +12,7 @@ import { deepEqual, safeClone } from "@templatical/types";
 /** Where a block sits, with its container as a comparable key. */
 interface Placement {
   block: Block;
+  parent: BlockParent;
   key: string;
   index: number;
 }
@@ -38,7 +39,9 @@ const SETTINGS_SKIP: ReadonlySet<string> = new Set(["locales", "l10n"]);
 function containerKey(parent: BlockParent): string {
   return parent === null
     ? ROOT_KEY
-    : JSON.stringify([parent.sectionId, parent.column]);
+    : "wrapperId" in parent
+      ? JSON.stringify(["wrapper", parent.wrapperId])
+      : JSON.stringify(["section", parent.sectionId, parent.column]);
 }
 
 function columnsOf(block: Block): Block[][] {
@@ -54,13 +57,21 @@ function indexBlocks(blocks: Block[]): Map<string, Placement> {
   const walk = (list: Block[], parent: BlockParent): void => {
     list.forEach((block, index) => {
       if (!placements.has(block.id)) {
-        placements.set(block.id, { block, key: containerKey(parent), index });
+        placements.set(block.id, {
+          block,
+          parent,
+          key: containerKey(parent),
+          index,
+        });
       }
       columnsOf(block).forEach((column, columnIndex) => {
         if (Array.isArray(column)) {
           walk(column, { sectionId: block.id, column: columnIndex });
         }
       });
+      if (block.type === "wrapper" && Array.isArray(block.children)) {
+        walk(block.children, { wrapperId: block.id });
+      }
     });
   };
   walk(blocks, null);
@@ -142,14 +153,16 @@ function layerChanges(
  * plus moves, never as deletions and re-additions.
  *
  * `applyOperations(before, diffContent(before, after))` deep-equals `after`
- * when both are well formed: unique ids, sections only at the top level, and
- * each section's `children` as long as its layout's column count. The order is
- * what the engine needs:
+ * when both are well formed: unique ids, sections at the top level or inside
+ * wrappers, and each section's `children` as long as its column count. The
+ * order is what the engine needs:
  *
+ * 0. Unhide existing wrappers before placing a slot inside them.
  * 1. Deletions that take nothing still needed with them.
  * 2. The top level: additions (a new section carries its new children) and moves.
  * 3. `columns` growth, so new columns exist before blocks move into them.
- * 4. Every section column: additions and moves, out of shrinking columns too.
+ * 4. Wrapper children and every section column: additions and moves, out of
+ *    shrinking columns too.
  * 5. `columns` shrinkage, once the dropped columns are empty.
  * 6. Deletion of sections whose surviving blocks have moved out.
  * 7. Key changes on blocks, then on settings.
@@ -170,6 +183,8 @@ export function diffContent(
   const was = indexBlocks(before.blocks);
   const now = indexBlocks(after.blocks);
   const ops: Operation[] = [];
+  const nextLocales = new Set(after.settings.locales ?? []);
+  const previousLocales = new Set(before.settings.locales ?? []);
 
   const typeChanged = (id: string): boolean => {
     const next = now.get(id);
@@ -182,14 +197,16 @@ export function diffContent(
   };
   const survives = (block: Block): boolean =>
     now.has(block.id) && !typeChanged(block.id);
+  const childLists = (block: Block): Block[][] =>
+    block.type === "wrapper" && Array.isArray(block.children)
+      ? [block.children]
+      : columnsOf(block);
   const hasSurvivor = (block: Block): boolean =>
-    columnsOf(block).some(
-      (column) =>
-        Array.isArray(column) &&
-        column.some(
-          (child) =>
-            survives(child) || (!typeChanged(child.id) && hasSurvivor(child)),
-        ),
+    childLists(block).some((list) =>
+      list.some(
+        (child) =>
+          survives(child) || (!typeChanged(child.id) && hasSurvivor(child)),
+      ),
     );
 
   // 1. Every old block's fate: kept, deleted now ("gone"), or deleted once its
@@ -219,9 +236,9 @@ export function diffContent(
         childFate = "dropped";
       }
     }
-    for (const column of columnsOf(block)) {
-      if (Array.isArray(column)) {
-        for (const child of column) visit(child, childFate);
+    for (const list of childLists(block)) {
+      if (Array.isArray(list)) {
+        for (const child of list) visit(child, childFate);
       }
     }
   };
@@ -236,11 +253,13 @@ export function diffContent(
     if (payload.type === "section") {
       payload.children = columnsOf(block).map((column) =>
         Array.isArray(column)
-          ? column
-              .filter((child) => !exists(child.id))
-              .map((child) => safeClone(child))
+          ? column.filter((child) => !exists(child.id)).map(payloadOf)
           : column,
       );
+    } else if (payload.type === "wrapper" && block.type === "wrapper") {
+      payload.children = block.children
+        .filter((child) => !exists(child.id))
+        .map(payloadOf);
     }
     return payload;
   };
@@ -279,9 +298,9 @@ export function diffContent(
   // 2. The top level.
   place(null, after.blocks, () => false);
 
-  const sections = after.blocks.filter(
-    (block): block is SectionBlock => block.type === "section",
-  );
+  const sections = [...now.values()]
+    .map(({ block }) => block)
+    .filter((block): block is SectionBlock => block.type === "section");
   const resized = new Set<string>();
   const resize = (grow: boolean): void => {
     for (const section of sections) {
@@ -302,7 +321,16 @@ export function diffContent(
   // 3. Growth.
   resize(true);
 
-  // 4. Every column of every section, new sections included.
+  // 4. Wrapper child lists, then every section column, including nested sections.
+  for (const { block } of now.values()) {
+    if (block.type !== "wrapper") continue;
+    const isNew = !exists(block.id);
+    place(
+      { wrapperId: block.id },
+      block.children,
+      (child) => isNew && !exists(child.id),
+    );
+  }
   for (const section of sections) {
     const isNew = !exists(section.id);
     columnsOf(section).forEach((column, columnIndex) => {
@@ -321,14 +349,83 @@ export function diffContent(
   // 6. Sections whose survivors have moved out.
   for (const id of deferred) ops.push({ op: "deleteBlock", blockId: id });
 
+  const holdsSlot = (block: Block): boolean =>
+    block.type === "slot" ||
+    childLists(block).some((list) => list.some(holdsSlot));
+  const wrapperAncestors = (parent: BlockParent): string[] => {
+    const ids: string[] = [];
+    let ancestor = parent;
+    while (ancestor !== null) {
+      const id =
+        "wrapperId" in ancestor ? ancestor.wrapperId : ancestor.sectionId;
+      if ("wrapperId" in ancestor) ids.push(id);
+      ancestor = now.get(id)?.parent ?? null;
+    }
+    return ids;
+  };
+  const slotTargets = new Set(
+    ops.flatMap((op) => {
+      if ((op.op !== "addBlock" && op.op !== "moveBlock") || op.parent === null)
+        return [];
+      const block =
+        op.op === "addBlock" ? op.block : was.get(op.blockId)?.block;
+      return block && holdsSlot(block) ? wrapperAncestors(op.parent) : [];
+    }),
+  );
+  const earlyUnhidden = new Set<string>();
+  const unhide: Operation[] = [];
+  for (const [id, previous] of was) {
+    const next = now.get(id);
+    if (!slotTargets.has(id) || !next || !survives(previous.block)) continue;
+    for (const [locale, layer] of Object.entries(previous.block.l10n ?? {})) {
+      if (
+        layer.hidden !== true ||
+        next.block.l10n?.[locale]?.hidden === true ||
+        !previousLocales.has(locale)
+      )
+        continue;
+      unhide.push({
+        op: "updateBlockLocale",
+        blockId: id,
+        locale,
+        hidden: false,
+      });
+      earlyUnhidden.add(JSON.stringify([id, locale]));
+    }
+  }
+  // A section can't enter a layout wrapper while it has its own `wrapper`, so
+  // that key goes before any move.
+  const unwrapped = new Set<string>();
+  const unwrap: Operation[] = [];
+  for (const [id, previous] of was) {
+    const next = now.get(id);
+    if (
+      !next ||
+      !survives(previous.block) ||
+      previous.block.type !== "section" ||
+      (previous.block as SectionBlock).wrapper === undefined ||
+      (next.block as SectionBlock).wrapper !== undefined ||
+      next.parent === null ||
+      !("wrapperId" in next.parent)
+    )
+      continue;
+    unwrapped.add(id);
+    unwrap.push({ op: "updateBlock", blockId: id, unset: ["wrapper"] });
+  }
+  ops.unshift(...unhide, ...unwrap);
+
   // 7. Key changes, in document order.
   for (const [id, placement] of now) {
     if (!exists(id)) continue;
-    const { set, unset } = keyChanges(
+    const changes = keyChanges(
       was.get(id)!.block as unknown as Json,
       placement.block as unknown as Json,
       resized.has(id) ? RESIZED_SECTION_SKIP : BLOCK_SKIP,
     );
+    const { set } = changes;
+    const unset = unwrapped.has(id)
+      ? changes.unset.filter((key) => key !== "wrapper")
+      : changes.unset;
     if (Object.keys(set).length === 0 && unset.length === 0) continue;
     ops.push({
       op: "updateBlock",
@@ -351,8 +448,6 @@ export function diffContent(
     });
   }
 
-  const previousLocales = new Set(before.settings.locales ?? []);
-  const nextLocales = new Set(after.settings.locales ?? []);
   for (const locale of nextLocales) {
     if (!previousLocales.has(locale)) ops.push({ op: "addLocale", locale });
   }
@@ -366,6 +461,8 @@ export function diffContent(
     ])) {
       if (!nextLocales.has(locale)) continue;
       const changes = layerChanges(previous[locale], next[locale]);
+      if (earlyUnhidden.has(JSON.stringify([id, locale])))
+        delete changes.hidden;
       if (Object.keys(changes).length > 0) {
         ops.push({ op: "updateBlockLocale", blockId: id, locale, ...changes });
       }

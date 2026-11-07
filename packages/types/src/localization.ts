@@ -333,6 +333,16 @@ export function localizeBlock(
 ): Block {
   const json = block as unknown as Json;
   const view = safeClone(withoutL10n(json));
+  return applyBlockLocaleLayer(block, view, locale, defaultLocale);
+}
+
+function applyBlockLocaleLayer(
+  block: Block,
+  view: Json,
+  locale: string,
+  defaultLocale: string,
+): Block {
+  const json = block as unknown as Json;
   if (locale === defaultLocale) return view as unknown as Block;
   const layer = (json.l10n as Record<string, BlockLocaleLayer> | undefined)?.[
     locale
@@ -351,6 +361,25 @@ export function localizeBlock(
   )
     delete view.renderedHtml;
   return view as unknown as Block;
+}
+
+function localizeBlockOwnFields(
+  block: Block,
+  locale: string,
+  defaultLocale: string,
+): Block {
+  const json = block as unknown as Json;
+  // Only sections and wrappers have children, and `resolveLocale` projects
+  // those into new arrays, so they are left out of this block's own copy.
+  if (
+    (json.type !== "section" && json.type !== "wrapper") ||
+    !Array.isArray(json.children)
+  )
+    return localizeBlock(block, locale, defaultLocale);
+  const { children, ...own } = withoutL10n(json);
+  const view = safeClone(own) as Json;
+  view.children = children;
+  return applyBlockLocaleLayer(block, view, locale, defaultLocale);
 }
 
 function isHidden(block: Block, locale: string): boolean {
@@ -394,7 +423,14 @@ export function resolveLocale(
   const project = (blocks: Block[]): Block[] =>
     blocks.flatMap((block) => {
       if (locale !== fallback && isHidden(block, locale)) return [];
-      const view = localizeBlock(block, locale, fallback) as unknown as Json;
+      const layer = block.l10n?.[locale];
+      const touchesChildPath = [
+        ...Object.keys(layer?.set ?? {}),
+        ...Object.keys(layer?.text ?? {}),
+      ].some((path) => path.startsWith("children."));
+      const view = (touchesChildPath
+        ? localizeBlock(block, locale, fallback)
+        : localizeBlockOwnFields(block, locale, fallback)) as unknown as Json;
       if (view.type === "section" && Array.isArray(view.children)) {
         view.children = (view.children as Block[][]).map((column) =>
           project(column),

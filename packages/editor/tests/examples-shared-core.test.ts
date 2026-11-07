@@ -43,6 +43,14 @@ const read = (example: string, rel: string) =>
   readFileSync(join(EXAMPLES, example, rel), "utf8");
 
 describe("the full-stack examples' shared core", () => {
+  it("writes compact JSON in every server store", () => {
+    for (const [example, rel] of Object.entries(CORE["store.ts"])) {
+      expect(read(example, rel)).toContain(
+        "writeFile(temp, JSON.stringify(record))",
+      );
+    }
+  });
+
   it("classifies every example on disk as full-stack or backend-free", () => {
     const onDisk = readdirSync(EXAMPLES)
       .filter((name) => statSync(join(EXAMPLES, name)).isDirectory())

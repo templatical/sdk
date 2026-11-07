@@ -1,0 +1,43 @@
+{
+  "name": "move section with wrapper into wrapper",
+  "content": {
+    "blocks": [
+      {
+        "id": "S",
+        "type": "section",
+        "columns": "1",
+        "children": [[]],
+        "wrapper": {
+          "backgroundColor": "#fff"
+        }
+      },
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": []
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "moveBlock",
+      "blockId": "S",
+      "parent": {
+        "wrapperId": "A"
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "message": "Sections with a wrapper cannot be placed inside wrappers."
+    }
+  }
+}

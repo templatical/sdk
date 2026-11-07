@@ -42,7 +42,7 @@ async function writeRecord(dir: string, id: string, record: unknown): Promise<vo
   await mkdir(dir, { recursive: true });
   const file = join(dir, `${id}.json`);
   const temp = `${file}.${randomUUID()}.tmp`;
-  await writeFile(temp, JSON.stringify(record, null, 2));
+  await writeFile(temp, JSON.stringify(record));
   // rename is atomic: a reader sees the old record or the new one, never half of one.
   await rename(temp, file);
 }

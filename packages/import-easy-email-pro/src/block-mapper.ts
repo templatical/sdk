@@ -780,13 +780,16 @@ function removeTags(html: string): string {
   return out;
 }
 
-function decodeEntities(text: string): string {
+export function decodeEntities(text: string): string {
   let out = "";
   let i = 0;
   while (i < text.length) {
     if (text[i] === "&") {
-      const semi = text.indexOf(";", i + 1);
-      if (semi !== -1 && semi - i <= 6) {
+      let semi = i + 1;
+      while (semi < text.length && semi - i <= 6 && text[semi] !== ";") {
+        semi++;
+      }
+      if (semi < text.length && semi - i <= 6) {
         const mapped = ENTITIES[text.slice(i, semi + 1)];
         if (mapped !== undefined) {
           out += mapped;

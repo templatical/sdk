@@ -22,15 +22,19 @@ import {
 } from "./localization";
 import type { TemplateContent, TemplateSettings } from "./template";
 
-/** Where a block sits: `null` is the top level, otherwise a section column. */
-export type BlockParent = null | { sectionId: string; column: number };
+/** Where a block sits: the top level, a section column, or wrapper children. */
+export type BlockParent =
+  null | { sectionId: string; column: number } | { wrapperId: string };
+
+const SECTION_WRAPPER_IN_WRAPPER =
+  "Sections with a wrapper cannot be placed inside wrappers.";
 
 /** Insert `block` into `parent`, after the sibling `after` (`null`: first). */
 export interface AddBlockOperation {
   op: "addBlock";
   /**
-   * A non-empty string `id` and a string `type`. A section brings its
-   * `children`: a list of columns, each a list of blocks.
+   * A non-empty string `id` and a string `type`. A section brings columns of
+   * blocks in `children`; a wrapper brings a flat child list.
    */
   block: Block;
   parent: BlockParent;
@@ -53,7 +57,7 @@ export interface MoveBlockOperation {
   expect?: { parent: BlockParent; after: string | null };
 }
 
-/** Delete a block. Deleting a section deletes its children with it. */
+/** Delete a block and its descendants, if it is a section or wrapper. */
 export interface DeleteBlockOperation {
   op: "deleteBlock";
   blockId: string;
@@ -289,7 +293,8 @@ export function getColumnCount(layout: unknown): number {
  * 2. the blocks it names (`block_missing`, `block_exists`);
  * 3. locks (`lock_held`, `locked_by_others`);
  * 4. preconditions (`precondition_failed`);
- * 5. placement (`invalid_operation`): a section into a column, a block after itself;
+ * 5. placement (`invalid_operation`): an illegal section or wrapper parent,
+ *    a descendant cycle, or a block after itself;
  * 6. the target container (`block_missing`, `invalid_operation`);
  * 7. the anchor (`anchor_missing`);
  * 8. the change itself (`invalid_operation`): a layout that drops non-empty columns.
@@ -392,50 +397,50 @@ function columnsOf(section: Json): unknown[][] {
   return children.map((column) => (Array.isArray(column) ? column : []));
 }
 
-/**
- * Find a block, depth first in document order: each top-level block, then the
- * blocks in its columns when it is a section. A template has no deeper level.
- */
-function locate(content: TemplateContent, blockId: string): Location | null {
-  const blocks = topLevelOf(content);
-  for (let index = 0; index < blocks.length; index++) {
-    const block = blocks[index];
+/** Locations in document order, including children of wrappers and sections. */
+function* walkLocations(
+  list: unknown[],
+  parent: BlockParent,
+): Generator<Location> {
+  for (let index = 0; index < list.length; index++) {
+    const block = list[index];
     if (!isRecord(block)) continue;
-    if (block.id === blockId)
-      return { block, list: blocks, index, parent: null };
-    if (!isSection(block) || typeof block.id !== "string") continue;
-    const children = block.children;
-    if (!Array.isArray(children)) continue;
-    for (let column = 0; column < children.length; column++) {
-      const list: unknown = children[column];
-      if (!Array.isArray(list)) continue;
-      for (let position = 0; position < list.length; position++) {
-        const child: unknown = list[position];
-        if (isRecord(child) && child.id === blockId) {
-          return {
-            block: child,
-            list,
-            index: position,
-            parent: { sectionId: block.id, column },
-          };
-        }
+    yield { block, list, index, parent };
+    if (typeof block.id !== "string") continue;
+    if (isSection(block)) {
+      for (const [column, children] of columnsOf(block).entries()) {
+        yield* walkLocations(children, { sectionId: block.id, column });
       }
+    } else if (block.type === "wrapper" && Array.isArray(block.children)) {
+      yield* walkLocations(block.children, { wrapperId: block.id });
     }
+  }
+}
+
+function locate(content: TemplateContent, blockId: string): Location | null {
+  for (const location of walkLocations(topLevelOf(content), null)) {
+    if (location.block.id === blockId) return location;
   }
   return null;
 }
 
-/** A block's id and every id inside it, in document order. */
-function idsOf(block: Json): string[] {
+/** A block's id and every descendant id, in document order. */
+export function blockIdsOf(block: unknown): string[] {
+  if (!isRecord(block)) return [];
   const ids = typeof block.id === "string" ? [block.id] : [];
+  // One push per id: spreading a wide container's ids into push() passes them
+  // as arguments and throws past the engine's argument limit.
   if (isSection(block)) {
-    for (const column of columnsOf(block)) ids.push(...idsIn(column));
+    for (const column of columnsOf(block))
+      for (const id of idsIn(column)) ids.push(id);
+  } else if (block.type === "wrapper" && Array.isArray(block.children)) {
+    for (const id of idsIn(block.children)) ids.push(id);
   }
   return ids;
 }
 
 function idsIn(blocks: readonly unknown[]): string[] {
-  return blocks.flatMap((block) => (isRecord(block) ? idsOf(block) : []));
+  return blocks.flatMap(blockIdsOf);
 }
 
 // --- 1. Shape ----------------------------------------------------------------
@@ -447,7 +452,7 @@ function readBlockId(op: Json, index: number): string {
   return op.blockId;
 }
 
-/** `parent` is required: `null`, or a section id and a whole column index. */
+/** `parent` is required: a root, section column, or wrapper child list. */
 function readParent(op: Json, index: number): BlockParent {
   const parent = op.parent;
   if (parent === null) return null;
@@ -459,10 +464,19 @@ function readParent(op: Json, index: number): BlockParent {
   ) {
     return { sectionId: parent.sectionId, column: parent.column };
   }
+  if (
+    isRecord(parent) &&
+    typeof parent.wrapperId === "string" &&
+    parent.wrapperId !== "" &&
+    !Object.hasOwn(parent, "sectionId") &&
+    !Object.hasOwn(parent, "column")
+  ) {
+    return { wrapperId: parent.wrapperId };
+  }
   return fail(
     "invalid_operation",
     index,
-    'parent must be null or { "sectionId", "column" }.',
+    'parent must be null, { "sectionId", "column" }, or { "wrapperId" }.',
   );
 }
 
@@ -532,7 +546,7 @@ function readChanges(
 function assertNewBlock(
   block: unknown,
   index: number,
-  inColumn: boolean,
+  placement: "root" | "column" | "wrapper",
 ): asserts block is Json {
   if (
     !isRecord(block) ||
@@ -546,13 +560,36 @@ function assertNewBlock(
       "A block needs a non-empty string id and a string type.",
     );
   }
+  if (block.type === "wrapper") {
+    if (placement !== "root") {
+      fail(
+        "invalid_operation",
+        index,
+        placement === "column"
+          ? "Wrappers can only be placed at the top level."
+          : "Wrappers cannot be placed inside wrappers.",
+      );
+    }
+    if (!Array.isArray(block.children)) {
+      fail(
+        "invalid_operation",
+        index,
+        "A wrapper needs children: a list of blocks.",
+      );
+    }
+    for (const child of block.children) assertNewBlock(child, index, "wrapper");
+    return;
+  }
   if (!isSection(block)) return;
-  if (inColumn) {
+  if (placement === "column") {
     fail(
       "invalid_operation",
       index,
       "Sections can only be placed at the top level.",
     );
+  }
+  if (placement === "wrapper" && block.wrapper) {
+    fail("invalid_operation", index, SECTION_WRAPPER_IN_WRAPPER);
   }
   const columns = block.children;
   if (
@@ -566,7 +603,7 @@ function assertNewBlock(
     );
   }
   for (const column of columns as unknown[][]) {
-    for (const child of column) assertNewBlock(child, index, true);
+    for (const child of column) assertNewBlock(child, index, "column");
   }
 }
 
@@ -659,6 +696,32 @@ function container(
   if (parent === null) {
     if (!Array.isArray(content.blocks)) content.blocks = [];
     return content.blocks;
+  }
+  if ("wrapperId" in parent) {
+    const found = locate(content, parent.wrapperId);
+    if (!found) {
+      return fail(
+        "block_missing",
+        index,
+        `No wrapper with id "${parent.wrapperId}".`,
+        parent.wrapperId,
+      );
+    }
+    if (found.block.type !== "wrapper") {
+      return fail(
+        "invalid_operation",
+        index,
+        `Block "${parent.wrapperId}" isn't a wrapper.`,
+      );
+    }
+    if (!Array.isArray(found.block.children)) {
+      return fail(
+        "invalid_operation",
+        index,
+        `Wrapper "${parent.wrapperId}" has no children list.`,
+      );
+    }
+    return found.block.children;
   }
   const found = locate(content, parent.sectionId);
   if (!found) {
@@ -855,7 +918,11 @@ function addBlock(content: TemplateContent, op: Json, index: number): void {
   const parent = readParent(op, index);
   const after = readAfter(op, index);
   const block = op.block;
-  assertNewBlock(block, index, parent !== null);
+  assertNewBlock(
+    block,
+    index,
+    parent === null ? "root" : "wrapperId" in parent ? "wrapper" : "column",
+  );
   assertElementIds(
     { blocks: [block as unknown as Block], settings: content.settings },
     index,
@@ -863,7 +930,7 @@ function addBlock(content: TemplateContent, op: Json, index: number): void {
 
   const existing = new Set(idsIn(topLevelOf(content)));
   const seen = new Set<string>();
-  for (const id of idsOf(block)) {
+  for (const id of blockIdsOf(block)) {
     if (existing.has(id) || seen.has(id)) {
       fail(
         "block_exists",
@@ -891,6 +958,10 @@ function moveBlock(
   const parent = readParent(op, index);
   const after = readAfter(op, index);
   const expect = readExpect(op, index);
+  const expectedParent =
+    expect && expect.parent !== undefined
+      ? readParent({ parent: expect.parent }, index)
+      : null;
 
   const location = locate(content, blockId);
   if (!location) {
@@ -901,13 +972,13 @@ function moveBlock(
       blockId,
     );
   }
-  assertUnlocked(engine, idsOf(location.block), index);
+  assertUnlocked(engine, blockIdsOf(location.block), index);
   if (expect) {
     const previous =
       location.index > 0 ? location.list[location.index - 1] : null;
     const currentAfter = isRecord(previous) ? (previous.id ?? null) : null;
     if (
-      !deepEqual(location.parent, expect.parent ?? null) ||
+      !deepEqual(location.parent, expectedParent) ||
       !deepEqual(currentAfter, expect.after ?? null)
     ) {
       fail(
@@ -918,11 +989,50 @@ function moveBlock(
       );
     }
   }
-  if (isSection(location.block) && parent !== null) {
+  if (
+    parent !== null &&
+    ("wrapperId" in parent ? parent.wrapperId : parent.sectionId) === blockId
+  ) {
+    fail(
+      "invalid_operation",
+      index,
+      "A block cannot be moved into itself or its descendants.",
+    );
+  }
+  if (
+    parent !== null &&
+    blockIdsOf(location.block).includes(
+      "wrapperId" in parent ? parent.wrapperId : parent.sectionId,
+    )
+  ) {
+    fail(
+      "invalid_operation",
+      index,
+      "A block cannot be moved into itself or its descendants.",
+    );
+  }
+  if (isSection(location.block) && parent !== null && "sectionId" in parent) {
     fail(
       "invalid_operation",
       index,
       "Sections can only be placed at the top level.",
+    );
+  }
+  if (
+    isSection(location.block) &&
+    location.block.wrapper &&
+    parent !== null &&
+    "wrapperId" in parent
+  ) {
+    fail("invalid_operation", index, SECTION_WRAPPER_IN_WRAPPER);
+  }
+  if (location.block.type === "wrapper" && parent !== null) {
+    fail(
+      "invalid_operation",
+      index,
+      "wrapperId" in parent
+        ? "Wrappers cannot be placed inside wrappers."
+        : "Wrappers can only be placed at the top level.",
     );
   }
   if (after === blockId) {
@@ -962,7 +1072,7 @@ function deleteBlock(
       blockId,
     );
   }
-  assertUnlocked(engine, idsOf(location.block), index);
+  assertUnlocked(engine, blockIdsOf(location.block), index);
   if (expect && !deepEqual(location.block, expect.block ?? null)) {
     fail(
       "precondition_failed",
@@ -1005,6 +1115,14 @@ function updateBlock(
   }
   assertUnlocked(engine, [blockId], index);
   if (expect) assertExpected(block, expect, index, blockId);
+  if (
+    section &&
+    location.parent !== null &&
+    "wrapperId" in location.parent &&
+    set.wrapper
+  ) {
+    fail("invalid_operation", index, SECTION_WRAPPER_IN_WRAPPER);
+  }
   const next = { ...block };
   change(next, set, unset);
   assertElementIds(
@@ -1022,11 +1140,10 @@ function updateBlock(
     else delete block.l10n;
   }
   if (
-    section &&
-    pruned.type === "section" &&
-    !deepEqual(block.children, pruned.children)
+    (section || block.type === "wrapper") &&
+    !deepEqual(block.children, (pruned as unknown as Json).children)
   )
-    block.children = pruned.children;
+    block.children = (pruned as unknown as Json).children;
 }
 
 function updateSettings(
@@ -1391,7 +1508,7 @@ function hidesSlot(block: unknown): boolean {
 
 /**
  * Refuse placing `block` where a language would hide the slot it holds: under
- * a parent section hidden in a language, or with a hidden block on the way.
+ * any ancestor hidden in a language, or with a hidden block on the way.
  */
 function assertSlotPlacement(
   content: TemplateContent,
@@ -1401,11 +1518,17 @@ function assertSlotPlacement(
   ownLayers: boolean,
 ): void {
   if (!holdsSlot(block)) return;
-  const section = parent === null ? null : locate(content, parent.sectionId);
-  if (
-    (section !== null && hiddenInALanguage(section.block)) ||
-    (ownLayers && hidesSlot(block))
-  )
+  let ancestor = parent;
+  let hidden = false;
+  while (ancestor !== null) {
+    const id =
+      "wrapperId" in ancestor ? ancestor.wrapperId : ancestor.sectionId;
+    const found = locate(content, id);
+    if (!found) break;
+    if (hiddenInALanguage(found.block)) hidden = true;
+    ancestor = found.parent;
+  }
+  if (hidden || (ownLayers && hidesSlot(block)))
     fail(
       "invalid_operation",
       index,

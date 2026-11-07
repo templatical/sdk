@@ -27,6 +27,8 @@ const SLOT_NESTED_IN_SECTION =
   "[Templatical] layout: slot must be a top-level or wrapper child, not nested in a section";
 const WRAPPER_IN_WRAPPER =
   "[Templatical] layout: a wrapper cannot contain a wrapper";
+const SECTION_WRAPPER_IN_WRAPPER =
+  "[Templatical] layout: a wrapper cannot contain a section with its own wrapper (section.wrapper)";
 const NESTED_MJ_WRAPPER =
   "[Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)";
 const SLOT_IN_CONTENT = "[Templatical] slot is not a valid content block";
@@ -134,6 +136,18 @@ describe("validateLayout", () => {
       }),
     ]);
     expect(() => validateLayout(layout)).toThrow(WRAPPER_IN_WRAPPER);
+  });
+
+  it("throws when a layout wrapper contains a section with its own wrapper", () => {
+    const layout = withBlocks([
+      createSlotBlock(),
+      createWrapperBlock({
+        children: [
+          createSectionBlock({ wrapper: { backgroundColor: "#fff" } }),
+        ],
+      }),
+    ]);
+    expect(() => validateLayout(layout)).toThrow(SECTION_WRAPPER_IN_WRAPPER);
   });
 
   it("accepts a top-level header / slot / footer layout", () => {

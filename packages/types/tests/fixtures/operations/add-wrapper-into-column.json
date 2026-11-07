@@ -1,0 +1,48 @@
+{
+  "name": "add wrapper into column",
+  "content": {
+    "blocks": [
+      {
+        "id": "S",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          [
+            {
+              "id": "X",
+              "type": "paragraph",
+              "content": "x"
+            }
+          ]
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "A",
+        "type": "wrapper",
+        "children": []
+      },
+      "parent": {
+        "sectionId": "S",
+        "column": 0
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "message": "Wrappers can only be placed at the top level."
+    }
+  }
+}

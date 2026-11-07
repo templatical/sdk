@@ -37,9 +37,16 @@ function commentSafe(value: string): string {
  * verbatim and is valid everywhere a block renders — inside `mj-column`, which is
  * where every non-section block ends up.
  */
+// Escapes newlines, other control characters, quotes and backslashes the way a
+// JSON string does, so a stored type or id can't write extra lines into a
+// server log. An ordinary type or id comes out unchanged.
+function logSafe(value: unknown): string {
+  return JSON.stringify(String(value)).slice(1, -1);
+}
+
 export function renderUnrenderableBlock(block: Block): string {
   console.warn(
-    `[Templatical] No renderer for block type "${block.type}" (id: ${block.id}). ` +
+    `[Templatical] No renderer for block type "${logSafe(block.type)}" (id: ${logSafe(block.id)}). ` +
       "A placeholder comment was emitted in its place. Pass a `blockRenderers` " +
       "entry for this type to render it.",
   );

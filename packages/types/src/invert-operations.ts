@@ -47,6 +47,12 @@ function positionOf(
       });
       if (found) return found;
     }
+    if (block.type === "wrapper" && Array.isArray(block.children)) {
+      const found = positionOf(block.children, blockId, {
+        wrapperId: block.id,
+      });
+      if (found) return found;
+    }
   }
   return null;
 }

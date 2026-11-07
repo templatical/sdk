@@ -161,27 +161,36 @@ describe("placing a layout's slot under a block a language hides", () => {
     after: null,
   });
 
-  it.each([
-    ["the slot", false, "slot"],
-    ["a wrapper holding the slot", true, "card"],
-  ] as const)(
-    "refuses moving %s into a section hidden in a language",
-    (_name, wrapped, blockId) => {
-      const before = layout(wrapped);
-      const original = safeClone(before);
-      expect(() =>
-        applyOperations(before, [move(blockId, "hidden")]),
-      ).toThrowError(
-        expect.objectContaining({
-          code: "invalid_operation",
-          opIndex: 0,
-          blockId,
-          message,
-        }),
-      );
-      expect(before).toEqual(original);
-    },
-  );
+  it("refuses moving the slot into a section hidden in a language", () => {
+    const before = layout();
+    const original = safeClone(before);
+    expect(() =>
+      applyOperations(before, [move("slot", "hidden")]),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "invalid_operation",
+        opIndex: 0,
+        blockId: "slot",
+        message,
+      }),
+    );
+    expect(before).toEqual(original);
+  });
+
+  it("refuses wrapper placement before checking its slot against a hidden section", () => {
+    const before = layout(true);
+    const original = safeClone(before);
+    expect(() =>
+      applyOperations(before, [move("card", "hidden")]),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "invalid_operation",
+        opIndex: 0,
+        message: "Wrappers can only be placed at the top level.",
+      }),
+    );
+    expect(before).toEqual(original);
+  });
 
   it("still moves the slot into a visible section and along the top level", () => {
     const into = applyOperations(layout(), [move("slot", "open")]);

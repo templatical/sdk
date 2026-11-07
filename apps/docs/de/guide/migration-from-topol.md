@@ -123,7 +123,7 @@ Eine `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — 
 
 ## Konvertierungsmodell
 
-Topols eigener JSON-Baum spricht bereits in MJML-förmigen Tags — `mj-section`, `mj-column`, `mj-text`, `mj-button` und so weiter — obwohl Topol selbst kein MJML ist. Sein Wurzelknoten ist `mj-global-style`, nicht MJMLs `<mjml>`/`<mj-body>`-Paar, und einige Tags verpacken Informationen anders: Ein einzelner `mj-social`-Knoten trägt jedes Icon als `<platform>-href`-Attribute, statt wie bei handgeschriebenem MJML `mj-social-element`-Kindelemente zu verschachteln. Reicher Inhalt liegt in einem `content`-Feld neben den `attributes` jedes Knotens, nicht darin.
+Topols eigener JSON-Baum spricht bereits in MJML-förmigen Tags — `mj-section`, `mj-column`, `mj-text`, `mj-button` und so weiter — obwohl Topol selbst kein MJML ist. Sein Wurzelknoten ist `mj-global-style`, nicht MJMLs `<mjml>`/`<mj-body>`-Paar. Die Sections des Wurzelknotens können unter `mj-container` oder `mj-body` liegen; der Importer akzeptiert beide. Einige Tags verpacken Informationen anders: Ein einzelner `mj-social`-Knoten trägt jedes Icon als `<platform>-href`-Attribute, statt wie bei handgeschriebenem MJML `mj-social-element`-Kindelemente zu verschachteln. Reicher Inhalt liegt in einem `content`-Feld neben den `attributes` jedes Knotens, nicht darin.
 
 - **Topol** speichert ein Design als diesen Baum aus tag-förmigen Knoten, plus ein Wurzel-`attributes`-Objekt mit Style-Defaults pro Tag und pro Selektor — dieselbe Rolle, die MJMLs `<mj-attributes>` spielt, hier auf die Wurzel abgeflacht statt unter `<mj-head>` verschachtelt.
 - **Templatical** speichert Templates als JSON-Baum mit typisierten Blöcken (`SectionBlock`, `ParagraphBlock` usw.) und rendert diesen Baum beim Export zu MJML.
@@ -170,7 +170,7 @@ Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der un
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` | `SocialIconsBlock` | Jede Plattform, die in der `display`-Liste des Knotens genannt ist und ein passendes `<platform>-href` hat, wird zu einem `SocialIcon`. Topol packt jedes Icon auf die Attribute dieses einen Knotens, statt wie bei handgeschriebenem MJML `mj-social-element`-Kindelemente zu verschachteln. |
-| Wurzel-`attributes` (plus `background-color` von `mj-container`) | Template-`settings` | Ein bloßes `:color` / `a:color` setzt die Text-/Link-Farbe des Dokuments; Selektor-Defaults (`h1:font-family` und Ähnliches) setzen die Schriftart einer Überschrift, wenn diese selbst keine festlegt. Ein eigenes Attribut des Knotens gewinnt immer gegen diese Defaults. Ein Schriftart-Stack wird vollständig übernommen, sodass seine Fallbacks erhalten bleiben. |
+| Wurzel-`attributes` (plus `background-color` von `mj-container` oder `mj-body`) | Template-`settings` | Ein bloßes `:color` / `a:color` setzt die Text-/Link-Farbe des Dokuments; Selektor-Defaults (`h1:font-family` und Ähnliches) setzen die Schriftart einer Überschrift, wenn diese selbst keine festlegt. Ein eigenes Attribut des Knotens gewinnt immer gegen diese Defaults. Ein Schriftart-Stack wird vollständig übernommen, sodass seine Fallbacks erhalten bleiben. |
 | Alles andere | `HtmlBlock` | Für das Tag existiert kein Templatical-Block; der rohe Knoten bleibt als JSON erhalten, markiert als `html-fallback`. |
 
 ### Hintergrundbilder

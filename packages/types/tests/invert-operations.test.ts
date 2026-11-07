@@ -26,6 +26,85 @@ function refusal(run: () => unknown): string | null {
 }
 
 describe("invertOperations", () => {
+  const wrapper = (id: string, children: Block[]): Block =>
+    ({ id, type: "wrapper", children }) as unknown as Block;
+
+  it("restores a deleted wrapper child after its original sibling", () => {
+    const before = content([wrapper("A", [leaf("X"), leaf("Y")])]);
+    const ops: Operation[] = [{ op: "deleteBlock", blockId: "Y" }];
+    expect(invertOperations(before, ops)).toEqual([
+      {
+        op: "addBlock",
+        block: leaf("Y"),
+        parent: { wrapperId: "A" },
+        after: "X",
+      },
+    ]);
+    expect(
+      applyOperations(
+        applyOperations(before, ops),
+        invertOperations(before, ops),
+      ),
+    ).toEqual(before);
+  });
+
+  it("restores a moved child to its wrapper and guards its destination", () => {
+    const before = content([wrapper("A", [leaf("X")]), wrapper("B", [])]);
+    const ops: Operation[] = [
+      {
+        op: "moveBlock",
+        blockId: "X",
+        parent: { wrapperId: "B" },
+        after: null,
+      },
+    ];
+    expect(invertOperations(before, ops)).toEqual([
+      {
+        op: "moveBlock",
+        blockId: "X",
+        parent: { wrapperId: "A" },
+        after: null,
+        expect: { parent: { wrapperId: "B" }, after: null },
+      },
+    ]);
+  });
+
+  it("finds nested section children for inverse updates", () => {
+    const before = content([wrapper("A", [section("S", "1", [[leaf("X")]])])]);
+    const ops: Operation[] = [
+      { op: "updateBlock", blockId: "X", set: { content: "new" } },
+    ];
+    expect(invertOperations(before, ops)).toEqual([
+      {
+        op: "updateBlock",
+        blockId: "X",
+        set: { content: "<p>X</p>" },
+        expect: { content: "new" },
+      },
+    ]);
+  });
+
+  it("refuses undo of a wrapper child move while another session holds it", () => {
+    const before = content([wrapper("A", [leaf("X")]), wrapper("B", [])]);
+    const ops: Operation[] = [
+      {
+        op: "moveBlock",
+        blockId: "X",
+        parent: { wrapperId: "B" },
+        after: null,
+      },
+    ];
+    const after = applyOperations(before, ops);
+    expect(
+      refusal(() =>
+        applyOperations(after, invertOperations(before, ops), {
+          locks: [{ blockId: "X", sessionId: "other" }],
+          session: "self",
+        }),
+      ),
+    ).toBe("lock_held");
+  });
+
   const base = content([
     leaf("a"),
     section("s", "2", [[leaf("b")], []]),
@@ -225,7 +304,9 @@ describe("locale operation inverses", () => {
     };
     const nested = (before.blocks[1] as { children: Block[][] }).children[0][0];
     nested.l10n = {
-      de: { text: { "items.i1.text": { value: "Laden", sourceHash: "28742cc9" } } },
+      de: {
+        text: { "items.i1.text": { value: "Laden", sourceHash: "28742cc9" } },
+      },
     };
     before.settings.l10n = {
       de: {
