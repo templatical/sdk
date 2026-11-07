@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
+import { flushPromises } from "@vue/test-utils";
 import { computed, nextTick, reactive, ref } from "vue";
 import CommentsSidebar from "../src/components/CommentsSidebar.vue";
 import { mountEditor } from "./helpers/mount";
@@ -690,11 +691,12 @@ describe("CommentsSidebar controls", () => {
       locale: "en",
     });
 
+    await flushPromises();
+    expect(composer().exists()).toBe(false);
+
+    await wrapper.get('[data-testid="comment-reply"]').trigger("click");
     await nextTick();
-    if (!composer().exists()) {
-      await wrapper.get('[data-testid="comment-reply"]').trigger("click");
-      await nextTick();
-    }
+    expect(composer().exists()).toBe(true);
     (composerButtons()[1] as HTMLButtonElement).click();
     await nextTick();
     expect(composer().exists()).toBe(false);
