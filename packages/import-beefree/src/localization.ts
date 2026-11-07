@@ -7,8 +7,26 @@ import type {
 
 type Target = { l10n?: Record<string, BlockLocaleLayer> };
 
+// Callers also push to `warnings` directly, so each set catches up on the
+// entries appended since the last call instead of being the only record.
+const seenWarnings = new WeakMap<
+  string[],
+  { set: Set<string>; size: number }
+>();
+
 export function warn(warnings: string[], message: string): void {
-  if (!warnings.includes(message)) warnings.push(message);
+  let seen = seenWarnings.get(warnings);
+  if (!seen || seen.size > warnings.length) {
+    seen = { set: new Set(), size: 0 };
+    seenWarnings.set(warnings, seen);
+  }
+  for (; seen.size < warnings.length; seen.size++) {
+    seen.set.add(warnings[seen.size]);
+  }
+  if (seen.set.has(message)) return;
+  warnings.push(message);
+  seen.set.add(message);
+  seen.size++;
 }
 
 export function localeTag(value: string, warnings: string[]): string | null {

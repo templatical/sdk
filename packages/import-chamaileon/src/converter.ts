@@ -108,7 +108,12 @@ export function convertChamaileonTemplate(
   const warnings: string[] = [];
   const blocks: Block[] = [];
   const stats = { resolvedVariables: 0 };
-  const variables = document.variables ?? [];
+  // A copy per conversion: the variable lookup table is cached per array, so
+  // converting the same document again after its variables change must not
+  // reuse the earlier table.
+  const variables = Array.isArray(document.variables)
+    ? [...document.variables]
+    : [];
 
   const bodyStyle = readStyle(body, variables, stats);
   const width =

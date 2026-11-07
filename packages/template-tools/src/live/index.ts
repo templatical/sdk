@@ -549,10 +549,12 @@ export function startBridge({
   }
 
   const server = createServer(async (req, res) => {
-    const { pathname } = new URL(req.url ?? "/", "http://localhost");
     const method = req.method ?? "GET";
 
     try {
+      // Inside the try: a target such as `//[` throws, and an unhandled
+      // rejection here would end the bridge process.
+      const { pathname } = new URL(req.url ?? "/", "http://localhost");
       // Only this listener's own loopback names are served: a DNS-rebound
       // hostname would otherwise let any web page read the bridge as same-origin.
       const addr = server.address();
