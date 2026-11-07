@@ -7,9 +7,27 @@ import {
   SAFE_LINK_SCHEMES,
   isSafeUrlAttribute,
 } from "@templatical/types";
-import { sanitizeHtml, sanitizeSvg } from "../src/utils/sanitizeHtml";
+import { sanitizeHtml, sanitizeHtmlForStorage, sanitizeSvg } from "../src/utils/sanitizeHtml";
 
 describe("sanitizeHtml", () => {
+  it("keeps a translation's authored rel tokens before storage", () => {
+    expect(sanitizeHtmlForStorage('<a target="_blank" rel="opener">x</a>')).toBe(
+      '<a target="_blank" rel="opener">x</a>',
+    );
+  });
+  it.each([
+    ['<a target="_blank" rel="opener">x</a>', '<a target="_blank" rel="noopener">x</a>'],
+    ['<a target="_blank" rel="nofollow opener">x</a>', '<a target="_blank" rel="nofollow noopener">x</a>'],
+    ['<a target="_blank" rel="OPENER noreferrer">x</a>', '<a target="_blank" rel="noreferrer noopener">x</a>'],
+    ['<a target="_blank">x</a>', '<a target="_blank" rel="noopener">x</a>'],
+    ['<a target="_blank" rel="noopener">x</a>', '<a target="_blank" rel="noopener">x</a>'],
+    ['<a target="_BLANK" rel="OpEnEr Nofollow">x</a>', '<a target="_BLANK" rel="Nofollow noopener">x</a>'],
+    ['<a rel="opener">x</a>', '<a rel="opener">x</a>'],
+    ['<a target="_self" rel="opener">x</a>', '<a target="_self" rel="opener">x</a>'],
+  ])('sets safe rel tokens for canvas link %s', (input, expected) => {
+    expect(sanitizeHtml(input)).toBe(expected);
+  });
+
   it("agrees with the shared attribute policy at the browser insertion boundary", () => {
     for (const attribute of [
       ...HTML_URL_ATTRIBUTES,

@@ -26,33 +26,49 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const isConnected = ref(false);
 
   let wsClient: WebSocketClient | null = null;
+  let socketReady: Promise<void> | null = null;
   let channelName: string | null = null;
 
   async function connect(
     templateId: string,
     config: WebSocketConfig,
   ): Promise<void> {
-    if (wsClient) {
-      return;
+    const nextChannelName = `presence-template.${templateId}`;
+    if (wsClient && channelName === nextChannelName) return;
+
+    if (!wsClient) {
+      const created = new WebSocketClient({ authManager, config, onError });
+      wsClient = created;
+      // A failed attempt is forgotten, so the next `connect` opens a new socket
+      // instead of awaiting the same rejection.
+      socketReady = created.connect().catch((error: unknown) => {
+        if (wsClient === created) {
+          wsClient = null;
+          socketReady = null;
+          channelName = null;
+        }
+        throw error;
+      });
     }
 
-    wsClient = new WebSocketClient({
-      authManager,
-      config,
-      onError,
-    });
+    const client = wsClient;
+    await socketReady;
+    if (wsClient !== client || channelName === nextChannelName) return;
+    if (channelName) client.unsubscribe(channelName);
 
-    await wsClient.connect();
-
-    channelName = `presence-template.${templateId}`;
-    const presenceChannel = wsClient.subscribePresence(channelName);
+    channelName = nextChannelName;
+    channel.value = null;
+    isConnected.value = false;
+    const presenceChannel = client.subscribePresence(nextChannelName);
 
     presenceChannel.bind("pusher:subscription_succeeded", () => {
+      if (channelName !== nextChannelName) return;
       isConnected.value = true;
       channel.value = presenceChannel;
     });
 
     presenceChannel.bind("pusher:subscription_error", (error: unknown) => {
+      if (channelName !== nextChannelName) return;
       isConnected.value = false;
       channel.value = null;
       onError?.(
@@ -70,6 +86,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
     wsClient?.disconnect();
     wsClient = null;
+    socketReady = null;
     channelName = null;
     channel.value = null;
     isConnected.value = false;

@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { shallowRef, defineComponent, h, ref, render } from 'vue';
 import { mount } from '@vue/test-utils';
-import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_REQUESTING_KEY, MERGE_TAG_SYNTAX_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
+import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_REQUESTING_KEY, MERGE_TAG_SYNTAX_KEY, ON_REQUEST_MERGE_TAG_KEY, READ_ONLY_SURFACE_KEY } from '../src/keys';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useRichTextEditor } from '../src/composables/useRichTextEditor';
 import { makeStubTranslations } from './helpers/translations';
@@ -23,6 +23,9 @@ class StubEditor {
   destroyed = false;
   focusCalls: string[] = [];
   linkHrefs: string[] = [];
+  view = { dom: document.createElement('div'), dispatch: vi.fn() };
+  state = { tr: {} };
+  setEditable(_editable: boolean, _emitUpdate?: boolean): void {}
   commands = {
     focus: (pos?: string) => {
       this.focusCalls.push(pos ?? '');
@@ -332,6 +335,23 @@ describe('useRichTextEditor', () => {
   });
 
   describe('content sync', () => {
+    it('does not write TipTap updates on a read-only surface', async () => {
+      const readOnly = ref(true);
+      const ctx = mountRichText({ blockId: 'abc' }, {
+        [READ_ONLY_SURFACE_KEY]: readOnly,
+      });
+      await flushAsync();
+
+      const tipTap = ctx.api().editor.value as unknown as StubEditor;
+      tipTap.setHTMLExternally('<p>Resolved copy</p>');
+      expect(ctx.updateBlock).not.toHaveBeenCalled();
+
+      readOnly.value = false;
+      await flushAsync();
+      tipTap.setHTMLExternally('<p>Author copy</p>');
+      expect(ctx.updateBlock).toHaveBeenCalledWith('abc', { content: '<p>Author copy</p>' });
+    });
+
     it('forwards onUpdate to emailEditor.updateBlock with new HTML', async () => {
       const ctx = mountRichText({ blockId: 'abc' });
       await flushAsync();

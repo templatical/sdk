@@ -5,8 +5,13 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { Table } from "@lucide/vue";
-import { computed, type Directive } from "vue";
-import { EDITOR_KEY, FONTS_MANAGER_KEY, requireInject } from "../../keys";
+import { computed, inject, type Directive } from "vue";
+import {
+  EDITOR_KEY,
+  FONTS_MANAGER_KEY,
+  READ_ONLY_SURFACE_KEY,
+  requireInject,
+} from "../../keys";
 
 // Hydrate a contenteditable cell's text imperatively. v-text would re-apply
 // on every prop update and overwrite the user's keystrokes mid-edit when
@@ -39,6 +44,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const editor = requireInject(EDITOR_KEY, "TableBlock");
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "TableBlock");
+const readOnly = inject(READ_ONLY_SURFACE_KEY, null);
 
 const hasRows = computed(() => props.block.rows.length > 0);
 
@@ -82,10 +88,12 @@ const dataRows = computed(() =>
 );
 
 function onCellClick(): void {
+  if (readOnly?.value) return;
   editor.selectBlock(props.block.id);
 }
 
 function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
+  if (readOnly?.value) return;
   const target = event.target as HTMLElement;
   const content = target.innerText.trim();
 
@@ -113,7 +121,7 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
             :key="cell.id"
             :style="headerCellStyle"
             :aria-label="t.table.cellPlaceholder"
-            contenteditable="true"
+            :contenteditable="readOnly ? 'false' : 'true'"
             :data-placeholder="t.table.cellPlaceholder"
             @blur="onCellBlur(headerRow!.id, cell.id, $event)"
             @keydown.enter.prevent="($event.target as HTMLElement).blur()"
@@ -129,7 +137,7 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
             :key="cell.id"
             :style="cellStyle"
             :aria-label="t.table.cellPlaceholder"
-            contenteditable="true"
+            :contenteditable="readOnly ? 'false' : 'true'"
             :data-placeholder="t.table.cellPlaceholder"
             @blur="onCellBlur(row.id, cell.id, $event)"
             @keydown.enter.prevent="($event.target as HTMLElement).blur()"

@@ -596,7 +596,7 @@ describe("translation runs", () => {
       },
     };
     (seed.blocks[1] as any).content =
-      '<p>Hello <span class="merge-tag" data-merge-tag="{{name}}" contenteditable="false">Name</span> <span data-logic-merge-tag="{% endif %}" contenteditable="false">ENDIF</span> <a href="{{url}}">Link</a></p>';
+      '<p>Hello <span class="merge-tag" data-merge-tag="{{name}}" contenteditable="false">Name</span> <span data-logic-merge-tag="{% endif %}" contenteditable="false">ENDIF</span> <a href="{{url}}" target="_blank" rel="opener">Link</a></p>';
     const { feature, editor } = open(
       {
         translate: async (request) => ({
@@ -624,7 +624,7 @@ describe("translation runs", () => {
       "<p>Alt {{name}}</p>",
     );
     expect(editor.content.value.blocks[1].l10n?.de.text?.content.value).toBe(
-      '<p>Hallo <span class="merge-tag" data-merge-tag="{{name}}" contenteditable="false">Name</span> <span data-logic-merge-tag="{% endif %}" contenteditable="false">ENDIF</span> <a href="{{url}}">Link</a></p>',
+      '<p>Hallo <span class="merge-tag" data-merge-tag="{{name}}" contenteditable="false">Name</span> <span data-logic-merge-tag="{% endif %}" contenteditable="false">ENDIF</span> <a href="{{url}}" target="_blank" rel="opener">Link</a></p>',
     );
   });
 

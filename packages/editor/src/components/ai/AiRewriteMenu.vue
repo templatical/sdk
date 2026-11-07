@@ -28,7 +28,7 @@ import {
   rewriteLanguageOptions,
 } from "../../utils/aiRewritePreview";
 import { normalizeMergeTagsInHtml } from "../../utils/normalizeMergeTagMarkup";
-import { sanitizeHtml } from "../../utils/sanitizeHtml";
+import { sanitizeHtml, sanitizeHtmlForStorage } from "../../utils/sanitizeHtml";
 
 /**
  * Rewrite with AI, in the paragraph text toolbar: a preset or the user's own
@@ -70,9 +70,12 @@ let generation = 0;
 const result = computed(() =>
   raw.value === null
     ? null
-    : sanitizeHtml(
+    : sanitizeHtmlForStorage(
         normalizeMergeTagsInHtml(raw.value, mergeTags.value, syntax),
       ),
+);
+const previewResult = computed(() =>
+  result.value === null ? null : sanitizeHtml(result.value),
 );
 const streamingPreview = computed(() => htmlToPlainText(streamed.value));
 const errorText = computed(() =>
@@ -221,7 +224,7 @@ onBeforeUnmount(stop);
         <div
           data-testid="ai-rewrite-preview"
           class="tpl:max-h-48 tpl:overflow-y-auto tpl:text-sm tpl:text-[var(--tpl-text)]"
-          v-html="result"
+          v-html="previewResult"
         />
         <div class="tpl:flex tpl:justify-end tpl:gap-2">
           <button

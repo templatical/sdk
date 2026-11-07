@@ -27,6 +27,7 @@ import {
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
+  READ_ONLY_SURFACE_KEY,
   requireInject,
 } from "../../keys";
 
@@ -68,6 +69,7 @@ provide(
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 const caps = inject(CAPABILITIES_KEY, {});
+const readOnly = inject(READ_ONLY_SURFACE_KEY, null);
 // Provided by the surface, never re-derived here — see the key's comment.
 const appliesConditionFilter = inject(APPLIES_CONDITION_FILTER_KEY, null);
 
@@ -81,6 +83,7 @@ const appliesConditionFilter = inject(APPLIES_CONDITION_FILTER_KEY, null);
  * click never reaches the section's own wrapper on its own.
  */
 function handleChildSelect(childBlockId: string): void {
+  if (readOnly?.value) return;
   const savedBlocks = caps.savedBlocks;
   if (savedBlocks?.isPicking.value) {
     savedBlocks.togglePick(props.block.id);
@@ -186,6 +189,7 @@ function holdsPlaceholderHeight(colIndex: number): boolean {
 }
 
 function setColumnBlocks(colIndex: number, blocks: Block[]): void {
+  if (readOnly?.value) return;
   updateBlockList(editor, blocks, props.block.id, colIndex);
 }
 
@@ -200,7 +204,7 @@ function handleFetchData(
     dataSourceFetched: boolean;
   },
 ): void {
-  if (block.type !== "custom") {
+  if (readOnly?.value || block.type !== "custom") {
     return;
   }
 
@@ -239,6 +243,7 @@ function handleFetchData(
         <!-- The list grows to the column's full height, so the whole visible
              column takes drops, not just the area its blocks cover. -->
         <VueDraggable
+          :disabled="readOnly ?? false"
           :model-value="getColumnBlocks(colIndex)"
           :group="{
             name: 'blocks',
@@ -261,6 +266,7 @@ function handleFetchData(
           }"
           @update="
             (event) =>
+              !readOnly &&
               updateBlockList(
                 editor,
                 getColumnBlocks(colIndex),
@@ -299,7 +305,7 @@ function handleFetchData(
                 @fetch-data="handleFetchData(childBlock, $event)"
                 @update="
                   (updates: Partial<Block>) =>
-                    editor.updateBlock(childBlock.id, updates)
+                    !readOnly && editor.updateBlock(childBlock.id, updates)
                 "
               />
             </BlockWrapper>
