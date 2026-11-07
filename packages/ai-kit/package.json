@@ -7,7 +7,7 @@
     "@templatical/types": "workspace:*"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^1.4.0",
+    "@anthropic-ai/sdk": "^1.5.0",
     "@types/node": "^26.6.6",
     "ai": "^7.0.162",
     "openai": "^7.50.0",
