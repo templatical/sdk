@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
+import { SELECTORS } from "../helpers/selectors";
 import { EditorPage } from "../pages/editor.page";
 import { ScenePage } from "../pages/scene.page";
 
@@ -27,10 +28,11 @@ async function sampleToggle(
   panel: string,
 ): Promise<Frame[]> {
   return page
-    .locator(".tpl")
-    .first()
+    .locator(SELECTORS.editorContainer)
+    .locator(SELECTORS.canvasBody)
     .evaluate(
-      async (root, { trigger, panel }) => {
+      async (body, { trigger, panel }) => {
+        const root = body.closest(".tpl")!;
         const q = (selector: string) =>
           root.querySelector<HTMLElement>(selector);
         const edge = root.getBoundingClientRect().right;
@@ -99,7 +101,7 @@ for (const { scene, trigger, panel } of [
     await new ScenePage(page, { shadowDom }).goto(scene);
     await editor.waitForReady();
     await editor.dismissOverlays();
-    const root = page.locator(".tpl").first();
+    const root = page.locator(SELECTORS.editorContainer);
     // The panel is a lazy chunk: load it once, so the measured open is the
     // motion and not the fetch.
     await root.locator(trigger).click();

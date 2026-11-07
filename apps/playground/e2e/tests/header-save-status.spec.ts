@@ -21,9 +21,8 @@ test("the save status never compacts the header", async ({
   await editor.waitForReady();
   await editor.dismissOverlays();
 
-  const root = page.locator(".tpl").first();
-  const header = root.locator(".tpl-header");
   const container = page.locator(SELECTORS.editorContainer);
+  const header = container.locator(".tpl-header");
   await expect
     .poll(async () => Number(await header.getAttribute("data-full-width")))
     .toBeGreaterThan(0);
@@ -38,7 +37,7 @@ test("the save status never compacts the header", async ({
   await expect(header).toHaveAttribute("data-compact", "false");
 
   await editor.clickPaletteItem("paragraph");
-  const unsaved = root.locator(SELECTORS.saveStatusUnsaved);
+  const unsaved = container.locator(SELECTORS.saveStatusUnsaved);
   await expect(unsaved).toBeVisible();
   await expect(unsaved).toHaveAttribute("title", "Unsaved");
   await expect(header).toHaveAttribute("data-compact", "false");

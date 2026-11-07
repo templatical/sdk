@@ -34,12 +34,16 @@ const state = computed<"error" | "saved" | "unsaved" | "none">(() => {
   return props.isDirty ? "unsaved" : "none";
 });
 
-const label = computed(() => {
-  if (state.value === "error") return t.header.saveFailed;
-  if (state.value === "saved") return t.header.saved;
-  if (state.value === "unsaved") return t.header.unsaved;
-  return "";
-});
+const LABEL_KEYS = {
+  error: "saveFailed",
+  saved: "saved",
+  unsaved: "unsaved",
+} as const;
+
+/** Read only while there is a state to name. */
+const label = computed(() =>
+  state.value === "none" ? "" : t.header[LABEL_KEYS[state.value]],
+);
 
 const colorClass = computed(() => {
   if (state.value === "error") return "tpl:text-[var(--tpl-danger)]";

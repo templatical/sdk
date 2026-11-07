@@ -19,14 +19,14 @@ defineProps<{
   feature: UseCommentsFeatureReturn;
 }>();
 
+// The slide lives here, around the `v-if`: inside the sidebar it would mount
+// already visible (no enter) and unmount with it (no leave).
 const CommentsSidebar = defineAsyncComponent(
   () => import("./CommentsSidebar.vue"),
 );
 </script>
 
 <template>
-  <!-- The slide lives here, around the \`v-if\`: inside the sidebar it would
-       mount already visible (no enter) and unmount with it (no leave). -->
   <Transition
     enter-active-class="tpl-panel-enter-active"
     leave-active-class="tpl-panel-leave-active"
