@@ -7,9 +7,12 @@ import { fill } from "./fill";
 import { languageName } from "./prompts";
 import { checkTranslationRequest } from "./read-request";
 
+type AliasedField = TranslationRequest["fields"][number] & { alias: string };
+
+/** The fields that pass, found in the answer by their alias and returned under their real id. */
 function passingFields(
   answer: string,
-  request: TranslationRequest,
+  sources: AliasedField[],
 ): TranslationResult["fields"] {
   let parsed: unknown;
   try {
@@ -24,13 +27,13 @@ function passingFields(
   )
     return [];
   const fields = (parsed as { fields: unknown[] }).fields;
-  return request.fields.flatMap((source) => {
+  return sources.flatMap((source) => {
     const matches = fields.filter(
       (field): field is { id: string; text?: unknown } =>
         typeof field === "object" &&
         field !== null &&
         "id" in field &&
-        field.id === source.id,
+        field.id === source.alias,
     );
     if (matches.length !== 1 || typeof matches[0].text !== "string") return [];
     const text = matches[0].text;
@@ -61,10 +64,15 @@ export async function translateFields(options: {
     source: `${languageName(request.sourceLocale)} (${request.sourceLocale})`,
     target: `${languageName(request.targetLocale)} (${request.targetLocale})`,
   });
+  // The model echoes every id in its answer, so it gets short aliases (f1, f2, …) instead of long field ids.
+  const fields: AliasedField[] = request.fields.map((field, index) => ({
+    ...field,
+    alias: `f${index + 1}`,
+  }));
   const messages: AiModelMessage[] = [
     {
       role: "user",
-      content: `Translate from ${languageName(request.sourceLocale)} (${request.sourceLocale}) to ${languageName(request.targetLocale)} (${request.targetLocale}).\n\nFields:\n${JSON.stringify(request.fields)}`,
+      content: `Translate from ${languageName(request.sourceLocale)} (${request.sourceLocale}) to ${languageName(request.targetLocale)} (${request.targetLocale}).\n\nFields:\n${JSON.stringify(fields.map(({ alias, format, text }) => ({ id: alias, format, text })))}`,
     },
   ];
   const accepted = new Map<string, string>();
@@ -109,15 +117,12 @@ export async function translateFields(options: {
         );
     }
     signal?.throwIfAborted();
-    const pending = {
-      ...request,
-      fields: request.fields.filter((field) => !accepted.has(field.id)),
-    };
+    const pending = fields.filter((field) => !accepted.has(field.id));
     for (const field of passingFields(answer, pending))
       accepted.set(field.id, field.text);
-    const failed = request.fields
+    const failed = fields
       .filter((field) => !accepted.has(field.id))
-      .map((field) => field.id);
+      .map((field) => field.alias);
     if (failed.length === 0) break;
     messages.push(
       { role: "assistant", content: answer },

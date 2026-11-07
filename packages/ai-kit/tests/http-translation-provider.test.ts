@@ -57,7 +57,7 @@ describe("HTTP translation", () => {
         {
           type: "text",
           text: JSON.stringify({
-            fields: [{ id: "p/content", text: 'Hallo <x id="1"/>' }],
+            fields: [{ id: "f1", text: 'Hallo <x id="1"/>' }],
           }),
         },
       ],

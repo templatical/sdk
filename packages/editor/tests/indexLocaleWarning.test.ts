@@ -73,7 +73,17 @@ describe("init() warns about an unusable locale", () => {
 
   it("lists the locales that would have worked", async () => {
     const [message] = await initWithLocale("it");
-    for (const locale of ["ca", "de", "en", "es", "fr", "ja", "nl", "pt-BR"]) {
+    for (const locale of [
+      "ca",
+      "da",
+      "de",
+      "en",
+      "es",
+      "fr",
+      "ja",
+      "nl",
+      "pt-BR",
+    ]) {
       expect(message).toContain(locale);
     }
   });
@@ -103,9 +113,8 @@ describe("init() warns about an unusable locale", () => {
   // translate it. Warning about that would fire for every `fr`/`es`/`nl`/`ca`
   // consumer, who did nothing wrong.
   it("says nothing about the cloud chunk's narrower coverage", async () => {
-    const { getSupportedLocales, getSupportedCloudLocales } = await import(
-      "../src/i18n"
-    );
+    const { getSupportedLocales, getSupportedCloudLocales } =
+      await import("../src/i18n");
     const ossOnly = getSupportedLocales().filter(
       (l) => !getSupportedCloudLocales().includes(l),
     );
