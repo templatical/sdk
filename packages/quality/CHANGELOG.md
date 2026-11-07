@@ -1,5 +1,14 @@
 # @templatical/quality
 
+## 0.57.0
+
+### Patch Changes
+
+- 418a249: `link.localhost-or-staging` matches `links.nonProductionHosts` globs in linear time, so a very long URL host no longer stalls the linter, and compatibility rules group CSS declarations and clients without copying arrays. The Easy Email Pro importer decodes HTML entities by looking at most six characters ahead of each `&`.
+- Updated dependencies [0bdfeac]
+- Updated dependencies [a2f3ed8]
+  - @templatical/types@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes

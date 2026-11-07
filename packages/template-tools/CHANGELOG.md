@@ -1,5 +1,37 @@
 # @templatical/template-tools
 
+## 0.57.0
+
+### Minor Changes
+
+- a2f3ed8: Breaking changes:
+
+  - `addBlock` no longer accepts a wrapper with a `{ sectionId, column }` parent. Add wrappers at the top level with `parent: null`.
+  - `moveBlock` no longer accepts a wrapper with a `{ sectionId, column }` parent. Move wrappers to the top level with `parent: null`.
+  - A malformed `moveBlock.expect.parent` is refused as `invalid_operation` at the shape check instead of failing as `precondition_failed`. Send `null`, `{ sectionId, column }` or `{ wrapperId }`.
+  - `addBlock`, `moveBlock` and `updateBlock` refuse a section with `section.wrapper` inside a layout wrapper. Keep the section at the top level or remove its own wrapper before placing it inside one. `validateLayout` rejects the same nesting.
+
+  Operations can address wrapper children with `{ wrapperId }` while existing section-column addresses keep their wire shape. The engine, inverses, collaboration diffs, AI feedback and CLI apply wrapper-child edits with placement, lock and hidden-slot checks.
+
+### Patch Changes
+
+- 59a17bc: The Unlayer, BeeFree and Topol importers check for a repeated warning in constant time, so a design with thousands of languages no longer slows the import quadratically. The Chamaileon importer looks up variable references in a table built once per document. The renderer escapes control characters in a block's type and id before it logs the missing-renderer warning. `templatical live` answers 400 to a request target it can't parse, where it used to exit.
+- Updated dependencies [0bdfeac]
+- Updated dependencies [59a17bc]
+- Updated dependencies [418a249]
+- Updated dependencies [a2f3ed8]
+  - @templatical/types@0.57.0
+  - @templatical/import-beefree@0.57.0
+  - @templatical/import-chamaileon@0.57.0
+  - @templatical/import-topol@0.57.0
+  - @templatical/import-unlayer@0.57.0
+  - @templatical/renderer@0.57.0
+  - @templatical/quality@0.57.0
+  - @templatical/import-easy-email-pro@0.57.0
+  - @templatical/import-html@0.57.0
+  - @templatical/import-mjml@0.57.0
+  - @templatical/import-stripo@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes
