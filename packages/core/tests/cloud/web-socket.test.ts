@@ -172,6 +172,25 @@ describe('useWebSocket', () => {
       expect(ws.isConnected.value).toBe(true);
     });
 
+    it('closes a socket that finishes opening after disconnect', async () => {
+      let release!: () => void;
+      vi.mocked(WebSocketClient.prototype.connect).mockImplementation(
+        () => new Promise<void>((resolve) => { release = resolve; }),
+      );
+      const ws = useWebSocket({ authManager: createMockAuthManager() });
+      const pending = ws.connect('tmpl-1', mockConfig);
+
+      ws.disconnect();
+      expect(WebSocketClient.prototype.disconnect).toHaveBeenCalledTimes(1);
+
+      release();
+      await pending;
+      expect(WebSocketClient.prototype.disconnect).toHaveBeenCalledTimes(2);
+      expect(WebSocketClient.prototype.subscribePresence).not.toHaveBeenCalled();
+      expect(ws.channel.value).toBeNull();
+      expect(ws.isConnected.value).toBe(false);
+    });
+
     it('opens a new socket after a failed connection attempt', async () => {
       vi.mocked(WebSocketClient.prototype.connect)
         .mockRejectedValueOnce(new Error('install pusher-js'))

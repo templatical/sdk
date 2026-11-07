@@ -53,7 +53,13 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
     const client = wsClient;
     await socketReady;
-    if (wsClient !== client || channelName === nextChannelName) return;
+    // `disconnect()` during the open can't close a socket that doesn't exist
+    // yet, so a client that lost ownership while opening is closed here.
+    if (wsClient !== client) {
+      client.disconnect();
+      return;
+    }
+    if (channelName === nextChannelName) return;
     if (channelName) client.unsubscribe(channelName);
 
     channelName = nextChannelName;
