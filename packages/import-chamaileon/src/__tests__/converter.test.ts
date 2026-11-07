@@ -267,6 +267,37 @@ describe("convertChamaileonTemplate resolved-variable count", () => {
   });
 });
 
+describe("convertChamaileonTemplate variable references", () => {
+  const pageColour = (variables: unknown) =>
+    convertChamaileonTemplate({
+      variables,
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600, backgroundColor: { reference: "Page" } },
+        children: [],
+      },
+    } as ChamaileonDocument).content.settings.backgroundColor;
+
+  it("reads the document's variables afresh on every conversion", () => {
+    const variables = [{ name: "Page", value: "#111111" }];
+    const unset = pageColour([]);
+    expect(pageColour(variables)).toBe("#111111");
+
+    variables[0].name = "Renamed";
+    variables.push({ name: "Page", value: "#222222" });
+    expect(pageColour(variables)).toBe("#222222");
+
+    variables.splice(1, 1);
+    expect(pageColour(variables)).toBe(unset);
+    expect(unset).not.toBe("#111111");
+  });
+
+  it("treats a variables value that is not a list as no variables", () => {
+    expect(pageColour({ Page: "#111111" })).toBe(pageColour([]));
+  });
+});
+
 describe("convertChamaileonTemplate loops", () => {
   it("converts a loop's fullwidth child and marks produced entries approximated", () => {
     const { content, report } = convertChamaileonTemplate({

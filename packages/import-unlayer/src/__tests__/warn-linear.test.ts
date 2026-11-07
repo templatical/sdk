@@ -21,21 +21,19 @@ describe("import warnings", () => {
     expect(warnings).toEqual(["a"]);
   });
 
-  it("scales with the number of distinct messages linearly", () => {
-    const run = (n: number) => {
-      let best = Infinity;
-      for (let i = 0; i < 3; i++) {
-        const warnings: string[] = [];
-        const start = performance.now();
-        for (let j = 0; j < n; j++) warn(warnings, `Dropped language "x${j}".`);
-        best = Math.min(best, performance.now() - start);
-        expect(warnings).toHaveLength(n);
-      }
-      return best;
-    };
+  it("reads each earlier warning once, not once per new warning", () => {
+    // Counting index reads instead of timing keeps this deterministic under
+    // coverage instrumentation. A search per warning reads n²/2 entries.
+    let reads = 0;
+    const warnings = new Proxy<string[]>([], {
+      get(target, key, receiver) {
+        if (typeof key === "string" && /^\d+$/.test(key)) reads++;
+        return Reflect.get(target, key, receiver);
+      },
+    });
     const n = 2_000;
-    const small = run(n);
-    const large = run(4 * n);
-    expect(large / small).toBeLessThan(10);
-  }, 30_000);
+    for (let i = 0; i < n; i++) warn(warnings, `Dropped language "x${i}".`);
+    expect(warnings).toHaveLength(n);
+    expect(reads).toBeLessThanOrEqual(n);
+  });
 });

@@ -28,33 +28,26 @@ describe("variable references", () => {
     expect(unwrapValue({ reference: "brand" }, variables)).toBeUndefined();
   });
 
-  it("scales references times variables linearly", () => {
-    const run = (n: number) => {
-      const variables: ChamaileonVariable[] = Array.from(
-        { length: n },
-        (_, i) => ({ name: `v${i}`, value: `#${i}` }),
-      );
-      const start = performance.now();
-      let resolved = 0;
-      for (let i = 0; i < n; i++) {
-        if (unwrapValue({ reference: `missing${i}` }, variables) === undefined)
-          resolved++;
-      }
-      expect(resolved).toBe(n);
-      return performance.now() - start;
-    };
-    const best = (n: number) => Math.min(run(n), run(n), run(n));
-    // An 8x step: per-call overhead hides a quadratic over a 4x step at sizes
-    // small enough for CI. Measured: about 5 for a lookup table, about 18 for a
-    // linear search per reference.
+  it("reads each variable once for any number of references", () => {
+    // Counting index reads instead of timing keeps this deterministic under
+    // coverage instrumentation. A search per reference reads n² entries.
+    let reads = 0;
     const n = 1_000;
-    const small = best(n);
-    const large = best(8 * n);
-    const ratio = large / small;
-    if (process.env.LINEAR_SCAN_REPORT)
-      console.info(
-        `variables n=${n} small=${small.toFixed(2)}ms large=${large.toFixed(2)}ms ratio=${ratio.toFixed(2)}`,
-      );
-    expect(ratio).toBeLessThan(12);
-  }, 30_000);
+    const variables = new Proxy<ChamaileonVariable[]>(
+      Array.from({ length: n }, (_, i) => ({ name: `v${i}`, value: `#${i}` })),
+      {
+        get(target, key, receiver) {
+          if (typeof key === "string" && /^\d+$/.test(key)) reads++;
+          return Reflect.get(target, key, receiver);
+        },
+      },
+    );
+    for (let i = 0; i < n; i++) {
+      expect(
+        unwrapValue({ reference: `missing${i}` }, variables),
+      ).toBeUndefined();
+    }
+    expect(unwrapValue({ reference: "v7" }, variables)).toBe("#7");
+    expect(reads).toBe(n);
+  });
 });
