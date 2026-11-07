@@ -146,6 +146,21 @@ describe('unrenderable blocks', () => {
     );
   });
 
+  it('escapes control characters in the warning so a log gets one line', () => {
+    const block = {
+      id: 'x\n[Templatical] forged',
+      type: 'odd"\r\ntype' as never,
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+    } as Block;
+    renderUnrenderableBlock(block);
+    expect(warn.mock.calls[0][0]).toBe(
+      '[Templatical] No renderer for block type "odd\\"\\r\\ntype" (id: x\\n[Templatical] forged). ' +
+        'A placeholder comment was emitted in its place. Pass a `blockRenderers` ' +
+        'entry for this type to render it.',
+    );
+    expect(warn.mock.calls[0][0]).not.toMatch(/[\r\n]/);
+  });
+
   it('collapses comment-terminating sequences so the marker cannot leak', () => {
     const block = {
       id: 'a--><script>x</script>',

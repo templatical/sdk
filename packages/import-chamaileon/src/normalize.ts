@@ -26,6 +26,31 @@ function isVariableObject(
   );
 }
 
+// One lookup table per document's variables. The first variable with a name
+// wins, as a linear search would pick it.
+const variablesByName = new WeakMap<
+  ChamaileonVariable[],
+  Map<string, ChamaileonVariable>
+>();
+
+function findVariable(
+  variables: ChamaileonVariable[],
+  name: string,
+): ChamaileonVariable | undefined {
+  let byName = variablesByName.get(variables);
+  if (!byName) {
+    byName = new Map();
+    for (const variable of variables) {
+      const name = variable.name;
+      if (typeof name === "string" && !byName.has(name)) {
+        byName.set(name, variable);
+      }
+    }
+    variablesByName.set(variables, byName);
+  }
+  return byName.get(name);
+}
+
 export function unwrapValue(
   value: unknown,
   variables: ChamaileonVariable[],
@@ -38,7 +63,7 @@ export function unwrapValue(
         const ref =
           typeof value.reference === "string" ? value.reference : undefined;
         if (!ref) return undefined;
-        const found = variables.find((v) => v.name === ref);
+        const found = findVariable(variables, ref);
         return found && !isUnset(found.value) ? found.value : undefined;
       })();
   if (stats && !isUnset(resolved)) stats.resolvedVariables += 1;

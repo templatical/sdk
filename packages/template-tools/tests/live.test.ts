@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { createConnection } from "node:net";
 import { join, resolve } from "node:path";
 import {
   DEFAULT_PORT,
@@ -387,5 +388,31 @@ describe("write guard", () => {
     });
     expect(mine.status).toBe(204);
     expect(h.getEditorState().annotations).toEqual([]);
+  });
+});
+
+describe("malformed request targets", () => {
+  // fetch() normalizes the target, so this writes the request line by hand.
+  const rawGet = (h: BridgeHandle, target: string) =>
+    new Promise<string>((done, fail) => {
+      const { hostname, port } = new URL(h.url);
+      const socket = createConnection({ host: hostname, port: Number(port) });
+      let reply = "";
+      socket.on("data", (chunk) => (reply += chunk.toString()));
+      socket.on("end", () => done(reply));
+      socket.on("error", fail);
+      socket.write(
+        `GET ${target} HTTP/1.1\r\nHost: ${hostname}:${port}\r\nConnection: close\r\n\r\n`,
+      );
+    });
+
+  it("answers 400 to a target the URL parser rejects and keeps serving", async () => {
+    const h = await bridge(project());
+    const reply = await rawGet(h, "//[");
+    expect(reply.split("\r\n")[0]).toBe("HTTP/1.1 400 Bad Request");
+    expect(reply).toContain("Bad request: Invalid URL");
+    const res = await fetch(`${h.url}template`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(TEMPLATE);
   });
 });
