@@ -594,9 +594,17 @@ function renderCustomBlockStylesheets(stylesheets: string[]): string {
   // One `<mj-style>` per unique stylesheet so per-definition CSS can be
   // independently inspected in the rendered MJML, and authors can grep their
   // contribution without disentangling a merged blob.
-  return stylesheets
-    .map((css) => `\n    <mj-style>\n${css}\n    </mj-style>`)
-    .join("");
+  return (
+    stylesheets
+      // MJML parses tags inside `<mj-style>`, so a stored stylesheet could close
+      // it or open an element of its own. `\3c ` is CSS's escape for `<`: the
+      // stylesheet means the same and carries no tag. CSS without `<` is unchanged.
+      .map(
+        (css) =>
+          `\n    <mj-style>\n${css.replaceAll("<", "\\3c ")}\n    </mj-style>`,
+      )
+      .join("")
+  );
 }
 
 // Re-export utilities for consumers
