@@ -106,9 +106,20 @@ export function formatClientGroups(
   const selected = new Map<string, ClientSupport[]>();
   for (const client of clients) {
     const family = client.id.split(".")[0];
-    allByFamily.set(family, [...(allByFamily.get(family) ?? []), client]);
-    if (client.support === bucket)
-      selected.set(family, [...(selected.get(family) ?? []), client]);
+    let all = allByFamily.get(family);
+    if (!all) {
+      all = [];
+      allByFamily.set(family, all);
+    }
+    all.push(client);
+    if (client.support === bucket) {
+      let chosen = selected.get(family);
+      if (!chosen) {
+        chosen = [];
+        selected.set(family, chosen);
+      }
+      chosen.push(client);
+    }
   }
   const families = [...selected.keys()].sort((a, b) => {
     const ai = familyOrder.indexOf(a);
