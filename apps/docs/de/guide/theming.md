@@ -83,6 +83,7 @@ Jedes Token folgt derselben Form: Deklarieren Sie `--tpl-user-<name>` auf dem Co
 | `--tpl-user-overlay`         | Modal-Hintergrund-Overlay                  | ✓    |
 | `--tpl-user-ring`            | Fokus-Ring                                 | ✓    |
 | `--tpl-user-transition`      | Spring-Easing-Übergang                     |      |
+| `--tpl-user-panel-transition` | Seitenpanel-Bewegung und das verschobene Layout |      |
 
 `--tpl-user-on-primary` braucht kein Gegenstück. Ohne eigenen Wert folgt es dem aktiven Hintergrund, Text auf Primärflächen ist also im Light-Modus nahezu weiß und im Dark-Modus nahezu schwarz. Wenn Sie es setzen, gilt eine Farbe für beide Modi, und eine nahezu weiße Beschriftung erreicht auf der helleren Standard-Primärfarbe des Dark-Modus keinen ausreichenden Kontrast.
 

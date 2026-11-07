@@ -833,11 +833,6 @@ defineExpose({
       <!-- Canvas area — absolute, fills remaining space -->
       <div
         class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:bg-[var(--tpl-canvas-bg)]"
-        style="
-          transition:
-            left var(--tpl-transition),
-            right var(--tpl-transition);
-        "
         :style="contentInsetStyle"
         :class="bodyInsetClass"
       >
@@ -950,7 +945,6 @@ defineExpose({
         v-show="!editor.state.previewMode"
         v-model:tab="rightSidebarTab"
         :style="contentInsetStyle"
-        style="transition-property: right"
         :selected-block="
           editor.selectedBlock.value
             ? localized.displayBlock(editor.selectedBlock.value)

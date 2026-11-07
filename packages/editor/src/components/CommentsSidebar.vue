@@ -331,580 +331,557 @@ defineExpose({ filterByBlock, focusNewComment });
 </script>
 
 <template>
-  <Transition
-    enter-active-class="tpl-comments-slide-enter-active"
-    enter-from-class="tpl:translate-x-full"
-    enter-to-class="tpl:translate-x-0"
-    leave-active-class="tpl-comments-slide-leave-active"
-    leave-from-class="tpl:translate-x-0"
-    leave-to-class="tpl:translate-x-full"
+  <div
+    v-if="visible"
+    role="complementary"
+    :aria-label="t.comments.title"
+    data-testid="comments-sidebar"
+    class="tpl-comments-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
   >
+    <!-- Header -->
     <div
-      v-if="visible"
-      role="complementary"
-      :aria-label="t.comments.title"
-      data-testid="comments-sidebar"
-      class="tpl-comments-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
+      class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
     >
-      <!-- Header -->
       <div
-        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
+        class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text)]"
       >
-        <div
-          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text)]"
+        <MessageCircle :size="13" :stroke-width="2" />
+        <span>{{ t.comments.title }}</span>
+        <span
+          v-if="feature.unresolvedCount.value > 0"
+          class="tpl:ml-1 tpl:inline-flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
         >
-          <MessageCircle :size="13" :stroke-width="2" />
-          <span>{{ t.comments.title }}</span>
-          <span
-            v-if="feature.unresolvedCount.value > 0"
-            class="tpl:ml-1 tpl:inline-flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
-          >
-            {{ feature.unresolvedCount.value }}
-          </span>
-        </div>
-        <button
-          type="button"
-          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
-          :aria-label="t.comments.close"
-          @click="emit('close')"
-        >
-          <X :size="14" :stroke-width="2" />
-        </button>
+          {{ feature.unresolvedCount.value }}
+        </span>
+      </div>
+      <button
+        type="button"
+        class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+        :aria-label="t.comments.close"
+        @click="emit('close')"
+      >
+        <X :size="14" :stroke-width="2" />
+      </button>
+    </div>
+
+    <!-- Filter bar -->
+    <div
+      class="tpl:flex tpl:flex-wrap tpl:gap-1 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2"
+    >
+      <button
+        type="button"
+        class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
+        :class="filterMode === 'unresolved' ? 'tpl-comment-filter--active' : ''"
+        :aria-pressed="filterMode === 'unresolved'"
+        data-testid="comments-filter-unresolved"
+        @click="setFilter('unresolved')"
+      >
+        {{ t.comments.filterUnresolved }}
+      </button>
+      <button
+        type="button"
+        class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
+        :class="filterMode === 'all' ? 'tpl-comment-filter--active' : ''"
+        :aria-pressed="filterMode === 'all'"
+        data-testid="comments-filter-all"
+        @click="setFilter('all')"
+      >
+        {{ t.comments.filterAll }}
+      </button>
+      <button
+        v-if="editor.state.selectedBlockId"
+        type="button"
+        class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
+        :class="filterMode === 'block' ? 'tpl-comment-filter--active' : ''"
+        :aria-pressed="filterMode === 'block'"
+        data-testid="comments-filter-block"
+        @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
+      >
+        {{ t.comments.filterBlock }}
+      </button>
+      <button
+        v-if="localization"
+        type="button"
+        data-testid="comments-filter-language"
+        class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)]"
+        :class="thisLanguage ? 'tpl-comment-filter--active' : ''"
+        :aria-pressed="thisLanguage"
+        @click="thisLanguage = !thisLanguage"
+      >
+        {{ t.comments.filterLanguage }}
+      </button>
+    </div>
+
+    <!-- Thread list -->
+    <div class="tpl:flex-1 tpl:overflow-y-auto">
+      <!-- Loading state -->
+      <div
+        v-if="isInitialLoad"
+        class="tpl:flex tpl:h-full tpl:items-center tpl:justify-center"
+      >
+        <LoaderCircle
+          class="tpl-spinner tpl:text-[var(--tpl-text-muted)]"
+          :size="24"
+          :stroke-width="2"
+        />
       </div>
 
-      <!-- Filter bar -->
+      <!-- Empty state -->
       <div
-        class="tpl:flex tpl:flex-wrap tpl:gap-1 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2"
+        v-else-if="filteredComments.length === 0"
+        class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:px-6 tpl:text-center"
       >
-        <button
-          type="button"
-          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
-          :class="
-            filterMode === 'unresolved' ? 'tpl-comment-filter--active' : ''
-          "
-          :aria-pressed="filterMode === 'unresolved'"
-          data-testid="comments-filter-unresolved"
-          @click="setFilter('unresolved')"
+        <MessageCircle
+          :size="32"
+          :stroke-width="1.5"
+          class="tpl:text-[var(--tpl-text-dim)]"
+        />
+        <p
+          class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ t.comments.filterUnresolved }}
-        </button>
-        <button
-          type="button"
-          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
-          :class="filterMode === 'all' ? 'tpl-comment-filter--active' : ''"
-          :aria-pressed="filterMode === 'all'"
-          data-testid="comments-filter-all"
-          @click="setFilter('all')"
-        >
-          {{ t.comments.filterAll }}
-        </button>
-        <button
-          v-if="editor.state.selectedBlockId"
-          type="button"
-          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
-          :class="filterMode === 'block' ? 'tpl-comment-filter--active' : ''"
-          :aria-pressed="filterMode === 'block'"
-          data-testid="comments-filter-block"
-          @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
-        >
-          {{ t.comments.filterBlock }}
-        </button>
-        <button
-          v-if="localization"
-          type="button"
-          data-testid="comments-filter-language"
-          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)]"
-          :class="thisLanguage ? 'tpl-comment-filter--active' : ''"
-          :aria-pressed="thisLanguage"
-          @click="thisLanguage = !thisLanguage"
-        >
-          {{ t.comments.filterLanguage }}
-        </button>
+          {{
+            filterMode === "all"
+              ? t.comments.noCommentsHint
+              : t.comments.noComments
+          }}
+        </p>
       </div>
 
-      <!-- Thread list -->
-      <div class="tpl:flex-1 tpl:overflow-y-auto">
-        <!-- Loading state -->
+      <!-- Comment threads -->
+      <div v-else class="tpl:flex tpl:flex-col tpl:gap-3 tpl:p-3">
         <div
-          v-if="isInitialLoad"
-          class="tpl:flex tpl:h-full tpl:items-center tpl:justify-center"
+          v-for="thread in filteredComments"
+          :key="thread.id"
+          class="tpl-comment-thread"
+          data-testid="comment-thread"
         >
-          <LoaderCircle
-            class="tpl-spinner tpl:text-[var(--tpl-text-muted)]"
-            :size="24"
-            :stroke-width="2"
-          />
-        </div>
-
-        <!-- Empty state -->
-        <div
-          v-else-if="filteredComments.length === 0"
-          class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:px-6 tpl:text-center"
-        >
-          <MessageCircle
-            :size="32"
-            :stroke-width="1.5"
-            class="tpl:text-[var(--tpl-text-dim)]"
-          />
-          <p
-            class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
-          >
-            {{
-              filterMode === "all"
-                ? t.comments.noCommentsHint
-                : t.comments.noComments
-            }}
-          </p>
-        </div>
-
-        <!-- Comment threads -->
-        <div v-else class="tpl:flex tpl:flex-col tpl:gap-3 tpl:p-3">
+          <!-- Root comment card -->
           <div
-            v-for="thread in filteredComments"
-            :key="thread.id"
-            class="tpl-comment-thread"
-            data-testid="comment-thread"
+            class="tpl-comment-card tpl:rounded-lg tpl:border tpl:px-3.5 tpl:py-3"
           >
-            <!-- Root comment card -->
-            <div
-              class="tpl-comment-card tpl:rounded-lg tpl:border tpl:px-3.5 tpl:py-3"
-            >
-              <!-- Comment header -->
-              <div
-                class="tpl:flex tpl:items-start tpl:justify-between tpl:gap-2"
-              >
-                <div
-                  class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1.5"
+            <!-- Comment header -->
+            <div class="tpl:flex tpl:items-start tpl:justify-between tpl:gap-2">
+              <div class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1.5">
+                <span
+                  class="tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
                 >
-                  <span
-                    class="tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
-                  >
-                    {{
-                      comments.isOwn(thread)
-                        ? t.comments.ownedByYou
-                        : thread.author.name
-                    }}
-                  </span>
-                  <span class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]">
-                    {{ formatTime(thread.createdAt) }}
-                  </span>
-                  <span
-                    v-if="localization"
-                    data-testid="comment-locale-badge"
-                    :class="chromePillClass"
-                    >{{ languageName(commentLanguage(thread)) }}</span
-                  >
-                  <span
-                    v-if="thread.updatedAt"
-                    class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"
-                  >
-                    ({{ t.comments.edited }})
-                  </span>
-                </div>
-                <div class="tpl:flex tpl:items-center tpl:gap-0.5">
-                  <!-- Resolve toggle -->
-                  <button
-                    v-if="comments.canResolve.value"
-                    data-testid="comment-resolve"
-                    class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
-                    :title="
-                      thread.resolvedAt
-                        ? t.comments.unresolve
-                        : t.comments.resolve
-                    "
-                    @click="handleResolve(thread)"
-                  >
-                    <CircleCheck
-                      :size="13"
-                      :stroke-width="2"
-                      class="tpl-resolve-icon"
-                      :style="{
-                        color: thread.resolvedAt
-                          ? 'var(--tpl-primary)'
-                          : undefined,
-                      }"
-                    />
-                  </button>
-                  <!-- Edit (own only) -->
-                  <button
-                    v-if="canEdit(thread)"
-                    data-testid="comment-edit"
-                    class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
-                    :title="t.comments.edit"
-                    @click="startEdit(thread)"
-                  >
-                    <Pencil :size="12" :stroke-width="2" />
-                  </button>
-                  <!-- Delete (own only) -->
-                  <button
-                    v-if="canDelete(thread)"
-                    data-testid="comment-delete"
-                    class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors"
-                    :title="t.comments.delete"
-                    @click="confirmDelete(thread.id)"
-                  >
-                    <Trash2 :size="12" :stroke-width="2" />
-                  </button>
-                </div>
-              </div>
-
-              <!-- Resolved badge -->
-              <Transition name="tpl-resolve">
-                <div
-                  v-if="thread.resolvedAt"
-                  class="tpl:mt-1 tpl:flex tpl:items-center tpl:gap-1 tpl:text-[10px] tpl:text-[var(--tpl-primary)]"
-                >
-                  <Check :size="10" :stroke-width="2.5" />
-                  <span>
-                    {{
-                      format(t.comments.resolvedBy, {
-                        name: thread.resolvedBy?.name ?? "",
-                      })
-                    }}
-                  </span>
-                </div>
-              </Transition>
-
-              <!-- Block anchor indicator -->
-              <span
-                v-if="thread.blockId && isBlockMissing(thread.blockId)"
-                class="tpl:mt-1 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)]"
-              >
-                {{ t.comments.missingBlock }}
-              </span>
-              <button
-                v-else-if="thread.blockId"
-                class="tpl:mt-1 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
-                @click="editor.selectBlock(thread.blockId ?? '')"
-              >
-                {{ t.comments.jumpToBlock }}
-              </button>
-
-              <!-- Comment body (or edit mode) -->
-              <div v-if="editingId === thread.id" class="tpl:mt-2">
-                <textarea
-                  v-model="editBody"
-                  class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
-                  rows="3"
-                  @keydown="handleEditKeydown($event, thread.id)"
-                />
-                <div class="tpl:mt-1.5 tpl:flex tpl:gap-1.5">
-                  <button
-                    class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
-                    :disabled="!editBody.trim() || comments.isSubmitting.value"
-                    @click="handleEdit(thread.id)"
-                  >
-                    {{ t.comments.save }}
-                  </button>
-                  <button
-                    class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
-                    @click="cancelEdit()"
-                  >
-                    {{ t.comments.cancel }}
-                  </button>
-                </div>
-              </div>
-              <p
-                v-else
-                class="tpl:mt-1.5 tpl:text-xs tpl:leading-relaxed tpl:whitespace-pre-wrap tpl:text-[var(--tpl-text)]"
-              >
-                {{ thread.body }}
-              </p>
-
-              <!-- Delete confirmation -->
-              <div
-                v-if="deletingId === thread.id"
-                class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
-              >
-                <span class="tpl:flex-1">
-                  {{ t.comments.deleteConfirm }}
+                  {{
+                    comments.isOwn(thread)
+                      ? t.comments.ownedByYou
+                      : thread.author.name
+                  }}
                 </span>
-                <button
-                  class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
-                  data-testid="comment-delete-confirm"
-                  @click="handleDelete(thread.id)"
+                <span class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]">
+                  {{ formatTime(thread.createdAt) }}
+                </span>
+                <span
+                  v-if="localization"
+                  data-testid="comment-locale-badge"
+                  :class="chromePillClass"
+                  >{{ languageName(commentLanguage(thread)) }}</span
                 >
-                  {{ t.comments.delete }}
-                </button>
-                <button
-                  class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-                  @click="cancelDelete()"
+                <span
+                  v-if="thread.updatedAt"
+                  class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"
                 >
-                  {{ t.comments.cancel }}
-                </button>
+                  ({{ t.comments.edited }})
+                </span>
               </div>
-
-              <!-- Thread actions -->
-              <div
-                v-if="editingId !== thread.id && deletingId !== thread.id"
-                class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2"
-              >
+              <div class="tpl:flex tpl:items-center tpl:gap-0.5">
+                <!-- Resolve toggle -->
                 <button
-                  v-if="comments.canCreate.value"
-                  data-testid="comment-reply"
+                  v-if="comments.canResolve.value"
+                  data-testid="comment-resolve"
                   class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
-                  :title="t.comments.reply"
-                  @click="startReply(thread.id)"
+                  :title="
+                    thread.resolvedAt
+                      ? t.comments.unresolve
+                      : t.comments.resolve
+                  "
+                  @click="handleResolve(thread)"
                 >
-                  <Reply
+                  <CircleCheck
                     :size="13"
                     :stroke-width="2"
-                    class="tpl:text-[var(--tpl-primary)]"
+                    class="tpl-resolve-icon"
+                    :style="{
+                      color: thread.resolvedAt
+                        ? 'var(--tpl-primary)'
+                        : undefined,
+                    }"
                   />
                 </button>
+                <!-- Edit (own only) -->
                 <button
-                  v-if="(thread.replies?.length ?? 0) > 0"
-                  class="tpl:flex tpl:items-center tpl:gap-0.5 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
-                  @click="toggleThread(thread.id)"
+                  v-if="canEdit(thread)"
+                  data-testid="comment-edit"
+                  class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
+                  :title="t.comments.edit"
+                  @click="startEdit(thread)"
                 >
-                  <template v-if="expandedThreads.has(thread.id)">
-                    <ChevronUp :size="11" :stroke-width="2" />
-                  </template>
-                  <template v-else>
-                    <ChevronDown :size="11" :stroke-width="2" />
-                  </template>
-                  {{
-                    (thread.replies?.length ?? 0) === 1
-                      ? format(t.comments.replyOne, {
-                          count: String(thread.replies?.length ?? 0),
-                        })
-                      : format(t.comments.replyMany, {
-                          count: String(thread.replies?.length ?? 0),
-                        })
-                  }}
+                  <Pencil :size="12" :stroke-width="2" />
+                </button>
+                <!-- Delete (own only) -->
+                <button
+                  v-if="canDelete(thread)"
+                  data-testid="comment-delete"
+                  class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors"
+                  :title="t.comments.delete"
+                  @click="confirmDelete(thread.id)"
+                >
+                  <Trash2 :size="12" :stroke-width="2" />
                 </button>
               </div>
             </div>
 
-            <!-- Replies -->
-            <Transition name="tpl-replies">
+            <!-- Resolved badge -->
+            <Transition name="tpl-resolve">
               <div
-                v-if="
-                  expandedThreads.has(thread.id) &&
-                  (thread.replies?.length ?? 0) > 0
+                v-if="thread.resolvedAt"
+                class="tpl:mt-1 tpl:flex tpl:items-center tpl:gap-1 tpl:text-[10px] tpl:text-[var(--tpl-primary)]"
+              >
+                <Check :size="10" :stroke-width="2.5" />
+                <span>
+                  {{
+                    format(t.comments.resolvedBy, {
+                      name: thread.resolvedBy?.name ?? "",
+                    })
+                  }}
+                </span>
+              </div>
+            </Transition>
+
+            <!-- Block anchor indicator -->
+            <span
+              v-if="thread.blockId && isBlockMissing(thread.blockId)"
+              class="tpl:mt-1 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)]"
+            >
+              {{ t.comments.missingBlock }}
+            </span>
+            <button
+              v-else-if="thread.blockId"
+              class="tpl:mt-1 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
+              @click="editor.selectBlock(thread.blockId ?? '')"
+            >
+              {{ t.comments.jumpToBlock }}
+            </button>
+
+            <!-- Comment body (or edit mode) -->
+            <div v-if="editingId === thread.id" class="tpl:mt-2">
+              <textarea
+                v-model="editBody"
+                class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
+                rows="3"
+                @keydown="handleEditKeydown($event, thread.id)"
+              />
+              <div class="tpl:mt-1.5 tpl:flex tpl:gap-1.5">
+                <button
+                  class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
+                  :disabled="!editBody.trim() || comments.isSubmitting.value"
+                  @click="handleEdit(thread.id)"
+                >
+                  {{ t.comments.save }}
+                </button>
+                <button
+                  class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+                  @click="cancelEdit()"
+                >
+                  {{ t.comments.cancel }}
+                </button>
+              </div>
+            </div>
+            <p
+              v-else
+              class="tpl:mt-1.5 tpl:text-xs tpl:leading-relaxed tpl:whitespace-pre-wrap tpl:text-[var(--tpl-text)]"
+            >
+              {{ thread.body }}
+            </p>
+
+            <!-- Delete confirmation -->
+            <div
+              v-if="deletingId === thread.id"
+              class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
+            >
+              <span class="tpl:flex-1">
+                {{ t.comments.deleteConfirm }}
+              </span>
+              <button
+                class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
+                data-testid="comment-delete-confirm"
+                @click="handleDelete(thread.id)"
+              >
+                {{ t.comments.delete }}
+              </button>
+              <button
+                class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+                @click="cancelDelete()"
+              >
+                {{ t.comments.cancel }}
+              </button>
+            </div>
+
+            <!-- Thread actions -->
+            <div
+              v-if="editingId !== thread.id && deletingId !== thread.id"
+              class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2"
+            >
+              <button
+                v-if="comments.canCreate.value"
+                data-testid="comment-reply"
+                class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
+                :title="t.comments.reply"
+                @click="startReply(thread.id)"
+              >
+                <Reply
+                  :size="13"
+                  :stroke-width="2"
+                  class="tpl:text-[var(--tpl-primary)]"
+                />
+              </button>
+              <button
+                v-if="(thread.replies?.length ?? 0) > 0"
+                class="tpl:flex tpl:items-center tpl:gap-0.5 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+                @click="toggleThread(thread.id)"
+              >
+                <template v-if="expandedThreads.has(thread.id)">
+                  <ChevronUp :size="11" :stroke-width="2" />
+                </template>
+                <template v-else>
+                  <ChevronDown :size="11" :stroke-width="2" />
+                </template>
+                {{
+                  (thread.replies?.length ?? 0) === 1
+                    ? format(t.comments.replyOne, {
+                        count: String(thread.replies?.length ?? 0),
+                      })
+                    : format(t.comments.replyMany, {
+                        count: String(thread.replies?.length ?? 0),
+                      })
+                }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Replies -->
+          <Transition name="tpl-replies">
+            <div
+              v-if="
+                expandedThreads.has(thread.id) &&
+                (thread.replies?.length ?? 0) > 0
+              "
+              class="tpl-comment-replies tpl:ml-5 tpl:pl-3 tpl:pt-2"
+            >
+              <div
+                v-for="(reply, index) in thread.replies"
+                :key="reply.id"
+                class="tpl-comment-reply-card tpl:relative tpl:rounded-lg tpl:border tpl:px-3.5 tpl:py-2.5"
+                :class="
+                  index < (thread.replies?.length ?? 0) - 1 ? 'tpl:mb-2' : ''
                 "
-                class="tpl-comment-replies tpl:ml-5 tpl:pl-3 tpl:pt-2"
               >
                 <div
-                  v-for="(reply, index) in thread.replies"
-                  :key="reply.id"
-                  class="tpl-comment-reply-card tpl:relative tpl:rounded-lg tpl:border tpl:px-3.5 tpl:py-2.5"
-                  :class="
-                    index < (thread.replies?.length ?? 0) - 1 ? 'tpl:mb-2' : ''
-                  "
+                  class="tpl:flex tpl:items-start tpl:justify-between tpl:gap-2"
                 >
                   <div
-                    class="tpl:flex tpl:items-start tpl:justify-between tpl:gap-2"
+                    class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1.5"
                   >
-                    <div
-                      class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1.5"
+                    <span
+                      class="tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
                     >
-                      <span
-                        class="tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
-                      >
-                        {{
-                          comments.isOwn(reply)
-                            ? t.comments.ownedByYou
-                            : reply.author.name
-                        }}
-                      </span>
-                      <span
-                        class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
-                      >
-                        {{ formatTime(reply.createdAt) }}
-                      </span>
-                      <span
-                        v-if="localization"
-                        data-testid="comment-locale-badge"
-                        :class="chromePillClass"
-                        >{{ languageName(commentLanguage(reply)) }}</span
-                      >
-                      <span
-                        v-if="reply.updatedAt"
-                        class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"
-                      >
-                        ({{ t.comments.edited }})
-                      </span>
-                    </div>
-                    <div class="tpl:flex tpl:items-center tpl:gap-0.5">
-                      <button
-                        v-if="canEdit(reply)"
-                        class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
-                        :title="t.comments.edit"
-                        @click="startEdit(reply)"
-                      >
-                        <Pencil :size="11" :stroke-width="2" />
-                      </button>
-                      <button
-                        v-if="canDelete(reply)"
-                        class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors"
-                        :title="t.comments.delete"
-                        @click="confirmDelete(reply.id)"
-                      >
-                        <Trash2 :size="11" :stroke-width="2" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Reply body (or edit mode) -->
-                  <div v-if="editingId === reply.id" class="tpl:mt-1.5">
-                    <textarea
-                      v-model="editBody"
-                      class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
-                      rows="2"
-                      @keydown="handleEditKeydown($event, reply.id)"
-                    />
-                    <div class="tpl:mt-1.5 tpl:flex tpl:gap-1.5">
-                      <button
-                        class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
-                        :disabled="
-                          !editBody.trim() || comments.isSubmitting.value
-                        "
-                        @click="handleEdit(reply.id)"
-                      >
-                        {{ t.comments.save }}
-                      </button>
-                      <button
-                        class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-                        @click="cancelEdit()"
-                      >
-                        {{ t.comments.cancel }}
-                      </button>
-                    </div>
-                  </div>
-                  <p
-                    v-else
-                    class="tpl:mt-1 tpl:text-xs tpl:leading-relaxed tpl:whitespace-pre-wrap tpl:text-[var(--tpl-text)]"
-                  >
-                    {{ reply.body }}
-                  </p>
-
-                  <!-- Delete confirmation for reply -->
-                  <div
-                    v-if="deletingId === reply.id"
-                    class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
-                  >
-                    <span class="tpl:flex-1">
-                      {{ t.comments.deleteConfirm }}
+                      {{
+                        comments.isOwn(reply)
+                          ? t.comments.ownedByYou
+                          : reply.author.name
+                      }}
                     </span>
-                    <button
-                      class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
-                      data-testid="comment-delete-confirm"
-                      @click="handleDelete(reply.id)"
+                    <span
+                      class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
                     >
-                      {{ t.comments.delete }}
+                      {{ formatTime(reply.createdAt) }}
+                    </span>
+                    <span
+                      v-if="localization"
+                      data-testid="comment-locale-badge"
+                      :class="chromePillClass"
+                      >{{ languageName(commentLanguage(reply)) }}</span
+                    >
+                    <span
+                      v-if="reply.updatedAt"
+                      class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"
+                    >
+                      ({{ t.comments.edited }})
+                    </span>
+                  </div>
+                  <div class="tpl:flex tpl:items-center tpl:gap-0.5">
+                    <button
+                      v-if="canEdit(reply)"
+                      class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
+                      :title="t.comments.edit"
+                      @click="startEdit(reply)"
+                    >
+                      <Pencil :size="11" :stroke-width="2" />
                     </button>
                     <button
-                      class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-                      @click="cancelDelete()"
+                      v-if="canDelete(reply)"
+                      class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors"
+                      :title="t.comments.delete"
+                      @click="confirmDelete(reply.id)"
+                    >
+                      <Trash2 :size="11" :stroke-width="2" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Reply body (or edit mode) -->
+                <div v-if="editingId === reply.id" class="tpl:mt-1.5">
+                  <textarea
+                    v-model="editBody"
+                    class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
+                    rows="2"
+                    @keydown="handleEditKeydown($event, reply.id)"
+                  />
+                  <div class="tpl:mt-1.5 tpl:flex tpl:gap-1.5">
+                    <button
+                      class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
+                      :disabled="
+                        !editBody.trim() || comments.isSubmitting.value
+                      "
+                      @click="handleEdit(reply.id)"
+                    >
+                      {{ t.comments.save }}
+                    </button>
+                    <button
+                      class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+                      @click="cancelEdit()"
                     >
                       {{ t.comments.cancel }}
                     </button>
                   </div>
                 </div>
-              </div>
-            </Transition>
-
-            <!-- Reply input -->
-            <Transition name="tpl-replies">
-              <div
-                v-if="replyingTo === thread.id"
-                class="tpl-comment-replies tpl:ml-5 tpl:pl-3 tpl:pt-2"
-              >
-                <!-- Same shape as the new-comment composer below: the border and
-                     the focus ring belong to the wrapper, the field is bare
-                     inside it, and the actions sit within the bounds rather than
-                     floating beside them. The two composers do the same job, so a
-                     reader should not have to notice they are different
-                     components. Only the height differs — a reply is nested and
-                     indented, so it starts at two rows without the composer's
-                     `min-h`. -->
-                <div
-                  class="tpl-comments-input-wrapper tpl-focus-ring-host tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+                <p
+                  v-else
+                  class="tpl:mt-1 tpl:text-xs tpl:leading-relaxed tpl:whitespace-pre-wrap tpl:text-[var(--tpl-text)]"
                 >
-                  <textarea
-                    v-model="replyBody"
-                    class="tpl:max-h-24 tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-xs tpl:outline-none tpl:text-[var(--tpl-text)]"
-                    :placeholder="t.comments.replyPlaceholder"
-                    rows="2"
-                    @keydown="handleReplyKeydown($event, thread.id)"
-                  />
+                  {{ reply.body }}
+                </p>
+
+                <!-- Delete confirmation for reply -->
+                <div
+                  v-if="deletingId === reply.id"
+                  class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
+                >
+                  <span class="tpl:flex-1">
+                    {{ t.comments.deleteConfirm }}
+                  </span>
                   <button
-                    class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
-                    :disabled="!replyBody.trim() || comments.isSubmitting.value"
-                    @click="handleReply(thread.id)"
+                    class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
+                    data-testid="comment-delete-confirm"
+                    @click="handleDelete(reply.id)"
                   >
-                    <Send :size="14" :stroke-width="2" />
+                    {{ t.comments.delete }}
                   </button>
                   <button
-                    class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:text-[var(--tpl-text-muted)]"
-                    @click="cancelReply()"
+                    class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+                    @click="cancelDelete()"
                   >
-                    <X :size="14" :stroke-width="2" />
+                    {{ t.comments.cancel }}
                   </button>
                 </div>
               </div>
-            </Transition>
-          </div>
-        </div>
-      </div>
+            </div>
+          </Transition>
 
-      <!-- New comment input. Absent entirely when the store withheld `create` —
-           hidden rather than disabled, so a read-only review reads as one rather
-           than as a broken composer. -->
-      <div
-        v-if="comments.canCreate.value"
-        class="tpl:border-t tpl:p-3 tpl:border-[var(--tpl-border)]"
-      >
-        <div
-          v-if="isBlockFilterUnsaved"
-          class="tpl:flex tpl:min-h-[68px] tpl:items-center tpl:rounded-md tpl:px-3 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)]"
-        >
-          {{ t.comments.saveTemplateFirst }}
-        </div>
-        <div
-          v-else
-          class="tpl-comments-input-wrapper tpl-focus-ring-host tpl:flex tpl:min-h-[68px] tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
-        >
-          <textarea
-            ref="newCommentInput"
-            v-model="newCommentBody"
-            class="tpl:max-h-24 tpl:min-h-[48px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-xs tpl:outline-none tpl:text-[var(--tpl-text)]"
-            data-testid="comments-input"
-            :placeholder="t.comments.placeholder"
-            :disabled="comments.isSubmitting.value"
-            rows="2"
-            @keydown="handleNewCommentKeydown"
-          />
-          <button
-            class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
-            data-testid="comments-send"
-            :disabled="!newCommentBody.trim() || comments.isSubmitting.value"
-            @click="handleAddComment"
-          >
-            <LoaderCircle
-              v-if="comments.isSubmitting.value"
-              class="tpl-spinner"
-              :size="16"
-              :stroke-width="2"
-            />
-            <Send v-else :size="16" :stroke-width="2" />
-          </button>
+          <!-- Reply input -->
+          <Transition name="tpl-replies">
+            <div
+              v-if="replyingTo === thread.id"
+              class="tpl-comment-replies tpl:ml-5 tpl:pl-3 tpl:pt-2"
+            >
+              <!-- Same shape as the new-comment composer below: the border and
+                   the focus ring belong to the wrapper, the field is bare
+                   inside it, and the actions sit within the bounds rather than
+                   floating beside them. The two composers do the same job, so a
+                   reader should not have to notice they are different
+                   components. Only the height differs — a reply is nested and
+                   indented, so it starts at two rows without the composer's
+                   `min-h`. -->
+              <div
+                class="tpl-comments-input-wrapper tpl-focus-ring-host tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+              >
+                <textarea
+                  v-model="replyBody"
+                  class="tpl:max-h-24 tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-xs tpl:outline-none tpl:text-[var(--tpl-text)]"
+                  :placeholder="t.comments.replyPlaceholder"
+                  rows="2"
+                  @keydown="handleReplyKeydown($event, thread.id)"
+                />
+                <button
+                  class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
+                  :disabled="!replyBody.trim() || comments.isSubmitting.value"
+                  @click="handleReply(thread.id)"
+                >
+                  <Send :size="14" :stroke-width="2" />
+                </button>
+                <button
+                  class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:text-[var(--tpl-text-muted)]"
+                  @click="cancelReply()"
+                >
+                  <X :size="14" :stroke-width="2" />
+                </button>
+              </div>
+            </div>
+          </Transition>
         </div>
       </div>
     </div>
-  </Transition>
+
+    <!-- New comment input. Absent entirely when the store withheld `create` —
+         hidden rather than disabled, so a read-only review reads as one rather
+         than as a broken composer. -->
+    <div
+      v-if="comments.canCreate.value"
+      class="tpl:border-t tpl:p-3 tpl:border-[var(--tpl-border)]"
+    >
+      <div
+        v-if="isBlockFilterUnsaved"
+        class="tpl:flex tpl:min-h-[68px] tpl:items-center tpl:rounded-md tpl:px-3 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)]"
+      >
+        {{ t.comments.saveTemplateFirst }}
+      </div>
+      <div
+        v-else
+        class="tpl-comments-input-wrapper tpl-focus-ring-host tpl:flex tpl:min-h-[68px] tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+      >
+        <textarea
+          ref="newCommentInput"
+          v-model="newCommentBody"
+          class="tpl:max-h-24 tpl:min-h-[48px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-xs tpl:outline-none tpl:text-[var(--tpl-text)]"
+          data-testid="comments-input"
+          :placeholder="t.comments.placeholder"
+          :disabled="comments.isSubmitting.value"
+          rows="2"
+          @keydown="handleNewCommentKeydown"
+        />
+        <button
+          class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
+          data-testid="comments-send"
+          :disabled="!newCommentBody.trim() || comments.isSubmitting.value"
+          @click="handleAddComment"
+        >
+          <LoaderCircle
+            v-if="comments.isSubmitting.value"
+            class="tpl-spinner"
+            :size="16"
+            :stroke-width="2"
+          />
+          <Send v-else :size="16" :stroke-width="2" />
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.tpl-comments-slide-enter-active {
-  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.tpl-comments-slide-leave-active {
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 .tpl-comments-input-wrapper:focus-within {
   border-color: var(--tpl-primary);
   box-shadow: var(--tpl-ring);

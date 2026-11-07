@@ -10,19 +10,33 @@ interface HeaderFitMeasurement {
   paddingWidth: number;
   columnGap: number;
   borderWidth: number;
+  /** What the save-status words add to `rightWidth`, their gap included. */
+  statusLabelWidth?: number;
 }
 
 /** Internal decision shared by DOM measurement and numeric boundary tests. */
 export function decideHeaderFit(measurement: HeaderFitMeasurement) {
   // Equal side tracks keep the centre anchored. A sum of the unequal side
   // widths would let the larger group overlap the centred view controls.
-  const fullWidth =
+  const required = (rightWidth: number) =>
     measurement.centerWidth +
-    2 * Math.max(measurement.leftWidth, measurement.rightWidth) +
+    2 * Math.max(measurement.leftWidth, rightWidth) +
     measurement.paddingWidth +
     2 * measurement.columnGap +
     measurement.borderWidth;
-  return { compact: measurement.availableWidth < fullWidth, fullWidth };
+  // The save-status words appear on every edit and leave seconds after each
+  // save. Counting them would toggle the whole header into its compact layout
+  // and back on every edit, so they show only where there is room for them.
+  const labelWidth = measurement.statusLabelWidth ?? 0;
+  const fullWidth = required(measurement.rightWidth - labelWidth);
+  const compact = measurement.availableWidth < fullWidth;
+  return {
+    compact,
+    fullWidth,
+    statusLabel:
+      !compact &&
+      measurement.availableWidth >= required(measurement.rightWidth),
+  };
 }
 
 /** Keep the full header until its labels would overlap the centred controls. */
@@ -32,6 +46,9 @@ export function useHeaderFit(
 ) {
   const compact = shallowRef(false);
   const fullWidth = shallowRef(0);
+  const statusLabel = shallowRef(false);
+  // The full width with the save-status words included.
+  let labelledWidth = 0;
   let resizeObserver: ResizeObserver | undefined;
   let mutationObserver: MutationObserver | undefined;
   let mounted = false;
@@ -72,6 +89,7 @@ export function useHeaderFit(
       contentDirty = true;
     if (!contentDirty && fullWidth.value > 0) {
       compact.value = available < fullWidth.value;
+      statusLabel.value = !compact.value && available >= labelledWidth;
       return;
     }
 
@@ -127,9 +145,16 @@ export function useHeaderFit(
     try {
       const style = getComputedStyle(copy);
       const widths = groups.map((group) => group.getBoundingClientRect().width);
+      // The status words are measured inside the right group, so the
+      // decision can take them out again.
+      const statusText = copy.querySelector<HTMLElement>(".tpl-status-label");
+      const statusLabelWidth = statusText
+        ? statusText.getBoundingClientRect().width +
+          pixels(getComputedStyle(statusText.parentElement!).columnGap)
+        : 0;
       // Always compare with full geometry, even while compact: the smaller
       // compact layout must never immediately trigger a return to full mode.
-      const decision = decideHeaderFit({
+      const measurement = {
         availableWidth: available,
         leftWidth: widths[0],
         centerWidth: widths[1],
@@ -140,9 +165,12 @@ export function useHeaderFit(
         columnGap: pixels(style.columnGap),
         borderWidth:
           pixels(style.borderLeftWidth) + pixels(style.borderRightWidth),
-      });
+      };
+      const decision = decideHeaderFit({ ...measurement, statusLabelWidth });
       fullWidth.value = decision.fullWidth;
       compact.value = decision.compact;
+      statusLabel.value = decision.statusLabel;
+      labelledWidth = decideHeaderFit(measurement).fullWidth;
       contentDirty = false;
     } finally {
       copy.remove();
@@ -246,5 +274,5 @@ export function useHeaderFit(
     );
   });
 
-  return { compact, fullWidth };
+  return { compact, fullWidth, statusLabel };
 }
