@@ -1,0 +1,55 @@
+{
+  "name": "add section without wrapper into wrapper",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": []
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "S",
+        "type": "section",
+        "columns": "1",
+        "children": [[]]
+      },
+      "parent": {
+        "wrapperId": "A"
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "A",
+          "type": "wrapper",
+          "children": [
+            {
+              "id": "S",
+              "type": "section",
+              "columns": "1",
+              "children": [[]]
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": ["de"]
+      }
+    }
+  }
+}

@@ -71,6 +71,30 @@ afterEach(() => {
 const read = () => JSON.parse(readFileSync(file, "utf8"));
 
 describe("edit command", () => {
+  it("moves a block into an existing wrapper and writes a schema-valid file", () => {
+    const before = read();
+    before.blocks.push({
+      id: "wrap_1",
+      type: "wrapper",
+      children: [],
+      styles: { padding: pad },
+    });
+    writeFileSync(file, `${JSON.stringify(before, null, 2)}\n`);
+    const op = JSON.stringify({
+      op: "moveBlock",
+      blockId: "title_1",
+      parent: { wrapperId: "wrap_1" },
+      after: null,
+    });
+    expect(runEdit(parseArgs(["edit", file, "--op", op]))).toBe(0);
+    expect(read().blocks.map((block: { id: string }) => block.id)).toEqual([
+      "button_1",
+      "wrap_1",
+    ]);
+    expect(read().blocks[1].children).toEqual([BASE.blocks[0]]);
+    expect(validateTemplate(read()).valid).toBe(true);
+  });
+
   it("applies a single operation and writes the file", () => {
     const op = JSON.stringify({
       op: "updateBlock",

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { computed, effectScope } from "@vue/reactivity";
+import { computed, effectScope, reactive, ref } from "@vue/reactivity";
 import type {
   Block,
   CollaborationActor,
@@ -18,6 +18,7 @@ import {
   COLLABORATION_TYPING_MAX_WAIT_MS,
   useCollaboration,
   type CollaborationNotice,
+  type CollaborationEditor,
   type UseCollaborationOptions,
 } from "../src/collaboration";
 import { FakeCollaborationServer } from "./helpers/fake-collaboration-server";
@@ -95,6 +96,84 @@ async function openClient(
 }
 
 describe("useCollaboration", () => {
+  it("replays a wrapper move over a pending edit and keeps the wrapper child selected", async () => {
+    const before = {
+      blocks: [
+        {
+          id: "A",
+          type: "wrapper",
+          children: [
+            {
+              id: "S",
+              type: "section",
+              columns: "1",
+              children: [[{ id: "X", type: "paragraph", content: "x" }]],
+            },
+            { id: "Y", type: "paragraph", content: "y" },
+          ],
+        },
+      ],
+      settings: { width: 600 },
+    } as unknown as TemplateContent;
+    const backend = new FakeCollaborationServer(before);
+    const scope = effectScope();
+    const client = scope.run(() => {
+      const state = reactive({
+        template: backend.template(),
+        selectedBlockId: "X" as string | null,
+        isLoading: false,
+      });
+      const content = ref(safeClone(before));
+      const editor: CollaborationEditor = {
+        state,
+        content,
+        selectBlock: (id) => {
+          state.selectedBlockId = id;
+        },
+        setContent: (value) => {
+          content.value = value;
+        },
+        markDirty: () => {},
+      };
+      const collaboration = useCollaboration({
+        provider: backend.provider("Ada"),
+        loadTemplate: async () => backend.template(),
+      });
+      collaboration.attach(editor);
+      return { state, content, collaboration };
+    })!;
+    await settle();
+    (
+      client.content.value.blocks[0] as Extract<Block, { type: "wrapper" }>
+    ).children[1].content = "local";
+    await settle();
+    const ops: Operation[] = [
+      { op: "moveBlock", blockId: "X", parent: { wrapperId: "A" }, after: "S" },
+    ];
+    backend.pushAs({ type: "agent", name: "Agent" } as CollaborationActor, ops);
+    backend.deliverAll();
+    await settle();
+    expect(client.content.value.blocks).toEqual([
+      {
+        id: "A",
+        type: "wrapper",
+        children: [
+          { id: "S", type: "section", columns: "1", children: [[]] },
+          { id: "X", type: "paragraph", content: "x" },
+          { id: "Y", type: "paragraph", content: "local" },
+        ],
+      },
+    ]);
+    expect(client.state.selectedBlockId).toBe("X");
+    expect(client.collaboration.canUndo.value).toBe(true);
+    client.collaboration.undo();
+    await settle();
+    expect(
+      (client.content.value.blocks[0] as Extract<Block, { type: "wrapper" }>)
+        .children[2].content,
+    ).toBe("y");
+    scope.stop();
+  });
   let server: FakeCollaborationServer;
 
   beforeEach(() => {

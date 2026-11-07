@@ -1,0 +1,50 @@
+{
+  "name": "move slot into hidden wrapper",
+  "content": {
+    "blocks": [
+      {
+        "id": "slot",
+        "type": "slot"
+      },
+      {
+        "id": "H",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ],
+        "l10n": {
+          "de": {
+            "hidden": true
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "moveBlock",
+      "blockId": "slot",
+      "parent": {
+        "wrapperId": "H"
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0,
+      "message": "A layout's slot block can't be placed inside a block that a language hides.",
+      "blockId": "slot"
+    }
+  }
+}

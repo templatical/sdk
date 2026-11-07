@@ -1,0 +1,85 @@
+{
+  "name": "locale block in wrapper",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "N",
+        "type": "paragraph",
+        "content": "new"
+      },
+      "parent": {
+        "wrapperId": "A"
+      },
+      "after": "X"
+    },
+    {
+      "op": "updateBlockLocale",
+      "blockId": "N",
+      "locale": "de",
+      "hidden": true
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "A",
+          "type": "wrapper",
+          "children": [
+            {
+              "id": "X",
+              "type": "paragraph",
+              "content": "x"
+            },
+            {
+              "id": "N",
+              "type": "paragraph",
+              "content": "new",
+              "l10n": {
+                "de": {
+                  "hidden": true
+                }
+              }
+            },
+            {
+              "id": "Y",
+              "type": "paragraph",
+              "content": "y"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "locale": "en",
+        "locales": ["de"]
+      }
+    }
+  }
+}

@@ -60,6 +60,10 @@ function locate(
           if (found) return found;
         }
       }
+      if (block.type === "wrapper" && Array.isArray(block.children)) {
+        const found = search(block.children, { wrapperId: block.id });
+        if (found) return found;
+      }
       previous = typeof block.id === "string" ? block.id : previous;
     }
     return null;

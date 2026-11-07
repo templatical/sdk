@@ -1,0 +1,50 @@
+{
+  "name": "order wrapper container before anchor",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "Z",
+        "type": "paragraph",
+        "content": "z"
+      },
+      "parent": {
+        "wrapperId": "missing"
+      },
+      "after": "X"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "block_missing",
+      "opIndex": 0,
+      "message": "No wrapper with id \"missing\".",
+      "blockId": "missing"
+    }
+  }
+}

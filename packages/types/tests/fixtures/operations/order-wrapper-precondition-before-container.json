@@ -1,0 +1,52 @@
+{
+  "name": "order wrapper precondition before container",
+  "content": {
+    "blocks": [
+      {
+        "id": "A",
+        "type": "wrapper",
+        "children": [
+          {
+            "id": "X",
+            "type": "paragraph",
+            "content": "x"
+          },
+          {
+            "id": "Y",
+            "type": "paragraph",
+            "content": "y"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "locale": "en",
+      "locales": ["de"]
+    }
+  },
+  "ops": [
+    {
+      "op": "moveBlock",
+      "blockId": "Y",
+      "parent": {
+        "wrapperId": "missing"
+      },
+      "after": null,
+      "expect": {
+        "parent": {
+          "wrapperId": "A"
+        },
+        "after": null
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "precondition_failed",
+      "opIndex": 0,
+      "message": "Block \"Y\" has moved since.",
+      "blockId": "Y"
+    }
+  }
+}

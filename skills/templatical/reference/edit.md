@@ -25,14 +25,14 @@ in one step, and nothing is written if the result isn't structurally valid.
 The vocabulary is the one the editor, collaboration backends and Templatical
 Cloud share:
 
-| Operation | Shape |
-|---|---|
-| `addBlock` | `{"op":"addBlock","block":{…},"parent":null,"after":"<sibling id>"}` |
-| `moveBlock` | `{"op":"moveBlock","blockId":"…","parent":null,"after":null}` |
-| `deleteBlock` | `{"op":"deleteBlock","blockId":"…"}` (a section goes with its blocks) |
-| `updateBlock` | `{"op":"updateBlock","blockId":"…","set":{…},"unset":["…"]}` |
-| `updateSettings` | `{"op":"updateSettings","set":{…},"unset":["…"]}` |
-| `setContent` | `{"op":"setContent","content":{…}}` — a full replacement, not a scoped change |
+| Operation        | Shape                                                                         |
+| ---------------- | ----------------------------------------------------------------------------- |
+| `addBlock`       | `{"op":"addBlock","block":{…},"parent":null,"after":"<sibling id>"}`          |
+| `moveBlock`      | `{"op":"moveBlock","blockId":"…","parent":null,"after":null}`                 |
+| `deleteBlock`    | `{"op":"deleteBlock","blockId":"…"}` (a section goes with its blocks)         |
+| `updateBlock`    | `{"op":"updateBlock","blockId":"…","set":{…},"unset":["…"]}`                  |
+| `updateSettings` | `{"op":"updateSettings","set":{…},"unset":["…"]}`                             |
+| `setContent`     | `{"op":"setContent","content":{…}}` — a full replacement, not a scoped change |
 
 The SDK also supports `addLocale`, `removeLocale`, `setDefaultLocale`, `updateBlockLocale` and
 `updateSettingsLocale` for language versions. Their paths, guards and locks
@@ -84,9 +84,9 @@ edits with this same vocabulary through the server's `edit_template` tool, so
 the shapes and rules here hold there too.
 
 Positions name a sibling, never an index: `parent` is `null` for the top level
-or `{"sectionId":"…","column":0}` for a section column, and `after` is the id
-of the block to land after, or `null` for first. A section sits only at the
-top level. **`set` replaces each named key whole, `styles` included**: to
+or `{"sectionId":"…","column":0}` for a section column, or `{"wrapperId":"A"}` for a wrapper’s direct child list, and `after` is the id
+of the block to land after, or `null` for first. A section sits at the top level or inside a wrapper. A wrapper sits only at the
+top level; a wrapper in a column or another wrapper is refused. **`set` replaces each named key whole, `styles` included**: to
 change one style property, read the block's `styles` from the file and send
 the whole object with that property changed, or `padding` and the rest are
 dropped. `id`, `type` and `children` can't be set; a section's layout changes
@@ -104,3 +104,14 @@ it — which is also what keeps the live-update loop's divergence check from
 firing on edits that were never actually in conflict. Reach for a full
 rewrite only for a genuine rebuild — a new layout, a different brief,
 starting over.
+
+For headless layout operations,
+`{"op":"moveBlock","blockId":"X","parent":{"wrapperId":"A"},"after":"S"}`
+moves `X` after `S` in wrapper `A`. `after` must name a sibling in that
+immediate list. The visual editor still refuses authored wrappers; use the CLI
+or `applyOperations` on an existing layout tree.
+
+Run `template-tools validate` on the edited JSON and
+`validateLayout(editedLayout)` from `@templatical/types` on the same layout.
+`validateLayout` checks slot count and nesting; `template-tools validate` does
+not replace that layout check.

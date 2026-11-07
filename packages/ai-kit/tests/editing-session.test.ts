@@ -9,7 +9,10 @@ const content = () =>
         id: "s1",
         type: "section",
         columns: "2",
-        children: [[{ id: "p1", type: "paragraph", content: "<p>Left</p>" }], []],
+        children: [
+          [{ id: "p1", type: "paragraph", content: "<p>Left</p>" }],
+          [],
+        ],
       },
     ],
     settings: { width: 600 },
@@ -21,6 +24,61 @@ const mergeTags = {
 };
 
 describe("createEditingSession (D30)", () => {
+  it("edits an existing wrapper child and reports its real parent on a stale move", () => {
+    const before = {
+      blocks: [
+        {
+          id: "A",
+          type: "wrapper",
+          children: [{ id: "X", type: "paragraph", content: "x" }],
+        },
+      ],
+      settings: { width: 600 },
+    };
+    const session = createEditingSession({
+      content: before as never,
+      mergeTags,
+    });
+    const edit = { op: "updateBlock", blockId: "X", set: { content: "new" } };
+    expect(session.apply(JSON.stringify([edit]))).toEqual({
+      ok: true,
+      ops: [edit],
+      inverse: [
+        {
+          op: "updateBlock",
+          blockId: "X",
+          set: { content: "x" },
+          expect: { content: "new" },
+        },
+      ],
+      feedback: "Applied.",
+    });
+    expect(session.content.blocks).toEqual([
+      {
+        id: "A",
+        type: "wrapper",
+        children: [{ id: "X", type: "paragraph", content: "new" }],
+      },
+    ]);
+    expect(
+      session.apply(
+        JSON.stringify([
+          {
+            op: "moveBlock",
+            blockId: "X",
+            parent: null,
+            after: null,
+            expect: { parent: null, after: null },
+          },
+        ]),
+      ),
+    ).toEqual({
+      ok: false,
+      feedback:
+        'Refused: op 0\'s expect failed: parent is now {"wrapperId":"A"}',
+    });
+  });
+
   it("applies a batch, answers its inverse and keeps the new content", () => {
     const session = createEditingSession({ content: content(), mergeTags });
 
@@ -70,7 +128,9 @@ describe("createEditingSession (D30)", () => {
     ["{}", 'Refused: "ops" must be a non-empty JSON array of operations.'],
     ["[]", 'Refused: "ops" must be a non-empty JSON array of operations.'],
   ])("refuses %s", (json, feedback) => {
-    expect(createEditingSession({ content: content(), mergeTags }).apply(json)).toEqual({
+    expect(
+      createEditingSession({ content: content(), mergeTags }).apply(json),
+    ).toEqual({
       ok: false,
       feedback,
     });
@@ -78,9 +138,14 @@ describe("createEditingSession (D30)", () => {
 
   it("refuses more operations than one call may carry", () => {
     const ops = JSON.stringify(
-      Array.from({ length: 101 }, () => ({ op: "updateSettings", set: { width: 600 } })),
+      Array.from({ length: 101 }, () => ({
+        op: "updateSettings",
+        set: { width: 600 },
+      })),
     );
-    expect(createEditingSession({ content: content(), mergeTags }).apply(ops)).toEqual({
+    expect(
+      createEditingSession({ content: content(), mergeTags }).apply(ops),
+    ).toEqual({
       ok: false,
       feedback: "Refused: send at most 100 operations in one call.",
     });
@@ -88,7 +153,10 @@ describe("createEditingSession (D30)", () => {
   });
 
   it("refuses a custom, slot or wrapper block that isn't there already", () => {
-    const result = createEditingSession({ content: content(), mergeTags }).apply(
+    const result = createEditingSession({
+      content: content(),
+      mergeTags,
+    }).apply(
       JSON.stringify([
         { op: "updateSettings", set: { width: 640 } },
         {
@@ -110,15 +178,17 @@ describe("createEditingSession (D30)", () => {
     const start = content();
     const session = createEditingSession({ content: start, mergeTags });
     expect(
-      session.apply(JSON.stringify([
-        {
-          op: "setContent",
-          content: {
-            blocks: [{ id: "t1", type: "custom", customType: "qr" }],
-            settings: { width: 600 },
+      session.apply(
+        JSON.stringify([
+          {
+            op: "setContent",
+            content: {
+              blocks: [{ id: "t1", type: "custom", customType: "qr" }],
+              settings: { width: 600 },
+            },
           },
-        },
-      ])),
+        ]),
+      ),
     ).toEqual({
       ok: false,
       feedback:
@@ -132,15 +202,17 @@ describe("createEditingSession (D30)", () => {
     const start = content();
     const session = createEditingSession({ content: start, mergeTags });
     expect(
-      session.apply(JSON.stringify([
-        { op: "deleteBlock", blockId: "t1" },
-        {
-          op: "addBlock",
-          block: { id: "t1", type: "custom", customType: "qr" },
-          parent: null,
-          after: null,
-        },
-      ])),
+      session.apply(
+        JSON.stringify([
+          { op: "deleteBlock", blockId: "t1" },
+          {
+            op: "addBlock",
+            block: { id: "t1", type: "custom", customType: "qr" },
+            parent: null,
+            after: null,
+          },
+        ]),
+      ),
     ).toEqual({
       ok: false,
       feedback:
@@ -155,7 +227,10 @@ describe("createEditingSession (D30)", () => {
       blocks: [{ id: "c1", type: "custom", customType: "qr" }],
       settings: { width: 600 },
     };
-    const session = createEditingSession({ content: start as never, mergeTags });
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
     expect(
       session.apply(JSON.stringify([{ op: "setContent", content: start }])),
     ).toMatchObject({ ok: true, feedback: "Applied." });
@@ -167,17 +242,22 @@ describe("createEditingSession (D30)", () => {
       blocks: [{ id: "c1", type: "custom", customType: "qr" }],
       settings: { width: 600 },
     };
-    const session = createEditingSession({ content: start as never, mergeTags });
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
     expect(
-      session.apply(JSON.stringify([
-        {
-          op: "setContent",
-          content: {
-            ...start,
-            blocks: [{ id: "c1", type: "custom", customType: "barcode" }],
+      session.apply(
+        JSON.stringify([
+          {
+            op: "setContent",
+            content: {
+              ...start,
+              blocks: [{ id: "c1", type: "custom", customType: "barcode" }],
+            },
           },
-        },
-      ])),
+        ]),
+      ),
     ).toEqual({
       ok: false,
       feedback:
@@ -204,10 +284,14 @@ describe("createEditingSession (D30)", () => {
     const start = content() as { blocks: { content?: string }[] };
     start.blocks[0].content =
       '<p><span data-merge-tag="{{legacy}}" data-label="Legacy">Legacy</span></p>';
-    const session = createEditingSession({ content: start as never, mergeTags });
+    const session = createEditingSession({
+      content: start as never,
+      mergeTags,
+    });
     expect(
-      session.apply('[{"op":"updateBlock","blockId":"p1","set":{"content":"<p>{{legacy}}</p>"}}]')
-        .ok,
+      session.apply(
+        '[{"op":"updateBlock","blockId":"p1","set":{"content":"<p>{{legacy}}</p>"}}]',
+      ).ok,
     ).toBe(true);
   });
 
@@ -226,15 +310,17 @@ describe("createEditingSession (D30)", () => {
   it("reports the defaulted parent in a moveBlock expectation", () => {
     const session = createEditingSession({ content: content(), mergeTags });
     expect(
-      session.apply(JSON.stringify([
-        {
-          op: "moveBlock",
-          blockId: "p1",
-          parent: null,
-          after: null,
-          expect: { after: null },
-        },
-      ])),
+      session.apply(
+        JSON.stringify([
+          {
+            op: "moveBlock",
+            blockId: "p1",
+            parent: null,
+            after: null,
+            expect: { after: null },
+          },
+        ]),
+      ),
     ).toEqual({
       ok: false,
       feedback:
@@ -249,17 +335,15 @@ describe("createEditingSession (D30)", () => {
       locks: [{ blockId: "p1", sessionId: "s-grace", name: "Grace" }],
       sessionId: "s-ada",
     });
-    expect(
-      session.apply('[{"op":"deleteBlock","blockId":"p1"}]'),
-    ).toEqual({
+    expect(session.apply('[{"op":"deleteBlock","blockId":"p1"}]')).toEqual({
       ok: false,
-      feedback: "Refused: op 0 (deleteBlock p1) was refused: Grace is editing this block",
+      feedback:
+        "Refused: op 0 (deleteBlock p1) was refused: Grace is editing this block",
     });
-    expect(
-      session.apply('[{"op":"deleteBlock","blockId":"nope"}]'),
-    ).toEqual({
+    expect(session.apply('[{"op":"deleteBlock","blockId":"nope"}]')).toEqual({
       ok: false,
-      feedback: 'Refused: op 0 (deleteBlock nope) was refused: no block with id "nope"',
+      feedback:
+        'Refused: op 0 (deleteBlock nope) was refused: no block with id "nope"',
     });
   });
 
@@ -272,34 +356,82 @@ describe("createEditingSession (D30)", () => {
     expect(
       session.apply(
         JSON.stringify([
-          { op: "updateBlock", blockId: "t1", set: { content: `<p>${"x".repeat(400)}</p>` } },
+          {
+            op: "updateBlock",
+            blockId: "t1",
+            set: { content: `<p>${"x".repeat(400)}</p>` },
+          },
         ]),
       ),
     ).toEqual({
       ok: false,
-      feedback: "Refused: the template would be larger than 400 bytes. Change less at once.",
+      feedback:
+        "Refused: the template would be larger than 400 bytes. Change less at once.",
     });
   });
 });
 
-
 it("refuses custom block retyping while allowing fieldValues edits", () => {
-  const content = { blocks: [{ id: "c", type: "custom", customType: "allowed", fieldValues: { text: "Before" } }], settings: {} } as never;
-  const session = createEditingSession({ content, mergeTags: { syntax: "liquid" as const, tags: [] } });
-  expect(session.apply([{ op: "updateBlock", blockId: "c", set: { customType: "other" } }])).toMatchObject({ ok: false, feedback: expect.stringContaining("customType") });
-  expect(session.apply([{ op: "updateBlock", blockId: "c", set: { type: "paragraph" } }])).toMatchObject({ ok: false, feedback: expect.stringContaining("type") });
-  expect(session.apply([{ op: "updateBlock", blockId: "c", unset: ["customType"] }])).toMatchObject({ ok: false });
-  expect(session.apply([{ op: "updateBlock", blockId: "c", set: { fieldValues: { text: "After" } } }])).toMatchObject({ ok: true });
-  expect(session.content.blocks[0]).toMatchObject({ customType: "allowed", fieldValues: { text: "After" } });
+  const content = {
+    blocks: [
+      {
+        id: "c",
+        type: "custom",
+        customType: "allowed",
+        fieldValues: { text: "Before" },
+      },
+    ],
+    settings: {},
+  } as never;
+  const session = createEditingSession({
+    content,
+    mergeTags: { syntax: "liquid" as const, tags: [] },
+  });
+  expect(
+    session.apply([
+      { op: "updateBlock", blockId: "c", set: { customType: "other" } },
+    ]),
+  ).toMatchObject({
+    ok: false,
+    feedback: expect.stringContaining("customType"),
+  });
+  expect(
+    session.apply([
+      { op: "updateBlock", blockId: "c", set: { type: "paragraph" } },
+    ]),
+  ).toMatchObject({ ok: false, feedback: expect.stringContaining("type") });
+  expect(
+    session.apply([{ op: "updateBlock", blockId: "c", unset: ["customType"] }]),
+  ).toMatchObject({ ok: false });
+  expect(
+    session.apply([
+      {
+        op: "updateBlock",
+        blockId: "c",
+        set: { fieldValues: { text: "After" } },
+      },
+    ]),
+  ).toMatchObject({ ok: true });
+  expect(session.content.blocks[0]).toMatchObject({
+    customType: "allowed",
+    fieldValues: { text: "After" },
+  });
 });
-
 
 it("refuses an invented liquid tag when no merge tags are declared", () => {
   const start = content();
-  const session = createEditingSession({ content: start, mergeTags: { syntax: "liquid", tags: [] } });
-  expect(session.apply([{ op: "updateBlock", blockId: "t1", set: { content: "<p>{{x}}</p>" } }])).toEqual({
+  const session = createEditingSession({
+    content: start,
+    mergeTags: { syntax: "liquid", tags: [] },
+  });
+  expect(
+    session.apply([
+      { op: "updateBlock", blockId: "t1", set: { content: "<p>{{x}}</p>" } },
+    ]),
+  ).toEqual({
     ok: false,
-    feedback: "Refused: op 0 (updateBlock t1) was refused: it uses merge tags this editor doesn't declare: {{x}}",
+    feedback:
+      "Refused: op 0 (updateBlock t1) was refused: it uses merge tags this editor doesn't declare: {{x}}",
   });
   expect(session.content).toEqual(start);
   expect(session.batches).toHaveLength(0);
