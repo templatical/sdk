@@ -15,6 +15,45 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.57.1
+
+<time datetime="2026-11-08">2026-11-08</time>
+
+### Fixes and improvements
+
+**cloneBlock serializes a block tree once and remints IDs throughout the copy.**
+
+`@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-easy-email-pro` · `@templatical/import-html` · `@templatical/import-mjml` · `@templatical/import-topol` · `@templatical/types`
+
+MJML table inference imports only rows owned by the outer table and keeps nested table markup inside its cell.
+HTML layout table classification stops at the first content tag or cell with an element child.
+Topol unsupported nodes are preserved as compact JSON.
+Topol social imports each platform and URL pair once and notes how many repeats it dropped.
+Chamaileon report notes quote at most 80 characters of document expressions and values, adding an ellipsis when truncated.
+Easy Email Pro report notes quote at most 80 characters of document attribute values, adding an ellipsis when truncated.
+Easy Email Pro makes a `$var()` replacement only while the attribute stays within 65,536 characters; a reference that would exceed that stays verbatim and counts as unresolved, and literal text is never cut.
+BeeFree keeps a text or social-icon `font-weight` only when it is `normal`, `bold`, `bolder`, `lighter`, a CSS-wide keyword or a number from 1 to 1000, and drops a text `font-family` stack over 256 characters with an approximated note.
+
+**The shipped eval set's domain-mismatch case checks link text with `>[^<>]*(?:www\.|://)` instead of `>(?:[^<]*)(?:www\.|://)`. It matches the same text, and checking a turn whose output holds a long run of `>` no longer takes quadratic time.**
+
+`@templatical/ai-kit`
+
+**BeeFree multi-column rows now convert outer column edges and matching top or bottom sides into section borders; painted column backgrounds, inner borders, and overlapping row borders still warn.**
+
+`@templatical/import-beefree`
+
+**Custom-block Liquid renders now have budgets: `createCustomBlockLiquid` sets `memoryLimit` to `CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT` (`1e7`) and `renderLimit` to `CUSTOM_BLOCK_LIQUID_RENDER_LIMIT` (2000 ms), both exported from `@templatical/types`, so a template such as a loop over `(1..1000000000)` fails with a Liquid limit error in the editor, `renderToMjml` and `custom-block validate` instead of exhausting memory. Data-source preview recipes render with the same limits.**
+
+`@templatical/editor` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+`template-tools custom-block validate` rejects a repeatable `minItems` or `maxItems` above 100 (`field.items-limit`), and specimen lists never hold more than 100 items. A `dataSourcePreview` response larger than 1 MiB of decoded data is cancelled and the fetch fails.
+
+`templatical live reload` and `live stop` act only after the server on the pidfile's port answers `GET /identity` with this directory and the pidfile's pid, and `live stop` exits it with `POST /shutdown` and sends no signal: when that request fails, it exits 2 naming the pid and keeps the pidfile. A live server started by an earlier version has no `/identity`, so the new `live reload` and `live stop` refuse its pidfile: stop that server with Ctrl-C (or the earlier version's `live stop`) before upgrading, then run `live` again. A pidfile with a non-positive pid or an out-of-range port is ignored, and `live` refuses to start over a pidfile whose process is running but doesn't answer as this workspace's server, naming the pidfile to delete if that process isn't a live server. A live preview page that stops reading receives only the latest pending update, and `openBrowser` opens only `http:` and `https:` URLs, through `rundll32.exe` on Windows rather than `cmd`.
+
+**Preserve explicit zero and shorthand padding on BeeFree buttons, with longhands taking precedence. Let an entirely bold label override any button style weight; import missing or unreadable weights as regular otherwise, and note lost partial bold formatting.**
+
+`@templatical/import-beefree`
+
 ## 0.57.0
 
 <time datetime="2026-11-08">2026-11-08</time>
