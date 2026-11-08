@@ -42,7 +42,7 @@ beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   live.readPidfile.mockReset();
   live.processAlive.mockReset();
-  live.verifyLiveServer.mockReset().mockResolvedValue(true);
+  live.verifyLiveServer.mockReset().mockResolvedValue("verified");
   live.startBridgePreferring.mockReset();
   live.openBrowser.mockReset();
 });
@@ -394,13 +394,28 @@ describe("live start for a custom block", () => {
     expect(stdout.join("")).toBe("Live server already running (pid 4242) at http://localhost:4747/\n");
   });
 
+  it("asks to try again, and keeps the pidfile, when a live pid's server does not answer in time", async () => {
+    mkdirSync(join(dir, ".templatical"), { recursive: true });
+    const pid = join(dir, ".templatical", "live-server.pid");
+    writeFileSync(pid, JSON.stringify({ pid: 4242, port: 4747 }), "utf8");
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 4747 });
+    live.processAlive.mockReturnValue(true);
+    live.verifyLiveServer.mockResolvedValue("no-answer");
+    const busy = new UsageError("The live server (pid 4242) did not answer on port 4747 within 3 s. If it is busy, try again; if it is not a live server, delete .templatical/live-server.pid.");
+    await expect(runLive(parseArgs(["live", "--custom-block", "a.json", "--no-open", "--cwd", dir]))).rejects.toThrow(busy);
+    await expect(runLive(parseArgs(["live", "reload", "--cwd", dir]))).rejects.toThrow(busy);
+    await expect(runLive(parseArgs(["live", "stop", "--cwd", dir]))).rejects.toThrow(busy);
+    expect(live.startBridgePreferring).not.toHaveBeenCalled();
+    expect(JSON.parse(readFileSync(pid, "utf8"))).toEqual({ pid: 4242, port: 4747 });
+  });
+
   it("refuses, and keeps the pidfile, when a live pid does not answer as this workspace's server", async () => {
     mkdirSync(join(dir, ".templatical"), { recursive: true });
     const pid = join(dir, ".templatical", "live-server.pid");
     writeFileSync(pid, JSON.stringify({ pid: 4242, port: 4747 }), "utf8");
     live.readPidfile.mockReturnValue({ pid: 4242, port: 4747, mode: "custom-block", path: join(dir, "a.json") });
     live.processAlive.mockReturnValue(true);
-    live.verifyLiveServer.mockResolvedValue(false);
+    live.verifyLiveServer.mockResolvedValue("mismatch");
     await expect(runLive(parseArgs(["live", "--custom-block", "a.json", "--no-open", "--cwd", dir]))).rejects.toThrow(
       new UsageError("Process 4242 from .templatical/live-server.pid is running but does not answer as this workspace's live server. If it is a live server, stop it; otherwise delete .templatical/live-server.pid. Then run `templatical live` again."),
     );

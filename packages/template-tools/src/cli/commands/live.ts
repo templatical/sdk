@@ -6,6 +6,7 @@ import { EXIT, resolveFrom, UsageError } from "../io";
 import { parseValuesFlag } from "./custom-block";
 import {
   DEFAULT_PORT,
+  IDENTITY_TIMEOUT_MS,
   listWorkingFiles,
   type FetchSummary,
   type LiveMode,
@@ -106,6 +107,12 @@ function untrustedPidfile(): UsageError {
   );
 }
 
+function noAnswer(info: PidfileInfo): UsageError {
+  return new UsageError(
+    `The live server (pid ${info.pid}) did not answer on port ${info.port} within ${IDENTITY_TIMEOUT_MS / 1000} s. If it is busy, try again; if it is not a live server, delete ${WORKING_DIR}/live-server.pid.`,
+  );
+}
+
 /** The fetched state's outcome, as one line of reload or start output. */
 function fetchLine(fetch: FetchSummary): string {
   if (!fetch.ok) return `Fetched state: the request failed. ${fetch.error}`;
@@ -125,7 +132,9 @@ export async function runLive(args: ParsedArgs): Promise<number> {
         `No live server is running here (no live pidfile at ${WORKING_DIR}/live-server.pid).`,
       );
     }
-    if (!(await verifyLiveServer(cwd, info))) throw untrustedPidfile();
+    const check = await verifyLiveServer(cwd, info);
+    if (check === "no-answer") throw noAnswer(info);
+    if (check === "mismatch") throw untrustedPidfile();
     if (sub === "reload") {
       const consumeAnnotations = args.flags["consume-annotations"] === true;
       const res = await postTo(
@@ -240,7 +249,9 @@ export async function runLive(args: ParsedArgs): Promise<number> {
     // A live pid that doesn't answer as this workspace's server is never
     // trusted and never silently replaced: it may be a busy bridge that pages
     // are still attached to, so recovering is the user's call.
-    if (!(await verifyLiveServer(cwd, existing))) {
+    const check = await verifyLiveServer(cwd, existing);
+    if (check === "no-answer") throw noAnswer(existing);
+    if (check === "mismatch") {
       throw new UsageError(
         `Process ${existing.pid} from ${WORKING_DIR}/live-server.pid is running but does not answer as this workspace's live server. If it is a live server, stop it; otherwise delete ${WORKING_DIR}/live-server.pid. Then run \`templatical live\` again.`,
       );

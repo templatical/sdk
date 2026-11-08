@@ -234,23 +234,42 @@ export function readPidfile(cwd: string): PidfileInfo | null {
  */
 export const IDENTITY_TIMEOUT_MS = CUSTOM_BLOCK_LIQUID_RENDER_LIMIT + 1000;
 
+/**
+ * `verified`: this workspace's live server answered with the pidfile's pid.
+ * `mismatch`: something answered, but not as that server.
+ * `no-answer`: nothing answered within IDENTITY_TIMEOUT_MS. A Liquid render's
+ * limit is checked between template steps, so a busy bridge can land here and
+ * a later try can succeed.
+ */
+export type LiveServerCheck = "verified" | "mismatch" | "no-answer";
+
 export async function verifyLiveServer(
   cwd: string,
   info: PidfileInfo,
-): Promise<boolean> {
+): Promise<LiveServerCheck> {
+  let response: Response;
   try {
     // The bridge listens on 127.0.0.1 only; `localhost` can resolve to ::1 first.
-    const response = await fetch(`http://127.0.0.1:${info.port}/identity`, {
+    response = await fetch(`http://127.0.0.1:${info.port}/identity`, {
       signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS),
     });
-    if (!response.ok) return false;
+  } catch {
+    return "no-answer";
+  }
+  if (!response.ok) return "mismatch";
+  try {
     const identity = (await response.json()) as {
       cwd?: unknown;
       pid?: unknown;
     };
-    return identity.cwd === resolve(cwd) && identity.pid === info.pid;
-  } catch {
-    return false;
+    return identity.cwd === resolve(cwd) && identity.pid === info.pid
+      ? "verified"
+      : "mismatch";
+  } catch (error) {
+    // The timeout also covers reading the body; running out there is no answer.
+    return error instanceof Error && error.name === "TimeoutError"
+      ? "no-answer"
+      : "mismatch";
   }
 }
 

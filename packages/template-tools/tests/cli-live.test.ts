@@ -160,7 +160,7 @@ describe("live reload / stop without a running server", () => {
     );
     await expect(
       runLive(parseArgs(["live", "reload", "--cwd", dir])),
-    ).rejects.toThrow("The pidfile does not belong to a live server for this workspace. Delete .templatical/live-server.pid and try again.");
+    ).rejects.toThrow("The live server (pid " + process.pid + ") did not answer on port 1 within 3 s. If it is busy, try again; if it is not a live server, delete .templatical/live-server.pid.");
   });
 
   it("rejects an unknown subcommand", async () => {

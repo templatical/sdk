@@ -139,17 +139,19 @@ describe("verifyLiveServer", () => {
     const cwd = project();
     const fetchMock = answer(200, { pid: 12, cwd: resolve(cwd) });
     vi.stubGlobal("fetch", fetchMock);
-    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe(true);
+    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe("verified");
     expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:4747/identity", { signal: expect.any(AbortSignal) });
   });
   it.each([
     ["another directory", 200, (_cwd: string) => ({ pid: 12, cwd: "/elsewhere" })],
     ["another pid", 200, (cwd: string) => ({ pid: 13, cwd: resolve(cwd) })],
     ["a matching identity on a non-2xx reply", 404, (cwd: string) => ({ pid: 12, cwd: resolve(cwd) })],
-  ])("refuses %s", async (_label, status, body) => {
+    ["a reply that is not JSON", 200, () => undefined],
+  ])("reports a mismatch for %s", async (_label, status, body) => {
     const cwd = project();
-    vi.stubGlobal("fetch", answer(status, body(cwd)));
-    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe(false);
+    const value = body(cwd);
+    vi.stubGlobal("fetch", value === undefined ? vi.fn(async () => new Response("<html>", { status })) : answer(status, value));
+    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe("mismatch");
   });
   it("waits past a render-length delay before giving up", async () => {
     const cwd = project();
@@ -160,15 +162,20 @@ describe("verifyLiveServer", () => {
     try {
       const { port } = server.address() as AddressInfo;
       expect(IDENTITY_TIMEOUT_MS).toBe(CUSTOM_BLOCK_LIQUID_RENDER_LIMIT + 1000);
-      expect(await verifyLiveServer(cwd, { pid: 12, port })).toBe(true);
+      expect(await verifyLiveServer(cwd, { pid: 12, port })).toBe("verified");
     } finally {
       server.closeAllConnections();
       await new Promise<void>((done) => server.close(() => done()));
     }
   }, 10000);
-  it("refuses when nothing answers", async () => {
+  it("reports no answer when the timeout runs out while the reply body is read", async () => {
+    const body = new ReadableStream({ start(controller) { controller.error(new DOMException("The operation timed out.", "TimeoutError")); } });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(body, { status: 200 })));
+    expect(await verifyLiveServer(project(), { pid: 12, port: 4747 })).toBe("no-answer");
+  });
+  it("reports no answer when nothing answers in time", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ECONNREFUSED"); }));
-    expect(await verifyLiveServer(project(), { pid: 12, port: 4747 })).toBe(false);
+    expect(await verifyLiveServer(project(), { pid: 12, port: 4747 })).toBe("no-answer");
   });
 });
 
