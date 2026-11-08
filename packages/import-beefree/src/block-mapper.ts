@@ -1,6 +1,7 @@
 import { localeTag, text, warn } from "./localization";
 import {
   BORDER_SIDES,
+  BUTTON_LINE_HEIGHT,
   canonicalFontStack,
   findOpenTagEnd,
   isSafeHtmlUrl,
@@ -1424,12 +1425,13 @@ function buttonLineHeightPx(
 
 /**
  * How many px to add to the button's top and bottom padding so the label's
- * line box matches BeeFree. The rendered label is 1.2× the font size, so a
- * taller line-height is split across the two sides. The result is an integer
- * and never negative: a line-height at or under 1.2 adds nothing.
+ * line box matches BeeFree. The rendered label uses BUTTON_LINE_HEIGHT times
+ * the font size, so a taller line-height is split across the two sides. The
+ * result is an integer and never negative: a line-height at or under that
+ * ratio adds nothing.
  */
 function lineHeightPadding(lineHeightPx: number, fontSize: number): number {
-  const extra = (lineHeightPx - 1.2 * fontSize) / 2;
+  const extra = (lineHeightPx - BUTTON_LINE_HEIGHT * fontSize) / 2;
   if (!Number.isFinite(extra) || extra <= 0) return 0;
   return Math.round(extra);
 }

@@ -1,5 +1,42 @@
 # @templatical/ai-kit
 
+## 0.57.0
+
+### Minor Changes
+
+- cfaff50: Breaking changes:
+
+  - Editing sessions refuse a locale layer (in `addBlock`, `setContent` or `updateBlockLocale`) that sets a block's `type` or changes its `customType`, including when `setDefaultLocale` promotes the layer and `removeLocale` removes the old default in the same batch. A block's type and custom schema are the same in every language: to use another type, `deleteBlock` the block and `addBlock` one of the new type, then translate its fields in that block's layer.
+  - A locale layer's `set.children` may keep a `custom`, `slot`, or `wrapper` block only when the base content already has a block with the same `id` and `type`, and a `custom` block also keeps its `customType`; it cannot introduce one. To localize such a block, put it in the base content first with the same `id`, `type` and `customType` (outside the session, or with `addBlock` when its type isn't in `forbiddenBlockTypes`), then change its translatable fields in the layer.
+  - A block in a locale layer's `set.children` keeps the type of the block with the same `id` in the content; a German child can't turn a base paragraph into a title. For a title in one language only, put a title with an `id` the base content doesn't use in that locale's `set.children`.
+  - A template whose `settings.locales` isn't a list of strings is refused. Send `settings.locales` as an array of locale tags, or omit it.
+  - A malformed locale layer is refused as invalid: a block or settings layer that isn't an object, or one whose `set` or `text` isn't an object. Send `{ set?: {…}, text?: {…} }` objects, or omit the layer.
+  - When the content already holds a layer breaking these rules, a batch that leaves that layer in place is refused, even if it doesn't touch that block. Delete the block that holds the layer, or replace the affected content with `setContent`. A malformed layer is refused even then, and a running session can't repair it: fix or remove the layer outside the session, then call `createEditingSession` again with the repaired content.
+
+  These rules apply to locale layers only. `setContent` can still change an existing block's base type under the same `id`, for example from paragraph to title.
+
+- a2f3ed8: Breaking changes:
+
+  - `addBlock` no longer accepts a wrapper with a `{ sectionId, column }` parent. Add wrappers at the top level with `parent: null`.
+  - `moveBlock` no longer accepts a wrapper with a `{ sectionId, column }` parent. Move wrappers to the top level with `parent: null`.
+  - A malformed `moveBlock.expect.parent` is refused as `invalid_operation` at the shape check instead of failing as `precondition_failed`. Send `null`, `{ sectionId, column }` or `{ wrapperId }`.
+  - `addBlock`, `moveBlock` and `updateBlock` refuse a section with `section.wrapper` inside a layout wrapper. Keep the section at the top level or remove its own wrapper before placing it inside one. `validateLayout` rejects the same nesting.
+
+  Operations can address wrapper children with `{ wrapperId }` while existing section-column addresses keep their wire shape. The engine, inverses, collaboration diffs, AI feedback and CLI apply wrapper-child edits with placement, lock and hidden-slot checks.
+
+### Patch Changes
+
+- e614847: An editing session checks locale layers in time proportional to the template size. Each locale is resolved only for the blocks that carry its layer, so a template with thousands of locales no longer makes every batch resolve the whole template once per locale.
+- c17eaf5: `translateFields` sends the model short field aliases
+
+  The model now sees each field as `f1`, `f2`, … instead of its long id, which shortens its answer. The returned `TranslationResult` still carries the real field ids in request order; the `TranslationRequest` and `TranslationResult` contract and the HTTP wire are unchanged.
+
+- Updated dependencies [ad58b8e]
+- Updated dependencies [0bdfeac]
+- Updated dependencies [0511bb6]
+- Updated dependencies [a2f3ed8]
+  - @templatical/types@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes

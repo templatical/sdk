@@ -132,6 +132,13 @@ describe('renderBlock', () => {
     expect(result).toContain('color="#fff"');
   });
 
+  it('writes the shared button line height onto mj-button', () => {
+    const block = createButtonBlock({ text: 'Click Me', fontSize: 16 });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('font-size="16px"');
+    expect(result).toContain('line-height="120%"');
+  });
+
   it('renders a full-width button as width="100%"', () => {
     const block = createButtonBlock({ text: 'Click Me', width: 'full' });
     const result = renderBlock(block, ctx);

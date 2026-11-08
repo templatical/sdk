@@ -4,10 +4,9 @@ import { createButtonBlock } from "@templatical/types";
 import { renderBlock, RenderContext } from "../src";
 
 /**
- * `mj-button` paints the label at `line-height: 120%` unless the attribute is
- * set. 120% of the font size is the line box the importer's padding fold
- * assumes, so this compiles a button that sets no line-height and reads the
- * anchor MJML emits.
+ * `mj-button` paints the label at `line-height: 120%`. The renderer writes
+ * that value explicitly, matching the line box the canvas and importer's
+ * padding fold use while keeping the compiled anchor style unchanged.
  */
 
 const ctx = new RenderContext(600, [], "Arial, sans-serif", true);
@@ -30,10 +29,10 @@ function anchorStyle(html: string): string {
 }
 
 describe("button label line box through MJML", () => {
-  it("is 120% of the font size when the button sets no line-height", async () => {
+  it("writes 120% on MJML and keeps 120% in the compiled anchor", async () => {
     const block = createButtonBlock({ text: "Go", url: "#", fontSize: 14 });
     const mjml = renderBlock(block, ctx);
-    expect(mjml).not.toContain("line-height=");
+    expect(mjml).toContain('line-height="120%"');
 
     const style = anchorStyle(await compile(wrapBlock(mjml)));
     expect(style).toContain("font-size:14px");
