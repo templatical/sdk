@@ -134,12 +134,19 @@ async function readJsonBody(req: NodeJS.ReadableStream): Promise<
  * always surface the URL too, so nothing is lost when this does nothing.
  */
 export function openBrowser(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return;
   const [cmd, cmdArgs]: [string, string[]] =
     process.platform === "darwin"
-      ? ["open", [url]]
+      ? ["open", [parsed.href]]
       : process.platform === "win32"
-        ? ["cmd", ["/c", "start", "", url]]
-        : ["xdg-open", [url]];
+        ? ["rundll32.exe", ["url.dll,FileProtocolHandler", parsed.href]]
+        : ["xdg-open", [parsed.href]];
   try {
     const child = spawn(cmd, cmdArgs, { stdio: "ignore", detached: true });
     child.on("error", () => {}); // no browser available — ignore
@@ -193,10 +200,88 @@ export function readPidfile(cwd: string): PidfileInfo | null {
   const p = pidfilePath(cwd);
   if (!existsSync(p)) return null;
   try {
-    return JSON.parse(readFileSync(p, "utf8")) as PidfileInfo;
+    const info: unknown = JSON.parse(readFileSync(p, "utf8"));
+    if (info === null || typeof info !== "object" || Array.isArray(info))
+      return null;
+    const value = info as Record<string, unknown>;
+    if (
+      !Number.isSafeInteger(value.pid) ||
+      (value.pid as number) <= 0 ||
+      !Number.isInteger(value.port) ||
+      (value.port as number) < 1 ||
+      (value.port as number) > 65535 ||
+      (value.mode !== undefined &&
+        value.mode !== "template" &&
+        value.mode !== "custom-block") ||
+      (value.path !== undefined && typeof value.path !== "string") ||
+      (value.host !== undefined && typeof value.host !== "string") ||
+      (value.fetch !== undefined &&
+        (value.fetch === null ||
+          typeof value.fetch !== "object" ||
+          Array.isArray(value.fetch)))
+    )
+      return null;
+    return value as unknown as PidfileInfo;
   } catch {
     return null;
   }
+}
+
+export async function verifyLiveServer(
+  cwd: string,
+  info: PidfileInfo,
+): Promise<boolean> {
+  try {
+    // The bridge listens on 127.0.0.1 only; `localhost` can resolve to ::1 first.
+    const response = await fetch(`http://127.0.0.1:${info.port}/identity`, {
+      signal: AbortSignal.timeout(1000),
+    });
+    if (!response.ok) return false;
+    const identity = (await response.json()) as {
+      cwd?: unknown;
+      pid?: unknown;
+    };
+    return identity.cwd === resolve(cwd) && identity.pid === info.pid;
+  } catch {
+    return false;
+  }
+}
+
+export interface SseClient {
+  send: (event: string, payload: string) => void;
+  close: () => void;
+  end: () => void;
+}
+
+export function createSseClient(res: ServerResponse): SseClient {
+  const pending = new Map<string, string>();
+  let waiting = false;
+  const drain = () => {
+    waiting = false;
+    for (const [event, payload] of pending) {
+      pending.delete(event);
+      if (!res.write(payload)) {
+        waiting = true;
+        break;
+      }
+    }
+  };
+  res.on("drain", drain);
+  return {
+    send(event, payload) {
+      if (waiting) pending.set(event, payload);
+      else if (!res.write(payload)) waiting = true;
+    },
+    close() {
+      pending.clear();
+      res.off("drain", drain);
+    },
+    end() {
+      pending.clear();
+      res.off("drain", drain);
+      res.end();
+    },
+  };
 }
 
 export function processAlive(pid: number): boolean {
@@ -317,6 +402,7 @@ export interface StartBridgeOptions {
    * /reload`; the in-process `reload()` reuses the last result.
    */
   fetch?: { values: Record<string, unknown> };
+  onShutdown?: () => void;
 }
 
 /**
@@ -337,6 +423,7 @@ export function startBridge({
   host,
   env = process.env,
   fetch: fetchOption,
+  onShutdown,
 }: StartBridgeOptions = {}): Promise<BridgeHandle> {
   const abs = (p: string) => (isAbsolute(p) ? p : resolve(cwd, p));
   const customBlockPath = customBlock ? abs(customBlock) : null;
@@ -364,11 +451,11 @@ export function startBridge({
     const n = nextAnnotationNumber++;
     return `a${n}-${Date.now().toString(36)}`;
   }
-  const clients = new Set<ServerResponse>();
+  const clients = new Set<SseClient>();
 
   function broadcastTemplate(content: unknown): void {
     const payload = `event: template\ndata: ${JSON.stringify(content)}\n\n`;
-    for (const res of clients) res.write(payload);
+    for (const client of clients) client.send("template", payload);
   }
 
   /** Why the bridge won't run this definition's recipe, or null when it will. */
@@ -513,7 +600,7 @@ export function startBridge({
       const consumed = options?.consumeAnnotations === true;
       if (consumed) state.annotations = [];
       const payload = `event: custom-block\ndata: ${JSON.stringify({ block: view.payload, template: view.template })}\n\n`;
-      for (const res of clients) res.write(payload);
+      for (const client of clients) client.send("custom-block", payload);
       const fetch = fetchOption ? lastFetch() : null;
       return {
         ok: true,
@@ -604,6 +691,16 @@ export function startBridge({
         return;
       }
 
+      if (method === "GET" && pathname === "/identity") {
+        sendJson(res, 200, {
+          pid: process.pid,
+          cwd: resolve(cwd),
+          mode: customBlockPath ? "custom-block" : "template",
+          path: workingPath,
+        });
+        return;
+      }
+
       if (method === "GET" && pathname === "/custom-block") {
         if (!customBlockPath) {
           res.writeHead(204).end();
@@ -676,12 +773,17 @@ export function startBridge({
           "cache-control": "no-cache",
           connection: "keep-alive",
         });
-        res.write("event: ready\ndata: {}\n\n");
-        clients.add(res);
-        const ping = setInterval(() => res.write(": ping\n\n"), 15000);
+        const client = createSseClient(res);
+        client.send("ready", "event: ready\ndata: {}\n\n");
+        clients.add(client);
+        const ping = setInterval(
+          () => client.send("ping", ": ping\n\n"),
+          15000,
+        );
         req.on("close", () => {
           clearInterval(ping);
-          clients.delete(res);
+          clients.delete(client);
+          client.close();
         });
         return;
       }
@@ -778,6 +880,16 @@ export function startBridge({
         });
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify(result));
+        return;
+      }
+
+      if (method === "POST" && pathname === "/shutdown") {
+        if (!onShutdown) {
+          res.writeHead(404, { "content-type": "text/plain" }).end("Not found");
+          return;
+        }
+        res.once("finish", onShutdown);
+        sendJson(res, 200, { ok: true });
         return;
       }
 

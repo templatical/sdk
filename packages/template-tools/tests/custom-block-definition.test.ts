@@ -151,6 +151,14 @@ describe("validateCustomBlockDefinition", () => {
     expect(run(repeatable({ minItems: 1, maxItems: 3, default: [{ t: "a" }] }))).toEqual([]);
   });
 
+  it("limits repeatable bounds to 100 items", () => {
+    const field = (bounds: object) => ({ key: "items", label: "Items", type: "repeatable", fields: [{ key: "t", label: "T", type: "text" }], ...bounds });
+    const check = (bounds: object) => validateCustomBlockDefinition({ ...TESTIMONIAL, fields: [field(bounds)] });
+    expect(check({ minItems: 101 })).toEqual({ valid: false, issues: [{ ruleId: "field.items-limit", severity: "error", path: "/fields/0", message: "`items`'s minItems and maxItems must be at most 100: a repeatable list holds up to 100 items." }] });
+    expect(check({ maxItems: 101 })).toEqual({ valid: false, issues: [{ ruleId: "field.items-limit", severity: "error", path: "/fields/0", message: "`items`'s minItems and maxItems must be at most 100: a repeatable list holds up to 100 items." }] });
+    expect(check({ minItems: 100, maxItems: 100 })).toEqual({ valid: true, issues: [] });
+  });
+
   it("accepts a dataSourcePreview recipe and rejects a malformed one", () => {
     const recipe = {
       label: "Fetch",

@@ -16,6 +16,7 @@ import {
   readPidfile,
   readWorkingFile,
   startBridgePreferring,
+  verifyLiveServer,
   WORKING_DIR,
 } from "../../live/index";
 
@@ -81,6 +82,12 @@ async function postTo(
   });
 }
 
+function untrustedPidfile(): UsageError {
+  return new UsageError(
+    `The pidfile does not belong to a live server for this workspace. Delete ${WORKING_DIR}/live-server.pid and try again.`,
+  );
+}
+
 /** The fetched state's outcome, as one line of reload or start output. */
 function fetchLine(fetch: FetchSummary): string {
   if (!fetch.ok) return `Fetched state: the request failed. ${fetch.error}`;
@@ -100,6 +107,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
         `No live server is running here (no live pidfile at ${WORKING_DIR}/live-server.pid).`,
       );
     }
+    if (!(await verifyLiveServer(cwd, info))) throw untrustedPidfile();
     if (sub === "reload") {
       const consumeAnnotations = args.flags["consume-annotations"] === true;
       const res = await postTo(
@@ -154,9 +162,15 @@ export async function runLive(args: ParsedArgs): Promise<number> {
       return EXIT.ok;
     }
     try {
-      process.kill(info.pid, "SIGTERM");
+      const response = await postTo(info.port, "/shutdown", {});
+      if (!response.ok)
+        throw new Error(`Shutdown returned ${response.status}.`);
     } catch {
-      /* already gone */
+      try {
+        process.kill(info.pid, "SIGTERM");
+      } catch {
+        /* already gone */
+      }
     }
     rmSync(pidfilePath(cwd), { force: true });
     emit({ stopped: true }, () => "Stopped the live server.");
@@ -200,7 +214,13 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   };
 
   const existing = readPidfile(cwd);
-  if (existing && processAlive(existing.pid)) {
+  // A pidfile whose server doesn't answer as this workspace's is stale (or
+  // planted) and is replaced, never trusted.
+  if (
+    existing &&
+    processAlive(existing.pid) &&
+    (await verifyLiveServer(cwd, existing))
+  ) {
     // A pidfile without `mode` came from a template-only bridge; one without
     // `path` can't be compared, so only its mode is.
     const mode = existing.mode ?? "template";
@@ -228,6 +248,10 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   }
   if (existing) rmSync(pidfilePath(cwd), { force: true }); // stale
 
+  const cleanup = () => {
+    rmSync(pidfilePath(cwd), { force: true });
+    handle.close().finally(() => process.exit(EXIT.ok));
+  };
   const handle = await startBridgePreferring({
     cwd,
     preferredPort,
@@ -235,6 +259,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
     customBlock,
     host,
     ...(fetchValues ? { fetch: { values: fetchValues } } : {}),
+    onShutdown: cleanup,
   });
 
   mkdirSync(dirname(pidfilePath(cwd)), { recursive: true });
@@ -249,10 +274,6 @@ export async function runLive(args: ParsedArgs): Promise<number> {
     "utf8",
   );
 
-  const cleanup = () => {
-    rmSync(pidfilePath(cwd), { force: true });
-    handle.close().finally(() => process.exit(EXIT.ok));
-  };
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 

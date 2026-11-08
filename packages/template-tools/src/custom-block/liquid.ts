@@ -4,7 +4,11 @@
 // Recipes use their separate, unescaped factory below.
 
 import * as liquidjs from "liquidjs";
-import { createCustomBlockLiquid } from "@templatical/types";
+import {
+  createCustomBlockLiquid,
+  CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT,
+  CUSTOM_BLOCK_LIQUID_RENDER_LIMIT,
+} from "@templatical/types";
 import type { CustomBlockIssue, CustomBlockWorkingFile } from "./types";
 
 export function createLiquid(): liquidjs.Liquid {
@@ -16,6 +20,8 @@ export function createRecipeLiquid(): liquidjs.Liquid {
   return new liquidjs.Liquid({
     strictVariables: false,
     strictFilters: false,
+    memoryLimit: CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT,
+    renderLimit: CUSTOM_BLOCK_LIQUID_RENDER_LIMIT,
     // Resolve file tags against an empty map, never the disk: a recipe
     // body must not be able to carry a local file to the API host.
     templates: {},

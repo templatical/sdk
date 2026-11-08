@@ -108,6 +108,15 @@ describe("buildSpecimen", () => {
     ]);
   });
 
+  it("clamps unvalidated repeatable bounds before allocation", () => {
+    const justOver = { ...def, fields: [{ key: "items", label: "Items", type: "repeatable", maxItems: 101, fields: [{ key: "t", label: "T", type: "text" }] }] } as never;
+    const boundary = buildSpecimen(justOver).find((i) => i.state === "max-items")!;
+    expect((boundary.fieldValues.items as unknown[]).length).toBe(100);
+    const huge = { ...def, fields: [{ key: "items", label: "Items", type: "repeatable", maxItems: 1e9, fields: [{ key: "t", label: "T", type: "text" }] }] } as never;
+    const long = buildSpecimen(huge).find((i) => i.state === "max-items")!;
+    expect((long.fieldValues.items as unknown[]).length).toBe(100);
+  });
+
   it("max-items falls back to 6 without maxItems", () => {
     const d = {
       type: "l",

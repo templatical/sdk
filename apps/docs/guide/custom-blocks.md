@@ -265,7 +265,7 @@ Toggle switch.
 
 ### repeatable
 
-A repeatable group of sub-fields. Users can add or remove items within the configured bounds. Each entry in `fields` follows the same field configuration as top-level fields. Nested repeatables are not supported.
+A repeatable group of sub-fields. Users can add or remove items within the configured bounds. Each entry in `fields` follows the same field configuration as top-level fields. `template-tools custom-block validate` rejects a `minItems` or `maxItems` above 100 (`field.items-limit`); the editor doesn't enforce that ceiling. Nested repeatables are not supported.
 
 ```ts
 {
@@ -420,6 +420,10 @@ Liquid treats an empty string as true, and a field the user cleared holds an emp
 **Comparisons:** `==`, `!=`, `>`, `<`, `>=`, `<=`, `and`, `or`, `contains`
 
 For the full syntax reference, see the [Liquid documentation](https://liquidjs.com/tags/overview.html).
+
+### Liquid budgets
+
+`CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT` is `1e7` Liquid allocation units per render. Liquid counts range elements and the strings and arrays filters build toward this limit; literal HTML in the template isn't counted. `CUSTOM_BLOCK_LIQUID_RENDER_LIMIT` is a 2000 ms deadline per render, checked before each template step, so a single slow filter can run past it. The same limits apply to custom-block templates and preview recipe URL and body rendering. An exceeded limit raises a Liquid error: the editor shows a render error, `renderToMjml` rejects, `custom-block validate` reports `liquid.render`, and a preview recipe returns `ok: false` before making a request.
 
 ### Output escaping
 
@@ -668,7 +672,7 @@ import { createCustomBlockLiquid } from '@templatical/types';
 const liquid = createCustomBlockLiquid(liquidjs);
 ```
 
-Its fixed options are `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, and `templates: {}`. The empty template map makes `{% include %}`, `{% render %}` and `{% layout %}` refuse partial loading from disk or the network. It HTML-escapes <code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output, while a final `| raw` on an output, an echo value or a cycle candidate opts that value out. The optional `liquidjs` peer range is `^10.30.1`, the first release that applies `outputEscape` to `{% echo %}` and `{% cycle %}`; with 10.30.0 those two tags print their values unescaped. Run the factory's exact-output suite with `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
+Its fixed options are `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, `memoryLimit: CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT`, `renderLimit: CUSTOM_BLOCK_LIQUID_RENDER_LIMIT`, and `templates: {}`. The empty template map makes `{% include %}`, `{% render %}` and `{% layout %}` refuse partial loading from disk or the network. It HTML-escapes <code v-pre>{{ }}</code>, `{% echo %}`, `{% liquid %}` echo and `{% cycle %}` output, while a final `| raw` on an output, an echo value or a cycle candidate opts that value out. The optional `liquidjs` peer range is `^10.30.1`, the first release that applies `outputEscape` to `{% echo %}` and `{% cycle %}`; with 10.30.0 those two tags print their values unescaped. Run the factory's exact-output suite with `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` runs only in the editor; the server renders the saved field values.
 
 ## In the playground
 

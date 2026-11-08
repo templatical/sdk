@@ -131,6 +131,11 @@ describe("checkLiquid", () => {
 
 
 describe("custom block engines", () => {
+  it("uses the shared Liquid budgets in recipe rendering", () => {
+    const engine = createRecipeLiquid();
+    expect(engine.options.memoryLimit).toBe(1e7);
+    expect(engine.options.renderLimit).toBe(2000);
+  });
   it("createLiquid escapes echo output through the public factory", async () => {
     expect(await createLiquid().parseAndRender("{% echo v %}", { v: "<script>x</script>" })).toBe("&lt;script&gt;x&lt;/script&gt;");
   });

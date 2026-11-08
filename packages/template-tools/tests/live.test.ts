@@ -1,12 +1,14 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createConnection } from "node:net";
+import { request as httpRequest } from "node:http";
 import { join, resolve } from "node:path";
 import {
   DEFAULT_PORT,
   deepEqual,
   listWorkingFiles,
+  readPidfile,
   readWorkingFile,
   startBridge,
   startBridgePreferring,
@@ -101,6 +103,19 @@ describe("readWorkingFile", () => {
   });
 });
 
+describe("readPidfile", () => {
+  it.each([{ pid: -1, port: 4747 }, { pid: 0, port: 4747 }, { pid: 1.5, port: 4747 }, { pid: "12", port: 4747 }, { pid: 12, port: 0 }, { pid: 12, port: 70000 }])("rejects malformed pidfile values %j", (info) => {
+    const cwd = project();
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
+    expect(readPidfile(cwd)).toBe(null);
+  });
+  it.each([{ pid: 12, port: 4747, mode: 12 }, { pid: 12, port: 4747, path: 12 }])("rejects malformed optional values %j", (info) => {
+    const cwd = project();
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
+    expect(readPidfile(cwd)).toBe(null);
+  });
+});
+
 describe("listWorkingFiles", () => {
   it("lists .json working files sorted, ignoring other files", () => {
     const dir = project();
@@ -117,6 +132,32 @@ describe("listWorkingFiles", () => {
 });
 
 describe("bridge HTTP surface", () => {
+  it("identifies its workspace and rejects a foreign Host", async () => {
+    const cwd = project();
+    const h = await bridge(cwd);
+    const response = await fetch(`${h.url}identity`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBe(null);
+    expect(await response.json()).toEqual({ pid: process.pid, cwd: resolve(cwd), mode: "template", path: resolve(cwd, ".templatical", "template.json") });
+    const forbidden = await new Promise<number>((resolveStatus) => {
+      const request = httpRequest({ host: "127.0.0.1", port: h.port, path: "/identity", headers: { host: "evil.test" } }, (res) => { res.resume(); resolveStatus(res.statusCode ?? 0); });
+      request.end();
+    });
+    expect(forbidden).toBe(403);
+  });
+
+  it("guards shutdown and invokes its callback after responding", async () => {
+    const noCallback = await bridge(project());
+    const post = (h: BridgeHandle, origin?: string) => fetch(`${h.url}shutdown`, { method: "POST", headers: { "content-type": "application/json", ...(origin ? { origin } : {}) }, body: "{}" });
+    expect((await post(noCallback)).status).toBe(404);
+    const onShutdown = vi.fn();
+    const h = await startBridge({ cwd: project(), onShutdown });
+    open.push(h);
+    expect((await post(h, "https://evil.test")).status).toBe(403);
+    expect(onShutdown).toHaveBeenCalledTimes(0);
+    expect((await post(h)).status).toBe(200);
+    await vi.waitFor(() => expect(onShutdown).toHaveBeenCalledTimes(1));
+  });
   it("serves the harness with the CDN version substituted", async () => {
     const h = await bridge(project());
     const res = await fetch(h.url);

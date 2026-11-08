@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createServer, type Server } from "node:http";
 import { checkRecipe, getPath, replaceLiquid, runRecipe } from "../src/custom-block/recipe";
 
@@ -242,6 +242,52 @@ describe("runRecipe against a local server", () => {
 describe("runRecipe without a server", () => {
   const json = (v: unknown) => (async () => new Response(JSON.stringify(v))) as unknown as typeof fetch;
   const at = (url: string, map: Record<string, string> = { name: "title" }) => ({ label: "F", request: { url }, map });
+
+  it("cancels a response after the 1 MiB limit", async () => {
+    const cancel = vi.fn();
+    const sizes = [1_048_576, 1];
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        const size = sizes.shift();
+        if (size === undefined) return new Promise<void>((resolvePull) => {
+          setTimeout(() => { try { controller.close(); } catch { /* cancelled */ } resolvePull(); }, 50);
+        });
+        else controller.enqueue(new Uint8Array(size));
+      },
+      cancel,
+    });
+    const fetch = (async () => new Response(body)) as typeof globalThis.fetch;
+    expect(await runRecipe(at("http://x.test/p"), {}, { fetch })).toEqual({ ok: false, status: 200, error: "GET http://x.test/p response exceeds the 1 MiB limit." });
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a huge Liquid body before making a request", async () => {
+    const fetch = vi.fn();
+    const result = await runRecipe({ ...at("http://x.test/p"), request: { method: "POST", url: "http://x.test/p", body: "{% for i in (1..100000000) %}{{ i }}{% endfor %}" } }, {}, { fetch });
+    expect(result).toEqual({ ok: false, error: "The request template does not render: memory alloc limit exceeded, line:1, col:1" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("accepts exactly 1 MiB of JSON", async () => {
+    const prefix = '{"title":"Lamp"}';
+    const fetch = (async () => new Response(prefix + " ".repeat(1_048_576 - prefix.length))) as typeof globalThis.fetch;
+    expect(await runRecipe(at("http://x.test/p"), {}, { fetch })).toEqual({ ok: true, status: 200, values: { name: "Lamp" }, unmapped: [] });
+  });
+
+  it("caps error response bodies", async () => {
+    const fetch = (async () => new Response("x".repeat(1_048_577), { status: 500 })) as typeof globalThis.fetch;
+    expect(await runRecipe(at("http://x.test/p"), {}, { fetch })).toEqual({ ok: false, status: 500, error: "GET http://x.test/p response exceeds the 1 MiB limit." });
+  });
+
+  it("reads a JSON body that starts with a byte-order mark", async () => {
+    const fetch = (async () => new Response('\uFEFF{"title":"Lamp"}')) as typeof globalThis.fetch;
+    expect(await runRecipe(at("http://x.test/p"), {}, { fetch })).toEqual({ ok: true, status: 200, values: { name: "Lamp" }, unmapped: [] });
+  });
+
+  it("treats a null response body as empty text", async () => {
+    const fetch = (async () => new Response(null)) as typeof globalThis.fetch;
+    expect(await runRecipe(at("http://x.test/p"), {}, { fetch })).toEqual({ ok: false, status: 200, error: "GET http://x.test/p did not return JSON." });
+  });
 
   it("refuses a URL with no scheme, since no origin can be derived", async () => {
     const r = await runRecipe(at("x.test/p"), {}, { fetch: json({}) });

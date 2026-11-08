@@ -690,7 +690,11 @@ export interface CustomBlockLiquidModule {
 }
 
 export declare function createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>;
+export declare const CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT: 10000000;
+export declare const CUSTOM_BLOCK_LIQUID_RENDER_LIMIT: 2000;
 ```
+
+`CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT` zählt Liquid-Allokationen pro Rendering, etwa Range-Elemente und die Strings und Arrays, die Filter erzeugen. Literales HTML im Template wird nicht angerechnet, das Limit begrenzt also nicht die gesamte Ausgabegröße. `CUSTOM_BLOCK_LIQUID_RENDER_LIMIT` ist eine Frist von 2000 ms, die liquidjs vor jedem Template-Schritt prüft; ein einzelner langsamer Filter kann sie daher ohne Fehler überschreiten. Bei Überschreitung wird das Rendering mit einem Liquid-Limitfehler abgelehnt. Diese Optionen gelten auch für die Custom-Block-Engine in Editor, Renderer und template-tools; das Rendern von Vorschau-Rezepten verwendet dieselben Grenzen.
 
 ```ts
 import {

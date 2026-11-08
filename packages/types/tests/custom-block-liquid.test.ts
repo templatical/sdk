@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as liquidjs from "liquidjs";
-import { createCustomBlockLiquid } from "../src/index";
+import { createCustomBlockLiquid, CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT, CUSTOM_BLOCK_LIQUID_RENDER_LIMIT } from "../src/index";
 
 function createEngine(): liquidjs.Liquid {
   return createCustomBlockLiquid(liquidjs);
@@ -12,6 +12,9 @@ describe("createCustomBlockLiquid", () => {
     expect(engine.options.strictVariables).toBe(false);
     expect(engine.options.strictFilters).toBe(false);
     expect(engine.options.outputEscape).toBeTypeOf("function");
+    expect([CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT, CUSTOM_BLOCK_LIQUID_RENDER_LIMIT]).toEqual([1e7, 2000]);
+    expect(engine.options.memoryLimit).toBe(CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT);
+    expect(engine.options.renderLimit).toBe(CUSTOM_BLOCK_LIQUID_RENDER_LIMIT);
   });
 
   it.each([
@@ -52,5 +55,10 @@ describe("createCustomBlockLiquid", () => {
 
   it("refuses to load a partial outside the template", async () => {
     await expect(createEngine().parseAndRender("{% include 'header' %}")).rejects.toThrow(/header/);
+  });
+
+  it("limits large ranges and renders small ranges", async () => {
+    await expect(createEngine().parseAndRender("{% for i in (1..100000000) %}{{ i }}{% endfor %}")).rejects.toMatchObject({ message: "memory alloc limit exceeded, line:1, col:1" });
+    expect(await createEngine().parseAndRender("{% for i in (1..3) %}{{ i }}{% endfor %}")).toBe("123");
   });
 });
