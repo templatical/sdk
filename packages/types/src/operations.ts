@@ -1447,8 +1447,15 @@ function changeLocale(
 ): void {
   if (!isRecord(target.l10n)) target.l10n = {};
   const l10n = target.l10n as Record<string, BlockLocaleLayer>;
-  if (!isRecord(l10n[locale])) l10n[locale] = {};
-  const layer = l10n[locale];
+  // An own layer or a fresh one, never an inherited value: read through a
+  // prototype key, l10n[locale] would be Object.prototype, and every write
+  // below would land on it. readLocale refuses those keys; this keeps the
+  // writes safe on their own.
+  const own = Object.prototype.hasOwnProperty.call(l10n, locale)
+    ? l10n[locale]
+    : undefined;
+  const layer: BlockLocaleLayer = isRecord(own) ? own : {};
+  if (layer !== own) l10n[locale] = layer;
   for (const path of changes.unset) {
     if (layer.text) delete layer.text[path];
     if (layer.set) delete layer.set[path];
