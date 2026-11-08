@@ -9,6 +9,7 @@ import type { Block, SectionBlock } from "@templatical/types";
 import type { Element } from "domhandler";
 import type { Cheerio } from "cheerio";
 import type { ImportReportEntry } from "../types";
+import { expectLinear } from "./expectLinear";
 
 const FIXTURE_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 
@@ -205,16 +206,17 @@ describe("processTable — data table preserved as HTML fallback", () => {
 
   it("converts 800 nested single-cell tables within the scan budget", () => {
     // 800 layers stay below parser stack limits and expose repeated subtree scans.
-    const depth = 800;
-    const html =
+    const nested = (depth: number) =>
       "<table><tr><td>".repeat(depth) +
       "<p>Deep</p>" +
       "</td></tr></table>".repeat(depth);
-    const start = performance.now();
-    const { blocks } = runTable(html);
-    const elapsed = performance.now() - start;
+    const { blocks } = runTable(nested(800));
     expect(blocks.map((block) => block.type)).toEqual(["section"]);
-    expect(elapsed).toBeLessThan(1000);
+    // 4 × 200 keeps the larger run at the 800 layers measured above.
+    expectLinear((n) => {
+      const html = nested(n);
+      return () => runTable(html);
+    }, 200);
   }, 30000);
 
   it("a bare data table (text-only cells) returns a single html-fallback block", () => {

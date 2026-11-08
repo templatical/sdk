@@ -11,6 +11,7 @@ import {
   readMjmlBackgroundImage,
 } from "../attribute-parser";
 import type { TopolNode } from "../types";
+import { expectLinear } from "./expectLinear";
 
 const node = (attributes: Record<string, unknown>): TopolNode =>
   ({ tagName: "mj-text", attributes }) as TopolNode;
@@ -102,14 +103,13 @@ describe("parsePxValue", () => {
     // a long run of trailing spaces followed by a non-matching character. The
     // failing match retried every split of that run between the two `\s*`
     // groups, which is polynomial in the run's length. At 80 KB the old
-    // pattern took over ten seconds (measured); this asserts the fixed one
-    // resolves in well under a second.
-    const input = "0" + " ".repeat(80_000) + "x";
-    const start = performance.now();
-    const result = parsePxValue(input);
-    const elapsed = performance.now() - start;
-    expect(result).toBe(0);
-    expect(elapsed).toBeLessThan(500);
+    // pattern took over ten seconds (measured); this asserts the fixed one's
+    // cost grows linearly with the run.
+    expect(parsePxValue("0" + " ".repeat(80_000) + "x")).toBe(0);
+    expectLinear((n) => {
+      const value = "0" + " ".repeat(n) + "x";
+      return () => parsePxValue(value);
+    }, 2_000);
   });
 });
 
@@ -346,20 +346,25 @@ describe("readMjmlBackgroundImage", () => {
 });
 
 describe("readMjmlBackgroundImage on adversarial input", () => {
-  const digits = "0".repeat(100_000);
-
-  it("reads runs of digits in linear time", () => {
+  const run = (length: number) => {
+    const digits = "0".repeat(length);
     const attrs: Record<string, string> = {
       "background-url": "u",
       "background-size": `${digits}!`,
       "background-position": `${digits}! ${digits}!`,
       "background-position-x": `${digits}!`,
     };
-    const run = () =>
-      readMjmlBackgroundImage((name) => attrs[name], "Section", 600);
-    const started = performance.now();
-    run();
-    expect(performance.now() - started).toBeLessThan(1000);
+    return readMjmlBackgroundImage((name) => attrs[name], "Section", 600);
+  };
+
+  it("reads runs of digits in linear time", () => {
+    expect(run(100_000)?.image).toEqual({
+      url: "u",
+      size: "auto",
+      position: { x: "center", y: "top" },
+      repeat: true,
+    });
+    expectLinear((n) => () => run(n), 8_000);
   });
 });
 

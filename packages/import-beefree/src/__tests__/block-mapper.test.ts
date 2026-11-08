@@ -6,6 +6,7 @@ import {
   skippedModuleEntry,
 } from "../block-mapper";
 import type { BeeFreeeImageContent, BeeFreeeModule } from "../types";
+import { expectLinear } from "./expectLinear";
 
 function makeModule(
   type: string,
@@ -146,22 +147,21 @@ describe("convertModule", () => {
     // for `</p>`. Adversarial input with many `<p>a` chunks but no `</p>`
     // used to stall the regex. The manual scanner is strictly linear.
     it("wraps paragraph content in linear time on `<p>a<p>a<p>a…` input (ReDoS regression)", () => {
-      const warnings: string[] = [];
-      const adversarial = "<p>a".repeat(10_000);
-      const mod = makeModule("mailup-bee-newsletter-modules-text", {
-        text: {
-          style: {
-            // Non-default style triggers the wrap branch
-            color: "#123456",
+      const wrap = (chunks: number) =>
+        makeModule("mailup-bee-newsletter-modules-text", {
+          text: {
+            style: {
+              // Non-default style triggers the wrap branch
+              color: "#123456",
+            },
+            html: "<p>a".repeat(chunks),
           },
-          html: adversarial,
-        },
-      });
-      const start = Date.now();
-      const { block } = convertModule(mod, warnings);
-      const elapsed = Date.now() - start;
-      expect(block.type).toBe("paragraph");
-      expect(elapsed).toBeLessThan(2500);
+        });
+      expect(convertModule(wrap(10_000), []).block.type).toBe("paragraph");
+      expectLinear((n) => {
+        const mod = wrap(n);
+        return () => convertModule(mod, []);
+      }, 4_000);
     });
 
     // Unclosed roots stay nested. Styling that chain has to stay linear.
@@ -169,24 +169,23 @@ describe("convertModule", () => {
       ["<li>a", "list"],
       ["<h1>a", "text"],
       ["<ul>a", "list"],
-    ] as const)(
-      "styles unclosed %s in linear time on 20k tags",
-      (chunk, kind) => {
-        const html = chunk.repeat(20_000);
-        const payload = { style: { color: "#123456" }, html };
-        const start = Date.now();
-        const { block } = convertModule(
-          makeModule(
-            `mailup-bee-newsletter-modules-${kind}`,
-            kind === "list" ? { list: payload } : { text: payload },
-          ),
-          [],
+    ] as const)("styles unclosed %s in linear time", (chunk, kind) => {
+      const styled = (tags: number) => {
+        const payload = {
+          style: { color: "#123456" },
+          html: chunk.repeat(tags),
+        };
+        return makeModule(
+          `mailup-bee-newsletter-modules-${kind}`,
+          kind === "list" ? { list: payload } : { text: payload },
         );
-        const elapsed = Date.now() - start;
-        expect(block.type).toBe("paragraph");
-        expect(elapsed).toBeLessThan(2500);
-      },
-    );
+      };
+      expect(convertModule(styled(20_000), []).block.type).toBe("paragraph");
+      expectLinear((n) => {
+        const mod = styled(n);
+        return () => convertModule(mod, []);
+      }, 4_000);
+    });
   });
 
   // BeeFree paragraphs are margin 0. An absent `paragraphSpacing` renders as
@@ -1558,20 +1557,18 @@ describe("convertModule", () => {
     });
 
     it("strips button label in linear time on adversarial `<<<<…` input (ReDoS regression)", () => {
-      const warnings: string[] = [];
-      const adversarial = "<".repeat(50_000) + "Buy";
-      const start = Date.now();
-      const mod = makeModule("mailup-bee-newsletter-modules-button", {
-        button: { label: adversarial, href: "https://x.test" },
-      });
-      const { block } = convertModule(mod, warnings);
-      const elapsed = Date.now() - start;
-      if (block.type === "button") {
-        // First `<` opens a tag that never closes — stripper bails and
-        // discards the rest, leaving an empty label.
-        expect(block.text).toBe("");
-      }
-      expect(elapsed).toBeLessThan(500);
+      const button = (opens: number) =>
+        makeModule("mailup-bee-newsletter-modules-button", {
+          button: { label: "<".repeat(opens) + "Buy", href: "https://x.test" },
+        });
+      const { block } = convertModule(button(50_000), []);
+      // First `<` opens a tag that never closes — stripper bails and
+      // discards the rest, leaving an empty label.
+      expect(block).toMatchObject({ type: "button", text: "" });
+      expectLinear((n) => {
+        const mod = button(n);
+        return () => convertModule(mod, []);
+      }, 2_000);
     });
   });
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { convertContent } from "../block-mapper";
 import type { UnlayerContent, UnlayerContentValues } from "../types";
+import { expectLinear } from "./expectLinear";
 
 function makeContent(
   type: string,
@@ -103,19 +104,17 @@ describe("convertContent", () => {
     // for `</p>`. Adversarial input with many `<p>a` chunks but no `</p>`
     // used to stall the regex. The manual scanner is strictly linear.
     it("wraps paragraph content in linear time on `<p>a<p>a<p>a…` input (ReDoS regression)", () => {
-      const adversarial = "<p>a".repeat(10_000);
-      const start = Date.now();
-      const { block } = convertContent(
+      const wrap = (chunks: number) =>
         makeContent("text", {
-          text: adversarial,
+          text: "<p>a".repeat(chunks),
           // Provide a non-default text style so the wrapping branch runs.
           color: "#123456",
-        }),
-        [],
-      );
-      const elapsed = Date.now() - start;
-      expect(block.type).toBe("paragraph");
-      expect(elapsed).toBeLessThan(500);
+        });
+      expect(convertContent(wrap(10_000), []).block.type).toBe("paragraph");
+      expectLinear((n) => {
+        const content = wrap(n);
+        return () => convertContent(content, []);
+      }, 1_000);
     });
   });
 
@@ -489,19 +488,16 @@ describe("convertContent", () => {
     });
 
     it("strips button label in linear time on adversarial `<<<<…` input (ReDoS regression)", () => {
-      const adversarial = "<".repeat(50_000) + "Buy";
-      const start = Date.now();
-      const { block } = convertContent(
-        makeContent("button", { text: adversarial }),
-        [],
-      );
-      const elapsed = Date.now() - start;
-      if (block.type === "button") {
-        // Every `<` opens a tag that never closes — the stripper bails at
-        // the first unterminated tag and discards the rest. Result is empty.
-        expect(block.text).toBe("");
-      }
-      expect(elapsed).toBeLessThan(500);
+      const button = (opens: number) =>
+        makeContent("button", { text: "<".repeat(opens) + "Buy" });
+      const { block } = convertContent(button(50_000), []);
+      // Every `<` opens a tag that never closes — the stripper bails at
+      // the first unterminated tag and discards the rest. Result is empty.
+      expect(block).toMatchObject({ type: "button", text: "" });
+      expectLinear((n) => {
+        const content = button(n);
+        return () => convertContent(content, []);
+      }, 2_000);
     });
   });
 

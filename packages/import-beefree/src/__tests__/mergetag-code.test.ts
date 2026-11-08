@@ -3,6 +3,7 @@ import { convertModule } from "../block-mapper";
 import { unwrapMergeTagCode } from "../merge-tokens";
 import { convertBeeFreeTemplate } from "../converter";
 import type { BeeFreeeModule, BeeFreeTemplate } from "../types";
+import { expectLinear } from "./expectLinear";
 import fixture from "./fixtures/mergetag-code.json";
 
 function moduleOf(
@@ -217,24 +218,27 @@ describe("BeeFree merge-tag code wrappers", () => {
     expect(html.content).toBe("<p>Hi {{ guest.name }}</p>");
   });
 
-  it("unwraps nested mergetag code in linear time on 20k tags", () => {
-    const html =
-      '<code data-bee-type="mergetag">T'.repeat(20_000) +
-      "</code>".repeat(20_000);
-    const start = Date.now();
-    const text = unwrapMergeTagCode(html);
-    const elapsed = Date.now() - start;
-    expect(text).toBe("T".repeat(20_000));
-    expect(elapsed).toBeLessThan(2500);
+  it("unwraps nested mergetag code in linear time", () => {
+    const nested = (tags: number) =>
+      '<code data-bee-type="mergetag">T'.repeat(tags) + "</code>".repeat(tags);
+    expect(unwrapMergeTagCode(nested(20_000))).toBe("T".repeat(20_000));
+    expectLinear((n) => {
+      const html = nested(n);
+      return () => unwrapMergeTagCode(html);
+    }, 1_000);
   });
 
-  it("unwraps unclosed mergetag code in linear time on 20k tags", () => {
-    const html = '<code data-bee-type="mergetag">a'.repeat(20_000);
-    const start = Date.now();
-    const content = paragraph(html);
-    const elapsed = Date.now() - start;
-    expect(content.startsWith('<code data-bee-type="mergetag">')).toBe(true);
-    expect(elapsed).toBeLessThan(2500);
+  it("unwraps unclosed mergetag code in linear time", () => {
+    const chunk = '<code data-bee-type="mergetag">a';
+    expect(
+      paragraph(chunk.repeat(20_000)).startsWith(
+        '<code data-bee-type="mergetag">',
+      ),
+    ).toBe(true);
+    expectLinear((n) => {
+      const html = chunk.repeat(n);
+      return () => paragraph(html);
+    }, 1_000);
   });
 
   it("unwraps the trimmed MERGETAG_CODE fixture", () => {
