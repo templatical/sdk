@@ -269,7 +269,7 @@ export function convertLeaf(
     default:
       return {
         block: createHtmlBlock({
-          content: JSON.stringify(node, null, 2),
+          content: JSON.stringify(node),
           ...baseStyles(node),
         }),
         entry: {

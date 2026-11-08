@@ -65,6 +65,18 @@ const OSS_MESSAGE =
   "Invalid Easy Email Pro template: this looks like open-source Easy Email JSON, not Easy Email Pro (expected standard-* children).";
 
 describe("convertEasyEmailProTemplate input guards", () => {
+  it("reports expansion-budget references as unresolved", () => {
+    const page = pageWithParagraph({
+      data: { variables: [{ name: "name", value: "x".repeat(10_000) }] },
+    });
+    page.children![0].attributes = {
+      "background-url": "$var(name)".repeat(10),
+    };
+    const { report } = convertEasyEmailProTemplate(page);
+    expect(report.warnings).toContain(
+      "Resolved 6 $var() values, 4 left unresolved.",
+    );
+  });
   it("throws a typed message for a non-object input", () => {
     expect(() => convertEasyEmailProTemplate(42 as never)).toThrow(
       INVALID_MESSAGE,

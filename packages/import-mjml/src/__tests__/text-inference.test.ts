@@ -116,6 +116,21 @@ describe("title inference", () => {
 });
 
 describe("table inference", () => {
+  it("keeps nested table markup in its outer cell exactly once", () => {
+    const { result } = convert(
+      "<table><tr><td>Outer<table><tr><td>Inner</td></tr></table></td></tr><tr><td>Last</td></tr></table>",
+    );
+    const block = result.block as TableBlock;
+    expect(block.type).toBe("table");
+    expect(
+      block.rows.map((row) => row.cells.map((cell) => cell.content)),
+    ).toEqual([
+      ["Outer<table><tbody><tr><td>Inner</td></tr></tbody></table>"],
+      ["Last"],
+    ]);
+    expect(block.rows.length).toBe(2);
+  });
+
   it("reads a single table root as a table block", () => {
     const { result } = convert(
       "<table><tr><th>H1</th><th>H2</th></tr><tr><td>a</td><td>b</td></tr></table>",

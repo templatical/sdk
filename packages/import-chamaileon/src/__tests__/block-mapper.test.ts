@@ -317,6 +317,14 @@ describe("dynamic-image", () => {
 });
 
 describe("unknown type", () => {
+  it("quotes at most 80 characters of an unknown type in its note", () => {
+    const type = "x".repeat(81);
+    const { entry } = convertLeaf(node({ type }), ctx());
+    expect(entry.sourceTag).toBe(type);
+    expect(entry.note).toBe(
+      `${"x".repeat(80)}… has no Templatical block equivalent; the original node is preserved as JSON.`,
+    );
+  });
   it("html-fallbacks with JSON.stringify of the node", () => {
     const n = node({ type: "countdown", attrs: { foo: 1 } });
     const { block, entry } = convertLeaf(n, ctx());

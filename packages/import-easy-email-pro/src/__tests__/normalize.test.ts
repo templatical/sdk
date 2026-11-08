@@ -38,6 +38,27 @@ describe("isUnset", () => {
 });
 
 describe("substituteVars", () => {
+  it("leaves references over the expansion budget unresolved", () => {
+    const large = "x".repeat(10_000);
+    expect(substituteVars("$var(name)".repeat(10), { name: large })).toEqual({
+      value: large.repeat(6) + "$var(name)".repeat(4),
+      resolved: 6,
+      unresolved: 4,
+    });
+  });
+  it("counts the literal text after a reference against the budget", () => {
+    const tail = "y".repeat(65_520);
+    expect(substituteVars(`$var(x)${tail}`, { x: "a".repeat(16) })).toEqual({
+      value: "a".repeat(16) + tail,
+      resolved: 1,
+      unresolved: 0,
+    });
+    expect(substituteVars(`$var(x)${tail}`, { x: "a".repeat(17) })).toEqual({
+      value: `$var(x)${tail}`,
+      resolved: 0,
+      unresolved: 1,
+    });
+  });
   const vars = { "primary-color": "#8C9A80" };
   it("replaces $var(name)", () => {
     expect(substituteVars("$var(primary-color)", vars)).toEqual({

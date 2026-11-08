@@ -867,6 +867,27 @@ describe("background images", () => {
     ]);
   });
 
+  it("quotes only 80 characters of a wrapper attribute in each section note", () => {
+    const raw = "x".repeat(300);
+    const { entries } = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: { "background-url": "u", "background-size": raw },
+      children: [section("A"), section("B"), section("C")],
+    });
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(3);
+    for (const entry of sectionEntries) {
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toContain(
+        `Wrapper background-size "${"x".repeat(80)}…"`,
+      );
+      expect(entry.note).not.toContain(raw);
+    }
+  });
+
   it("reads a hero with no mode or height as a regular section with a background image", () => {
     const { blocks } = build({
       type: "standard-hero",

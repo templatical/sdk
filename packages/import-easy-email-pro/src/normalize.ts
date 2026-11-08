@@ -5,6 +5,7 @@ import type {
 } from "./types";
 
 const VAR_PREFIX = "$var(";
+export const MAX_EXPANDED_ATTRIBUTE_LENGTH = 65_536;
 
 /** Spec §3.3 category map — unknown types skip the category layer. */
 export const CATEGORY_BY_TYPE: Record<string, string> = {
@@ -109,7 +110,13 @@ export function substituteVars(
       break;
     }
     const name = value.slice(nameStart, nameEnd);
-    if (Object.prototype.hasOwnProperty.call(variables, name)) {
+    if (
+      Object.prototype.hasOwnProperty.call(variables, name) &&
+      // The literal text still to come counts too, so the attribute as a whole
+      // stays within the budget.
+      out.length + variables[name].length + (value.length - nameEnd - 1) <=
+        MAX_EXPANDED_ATTRIBUTE_LENGTH
+    ) {
       out += variables[name];
       resolved += 1;
     } else {

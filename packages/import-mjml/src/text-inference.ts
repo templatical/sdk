@@ -33,7 +33,7 @@ import { baseFields, type ConvertContext, type Converted } from "./block-base";
  * isn't compensating for a different parser here. It gives each
  * shape-detection helper (title / table / menu) an isolated, freshly
  * queryable document scoped to just this block's own markup — so
- * `$inner("tr")` can only match rows that belong to this table, and
+ * the outer table can be selected without matching other document blocks, and
  * `$inner("body")` has a real root to enumerate top-level nodes from. A
  * paragraph's markup is reparsed only when an attribute has to be carried
  * into it (`styleParagraphs`); otherwise it passes through verbatim.
@@ -110,7 +110,18 @@ function convertTable(
   cascade: AttributeCascade,
 ): Converted {
   const $inner = parseInner(html);
-  const $rows = $inner("tr");
+  const $table = $inner("body").children("table").first();
+  const rowsInOrder = $table
+    .children()
+    .toArray()
+    .flatMap((child) =>
+      child.tagName.toLowerCase() === "tr"
+        ? [child]
+        : ["thead", "tbody", "tfoot"].includes(child.tagName.toLowerCase())
+          ? $inner(child).children("tr").toArray()
+          : [],
+    );
+  const $rows = $inner(rowsInOrder);
 
   const rows: TableRowData[] = $rows.toArray().map((rowEl) => ({
     id: generateId(),

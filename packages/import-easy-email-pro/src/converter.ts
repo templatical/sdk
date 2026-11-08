@@ -11,6 +11,7 @@ import type {
   TemplateSettings,
 } from "@templatical/types";
 import { parseColor, parsePx } from "./attribute-parser";
+import { noteValue } from "./note-value";
 import { convertLeaf, isLeafType, type MapContext } from "./block-mapper";
 import {
   contextFromPage,
@@ -263,7 +264,7 @@ function walkNode(
       sourceTag: node.type ?? "logic",
       templaticalBlockType: null,
       status: "skipped",
-      note: `Skipped empty logic (${logicExpression(logic)})`,
+      note: `Skipped empty logic (${noteValue(logicExpression(logic))})`,
     });
     return;
   }
@@ -283,13 +284,17 @@ function walkNode(
     markApproximated(
       entries,
       from,
-      `${node.type} flattened; $var resolved from data.input`,
+      `${noteValue(node.type)} flattened; $var resolved from data.input`,
       {
         sourceTag: node.type,
       },
     );
     if (logicOn) {
-      markApproximated(entries, from, `logic ${logicExpression(logic)}`);
+      markApproximated(
+        entries,
+        from,
+        `logic ${noteValue(logicExpression(logic))}`,
+      );
     }
     return;
   }
@@ -314,7 +319,11 @@ function walkNode(
   }
 
   if (logicOn) {
-    markApproximated(entries, from, `logic ${logicExpression(logic)}`);
+    markApproximated(
+      entries,
+      from,
+      `logic ${noteValue(logicExpression(logic))}`,
+    );
   }
 }
 
@@ -340,7 +349,7 @@ function walkBand(
       sourceTag: node.type,
       templaticalBlockType: null,
       status: "skipped",
-      note: `An empty ${node.type} produces nothing.`,
+      note: `An empty ${noteValue(node.type)} produces nothing.`,
     });
     return;
   }

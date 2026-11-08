@@ -1857,14 +1857,36 @@ describe("convertModule", () => {
           match[0].includes("font-family"),
         )?.[0] ?? "";
       expect(expectClosedStyle(textCell, "td")).toBe(
-        "vertical-align: middle; color: red&amp;; font-family: 'Evil&quot;X', sans-serif; font-size: 15px; font-weight: bold&quot; onmouseover=&quot;x;",
+        "vertical-align: middle; color: red&amp;; font-family: 'Evil&quot;X', sans-serif; font-size: 15px;",
       );
       expect(findStyleAttr(textCell)?.value).toBe(
-        'vertical-align: middle; color: red&; font-family: \'Evil"X\', sans-serif; font-size: 15px; font-weight: bold" onmouseover="x;',
+        "vertical-align: middle; color: red&; font-family: 'Evil\"X', sans-serif; font-size: 15px;",
       );
+      expect(content).not.toContain("onmouseover");
       expect(content).not.toContain("&amp;amp;");
       expect(content).toContain(
         'style="color: red&amp;; text-decoration: none;"',
+      );
+    });
+
+    it("keeps a CSS font-weight in icon text styles and drops any other", () => {
+      const cell = (weight: string): string => {
+        const { content } = html(
+          iconsModule([{ ...gift, text: "Gift", textPosition: "right" }], {
+            style: { "font-weight": weight, "font-size": "15px" },
+          }),
+        );
+        return (
+          [...content.matchAll(/<td\b[^>]*>/g)].find((match) =>
+            match[0].includes("font-size"),
+          )?.[0] ?? ""
+        );
+      };
+      expect(findStyleAttr(cell(" 700 "))?.value).toBe(
+        "vertical-align: middle; font-size: 15px; font-weight: 700;",
+      );
+      expect(findStyleAttr(cell("heavy"))?.value).toBe(
+        "vertical-align: middle; font-size: 15px;",
       );
     });
 
@@ -3179,6 +3201,59 @@ describe("convertModule", () => {
     });
 
     describe("inlineStylesToHtml font-weight emission", () => {
+      it.each(["heavy;x:", "2000"])(
+        "drops invalid font-weight %s",
+        (weight) => {
+          const { block, entry } = convertModule(
+            makeModule("mailup-bee-newsletter-modules-text", {
+              text: { html: "<p>Hi</p>", style: { "font-weight": weight } },
+            }),
+            [],
+          );
+          expect(block.type).toBe("paragraph");
+          if (block.type === "paragraph")
+            expect(block.content).toBe("<p>Hi</p>");
+          expect(entry.status).toBe("converted");
+          expect(entry.note).toBeUndefined();
+        },
+      );
+
+      it("drops a 300-character font stack and notes the approximation", () => {
+        const { block, entry } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: {
+              html: "<p>Hi</p>",
+              style: { "font-family": "A".repeat(300) },
+            },
+          }),
+          [],
+        );
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") expect(block.content).toBe("<p>Hi</p>");
+        expect(entry.status).toBe("approximated");
+        expect(entry.note).toBe(
+          "Font family longer than 256 characters was dropped.",
+        );
+      });
+
+      it("reports a long family in a heading module's text fallback", () => {
+        const { block, entry } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-heading", {
+            text: {
+              html: "<p>Hi</p>",
+              style: { "font-family": "A".repeat(300) },
+            },
+          }),
+          [],
+        );
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") expect(block.content).toBe("<p>Hi</p>");
+        expect(entry.status).toBe("approximated");
+        expect(entry.note).toBe(
+          "Font family longer than 256 characters was dropped.",
+        );
+      });
+
       it("does NOT emit a weight span for empty font-weight", () => {
         const { block } = convertModule(
           makeModule("mailup-bee-newsletter-modules-text", {
@@ -3230,6 +3305,41 @@ describe("convertModule", () => {
         const { block } = convertModule(
           makeModule("mailup-bee-newsletter-modules-text", {
             text: { html: "<p>Hi</p>", style: { "font-weight": "700" } },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          expect(block.content).toBe(
+            '<p><span style="font-weight: 700">Hi</span></p>',
+          );
+        }
+      });
+
+      it.each(["+700", "7e2", "inherit"])(
+        "keeps the CSS font-weight %s",
+        (weight) => {
+          const { block } = convertModule(
+            makeModule("mailup-bee-newsletter-modules-text", {
+              text: { html: "<p>Hi</p>", style: { "font-weight": weight } },
+            }),
+            [],
+          );
+
+          expect(block.type).toBe("paragraph");
+          if (block.type === "paragraph") {
+            expect(block.content).toBe(
+              `<p><span style="font-weight: ${weight}">Hi</span></p>`,
+            );
+          }
+        },
+      );
+
+      it("trims a font-weight before checking it", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: { html: "<p>Hi</p>", style: { "font-weight": " 700 " } },
           }),
           [],
         );
@@ -3769,7 +3879,7 @@ describe("convertModule", () => {
         );
       });
 
-      it("escapes a quote in the leaf span's letter-spacing, weight, color and font", () => {
+      it("escapes a quote in the leaf span and drops an invalid weight", () => {
         const html = textHtml("text", "<p>Hi</p>", {
           "letter-spacing": '1px" onmouseover="x',
           "font-weight": 'bold" onmouseover="w',
@@ -3777,10 +3887,10 @@ describe("convertModule", () => {
           "font-family": "'Evil\"X', sans-serif",
         });
         expect(expectClosedStyle(html, "span")).toBe(
-          "color: red&quot; onmouseover=&quot;c; font-weight: bold&quot; onmouseover=&quot;w; font-family: 'Evil&quot;X', sans-serif; letter-spacing: 1px&quot;onmouseover=&quot;x",
+          "color: red&quot; onmouseover=&quot;c; font-family: 'Evil&quot;X', sans-serif; letter-spacing: 1px&quot;onmouseover=&quot;x",
         );
         expect(findStyleAttr(firstOpenTag(html, "span"))?.value).toBe(
-          'color: red" onmouseover="c; font-weight: bold" onmouseover="w; font-family: \'Evil"X\', sans-serif; letter-spacing: 1px"onmouseover="x',
+          'color: red" onmouseover="c; font-family: \'Evil"X\', sans-serif; letter-spacing: 1px"onmouseover="x',
         );
       });
 
