@@ -1,5 +1,14 @@
 # @templatical/ai-kit
 
+## 0.57.1
+
+### Patch Changes
+
+- 818714d: The shipped eval set's domain-mismatch case checks link text with `>[^<>]*(?:www\.|://)` instead of `>(?:[^<]*)(?:www\.|://)`. It matches the same text, and checking a turn whose output holds a long run of `>` no longer takes quadratic time.
+- Updated dependencies [36bc74f]
+- Updated dependencies [c05e2a8]
+  - @templatical/types@0.57.1
+
 ## 0.57.0
 
 ### Minor Changes
