@@ -110,7 +110,7 @@ describe("readPidfile", () => {
     writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
     expect(readPidfile(cwd)).toBe(null);
   });
-  it.each([{ pid: 12, port: 4747, mode: 12 }, { pid: 12, port: 4747, path: 12 }])("rejects malformed optional values %j", (info) => {
+  it.each([{ pid: 12, port: 4747, mode: 12 }, { pid: 12, port: 4747, path: 12 }, { pid: 12, port: 4747, host: 12 }, { pid: 12, port: 4747, fetch: null }, { pid: 12, port: 4747, fetch: [] }, { pid: 12, port: 4747, fetch: "x" }])("rejects malformed optional values %j", (info) => {
     const cwd = project();
     writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
     expect(readPidfile(cwd)).toBe(null);
@@ -122,7 +122,7 @@ describe("readPidfile", () => {
   });
   it("reads a well-formed pidfile", () => {
     const cwd = project();
-    const info = { pid: 12, port: 4747, mode: "template", path: "/tmp/t.json" };
+    const info = { pid: 12, port: 4747, mode: "custom-block", path: "/tmp/q.json", host: "/tmp/t.json", fetch: { id: 7 } };
     writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
     expect(readPidfile(cwd)).toEqual(info);
   });
@@ -182,6 +182,26 @@ describe("bridge HTTP surface", () => {
       request.end();
     });
     expect(forbidden).toBe(403);
+  });
+
+  it("pings an open event stream every 15 seconds", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    let request: ReturnType<typeof httpRequest> | undefined;
+    try {
+      const h = await bridge(project());
+      const chunks: string[] = [];
+      request = httpRequest({ host: "127.0.0.1", port: h.port, path: "/events" });
+      const stream = request;
+      const response = await new Promise<import("node:http").IncomingMessage>((done) => { stream.on("response", done); stream.end(); });
+      response.setEncoding("utf8");
+      response.on("data", (chunk: string) => chunks.push(chunk));
+      await vi.waitFor(() => expect(chunks.join("")).toBe("event: ready\ndata: {}\n\n"));
+      vi.advanceTimersByTime(15000);
+      await vi.waitFor(() => expect(chunks.join("")).toBe("event: ready\ndata: {}\n\n: ping\n\n"));
+    } finally {
+      request?.destroy();
+      vi.useRealTimers();
+    }
   });
 
   it("guards shutdown and invokes its callback after responding", async () => {

@@ -254,7 +254,12 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   }
   if (existing) rmSync(pidfilePath(cwd), { force: true }); // stale
 
+  // Runs once: a second signal while the bridge closes would otherwise delete
+  // the pidfile of a replacement server started in the meantime.
+  let closing = false;
   const cleanup = () => {
+    if (closing) return;
+    closing = true;
     rmSync(pidfilePath(cwd), { force: true });
     handle.close().finally(() => process.exit(EXIT.ok));
   };

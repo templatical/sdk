@@ -285,6 +285,11 @@ describe("live already-running / reload / stop", () => {
     expect(existsSync(pid)).toBe(false);
     expect(close).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(0));
+    // A replacement server writes its own pidfile; a second signal must not remove it.
+    writeFileSync(pid, "{}", "utf8");
+    onShutdown();
+    expect(existsSync(pid)).toBe(true);
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   it("stops a live pid and removes the pidfile", async () => {
@@ -306,6 +311,7 @@ describe("live already-running / reload / stop", () => {
   it.each([
     ["answers an error", vi.fn(async () => ({ ok: false, status: 500 })), "it answered 500"],
     ["cannot be reached", vi.fn(async () => { throw new Error("fetch failed"); }), "fetch failed"],
+    ["rejects with a non-Error", vi.fn(async () => { throw "socket hang up"; }), "socket hang up"],
   ])("sends no signal and keeps the pidfile when the shutdown route %s", async (_label, shutdown, reason) => {
     mkdirSync(join(dir, ".templatical"), { recursive: true });
     const pid = join(dir, ".templatical", "live-server.pid");
