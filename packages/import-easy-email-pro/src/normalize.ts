@@ -5,6 +5,11 @@ import type {
 } from "./types";
 
 const VAR_PREFIX = "$var(";
+/**
+ * A `$var()` replacement is made only while the attribute, counting the text
+ * still after the reference, stays within this many characters. It limits
+ * replacements, not the attribute: literal text is never cut.
+ */
 export const MAX_EXPANDED_ATTRIBUTE_LENGTH = 65_536;
 
 /** Spec §3.3 category map — unknown types skip the category layer. */

@@ -333,6 +333,18 @@ describe("convertChamaileonTemplate loops", () => {
     ]);
   });
 
+  it("falls back to HTML for a node whose type is a number", () => {
+    const { report } = convertChamaileonTemplate(
+      JSON.stringify({ body: { type: "body", children: [{ type: 42 }] } }),
+    );
+    expect(report.entries.map((entry) => [entry.status, entry.note])).toEqual([
+      [
+        "html-fallback",
+        "42 has no Templatical block equivalent; the original node is preserved as JSON.",
+      ],
+    ]);
+  });
+
   it("keeps an exactly 80-character expression in a skipped note", () => {
     const expression = "z".repeat(80);
     const { report } = convertChamaileonTemplate({
