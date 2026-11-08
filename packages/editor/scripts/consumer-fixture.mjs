@@ -33,6 +33,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -483,9 +484,27 @@ export function ensurePrivateParent(consumerDir) {
   } catch (error) {
     if (error?.code !== "EEXIST") throw error;
   }
+  const uid = typeof process.getuid === "function" ? process.getuid() : null;
+  // Every folder above the parent must stay put for the whole run, or another
+  // user could rename the path and put their own folder in its place: each
+  // one is owned by this user or root, and is not group or other writable
+  // unless it has the sticky bit (whose owner, trusted here, can still rename).
+  if (process.platform !== "win32" && uid !== null) {
+    for (let dir = dirname(parent); ; dir = dirname(dir)) {
+      const ancestor = statSync(dir);
+      const trustedOwner = ancestor.uid === uid || ancestor.uid === 0;
+      const renamable =
+        (ancestor.mode & 0o022) !== 0 && (ancestor.mode & 0o1000) === 0;
+      if (!trustedOwner || renamable) {
+        throw new Error(
+          `Refusing to use ${parent}: ${dir} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      }
+      if (dirname(dir) === dir) break;
+    }
+  }
   const stat = lstatSync(parent);
-  const owned =
-    typeof process.getuid !== "function" || stat.uid === process.getuid();
+  const owned = uid === null || stat.uid === uid;
   // Windows reports no meaningful permission bits, so only POSIX checks them.
   const private_ = process.platform === "win32" || (stat.mode & 0o077) === 0;
   if (stat.isSymbolicLink() || !stat.isDirectory() || !owned || !private_) {

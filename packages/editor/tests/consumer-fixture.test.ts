@@ -145,7 +145,9 @@ describe("ensurePrivateParent", () => {
     try {
       const parent = join(root, "fresh");
       expect(ensurePrivateParent(join(parent, "app"))).toBe(parent);
-      expect(statSync(parent).mode & 0o777).toBe(0o700);
+      if (process.platform !== "win32")
+        expect(statSync(parent).mode & 0o777).toBe(0o700);
+      else expect(existsSync(parent)).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -160,7 +162,44 @@ describe("ensurePrivateParent", () => {
     }
   });
 
-  it("refuses a parent that group or other users can reach", () => {
+  it.skipIf(process.platform === "win32")(
+    "refuses a parent whose folder lets others rename entries",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const open = join(root, "open");
+        mkdirSync(open);
+        chmodSync(open, 0o777);
+        expect(() => ensurePrivateParent(join(open, "p", "app"))).toThrow(
+          `Refusing to use ${join(open, "p")}: ${open} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+        chmodSync(open, 0o1777);
+        expect(ensurePrivateParent(join(open, "p", "app"))).toBe(join(open, "p"));
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "refuses a path with a folder owned by someone other than you or root",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      // Pretend to be another user: the mkdtemp folder, owned by the real
+      // one, is then an ancestor that someone else controls.
+      const getuid = vi.spyOn(process, "getuid").mockReturnValue(2_000_000);
+      try {
+        expect(() => ensurePrivateParent(join(root, "p", "app"))).toThrow(
+          /can be changed by another user/,
+        );
+      } finally {
+        getuid.mockRestore();
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")("refuses a parent that group or other users can reach", () => {
     const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
     try {
       const shared = join(root, "shared");
@@ -188,7 +227,7 @@ describe("ensurePrivateParent", () => {
     }
   });
 
-  it("refuses a parent that is a symlink, even to a private folder", () => {
+  it.skipIf(process.platform === "win32")("refuses a parent that is a symlink, even to a private folder", () => {
     const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
     try {
       const target = join(root, "target");
@@ -203,7 +242,7 @@ describe("ensurePrivateParent", () => {
     }
   });
 
-  it("is checked before either materializer packs or copies anything", () => {
+  it.skipIf(process.platform === "win32")("is checked before either materializer packs or copies anything", () => {
     const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
     try {
       const shared = join(root, "shared");
