@@ -65,6 +65,18 @@ const OSS_MESSAGE =
   "Invalid Easy Email Pro template: this looks like open-source Easy Email JSON, not Easy Email Pro (expected standard-* children).";
 
 describe("convertEasyEmailProTemplate input guards", () => {
+  it("reports expansion-budget references as unresolved", () => {
+    const page = pageWithParagraph({
+      data: { variables: [{ name: "name", value: "x".repeat(10_000) }] },
+    });
+    page.children![0].attributes = {
+      "background-url": "$var(name)".repeat(10),
+    };
+    const { report } = convertEasyEmailProTemplate(page);
+    expect(report.warnings).toContain(
+      "Resolved 6 $var() values, 4 left unresolved.",
+    );
+  });
   it("throws a typed message for a non-object input", () => {
     expect(() => convertEasyEmailProTemplate(42 as never)).toThrow(
       INVALID_MESSAGE,
@@ -792,6 +804,29 @@ describe("divider width against the page", () => {
       children: [dividerSection("500px", "499px", "40%")],
     });
     expect(dividerWidths(content.blocks[0])).toEqual(["full", 499, "40%"]);
+  });
+
+  it("quotes at most 80 characters of a widget's logic in its notes", () => {
+    const condition = "x".repeat(81);
+    const { report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "section_widget",
+          data: { input: {} },
+          attributes: {},
+          logic: { condition },
+          children: [dividerSection("600px")],
+        },
+      ],
+    });
+    const notes = report.entries.map((entry) => entry.note ?? "");
+    expect(
+      notes.some((note) => note.includes(`logic ${"x".repeat(80)}…`)),
+    ).toBe(true);
+    expect(notes.some((note) => note.includes(condition))).toBe(false);
   });
 
   it("keeps the page width inside a widget", () => {

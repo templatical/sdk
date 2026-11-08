@@ -365,28 +365,99 @@ function columnBackgroundColor(
   return parseColor(raw);
 }
 
-/**
- * A column or row style's border as a section border. A side that paints
- * nothing has width 0. `undefined` when no side is drawn.
- */
-function columnBorder(
-  style: Record<string, string> | undefined,
-): BorderValue | undefined {
-  if (!style) return undefined;
-  let drawn = false;
+/** A side that paints nothing has width 0 and keeps its parsed style and color. */
+function borderValue(style: Record<string, string> | undefined): BorderValue {
   const border = {} as BorderValue;
   for (const side of BORDER_SIDES) {
-    const raw = style[`border-${side}`];
+    const raw = style?.[`border-${side}`];
     const parsed = raw ? parseBorderTop(raw) : undefined;
     const paints = parsed !== undefined && parsed.drawn && parsed.width > 0;
-    if (paints) drawn = true;
     border[side] = {
       width: paints ? parsed.width : 0,
       style: toBorderStyle(parsed?.style),
       color: parsed?.color || "#000000",
     };
   }
-  return drawn ? border : undefined;
+  return border;
+}
+
+/** A column or row style's border as a section border, if any side draws. */
+function columnBorder(
+  style: Record<string, string> | undefined,
+): BorderValue | undefined {
+  if (!style) return undefined;
+  const border = borderValue(style);
+  return BORDER_SIDES.some((side) => border[side].width > 0)
+    ? border
+    : undefined;
+}
+
+function sameBorderSide(
+  a: BorderValue["top"],
+  b: BorderValue["top"],
+  aRaw: string | undefined,
+  bRaw: string | undefined,
+): boolean {
+  return (
+    a.width === b.width &&
+    a.style === b.style &&
+    a.color === b.color &&
+    parseBorderTop(aRaw).style === parseBorderTop(bRaw).style
+  );
+}
+
+/** Gutterless columns supply a section edge only when every drawn side fits. */
+function promotedColumnBorder(
+  columns: BeeFreeeColumn[],
+  rowBorder: BorderValue | undefined,
+): BorderValue | undefined {
+  if (columns.some((column) => columnBackgroundColor(column.style) !== "")) {
+    return undefined;
+  }
+  const borders = columns.map((column) => borderValue(column.style));
+  if (
+    !borders.some((border) =>
+      BORDER_SIDES.some((side) => border[side].width > 0),
+    )
+  ) {
+    return undefined;
+  }
+  if (
+    borders.slice(1).some((border) => border.left.width > 0) ||
+    borders.slice(0, -1).some((border) => border.right.width > 0)
+  ) {
+    return undefined;
+  }
+  for (const side of ["top", "bottom"] as const) {
+    if (
+      borders.some((border) => border[side].width > 0) &&
+      !borders.every((border, index) =>
+        sameBorderSide(
+          border[side],
+          borders[0][side],
+          columns[index].style?.[`border-${side}`],
+          columns[0].style?.[`border-${side}`],
+        ),
+      )
+    ) {
+      return undefined;
+    }
+  }
+  const promoted: BorderValue = {
+    top: borders[0].top,
+    right: borders[borders.length - 1].right,
+    bottom: borders[0].bottom,
+    left: borders[0].left,
+  };
+  if (
+    rowBorder &&
+    BORDER_SIDES.some(
+      (side) => rowBorder[side].width > 0 && promoted[side].width > 0,
+    )
+  ) {
+    return undefined;
+  }
+  return promoted;
 }
 
 function isFlag(value: string | boolean | undefined): boolean {
@@ -773,9 +844,19 @@ function processRow(
   }
 
   // Multi-column — wrap in a SectionBlock. Each column's padding folds into
-  // its modules; a column background or border has no per-column box.
+  // its modules; only continuous outer borders fit the section box.
   const widths = columnPixels(layout, settings.width);
   const frame = rowFrame(row, rowBg, undefined, true, warnings, images.band);
+  const promoted = promotedColumnBorder(columns, frame.border);
+  if (promoted) {
+    const border = {} as BorderValue;
+    for (const side of BORDER_SIDES) {
+      border[side] = frame.border?.[side].width
+        ? frame.border[side]
+        : promoted[side];
+    }
+    frame.border = border;
+  }
   const contentWidths = renderedColumnContentWidths(
     layout,
     settings.width,
@@ -820,7 +901,7 @@ function processRow(
     foldColumnPadding(blocks, columnPadding);
     return blocks;
   });
-  warnIfColumnBoxDropped(columns, warnings);
+  if (!promoted) warnIfColumnBoxDropped(columns, warnings);
   // Widths that are a length of this room — an image, a lone icon, a px
   // divider — are chosen with the padding already returned, so giving it
   // back does not resize them. A full button, a percentage divider, a menu

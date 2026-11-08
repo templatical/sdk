@@ -731,12 +731,33 @@ function frameHasInk(inner: string): boolean {
   return text.length > 0;
 }
 
+/**
+ * The font-weight the importer keeps: normal / bold / bolder / lighter, a
+ * CSS-wide keyword, or a CSS number (sign and exponent allowed) from 1 to
+ * 1000. Anything else, including a `var()` it cannot resolve, is undefined.
+ */
+function cssFontWeight(raw: string | undefined): string | undefined {
+  const value = raw?.trim();
+  if (!value) return undefined;
+  if (
+    /^(normal|bold|bolder|lighter|inherit|initial|unset|revert|revert-layer)$/i.test(
+      value,
+    )
+  )
+    return value;
+  if (!/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value))
+    return undefined;
+  const weight = Number(value);
+  return weight >= 1 && weight <= 1000 ? value : undefined;
+}
+
 function inlineStylesToHtml(
   html: string,
   style: Record<string, string | undefined>,
   textColor: string,
   linkColor: string,
   listBox?: ListBox,
+  notes?: string[],
 ): string {
   const spanDecls: StyleDecl[] = [];
   const fontSize = parsePxValue(style["font-size"]);
@@ -747,13 +768,16 @@ function inlineStylesToHtml(
   // color needs a span to survive.
   if (color && color !== textColor)
     spanDecls.push({ name: "color", value: color });
-  const fontWeight = style["font-weight"];
+  const fontWeight = cssFontWeight(style["font-weight"]);
   // "400" is the numeric synonym for "normal" — neither needs an explicit
   // span (matches the import-unlayer importer).
-  if (fontWeight && fontWeight !== "normal" && fontWeight !== "400")
+  if (fontWeight && !/^(normal|400)$/i.test(fontWeight))
     spanDecls.push({ name: "font-weight", value: fontWeight });
   const fontFamily = canonicalFontStack(style["font-family"]);
-  if (fontFamily) spanDecls.push({ name: "font-family", value: fontFamily });
+  if (fontFamily && fontFamily.length <= 256)
+    spanDecls.push({ name: "font-family", value: fontFamily });
+  else if (fontFamily)
+    notes?.push("Font family longer than 256 characters was dropped.");
   const letterSpacing = moduleLetterSpacing(style["letter-spacing"]);
   if (letterSpacing)
     spanDecls.push({ name: "letter-spacing", value: letterSpacing });
@@ -1078,6 +1102,7 @@ function paragraphModuleSpacing(
 function convertText(
   descriptor: BeeFreeeModuleDescriptor,
   textColor: string,
+  notes: string[] = [],
 ): Block {
   const textContent =
     descriptor.text ?? descriptor.paragraph ?? descriptor.list;
@@ -1097,6 +1122,7 @@ function convertText(
         textColor,
         moduleLinkColor(textContent),
         listBox,
+        notes,
       ),
     ),
     paragraphSpacing: paragraphModuleSpacing(textContent, html),
@@ -1226,7 +1252,11 @@ function convertHeading(
   textColor: string,
 ): { block: Block; note?: string } {
   const heading = descriptor.heading;
-  if (!heading) return { block: convertText(descriptor, textColor) };
+  if (!heading) {
+    const notes: string[] = [];
+    const block = convertText(descriptor, textColor, notes);
+    return { block, ...(notes.length > 0 ? { note: notes.join(" ") } : {}) };
+  }
 
   const style = heading.style ?? {};
   const tag = heading.title ?? "h2";
@@ -2355,7 +2385,7 @@ function iconTextStyle(style: Record<string, string>): string {
   const color = parseColor(style.color);
   const fontFamily = canonicalFontStack(style["font-family"]);
   const fontSize = parsePxValue(style["font-size"]);
-  const fontWeight = style["font-weight"];
+  const fontWeight = cssFontWeight(style["font-weight"]);
   return [
     color ? `color: ${color};` : "",
     fontFamily ? `font-family: ${fontFamily};` : "",
@@ -2653,7 +2683,8 @@ function convertModuleBase(
   switch (mappedType) {
     case "paragraph":
     case "list":
-      block = convertText(descriptor, textColor);
+      block = convertText(descriptor, textColor, notes);
+      isApproximation = notes.length > 0;
       break;
     case "title": {
       const result = convertHeading(descriptor, textColor);

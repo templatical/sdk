@@ -16,6 +16,7 @@ import {
 import { convertLeaf, type Converted, type MapContext } from "./block-mapper";
 import { COLUMN_COUNT, columnPixels, matchColumnLayout } from "./column-layout";
 import { isUnset, readAttr } from "./normalize";
+import { noteValue } from "./note-value";
 import type {
   ConversionStatus,
   EasyEmailProNode,
@@ -85,7 +86,9 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
     } else {
       const shown = rawWidths
         .map((width) =>
-          typeof width === "string" && !isUnset(width) ? width : "auto",
+          typeof width === "string" && !isUnset(width)
+            ? noteValue(width)
+            : "auto",
         )
         .join(", ");
       reasons.push(
@@ -255,7 +258,7 @@ export function applyWrapper(
     section.wrapper = cloneWrapper(wrapper);
   }
   if (sections.length > 1) {
-    const note = `${node.type ?? "standard-wrapper"} holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`;
+    const note = `${noteValue(node.type ?? "standard-wrapper")} holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`;
     for (const entry of entries) {
       if (entry.templaticalBlockType !== "section") continue;
       if (entry.status !== "converted") continue;

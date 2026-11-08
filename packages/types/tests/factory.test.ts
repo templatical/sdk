@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   generateId,
   createTitleBlock,
@@ -279,6 +279,36 @@ describe("createBlock", () => {
 });
 
 describe("cloneBlock", () => {
+  it("copies a wrapper subtree once and remints every block ID", () => {
+    const leaf = createParagraphBlock({ content: "<p>Leaf</p>" });
+    const section = createSectionBlock({ children: [[leaf]] });
+    const source = createWrapperBlock({ children: [section] });
+    const stringify = vi.spyOn(JSON, "stringify");
+    let cloned;
+    try {
+      cloned = cloneBlock(source);
+      expect(stringify).toHaveBeenCalledTimes(1);
+    } finally {
+      stringify.mockRestore();
+    }
+    if (cloned.type !== "wrapper" || cloned.children[0].type !== "section")
+      throw new Error("unexpected clone shape");
+    const copySection = cloned.children[0];
+    const copyLeaf = copySection.children[0][0];
+    const sourceIds = [source.id, section.id, leaf.id];
+    const copyIds = [cloned.id, copySection.id, copyLeaf.id];
+    expect(new Set(copyIds).size).toBe(3);
+    for (const id of copyIds) expect(sourceIds).not.toContain(id);
+    expect({
+      ...cloned,
+      id: source.id,
+      children: [{
+        ...copySection,
+        id: section.id,
+        children: [[{ ...copyLeaf, id: leaf.id }]],
+      }],
+    }).toEqual(source);
+  });
   it("creates a deep copy with a new ID", () => {
     const original = createTitleBlock({ content: "<p>Test</p>" });
     const cloned = cloneBlock(original);

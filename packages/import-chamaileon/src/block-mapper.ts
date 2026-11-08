@@ -1,3 +1,4 @@
+import { noteValue } from "./note-value";
 import {
   createButtonBlock,
   createDividerBlock,
@@ -80,7 +81,7 @@ export function skippedLoopEntry(
     sourceTag: type,
     templaticalBlockType: null,
     status: "skipped",
-    note: expression ? `${type} ${expression}` : type,
+    note: expression ? `${type} ${noteValue(expression)}` : type,
   };
 }
 
@@ -90,7 +91,7 @@ export function markLoopApproximated(
   type: string,
   expression: string | undefined,
 ): void {
-  const extra = expression ? `${type} ${expression}` : type;
+  const extra = expression ? `${type} ${noteValue(expression)}` : type;
   for (let i = from; i < entries.length; i++) {
     const entry = entries[i];
     if (entry.status === "converted") {
@@ -387,7 +388,7 @@ function convertUnknown(node: ChamaileonNode, ctx: MapContext): Converted {
       sourceTag,
       "html",
       "html-fallback",
-      `${sourceTag} has no Templatical block equivalent; the original node is preserved as JSON.`,
+      `${noteValue(sourceTag)} has no Templatical block equivalent; the original node is preserved as JSON.`,
     ),
   );
 }

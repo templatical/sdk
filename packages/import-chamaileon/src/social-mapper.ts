@@ -1,4 +1,5 @@
 import { createSocialIconsBlock, generateId } from "@templatical/types";
+import { noteValue } from "./note-value";
 import type {
   BlockStyles,
   BlockVisibility,
@@ -119,7 +120,7 @@ export function convertSocial(
     const platform = normalizePlatform(rawType);
     if (!platform) {
       notes.push(
-        `Unrecognised social platform "${rawType}" mapped to "website".`,
+        `Unrecognised social platform "${noteValue(rawType)}" mapped to "website".`,
       );
     }
     icons.push({
@@ -143,7 +144,7 @@ export function convertSocial(
     iconSize = resolved.size;
     if (!resolved.exact) {
       notes.push(
-        `Icon size ${attrs.size} is not one of 24/32/48px; resolved to "${resolved.size}".`,
+        `Icon size ${noteValue(String(attrs.size))} is not one of 24/32/48px; resolved to "${resolved.size}".`,
       );
     }
   }
