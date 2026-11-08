@@ -1,5 +1,6 @@
 import { createSectionBlock } from "@templatical/types";
 import type { Block, BlockVisibility, SpacingValue } from "@templatical/types";
+import { noteValue } from "./note-value";
 import {
   parseColor,
   parsePadding,
@@ -134,7 +135,7 @@ export function buildFullwidth(
     if (stacking === "none") {
       section.stackOnMobile = false;
     } else if (stacking !== undefined && stacking !== "left-on-top") {
-      reasons.push(`unknown stacking "${stacking}" omitted`);
+      reasons.push(`unknown stacking "${noteValue(stacking)}" omitted`);
     }
 
     const slots = COLUMN_COUNT[layout];
