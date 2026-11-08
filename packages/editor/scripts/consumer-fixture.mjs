@@ -32,8 +32,8 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
-  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -485,23 +485,31 @@ export function ensurePrivateParent(consumerDir) {
     if (error?.code !== "EEXIST") throw error;
   }
   const uid = typeof process.getuid === "function" ? process.getuid() : null;
-  // Every folder above the parent must stay put for the whole run, or another
-  // user could rename the path and put their own folder in its place: each
-  // one is owned by this user or root, and is not group or other writable
-  // unless it has the sticky bit (whose owner, trusted here, can still rename).
+  // Every entry above the parent must stay put for the whole run, or another
+  // user could rename the path and put their own folder in its place. Each
+  // entry, a symlink included, is owned by this user or root; each folder is
+  // not group or other writable unless it has the sticky bit (whose owner,
+  // trusted here, can still rename). lstat, never stat: a symlink is judged by
+  // who can replace it, and its target's real path is walked as well.
   if (process.platform !== "win32" && uid !== null) {
-    for (let dir = dirname(parent); ; dir = dirname(dir)) {
-      const ancestor = statSync(dir);
-      const trustedOwner = ancestor.uid === uid || ancestor.uid === 0;
-      const renamable =
-        (ancestor.mode & 0o022) !== 0 && (ancestor.mode & 0o1000) === 0;
-      if (!trustedOwner || renamable) {
-        throw new Error(
-          `Refusing to use ${parent}: ${dir} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
-        );
+    const walk = (start) => {
+      for (let dir = start; ; dir = dirname(dir)) {
+        const entry = lstatSync(dir);
+        const trustedOwner = entry.uid === uid || entry.uid === 0;
+        const renamable =
+          entry.isDirectory() &&
+          (entry.mode & 0o022) !== 0 &&
+          (entry.mode & 0o1000) === 0;
+        if (!trustedOwner || renamable) {
+          throw new Error(
+            `Refusing to use ${parent}: ${dir} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+          );
+        }
+        if (dirname(dir) === dir) break;
       }
-      if (dirname(dir) === dir) break;
-    }
+    };
+    walk(dirname(parent));
+    walk(realpathSync(dirname(parent)));
   }
   const stat = lstatSync(parent);
   const owned = uid === null || stat.uid === uid;

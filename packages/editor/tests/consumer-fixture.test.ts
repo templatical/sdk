@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -194,6 +195,27 @@ describe("ensurePrivateParent", () => {
         );
       } finally {
         getuid.mockRestore();
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "walks a symlinked ancestor's real path too",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const open = join(root, "open");
+        mkdirSync(open);
+        chmodSync(open, 0o777);
+        const target = join(open, "target");
+        mkdirSync(target, { mode: 0o700 });
+        const link = join(root, "link");
+        symlinkSync(target, link);
+        expect(() => ensurePrivateParent(join(link, "p", "app"))).toThrow(
+          `Refusing to use ${join(link, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      } finally {
         rmSync(root, { recursive: true, force: true });
       }
     },
