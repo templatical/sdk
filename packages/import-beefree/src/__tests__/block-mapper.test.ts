@@ -1052,12 +1052,13 @@ describe("convertModule", () => {
     function buttonWith(
       style: Record<string, string | number>,
       moduleStyle?: Record<string, string>,
+      label = "Go",
     ) {
       const { block, entry } = convertModule(
         makeModule("mailup-bee-newsletter-modules-button", {
           ...(moduleStyle ? { style: moduleStyle } : {}),
           button: {
-            label: "Go",
+            label,
             href: "https://example.com",
             // BeeFree JSON stores a numeric font-weight; the descriptor type
             // only names strings.
@@ -1069,6 +1070,121 @@ describe("convertModule", () => {
       if (block.type !== "button") throw new Error("expected a button block");
       return { block, entry };
     }
+
+    it("keeps explicit zero padding on every button side", () => {
+      const { block } = buttonWith({
+        "padding-top": "0px",
+        "padding-right": "0px",
+        "padding-bottom": "0px",
+        "padding-left": "0px",
+      });
+      expect(block.buttonPadding).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+    });
+
+    it("adds only line-height compensation to zero vertical padding", () => {
+      const { block } = buttonWith({
+        "font-size": "16px",
+        "line-height": "200%",
+        "padding-top": "0px",
+        "padding-bottom": "0px",
+      });
+      expect(block.buttonPadding).toEqual({
+        top: 6,
+        right: 24,
+        bottom: 6,
+        left: 24,
+      });
+    });
+
+    it("keeps one-pixel padding on every button side", () => {
+      const { block } = buttonWith({
+        "padding-top": "1px",
+        "padding-right": "1px",
+        "padding-bottom": "1px",
+        "padding-left": "1px",
+      });
+      expect(block.buttonPadding).toEqual({
+        top: 1,
+        right: 1,
+        bottom: 1,
+        left: 1,
+      });
+    });
+
+    it.each([
+      ["0px", { top: 0, right: 0, bottom: 0, left: 0 }],
+      ["4px 8px", { top: 4, right: 8, bottom: 4, left: 8 }],
+      ["1px 2px 3px", { top: 1, right: 2, bottom: 3, left: 2 }],
+      ["1px 2px 3px 4px", { top: 1, right: 2, bottom: 3, left: 4 }],
+    ] as const)("expands button padding shorthand %s", (padding, expected) => {
+      expect(buttonWith({ padding }).block.buttonPadding).toEqual(expected);
+    });
+
+    it("lets a readable longhand override its shorthand side", () => {
+      expect(
+        buttonWith({ padding: "4px 8px", "padding-left": "0px" }).block
+          .buttonPadding,
+      ).toEqual({
+        top: 4,
+        right: 8,
+        bottom: 4,
+        left: 0,
+      });
+    });
+
+    it("uses defaults for missing, unreadable, and negative padding", () => {
+      expect(buttonWith({}).block.buttonPadding).toEqual({
+        top: 12,
+        right: 24,
+        bottom: 12,
+        left: 24,
+      });
+      expect(
+        buttonWith({
+          "padding-top": "auto",
+          "padding-right": "-1px",
+          "padding-bottom": "-0.4px",
+          "padding-left": "2em",
+        }).block.buttonPadding,
+      ).toEqual({
+        top: 12,
+        right: 24,
+        bottom: 12,
+        left: 24,
+      });
+      expect(buttonWith({ padding: "auto" }).block.buttonPadding).toEqual({
+        top: 12,
+        right: 24,
+        bottom: 12,
+        left: 24,
+      });
+    });
+
+    it("drops a whole shorthand with a negative side but keeps valid longhands", () => {
+      expect(
+        buttonWith({ padding: "4px -0.4px", "padding-left": "3px" }).block
+          .buttonPadding,
+      ).toEqual({
+        top: 12,
+        right: 24,
+        bottom: 12,
+        left: 3,
+      });
+      expect(
+        buttonWith({ padding: "4px 8px", "padding-left": "-0.4px" }).block
+          .buttonPadding,
+      ).toEqual({
+        top: 4,
+        right: 8,
+        bottom: 4,
+        left: 8,
+      });
+    });
 
     // The renderer's button label line box is 1.2× the font size (MJML's
     // `line-height: 120%`). Beefree's usual 200% is taller, and that extra
@@ -1175,18 +1291,77 @@ describe("convertModule", () => {
       },
     );
 
-    it("does not note a weight BeeFree left unset or could not read", () => {
+    it("imports a missing or unreadable weight as regular without a note", () => {
       for (const raw of [undefined, "", "inherit", "lighter"]) {
         const { block, entry } = buttonWith(
           raw === undefined ? {} : { "font-weight": raw },
         );
-        expect(block.fontWeight).toBeUndefined();
+        expect(block.fontWeight).toBe("regular");
         expect(entry.status).toBe("converted");
         expect(entry.note).toBeUndefined();
       }
     });
 
-    it("maps the style weight and strips a strong label rather than reading the tag as weight", () => {
+    it.each([
+      ["<p><strong>Go</strong></p>", undefined],
+      ["<p><b>Go</b></p>", undefined],
+      ['<p><span style="font-weight:700">Go</span></p>', undefined],
+      ['<p><span style="font-weight:bold">Go</span></p>', undefined],
+      ['<p><span style="font-weight:bolder">Go</span></p>', undefined],
+      ['<p><span style="font-weight:600">Go</span></p>', undefined],
+      ['<p><span style="color:red; font-weight: 700">Go</span></p>', undefined],
+      ["<p> \n <strong>Go</strong> </p>", undefined],
+      ["<p><!-- plain --><strong>Go</strong></p>", undefined],
+      ["<p><strong>Go</strong></p><!-- unclosed", undefined],
+      ["<p>Go</p>", "regular"],
+    ] as const)("maps missing weight for label %s", (label, expected) => {
+      const { block, entry } = buttonWith({}, undefined, label);
+      expect(block.fontWeight).toBe(expected);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it.each([
+      "<p><strong>Go</strong><x:y></p>",
+      "<p><strong>Go</strong><!doctype x></p>",
+      "<p><strong>Go</strong>></p>",
+      "<p><strong>Go</strong>< unclosed",
+    ])("counts only text the label keeps in %s", (label) => {
+      const { block, entry } = buttonWith({}, undefined, label);
+      expect(block.text).toBe("Go");
+      expect(block.fontWeight).toBeUndefined();
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("notes partial bold once when a missing weight flattens a mixed label", () => {
+      const { block, entry } = buttonWith(
+        {},
+        undefined,
+        "<p>Pay <strong>now</strong></p>",
+      );
+      expect(block.text).toBe("Pay now");
+      expect(block.fontWeight).toBe("regular");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "partial bold in the label is not carried; button imports at regular weight",
+      );
+    });
+
+    it("keeps one note when partial bold and letter spacing are both dropped", () => {
+      const { block, entry } = buttonWith(
+        { "letter-spacing": "1px" },
+        undefined,
+        "Pay <b>now</b>",
+      );
+      expect(block.fontWeight).toBe("regular");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "letter spacing 1px, partial bold in the label are not carried; button imports at regular weight",
+      );
+    });
+
+    it("keeps an all-strong label bold when the style weight is 400", () => {
       const { block, entry } = convertModule(
         makeModule("mailup-bee-newsletter-modules-button", {
           button: {
@@ -1201,12 +1376,23 @@ describe("convertModule", () => {
       expect(block.type).toBe("button");
       if (block.type !== "button") return;
       expect(block.text).toBe("REGISTER NOW");
-      expect(block.fontWeight).toBe("regular");
+      expect(block.fontWeight).toBeUndefined();
       expect(entry.status).toBe("converted");
       expect(entry.note).toBeUndefined();
     });
 
-    it("maps weight 400 when only part of the label is strong", () => {
+    it("keeps an all-b label bold when the style weight is 500", () => {
+      const { block, entry } = buttonWith(
+        { "font-weight": "500" },
+        undefined,
+        "<p><b>Go</b></p>",
+      );
+      expect(block.fontWeight).toBeUndefined();
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("notes lost partial bold when weight 400 is set", () => {
       const { block, entry } = convertModule(
         makeModule("mailup-bee-newsletter-modules-button", {
           button: {
@@ -1221,6 +1407,32 @@ describe("convertModule", () => {
       if (block.type !== "button") return;
       expect(block.text).toBe("Pay now");
       expect(block.fontWeight).toBe("regular");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "partial bold in the label is not carried; button imports at regular weight",
+      );
+    });
+
+    it("keeps a readable medium weight and notes lost partial bold", () => {
+      const { block, entry } = buttonWith(
+        { "font-weight": "500" },
+        undefined,
+        "Go <strong>now</strong>",
+      );
+      expect(block.fontWeight).toBe("medium");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "partial bold in the label is not carried; button imports at medium weight",
+      );
+    });
+
+    it("does not note partial bold when the style weight is already bold", () => {
+      const { block, entry } = buttonWith(
+        { "font-weight": "700" },
+        undefined,
+        "Go <strong>now</strong>",
+      );
+      expect(block.fontWeight).toBeUndefined();
       expect(entry.status).toBe("converted");
       expect(entry.note).toBeUndefined();
     });

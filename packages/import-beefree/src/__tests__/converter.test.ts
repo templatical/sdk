@@ -491,6 +491,73 @@ describe("convertBeeFreeTemplate", () => {
     }
   });
 
+  it.each([
+    [
+      {
+        "padding-top": "0px",
+        "padding-right": "0px",
+        "padding-bottom": "0px",
+        "padding-left": "0px",
+      },
+      { top: 0, right: 0, bottom: 0, left: 0 },
+      "regular",
+    ],
+    [
+      {
+        "padding-top": "1px",
+        "padding-right": "1px",
+        "padding-bottom": "1px",
+        "padding-left": "1px",
+      },
+      { top: 1, right: 1, bottom: 1, left: 1 },
+      "regular",
+    ],
+    [
+      { "padding-top": "0px", "padding-bottom": "0px", "line-height": "200%" },
+      { top: 6, right: 24, bottom: 6, left: 24 },
+      "regular",
+    ],
+    [
+      { "font-weight": "400" },
+      { top: 12, right: 24, bottom: 12, left: 24 },
+      "regular",
+    ],
+    [{}, { top: 12, right: 24, bottom: 12, left: 24 }, "regular"],
+  ] as const)(
+    "converts issue 1151 button style %j",
+    (style, padding, weight) => {
+      const { content } = convertBeeFreeTemplate({
+        page: {
+          body: { content: { style: { width: "600px" } } },
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-button",
+                      descriptor: {
+                        button: { href: "#", label: "<p>OK</p>", style },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const block = content.blocks.flatMap((item) =>
+        item.type === "section" ? item.children.flat() : [item],
+      )[0];
+      expect(block.type).toBe("button");
+      if (block.type !== "button") throw new Error("expected a button block");
+      expect(block.buttonPadding).toEqual(padding);
+      expect(block.fontWeight).toBe(weight);
+    },
+  );
+
   it("converts divider module", () => {
     const template: BeeFreeTemplate = {
       page: {

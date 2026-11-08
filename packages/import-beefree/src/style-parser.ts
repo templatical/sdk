@@ -225,6 +225,44 @@ export function extractPadding(
   };
 }
 
+/**
+ * Button padding falls back to the button factory's 12px/24px only for sides
+ * with no readable declaration; an explicit 0 stays 0. A valid longhand wins over the shorthand on its side.
+ */
+export function readButtonPadding(style: Record<string, string>): SpacingValue {
+  const shorthandParts = style.padding?.trim().split(/\s+/) ?? [];
+  const shorthandValues = shorthandParts.map(buttonPaddingLength);
+  const shorthand =
+    shorthandParts.length >= 1 &&
+    shorthandParts.length <= 4 &&
+    shorthandValues.every((value) => value !== undefined)
+      ? parseShorthandPadding(
+          shorthandParts
+            .map((part) => `${Number.parseFloat(part)}px`)
+            .join(" "),
+        )
+      : undefined;
+
+  return {
+    top: buttonPaddingLength(style["padding-top"]) ?? shorthand?.top ?? 12,
+    right:
+      buttonPaddingLength(style["padding-right"]) ?? shorthand?.right ?? 24,
+    bottom:
+      buttonPaddingLength(style["padding-bottom"]) ?? shorthand?.bottom ?? 12,
+    left: buttonPaddingLength(style["padding-left"]) ?? shorthand?.left ?? 24,
+  };
+}
+
+function buttonPaddingLength(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const raw = value.trim();
+  if (/^-?0+(?:\.0+)?$/.test(raw)) return 0;
+  const match = /^(-?(?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(raw);
+  if (!match) return undefined;
+  const numeric = Number(match[1]);
+  return numeric >= 0 ? Math.round(numeric) : undefined;
+}
+
 function paddingLonghand(value: string | undefined): number {
   return Math.max(0, parsePxValue(value));
 }
