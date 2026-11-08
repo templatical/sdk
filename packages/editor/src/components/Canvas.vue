@@ -20,6 +20,7 @@ import {
   FONTS_MANAGER_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   PREVIEW_RESOLUTION_KEY,
+  READ_ONLY_SURFACE_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
   requireInject,
 } from "../keys";
@@ -114,6 +115,10 @@ const mergeTagSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
 // Null in headless mounts and when no resolver is configured.
 const previewResolution = inject(PREVIEW_RESOLUTION_KEY, null);
 provide(
+  READ_ONLY_SURFACE_KEY,
+  computed(() => props.previewMode),
+);
+provide(
   USE_MERGE_TAG_SAMPLES_KEY,
   computed(
     () =>
@@ -151,7 +156,9 @@ const appliesConditionFilter = inject(APPLIES_CONDITION_FILTER_KEY, null);
 
 const blocks = computed({
   get: () => props.content.blocks,
-  set: (value: Block[]) => updateBlockList(editor, value),
+  set: (value: Block[]) => {
+    if (!props.previewMode) updateBlockList(editor, value);
+  },
 });
 
 // Shared with the preview canvas and the save dialog's scaled rows, so all
@@ -282,7 +289,7 @@ function handleFetchData(
     dataSourceFetched: boolean;
   },
 ): void {
-  if (block.type !== "custom") {
+  if (props.previewMode || block.type !== "custom") {
     return;
   }
 
@@ -418,7 +425,9 @@ function handleFetchData(
               : '',
           ]"
           @update="
-            (event) => updateBlockList(editor, blocks, undefined, 0, event)
+            (event) =>
+              !previewMode &&
+              updateBlockList(editor, blocks, undefined, 0, event)
           "
           @dragenter="handleEmptyDragEnter"
           @dragleave="handleEmptyDragLeave"
@@ -527,7 +536,7 @@ function handleFetchData(
                   @fetch-data="handleFetchData(block, $event)"
                   @update="
                     (updates: Partial<Block>) =>
-                      editor.updateBlock(block.id, updates)
+                      !previewMode && editor.updateBlock(block.id, updates)
                   "
                 />
               </BlockWrapper>

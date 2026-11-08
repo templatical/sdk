@@ -37,7 +37,10 @@ const HTML_CONFIG = {
   FORBID_ATTR: FORBID_ATTRIBUTES,
   ALLOWED_URI_REGEXP,
   ADD_ATTR: ["target"],
+  CANVAS_LINKS: true,
 };
+
+const STORAGE_HTML_CONFIG = { ...HTML_CONFIG, CANVAS_LINKS: false };
 
 const SVG_CONFIG = {
   USE_PROFILES: { svg: true, svgFilters: true },
@@ -79,6 +82,23 @@ if (DOMPurify.isSupported) {
       data.keepAttr = false;
     }
   });
+  DOMPurify.addHook("afterSanitizeAttributes", (node, _data, config) => {
+    if (!(config as typeof HTML_CONFIG).CANVAS_LINKS) return;
+    if (
+      node.namespaceURI !== "http://www.w3.org/1999/xhtml" ||
+      node.nodeName.toLowerCase() !== "a"
+    )
+      return;
+    if (node.getAttribute("target")?.toLowerCase() !== "_blank") return;
+
+    const tokens = (node.getAttribute("rel") ?? "")
+      .split(/\s+/)
+      .filter((token) => token && token.toLowerCase() !== "opener");
+    if (!tokens.some((token) => token.toLowerCase() === "noopener")) {
+      tokens.push("noopener");
+    }
+    node.setAttribute("rel", tokens.join(" "));
+  });
 }
 
 function escapeHtmlText(value: string): string {
@@ -94,6 +114,16 @@ function escapeHtmlText(value: string): string {
 export function sanitizeHtml(html: string): string {
   if (!DOMPurify.isSupported) return escapeHtmlText(html);
   return DOMPurify.sanitize(html, HTML_CONFIG);
+}
+
+/**
+ * Sanitize HTML that is written back into the template (translations, AI
+ * Rewrite's Replace). It keeps authored link attributes as they are: the
+ * canvas's `rel` rewrite is for display only.
+ */
+export function sanitizeHtmlForStorage(html: string): string {
+  if (!DOMPurify.isSupported) return escapeHtmlText(html);
+  return DOMPurify.sanitize(html, STORAGE_HTML_CONFIG);
 }
 
 /** Sanitize an integrator-supplied inline SVG icon. */

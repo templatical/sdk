@@ -5,10 +5,11 @@ import {
   substituteHtmlMergeTagSamples,
 } from "@templatical/types";
 import { useElementBounding } from "@vueuse/core";
-import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
+import { computed, inject, ref, watch, type ComputedRef, type Ref } from "vue";
 import {
   MERGE_TAGS_KEY,
   NO_MERGE_TAGS,
+  READ_ONLY_SURFACE_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
 } from "../keys";
 import { useMergeTag } from "./useMergeTag";
@@ -31,6 +32,7 @@ export function useEditableTextBlock(
   // Defaults to `false`, so any surface that doesn't opt in — the editing
   // canvas above all — keeps showing labels.
   const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
+  const readOnly = inject(READ_ONLY_SURFACE_KEY, null);
   const { syntax } = useMergeTag();
 
   /**
@@ -65,6 +67,12 @@ export function useEditableTextBlock(
   );
 
   const isEditing = ref(false);
+  watch(
+    () => readOnly?.value,
+    (value) => {
+      if (value) isEditing.value = false;
+    },
+  );
   const blockRef = ref<HTMLElement | null>(null);
   const { top: boundingTop, left: boundingLeft } = useElementBounding(blockRef);
   // The floating toolbar teleports into the popover root and positions itself
@@ -78,6 +86,7 @@ export function useEditableTextBlock(
   );
 
   function handleDoubleClick(): void {
+    if (readOnly?.value) return;
     isEditing.value = true;
   }
 

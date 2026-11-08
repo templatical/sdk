@@ -26,33 +26,65 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const isConnected = ref(false);
 
   let wsClient: WebSocketClient | null = null;
+  let socketReady: Promise<void> | null = null;
   let channelName: string | null = null;
+  // The channel the latest `connect` asked for. Recorded before any await, so
+  // a switch that resumes after a later request is dropped and the last
+  // request wins, including one for the channel already joined.
+  let requestedChannelName: string | null = null;
 
   async function connect(
     templateId: string,
     config: WebSocketConfig,
   ): Promise<void> {
-    if (wsClient) {
-      return;
+    const nextChannelName = `presence-template.${templateId}`;
+    requestedChannelName = nextChannelName;
+    if (wsClient && channelName === nextChannelName) return;
+
+    if (!wsClient) {
+      const created = new WebSocketClient({ authManager, config, onError });
+      wsClient = created;
+      // A failed attempt is forgotten, so the next `connect` opens a new socket
+      // instead of awaiting the same rejection.
+      socketReady = created.connect().catch((error: unknown) => {
+        if (wsClient === created) {
+          wsClient = null;
+          socketReady = null;
+          channelName = null;
+          requestedChannelName = null;
+        }
+        throw error;
+      });
     }
 
-    wsClient = new WebSocketClient({
-      authManager,
-      config,
-      onError,
-    });
+    const client = wsClient;
+    await socketReady;
+    // `disconnect()` during the open can't close a socket that doesn't exist
+    // yet, so a client that lost ownership while opening is closed here.
+    if (wsClient !== client) {
+      client.disconnect();
+      return;
+    }
+    if (
+      requestedChannelName !== nextChannelName ||
+      channelName === nextChannelName
+    )
+      return;
+    if (channelName) client.unsubscribe(channelName);
 
-    await wsClient.connect();
-
-    channelName = `presence-template.${templateId}`;
-    const presenceChannel = wsClient.subscribePresence(channelName);
+    channelName = nextChannelName;
+    channel.value = null;
+    isConnected.value = false;
+    const presenceChannel = client.subscribePresence(nextChannelName);
 
     presenceChannel.bind("pusher:subscription_succeeded", () => {
+      if (channelName !== nextChannelName) return;
       isConnected.value = true;
       channel.value = presenceChannel;
     });
 
     presenceChannel.bind("pusher:subscription_error", (error: unknown) => {
+      if (channelName !== nextChannelName) return;
       isConnected.value = false;
       channel.value = null;
       onError?.(
@@ -70,7 +102,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
     wsClient?.disconnect();
     wsClient = null;
+    socketReady = null;
     channelName = null;
+    requestedChannelName = null;
     channel.value = null;
     isConnected.value = false;
   }

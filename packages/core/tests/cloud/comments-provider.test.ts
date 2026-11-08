@@ -344,6 +344,37 @@ describe("createCloudCommentsProvider", () => {
   });
 
   describe("subscribe — where Pusher lives", () => {
+    it("ignores a broadcast whose comment belongs to another template", async () => {
+      const pusher = createChannel();
+      const { provider, channel } = setup();
+      const onChange = vi.fn();
+      provider.subscribe!("tmpl-2", onChange);
+      channel.value = pusher;
+      await nextTick();
+
+      pusher.emit("comment-broadcast", {
+        action: "commentCreated",
+        comment: record({ templateId: "tmpl-1" }),
+      });
+      expect(onChange).not.toHaveBeenCalled();
+
+      pusher.emit("comment-broadcast", {
+        action: "commentCreated",
+        comment: record({ templateId: "tmpl-2" }),
+      });
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith({
+        type: "created",
+        comment: expect.objectContaining({ id: "c-1", body: "Looks good" }),
+      });
+
+      pusher.emit("comment-broadcast", {
+        action: "commentCreated",
+        comment: record({ templateId: undefined }),
+      });
+      expect(onChange).toHaveBeenCalledTimes(2);
+    });
+
     it("binds the broadcast event once the channel lands", async () => {
       const channel = ref<RealtimeChannel | null>(null);
       const { provider } = setup({ channel });

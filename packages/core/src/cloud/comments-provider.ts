@@ -211,10 +211,15 @@ export function createCloudCommentsProvider(
     },
 
     subscribe(
-      _templateId: string,
+      templateId: string,
       onChange: (change: CommentChange) => void,
     ): () => void {
       function handle(payload: CommentBroadcastPayload): void {
+        if (
+          payload.comment.templateId &&
+          payload.comment.templateId !== templateId
+        )
+          return;
         const comment = toComment(payload.comment);
         switch (payload.action) {
           case "commentCreated":
@@ -239,9 +244,8 @@ export function createCloudCommentsProvider(
 
       // The channel is joined when the template loads, i.e. after this provider is
       // built, and is replaced when another template is opened — so the binding
-      // follows the ref rather than being made once. `_templateId` is unused
-      // because Cloud's channel *is* per-template: a channel change already means
-      // a template change.
+      // follows the ref rather than being made once. The channel switch selects
+      // the template; a payload with its own template id is checked as well.
       const stopWatching = watch(
         channel,
         (next, previous) => {

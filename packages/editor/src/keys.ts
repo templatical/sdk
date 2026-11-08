@@ -282,6 +282,10 @@ export const MERGE_TAG_SAMPLE_MODE_KEY: InjectionKey<Ref<boolean>> =
 export const USE_MERGE_TAG_SAMPLES_KEY: InjectionKey<ComputedRef<boolean>> =
   Symbol("useMergeTagSamples");
 
+/** Whether this block-rendering surface permits edits to the live template. */
+export const READ_ONLY_SURFACE_KEY: InjectionKey<ComputedRef<boolean>> =
+  Symbol("readOnlySurface");
+
 /**
  * The `resolvePreview` seam — resolved content plus its loading and failure
  * state. Provided by `useEditorCore` so every preview surface shares one

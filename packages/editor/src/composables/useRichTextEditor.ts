@@ -8,6 +8,7 @@ import type { Extension, Mark, Node } from "@tiptap/core";
 import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
   inject,
+  computed,
   isRef,
   onBeforeUnmount,
   ref,
@@ -21,7 +22,7 @@ import {
   getSyntaxTriggerChar,
   resolveContentDirection,
 } from "@templatical/types";
-import { EDITOR_KEY, TRANSLATIONS_KEY } from "../keys";
+import { EDITOR_KEY, READ_ONLY_SURFACE_KEY, TRANSLATIONS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { useLogicTag } from "./useLogicTag";
 import { insertLogicTagSelection } from "../utils/insertLogicTag";
@@ -82,7 +83,9 @@ export function useRichTextEditor(
   options: UseRichTextEditorOptions,
 ): UseRichTextEditorReturn {
   const emailEditor = inject(EDITOR_KEY, null);
-  const isEditable = useLocaleEditable();
+  const localeEditable = useLocaleEditable();
+  const readOnly = inject(READ_ONLY_SURFACE_KEY, null);
+  const isEditable = computed(() => localeEditable.value && !readOnly?.value);
 
   const {
     mergeTags,

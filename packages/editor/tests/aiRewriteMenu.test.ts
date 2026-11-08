@@ -188,6 +188,22 @@ describe("AiRewriteMenu (D22)", () => {
     );
   });
 
+  it("keeps canvas link hardening out of the stored AI rewrite", async () => {
+    answer = async () => ({
+      html: '<p><a target="_blank" rel="opener" href="https://example.com">Shop</a></p>',
+    });
+    const { wrapper, tiptap } = await mountMenu();
+    await wrapper.get('[data-testid="ai-rewrite-preset-shorten"]').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="ai-rewrite-preview"] a').attributes("rel")).toBe("noopener");
+    await wrapper.get('[data-testid="ai-rewrite-replace"]').trigger("click");
+    expect(tiptap.steps.setContent).toHaveBeenCalledWith(
+      '<p><a target="_blank" rel="opener" href="https://example.com">Shop</a></p>',
+      { emitUpdate: true },
+    );
+  });
+
   it("discards the result and leaves the paragraph alone", async () => {
     answer = async () => ({ html: "<p>Hi</p>" });
     const { wrapper, tiptap } = await mountMenu();
