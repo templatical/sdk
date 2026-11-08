@@ -60,7 +60,10 @@ const CollaboratorBar = defineAsyncComponent(
  */
 const containerElement = shallowRef<HTMLElement | null>(null);
 const headerElement = shallowRef<HTMLElement | null>(null);
-const { compact, fullWidth } = useHeaderFit(containerElement, headerElement);
+const { compact, fullWidth, statusLabel } = useHeaderFit(
+  containerElement,
+  headerElement,
+);
 
 defineProps<{
   editor: BaseEditorReturn;
@@ -133,6 +136,7 @@ defineProps<{
       ref="headerElement"
       :data-compact="compact"
       :data-full-width="fullWidth"
+      :data-status-label="statusLabel"
       class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] tpl:items-center tpl:px-4 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:border-b tpl:border-[var(--tpl-border)]"
     >
       <!-- Left: the template's identity — the inline-editable name, and under it
@@ -348,7 +352,8 @@ defineProps<{
            make it read as a different kind of thing. The Amber-Accent Exception
            in DESIGN.md records the decision and its limits — chief among them
            that amber must never be the only carrier of a state, which is why the
-           `TemplateSaveStatus` badge says "Unsaved" in words beside it.
+           `TemplateSaveStatus` badge marks it with its own glyph and says
+           "Unsaved" in words wherever the header has room for them.
 
            The light lift is the same condition, and it is Flat-At-Rest applied
            rather than bent: a surface paints no shadow until something happens to

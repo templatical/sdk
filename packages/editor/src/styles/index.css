@@ -207,6 +207,10 @@
 
     /* Spring easing transition */
     --tpl-transition: var(--tpl-user-transition, 120ms cubic-bezier(0.16, 1, 0.3, 1));
+
+    /* Side-panel motion: the AI and Comments panels, the properties panel they
+     * push aside and the canvas they narrow all move on this one token. */
+    --tpl-panel-transition: var(--tpl-user-panel-transition, 240ms cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 /* Dark theme defaults — activated by data attribute. User overrides for dark
@@ -1134,6 +1138,58 @@
     .tpl-spinner {
         animation: tpl-spin 1s linear infinite;
     }
+
+    .tpl-body,
+    .tpl-right-sidebar {
+        transition: none;
+    }
+
+    .tpl-panel-enter-active,
+    .tpl-panel-leave-active {
+        animation: none;
+    }
+}
+
+/* A side panel opening shifts the properties panel left by its width and
+   narrows the canvas; all three run on `--tpl-panel-transition` so the panels
+   stay edge to edge and the canvas settles with them. The panels use keyframes
+   rather than a transition: Vue starts an enter transition a frame after
+   insertion, while the properties panel's `right` transition starts the frame
+   the state changes, so a transitioned panel trails it by a frame. A keyframe
+   animation starts the frame its class lands. Locked by
+   `tests/sidePanelMotion.test.ts`. */
+.tpl-body {
+    transition: left var(--tpl-panel-transition), right var(--tpl-panel-transition);
+}
+
+.tpl-right-sidebar {
+    transition: right var(--tpl-panel-transition);
+}
+
+.tpl-panel-enter-active {
+    animation: var(--tpl-panel-transition) both tpl-panel-in;
+}
+
+.tpl-panel-leave-active {
+    animation: var(--tpl-panel-transition) both tpl-panel-out;
+}
+
+@keyframes tpl-panel-in {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: none;
+    }
+}
+
+@keyframes tpl-panel-out {
+    from {
+        transform: none;
+    }
+    to {
+        transform: translateX(100%);
+    }
 }
 
 .tpl-header-container {
@@ -1159,6 +1215,21 @@
 
 .tpl-header-timestamp {
     max-width: 100%;
+}
+
+/* The save-status words never decide the header layout (`useHeaderFit`): where
+   the full header has no room for them, the badge shows its glyph alone and
+   keeps the words for screen readers and its tooltip. */
+.tpl-header:not([data-status-label="true"]) .tpl-status-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* Measured full-label overflow drives compaction in light and shadow roots. */

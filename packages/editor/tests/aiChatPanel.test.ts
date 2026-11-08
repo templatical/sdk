@@ -78,6 +78,18 @@ async function setup(
 }
 
 describe("AiChatPanel", () => {
+  it("renders the positioned panel as its root, so the slide has a box to move", async () => {
+    // `AiPanels` animates this component's root. A `display: contents`
+    // wrapper there has no box, and the panel popped in and out unanimated.
+    const { wrapper } = await setup({
+      chat: vi.fn(async () => ({ messageId: null, text: "" })),
+    });
+    const root = wrapper.element as HTMLElement;
+    expect(root.getAttribute("data-testid")).toBe("ai-panel-chat");
+    expect(root.classList.contains("tpl-ai-sidebar")).toBe(true);
+    expect(root.classList.contains("tpl:contents")).toBe(false);
+  });
+
   it("shows the history error string when conversation loading rejects", async () => {
     const { wrapper, feature } = await setup({
       conversation: {
@@ -517,7 +529,7 @@ describe("chat attachment controls", () => {
       chat: vi.fn(async () => ({ messageId: null, text: "" })),
       chatAttachments: true,
     });
-    const panel = wrapper.get('[data-testid="ai-chat-dropzone"]');
+    const panel = wrapper.get('[data-testid="ai-panel-chat"]');
     await panel.trigger("dragenter", {
       dataTransfer: { types: ["text/plain"] },
     });
@@ -598,7 +610,7 @@ describe("chat attachment controls", () => {
     expect(wrapper.get('input[type="file"]').attributes()).toHaveProperty(
       "disabled",
     );
-    await wrapper.get('[data-testid="ai-chat-dropzone"]').trigger("drop", {
+    await wrapper.get('[data-testid="ai-panel-chat"]').trigger("drop", {
       dataTransfer: { types: ["Files"], files: [attachment("other.png")] },
     });
     expect(wrapper.findAll('[data-testid="ai-chat-attachment"]')).toHaveLength(

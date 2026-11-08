@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
+import { flushPromises } from "@vue/test-utils";
 import { computed, nextTick, reactive, ref } from "vue";
 import CommentsSidebar from "../src/components/CommentsSidebar.vue";
 import { mountEditor } from "./helpers/mount";
@@ -539,6 +540,166 @@ describe("CommentsSidebar mutations", () => {
       blockId: "blk-1",
       locale: "en",
     });
+  });
+});
+
+describe("CommentsSidebar controls", () => {
+  const byText = (
+    wrapper: Awaited<ReturnType<typeof mountSidebar>>["wrapper"],
+    text: string,
+  ) => wrapper.findAll("button").filter((b) => b.text() === text);
+
+  it("emits close from the header's close button", async () => {
+    const { wrapper } = await mountSidebar();
+
+    await wrapper.get('button[aria-label="comments.close"]').trigger("click");
+
+    expect(wrapper.emitted("close")).toHaveLength(1);
+  });
+
+  it("filters to unresolved threads, and to the selected block", async () => {
+    const { wrapper, feature, editor } = await mountSidebar({
+      threads: [
+        comment("c-1", { body: "open", blockId: "blk-1" }),
+        comment("c-2", {
+          body: "done",
+          blockId: "blk-2",
+          resolvedAt: "2026-08-17T11:00:00Z",
+        }),
+      ],
+      canvasBlockIds: ["blk-1", "blk-2"],
+    });
+
+    await wrapper.get('[data-testid="comments-filter-all"]').trigger("click");
+    await wrapper
+      .get('[data-testid="comments-filter-unresolved"]')
+      .trigger("click");
+    await nextTick();
+    expect(wrapper.text()).toContain("open");
+    expect(wrapper.text()).not.toContain("done");
+
+    editor.state.selectedBlockId = "blk-2";
+    await nextTick();
+    await wrapper.get('[data-testid="comments-filter-block"]').trigger("click");
+    await nextTick();
+    expect(feature.filterBlockId.value).toBe("blk-2");
+    expect(wrapper.text()).not.toContain("open");
+  });
+
+  it("saves and cancels a thread edit from its buttons", async () => {
+    const { wrapper, provider } = await mountSidebar();
+
+    await wrapper.get('[data-testid="comment-edit"]').trigger("click");
+    await nextTick();
+    await wrapper.findAll("textarea")[0].setValue("from the button");
+    await byText(wrapper, "comments.save")[0].trigger("click");
+    expect(provider.update).toHaveBeenCalledWith("tpl-1", "c-1", {
+      body: "from the button",
+    });
+
+    await wrapper.get('[data-testid="comment-edit"]').trigger("click");
+    await nextTick();
+    await wrapper.findAll("textarea")[0].setValue("discard me");
+    await byText(wrapper, "comments.cancel")[0].trigger("click");
+    await nextTick();
+    expect(wrapper.text()).not.toContain("discard me");
+    expect(provider.update).toHaveBeenCalledTimes(1);
+  });
+
+  async function mountWithReply() {
+    const mounted = await mountSidebar({
+      threads: [
+        comment("c-1", {
+          replies: [comment("r-1", { parentId: "c-1", body: "nested" })],
+        }),
+      ],
+    });
+    await mounted.wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("comments.replyOne"))!
+      .trigger("click");
+    await nextTick();
+    return mounted;
+  }
+
+  const replyAction = (
+    wrapper: Awaited<ReturnType<typeof mountSidebar>>["wrapper"],
+    title: string,
+  ) => wrapper.findAll(`button[title="${title}"]`).at(-1)!;
+
+  it("edits a reply, saving with the button and with Enter, and cancels", async () => {
+    const { wrapper, provider } = await mountWithReply();
+
+    await replyAction(wrapper, "comments.edit").trigger("click");
+    await nextTick();
+    await wrapper.findAll("textarea")[0].setValue("reply revised");
+    await byText(wrapper, "comments.save")[0].trigger("click");
+    expect(provider.update).toHaveBeenCalledWith("tpl-1", "r-1", {
+      body: "reply revised",
+    });
+
+    await replyAction(wrapper, "comments.edit").trigger("click");
+    await nextTick();
+    await wrapper.findAll("textarea")[0].setValue("by keyboard");
+    await wrapper.findAll("textarea")[0].trigger("keydown", { key: "Enter" });
+    expect(provider.update).toHaveBeenLastCalledWith("tpl-1", "r-1", {
+      body: "by keyboard",
+    });
+
+    await replyAction(wrapper, "comments.edit").trigger("click");
+    await nextTick();
+    await byText(wrapper, "comments.cancel")[0].trigger("click");
+    await nextTick();
+    expect(provider.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("deletes a reply on the second click, and cancel keeps it", async () => {
+    const { wrapper, provider } = await mountWithReply();
+
+    await replyAction(wrapper, "comments.delete").trigger("click");
+    await nextTick();
+    await byText(wrapper, "comments.cancel")[0].trigger("click");
+    await nextTick();
+    expect(
+      wrapper.find('[data-testid="comment-delete-confirm"]').exists(),
+    ).toBe(false);
+    expect(provider.delete).not.toHaveBeenCalled();
+
+    await replyAction(wrapper, "comments.delete").trigger("click");
+    await nextTick();
+    await wrapper
+      .get('[data-testid="comment-delete-confirm"]')
+      .trigger("click");
+    expect(provider.delete).toHaveBeenCalledWith("tpl-1", "r-1");
+  });
+
+  it("sends a reply with its button, and cancel closes the composer", async () => {
+    const { wrapper, provider } = await mountSidebar();
+    const composer = () =>
+      wrapper.find('textarea[placeholder="comments.replyPlaceholder"]');
+    const composerButtons = () =>
+      composer().element.parentElement!.querySelectorAll("button");
+
+    await wrapper.get('[data-testid="comment-reply"]').trigger("click");
+    await nextTick();
+    await composer().setValue("by button");
+    (composerButtons()[0] as HTMLButtonElement).click();
+    expect(provider.create).toHaveBeenCalledWith("tpl-1", {
+      body: "by button",
+      blockId: undefined,
+      parentId: "c-1",
+      locale: "en",
+    });
+
+    await flushPromises();
+    expect(composer().exists()).toBe(false);
+
+    await wrapper.get('[data-testid="comment-reply"]').trigger("click");
+    await nextTick();
+    expect(composer().exists()).toBe(true);
+    (composerButtons()[1] as HTMLButtonElement).click();
+    await nextTick();
+    expect(composer().exists()).toBe(false);
   });
 });
 

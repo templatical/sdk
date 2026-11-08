@@ -83,6 +83,7 @@ Every token follows the same shape: declare `--tpl-user-<name>` on the container
 | `--tpl-user-overlay`         | Modal backdrop overlay                | ✓    |
 | `--tpl-user-ring`            | Focus ring                            | ✓    |
 | `--tpl-user-transition`      | Spring easing transition              |      |
+| `--tpl-user-panel-transition` | Side-panel slide and the layout it moves |      |
 
 `--tpl-user-on-primary` needs no twin. Left unset, it follows the active background, so text on primary surfaces is near-white in light mode and near-black in dark mode. Setting it fixes one color for both modes, and a near-white label fails contrast on the default dark-mode primary, which is lighter.
 
