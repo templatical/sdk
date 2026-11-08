@@ -9,6 +9,8 @@ export {
   type RecipeResult,
 } from "./recipe";
 export { renderSpecimenMjml, renderStates, type RenderedState } from "./render";
+export { MAX_REPEATABLE_ITEMS } from "./specimen";
+export { MAX_RECIPE_RESPONSE_BYTES } from "./recipe";
 export { checkEmailSafety } from "./safety";
 export {
   buildSpecimen,

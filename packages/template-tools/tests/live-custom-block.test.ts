@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { connect } from "node:net";
 import { createServer, request as httpRequest, type Server } from "node:http";
 import { startBridge, type BridgeHandle, type StartBridgeOptions } from "../src/live/index";
@@ -245,6 +245,11 @@ describe("bridge custom-block mode", () => {
     const raced = await Promise.race([reader.read().then(() => "frame"), new Promise((r) => setTimeout(() => r("quiet"), 300))]);
     expect(raced).toBe("quiet");
     await reader.cancel();
+  });
+
+  it("identifies itself as a custom-block server", async () => {
+    const { cwd, file, get } = await project(def());
+    expect(await (await get("/identity")).json()).toEqual({ pid: process.pid, cwd: resolve(cwd), mode: "custom-block", path: resolve(cwd, file) });
   });
 
   it("answers 422 on /template for an invalid --host template", async () => {

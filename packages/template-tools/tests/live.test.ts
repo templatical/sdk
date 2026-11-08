@@ -1,13 +1,19 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createConnection } from "node:net";
+import { createServer, request as httpRequest } from "node:http";
+import type { AddressInfo } from "node:net";
+import { CUSTOM_BLOCK_LIQUID_RENDER_LIMIT } from "@templatical/types";
 import { join, resolve } from "node:path";
 import {
   DEFAULT_PORT,
   deepEqual,
   listWorkingFiles,
+  readPidfile,
   readWorkingFile,
+  verifyLiveServer,
+  IDENTITY_TIMEOUT_MS,
   startBridge,
   startBridgePreferring,
   type BridgeHandle,
@@ -101,6 +107,78 @@ describe("readWorkingFile", () => {
   });
 });
 
+describe("readPidfile", () => {
+  it.each([{ pid: -1, port: 4747 }, { pid: 0, port: 4747 }, { pid: 1.5, port: 4747 }, { pid: "12", port: 4747 }, { pid: 12, port: 0 }, { pid: 12, port: 70000 }])("rejects malformed pidfile values %j", (info) => {
+    const cwd = project();
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
+    expect(readPidfile(cwd)).toBe(null);
+  });
+  it.each([{ pid: 12, port: 4747, mode: 12 }, { pid: 12, port: 4747, path: 12 }, { pid: 12, port: 4747, host: 12 }, { pid: 12, port: 4747, fetch: null }, { pid: 12, port: 4747, fetch: [] }, { pid: 12, port: 4747, fetch: "x" }])("rejects malformed optional values %j", (info) => {
+    const cwd = project();
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
+    expect(readPidfile(cwd)).toBe(null);
+  });
+  it.each(["null", "[]", "12", '"pid"'])("rejects a pidfile whose JSON is %s", (raw) => {
+    const cwd = project();
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), raw);
+    expect(readPidfile(cwd)).toBe(null);
+  });
+  it("reads a well-formed pidfile", () => {
+    const cwd = project();
+    const info = { pid: 12, port: 4747, mode: "custom-block", path: "/tmp/q.json", host: "/tmp/t.json", fetch: { id: 7 } };
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
+    expect(readPidfile(cwd)).toEqual(info);
+  });
+});
+
+describe("verifyLiveServer", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const answer = (status: number, body: unknown) => vi.fn(async () => new Response(JSON.stringify(body), { status }));
+
+  it("accepts an identity naming this directory and the pidfile's pid, asked on 127.0.0.1", async () => {
+    const cwd = project();
+    const fetchMock = answer(200, { pid: 12, cwd: resolve(cwd) });
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe("verified");
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:4747/identity", { signal: expect.any(AbortSignal) });
+  });
+  it.each([
+    ["another directory", 200, (_cwd: string) => ({ pid: 12, cwd: "/elsewhere" })],
+    ["another pid", 200, (cwd: string) => ({ pid: 13, cwd: resolve(cwd) })],
+    ["a matching identity on a non-2xx reply", 404, (cwd: string) => ({ pid: 12, cwd: resolve(cwd) })],
+    ["a reply that is not JSON", 200, () => undefined],
+  ])("reports a mismatch for %s", async (_label, status, body) => {
+    const cwd = project();
+    const value = body(cwd);
+    vi.stubGlobal("fetch", value === undefined ? vi.fn(async () => new Response("<html>", { status })) : answer(status, value));
+    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe("mismatch");
+  });
+  it("waits past a render-length delay before giving up", async () => {
+    const cwd = project();
+    const server = createServer((_req, res) => {
+      setTimeout(() => res.end(JSON.stringify({ pid: 12, cwd: resolve(cwd) })), CUSTOM_BLOCK_LIQUID_RENDER_LIMIT + 200);
+    });
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    try {
+      const { port } = server.address() as AddressInfo;
+      expect(IDENTITY_TIMEOUT_MS).toBe(CUSTOM_BLOCK_LIQUID_RENDER_LIMIT + 1000);
+      expect(await verifyLiveServer(cwd, { pid: 12, port })).toBe("verified");
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((done) => server.close(() => done()));
+    }
+  }, 10000);
+  it("reports no answer when the timeout runs out while the reply body is read", async () => {
+    const body = new ReadableStream({ start(controller) { controller.error(new DOMException("The operation timed out.", "TimeoutError")); } });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(body, { status: 200 })));
+    expect(await verifyLiveServer(project(), { pid: 12, port: 4747 })).toBe("no-answer");
+  });
+  it("reports no answer when nothing answers in time", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ECONNREFUSED"); }));
+    expect(await verifyLiveServer(project(), { pid: 12, port: 4747 })).toBe("no-answer");
+  });
+});
+
 describe("listWorkingFiles", () => {
   it("lists .json working files sorted, ignoring other files", () => {
     const dir = project();
@@ -117,6 +195,52 @@ describe("listWorkingFiles", () => {
 });
 
 describe("bridge HTTP surface", () => {
+  it("identifies its workspace and rejects a foreign Host", async () => {
+    const cwd = project();
+    const h = await bridge(cwd);
+    const response = await fetch(`${h.url}identity`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBe(null);
+    expect(await response.json()).toEqual({ pid: process.pid, cwd: resolve(cwd), mode: "template", path: resolve(cwd, ".templatical", "template.json") });
+    const forbidden = await new Promise<number>((resolveStatus) => {
+      const request = httpRequest({ host: "127.0.0.1", port: h.port, path: "/identity", headers: { host: "evil.test" } }, (res) => { res.resume(); resolveStatus(res.statusCode ?? 0); });
+      request.end();
+    });
+    expect(forbidden).toBe(403);
+  });
+
+  it("pings an open event stream every 15 seconds", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    let request: ReturnType<typeof httpRequest> | undefined;
+    try {
+      const h = await bridge(project());
+      const chunks: string[] = [];
+      request = httpRequest({ host: "127.0.0.1", port: h.port, path: "/events" });
+      const stream = request;
+      const response = await new Promise<import("node:http").IncomingMessage>((done) => { stream.on("response", done); stream.end(); });
+      response.setEncoding("utf8");
+      response.on("data", (chunk: string) => chunks.push(chunk));
+      await vi.waitFor(() => expect(chunks.join("")).toBe("event: ready\ndata: {}\n\n"));
+      vi.advanceTimersByTime(15000);
+      await vi.waitFor(() => expect(chunks.join("")).toBe("event: ready\ndata: {}\n\n: ping\n\n"));
+    } finally {
+      request?.destroy();
+      vi.useRealTimers();
+    }
+  });
+
+  it("guards shutdown and invokes its callback after responding", async () => {
+    const noCallback = await bridge(project());
+    const post = (h: BridgeHandle, origin?: string) => fetch(`${h.url}shutdown`, { method: "POST", headers: { "content-type": "application/json", ...(origin ? { origin } : {}) }, body: "{}" });
+    expect((await post(noCallback)).status).toBe(404);
+    const onShutdown = vi.fn();
+    const h = await startBridge({ cwd: project(), onShutdown });
+    open.push(h);
+    expect((await post(h, "https://evil.test")).status).toBe(403);
+    expect(onShutdown).toHaveBeenCalledTimes(0);
+    expect((await post(h)).status).toBe(200);
+    await vi.waitFor(() => expect(onShutdown).toHaveBeenCalledTimes(1));
+  });
   it("serves the harness with the CDN version substituted", async () => {
     const h = await bridge(project());
     const res = await fetch(h.url);

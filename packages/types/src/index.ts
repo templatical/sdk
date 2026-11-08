@@ -334,7 +334,11 @@ export type {
   DataSourceFetchContext,
   SelectOption,
 } from "./custom-blocks";
-export { createCustomBlockLiquid } from "./custom-block-liquid";
+export {
+  createCustomBlockLiquid,
+  CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT,
+  CUSTOM_BLOCK_LIQUID_RENDER_LIMIT,
+} from "./custom-block-liquid";
 export type { CustomBlockLiquidModule } from "./custom-block-liquid";
 
 // Block factory

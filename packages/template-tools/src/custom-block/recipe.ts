@@ -29,6 +29,7 @@ import type {
 const ENV_REF = /\$\{env:([A-Za-z_][A-Za-z0-9_]*)\}/g;
 const LIQUID = /\{\{|\{%/;
 const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+export const MAX_RECIPE_RESPONSE_BYTES = 1_048_576;
 // A header-name word that names a credential. Whole words of the name split
 // on - and _, so X-Session-Locale and Accept-Keys don't match while X-API-Key,
 // X-Auth-Token and X-AccessToken do. `session` counts only before `id`.
@@ -329,7 +330,28 @@ export async function runRecipe(
         ),
       };
     }
-    const text = await res.text();
+    let text = "";
+    if (res.body) {
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let bytes = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > MAX_RECIPE_RESPONSE_BYTES) {
+          await reader.cancel().catch(() => {});
+          return {
+            ok: false,
+            status: res.status,
+            error: redact(`${method} ${url} response exceeds the 1 MiB limit.`),
+          };
+        }
+        chunks.push(value);
+      }
+      // TextDecoder drops a leading BOM, as Response#text() does.
+      text = new TextDecoder().decode(Buffer.concat(chunks));
+    }
     if (!res.ok) {
       return {
         ok: false,

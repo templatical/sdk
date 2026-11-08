@@ -265,7 +265,7 @@ Umschalter.
 
 ### repeatable
 
-Eine wiederholbare Gruppe von Unterfeldern. Benutzer können Einträge innerhalb der konfigurierten Grenzen hinzufügen oder entfernen. Jeder Eintrag in `fields` folgt der gleichen Feldkonfiguration wie Felder auf oberster Ebene. Verschachtelte wiederholbare Felder werden nicht unterstützt.
+Eine wiederholbare Gruppe von Unterfeldern. Benutzer können Einträge innerhalb der konfigurierten Grenzen hinzufügen oder entfernen. Jeder Eintrag in `fields` folgt der gleichen Feldkonfiguration wie Felder auf oberster Ebene. `template-tools custom-block validate` lehnt ein `minItems` oder `maxItems` über 100 ab (`field.items-limit`); der Editor erzwingt diese Grenze nicht. Verschachtelte wiederholbare Felder werden nicht unterstützt.
 
 ```ts
 {
@@ -420,6 +420,10 @@ Liquid wertet einen leeren String als wahr, und ein Feld, das der Nutzer geleert
 **Vergleiche:** `==`, `!=`, `>`, `<`, `>=`, `<=`, `and`, `or`, `contains`
 
 Die vollständige Syntaxreferenz finden Sie in der [Liquid-Dokumentation](https://liquidjs.com/tags/overview.html).
+
+### Liquid-Budgets
+
+`CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT` beträgt `1e7` Liquid-Allokationseinheiten pro Rendering. Liquid zählt Range-Elemente und die Strings und Arrays, die Filter erzeugen, zu diesem Limit; literales HTML im Template wird nicht angerechnet. `CUSTOM_BLOCK_LIQUID_RENDER_LIMIT` ist eine Frist von 2000 ms pro Rendering, die vor jedem Template-Schritt geprüft wird; ein einzelner langsamer Filter kann sie daher überschreiten. Dieselben Grenzen gelten für Custom-Block-Templates und das Rendern von URL und Body eines Vorschau-Rezepts. Bei Überschreitung entsteht ein Liquid-Fehler: Der Editor zeigt einen Renderfehler, `renderToMjml` lehnt den Aufruf ab, `custom-block validate` meldet `liquid.render`, und ein Vorschau-Rezept gibt vor einer Anfrage `ok: false` zurück.
 
 ### Ausgabe-Escaping
 
@@ -668,7 +672,7 @@ import { createCustomBlockLiquid } from '@templatical/types';
 const liquid = createCustomBlockLiquid(liquidjs);
 ```
 
-Die festen Optionen sind `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'` und `templates: {}`. Die leere Template-Map lässt `{% include %}`, `{% render %}` und `{% layout %}` keine Partials von Datenträger oder Netzwerk laden. Die Ausgabe von <code v-pre>{{ }}</code>, `{% echo %}`, `echo` innerhalb von `{% liquid %}` und `{% cycle %}` wird HTML-escaped; ein abschließendes `| raw` an einer Ausgabe, einem Echo-Wert oder einem `cycle`-Kandidaten nimmt diesen Wert davon aus. Der optionale `liquidjs`-Peer-Bereich ist `^10.30.1`, die erste Version, die `outputEscape` auch auf `{% echo %}` und `{% cycle %}` anwendet; mit 10.30.0 geben diese beiden Tags ihre Werte ohne Escaping aus. Prüfen Sie die exakte Ausgabe mit `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` läuft nur im Editor; der Server rendert die gespeicherten Feldwerte.
+Die festen Optionen sind `strictVariables: false`, `strictFilters: false`, `outputEscape: 'escape'`, `memoryLimit: CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT`, `renderLimit: CUSTOM_BLOCK_LIQUID_RENDER_LIMIT` und `templates: {}`. Die leere Template-Map lässt `{% include %}`, `{% render %}` und `{% layout %}` keine Partials von Datenträger oder Netzwerk laden. Die Ausgabe von <code v-pre>{{ }}</code>, `{% echo %}`, `echo` innerhalb von `{% liquid %}` und `{% cycle %}` wird HTML-escaped; ein abschließendes `| raw` an einer Ausgabe, einem Echo-Wert oder einem `cycle`-Kandidaten nimmt diesen Wert davon aus. Der optionale `liquidjs`-Peer-Bereich ist `^10.30.1`, die erste Version, die `outputEscape` auch auf `{% echo %}` und `{% cycle %}` anwendet; mit 10.30.0 geben diese beiden Tags ihre Werte ohne Escaping aus. Prüfen Sie die exakte Ausgabe mit `pnpm --filter @templatical/types exec vitest run tests/custom-block-liquid.test.ts`. `dataSource.onFetch` läuft nur im Editor; der Server rendert die gespeicherten Feldwerte.
 
 ## Im Playground
 

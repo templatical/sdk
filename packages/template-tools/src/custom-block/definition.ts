@@ -8,6 +8,7 @@
 
 import Ajv, { type ErrorObject } from "ajv";
 import rawSchema from "../../custom-block-schema.json";
+import { MAX_REPEATABLE_ITEMS } from "./specimen";
 import type { CustomBlockCheckResult, CustomBlockIssue } from "./types";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -131,6 +132,16 @@ function fieldIssues(fields: FieldLike[], base: string): CustomBlockIssue[] {
           severity: "error",
           path,
           message: `\`${field.key}\`'s minItems and maxItems must be whole numbers of 0 or more.`,
+        });
+      } else if (
+        (minItems ?? 0) > MAX_REPEATABLE_ITEMS ||
+        (maxItems ?? 0) > MAX_REPEATABLE_ITEMS
+      ) {
+        issues.push({
+          ruleId: "field.items-limit",
+          severity: "error",
+          path,
+          message: `\`${field.key}\`'s minItems and maxItems must be at most ${MAX_REPEATABLE_ITEMS}: a repeatable list holds up to ${MAX_REPEATABLE_ITEMS} items.`,
         });
       } else if (
         minItems !== undefined &&

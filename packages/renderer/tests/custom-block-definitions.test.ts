@@ -114,6 +114,11 @@ describe("renderToMjml customBlocks definitions", () => {
     await expect(renderToMjml(content(def, ["x"]), { customBlocks: [def] })).rejects.toThrow(/missing/);
   });
 
+  it("rejects a custom block whose Liquid range exceeds the memory budget", async () => {
+    const huge = definition("card", "{% for i in (1..100000000) %}{{ i }}{% endfor %}");
+    await expect(renderToMjml(content(huge, ["x"]), { customBlocks: [huge] })).rejects.toMatchObject({ message: "memory alloc limit exceeded, line:1, col:1" });
+  });
+
   it("does not import liquidjs without custom blocks, but reports a missing peer when needed", async () => {
     vi.doMock("liquidjs", () => {
       throw new Error("Cannot find module 'liquidjs'");

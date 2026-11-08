@@ -138,7 +138,12 @@ their picker.
 
 Fix every `error`. Treat `warning`s as defects unless there's a reason —
 say the reason. Never start or reload the preview on an invalid definition. A
-field only the recipe reads (the id it fetches by) counts as used.
+field only the recipe reads (the id it fetches by) counts as used. Repeatable
+`minItems` and `maxItems` each have a ceiling of 100. Liquid renders have a
+`CUSTOM_BLOCK_LIQUID_MEMORY_LIMIT` of `1e7` allocation units and a
+`CUSTOM_BLOCK_LIQUID_RENDER_LIMIT` of 2000 ms; a limit error makes validation
+fail. A `dataSourcePreview` response is capped at `MAX_RECIPE_RESPONSE_BYTES`
+(1 MiB), including error responses; a larger response makes the fetch fail.
 
 To check the rendered output without the browser, render one state to a file:
 

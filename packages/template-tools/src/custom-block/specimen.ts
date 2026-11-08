@@ -30,6 +30,7 @@ export interface SpecimenInstance {
   fieldValues: Record<string, unknown>;
 }
 export const DEFAULT_MAX_ITEMS = 6;
+export const MAX_REPEATABLE_ITEMS = 100;
 
 type ItemField = Exclude<CustomBlockField, { type: "repeatable" }>;
 type Repeatable = Extract<CustomBlockField, { type: "repeatable" }>;
@@ -53,8 +54,9 @@ function items(f: Repeatable, n: number): Record<string, unknown>[] {
     Array.isArray(f.default) && f.default.length > 0
       ? f.default
       : [itemFrom(f.fields)];
-  return Array.from({ length: n }, (_, i) =>
-    structuredClone(seeds[i % seeds.length]),
+  return Array.from(
+    { length: Math.min(MAX_REPEATABLE_ITEMS, Math.max(0, n)) },
+    (_, i) => structuredClone(seeds[i % seeds.length]),
   );
 }
 

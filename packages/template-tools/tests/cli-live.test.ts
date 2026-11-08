@@ -13,9 +13,11 @@ import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
 import { runList, runLive } from "../src/cli/commands/live";
 import { UsageError } from "../src/cli/io";
+import { startBridge, type BridgeHandle } from "../src/live/index";
 
 let dir: string;
 let stdout: string[];
+const bridges: BridgeHandle[] = [];
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "tt-live-"));
@@ -28,7 +30,8 @@ beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await Promise.all(bridges.splice(0).map((h) => h.close()));
   setJsonMode(false);
   vi.restoreAllMocks();
 });
@@ -97,6 +100,37 @@ describe("list command", () => {
 });
 
 describe("live reload / stop without a running server", () => {
+  it.each(["reload", "stop"])("%s refuses a pidfile for another workspace or pid", async (sub) => {
+    const other = mkdtempSync(join(tmpdir(), "tt-live-other-"));
+    const h = await startBridge({ cwd: other });
+    bridges.push(h);
+    const network = vi.spyOn(globalThis, "fetch");
+    const kill = vi.spyOn(process, "kill").mockImplementation((_pid, signal) => {
+      if (signal === 0) return true;
+      throw new Error("unexpected signal");
+    });
+    for (const pid of [process.pid, process.pid + 1]) {
+      writeFileSync(join(dir, ".templatical", "live-server.pid"), JSON.stringify({ pid, port: h.port }));
+      await expect(runLive(parseArgs(["live", sub, "--cwd", dir]))).rejects.toThrow(`The pidfile does not belong to a live server for this workspace. Delete ${join(".templatical", "live-server.pid")} and try again.`);
+    }
+    expect(network.mock.calls.filter(([url, init]) => String(url).endsWith("/reload") && init?.method === "POST")).toEqual([]);
+    expect(kill.mock.calls.filter(([, signal]) => signal !== 0)).toEqual([]);
+  });
+
+  it("stop uses the matching bridge shutdown callback without signaling", async () => {
+    const onShutdown = vi.fn();
+    const h = await startBridge({ cwd: dir, onShutdown });
+    bridges.push(h);
+    writeFileSync(join(dir, ".templatical", "live-server.pid"), JSON.stringify({ pid: process.pid, port: h.port }));
+    const kill = vi.spyOn(process, "kill").mockImplementation((_pid, signal) => {
+      if (signal === 0) return true;
+      throw new Error("unexpected signal");
+    });
+    expect(await runLive(parseArgs(["live", "stop", "--cwd", dir]))).toBe(0);
+    await vi.waitFor(() => expect(onShutdown).toHaveBeenCalledTimes(1));
+    expect(kill.mock.calls.filter(([, signal]) => signal !== 0)).toEqual([]);
+    expect(existsSync(join(dir, ".templatical", "live-server.pid"))).toBe(false);
+  });
   it("reload reports that nothing is running", async () => {
     await expect(
       runLive(parseArgs(["live", "reload", "--cwd", dir])),
@@ -109,15 +143,24 @@ describe("live reload / stop without a running server", () => {
     ).rejects.toThrow(/no live server/i);
   });
 
-  it("treats a pidfile whose process is gone as absent", async () => {
-    // A crashed run leaves a stale pidfile; it must not make reload look live.
+  it("reads a pidfile whose process has exited as no server", async () => {
     writeFileSync(
       join(dir, ".templatical", "live-server.pid"),
-      JSON.stringify({ pid: 999999, port: 4747 }),
+      JSON.stringify({ pid: 2147483646, port: 4747 }),
+    );
+    await expect(
+      runLive(parseArgs(["live", "stop", "--cwd", dir])),
+    ).rejects.toThrow("No live server is running here (no live pidfile at .templatical/live-server.pid).");
+  });
+
+  it("rejects a pidfile whose live pid has no server answering identity", async () => {
+    writeFileSync(
+      join(dir, ".templatical", "live-server.pid"),
+      JSON.stringify({ pid: process.pid, port: 1 }),
     );
     await expect(
       runLive(parseArgs(["live", "reload", "--cwd", dir])),
-    ).rejects.toThrow(/no live server/i);
+    ).rejects.toThrow("The live server (pid " + process.pid + ") did not answer on port 1 within 3 s. If it is busy, try again; if it is not a live server, delete .templatical/live-server.pid.");
   });
 
   it("rejects an unknown subcommand", async () => {

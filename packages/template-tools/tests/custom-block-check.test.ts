@@ -64,6 +64,10 @@ describe("checkCustomBlock", () => {
       }],
     });
   });
+  it("reports a Liquid memory limit as a validation error", async () => {
+    const r = await checkCustomBlock({ ...good, template: "{% for i in (1..100000000) %}{{ i }}{% endfor %}{{ text }}" });
+    expect(r).toEqual({ valid: false, issues: [{ ruleId: "liquid.render", severity: "error", path: "/template", message: "The template does not render: memory alloc limit exceeded, line:1, col:1" }] });
+  });
   it("stops before rendering a template that loads another file", async () => {
     const r = await checkCustomBlock({ ...good, template: `${good.template}{% include 'package.json' %}` });
     expect(r.valid).toBe(false);
