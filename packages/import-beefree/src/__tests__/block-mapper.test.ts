@@ -1311,12 +1311,27 @@ describe("convertModule", () => {
       ['<p><span style="font-weight:600">Go</span></p>', undefined],
       ['<p><span style="color:red; font-weight: 700">Go</span></p>', undefined],
       ["<p> \n <strong>Go</strong> </p>", undefined],
+      ["<p><!-- plain --><strong>Go</strong></p>", undefined],
+      ["<p><strong>Go</strong></p><!-- unclosed", undefined],
       ["<p>Go</p>", "regular"],
     ] as const)("maps missing weight for label %s", (label, expected) => {
       const { block, entry } = buttonWith({}, undefined, label);
       expect(block.fontWeight).toBe(expected);
       expect(entry.status).toBe("converted");
       expect(entry.note).toBeUndefined();
+    });
+
+    it("reads a malformed tag name as label text", () => {
+      const { block, entry } = buttonWith(
+        {},
+        undefined,
+        "<p><strong>Go</strong><x:y></p>",
+      );
+      expect(block.fontWeight).toBe("regular");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "partial bold in the label is not carried; button imports at regular weight",
+      );
     });
 
     it("notes partial bold once when a missing weight flattens a mixed label", () => {
