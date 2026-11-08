@@ -39,7 +39,15 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, parse, resolve, sep } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  parse,
+  resolve,
+  sep,
+} from "node:path";
 
 const SCOPE = "@templatical/";
 
@@ -510,20 +518,32 @@ export function ensurePrivateParent(consumerDir) {
     };
     // No hop limit needed: the mkdirSync above already failed with ELOOP for
     // a path whose symlinks loop, so every chain reached here is finite.
+    // Resolved the way the filesystem does, never lexically: `..` steps up
+    // from the real folder reached so far, after any symlink before it.
     const walk = (path) => {
-      const { root } = parse(path);
+      const absolute = isAbsolute(path)
+        ? path
+        : `${process.cwd()}${sep}${path}`;
+      const { root } = parse(absolute);
       let current = root;
       check(current);
-      for (const part of path.slice(root.length).split(sep)) {
-        if (!part) continue;
+      for (const part of absolute.slice(root.length).split(sep)) {
+        if (!part || part === ".") continue;
+        if (part === "..") {
+          current = dirname(current);
+          continue;
+        }
         current = join(current, part);
         if (check(current).isSymbolicLink()) {
-          walk(resolve(dirname(current), readlinkSync(current)));
+          const target = readlinkSync(current);
+          walk(
+            isAbsolute(target) ? target : `${dirname(current)}${sep}${target}`,
+          );
           current = realpathSync(current);
         }
       }
     };
-    walk(resolve(dirname(parent)));
+    walk(dirname(parent));
   }
   const stat = lstatSync(parent);
   const owned = uid === null || stat.uid === uid;

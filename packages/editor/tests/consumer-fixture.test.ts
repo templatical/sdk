@@ -13,7 +13,7 @@ import {
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it, vi } from "vitest";
@@ -235,6 +235,29 @@ describe("ensurePrivateParent", () => {
         symlinkSync(target, join(open, "redirect"));
         const link = join(root, "link");
         symlinkSync(join(open, "redirect"), link);
+        expect(() => ensurePrivateParent(join(link, "p", "app"))).toThrow(
+          `Refusing to use ${join(link, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "resolves .. in a symlink target after the symlinks before it",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        mkdirSync(join(root, "safe"), { mode: 0o700 });
+        const open = join(root, "open");
+        mkdirSync(join(open, "deep"), { recursive: true });
+        mkdirSync(join(open, "safe"), { mode: 0o700 });
+        chmodSync(open, 0o777);
+        symlinkSync(join(open, "deep"), join(root, "jump"));
+        const link = join(root, "link");
+        // Lexically `jump/../safe` is root/safe; physically it is open/safe.
+        symlinkSync(`${root}${sep}jump${sep}..${sep}safe`, link);
         expect(() => ensurePrivateParent(join(link, "p", "app"))).toThrow(
           `Refusing to use ${join(link, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
         );
