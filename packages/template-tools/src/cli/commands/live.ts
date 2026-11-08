@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { flagValue, type ParsedArgs } from "../args";
 import { emit, note } from "../output";
@@ -82,6 +82,22 @@ async function postTo(
     headers: { "content-type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+/**
+ * Removes the pidfile only while it still records `pid`: a server started in
+ * the meantime keeps its own pidfile.
+ */
+function removePidfileOf(cwd: string, pid: number): void {
+  const path = pidfilePath(cwd);
+  try {
+    const recorded = (
+      JSON.parse(readFileSync(path, "utf8")) as { pid?: unknown }
+    ).pid;
+    if (recorded === pid) rmSync(path, { force: true });
+  } catch {
+    /* missing or unreadable: nothing of ours to remove */
+  }
 }
 
 function untrustedPidfile(): UsageError {
@@ -178,7 +194,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
         `The live server (pid ${info.pid}) did not stop: POST /shutdown failed (${failure}). Stop that process yourself, then delete ${WORKING_DIR}/live-server.pid.`,
       );
     }
-    rmSync(pidfilePath(cwd), { force: true });
+    removePidfileOf(cwd, info.pid);
     emit({ stopped: true }, () => "Stopped the live server.");
     return EXIT.ok;
   }
@@ -220,13 +236,15 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   };
 
   const existing = readPidfile(cwd);
-  // A pidfile whose server doesn't answer as this workspace's is stale (or
-  // planted) and is replaced, never trusted.
-  if (
-    existing &&
-    processAlive(existing.pid) &&
-    (await verifyLiveServer(cwd, existing))
-  ) {
+  if (existing && processAlive(existing.pid)) {
+    // A live pid that doesn't answer as this workspace's server is never
+    // trusted and never silently replaced: it may be a busy bridge that pages
+    // are still attached to, so recovering is the user's call.
+    if (!(await verifyLiveServer(cwd, existing))) {
+      throw new UsageError(
+        `Process ${existing.pid} from ${WORKING_DIR}/live-server.pid is running but does not answer as this workspace's live server. If it is a live server, stop it; otherwise delete ${WORKING_DIR}/live-server.pid. Then run \`templatical live\` again.`,
+      );
+    }
     // A pidfile without `mode` came from a template-only bridge; one without
     // `path` can't be compared, so only its mode is.
     const mode = existing.mode ?? "template";
@@ -252,7 +270,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
     );
     return EXIT.ok;
   }
-  if (existing) rmSync(pidfilePath(cwd), { force: true }); // stale
+  if (existing) rmSync(pidfilePath(cwd), { force: true }); // its process is gone
 
   // Runs once: a second signal while the bridge closes would otherwise delete
   // the pidfile of a replacement server started in the meantime.
@@ -260,7 +278,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   const cleanup = () => {
     if (closing) return;
     closing = true;
-    rmSync(pidfilePath(cwd), { force: true });
+    removePidfileOf(cwd, process.pid);
     handle.close().finally(() => process.exit(EXIT.ok));
   };
   const handle = await startBridgePreferring({

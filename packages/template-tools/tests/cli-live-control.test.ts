@@ -292,9 +292,20 @@ describe("live already-running / reload / stop", () => {
     expect(close).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps a pidfile that a replacement server wrote while stopping", async () => {
+    mkdirSync(join(dir, ".templatical"), { recursive: true });
+    const pid = join(dir, ".templatical", "live-server.pid");
+    writeFileSync(pid, JSON.stringify({ pid: 5555, port: 4848 }), "utf8");
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 4747 });
+    live.processAlive.mockReturnValue(true);
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200 })));
+    expect(await runLive(parseArgs(["live", "stop", "--cwd", dir]))).toBe(0);
+    expect(JSON.parse(readFileSync(pid, "utf8"))).toEqual({ pid: 5555, port: 4848 });
+  });
+
   it("stops a live pid and removes the pidfile", async () => {
     mkdirSync(join(dir, ".templatical"), { recursive: true });
-    writeFileSync(join(dir, ".templatical", "live-server.pid"), "{}", "utf8");
+    writeFileSync(join(dir, ".templatical", "live-server.pid"), JSON.stringify({ pid: 4242, port: 4747 }), "utf8");
     live.readPidfile.mockReturnValue({ pid: 4242, port: 4747 });
     live.processAlive.mockReturnValue(true);
     const kill = vi.spyOn(process, "kill").mockImplementation(() => true);
@@ -306,6 +317,7 @@ describe("live already-running / reload / stop", () => {
     expect(fetch).toHaveBeenCalledWith("http://127.0.0.1:4747/shutdown", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     expect(kill).not.toHaveBeenCalled();
     expect(JSON.parse(stdout.join(""))).toEqual({ stopped: true });
+    expect(existsSync(join(dir, ".templatical", "live-server.pid"))).toBe(false);
   });
 
   it.each([
@@ -382,20 +394,19 @@ describe("live start for a custom block", () => {
     expect(stdout.join("")).toBe("Live server already running (pid 4242) at http://localhost:4747/\n");
   });
 
-  it("replaces a pidfile whose server does not answer as this workspace's", async () => {
+  it("refuses, and keeps the pidfile, when a live pid does not answer as this workspace's server", async () => {
     mkdirSync(join(dir, ".templatical"), { recursive: true });
-    writeFileSync(join(dir, ".templatical", "live-server.pid"), JSON.stringify({ pid: 4242, port: 4747 }), "utf8");
+    const pid = join(dir, ".templatical", "live-server.pid");
+    writeFileSync(pid, JSON.stringify({ pid: 4242, port: 4747 }), "utf8");
     live.readPidfile.mockReturnValue({ pid: 4242, port: 4747, mode: "custom-block", path: join(dir, "a.json") });
     live.processAlive.mockReturnValue(true);
     live.verifyLiveServer.mockResolvedValue(false);
-    live.startBridgePreferring.mockResolvedValue(bridge());
-    await startDetached(["live", "--custom-block", "a.json", "--no-open", "--cwd", dir]);
-    expect(live.verifyLiveServer).toHaveBeenCalledWith(dir, { pid: 4242, port: 4747, mode: "custom-block", path: join(dir, "a.json") });
-    expect(live.startBridgePreferring).toHaveBeenCalledTimes(1);
-    expect(stdout.join("")).not.toContain("already running");
-    await vi.waitFor(() =>
-      expect(JSON.parse(readFileSync(join(dir, ".templatical", "live-server.pid"), "utf8")).pid).toBe(process.pid),
+    await expect(runLive(parseArgs(["live", "--custom-block", "a.json", "--no-open", "--cwd", dir]))).rejects.toThrow(
+      new UsageError("Process 4242 from .templatical/live-server.pid is running but does not answer as this workspace's live server. If it is a live server, stop it; otherwise delete .templatical/live-server.pid. Then run `templatical live` again."),
     );
+    expect(live.verifyLiveServer).toHaveBeenCalledWith(dir, { pid: 4242, port: 4747, mode: "custom-block", path: join(dir, "a.json") });
+    expect(live.startBridgePreferring).not.toHaveBeenCalled();
+    expect(JSON.parse(readFileSync(pid, "utf8"))).toEqual({ pid: 4242, port: 4747 });
   });
 
   it("records the absolute --host path in the pidfile and clears a stale pidfile first", async () => {
