@@ -59,6 +59,7 @@ import {
   parseColor,
   parseBorderTop,
   extractPadding,
+  readButtonPadding,
   parseDividerWidth,
 } from "./style-parser";
 
@@ -1480,16 +1481,115 @@ function nearestButtonWeight(
 }
 
 /**
- * BeeFree's weight as the button field. Bold is what an omitted field
- * renders, so that step is left unset. An unreadable weight is dropped.
+ * Whether every label text run is bold, some are bold, or none are. Button
+ * labels become plain text, so a whole bold label can use the button field
+ * while a mixed label needs a note when its inline weight is lost.
+ */
+function buttonLabelBoldness(label: string): "all" | "mixed" | "none" {
+  const html = trimHighlightedTokenPadding(unwrapMergeTagCode(label));
+  const stack: Array<{ name: string; bold: boolean }> = [];
+  let boldText = false;
+  let plainText = false;
+  const textRun = (value: string): void => {
+    if (!decodePlainTextEntities(value).trim()) return;
+    if (stack.at(-1)?.bold) boldText = true;
+    else plainText = true;
+  };
+
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) {
+      textRun(html.slice(i));
+      break;
+    }
+    textRun(html.slice(i, lt));
+    if (html.startsWith("<!--", lt)) {
+      const end = html.indexOf("-->", lt + 4);
+      if (end === -1) break;
+      i = end + 3;
+      continue;
+    }
+    const closing = html[lt + 1] === "/";
+    const nameStart = lt + (closing ? 2 : 1);
+    if (!/[a-z]/i.test(html[nameStart] ?? "")) {
+      textRun("<");
+      i = lt + 1;
+      continue;
+    }
+    let nameEnd = nameStart;
+    while (nameEnd < html.length && /[a-z0-9]/i.test(html[nameEnd])) nameEnd++;
+    if (html[nameEnd] !== undefined && !/[\s>/]/.test(html[nameEnd])) {
+      textRun(html.slice(lt, nameEnd));
+      i = nameEnd;
+      continue;
+    }
+    const name = html.slice(nameStart, nameEnd).toLowerCase();
+    const end = closing
+      ? html.indexOf(">", nameEnd)
+      : findOpenTagEnd(html, nameEnd);
+    if (end === -1) break;
+    if (closing) {
+      for (let s = stack.length - 1; s >= 0; s--) {
+        if (stack[s].name === name) {
+          stack.length = s;
+          break;
+        }
+      }
+    } else {
+      const openTag = html.slice(lt, end + 1);
+      const inlineWeight = findStyleAttr(openTag)
+        ?.value.split(";")
+        .map((part) => part.trim())
+        .filter((part) => /^font-weight\s*:/i.test(part))
+        .at(-1);
+      const weight = inlineWeight
+        ? cssFontWeightNumber(inlineWeight.slice(inlineWeight.indexOf(":") + 1))
+        : undefined;
+      const bold =
+        stack.at(-1)?.bold === true ||
+        name === "strong" ||
+        name === "b" ||
+        (weight !== undefined && weight >= 600);
+      if (
+        !/^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/.test(
+          name,
+        ) &&
+        html[end - 1] !== "/"
+      ) {
+        stack.push({ name, bold });
+      }
+    }
+    i = end + 1;
+  }
+  return boldText ? (plainText ? "mixed" : "all") : "none";
+}
+
+/**
+ * BeeFree's readable weight maps to the nearest button step unless all label
+ * text is bold in the HTML, which takes precedence over the module weight.
+ * An unweighted label otherwise imports as regular.
  */
 function buttonFontWeight(
   value: unknown,
-): ButtonBlock["fontWeight"] | undefined {
+  label: string,
+): { fontWeight: ButtonBlock["fontWeight"]; partialBold: boolean } {
   const numeric = cssFontWeightNumber(value);
-  if (numeric === undefined) return undefined;
+  const boldness = buttonLabelBoldness(label);
+  if (boldness === "all") {
+    return { fontWeight: undefined, partialBold: false };
+  }
+  if (numeric === undefined) {
+    return {
+      fontWeight: "regular",
+      partialBold: boldness === "mixed",
+    };
+  }
   const mapped = nearestButtonWeight(numeric);
-  return mapped === "bold" ? undefined : mapped;
+  return {
+    fontWeight: mapped === "bold" ? undefined : mapped,
+    partialBold: mapped !== "bold" && boldness === "mixed",
+  };
 }
 
 /**
@@ -1538,13 +1638,15 @@ function buttonWidth(value: string | undefined): {
 }
 
 /**
- * One note naming what this button does not carry: a letter-spacing, and a
- * percentage width other than 100%. Empty when nothing was left out. Weight
- * is mapped, so it is not named here.
+ * One note naming what this button does not carry: letter spacing, a partial
+ * bold label, and a percentage width other than 100%. Empty when nothing was
+ * left out.
  */
 function buttonApproximationNote(
   style: Record<string, string>,
   widthUncarried: string | undefined,
+  partialBold: boolean,
+  fontWeight: ButtonBlock["fontWeight"],
 ): string | undefined {
   const parts: string[] = [];
   const spacing = uncarriedLetterSpacing(style["letter-spacing"]);
@@ -1552,9 +1654,11 @@ function buttonApproximationNote(
 
   if (widthUncarried) parts.push(widthUncarried);
 
+  if (partialBold) parts.push("partial bold in the label");
+
   if (parts.length === 0) return undefined;
   const verb = parts.length === 1 ? "is" : "are";
-  return `${parts.join(", ")} ${verb} not carried`;
+  return `${parts.join(", ")} ${verb} not carried${partialBold ? `; button imports at ${fontWeight} weight` : ""}`;
 }
 
 function toButtonBorderStyle(value: string | undefined): BorderStyle {
@@ -1598,14 +1702,23 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
 
   const style = button.style ?? {};
   const label = button.label ? importedPlainText(button.label) : "Button";
+  const padding = readButtonPadding(style);
   const fontSize = parsePxValue(style["font-size"]) || 16;
   const lineHeightPx = buttonLineHeightPx(style["line-height"], fontSize);
   const linePad =
     lineHeightPx === undefined ? 0 : lineHeightPadding(lineHeightPx, fontSize);
   const { width, uncarried: widthUncarried } = buttonWidth(style.width);
   const border = buttonBorder(style);
-  const fontWeight = buttonFontWeight(style["font-weight"]);
-  const note = buttonApproximationNote(style, widthUncarried);
+  const { fontWeight, partialBold } = buttonFontWeight(
+    style["font-weight"],
+    button.label ?? "Button",
+  );
+  const note = buttonApproximationNote(
+    style,
+    widthUncarried,
+    partialBold,
+    fontWeight,
+  );
 
   return {
     block: createButtonBlock({
@@ -1626,10 +1739,10 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
       ...(width !== undefined ? { width } : {}),
       ...(border ? { border } : {}),
       buttonPadding: {
-        top: (parsePxValue(style["padding-top"]) || 12) + linePad,
-        right: parsePxValue(style["padding-right"]) || 24,
-        bottom: (parsePxValue(style["padding-bottom"]) || 12) + linePad,
-        left: parsePxValue(style["padding-left"]) || 24,
+        top: padding.top + linePad,
+        right: padding.right,
+        bottom: padding.bottom + linePad,
+        left: padding.left,
       },
       styles: makeStyles(descriptor),
     }),
