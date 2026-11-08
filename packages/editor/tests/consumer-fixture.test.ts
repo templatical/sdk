@@ -182,7 +182,8 @@ describe("ensurePrivateParent", () => {
     },
   );
 
-  it.skipIf(process.platform === "win32")(
+  // Skipped as root: uid 0 is trusted, so the real owner would still pass.
+  it.skipIf(process.platform === "win32" || process.getuid?.() === 0)(
     "refuses a path with a folder owned by someone other than you or root",
     () => {
       const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
