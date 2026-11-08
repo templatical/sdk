@@ -20,6 +20,87 @@ const social = (attributes: Record<string, unknown>): TopolNode =>
   ({ tagName: "mj-social", attributes }) as TopolNode;
 
 describe("convertSocial", () => {
+  it("groups alias repeats and keeps distinct URLs", () => {
+    const repeated = convertSocial(
+      social({
+        display: "twitter x twitter x",
+        "twitter-href": "https://tw.test/a",
+        "x-href": "https://tw.test/a",
+      }),
+      ctx(),
+    )!;
+    expect(
+      (repeated.block as SocialIconsBlock).icons.map((icon) => [
+        icon.platform,
+        icon.url,
+      ]),
+    ).toEqual([["twitter", "https://tw.test/a"]]);
+    expect(repeated.entry.note).toBe('Dropped 3 repeated "twitter" icons.');
+
+    const distinct = convertSocial(
+      social({
+        display: "twitter x",
+        "twitter-href": "https://tw.test/a",
+        "x-href": "https://tw.test/b",
+      }),
+      ctx(),
+    )!;
+    expect(
+      (distinct.block as SocialIconsBlock).icons.map((icon) => icon.url),
+    ).toEqual(["https://tw.test/a", "https://tw.test/b"]);
+    expect(distinct.entry.status).toBe("converted");
+  });
+
+  it("drops repeated platform and URL pairs in first-seen order", () => {
+    const result = convertSocial(
+      social({
+        display: "facebook facebook twitter facebook",
+        "facebook-href": "https://fb.test/a",
+        "twitter-href": "https://tw.test/a",
+      }),
+      ctx(),
+    )!;
+    expect(
+      (result.block as SocialIconsBlock).icons.map((icon) => [
+        icon.platform,
+        icon.url,
+      ]),
+    ).toEqual([
+      ["facebook", "https://fb.test/a"],
+      ["twitter", "https://tw.test/a"],
+    ]);
+    expect(result.entry.status).toBe("approximated");
+    expect(result.entry.note).toBe('Dropped 2 repeated "facebook" icons.');
+  });
+
+  it("drops a repeated unrecognised platform under its website mapping", () => {
+    const result = convertSocial(
+      social({
+        display: "myspace myspace",
+        "myspace-href": "https://ms.test/a",
+      }),
+      ctx(),
+    )!;
+    expect(
+      (result.block as SocialIconsBlock).icons.map((icon) => icon.platform),
+    ).toEqual(["website"]);
+    expect(result.entry.note).toBe(
+      'Unrecognised social platform "myspace" mapped to "website". Dropped 1 repeated "website" icon.',
+    );
+  });
+
+  it("names a single dropped repeat in the singular", () => {
+    const result = convertSocial(
+      social({
+        display: "facebook facebook",
+        "facebook-href": "https://fb.test/a",
+      }),
+      ctx(),
+    )!;
+    expect((result.block as SocialIconsBlock).icons).toHaveLength(1);
+    expect(result.entry.note).toBe('Dropped 1 repeated "facebook" icon.');
+  });
+
   it("emits one icon per display entry, in display order", () => {
     const r = convertSocial(
       social({

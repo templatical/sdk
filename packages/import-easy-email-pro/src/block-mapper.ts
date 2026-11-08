@@ -1,3 +1,4 @@
+import { noteValue } from "./note-value";
 import {
   createButtonBlock,
   createDividerBlock,
@@ -318,14 +319,14 @@ function imageWidth(
     if (percent === null || percent <= 0 || percent >= 100) return "full";
     if (room === undefined) {
       notes.push(
-        `Image width ${value.trim()} has no known column to resolve against; imported as full width.`,
+        `Image width ${noteValue(value.trim())} has no known column to resolve against; imported as full width.`,
       );
       return "full";
     }
     const px = Math.round((room * percent) / 100);
     if (px >= room) return "full";
     notes.push(
-      `Image width ${value.trim()} imported as ${px}px, which keeps its size on a phone.`,
+      `Image width ${noteValue(value.trim())} imported as ${px}px, which keeps its size on a phone.`,
     );
     return px;
   }
@@ -579,7 +580,7 @@ function convertUnknown(node: EasyEmailProNode, map: MapContext): Converted {
       sourceTag,
       "html",
       "html-fallback",
-      `Unknown Easy Email Pro type "${sourceTag}"; preserved as HTML.`,
+      `Unknown Easy Email Pro type "${noteValue(sourceTag)}"; preserved as HTML.`,
     ),
   );
 }

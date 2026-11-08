@@ -162,6 +162,22 @@ describe("buildTopLevel", () => {
     );
   });
 
+  it("names a column without a width as auto", () => {
+    const { entries } = build({
+      type: "standard-section",
+      data: {},
+      attributes: {},
+      children: [
+        col([para("a")], "15%"),
+        col([para("b")]),
+        col([para("c")], "15%"),
+      ],
+    });
+    expect(entries[0].note).toMatch(
+      /^Column widths 15%, auto, 15% have no exact Templatical layout;/,
+    );
+  });
+
   it("skips a placeholder-only column as an empty slot", () => {
     const { blocks } = build({
       type: "standard-section",
@@ -865,6 +881,27 @@ describe("background images", () => {
         note: 'Wrapper background-repeat "repeat-x" has no exact Templatical equivalent; imported as "repeat".',
       },
     ]);
+  });
+
+  it("quotes only 80 characters of a wrapper attribute in each section note", () => {
+    const raw = "x".repeat(300);
+    const { entries } = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: { "background-url": "u", "background-size": raw },
+      children: [section("A"), section("B"), section("C")],
+    });
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(3);
+    for (const entry of sectionEntries) {
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toContain(
+        `Wrapper background-size "${"x".repeat(80)}…"`,
+      );
+      expect(entry.note).not.toContain(raw);
+    }
   });
 
   it("reads a hero with no mode or height as a regular section with a background image", () => {

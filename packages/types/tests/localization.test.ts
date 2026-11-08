@@ -3,7 +3,9 @@ import {
   cloneBlock,
   createCustomBlock,
   createParagraphBlock,
+  createSectionBlock,
   createTableBlock,
+  createWrapperBlock,
   isLocaleTag,
   localeCoverage,
   localizeBlock,
@@ -460,6 +462,34 @@ describe("cloneBlock", () => {
       expect(JSON.stringify(table)).toBe(before);
     },
   );
+
+  it("remaps l10n paths of a table nested in a wrapper and section", () => {
+    const table = createTableBlock({
+      rows: [{ id: "r1", cells: [{ id: "c1", content: "One" }] }],
+      l10n: {
+        de: {
+          text: {
+            "rows.r1.cells.c1.content": {
+              value: "Eins",
+              sourceHash: sourceHash("One"),
+            },
+          },
+        },
+      },
+    });
+    const wrapper = createWrapperBlock({
+      children: [createSectionBlock({ children: [[table]] })],
+    });
+    const copy = cloneBlock(wrapper) as typeof wrapper;
+    const section = copy.children[0] as ReturnType<typeof createSectionBlock>;
+    const nested = section.children[0][0] as typeof table;
+    const path = `rows.${nested.rows[0].id}.cells.${nested.rows[0].cells[0].id}.content`;
+    expect(nested.rows[0].id).not.toBe("r1");
+    expect(Object.keys(nested.l10n!.de.text!)).toEqual([path]);
+    expect(readPath(nested, path)).toBe("One");
+    const projected = localizeBlock(nested, "de", "en") as typeof table;
+    expect(projected.rows[0].cells[0].content).toBe("Eins");
+  });
 
   it("rewrites element ids inside l10n paths", () => {
     const menu = (base().blocks[2] as any).children[0][1];

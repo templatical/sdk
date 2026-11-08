@@ -113,6 +113,8 @@ export function convertSocial(
 
   const notes: string[] = [];
   const icons: SocialIcon[] = [];
+  const seen = new Set<string>();
+  const repeated = new Map<string, number>();
 
   for (const token of display.trim().split(/\s+/)) {
     const rawName = token.split(":")[0];
@@ -122,6 +124,13 @@ export function convertSocial(
     if (!url) continue;
 
     const platform = normalizePlatform(rawName);
+    const key = JSON.stringify([platform ?? "website", url]);
+    if (seen.has(key)) {
+      const name = platform ?? "website";
+      repeated.set(name, (repeated.get(name) ?? 0) + 1);
+      continue;
+    }
+    seen.add(key);
     if (!platform) {
       notes.push(
         `Unrecognised social platform "${rawName}" mapped to "website".`,
@@ -129,6 +138,11 @@ export function convertSocial(
     }
 
     icons.push({ id: generateId(), platform: platform ?? "website", url });
+  }
+  for (const [platform, count] of repeated) {
+    notes.push(
+      `Dropped ${count} repeated "${platform}" ${count === 1 ? "icon" : "icons"}.`,
+    );
   }
 
   if (icons.length === 0) return null;

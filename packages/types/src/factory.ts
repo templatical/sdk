@@ -393,45 +393,47 @@ function remapL10n(
 
 export function cloneBlock(block: Block): Block {
   const cloned = JSON.parse(JSON.stringify(block)) as Block;
-  cloned.id = generateId();
-  const ids = new Map<string, Map<string, string>>();
-  const remint = (element: { id: string }, parentPath: string): string => {
-    const oldId = element.id;
-    element.id = generateId();
-    let scoped = ids.get(parentPath);
-    if (!scoped) {
-      scoped = new Map();
-      ids.set(parentPath, scoped);
+  const remintBlock = (current: Block): void => {
+    current.id = generateId();
+    const ids = new Map<string, Map<string, string>>();
+    const remint = (element: { id: string }, parentPath: string): string => {
+      const oldId = element.id;
+      element.id = generateId();
+      let scoped = ids.get(parentPath);
+      if (!scoped) {
+        scoped = new Map();
+        ids.set(parentPath, scoped);
+      }
+      scoped.set(oldId, element.id);
+      return oldId;
+    };
+
+    if (current.type === "table") {
+      for (const row of current.rows) {
+        const oldRowId = remint(row, "rows");
+        for (const cell of row.cells) remint(cell, `rows.${oldRowId}.cells`);
+      }
     }
-    scoped.set(oldId, element.id);
-    return oldId;
+
+    if (current.type === "menu") {
+      for (const item of current.items) remint(item, "items");
+    }
+
+    if (current.type === "social") {
+      for (const icon of current.icons) remint(icon, "icons");
+    }
+
+    if (current.type === "section") {
+      for (const column of current.children)
+        for (const child of column) remintBlock(child);
+    }
+
+    if (current.type === "wrapper") {
+      for (const child of current.children) remintBlock(child);
+    }
+
+    remapL10n(current as unknown as Record<string, unknown>, ids);
   };
-
-  if (cloned.type === "table") {
-    for (const row of cloned.rows) {
-      const oldRowId = remint(row, "rows");
-      for (const cell of row.cells) remint(cell, `rows.${oldRowId}.cells`);
-    }
-  }
-
-  if (cloned.type === "menu") {
-    for (const item of cloned.items) remint(item, "items");
-  }
-
-  if (cloned.type === "social") {
-    for (const icon of cloned.icons) remint(icon, "icons");
-  }
-
-  if (cloned.type === "section") {
-    cloned.children = cloned.children.map((column) =>
-      column.map((child) => cloneBlock(child)),
-    );
-  }
-
-  if (cloned.type === "wrapper") {
-    cloned.children = cloned.children.map((c) => cloneBlock(c));
-  }
-
-  remapL10n(cloned as unknown as Record<string, unknown>, ids);
+  remintBlock(cloned);
   return cloned;
 }

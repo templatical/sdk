@@ -6,6 +6,7 @@ import type {
   SectionHero,
 } from "@templatical/types";
 import { isUnset } from "./normalize";
+import { noteValue } from "./note-value";
 
 /** Strip a trailing `px` (case-insensitive) and coerce to number. Unset/NaN → undefined. */
 export function parsePx(value: unknown): number | undefined {
@@ -193,7 +194,7 @@ export function readMjmlBackgroundImage(
   const notes: string[] = [];
   const lossy = (name: string, raw: string, shown: string): void => {
     notes.push(
-      `${label} ${name} "${raw}" has no exact Templatical equivalent; imported as "${shown}".`,
+      `${label} ${name} "${noteValue(raw)}" has no exact Templatical equivalent; imported as "${shown}".`,
     );
   };
 
@@ -333,7 +334,7 @@ export function readMjmlHero(
     HERO_ALIGNS.find((align) => align === rawAlign?.toLowerCase()) ?? "top";
   if (rawAlign && verticalAlign !== rawAlign.toLowerCase()) {
     notes.push(
-      `${label} vertical-align "${rawAlign}" has no Templatical equivalent; imported as "top".`,
+      `${label} vertical-align "${noteValue(rawAlign)}" has no Templatical equivalent; imported as "top".`,
     );
   }
 
@@ -350,7 +351,7 @@ export function readMjmlHero(
   } else {
     if (mode !== "fixed-height") {
       notes.push(
-        `${label} mode "${rawMode}" has no Templatical equivalent; imported as "fixed-height".`,
+        `${label} mode "${noteValue(rawMode!)}" has no Templatical equivalent; imported as "fixed-height".`,
       );
     }
     const fixed = parsePx(value("height"));
@@ -369,7 +370,7 @@ export function readMjmlHero(
     const raw = value(name);
     if (raw === undefined) continue;
     notes.push(
-      `${label} ${name} "${raw}" has no Templatical equivalent; dropped.`,
+      `${label} ${name} "${noteValue(raw)}" has no Templatical equivalent; dropped.`,
     );
   }
 

@@ -299,6 +299,90 @@ describe("convertChamaileonTemplate variable references", () => {
 });
 
 describe("convertChamaileonTemplate loops", () => {
+  it("quotes at most 80 expression characters in every descendant note", () => {
+    const expression = "x".repeat(81);
+    const { report } = convertChamaileonTemplate({
+      body: {
+        type: "body",
+        children: [
+          {
+            type: "block-level-loop",
+            attrs: { expression },
+            children: [
+              {
+                type: "fullwidth",
+                children: [
+                  { type: "text", attrs: { text: "<p>A</p>" } },
+                  { type: "text", attrs: { text: "<p>B</p>" } },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(report.entries.map((entry) => entry.note)).toEqual([
+      `block-level-loop ${"x".repeat(80)}…`,
+      `block-level-loop ${"x".repeat(80)}…`,
+      `block-level-loop ${"x".repeat(80)}…`,
+    ]);
+    expect(report.entries.map((entry) => entry.status)).toEqual([
+      "approximated",
+      "approximated",
+      "approximated",
+    ]);
+  });
+
+  it("falls back to HTML for a node whose type is a number", () => {
+    const { report } = convertChamaileonTemplate(
+      JSON.stringify({ body: { type: "body", children: [{ type: 42 }] } }),
+    );
+    expect(report.entries.map((entry) => [entry.status, entry.note])).toEqual([
+      [
+        "html-fallback",
+        "42 has no Templatical block equivalent; the original node is preserved as JSON.",
+      ],
+    ]);
+  });
+
+  it("names only the type when a loop has no expression", () => {
+    const { report } = convertChamaileonTemplate({
+      body: {
+        type: "body",
+        children: [
+          { type: "block-level-loop", children: [] },
+          {
+            type: "block-level-loop",
+            children: [
+              {
+                type: "fullwidth",
+                children: [{ type: "text", attrs: { text: "<p>A</p>" } }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(report.entries.map((entry) => [entry.status, entry.note])).toEqual([
+      ["skipped", "block-level-loop"],
+      ["approximated", "block-level-loop"],
+      ["approximated", "block-level-loop"],
+    ]);
+  });
+
+  it("keeps an exactly 80-character expression in a skipped note", () => {
+    const expression = "z".repeat(80);
+    const { report } = convertChamaileonTemplate({
+      body: {
+        type: "body",
+        children: [
+          { type: "block-level-loop", attrs: { expression }, children: [] },
+        ],
+      },
+    });
+    expect(report.entries[0].note).toBe(`block-level-loop ${expression}`);
+  });
+
   it("converts a loop's fullwidth child and marks produced entries approximated", () => {
     const { content, report } = convertChamaileonTemplate({
       body: {
