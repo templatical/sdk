@@ -44,6 +44,7 @@ export type {
 } from "./blocks";
 export {
   HEADING_LEVEL_FONT_SIZE,
+  BUTTON_LINE_HEIGHT,
   TITLE_FONT_WEIGHT,
   TITLE_LINE_HEIGHT,
   RICH_TEXT_SPACING,

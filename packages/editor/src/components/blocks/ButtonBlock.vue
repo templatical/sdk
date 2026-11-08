@@ -3,7 +3,7 @@ import type {
   ButtonBlock as ButtonBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { toBorderRadiusCss } from "@templatical/types";
+import { BUTTON_LINE_HEIGHT, toBorderRadiusCss } from "@templatical/types";
 import { computed } from "vue";
 import { getBorderStyle } from "../../utils/blockComponentResolver";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
@@ -34,6 +34,7 @@ const buttonStyle = computed(() => {
     backgroundColor: props.block.backgroundColor,
     color: props.block.textColor,
     fontSize: `${props.block.fontSize}px`,
+    lineHeight: String(BUTTON_LINE_HEIGHT),
     fontWeight: buttonLabelWeight(props.block.fontWeight),
     textDecoration: "none",
     // A plain number renders as-is, like the export; per-corner radii go

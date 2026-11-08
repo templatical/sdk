@@ -15,6 +15,101 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.57.0
+
+<time datetime="2026-11-08">2026-11-08</time>
+
+### Features
+
+**Breaking changes:**
+
+`@templatical/core` · `@templatical/types`
+
+- `deleteBlock` and `moveBlock` refuse a section or wrapper while another session holds a lock on any block inside it. There is no override: wait for the lock to be released, or move the unlocked blocks out first.
+- `updateBlock` on a section refuses a `type` change or a `children` rewrite that would remove or overwrite a block another session has locked. Wait for the lock to be released.
+- `updateBlock` on a section refuses incoming `children` whose ids are locked by another session, already used outside that section, or repeated within the incoming children. Give new children unique ids that aren't in use elsewhere.
+- A `moveBlock` or `deleteBlock` on a wrapper with a peer-locked descendant now fails with `lock_held` before its `expect` is checked, so a stale `expect` there returns `lock_held` instead of `precondition_failed`. Handle `lock_held` as well as `precondition_failed` when retrying.
+- `addBlock` checks a new wrapper's children for duplicate ids, so a wrapper whose child reuses an existing id, or repeats an id among its own children, fails with `block_exists`. Give every block in the wrapper a unique id before adding it.
+- With a language selected, a section rewrite that would leave duplicate ids once existing children are restored is refused. Send a rewrite whose restored tree keeps every id unique.
+
+Lock checks now reach descendants of wrappers as well as section columns. In the default language, a rewrite that moves a block out of its section is accepted.
+
+**Add Danish editor and media library translations and localized recipient-facing content defaults.**
+
+`@templatical/editor` · `@templatical/media-library`
+
+**Breaking changes:**
+
+`@templatical/ai-kit` · `@templatical/core` · `@templatical/template-tools` · `@templatical/types`
+
+- `addBlock` no longer accepts a wrapper with a `{ sectionId, column }` parent. Add wrappers at the top level with `parent: null`.
+- `moveBlock` no longer accepts a wrapper with a `{ sectionId, column }` parent. Move wrappers to the top level with `parent: null`.
+- A malformed `moveBlock.expect.parent` is refused as `invalid_operation` at the shape check instead of failing as `precondition_failed`. Send `null`, `{ sectionId, column }` or `{ wrapperId }`.
+- `addBlock`, `moveBlock` and `updateBlock` refuse a section with `section.wrapper` inside a layout wrapper. Keep the section at the top level or remove its own wrapper before placing it inside one. `validateLayout` rejects the same nesting.
+
+Operations can address wrapper children with `{ wrapperId }` while existing section-column addresses keep their wire shape. The engine, inverses, collaboration diffs, AI feedback and CLI apply wrapper-child edits with placement, lock and hidden-slot checks.
+
+**Breaking changes:**
+
+`@templatical/ai-kit`
+
+- Editing sessions refuse a locale layer (in `addBlock`, `setContent` or `updateBlockLocale`) that sets a block's `type` or changes its `customType`, including when `setDefaultLocale` promotes the layer and `removeLocale` removes the old default in the same batch. A block's type and custom schema are the same in every language: to use another type, `deleteBlock` the block and `addBlock` one of the new type, then translate its fields in that block's layer.
+- A locale layer's `set.children` may keep a `custom`, `slot`, or `wrapper` block only when the base content already has a block with the same `id` and `type`, and a `custom` block also keeps its `customType`; it cannot introduce one. To localize such a block, put it in the base content first with the same `id`, `type` and `customType` (outside the session, or with `addBlock` when its type isn't in `forbiddenBlockTypes`), then change its translatable fields in the layer.
+- A block in a locale layer's `set.children` keeps the type of the block with the same `id` in the content; a German child can't turn a base paragraph into a title. For a title in one language only, put a title with an `id` the base content doesn't use in that locale's `set.children`.
+- A template whose `settings.locales` isn't a list of strings is refused. Send `settings.locales` as an array of locale tags, or omit it.
+- A malformed locale layer is refused as invalid: a block or settings layer that isn't an object, or one whose `set` or `text` isn't an object. Send `{ set?: {…}, text?: {…} }` objects, or omit the layer.
+- When the content already holds a layer breaking these rules, a batch that leaves that layer in place is refused, even if it doesn't touch that block. Delete the block that holds the layer, or replace the affected content with `setContent`. A malformed layer is refused even then, and a running session can't repair it: fix or remove the layer outside the session, then call `createEditingSession` again with the repaired content.
+
+These rules apply to locale layers only. `setContent` can still change an existing block's base type under the same `id`, for example from paragraph to title.
+
+### Fixes and improvements
+
+**`resolveLocale` copies each block once, so resolving a deeply nested template takes time in proportion to its size. Masking merge tags with a custom syntax runs each regex once per match instead of again on every tag.**
+
+`@templatical/renderer` · `@templatical/types`
+
+The renderer writes every `<` in a custom-block stylesheet as the CSS escape `\3c `, so a stylesheet from `renderedStylesheet` or `getCustomBlockStylesheet` can't close its `<mj-style>` or add MJML elements. A stylesheet without `<` renders unchanged.
+
+**`link.localhost-or-staging` matches `links.nonProductionHosts` globs in linear time, so a very long URL host no longer stalls the linter, and compatibility rules group CSS declarations and clients without copying arrays. The Easy Email Pro importer decodes HTML entities by looking at most six characters ahead of each `&`.**
+
+`@templatical/import-easy-email-pro` · `@templatical/quality`
+
+**The Unlayer, BeeFree and Topol importers check for a repeated warning in constant time, so a design with thousands of languages no longer slows the import quadratically. The Chamaileon importer looks up variable references in a table built once per document. The renderer escapes control characters in a block's type and id before it logs the missing-renderer warning. `templatical live` answers 400 to a request target it can't parse, where it used to exit.**
+
+`@templatical/import-beefree` · `@templatical/import-chamaileon` · `@templatical/import-topol` · `@templatical/import-unlayer` · `@templatical/renderer` · `@templatical/template-tools`
+
+**Localized operations preserve other language layers when an existing block moves into a newly added wrapper. Mixed section and wrapper parent objects resolve to the section column, matching the operation engine.**
+
+`@templatical/core`
+
+**The canvas draws a button at the same height as the export (#1144). The renderer now writes `line-height="120%"` explicitly; compiled HTML is unchanged.**
+
+`@templatical/editor` · `@templatical/import-beefree` · `@templatical/renderer` · `@templatical/types`
+
+**`translateFields` sends the model short field aliases**
+
+`@templatical/ai-kit`
+
+The model now sees each field as `f1`, `f2`, … instead of its long id, which shortens its answer. The returned `TranslationResult` still carries the real field ids in request order; the `TranslationRequest` and `TranslationResult` contract and the HTTP wire are unchanged.
+
+**Fix the header switching to its compact layout while the save status shows. "Unsaved" and "Saved" appear on every edit and save; in an editor just wide enough for the full header, their words compacted the whole header until the status cleared, about 5 seconds with `templates.autoSave`. The badge keeps a fixed slot (its icon) in the header's fit measurement and shows its words only where the full header has room for them. Without room it shows the icon alone, a different one per state (dot, check, alert), and keeps the words as its tooltip and for screen readers. In the compact header the badge is always the icon alone.**
+
+`@templatical/editor`
+
+Fix the AI and Comments panels opening and closing without a slide: the AI panel appeared and disappeared in place, and Comments jumped. The panel, the properties panel it pushes aside and the canvas move together on one timing, the new `--tpl-panel-transition` token (240ms). Override it with `--tpl-user-panel-transition`. Under `prefers-reduced-motion: reduce` none of the three animates.
+
+**An editing session checks locale layers in time proportional to the template size. Each locale is resolved only for the blocks that carry its layer, so a template with thousands of locales no longer makes every batch resolve the whole template once per locale.**
+
+`@templatical/ai-kit`
+
+**Preview surfaces are read-only: the canvas in preview mode and the test-email and saved-block previews no longer start inline edits or write table cells, so resolved preview content can't overwrite the template.**
+
+`@templatical/core` · `@templatical/editor`
+
+On the canvas, a link with `target="_blank"` drops `opener` from its `rel` and gains `noopener`. Stored content and the exported email keep the link as authored.
+
+Cloud comments follow a template switch: the editor leaves the previous template's realtime channel and joins the new one, and ignores a comment broadcast for another template. A failed socket connection is retried on the next connect.
+
 ## 0.56.1
 
 <time datetime="2026-11-06">2026-11-06</time>
