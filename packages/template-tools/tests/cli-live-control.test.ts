@@ -80,7 +80,7 @@ describe("live already-running / reload / stop", () => {
       await runLive(parseArgs(["live", "reload", "--cwd", dir, "--json"])),
     ).toBe(0);
     expect(fetch).toHaveBeenCalledWith(
-      "http://localhost:5151/reload",
+      "http://127.0.0.1:5151/reload",
       expect.objectContaining({ method: "POST", body: undefined }),
     );
     expect(JSON.parse(stdout.join(""))).toEqual({
@@ -113,7 +113,7 @@ describe("live already-running / reload / stop", () => {
         ]),
       ),
     ).toBe(0);
-    expect(fetch).toHaveBeenCalledWith("http://localhost:5151/reload", {
+    expect(fetch).toHaveBeenCalledWith("http://127.0.0.1:5151/reload", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ consumeAnnotations: true }),
@@ -262,6 +262,31 @@ describe("live already-running / reload / stop", () => {
     });
   });
 
+  it("passes a shutdown callback that closes the bridge, removes the pidfile and exits", async () => {
+    live.readPidfile.mockReturnValue(null);
+    const close = vi.fn(async () => {});
+    live.startBridgePreferring.mockResolvedValue({
+      port: 4848,
+      url: "http://localhost:4848/",
+      workingPath: join(dir, "a.json"),
+      fellBack: false,
+      lastFetch: () => null,
+      close,
+    });
+    const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    const before = { int: process.listeners("SIGINT"), term: process.listeners("SIGTERM") };
+    void runLive(parseArgs(["live", "--custom-block", "a.json", "--no-open", "--cwd", dir]));
+    const pid = join(dir, ".templatical", "live-server.pid");
+    await vi.waitFor(() => expect(existsSync(pid)).toBe(true));
+    for (const l of process.listeners("SIGINT")) if (!before.int.includes(l)) process.removeListener("SIGINT", l);
+    for (const l of process.listeners("SIGTERM")) if (!before.term.includes(l)) process.removeListener("SIGTERM", l);
+    const { onShutdown } = live.startBridgePreferring.mock.calls[0][0] as { onShutdown: () => void };
+    onShutdown();
+    expect(existsSync(pid)).toBe(false);
+    expect(close).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(0));
+  });
+
   it("stops a live pid and removes the pidfile", async () => {
     mkdirSync(join(dir, ".templatical"), { recursive: true });
     writeFileSync(join(dir, ".templatical", "live-server.pid"), "{}", "utf8");
@@ -273,18 +298,27 @@ describe("live already-running / reload / stop", () => {
     expect(
       await runLive(parseArgs(["live", "stop", "--cwd", dir, "--json"])),
     ).toBe(0);
-    expect(fetch).toHaveBeenCalledWith("http://localhost:4747/shutdown", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    expect(fetch).toHaveBeenCalledWith("http://127.0.0.1:4747/shutdown", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     expect(kill).not.toHaveBeenCalled();
     expect(JSON.parse(stdout.join(""))).toEqual({ stopped: true });
   });
 
-  it("signals the verified pid when the shutdown route fails", async () => {
+  it.each([
+    ["answers an error", vi.fn(async () => ({ ok: false, status: 500 })), "it answered 500"],
+    ["cannot be reached", vi.fn(async () => { throw new Error("fetch failed"); }), "fetch failed"],
+  ])("sends no signal and keeps the pidfile when the shutdown route %s", async (_label, shutdown, reason) => {
+    mkdirSync(join(dir, ".templatical"), { recursive: true });
+    const pid = join(dir, ".templatical", "live-server.pid");
+    writeFileSync(pid, "{}", "utf8");
     live.readPidfile.mockReturnValue({ pid: 4242, port: 4747 });
     live.processAlive.mockReturnValue(true);
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500 })));
+    vi.stubGlobal("fetch", shutdown);
     const kill = vi.spyOn(process, "kill").mockImplementation(() => true);
-    expect(await runLive(parseArgs(["live", "stop", "--cwd", dir]))).toBe(0);
-    expect(kill).toHaveBeenCalledWith(4242, "SIGTERM");
+    await expect(runLive(parseArgs(["live", "stop", "--cwd", dir]))).rejects.toThrow(
+      new UsageError(`The live server (pid 4242) did not stop: POST /shutdown failed (${reason}). Stop that process yourself, then delete .templatical/live-server.pid.`),
+    );
+    expect(kill).not.toHaveBeenCalled();
+    expect(existsSync(pid)).toBe(true);
   });
 
 });

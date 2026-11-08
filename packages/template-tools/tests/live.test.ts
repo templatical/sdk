@@ -10,6 +10,7 @@ import {
   listWorkingFiles,
   readPidfile,
   readWorkingFile,
+  verifyLiveServer,
   startBridge,
   startBridgePreferring,
   type BridgeHandle,
@@ -113,6 +114,43 @@ describe("readPidfile", () => {
     const cwd = project();
     writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
     expect(readPidfile(cwd)).toBe(null);
+  });
+  it.each(["null", "[]", "12", '"pid"'])("rejects a pidfile whose JSON is %s", (raw) => {
+    const cwd = project();
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), raw);
+    expect(readPidfile(cwd)).toBe(null);
+  });
+  it("reads a well-formed pidfile", () => {
+    const cwd = project();
+    const info = { pid: 12, port: 4747, mode: "template", path: "/tmp/t.json" };
+    writeFileSync(join(cwd, ".templatical", "live-server.pid"), JSON.stringify(info));
+    expect(readPidfile(cwd)).toEqual(info);
+  });
+});
+
+describe("verifyLiveServer", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const answer = (status: number, body: unknown) => vi.fn(async () => new Response(JSON.stringify(body), { status }));
+
+  it("accepts an identity naming this directory and the pidfile's pid, asked on 127.0.0.1", async () => {
+    const cwd = project();
+    const fetchMock = answer(200, { pid: 12, cwd: resolve(cwd) });
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:4747/identity", { signal: expect.any(AbortSignal) });
+  });
+  it.each([
+    ["another directory", 200, (_cwd: string) => ({ pid: 12, cwd: "/elsewhere" })],
+    ["another pid", 200, (cwd: string) => ({ pid: 13, cwd: resolve(cwd) })],
+    ["a matching identity on a non-2xx reply", 404, (cwd: string) => ({ pid: 12, cwd: resolve(cwd) })],
+  ])("refuses %s", async (_label, status, body) => {
+    const cwd = project();
+    vi.stubGlobal("fetch", answer(status, body(cwd)));
+    expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe(false);
+  });
+  it("refuses when nothing answers", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ECONNREFUSED"); }));
+    expect(await verifyLiveServer(project(), { pid: 12, port: 4747 })).toBe(false);
   });
 });
 

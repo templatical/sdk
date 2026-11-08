@@ -75,7 +75,9 @@ async function postTo(
   path: string,
   body?: unknown,
 ): Promise<Response> {
-  return fetch(`http://localhost:${port}${path}`, {
+  // 127.0.0.1, where the bridge listens and verifyLiveServer checked it:
+  // `localhost` can resolve to ::1 first and reach a different server.
+  return fetch(`http://127.0.0.1:${port}${path}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -161,16 +163,20 @@ export async function runLive(args: ParsedArgs): Promise<number> {
       );
       return EXIT.ok;
     }
+    // No signal fallback: the pid came from the pidfile and /identity, both of
+    // which another local process can forge, so signalling it could hit any
+    // process this user owns. A server that passes /identity answers /shutdown.
+    let failure: string | null = null;
     try {
       const response = await postTo(info.port, "/shutdown", {});
-      if (!response.ok)
-        throw new Error(`Shutdown returned ${response.status}.`);
-    } catch {
-      try {
-        process.kill(info.pid, "SIGTERM");
-      } catch {
-        /* already gone */
-      }
+      if (!response.ok) failure = `it answered ${response.status}`;
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error);
+    }
+    if (failure !== null) {
+      throw new UsageError(
+        `The live server (pid ${info.pid}) did not stop: POST /shutdown failed (${failure}). Stop that process yourself, then delete ${WORKING_DIR}/live-server.pid.`,
+      );
     }
     rmSync(pidfilePath(cwd), { force: true });
     emit({ stopped: true }, () => "Stopped the live server.");
