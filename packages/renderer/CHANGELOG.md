@@ -1,5 +1,21 @@
 # @templatical/renderer
 
+## 0.57.0
+
+### Patch Changes
+
+- ad58b8e: The canvas draws a button at the same height as the export (#1144). The renderer now writes `line-height="120%"` explicitly; compiled HTML is unchanged.
+- 59a17bc: The Unlayer, BeeFree and Topol importers check for a repeated warning in constant time, so a design with thousands of languages no longer slows the import quadratically. The Chamaileon importer looks up variable references in a table built once per document. The renderer escapes control characters in a block's type and id before it logs the missing-renderer warning. `templatical live` answers 400 to a request target it can't parse, where it used to exit.
+- 0511bb6: `resolveLocale` copies each block once, so resolving a deeply nested template takes time in proportion to its size. Masking merge tags with a custom syntax runs each regex once per match instead of again on every tag.
+
+  The renderer writes every `<` in a custom-block stylesheet as the CSS escape `\3c `, so a stylesheet from `renderedStylesheet` or `getCustomBlockStylesheet` can't close its `<mj-style>` or add MJML elements. A stylesheet without `<` renders unchanged.
+
+- Updated dependencies [ad58b8e]
+- Updated dependencies [0bdfeac]
+- Updated dependencies [0511bb6]
+- Updated dependencies [a2f3ed8]
+  - @templatical/types@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes

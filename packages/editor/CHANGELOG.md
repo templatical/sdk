@@ -1,5 +1,31 @@
 # @templatical/editor
 
+## 0.57.0
+
+### Minor Changes
+
+- 3e1b6a3: Add Danish editor and media library translations and localized recipient-facing content defaults.
+
+### Patch Changes
+
+- ad58b8e: The canvas draws a button at the same height as the export (#1144). The renderer now writes `line-height="120%"` explicitly; compiled HTML is unchanged.
+- c2015dd: Fix the header switching to its compact layout while the save status shows. "Unsaved" and "Saved" appear on every edit and save; in an editor just wide enough for the full header, their words compacted the whole header until the status cleared, about 5 seconds with `templates.autoSave`. The badge keeps a fixed slot (its icon) in the header's fit measurement and shows its words only where the full header has room for them. Without room it shows the icon alone, a different one per state (dot, check, alert), and keeps the words as its tooltip and for screen readers. In the compact header the badge is always the icon alone.
+
+  Fix the AI and Comments panels opening and closing without a slide: the AI panel appeared and disappeared in place, and Comments jumped. The panel, the properties panel it pushes aside and the canvas move together on one timing, the new `--tpl-panel-transition` token (240ms). Override it with `--tpl-user-panel-transition`. Under `prefers-reduced-motion: reduce` none of the three animates.
+
+- f1ad606: Preview surfaces are read-only: the canvas in preview mode and the test-email and saved-block previews no longer start inline edits or write table cells, so resolved preview content can't overwrite the template.
+
+  On the canvas, a link with `target="_blank"` drops `opener` from its `rel` and gains `noopener`. Stored content and the exported email keep the link as authored.
+
+  Cloud comments follow a template switch: the editor leaves the previous template's realtime channel and joins the new one, and ignores a comment broadcast for another template. A failed socket connection is retried on the next connect.
+
+- Updated dependencies [ad58b8e]
+- Updated dependencies [59a17bc]
+- Updated dependencies [418a249]
+- Updated dependencies [0511bb6]
+  - @templatical/renderer@0.57.0
+  - @templatical/quality@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes
