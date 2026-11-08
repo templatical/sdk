@@ -1,15 +1,19 @@
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
+  statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it, vi } from "vitest";
@@ -17,7 +21,10 @@ import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error — plain .mjs build script, no declarations
 import {
   buildOrder,
+  ensurePrivateParent,
   installConsumer,
+  materializeConsumer,
+  materializeExample,
   readExampleRoots,
   readFixtureRoots,
   readWorkspacePackages,
@@ -130,7 +137,224 @@ describe("omitted consumer installation", () => {
   });
 });
 
+describe("ensurePrivateParent", () => {
+  const refusal = (dir: string) =>
+    `Refusing to use ${dir}: it must be a directory you own with no group or other access. Delete it and try again.`;
+
+  it("creates a missing parent with mode 0700", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const parent = join(root, "fresh");
+      expect(ensurePrivateParent(join(parent, "app"))).toBe(parent);
+      if (process.platform !== "win32")
+        expect(statSync(parent).mode & 0o777).toBe(0o700);
+      else expect(existsSync(parent)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts an existing private folder", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      expect(ensurePrivateParent(join(root, "app"))).toBe(root);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "refuses a parent whose folder lets others rename entries",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const open = join(root, "open");
+        mkdirSync(open);
+        chmodSync(open, 0o777);
+        expect(() => ensurePrivateParent(join(open, "p", "app"))).toThrow(
+          `Refusing to use ${join(open, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+        chmodSync(open, 0o1777);
+        expect(ensurePrivateParent(join(open, "p", "app"))).toBe(join(open, "p"));
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  // Skipped as root: uid 0 is trusted, so the real owner would still pass.
+  it.skipIf(process.platform === "win32" || process.getuid?.() === 0)(
+    "refuses a path with a folder owned by someone other than you or root",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      // Pretend to be another user: the mkdtemp folder, owned by the real
+      // one, is then an ancestor that someone else controls.
+      const getuid = vi.spyOn(process, "getuid").mockReturnValue(2_000_000);
+      try {
+        expect(() => ensurePrivateParent(join(root, "p", "app"))).toThrow(
+          /can be changed by another user/,
+        );
+      } finally {
+        getuid.mockRestore();
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "walks a symlinked ancestor's real path too",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const open = join(root, "open");
+        mkdirSync(open);
+        chmodSync(open, 0o777);
+        const target = join(open, "target");
+        mkdirSync(target, { mode: 0o700 });
+        const link = join(root, "link");
+        symlinkSync(target, link);
+        expect(() => ensurePrivateParent(join(link, "p", "app"))).toThrow(
+          `Refusing to use ${join(link, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "walks every folder a chain of symlinks passes through",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const target = join(root, "target");
+        mkdirSync(target, { mode: 0o700 });
+        const open = join(root, "open");
+        mkdirSync(open);
+        chmodSync(open, 0o777);
+        symlinkSync(target, join(open, "redirect"));
+        const link = join(root, "link");
+        symlinkSync(join(open, "redirect"), link);
+        expect(() => ensurePrivateParent(join(link, "p", "app"))).toThrow(
+          `Refusing to use ${join(link, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "resolves .. in a symlink target after the symlinks before it",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        mkdirSync(join(root, "safe"), { mode: 0o700 });
+        const open = join(root, "open");
+        mkdirSync(join(open, "deep"), { recursive: true });
+        mkdirSync(join(open, "safe"), { mode: 0o700 });
+        chmodSync(open, 0o777);
+        symlinkSync(join(open, "deep"), join(root, "jump"));
+        const link = join(root, "link");
+        // Lexically `jump/../safe` is root/safe; physically it is open/safe.
+        symlinkSync(`${root}${sep}jump${sep}..${sep}safe`, link);
+        expect(() => ensurePrivateParent(join(link, "p", "app"))).toThrow(
+          `Refusing to use ${join(link, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")("refuses a symlink loop", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const a = join(root, "a");
+      const b = join(root, "b");
+      symlinkSync(b, a);
+      symlinkSync(a, b);
+      expect(() => ensurePrivateParent(join(a, "p", "app"))).toThrow(
+        expect.objectContaining({ code: "ELOOP" }),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(process.platform === "win32")("refuses a parent that group or other users can reach", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const shared = join(root, "shared");
+      mkdirSync(shared);
+      chmodSync(shared, 0o755);
+      expect(() => ensurePrivateParent(join(shared, "app"))).toThrow(
+        refusal(shared),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("skips the permission bits on Windows", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    const platform = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+    try {
+      const shared = join(root, "shared");
+      mkdirSync(shared);
+      chmodSync(shared, 0o755);
+      expect(ensurePrivateParent(join(shared, "app"))).toBe(shared);
+    } finally {
+      platform.mockRestore();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(process.platform === "win32")("refuses a parent that is a symlink, even to a private folder", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const target = join(root, "target");
+      mkdirSync(target, { mode: 0o700 });
+      const link = join(root, "link");
+      symlinkSync(target, link);
+      expect(() => ensurePrivateParent(join(link, "app"))).toThrow(
+        refusal(link),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(process.platform === "win32")("is checked before either materializer packs or copies anything", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const shared = join(root, "shared");
+      mkdirSync(shared);
+      chmodSync(shared, 0o755);
+      const consumerDir = join(shared, "app");
+      const packDir = join(root, "packs");
+      const args = { repoRoot: REPO_ROOT, consumerDir, packDir };
+      expect(() =>
+        materializeConsumer({ ...args, fixtureDir: join(root, "missing") }),
+      ).toThrow(refusal(shared));
+      expect(() =>
+        materializeExample({ ...args, exampleDir: join(root, "missing") }),
+      ).toThrow(refusal(shared));
+      expect(existsSync(consumerDir)).toBe(false);
+      expect(existsSync(packDir)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("vanillaConsumerDir", () => {
+  it("is an app folder inside a per-checkout parent", () => {
+    const dir = vanillaConsumerDir("/work/sdk");
+    expect(dir.endsWith(join("app"))).toBe(true);
+    expect(dirname(dir)).toMatch(/templatical-e2e-consumer-[0-9a-f]{12}$/);
+  });
+
   // A consumer inside the repo also resolves bare imports from the repo-root
   // node_modules, where pnpm links workspace packages; it then cannot model
   // an optional peer the app did not install.

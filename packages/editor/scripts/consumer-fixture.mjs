@@ -28,15 +28,26 @@ import { createHash } from "node:crypto";
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
+  readlinkSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  parse,
+  resolve,
+  sep,
+} from "node:path";
 
 const SCOPE = "@templatical/";
 
@@ -298,8 +309,8 @@ export function packClosure({
 /**
  * Materialize `examples/<name>` against packed workspace builds: copy it to
  * `consumerDir` (keep that outside the repo so resolution cannot walk into the
- * workspace), point its `@templatical/*` dependencies at the tarballs, then
- * `npm install`.
+ * workspace, as a child of a private folder: `ensurePrivateParent`), point its
+ * `@templatical/*` dependencies at the tarballs, then `npm install`.
  */
 export function materializeExample({
   repoRoot,
@@ -309,6 +320,7 @@ export function materializeExample({
   build = false,
   log = () => {},
 }) {
+  ensurePrivateParent(consumerDir);
   const manifestPath = join(exampleDir, "package.json");
   if (!existsSync(manifestPath)) {
     throw new Error(`example has no package.json: ${exampleDir}`);
@@ -329,7 +341,7 @@ export function materializeExample({
   });
 
   rmSync(consumerDir, { recursive: true, force: true });
-  mkdirSync(consumerDir, { recursive: true });
+  mkdirSync(consumerDir);
   cpSync(exampleDir, consumerDir, {
     recursive: true,
     filter: shouldCopyExampleEntry,
@@ -350,8 +362,10 @@ const OVERRIDES_NOTE =
   "packages/editor/scripts/consumer-fixture.mjs — see its header for why.";
 
 /**
- * Build, pack, materialize and `npm install`. Returns the closure it resolved so
- * callers can log what the fixture actually pulled in.
+ * Build, pack, materialize and `npm install`. `consumerDir` is a child of a
+ * private folder (`ensurePrivateParent`), never a shared temp path itself.
+ * Returns the closure it resolved so callers can log what the fixture actually
+ * pulled in.
  */
 export function materializeConsumer({
   repoRoot,
@@ -361,6 +375,7 @@ export function materializeConsumer({
   omitOptional = false,
   log = () => {},
 }) {
+  ensurePrivateParent(consumerDir);
   if (!existsSync(fixtureDir)) {
     throw new Error(`fixture dir not found: ${fixtureDir}`);
   }
@@ -387,7 +402,7 @@ export function materializeConsumer({
   });
 
   rmSync(consumerDir, { recursive: true, force: true });
-  mkdirSync(consumerDir, { recursive: true });
+  mkdirSync(consumerDir);
   cpSync(fixtureDir, consumerDir, { recursive: true });
 
   // The fixture ships its manifest as `package.json.tpl` so syncpack and pnpm
@@ -461,7 +476,85 @@ function run(cmd, opts, log) {
  */
 export function vanillaConsumerDir(repoRoot) {
   const id = createHash("sha256").update(repoRoot).digest("hex").slice(0, 12);
-  return join(tmpdir(), `templatical-e2e-consumer-${id}`);
+  return join(tmpdir(), `templatical-e2e-consumer-${id}`, "app");
+}
+
+/**
+ * Make sure `consumerDir`'s parent is a directory only this user can reach:
+ * created here with mode 0700, or already one this user owns with no group or
+ * other access and not a symlink. The consumer is deleted and re-created
+ * inside it, and its config files are later executed, so another local
+ * account must not be able to plant or swap anything on that path.
+ */
+export function ensurePrivateParent(consumerDir) {
+  const parent = dirname(consumerDir);
+  try {
+    mkdirSync(parent, { mode: 0o700 });
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+  }
+  const uid = typeof process.getuid === "function" ? process.getuid() : null;
+  // Every entry above the parent must stay put for the whole run, or another
+  // user could rename the path and put their own folder in its place. Each
+  // entry, a symlink included, is owned by this user or root; each folder is
+  // not group or other writable unless it has the sticky bit (whose owner,
+  // trusted here, can still rename). lstat, never stat: a symlink is judged by
+  // who can replace it, and every path a symlink resolves through is walked
+  // too, component by component, so a chain of links can't skip a folder.
+  if (process.platform !== "win32" && uid !== null) {
+    const check = (dir) => {
+      const entry = lstatSync(dir);
+      const trustedOwner = entry.uid === uid || entry.uid === 0;
+      const renamable =
+        entry.isDirectory() &&
+        (entry.mode & 0o022) !== 0 &&
+        (entry.mode & 0o1000) === 0;
+      if (!trustedOwner || renamable) {
+        throw new Error(
+          `Refusing to use ${parent}: ${dir} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      }
+      return entry;
+    };
+    // No hop limit needed: the mkdirSync above already failed with ELOOP for
+    // a path whose symlinks loop, so every chain reached here is finite.
+    // Resolved the way the filesystem does, never lexically: `..` steps up
+    // from the real folder reached so far, after any symlink before it.
+    const walk = (path) => {
+      const absolute = isAbsolute(path)
+        ? path
+        : `${process.cwd()}${sep}${path}`;
+      const { root } = parse(absolute);
+      let current = root;
+      check(current);
+      for (const part of absolute.slice(root.length).split(sep)) {
+        if (!part || part === ".") continue;
+        if (part === "..") {
+          current = dirname(current);
+          continue;
+        }
+        current = join(current, part);
+        if (check(current).isSymbolicLink()) {
+          const target = readlinkSync(current);
+          walk(
+            isAbsolute(target) ? target : `${dirname(current)}${sep}${target}`,
+          );
+          current = realpathSync(current);
+        }
+      }
+    };
+    walk(dirname(parent));
+  }
+  const stat = lstatSync(parent);
+  const owned = uid === null || stat.uid === uid;
+  // Windows reports no meaningful permission bits, so only POSIX checks them.
+  const private_ = process.platform === "win32" || (stat.mode & 0o077) === 0;
+  if (stat.isSymbolicLink() || !stat.isDirectory() || !owned || !private_) {
+    throw new Error(
+      `Refusing to use ${parent}: it must be a directory you own with no group or other access. Delete it and try again.`,
+    );
+  }
+  return parent;
 }
 
 /** Resolve the repo root from a script in `packages/editor/scripts/`. */

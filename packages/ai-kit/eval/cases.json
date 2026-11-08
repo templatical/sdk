@@ -253,7 +253,7 @@
       "type": "fieldNot",
       "block": "domain-link",
       "path": "content",
-      "matches": "(?i)>(?:[^<]*)(?:www\\.|://)"
+      "matches": "(?i)>[^<>]*(?:www\\.|://)"
     }
   ]
 },
