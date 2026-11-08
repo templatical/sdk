@@ -283,6 +283,13 @@ export const HEADING_LEVEL_FONT_SIZE: Record<HeadingLevel, number> = {
 export const TITLE_LINE_HEIGHT = 1.3;
 
 /**
+ * A button label's line box as a ratio of its font size. The renderer emits
+ * it and the canvas draws it, matching MJML's `mj-button` default so compiled
+ * HTML stays unchanged.
+ */
+export const BUTTON_LINE_HEIGHT = 1.2;
+
+/**
  * A title block's font weight.
  *
  * The renderer writes it onto the exported heading, and the editor sets it on

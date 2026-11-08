@@ -4,6 +4,7 @@ import "./dom-stubs";
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import {
+  BUTTON_LINE_HEIGHT,
   SYNTAX_PRESETS,
   createButtonBlock,
   uniformBorder,
@@ -124,7 +125,12 @@ describe("ButtonBlock border", () => {
   it("rounds only the chosen corners", () => {
     const wrapper = mountButton(
       createButtonBlock({
-        borderRadius: { topLeft: 0, topRight: 20, bottomRight: 20, bottomLeft: 0 },
+        borderRadius: {
+          topLeft: 0,
+          topRight: 20,
+          bottomRight: 20,
+          bottomLeft: 0,
+        },
       }),
     );
     expect((wrapper.find("a").element as HTMLElement).style.borderRadius).toBe(
@@ -135,5 +141,22 @@ describe("ButtonBlock border", () => {
   it("sets no border when none is stored", () => {
     const wrapper = mountButton(createButtonBlock());
     expect((wrapper.find("a").element as HTMLElement).style.border).toBe("");
+  });
+});
+
+/**
+ * The renderer writes the same ratio onto `mj-button`, so a canvas button is
+ * as tall as the exported one (#1144). Without it the anchor inherits the
+ * editor's 1.5 and a 16px label with 18px padding draws 60px against 55px.
+ */
+describe("ButtonBlock line height", () => {
+  it("draws the label at the shared button line height", () => {
+    const wrapper = mountButton(
+      createButtonBlock({ text: "Go", fontSize: 16 }),
+    );
+    expect(BUTTON_LINE_HEIGHT).toBe(1.2);
+    expect((wrapper.find("a").element as HTMLElement).style.lineHeight).toBe(
+      "1.2",
+    );
   });
 });
