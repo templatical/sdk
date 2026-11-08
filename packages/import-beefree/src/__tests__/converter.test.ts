@@ -491,6 +491,73 @@ describe("convertBeeFreeTemplate", () => {
     }
   });
 
+  it.each([
+    [
+      {
+        "padding-top": "0px",
+        "padding-right": "0px",
+        "padding-bottom": "0px",
+        "padding-left": "0px",
+      },
+      { top: 0, right: 0, bottom: 0, left: 0 },
+      "regular",
+    ],
+    [
+      {
+        "padding-top": "1px",
+        "padding-right": "1px",
+        "padding-bottom": "1px",
+        "padding-left": "1px",
+      },
+      { top: 1, right: 1, bottom: 1, left: 1 },
+      "regular",
+    ],
+    [
+      { "padding-top": "0px", "padding-bottom": "0px", "line-height": "200%" },
+      { top: 6, right: 24, bottom: 6, left: 24 },
+      "regular",
+    ],
+    [
+      { "font-weight": "400" },
+      { top: 12, right: 24, bottom: 12, left: 24 },
+      "regular",
+    ],
+    [{}, { top: 12, right: 24, bottom: 12, left: 24 }, "regular"],
+  ] as const)(
+    "converts issue 1151 button style %j",
+    (style, padding, weight) => {
+      const { content } = convertBeeFreeTemplate({
+        page: {
+          body: { content: { style: { width: "600px" } } },
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-button",
+                      descriptor: {
+                        button: { href: "#", label: "<p>OK</p>", style },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const block = content.blocks.flatMap((item) =>
+        item.type === "section" ? item.children.flat() : [item],
+      )[0];
+      expect(block.type).toBe("button");
+      if (block.type !== "button") throw new Error("expected a button block");
+      expect(block.buttonPadding).toEqual(padding);
+      expect(block.fontWeight).toBe(weight);
+    },
+  );
+
   it("converts divider module", () => {
     const template: BeeFreeTemplate = {
       page: {
@@ -1559,6 +1626,237 @@ describe("convertBeeFreeTemplate", () => {
         bottom: { width: 1, style: "solid", color: "#445566" },
         left: { width: 0, style: "solid", color: "#000000" },
       });
+    });
+
+    function multiColumnBox(
+      styles: Record<string, string>[],
+      rowStyle?: Record<string, string>,
+    ) {
+      return sectionOf({
+        page: {
+          rows: [
+            {
+              ...(rowStyle ? { content: { style: rowStyle } } : {}),
+              columns: styles.map((style) => ({
+                "grid-columns": 12 / styles.length,
+                style,
+                modules: [text({})],
+              })),
+            },
+          ],
+        },
+      });
+    }
+
+    it("promotes the issue's two outer column edges", () => {
+      const edge = "1px solid #E7EAEC";
+      const none = "0px solid transparent";
+      const column = (left: string, right: string) => ({
+        "grid-columns": 6,
+        style: {
+          "border-top": none,
+          "border-right": right,
+          "border-bottom": none,
+          "border-left": left,
+        },
+        modules: [
+          {
+            type: "mailup-bee-newsletter-modules-text",
+            descriptor: { text: { html: "<p>Text</p>" }, style: {} },
+          },
+        ],
+      });
+      const { section, report } = sectionOf({
+        page: {
+          body: { content: { style: { width: "500px" } } },
+          rows: [{ columns: [column(edge, none), column(none, edge)] }],
+        },
+      });
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toEqual({
+        top: { width: 0, style: "solid", color: "#000000" },
+        right: { width: 1, style: "solid", color: "#e7eaec" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 1, style: "solid", color: "#e7eaec" },
+      });
+      expect(report.warnings).toEqual([]);
+    });
+
+    it("promotes only the first column's left edge", () => {
+      const { section, report } = multiColumnBox([
+        { "border-left": "2px dashed #112233" },
+        {},
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toEqual({
+        top: { width: 0, style: "solid", color: "#000000" },
+        right: { width: 0, style: "solid", color: "#000000" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 2, style: "dashed", color: "#112233" },
+      });
+      expect(report.warnings).toEqual([]);
+    });
+
+    it("promotes outer edges across three columns", () => {
+      const { section, report } = multiColumnBox([
+        { "border-left": "1px solid #112233" },
+        {},
+        { "border-right": "3px dotted #445566" },
+      ]);
+
+      expect(section.columns).toBe("3");
+      expect(section.border).toEqual({
+        top: { width: 0, style: "solid", color: "#000000" },
+        right: { width: 3, style: "dotted", color: "#445566" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 1, style: "solid", color: "#112233" },
+      });
+      expect(report.warnings).toEqual([]);
+    });
+
+    it("keeps the drop warning when an inner side is drawn", () => {
+      const { section, report } = multiColumnBox([
+        {
+          "border-left": "1px solid #112233",
+          "border-right": "1px solid #445566",
+        },
+        { "border-right": "1px solid #112233" },
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toBeUndefined();
+      expect(report.warnings).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+    });
+
+    it("promotes an identical top border across every column", () => {
+      const { section, report } = multiColumnBox([
+        { "border-top": "2px dashed #112233" },
+        { "border-top": "2px dashed #112233" },
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toEqual({
+        top: { width: 2, style: "dashed", color: "#112233" },
+        right: { width: 0, style: "solid", color: "#000000" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 0, style: "solid", color: "#000000" },
+      });
+      expect(report.warnings).toEqual([]);
+    });
+
+    it("promotes an identical bottom border across every column", () => {
+      const { section, report } = multiColumnBox([
+        { "border-bottom": "1px dotted #445566" },
+        { "border-bottom": "1px dotted #445566" },
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toEqual({
+        top: { width: 0, style: "solid", color: "#000000" },
+        right: { width: 0, style: "solid", color: "#000000" },
+        bottom: { width: 1, style: "dotted", color: "#445566" },
+        left: { width: 0, style: "solid", color: "#000000" },
+      });
+      expect(report.warnings).toEqual([]);
+    });
+
+    it("keeps the drop warning when only one column draws the top", () => {
+      const { section, report } = multiColumnBox([
+        { "border-top": "1px solid #112233" },
+        {},
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toBeUndefined();
+      expect(report.warnings).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+    });
+
+    it("keeps the drop warning when top border colors differ", () => {
+      const { section, report } = multiColumnBox([
+        { "border-top": "1px solid #112233" },
+        { "border-top": "1px solid #445566" },
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toBeUndefined();
+      expect(report.warnings).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+    });
+
+    it("keeps the drop warning when source top border styles differ", () => {
+      const { section, report } = multiColumnBox([
+        { "border-top": "1px double #112233" },
+        { "border-top": "1px solid #112233" },
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toBeUndefined();
+      expect(report.warnings).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+    });
+
+    it("keeps the drop warning when a column background paints", () => {
+      const { section, report } = multiColumnBox([
+        {
+          "border-left": "1px solid #112233",
+          "background-color": "#eeeeee",
+        },
+        { "border-right": "1px solid #112233" },
+      ]);
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toBeUndefined();
+      expect(report.warnings).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
+    });
+
+    it("merges disjoint row and column border sides", () => {
+      const { section, report } = multiColumnBox(
+        [
+          { "border-left": "1px solid #112233" },
+          { "border-right": "1px solid #112233" },
+        ],
+        { "border-top": "2px dashed #445566" },
+      );
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toEqual({
+        top: { width: 2, style: "dashed", color: "#445566" },
+        right: { width: 1, style: "solid", color: "#112233" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 1, style: "solid", color: "#112233" },
+      });
+      expect(report.warnings).toEqual([]);
+    });
+
+    it("keeps the row border and drop warning when sides overlap", () => {
+      const { section, report } = multiColumnBox(
+        [
+          { "border-left": "1px solid #112233" },
+          { "border-right": "1px solid #112233" },
+        ],
+        { "border-left": "2px solid #445566" },
+      );
+
+      expect(section.columns).toBe("2");
+      expect(section.border).toEqual({
+        top: { width: 0, style: "solid", color: "#000000" },
+        right: { width: 0, style: "solid", color: "#000000" },
+        bottom: { width: 0, style: "solid", color: "#000000" },
+        left: { width: 2, style: "solid", color: "#445566" },
+      });
+      expect(report.warnings).toEqual([
+        "Column background/border was dropped; a multi-column row has no per-column box.",
+      ]);
     });
 
     it("ignores a non-px or negative column padding", () => {
@@ -3047,6 +3345,46 @@ describe("image fluidOnMobile", () => {
 
     expect(image.width).toBe(298);
     expect(image.fluidOnMobile).toBe(false);
+  });
+
+  it("uses unequal promoted edges to size column content", () => {
+    const { content, report } = convertBeeFreeTemplate({
+      page: {
+        body: { content: { computedStyle: { messageWidth: "600px" } } },
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 6,
+                style: { "border-left": "1px solid #112233" },
+                modules: [photo("298px")],
+              },
+              {
+                "grid-columns": 6,
+                style: { "border-right": "3px dotted #445566" },
+                modules: [photo("100px")],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    if (section?.type !== "section") throw new Error("expected a section");
+    const image = section.children[0][0];
+    if (image?.type !== "image") throw new Error("expected an image");
+
+    // The 1px and 3px edges leave 596px, so each equal column has 298px.
+    expect(image.width).toBe(298);
+    expect(image.fluidOnMobile).toBe(false);
+    expect(section.columns).toBe("2");
+    expect(section.border).toEqual({
+      top: { width: 0, style: "solid", color: "#000000" },
+      right: { width: 3, style: "dotted", color: "#445566" },
+      bottom: { width: 0, style: "solid", color: "#000000" },
+      left: { width: 1, style: "solid", color: "#112233" },
+    });
+    expect(report.warnings).toEqual([]);
   });
 
   it("leaves a full-width row unset and pins an image that fills a quarter column", () => {
