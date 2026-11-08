@@ -22,12 +22,13 @@ import { normalizeMergeTagsInHtml } from "../src/utils/normalizeMergeTagMarkup";
  * `<` followed by a non-alpha character is emitted as a literal character, and
  * so matches what the editor actually sees in a browser.
  *
- * Note what the serializer does with each position, since the two differ and
- * both are asserted below:
- *   - **attribute** values escape only `&`, `"` and U+00A0, so `<` and `>`
- *     survive verbatim. `findOpenTagEnd` is quote-aware precisely for this.
- *   - **text** escapes `<` and `>`, so an undeclared tag — whose label falls
- *     back to the raw token — reads `&lt;% … %&gt;` as the span's inner text.
+ * The serializer escapes `<` and `>` in both attribute values and text, as
+ * current browsers and jsdom 31+ (parse5 with entities 9) do. So the token
+ * lands in `data-merge-tag` as `&lt;% … %&gt;`, and an undeclared tag, whose
+ * label falls back to the raw token, reads the same as the span's inner text.
+ * Content written by an older serializer still carries a raw `<` and `>` inside
+ * the attribute, which is why `findOpenTagEnd` stays quote-aware; that shape is
+ * covered in `packages/types/tests/html-scan.test.ts`.
  */
 
 const SMARTY: SyntaxPreset = {
@@ -115,7 +116,7 @@ describe("normalizeMergeTagsInHtml with an angle-bracket syntax", () => {
     );
 
     expect(result).toBe(
-      '<p>Mail: <span data-merge-tag="<% $email %>">Email</span></p>',
+      '<p>Mail: <span data-merge-tag="&lt;% $email %&gt;">Email</span></p>',
     );
   });
 
@@ -128,9 +129,10 @@ describe("normalizeMergeTagsInHtml with an angle-bracket syntax", () => {
       SMARTY,
     );
 
-    // Read the open tag with the quote-aware scanner, not `indexOf(">")` —
-    // the first `>` in this markup is the one inside the token itself, which
-    // is the truncation `findOpenTagEnd` was added for (#544).
+    // Read the open tag with the quote-aware scanner, not `indexOf(">")`:
+    // content from an older serializer has a raw `>` inside the token, which is
+    // the truncation `findOpenTagEnd` was added for (#544). The value comes
+    // back decoded either way.
     const open = result.indexOf("<span");
     const attrs = result.substring(open + 5, findOpenTagEnd(result, open + 5));
 
@@ -151,7 +153,7 @@ describe("normalizeMergeTagsInHtml with an angle-bracket syntax", () => {
     );
 
     expect(result).toBe(
-      '<p><span data-merge-tag="<% $nickname %>">&lt;% $nickname %&gt;</span></p>',
+      '<p><span data-merge-tag="&lt;% $nickname %&gt;">&lt;% $nickname %&gt;</span></p>',
     );
   });
 
