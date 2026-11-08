@@ -1,10 +1,13 @@
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -17,7 +20,10 @@ import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error — plain .mjs build script, no declarations
 import {
   buildOrder,
+  ensurePrivateParent,
   installConsumer,
+  materializeConsumer,
+  materializeExample,
   readExampleRoots,
   readFixtureRoots,
   readWorkspacePackages,
@@ -130,7 +136,103 @@ describe("omitted consumer installation", () => {
   });
 });
 
+describe("ensurePrivateParent", () => {
+  const refusal = (dir: string) =>
+    `Refusing to use ${dir}: it must be a directory you own with no group or other access. Delete it and try again.`;
+
+  it("creates a missing parent with mode 0700", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const parent = join(root, "fresh");
+      expect(ensurePrivateParent(join(parent, "app"))).toBe(parent);
+      expect(statSync(parent).mode & 0o777).toBe(0o700);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts an existing private folder", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      expect(ensurePrivateParent(join(root, "app"))).toBe(root);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a parent that group or other users can reach", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const shared = join(root, "shared");
+      mkdirSync(shared);
+      chmodSync(shared, 0o755);
+      expect(() => ensurePrivateParent(join(shared, "app"))).toThrow(
+        refusal(shared),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("skips the permission bits on Windows", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    const platform = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+    try {
+      const shared = join(root, "shared");
+      mkdirSync(shared);
+      chmodSync(shared, 0o755);
+      expect(ensurePrivateParent(join(shared, "app"))).toBe(shared);
+    } finally {
+      platform.mockRestore();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a parent that is a symlink, even to a private folder", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const target = join(root, "target");
+      mkdirSync(target, { mode: 0o700 });
+      const link = join(root, "link");
+      symlinkSync(target, link);
+      expect(() => ensurePrivateParent(join(link, "app"))).toThrow(
+        refusal(link),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("is checked before either materializer packs or copies anything", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const shared = join(root, "shared");
+      mkdirSync(shared);
+      chmodSync(shared, 0o755);
+      const consumerDir = join(shared, "app");
+      const packDir = join(root, "packs");
+      const args = { repoRoot: REPO_ROOT, consumerDir, packDir };
+      expect(() =>
+        materializeConsumer({ ...args, fixtureDir: join(root, "missing") }),
+      ).toThrow(refusal(shared));
+      expect(() =>
+        materializeExample({ ...args, exampleDir: join(root, "missing") }),
+      ).toThrow(refusal(shared));
+      expect(existsSync(consumerDir)).toBe(false);
+      expect(existsSync(packDir)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("vanillaConsumerDir", () => {
+  it("is an app folder inside a per-checkout parent", () => {
+    const dir = vanillaConsumerDir("/work/sdk");
+    expect(dir.endsWith(join("app"))).toBe(true);
+    expect(dirname(dir)).toMatch(/templatical-e2e-consumer-[0-9a-f]{12}$/);
+  });
+
   // A consumer inside the repo also resolves bare imports from the repo-root
   // node_modules, where pnpm links workspace packages; it then cannot model
   // an optional peer the app did not install.

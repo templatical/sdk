@@ -43,7 +43,10 @@ const FIXTURE_DIR = join(EDITOR_DIR, "tests/e2e-fixtures/webpack-consumer");
 // way a real installed consumer does — it must NOT walk up into the workspace and
 // resolve hoisted workspace packages (@templatical/quality et al.) or their
 // TypeScript source. Keeps the check immune to lockfile/hoisting layout changes.
-const CONSUMER_DIR = mkdtempSync(join(tmpdir(), "tpl-webpack-consumer-"));
+// The consumer is a child of a private mkdtemp folder, which stays in place
+// until the build finishes: see ensurePrivateParent.
+const CONSUMER_ROOT = mkdtempSync(join(tmpdir(), "tpl-webpack-consumer-"));
+const CONSUMER_DIR = join(CONSUMER_ROOT, "app");
 
 const OPTIONAL_PEERS = [
   "pusher-js",
@@ -117,5 +120,5 @@ try {
   );
 } finally {
   rmSync(packDir, { recursive: true, force: true });
-  rmSync(CONSUMER_DIR, { recursive: true, force: true });
+  rmSync(CONSUMER_ROOT, { recursive: true, force: true });
 }

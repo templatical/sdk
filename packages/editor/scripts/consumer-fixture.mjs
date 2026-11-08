@@ -28,6 +28,7 @@ import { createHash } from "node:crypto";
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -298,8 +299,8 @@ export function packClosure({
 /**
  * Materialize `examples/<name>` against packed workspace builds: copy it to
  * `consumerDir` (keep that outside the repo so resolution cannot walk into the
- * workspace), point its `@templatical/*` dependencies at the tarballs, then
- * `npm install`.
+ * workspace, as a child of a private folder: `ensurePrivateParent`), point its
+ * `@templatical/*` dependencies at the tarballs, then `npm install`.
  */
 export function materializeExample({
   repoRoot,
@@ -309,6 +310,7 @@ export function materializeExample({
   build = false,
   log = () => {},
 }) {
+  ensurePrivateParent(consumerDir);
   const manifestPath = join(exampleDir, "package.json");
   if (!existsSync(manifestPath)) {
     throw new Error(`example has no package.json: ${exampleDir}`);
@@ -329,7 +331,7 @@ export function materializeExample({
   });
 
   rmSync(consumerDir, { recursive: true, force: true });
-  mkdirSync(consumerDir, { recursive: true });
+  mkdirSync(consumerDir);
   cpSync(exampleDir, consumerDir, {
     recursive: true,
     filter: shouldCopyExampleEntry,
@@ -350,8 +352,10 @@ const OVERRIDES_NOTE =
   "packages/editor/scripts/consumer-fixture.mjs — see its header for why.";
 
 /**
- * Build, pack, materialize and `npm install`. Returns the closure it resolved so
- * callers can log what the fixture actually pulled in.
+ * Build, pack, materialize and `npm install`. `consumerDir` is a child of a
+ * private folder (`ensurePrivateParent`), never a shared temp path itself.
+ * Returns the closure it resolved so callers can log what the fixture actually
+ * pulled in.
  */
 export function materializeConsumer({
   repoRoot,
@@ -361,6 +365,7 @@ export function materializeConsumer({
   omitOptional = false,
   log = () => {},
 }) {
+  ensurePrivateParent(consumerDir);
   if (!existsSync(fixtureDir)) {
     throw new Error(`fixture dir not found: ${fixtureDir}`);
   }
@@ -387,7 +392,7 @@ export function materializeConsumer({
   });
 
   rmSync(consumerDir, { recursive: true, force: true });
-  mkdirSync(consumerDir, { recursive: true });
+  mkdirSync(consumerDir);
   cpSync(fixtureDir, consumerDir, { recursive: true });
 
   // The fixture ships its manifest as `package.json.tpl` so syncpack and pnpm
@@ -461,7 +466,34 @@ function run(cmd, opts, log) {
  */
 export function vanillaConsumerDir(repoRoot) {
   const id = createHash("sha256").update(repoRoot).digest("hex").slice(0, 12);
-  return join(tmpdir(), `templatical-e2e-consumer-${id}`);
+  return join(tmpdir(), `templatical-e2e-consumer-${id}`, "app");
+}
+
+/**
+ * Make sure `consumerDir`'s parent is a directory only this user can reach:
+ * created here with mode 0700, or already one this user owns with no group or
+ * other access and not a symlink. The consumer is deleted and re-created
+ * inside it, and its config files are later executed, so another local
+ * account must not be able to plant or swap anything on that path.
+ */
+export function ensurePrivateParent(consumerDir) {
+  const parent = dirname(consumerDir);
+  try {
+    mkdirSync(parent, { mode: 0o700 });
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+  }
+  const stat = lstatSync(parent);
+  const owned =
+    typeof process.getuid !== "function" || stat.uid === process.getuid();
+  // Windows reports no meaningful permission bits, so only POSIX checks them.
+  const private_ = process.platform === "win32" || (stat.mode & 0o077) === 0;
+  if (stat.isSymbolicLink() || !stat.isDirectory() || !owned || !private_) {
+    throw new Error(
+      `Refusing to use ${parent}: it must be a directory you own with no group or other access. Delete it and try again.`,
+    );
+  }
+  return parent;
 }
 
 /** Resolve the repo root from a script in `packages/editor/scripts/`. */
