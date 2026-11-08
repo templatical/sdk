@@ -19,16 +19,23 @@ defineProps<{
   feature: UseCommentsFeatureReturn;
 }>();
 
+// The slide lives here, around the `v-if`: inside the sidebar it would mount
+// already visible (no enter) and unmount with it (no leave).
 const CommentsSidebar = defineAsyncComponent(
   () => import("./CommentsSidebar.vue"),
 );
 </script>
 
 <template>
-  <CommentsSidebar
-    v-if="feature.isOpen.value"
-    :visible="feature.isOpen.value"
-    :feature="feature"
-    @close="feature.close()"
-  />
+  <Transition
+    enter-active-class="tpl-panel-enter-active"
+    leave-active-class="tpl-panel-leave-active"
+  >
+    <CommentsSidebar
+      v-if="feature.isOpen.value"
+      :visible="feature.isOpen.value"
+      :feature="feature"
+      @close="feature.close()"
+    />
+  </Transition>
 </template>
