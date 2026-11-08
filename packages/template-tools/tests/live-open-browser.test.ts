@@ -21,7 +21,7 @@ describe("openBrowser", () => {
   it("ignores a spawn that throws", () => {
     vi.spyOn(process, "platform", "get").mockReturnValue("linux");
     vi.mocked(spawn).mockImplementationOnce(() => { throw new Error("ENOENT"); });
-    expect(openBrowser("https://example.com")).toBeUndefined();
+    expect(() => openBrowser("https://example.com")).not.toThrow();
     expect(spawn).toHaveBeenCalledTimes(1);
   });
 
