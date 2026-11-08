@@ -110,18 +110,14 @@ function convertTable(
   cascade: AttributeCascade,
 ): Converted {
   const $inner = parseInner(html);
-  const $table = $inner("body").children("table").first();
-  const rowsInOrder = $table
-    .children()
-    .toArray()
-    .flatMap((child) =>
-      child.tagName.toLowerCase() === "tr"
-        ? [child]
-        : ["thead", "tbody", "tfoot"].includes(child.tagName.toLowerCase())
-          ? $inner(child).children("tr").toArray()
-          : [],
-    );
-  const $rows = $inner(rowsInOrder);
+  // Only the outer table's own rows: a nested table stays inside its cell's
+  // markup. cheerio's default parser puts every row in a thead / tbody /
+  // tfoot, and children() keeps them in document order.
+  const $rows = $inner("body")
+    .children("table")
+    .first()
+    .children("thead, tbody, tfoot")
+    .children("tr");
 
   const rows: TableRowData[] = $rows.toArray().map((rowEl) => ({
     id: generateId(),

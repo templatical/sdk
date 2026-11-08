@@ -73,6 +73,22 @@ describe("convertSocial", () => {
     expect(result.entry.note).toBe('Dropped 2 repeated "facebook" icons.');
   });
 
+  it("drops a repeated unrecognised platform under its website mapping", () => {
+    const result = convertSocial(
+      social({
+        display: "myspace myspace",
+        "myspace-href": "https://ms.test/a",
+      }),
+      ctx(),
+    )!;
+    expect(
+      (result.block as SocialIconsBlock).icons.map((icon) => icon.platform),
+    ).toEqual(["website"]);
+    expect(result.entry.note).toBe(
+      'Unrecognised social platform "myspace" mapped to "website". Dropped 1 repeated "website" icon.',
+    );
+  });
+
   it("names a single dropped repeat in the singular", () => {
     const result = convertSocial(
       social({

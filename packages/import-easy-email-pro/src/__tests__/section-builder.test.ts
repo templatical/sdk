@@ -162,6 +162,22 @@ describe("buildTopLevel", () => {
     );
   });
 
+  it("names a column without a width as auto", () => {
+    const { entries } = build({
+      type: "standard-section",
+      data: {},
+      attributes: {},
+      children: [
+        col([para("a")], "15%"),
+        col([para("b")]),
+        col([para("c")], "15%"),
+      ],
+    });
+    expect(entries[0].note).toMatch(
+      /^Column widths 15%, auto, 15% have no exact Templatical layout;/,
+    );
+  });
+
   it("skips a placeholder-only column as an empty slot", () => {
     const { blocks } = build({
       type: "standard-section",

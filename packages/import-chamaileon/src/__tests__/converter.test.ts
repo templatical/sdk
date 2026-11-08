@@ -345,6 +345,31 @@ describe("convertChamaileonTemplate loops", () => {
     ]);
   });
 
+  it("names only the type when a loop has no expression", () => {
+    const { report } = convertChamaileonTemplate({
+      body: {
+        type: "body",
+        children: [
+          { type: "block-level-loop", children: [] },
+          {
+            type: "block-level-loop",
+            children: [
+              {
+                type: "fullwidth",
+                children: [{ type: "text", attrs: { text: "<p>A</p>" } }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(report.entries.map((entry) => [entry.status, entry.note])).toEqual([
+      ["skipped", "block-level-loop"],
+      ["approximated", "block-level-loop"],
+      ["approximated", "block-level-loop"],
+    ]);
+  });
+
   it("keeps an exactly 80-character expression in a skipped note", () => {
     const expression = "z".repeat(80);
     const { report } = convertChamaileonTemplate({

@@ -806,6 +806,29 @@ describe("divider width against the page", () => {
     expect(dividerWidths(content.blocks[0])).toEqual(["full", 499, "40%"]);
   });
 
+  it("quotes at most 80 characters of a widget's logic in its notes", () => {
+    const condition = "x".repeat(81);
+    const { report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "section_widget",
+          data: { input: {} },
+          attributes: {},
+          logic: { condition },
+          children: [dividerSection("600px")],
+        },
+      ],
+    });
+    const notes = report.entries.map((entry) => entry.note ?? "");
+    expect(
+      notes.some((note) => note.includes(`logic ${"x".repeat(80)}…`)),
+    ).toBe(true);
+    expect(notes.some((note) => note.includes(condition))).toBe(false);
+  });
+
   it("keeps the page width inside a widget", () => {
     const { content } = convertEasyEmailProTemplate({
       type: "page",
