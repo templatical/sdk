@@ -172,7 +172,7 @@ describe("ensurePrivateParent", () => {
         mkdirSync(open);
         chmodSync(open, 0o777);
         expect(() => ensurePrivateParent(join(open, "p", "app"))).toThrow(
-          `Refusing to use ${join(open, "p")}: ${open} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+          `Refusing to use ${join(open, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
         );
         chmodSync(open, 0o1777);
         expect(ensurePrivateParent(join(open, "p", "app"))).toBe(join(open, "p"));
@@ -220,6 +220,43 @@ describe("ensurePrivateParent", () => {
       }
     },
   );
+
+  it.skipIf(process.platform === "win32")(
+    "walks every folder a chain of symlinks passes through",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const target = join(root, "target");
+        mkdirSync(target, { mode: 0o700 });
+        const open = join(root, "open");
+        mkdirSync(open);
+        chmodSync(open, 0o777);
+        symlinkSync(target, join(open, "redirect"));
+        const link = join(root, "link");
+        symlinkSync(join(open, "redirect"), link);
+        expect(() => ensurePrivateParent(join(link, "p", "app"))).toThrow(
+          `Refusing to use ${join(link, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")("refuses a symlink loop", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+    try {
+      const a = join(root, "a");
+      const b = join(root, "b");
+      symlinkSync(b, a);
+      symlinkSync(a, b);
+      expect(() => ensurePrivateParent(join(a, "p", "app"))).toThrow(
+        expect.objectContaining({ code: "ELOOP" }),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 
   it.skipIf(process.platform === "win32")("refuses a parent that group or other users can reach", () => {
     const root = mkdtempSync(join(tmpdir(), "tpl-private-"));

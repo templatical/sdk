@@ -32,13 +32,14 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  readlinkSync,
   realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, parse, resolve, sep } from "node:path";
 
 const SCOPE = "@templatical/";
 
@@ -490,26 +491,39 @@ export function ensurePrivateParent(consumerDir) {
   // entry, a symlink included, is owned by this user or root; each folder is
   // not group or other writable unless it has the sticky bit (whose owner,
   // trusted here, can still rename). lstat, never stat: a symlink is judged by
-  // who can replace it, and its target's real path is walked as well.
+  // who can replace it, and every path a symlink resolves through is walked
+  // too, component by component, so a chain of links can't skip a folder.
   if (process.platform !== "win32" && uid !== null) {
-    const walk = (start) => {
-      for (let dir = start; ; dir = dirname(dir)) {
-        const entry = lstatSync(dir);
-        const trustedOwner = entry.uid === uid || entry.uid === 0;
-        const renamable =
-          entry.isDirectory() &&
-          (entry.mode & 0o022) !== 0 &&
-          (entry.mode & 0o1000) === 0;
-        if (!trustedOwner || renamable) {
-          throw new Error(
-            `Refusing to use ${parent}: ${dir} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
-          );
+    const check = (dir) => {
+      const entry = lstatSync(dir);
+      const trustedOwner = entry.uid === uid || entry.uid === 0;
+      const renamable =
+        entry.isDirectory() &&
+        (entry.mode & 0o022) !== 0 &&
+        (entry.mode & 0o1000) === 0;
+      if (!trustedOwner || renamable) {
+        throw new Error(
+          `Refusing to use ${parent}: ${dir} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
+        );
+      }
+      return entry;
+    };
+    // No hop limit needed: the mkdirSync above already failed with ELOOP for
+    // a path whose symlinks loop, so every chain reached here is finite.
+    const walk = (path) => {
+      const { root } = parse(path);
+      let current = root;
+      check(current);
+      for (const part of path.slice(root.length).split(sep)) {
+        if (!part) continue;
+        current = join(current, part);
+        if (check(current).isSymbolicLink()) {
+          walk(resolve(dirname(current), readlinkSync(current)));
+          current = realpathSync(current);
         }
-        if (dirname(dir) === dir) break;
       }
     };
-    walk(dirname(parent));
-    walk(realpathSync(dirname(parent)));
+    walk(resolve(dirname(parent)));
   }
   const stat = lstatSync(parent);
   const owned = uid === null || stat.uid === uid;
