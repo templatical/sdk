@@ -1520,8 +1520,10 @@ function buttonLabelBoldness(label: string): "all" | "mixed" | "none" {
   const stack: Array<{ name: string; bold: boolean }> = [];
   let boldText = false;
   let plainText = false;
+  // Text counts only where stripTagsPlain keeps it: every `<…>` goes, a
+  // stray `>` goes, and an unclosed `<` ends the label.
   const textRun = (value: string): void => {
-    if (!decodePlainTextEntities(value).trim()) return;
+    if (!decodePlainTextEntities(value.replaceAll(">", "")).trim()) return;
     if (stack.at(-1)?.bold) boldText = true;
     else plainText = true;
   };
@@ -1542,16 +1544,15 @@ function buttonLabelBoldness(label: string): "all" | "mixed" | "none" {
     }
     const closing = html[lt + 1] === "/";
     const nameStart = lt + (closing ? 2 : 1);
-    if (!/[a-z]/i.test(html[nameStart] ?? "")) {
-      textRun("<");
-      i = lt + 1;
-      continue;
-    }
     let nameEnd = nameStart;
     while (nameEnd < html.length && /[a-z0-9]/i.test(html[nameEnd])) nameEnd++;
-    if (html[nameEnd] !== undefined && !/[\s>/]/.test(html[nameEnd])) {
-      textRun(html.slice(lt, nameEnd));
-      i = nameEnd;
+    if (
+      nameEnd === nameStart ||
+      (html[nameEnd] !== undefined && !/[\s>/]/.test(html[nameEnd]))
+    ) {
+      const close = html.indexOf(">", lt + 1);
+      if (close === -1) break;
+      i = close + 1;
       continue;
     }
     const name = html.slice(nameStart, nameEnd).toLowerCase();

@@ -1321,17 +1321,17 @@ describe("convertModule", () => {
       expect(entry.note).toBeUndefined();
     });
 
-    it("reads a malformed tag name as label text", () => {
-      const { block, entry } = buttonWith(
-        {},
-        undefined,
-        "<p><strong>Go</strong><x:y></p>",
-      );
-      expect(block.fontWeight).toBe("regular");
-      expect(entry.status).toBe("approximated");
-      expect(entry.note).toBe(
-        "partial bold in the label is not carried; button imports at regular weight",
-      );
+    it.each([
+      "<p><strong>Go</strong><x:y></p>",
+      "<p><strong>Go</strong><!doctype x></p>",
+      "<p><strong>Go</strong>></p>",
+      "<p><strong>Go</strong>< unclosed",
+    ])("counts only text the label keeps in %s", (label) => {
+      const { block, entry } = buttonWith({}, undefined, label);
+      expect(block.text).toBe("Go");
+      expect(block.fontWeight).toBeUndefined();
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
     });
 
     it("notes partial bold once when a missing weight flattens a mixed label", () => {
