@@ -20,6 +20,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  CUSTOM_BLOCK_LIQUID_RENDER_LIMIT,
   createDefaultTemplateContent,
   type TemplateContent,
 } from "@templatical/types";
@@ -227,6 +228,12 @@ export function readPidfile(cwd: string): PidfileInfo | null {
   }
 }
 
+/**
+ * How long `/identity` may take: longer than a custom-block Liquid render may
+ * run, since a render in progress can delay the bridge's answer.
+ */
+export const IDENTITY_TIMEOUT_MS = CUSTOM_BLOCK_LIQUID_RENDER_LIMIT + 1000;
+
 export async function verifyLiveServer(
   cwd: string,
   info: PidfileInfo,
@@ -234,7 +241,7 @@ export async function verifyLiveServer(
   try {
     // The bridge listens on 127.0.0.1 only; `localhost` can resolve to ::1 first.
     const response = await fetch(`http://127.0.0.1:${info.port}/identity`, {
-      signal: AbortSignal.timeout(1000),
+      signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS),
     });
     if (!response.ok) return false;
     const identity = (await response.json()) as {

@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createConnection } from "node:net";
-import { request as httpRequest } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
+import type { AddressInfo } from "node:net";
+import { CUSTOM_BLOCK_LIQUID_RENDER_LIMIT } from "@templatical/types";
 import { join, resolve } from "node:path";
 import {
   DEFAULT_PORT,
@@ -11,6 +13,7 @@ import {
   readPidfile,
   readWorkingFile,
   verifyLiveServer,
+  IDENTITY_TIMEOUT_MS,
   startBridge,
   startBridgePreferring,
   type BridgeHandle,
@@ -148,6 +151,21 @@ describe("verifyLiveServer", () => {
     vi.stubGlobal("fetch", answer(status, body(cwd)));
     expect(await verifyLiveServer(cwd, { pid: 12, port: 4747 })).toBe(false);
   });
+  it("waits past a render-length delay before giving up", async () => {
+    const cwd = project();
+    const server = createServer((_req, res) => {
+      setTimeout(() => res.end(JSON.stringify({ pid: 12, cwd: resolve(cwd) })), CUSTOM_BLOCK_LIQUID_RENDER_LIMIT + 200);
+    });
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    try {
+      const { port } = server.address() as AddressInfo;
+      expect(IDENTITY_TIMEOUT_MS).toBe(CUSTOM_BLOCK_LIQUID_RENDER_LIMIT + 1000);
+      expect(await verifyLiveServer(cwd, { pid: 12, port })).toBe(true);
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((done) => server.close(() => done()));
+    }
+  }, 10000);
   it("refuses when nothing answers", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ECONNREFUSED"); }));
     expect(await verifyLiveServer(project(), { pid: 12, port: 4747 })).toBe(false);
