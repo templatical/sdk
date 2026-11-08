@@ -1,5 +1,19 @@
 # @templatical/media-library
 
+## 0.57.0
+
+### Minor Changes
+
+- 3e1b6a3: Add Danish editor and media library translations and localized recipient-facing content defaults.
+
+### Patch Changes
+
+- Updated dependencies [ad58b8e]
+- Updated dependencies [0bdfeac]
+- Updated dependencies [0511bb6]
+- Updated dependencies [a2f3ed8]
+  - @templatical/types@0.57.0
+
 ## 0.56.1
 
 ### Patch Changes
