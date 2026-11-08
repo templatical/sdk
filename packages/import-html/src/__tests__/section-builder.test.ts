@@ -174,6 +174,49 @@ describe("processTable — styled loose anchor in a cell becomes a button", () =
 });
 
 describe("processTable — data table preserved as HTML fallback", () => {
+  it("treats an empty table selection as a data-table fallback", () => {
+    const { blocks, entries } = runTable("<div>No table</div>");
+    expect(blocks.map((block) => block.type)).toEqual(["html"]);
+    expect(entries[0]).toEqual({
+      sourceTag: "table",
+      templaticalBlockType: "html",
+      status: "html-fallback",
+      note: "Data table preserved as HTML block.",
+    });
+  });
+  it("classifies a content tag inside a cell as layout", () => {
+    const { blocks } = runTable("<table><tr><td><p>Body</p></td></tr></table>");
+    expect(blocks.map((block) => block.type)).toEqual(["section"]);
+  });
+
+  it("classifies a cell with a non-content element child as layout", () => {
+    const { blocks } = runTable(
+      "<table><tr><td><custom>Body</custom></td></tr></table>",
+    );
+    expect(blocks.map((block) => block.type)).toEqual(["section"]);
+  });
+
+  it("keeps a text-only table as HTML", () => {
+    const { blocks } = runTable(
+      "<table><tr><th>Name</th><td>Ada</td></tr></table>",
+    );
+    expect(blocks.map((block) => block.type)).toEqual(["html"]);
+  });
+
+  it("converts 800 nested single-cell tables within the scan budget", () => {
+    // 800 layers stay below parser stack limits and expose repeated subtree scans.
+    const depth = 800;
+    const html =
+      "<table><tr><td>".repeat(depth) +
+      "<p>Deep</p>" +
+      "</td></tr></table>".repeat(depth);
+    const start = performance.now();
+    const { blocks } = runTable(html);
+    const elapsed = performance.now() - start;
+    expect(blocks.map((block) => block.type)).toEqual(["section"]);
+    expect(elapsed).toBeLessThan(1000);
+  }, 30000);
+
   it("a bare data table (text-only cells) returns a single html-fallback block", () => {
     const { blocks, entries } = runTable(
       `<table><tr><td>Name</td><td>Age</td></tr><tr><td>Ada</td><td>30</td></tr></table>`,

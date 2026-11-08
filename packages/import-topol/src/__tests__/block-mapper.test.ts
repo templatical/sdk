@@ -443,4 +443,11 @@ describe("the unknown-tag fallback", () => {
       note: "<mj-carousel> has no Templatical block equivalent; the original node is preserved as JSON.",
     });
   });
+  it("stores unsupported nodes as compact JSON", () => {
+    const unsupported = node("mj-carousel", { images: { first: ["a", "b"] } });
+    const result = convertLeaf(unsupported, ctx())!;
+    expect((result.block as { content: string }).content).toBe(
+      JSON.stringify(unsupported),
+    );
+  });
 });

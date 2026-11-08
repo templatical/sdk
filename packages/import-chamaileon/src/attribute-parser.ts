@@ -7,6 +7,7 @@ import type {
   SpacingValue,
 } from "@templatical/types";
 import { isUnset, styleValue } from "./normalize";
+import { noteValue } from "./note-value";
 
 /**
  * Parse a px-like value into a rounded integer. Returns `undefined` when unset
@@ -349,7 +350,7 @@ export function readChamaileonBackgroundImage(
   const notes: string[] = [];
   const lossy = (name: string, raw: string, shown: string): void => {
     notes.push(
-      `${label} ${name} "${raw}" has no exact Templatical equivalent; imported as "${shown}".`,
+      `${label} ${name} "${noteValue(raw)}" has no exact Templatical equivalent; imported as "${shown}".`,
     );
   };
 

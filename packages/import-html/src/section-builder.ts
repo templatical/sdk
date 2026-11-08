@@ -236,25 +236,46 @@ function getDirectCells(
   return cells;
 }
 
-function isLayoutTable($table: Cheerio<Element>, $: CheerioAPI): boolean {
+function isLayoutTable($table: Cheerio<Element>): boolean {
   // A table is "layout" if any descendant carries content email blocks rely on,
   // OR if any cell contains a non-text element (custom tags, semantic blocks,
   // etc. — those should be preserved as html-fallback at the element level
   // rather than collapsing the entire table into one html block).
   // A bare data table (cells contain only text) is preserved as HTML.
-  if (
-    $table.find(
-      "img, a, h1, h2, h3, h4, h5, h6, table, hr, p, div, span, ul, ol, li, blockquote, video, iframe",
-    ).length > 0
-  )
-    return true;
-
-  let hasNonStandardChild = false;
-  $table.find("td, th").each((_, td) => {
-    if (hasNonStandardChild) return;
-    if ($(td).children().length > 0) hasNonStandardChild = true;
-  });
-  return hasNonStandardChild;
+  if (!$table[0]) return false;
+  const contentTags = new Set([
+    "img",
+    "a",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "table",
+    "hr",
+    "p",
+    "div",
+    "span",
+    "ul",
+    "ol",
+    "li",
+    "blockquote",
+    "video",
+    "iframe",
+  ]);
+  const stack = [...$table[0].children].reverse();
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (!isTag(node)) continue;
+    const tag = node.name.toLowerCase();
+    if (contentTags.has(tag)) return true;
+    if ((tag === "td" || tag === "th") && node.children.some(isTag))
+      return true;
+    for (let i = node.children.length - 1; i >= 0; i--)
+      stack.push(node.children[i]);
+  }
+  return false;
 }
 
 function resolveColumnLayout(
@@ -968,7 +989,7 @@ export function processTable(
   room?: number,
   enclosingImage: CarriedImage | null = null,
 ): Block[] {
-  if (!isLayoutTable($table, $)) {
+  if (!isLayoutTable($table)) {
     entries.push({
       sourceTag: "table",
       templaticalBlockType: "html",
