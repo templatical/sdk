@@ -50,13 +50,13 @@ describe("merge tags in AI input and output (S7 Y5)", () => {
     ).toBe("<p>Hi {{first_name}}, *|A&B|*</p>");
   });
 
-  it("returns unterminated merge-tag spans unchanged in under 100 ms", () => {
+  it("returns unterminated merge-tag spans unchanged in linear time", () => {
     const html = '<span data-merge-tag=""'.repeat(900);
-    const started = performance.now();
-    const result = flattenMergeTags(html);
-    const elapsed = performance.now() - started;
-    expect(result).toBe(html);
-    expect(elapsed).toBeLessThan(100);
+    expect(flattenMergeTags(html)).toBe(html);
+    expectLinear((n) => {
+      const value = '<span data-merge-tag=""'.repeat(n);
+      return () => flattenMergeTags(value);
+    }, 500);
   });
 
   it("names each unknown token once, in order, and checks nothing for custom", () => {

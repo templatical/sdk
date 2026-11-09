@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkAccessibility } from "../src/custom-block/a11y";
+import { expectLinear } from "./helpers/expectLinear";
 
 const check = (html: string, state = "defaults") =>
   checkAccessibility([{ state: state as never, html }]);
@@ -57,9 +58,12 @@ describe("checkAccessibility", () => {
   });
 
   it("reads a background colour in linear time", () => {
-    const t = performance.now();
-    expect(ids(`<td style="background: #ffffff ${"url(".repeat(50000)}"><p style="color:#cccccc">x</p></td>`)).toEqual(["warning:a11y.contrast"]);
-    expect(performance.now() - t).toBeLessThan(1000);
+    const html = (n: number) => `<td style="background: #ffffff ${"url(".repeat(n)}"><p style="color:#cccccc">x</p></td>`;
+    expect(ids(html(50_000))).toEqual(["warning:a11y.contrast"]);
+    expectLinear((n) => {
+      const input = html(n);
+      return () => ids(input);
+    }, 2_000);
   });
 
   it("pops a void element's frame, so a later sibling doesn't inherit its parent's background", () => {

@@ -6,6 +6,7 @@ import {
   hasNestedAnchors,
   rewriteOpenTags,
 } from "../src/html-utils";
+import { expectLinear } from "./helpers/expectLinear";
 
 describe("extractAnchors", () => {
   it("returns href + text for a simple anchor", () => {
@@ -139,12 +140,11 @@ describe("hasNestedAnchors", () => {
   // An input full of `<!--` starts with no closing `-->` retried the lazy
   // quantifier at every position. The scanner is strictly O(n).
   it("returns false in linear time on adversarial `<!--<!--<!--…` input (ReDoS regression)", () => {
-    const adversarial = "<!--".repeat(20_000);
-    const start = Date.now();
-    const result = hasNestedAnchors(adversarial);
-    const elapsed = Date.now() - start;
-    expect(result).toBe(false);
-    expect(elapsed).toBeLessThan(500);
+    expect(hasNestedAnchors("<!--".repeat(20_000))).toBe(false);
+    expectLinear((n) => {
+      const html = "<!--".repeat(n);
+      return () => hasNestedAnchors(html);
+    }, 2_000);
   });
 });
 

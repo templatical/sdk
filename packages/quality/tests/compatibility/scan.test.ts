@@ -12,6 +12,7 @@ import {
   stripCssComments,
   stripCssUrlsAndStrings,
 } from "../../src/compatibility/scan";
+import { expectLinear } from "../helpers/expectLinear";
 
 describe("CSS scanner", () => {
   it("removes comments and drops an unterminated comment", () => {
@@ -31,10 +32,12 @@ describe("CSS scanner", () => {
     expect(stripCssUrlsAndStrings("a:1; 'unfinished")).toBe("a:1; ");
   });
 
-  it("handles a long adversarial escaped string promptly", () => {
-    const started = performance.now();
+  it("handles a long adversarial escaped string in linear time", () => {
     expect(stripCssUrlsAndStrings('"' + "\\!".repeat(50_000))).toBe("");
-    expect(performance.now() - started).toBeLessThan(1_000);
+    expectLinear((n) => {
+      const css = '"' + "\\!".repeat(n);
+      return () => stripCssUrlsAndStrings(css);
+    }, 2_000);
   });
 
   it("records HTML background attributes and CSS declarations", () => {

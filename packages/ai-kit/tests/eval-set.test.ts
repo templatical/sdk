@@ -23,6 +23,7 @@ import {
   evalTurnWith,
   runAiEvalSet,
 } from "../src/testing";
+import { expectLinear } from "./helpers/expectLinear";
 import { scriptedModel } from "./helpers/scripted-model";
 import type { AiEvalAltCheck, AiEvalCase, AiEvalCheck } from "../src/testing";
 
@@ -737,19 +738,21 @@ describe("multimodal and lint evals", () => {
     const c = caseNamed("fix domain-mismatch");
     if (c.kind !== "fix") throw new Error("Expected fix case");
     const original = AI_EVAL_TEMPLATES[c.template];
-    const html = `<p><a href="https://acme.example/shop">Shop${">".repeat(50_000)}</a></p>`;
-    const content = applyOperations(original, [
-      { op: "updateBlock", blockId: "domain-link", set: { content: html } },
-    ]);
-    const started = performance.now();
-    const reason = checkEvalCase(
-      c,
-      original,
-      { content, reply: "Fixed.", applied: true },
-      () => [],
-    );
-    expect(performance.now() - started).toBeLessThan(1000);
-    expect(reason).toBe(null);
+    const check = (n: number) => {
+      const html = `<p><a href="https://acme.example/shop">Shop${">".repeat(n)}</a></p>`;
+      const content = applyOperations(original, [
+        { op: "updateBlock", blockId: "domain-link", set: { content: html } },
+      ]);
+      return () =>
+        checkEvalCase(
+          c,
+          original,
+          { content, reply: "Fixed.", applied: true },
+          () => [],
+        );
+    };
+    expect(check(50_000)()).toBe(null);
+    expectLinear(check, 2_000);
   });
 
   it.each([

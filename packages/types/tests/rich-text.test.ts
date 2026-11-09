@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fillEmptyParagraphs, isBlankRichText } from "../src";
+import { expectLinear } from "./helpers/expectLinear";
 
 describe("isBlankRichText", () => {
   it("is true for cleared text, as TipTap stores it", () => {
@@ -21,10 +22,11 @@ describe("isBlankRichText", () => {
   });
 
   it("stays linear on an unclosed run of paragraph opens", () => {
-    const hostile = "<p".repeat(50_000);
-    const started = performance.now();
-    expect(isBlankRichText(hostile)).toBe(false);
-    expect(performance.now() - started).toBeLessThan(500);
+    expect(isBlankRichText("<p".repeat(50_000))).toBe(false);
+    expectLinear((n) => {
+      const hostile = "<p".repeat(n);
+      return () => isBlankRichText(hostile);
+    }, 2_000);
   });
 });
 
