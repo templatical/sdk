@@ -2023,6 +2023,31 @@ describe("convertModule", () => {
       expect(content.match(/padding-left: 15px/g)).toHaveLength(2);
     });
 
+    // `itemsSpacing` is the current key and `itemSpacing` the legacy one.
+    it("keeps an explicit 0px items spacing over the legacy key", () => {
+      const row = (computedStyle: Record<string, string>) =>
+        html(
+          iconsModule(
+            [
+              { ...gift, image: "https://example.com/a.png", alt: "A" },
+              { ...gift, image: "https://example.com/b.png", alt: "B" },
+            ],
+            { computedStyle },
+          ),
+        ).content;
+      const zero = row({ itemsSpacing: "0px", itemSpacing: "10px" });
+      expect(zero).not.toContain("padding-left:");
+      expect(zero.match(/<img /g)).toHaveLength(2);
+      expect(
+        row({ itemSpacing: "10px" }).match(/padding-left: 10px/g),
+      ).toHaveLength(1);
+      expect(
+        row({ itemsSpacing: "15px", itemSpacing: "10px" }).match(
+          /padding-left: 15px/g,
+        ),
+      ).toHaveLength(1);
+    });
+
     it("sizes an icon by height alone when its file size is unknown", () => {
       const { content } = html(
         iconsModule([{ image: "https://example.com/x.png", alt: "X" }]),
@@ -2367,28 +2392,300 @@ describe("convertModule", () => {
   });
 
   describe("spacer", () => {
-    it("uses height from descriptor or defaults to 24", () => {
-      const warnings: string[] = [];
+    const SPACER = "mailup-bee-newsletter-modules-spacer";
 
-      const withHeight = makeModule("mailup-bee-newsletter-modules-spacer", {
-        spacer: { style: { height: "40px" } },
+    function spacer(
+      style?: Record<string, string>,
+    ): ReturnType<typeof convertModule> {
+      return convertModule(
+        makeModule(SPACER, style ? { spacer: { style } } : {}),
+        [],
+      );
+    }
+
+    function spacerHeight(style?: Record<string, string>): number {
+      const { block } = spacer(style);
+      if (block.type !== "spacer") throw new Error("expected a spacer");
+      return block.height;
+    }
+
+    it("keeps the height BeeFree states", () => {
+      const { block, entry } = spacer({ height: "40px" });
+      expect(block.type === "spacer" && block.height).toBe(40);
+      expect(entry).toEqual({
+        beeFreeModuleType: SPACER,
+        templaticalBlockType: "spacer",
+        status: "converted",
       });
-      const { block: b1 } = convertModule(withHeight, warnings);
-      expect(b1.type).toBe("spacer");
-      if (b1.type === "spacer") {
-        expect(b1.height).toBe(40);
-      }
+      expect(spacerHeight({ height: "12.6px" })).toBe(13);
+    });
 
-      const noHeight = makeModule("mailup-bee-newsletter-modules-spacer", {});
-      const { block: b2 } = convertModule(noHeight, warnings);
-      expect(b2.type).toBe("spacer");
-      if (b2.type === "spacer") {
-        expect(b2.height).toBe(24);
+    // BeeFree draws a spacer it has no height for at its 60px default.
+    it("uses BeeFree's 60px default when the height is absent or unreadable", () => {
+      expect(spacerHeight()).toBe(60);
+      expect(spacerHeight({})).toBe(60);
+      expect(spacerHeight({ height: "" })).toBe(60);
+      expect(spacerHeight({ height: "auto" })).toBe(60);
+      expect(spacerHeight({ height: "40" })).toBe(60);
+      expect(spacerHeight({ height: "-10px" })).toBe(60);
+    });
+
+    it("skips a spacer that is 0px tall", () => {
+      for (const height of ["0px", "0", "0.0px"]) {
+        expect(
+          skippedModuleEntry(
+            makeModule(SPACER, { spacer: { style: { height } } }),
+          ),
+        ).toEqual({
+          beeFreeModuleType: SPACER,
+          templaticalBlockType: null,
+          status: "skipped",
+          note: "The spacer is 0px tall.",
+        });
       }
+    });
+
+    it("does not skip a spacer with a height or BeeFree's default", () => {
+      expect(
+        skippedModuleEntry(
+          makeModule(SPACER, { spacer: { style: { height: "1px" } } }),
+        ),
+      ).toBeUndefined();
+      expect(skippedModuleEntry(makeModule(SPACER, {}))).toBeUndefined();
     });
   });
 
   describe("social", () => {
+    it("keeps a mail icon's scheme prefix before its href", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "others",
+                name: "E-Mail",
+                image: {
+                  href: "https://www.maxgoelitz.com/en/mailing-list/",
+                  prefix: "mailto:",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons[0].url).toBe(
+        "mailto:https://www.maxgoelitz.com/en/mailing-list/",
+      );
+    });
+
+    it("keeps a custom Xing image when its link identifies a known network", () => {
+      const warnings: string[] = [];
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
+                image: {
+                  alt: "Xing",
+                  href: "https://www.xing.com/pages/sonepardeutschland",
+                  src: "https://core-beefree.s3.amazonaws.com/images/1eeabd3c-0ab0-6baa-8973-5b41c5e4a053/xing.png",
+                  width: 64,
+                  height: 64,
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("image");
+      if (block.type !== "image") return;
+      expect(block.src).toBe(
+        "https://core-beefree.s3.amazonaws.com/images/1eeabd3c-0ab0-6baa-8973-5b41c5e4a053/xing.png",
+      );
+      expect(block.linkUrl).toBe(
+        "https://www.xing.com/pages/sonepardeutschland",
+      );
+      expect(warnings).toEqual([
+        'Custom social icon "Xing" imported as an image.',
+      ]);
+    });
+
+    it("keeps a custom Xing image before a following YouTube icon", () => {
+      const warnings: string[] = [];
+      const { block, extras } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                name: "custom-xing",
+                image: {
+                  alt: "Xing",
+                  href: "https://www.xing.com/pages/example",
+                  src: "https://cdn.example.com/xing.png",
+                },
+              },
+              {
+                name: "youtube",
+                image: { href: "https://www.youtube.com/channel/example" },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect([
+        block.type,
+        ...(extras ?? []).map((extra) => extra.type),
+      ]).toEqual(["image", "social"]);
+      if (block.type !== "image" || extras?.[0]?.type !== "social") return;
+      expect(block.src).toBe("https://cdn.example.com/xing.png");
+      expect(block.linkUrl).toBe("https://www.xing.com/pages/example");
+      expect(extras[0].icons.map(({ platform }) => platform)).toEqual([
+        "youtube",
+      ]);
+      expect(extras[0].icons[0].url).toBe(
+        "https://www.youtube.com/channel/example",
+      );
+      expect(warnings).toEqual([
+        'Custom social icon "Xing" imported as an image.',
+      ]);
+    });
+
+    it("splits recognized icons into runs around a custom Xing image", () => {
+      const warnings: string[] = [];
+      const { block, extras } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "facebook",
+                image: { href: "https://facebook.com/page" },
+              },
+              {
+                type: "custom",
+                name: "custom-xing",
+                image: {
+                  alt: "Xing",
+                  href: "https://www.xing.com/pages/example",
+                  src: "https://cdn.example.com/xing.png",
+                },
+              },
+              {
+                name: "linkedin",
+                image: { href: "https://linkedin.com/company/example" },
+              },
+              {
+                name: "instagram",
+                image: { href: "https://instagram.com/example" },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect([
+        block.type,
+        ...(extras ?? []).map((extra) => extra.type),
+      ]).toEqual(["social", "image", "social"]);
+      if (
+        block.type !== "social" ||
+        extras?.[0]?.type !== "image" ||
+        extras[1]?.type !== "social"
+      )
+        return;
+      expect(block.icons.map(({ platform }) => platform)).toEqual(["facebook"]);
+      expect(extras[0].src).toBe("https://cdn.example.com/xing.png");
+      expect(extras[1].icons.map(({ platform }) => platform)).toEqual([
+        "linkedin",
+        "instagram",
+      ]);
+      expect(warnings).toEqual([
+        'Custom social icon "Xing" imported as an image.',
+      ]);
+    });
+
+    it("keeps an unknown network before a following Facebook icon", () => {
+      const warnings: string[] = [];
+      const { block, extras } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "myspace",
+                image: {
+                  alt: "Myspace",
+                  href: "https://myspace.com/band",
+                  src: "https://cdn.example.com/myspace.png",
+                },
+              },
+              {
+                name: "facebook",
+                image: { href: "https://facebook.com/page" },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect([
+        block.type,
+        ...(extras ?? []).map((extra) => extra.type),
+      ]).toEqual(["image", "social"]);
+      if (block.type !== "image" || extras?.[0]?.type !== "social") return;
+      expect(block.src).toBe("https://cdn.example.com/myspace.png");
+      expect(extras[0].icons.map(({ platform }) => platform)).toEqual([
+        "facebook",
+      ]);
+      expect(warnings).toEqual([
+        'Social network "Myspace" has no Templatical icon; imported as an image.',
+      ]);
+    });
+
+    it("drops an icon with nothing to keep without splitting the run", () => {
+      const warnings: string[] = [];
+      const { block, extras } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "facebook",
+                image: { href: "https://facebook.com/page" },
+              },
+              { name: "myspace", image: { alt: "Myspace" } },
+              {
+                name: "linkedin",
+                image: { href: "https://linkedin.com/company/x" },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons.map(({ platform }) => platform)).toEqual([
+        "facebook",
+        "linkedin",
+      ]);
+      expect(warnings).toEqual([
+        'Social network "Myspace" has no Templatical icon and no image or link to keep.',
+      ]);
+    });
+
     it("maps known platform names to SocialPlatform values", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-social", {

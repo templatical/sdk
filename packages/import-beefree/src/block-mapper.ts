@@ -60,6 +60,7 @@ import {
   parseBorderTop,
   extractPadding,
   readButtonPadding,
+  readPxLength,
   parseDividerWidth,
 } from "./style-parser";
 
@@ -1899,12 +1900,19 @@ function convertUndrawnDivider(
   });
 }
 
-function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
-  const spacer = descriptor.spacer;
-  const height = parsePxValue(spacer?.style?.height) || 24;
+/** BeeFree's documented height for a spacer it has no height for. */
+const BEEFREE_SPACER_HEIGHT = 60;
 
+/** A spacer's height in px; an explicit 0 stays 0. */
+function spacerHeight(descriptor: BeeFreeeModuleDescriptor): number {
+  return (
+    readPxLength(descriptor.spacer?.style?.height) ?? BEEFREE_SPACER_HEIGHT
+  );
+}
+
+function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
   return createSpacerBlock({
-    height,
+    height: spacerHeight(descriptor),
     styles: makeStyles(descriptor),
   });
 }
@@ -2040,6 +2048,19 @@ function safeCopiedUrl(
   return "";
 }
 
+function socialHref(icon: BeeFreeeSocialIcon): string {
+  const href = decodeEntitiesInTokens(icon.image?.href ?? "");
+  const prefix = icon.image?.prefix ?? "";
+  if (
+    /^(?:mailto|tel|sms):$/i.test(prefix) &&
+    href !== "" &&
+    !href.toLowerCase().startsWith(prefix.toLowerCase())
+  ) {
+    return prefix + href;
+  }
+  return href;
+}
+
 /**
  * A network Templatical does not draw. The file and the link stay, as an
  * image when there is a file and as a link when there is not.
@@ -2049,11 +2070,7 @@ function unknownSocialBlock(
   icon: BeeFreeeSocialIcon,
   warnings: string[],
 ): { block: Block; note: string } | undefined {
-  const href = safeCopiedUrl(
-    decodeEntitiesInTokens(icon.image?.href ?? ""),
-    "href",
-    warnings,
-  );
+  const href = safeCopiedUrl(socialHref(icon), "href", warnings);
   const src = safeCopiedUrl(
     decodeEntitiesInTokens(icon.image?.src ?? ""),
     "src",
@@ -2069,7 +2086,10 @@ function unknownSocialBlock(
     };
   }
   const asLink = !src;
-  const note = `Social network "${label}" has no Templatical icon; imported as ${asLink ? "a link" : "an image"}.`;
+  const note =
+    icon.type === "custom" && !asLink
+      ? `Custom social icon "${label}" imported as an image.`
+      : `Social network "${label}" has no Templatical icon; imported as ${asLink ? "a link" : "an image"}.`;
   warnings.push(note);
   if (asLink) {
     return {
@@ -2247,14 +2267,21 @@ function convertSocial(
     };
   }
 
-  const icons: SocialIcon[] = [];
-  const extras: Block[] = [];
+  // Blocks come out in source order: each run of recognized icons is one
+  // social block, and a routed-out icon keeps its place between runs.
+  let icons: SocialIcon[] = [];
+  const blocks: Block[] = [];
   const notes: string[] = [];
+  const flushIcons = () => {
+    if (icons.length === 0) return;
+    blocks.push(createSocialIconsBlock({ icons, styles, ...appearance }));
+    icons = [];
+  };
 
   // The Icons module keeps items of another shape under the same key.
   for (const beeIcon of iconsList.icons as BeeFreeeSocialIcon[]) {
     const platform = socialPlatform(beeIcon);
-    if (!platform) {
+    if (!platform || beeIcon.type === "custom") {
       const kept = unknownSocialBlock(descriptor, beeIcon, warnings);
       if (!kept) continue;
       // An empty HTML block is the note for an icon with nothing to keep.
@@ -2262,35 +2289,32 @@ function convertSocial(
         notes.push(kept.note);
         continue;
       }
-      extras.push(kept.block);
+      flushIcons();
+      blocks.push(kept.block);
       notes.push(kept.note);
       continue;
     }
 
-    const href = safeCopiedUrl(
-      decodeEntitiesInTokens(beeIcon.image?.href ?? ""),
-      "href",
-      warnings,
-    );
+    const href = safeCopiedUrl(socialHref(beeIcon), "href", warnings);
     icons.push({
       id: generateId(),
       platform,
       url: href || "#",
     });
   }
+  flushIcons();
 
-  // A module of only custom icons is those images. An empty social block
-  // would render nothing beside them.
-  if (icons.length === 0 && extras.length > 0) {
-    const [block, ...rest] = extras;
-    return { block, extras: rest, notes };
+  // An empty social block is the fallback when nothing else was kept.
+  if (blocks.length === 0) {
+    return {
+      block: createSocialIconsBlock({ icons, styles, ...appearance }),
+      extras: [],
+      notes,
+    };
   }
 
-  return {
-    block: createSocialIconsBlock({ icons, styles, ...appearance }),
-    extras,
-    notes,
-  };
+  const [block, ...extras] = blocks;
+  return { block, extras, notes };
 }
 
 /** Escape `& < > "` for text content and attribute values. */
@@ -2408,8 +2432,8 @@ function iconsHtml(descriptor: BeeFreeeModuleDescriptor): string {
   const align = toAlign(style["text-align"]);
   const color = parseColor(style.color);
   const textStyle = iconTextStyle(style);
-  const gap =
-    computedPx(computed.itemsSpacing) || computedPx(computed.itemSpacing);
+  // `itemSpacing` is the legacy key, read only when `itemsSpacing` is absent.
+  const gap = computedPx(computed.itemsSpacing ?? computed.itemSpacing);
   const spacing = iconSpacing(descriptor);
   const iconPadding =
     spacing.top || spacing.right || spacing.bottom || spacing.left
@@ -2833,6 +2857,10 @@ export function skippedModuleEntry(
     case "divider":
       return undrawnDividerHeight(module.descriptor) === 0
         ? skip("The divider draws no line and takes no space.")
+        : undefined;
+    case "spacer":
+      return spacerHeight(module.descriptor) === 0
+        ? skip("The spacer is 0px tall.")
         : undefined;
     default:
       return undefined;
