@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
@@ -28,7 +29,7 @@ const defs: CustomBlockDefinition[] = ["welcome", "footer"].map((type) => ({
 }));
 
 beforeEach(() => {
-  dir = mkdtempSync(join(import.meta.dirname, ".definitions-"));
+  dir = mkdtempSync(join(tmpdir(), "tt-definitions-"));
   file = join(dir, "template.json");
   definitions = join(dir, "definitions.json");
   write(definitions, defs);
