@@ -17,6 +17,7 @@ import {
     getSyntaxClosingChar,
     type MergeTag,
 } from '../src';
+import { expectLinear } from './helpers/expectLinear';
 
 const liquidSyntax = SYNTAX_PRESETS.liquid;
 
@@ -215,24 +216,23 @@ describe('resolveHtmlMergeTagLabels', () => {
     // stall the regex for seconds. The linear scanner completes in ms.
     it('runs in linear time on adversarial `<span<span<span…` input (ReDoS regression)', () => {
         const adversarial = '<span'.repeat(10_000);
-        const start = Date.now();
-        const result = resolveHtmlMergeTagLabels(adversarial, tags);
-        const elapsed = Date.now() - start;
         // Output should be unchanged (no closing `>`, no rewrite to do).
-        expect(result).toBe(adversarial);
-        // Generous bound for CI variance — old regex would push 10s+.
-        expect(elapsed).toBeLessThan(500);
+        expect(resolveHtmlMergeTagLabels(adversarial, tags)).toBe(adversarial);
+        expectLinear((n) => {
+            const html = '<span'.repeat(n);
+            return () => resolveHtmlMergeTagLabels(html, tags);
+        }, 2_000);
     });
 
     it('runs in linear time on `<span data-merge-tag=""…` repeats (ReDoS regression)', () => {
         const adversarial =
             '<span data-merge-tag=""'.repeat(5_000);
-        const start = Date.now();
-        const result = resolveHtmlMergeTagLabels(adversarial, tags);
-        const elapsed = Date.now() - start;
         // No closing `>` on any span — none should be rewritten.
-        expect(result).toBe(adversarial);
-        expect(elapsed).toBeLessThan(500);
+        expect(resolveHtmlMergeTagLabels(adversarial, tags)).toBe(adversarial);
+        expectLinear((n) => {
+            const html = '<span data-merge-tag=""'.repeat(n);
+            return () => resolveHtmlMergeTagLabels(html, tags);
+        }, 500);
     });
 });
 
@@ -258,14 +258,14 @@ describe('resolveHtmlLogicMergeTagLabels', () => {
 
     it('runs in linear time on adversarial `<span<span…` input (ReDoS regression)', () => {
         const adversarial = '<span'.repeat(10_000);
-        const start = Date.now();
-        const result = resolveHtmlLogicMergeTagLabels(
-            adversarial,
-            SYNTAX_PRESETS.liquid,
-        );
-        const elapsed = Date.now() - start;
-        expect(result).toBe(adversarial);
-        expect(elapsed).toBeLessThan(500);
+        expect(
+            resolveHtmlLogicMergeTagLabels(adversarial, SYNTAX_PRESETS.liquid),
+        ).toBe(adversarial);
+        expectLinear((n) => {
+            const html = '<span'.repeat(n);
+            return () =>
+                resolveHtmlLogicMergeTagLabels(html, SYNTAX_PRESETS.liquid);
+        }, 2_000);
     });
 });
 
@@ -788,13 +788,13 @@ describe('angle-bracket tag values (custom syntax)', () => {
     it('runs in linear time when many tag values contain `>` (ReDoS regression)', () => {
         const adversarial =
             '<span data-merge-tag="<% $email %>">x</span>'.repeat(5_000);
-        const start = Date.now();
-        const result = resolveHtmlMergeTagLabels(adversarial, smartyTags);
-        const elapsed = Date.now() - start;
-        expect(result).toBe(
+        expect(resolveHtmlMergeTagLabels(adversarial, smartyTags)).toBe(
             '<span data-merge-tag="<% $email %>">E-Mail</span>'.repeat(5_000),
         );
-        expect(elapsed).toBeLessThan(500);
+        expectLinear((n) => {
+            const html = '<span data-merge-tag="<% $email %>">x</span>'.repeat(n);
+            return () => resolveHtmlMergeTagLabels(html, smartyTags);
+        }, 500);
     });
 });
 

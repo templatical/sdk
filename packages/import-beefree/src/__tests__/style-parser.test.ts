@@ -8,6 +8,7 @@ import {
   parseDividerWidth,
   readBeefreeBackgroundImage,
 } from "../style-parser";
+import { expectLinear } from "./expectLinear";
 
 describe("parsePxValue", () => {
   it("extracts integer from px string", () => {
@@ -124,11 +125,12 @@ describe("parseBorderTop", () => {
   // quadratically on a long run that fails to match (CodeQL
   // js/polynomial-redos).
   it("reads a long run of zeros in linear time (ReDoS regression)", () => {
-    const start = Date.now();
     const result = parseBorderTop(`${"0".repeat(40_000)}x solid #cccccc`);
-    const elapsed = Date.now() - start;
     expect([result.width, result.drawn]).toEqual([0, true]);
-    expect(elapsed).toBeLessThan(250);
+    expectLinear((n) => {
+      const value = `${"0".repeat(n)}x solid #cccccc`;
+      return () => parseBorderTop(value);
+    }, 2_000);
   });
 
   it("is not drawn at 0 width, with no style, or in a transparent colour", () => {
@@ -330,11 +332,10 @@ describe("readBeefreeBackgroundImage", () => {
 });
 
 describe("readBeefreeBackgroundImage on adversarial input", () => {
-  const digits = "0".repeat(100_000);
-  const spaces = " ".repeat(100_000);
-
-  it("reads runs of digits and spaces in linear time", () => {
-    const run = () =>
+  const run = (length: number) => {
+    const digits = "0".repeat(length);
+    const spaces = " ".repeat(length);
+    return (
       readBeefreeBackgroundImage(
         {
           "background-image": `url(${spaces}`,
@@ -352,10 +353,18 @@ describe("readBeefreeBackgroundImage on adversarial input", () => {
         },
         "Row",
         600,
-      );
-    const started = performance.now();
-    run();
-    expect(performance.now() - started).toBeLessThan(1000);
+      )
+    );
+  };
+
+  it("reads runs of digits and spaces in linear time", () => {
+    expect(run(100_000)?.image).toEqual({
+      url: "u",
+      size: "auto",
+      position: { x: "left", y: "top" },
+      repeat: true,
+    });
+    expectLinear((n) => () => run(n), 8_000);
   });
 });
 
@@ -407,10 +416,11 @@ describe("readBeefreeBackgroundImage url() scanning", () => {
     readBeefreeBackgroundImage({ "background-image": value }, "Row", 600);
 
   it("reads a repeated unclosed url( in linear time", () => {
-    const value = "url(" + "url(!".repeat(20_000);
-    const started = performance.now();
-    expect(read(value)).toBeNull();
-    expect(performance.now() - started).toBeLessThan(1000);
+    expect(read("url(" + "url(!".repeat(20_000))).toBeNull();
+    expectLinear((n) => {
+      const value = "url(" + "url(!".repeat(n);
+      return () => read(value);
+    }, 1_000);
   });
 
   it.each(['url("a.png', 'url("a.png" x)', 'url(a"b)', "url(a.png"])(

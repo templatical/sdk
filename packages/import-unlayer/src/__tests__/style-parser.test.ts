@@ -10,6 +10,7 @@ import {
   readUnlayerBackgroundImage,
 } from "../style-parser";
 import type { UnlayerBackgroundImage } from "../types";
+import { expectLinear } from "./expectLinear";
 
 describe("parsePxValue", () => {
   it("parses '12px' to 12", () => {
@@ -46,12 +47,12 @@ describe("parsePxValue", () => {
   // rewrite collapses to a single `\s*(?:px\s*)?` so trailing whitespace
   // is matched by one quantifier with no backtracking.
   it("rejects digit-then-long-whitespace input in linear time (ReDoS regression)", () => {
-    const adversarial = "9" + " ".repeat(50_000) + "x";
-    const start = Date.now();
-    const result = parsePxValue(adversarial);
-    const elapsed = Date.now() - start;
-    expect(result).toBe(0); // `x` makes it fail the `px?` group
-    expect(elapsed).toBeLessThan(500);
+    // `x` makes it fail the `px?` group
+    expect(parsePxValue("9" + " ".repeat(50_000) + "x")).toBe(0);
+    expectLinear((n) => {
+      const value = "9" + " ".repeat(n) + "x";
+      return () => parsePxValue(value);
+    }, 2_000);
   });
 });
 
@@ -179,19 +180,21 @@ describe("parseBorderObject", () => {
   // backtracks quadratically on a long run that fails to match (CodeQL
   // js/polynomial-redos).
   it("reads long runs of zeros and spaces in linear time (ReDoS regression)", () => {
-    for (const borderTopWidth of [
-      `${"0".repeat(40_000)}x`,
-      `0${" ".repeat(40_000)}x`,
-    ]) {
-      const start = Date.now();
-      const { drawn } = parseBorderObject({
+    const border = (borderTopWidth: string) =>
+      parseBorderObject({
         borderTopWidth,
         borderTopStyle: "solid",
         borderTopColor: "#cccccc",
       });
-      const elapsed = Date.now() - start;
-      expect(drawn).toBe(true);
-      expect(elapsed).toBeLessThan(250);
+    for (const width of [
+      (n: number) => `${"0".repeat(n)}x`,
+      (n: number) => `0${" ".repeat(n)}x`,
+    ]) {
+      expect(border(width(40_000)).drawn).toBe(true);
+      expectLinear((n) => {
+        const value = width(n);
+        return () => border(value);
+      }, 2_000);
     }
   });
 
@@ -322,12 +325,11 @@ describe("parseDividerWidth", () => {
   });
 
   it("rejects digit-then-long-whitespace input in linear time (ReDoS guard)", () => {
-    const adversarial = "9" + " ".repeat(50_000) + "x";
-    const start = Date.now();
-    const result = parseDividerWidth(adversarial);
-    const elapsed = Date.now() - start;
-    expect(result).toBeUndefined();
-    expect(elapsed).toBeLessThan(500);
+    expect(parseDividerWidth("9" + " ".repeat(50_000) + "x")).toBeUndefined();
+    expectLinear((n) => {
+      const value = "9" + " ".repeat(n) + "x";
+      return () => parseDividerWidth(value);
+    }, 2_000);
   });
 });
 
@@ -495,23 +497,28 @@ describe("readUnlayerBackgroundImage", () => {
 });
 
 describe("readUnlayerBackgroundImage on adversarial input", () => {
-  const digits = "0".repeat(100_000);
+  const run = (length: number) => {
+    const digits = "0".repeat(length);
+    return readUnlayerBackgroundImage(
+      {
+        url: "u",
+        size: `${digits}!`,
+        position: "custom",
+        customPosition: [`${digits}!`, `${digits}!`],
+      },
+      "Row",
+      600,
+    );
+  };
 
   it("reads runs of digits and spaces in linear time", () => {
-    const run = () =>
-      readUnlayerBackgroundImage(
-        {
-          url: "u",
-          size: `${digits}!`,
-          position: "custom",
-          customPosition: [`${digits}!`, `${digits}!`],
-        },
-        "Row",
-        600,
-      );
-    const started = performance.now();
-    run();
-    expect(performance.now() - started).toBeLessThan(1000);
+    expect(run(100_000)?.image).toEqual({
+      url: "u",
+      size: "auto",
+      position: { x: "center", y: "center" },
+      repeat: false,
+    });
+    expectLinear((n) => () => run(n), 8_000);
   });
 });
 

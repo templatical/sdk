@@ -10,6 +10,7 @@ import {
   unwrapMergeTagCode,
 } from "../merge-tokens";
 import type { BeeFreeeModule, BeeFreeTemplate } from "../types";
+import { expectLinear } from "./expectLinear";
 import fixture from "./fixtures/twig-entity-encoded.json";
 
 function moduleOf(
@@ -633,18 +634,22 @@ describe("merge token scan", () => {
   it.each(["{{{{", "{{%", "{{#"])(
     "scans %s repeated 50k times in linear time",
     (opener) => {
+      const scan = (value: string) => ({
+        decoded: decodeEntitiesInTokens(value),
+        unwrapped: unwrapMergeTagCode(
+          `<code data-bee-type="mergetag">${value}</code>`,
+        ),
+        trimmed: trimHighlightedTokenPadding(`<code> ${value}</code>`),
+      });
       const value = opener.repeat(50_000);
-      const start = Date.now();
-      const decoded = decodeEntitiesInTokens(value);
-      const unwrapped = unwrapMergeTagCode(
-        `<code data-bee-type="mergetag">${value}</code>`,
-      );
-      const trimmed = trimHighlightedTokenPadding(`<code> ${value}</code>`);
-      const elapsed = Date.now() - start;
+      const { decoded, unwrapped, trimmed } = scan(value);
       expect(decoded).toBe(value);
       expect(unwrapped).toBe(value);
       expect(trimmed.startsWith("<code>")).toBe(true);
-      expect(elapsed).toBeLessThan(2500);
+      expectLinear((n) => {
+        const input = opener.repeat(n);
+        return () => scan(input);
+      }, 2_000);
     },
   );
 });
@@ -732,11 +737,12 @@ describe("a token that spans inline tags", () => {
   });
 
   it("scans {{ openers across tags in linear time", () => {
-    const value = '<p><a href="{{ &quot;">{{ &nbsp;'.repeat(20_000);
-    const start = Date.now();
-    const decoded = decodeEntitiesInHtml(value);
-    const elapsed = Date.now() - start;
-    expect(decoded).toBe(value);
-    expect(elapsed).toBeLessThan(2500);
+    const chunk = '<p><a href="{{ &quot;">{{ &nbsp;';
+    const value = chunk.repeat(20_000);
+    expect(decodeEntitiesInHtml(value)).toBe(value);
+    expectLinear((n) => {
+      const input = chunk.repeat(n);
+      return () => decodeEntitiesInHtml(input);
+    }, 1_000);
   });
 });

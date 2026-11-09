@@ -12,5 +12,10 @@ export default defineConfig({
     // exactly what CI does. The same 20s the editor and skill suites use,
     // for the same reason.
     testTimeout: 20_000,
+    coverage: {
+      // Coverage measures whatever the tests load, so without this the shared
+      // test helpers under tests/ would count as package code.
+      exclude: ["tests/**"],
+    },
   },
 });

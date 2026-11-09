@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { inferTextBlock, stripTags } from "../content-inference";
+import { expectLinear } from "./expectLinear";
 
 describe("inferTextBlock", () => {
   it("reads a single heading root as a title, keeping its level", () => {
@@ -160,15 +161,15 @@ describe("stripTags", () => {
     // Adversarial input for the pre-fix `/<[^>]*>/g`: many `<` starts and no
     // `>` anywhere, so `[^>]*` backtracks at every one of them. At 80 KB the
     // old regex took over nine seconds (measured); this asserts the fixed
-    // scan resolves in well under a second. Nothing here is a complete tag,
+    // scan's cost grows linearly with the input. Nothing here is a complete tag,
     // so the whole input passes through unchanged (no whitespace or
     // entities to collapse either).
     const input = "<".repeat(80_000);
-    const start = performance.now();
-    const result = stripTags(input);
-    const elapsed = performance.now() - start;
-    expect(result).toBe(input);
-    expect(elapsed).toBeLessThan(500);
+    expect(stripTags(input)).toBe(input);
+    expectLinear((n) => {
+      const value = "<".repeat(n);
+      return () => stripTags(value);
+    }, 2_000);
   });
 
   it("strips a 4.x button label wrapped in a paragraph", () => {

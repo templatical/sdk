@@ -16,6 +16,7 @@ import type { TemplateContent } from "@templatical/types";
 import { renderToMjml } from "../src";
 import { renderBlock, RenderContext } from "../src";
 import { convertMergeTagsToValues } from "../src/escape";
+import { expectLinear } from "./helpers/expectLinear";
 
 /**
  * Round-trip tests: compile renderer's MJML output through mjml@5 and
@@ -628,18 +629,21 @@ describe("empty paragraph emits nothing", () => {
   // make the regex engine retry `[^>]*` at every position. The `[^<>]*` rewrite
   // fails fast at the next `<` and keeps the work linear.
   it("strips empty-paragraph tags in linear time on `<p<p<p…` input (ReDoS regression)", () => {
-    const adversarial = "<p".repeat(50_000);
-    const block = createParagraphBlock({
-      content: adversarial,
-    } as Parameters<typeof createParagraphBlock>[0]);
-    const start = Date.now();
-    const mjml = renderBlock(block, ctx);
-    const elapsed = Date.now() - start;
+    const paragraph = (n: number) =>
+      createParagraphBlock({
+        content: "<p".repeat(n),
+      } as Parameters<typeof createParagraphBlock>[0]);
     // Stripped content is identical (no `>` ever matches), so non-empty
-    // after the strip — the block emits a non-empty mj-text. We only care
-    // that it doesn't hang.
-    expect(typeof mjml).toBe("string");
-    expect(elapsed).toBeLessThan(500);
+    // after the strip — the block emits the input unchanged in an mj-text.
+    expect(
+      renderBlock(paragraph(50_000), ctx).endsWith(
+        `>${"<p".repeat(50_000)}</mj-text>`,
+      ),
+    ).toBe(true);
+    expectLinear((n) => {
+      const block = paragraph(n);
+      return () => renderBlock(block, ctx);
+    }, 2_000);
   });
 });
 
