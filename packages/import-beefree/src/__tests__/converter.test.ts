@@ -4,6 +4,7 @@ import type { Block, DividerBlock, ImageBlock } from "@templatical/types";
 import { convertBeeFreeTemplate } from "../converter";
 import type { BeeFreeeRow, BeeFreeTemplate } from "../types";
 import fixture from "./fixtures/example-1.json";
+import { realMenu, realTable, realVideo } from "./fixtures/real-modules";
 
 describe("convertBeeFreeTemplate", () => {
   it("throws for invalid input", () => {
@@ -2835,14 +2836,15 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.styles.padding).toEqual(returned);
       });
 
-      it("keeps a video at its stated px width and still returns padding", () => {
+      it("measures a video's px width in the returned room and still returns padding", () => {
         const narrow = leftBlock({
           type: "mailup-bee-newsletter-modules-video",
           descriptor: {
             video: {
               src: "https://www.youtube.com/watch?v=abcdefghijk",
-              style: { width: "240px" },
+              mode: "thumbnail",
             },
+            computedStyle: { class: "center", width: "240px" },
             style: padding,
           },
         });
@@ -2851,8 +2853,9 @@ describe("convertBeeFreeTemplate", () => {
           descriptor: {
             video: {
               src: "https://www.youtube.com/watch?v=abcdefghijk",
-              style: { width: "500px" },
+              mode: "thumbnail",
             },
+            computedStyle: { class: "center", width: "500px" },
             style: padding,
           },
         });
@@ -2862,8 +2865,9 @@ describe("convertBeeFreeTemplate", () => {
         if (narrow.type !== "video" || wide.type !== "video") {
           throw new Error("expected video blocks");
         }
+        // The room after the return is 290px: 240px stays, 500px fills it.
         expect(narrow.width).toBe(240);
-        expect(wide.width).toBe(500);
+        expect(wide.width).toBe("full");
         expect(narrow.styles.padding).toEqual(returned);
         expect(wide.styles.padding).toEqual(returned);
       });
@@ -2895,8 +2899,8 @@ describe("convertBeeFreeTemplate", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-menu",
           descriptor: {
-            menu: {
-              items: [{ text: "Home", link: "https://example.com" }],
+            menuItemsList: {
+              items: [{ text: "Home", link: { href: "https://example.com" } }],
             },
             style: padding,
           },
@@ -3477,5 +3481,71 @@ describe("image fluidOnMobile", () => {
     });
     expect(flat.width).toBe("full");
     expect(flat.fluidOnMobile).toBeUndefined();
+  });
+});
+
+// The descriptors BeeFree writes for a menu, a table and a video, imported in
+// one row. Each used to read a shape BeeFree never writes, so a real menu or
+// table imported empty and a video lost its thumbnail.
+describe("real menu, table and video exports", () => {
+  it("imports their content and reports each one", () => {
+    const { content, report } = convertBeeFreeTemplate({
+      page: {
+        body: { content: { style: { width: "600px" } } },
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [realMenu(), realTable(), realVideo()],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const [menu, table, video] = content.blocks;
+    if (
+      menu?.type !== "menu" ||
+      table?.type !== "table" ||
+      video?.type !== "video"
+    )
+      throw new Error(
+        `expected menu, table, video; got ${content.blocks.map((b) => b.type).join(", ")}`,
+      );
+    expect(menu.items.map((item) => item.text)).toEqual([
+      "NEW COLLECTION",
+      "FURNITURE",
+      "DECOR",
+      "ACCESSORIES",
+      "BLOG",
+    ]);
+    expect(menu.spacing).toBe(15);
+    expect(menu.separator).toBe("");
+    expect(
+      table.rows.map((row) => row.cells.map((cell) => cell.content)),
+    ).toEqual([
+      ["Size", "Width", "Price"],
+      ["Small", "40cm", "$20"],
+      ["", "", ""],
+      ["", "", ""],
+    ]);
+    expect(table.hasHeaderRow).toBe(true);
+    expect(video.thumbnailUrl).toBe(
+      "https://img.youtube.com/vi/abcdefghijk/maxresdefault.jpg",
+    );
+    expect(video.width).toBe("full");
+    expect(
+      report.entries.map(({ templaticalBlockType, status }) => ({
+        templaticalBlockType,
+        status,
+      })),
+    ).toEqual([
+      { templaticalBlockType: "menu", status: "approximated" },
+      { templaticalBlockType: "table", status: "approximated" },
+      { templaticalBlockType: "video", status: "converted" },
+    ]);
+    expect(report.warnings).toEqual([]);
   });
 });

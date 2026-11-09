@@ -190,15 +190,18 @@ describe("BeeFree merge-tag code wrappers", () => {
     const table = convertModule(
       moduleOf("mailup-bee-newsletter-modules-table", {
         table: {
-          rows: [
-            {
-              cells: [
-                {
-                  html: '<code data-bee-type="mergetag" data-bee-code="{% if n > 1 %}">{% if n &gt; 1 %}</code>',
-                },
-              ],
-            },
-          ],
+          content: {
+            headers: [],
+            rows: [
+              {
+                cells: [
+                  {
+                    html: '<code data-bee-type="mergetag" data-bee-code="{% if n > 1 %}">{% if n &gt; 1 %}</code>',
+                  },
+                ],
+              },
+            ],
+          },
         },
       }),
       [],

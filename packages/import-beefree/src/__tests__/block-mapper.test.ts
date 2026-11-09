@@ -6,6 +6,7 @@ import {
   skippedModuleEntry,
 } from "../block-mapper";
 import type { BeeFreeeImageContent, BeeFreeeModule } from "../types";
+import { realMenu, realTable, realVideo } from "./fixtures/real-modules";
 import { expectLinear } from "./expectLinear";
 
 function makeModule(
@@ -2377,6 +2378,19 @@ describe("convertModule", () => {
       ).toBe("image");
     });
 
+    it("converts an addon carrying menu items as a menu", () => {
+      const { block } = convertModule(
+        makeModule(ADDON, {
+          menuItemsList: {
+            items: [{ text: "Home", link: { href: "https://x.test" } }],
+          },
+        }),
+        [],
+      );
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.items.map((item) => item.text)).toEqual(["Home"]);
+    });
+
     it("falls back to an HTML comment for an addon with nothing to read", () => {
       const { block, entry } = convertModule(makeModule(ADDON, {}), []);
       expect(block.type === "html" && block.content).toBe(
@@ -3260,6 +3274,19 @@ describe("convertModule", () => {
   });
 
   describe("video", () => {
+    function video(
+      fields: Record<string, unknown>,
+      descriptor: Partial<BeeFreeeModule["descriptor"]> = {},
+    ): BeeFreeeModule {
+      return makeModule("mailup-bee-newsletter-modules-video", {
+        video: {
+          src: "https://www.youtube.com/watch?v=abcdefghijk",
+          ...fields,
+        },
+        ...descriptor,
+      } as BeeFreeeModule["descriptor"]);
+    }
+
     it("converts video without video descriptor to empty video block", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-video", {
@@ -3278,210 +3305,725 @@ describe("convertModule", () => {
       }
     });
 
-    it("converts video with src and thumbnail", () => {
+    it("imports a real thumbnail-mode export", () => {
       const warnings: string[] = [];
-      const mod = makeModule("mailup-bee-newsletter-modules-video", {
-        video: {
-          src: "https://youtube.com/watch?v=abc",
-          thumbnail: "https://img.youtube.com/vi/abc/0.jpg",
-          alt: "Video",
-          style: { width: "500px", "text-align": "center" },
-        },
+      const { block, entry } = convertModule(realVideo(), warnings, {
+        columnWidth: 600,
       });
 
-      const { block, entry } = convertModule(mod, warnings);
-
-      expect(block.type).toBe("video");
-      if (block.type === "video") {
-        expect(block.url).toBe("https://youtube.com/watch?v=abc");
-        expect(block.thumbnailUrl).toBe("https://img.youtube.com/vi/abc/0.jpg");
-        expect(block.alt).toBe("Video");
-        expect(block.width).toBe(500);
-        expect(block.align).toBe("center");
-      }
-      expect(entry.status).toBe("converted");
+      if (block.type !== "video") throw new Error("expected a video");
+      expect(block.url).toBe("https://www.youtube.com/watch?v=abcdefghijk");
+      expect(block.thumbnailUrl).toBe(
+        "https://img.youtube.com/vi/abcdefghijk/maxresdefault.jpg",
+      );
+      expect(block.alt).toBe("Product tour");
+      expect(block.width).toBe("full");
+      expect(block.height).toBeUndefined();
+      expect(block.align).toBe("center");
+      expect(block.styles.padding).toEqual({
+        top: 10,
+        right: 10,
+        bottom: 10,
+        left: 10,
+      });
+      expect(entry).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-video",
+        templaticalBlockType: "video",
+        status: "converted",
+      });
+      expect(warnings).toEqual([]);
     });
 
-    // The video thumbnail ships as an mj-image, so a pinned height in the
-    // source is the same fixed-box intent as on an image block.
-    it("carries the thumbnail height from the style, and leaves it unset otherwise", () => {
-      const warnings: string[] = [];
-      const withHeight = convertModule(
-        makeModule("mailup-bee-newsletter-modules-video", {
-          video: {
-            src: "https://youtube.com/watch?v=abc",
-            style: { width: "500px", height: "280px" },
-          },
-        }),
-        warnings,
+    it("reads the alignment from computedStyle.class", () => {
+      const left = convertModule(
+        video({ mode: "thumbnail" }, { computedStyle: { class: "left" } }),
+        [],
       ).block;
-      const withoutHeight = convertModule(
-        makeModule("mailup-bee-newsletter-modules-video", {
-          video: {
-            src: "https://youtube.com/watch?v=abc",
-            style: { width: "500px" },
-          },
-        }),
-        warnings,
+      const right = convertModule(
+        video({ mode: "thumbnail" }, { computedStyle: { class: "right" } }),
+        [],
       ).block;
+      if (left.type !== "video" || right.type !== "video")
+        throw new Error("expected videos");
+      expect(left.align).toBe("left");
+      expect(right.align).toBe("right");
+    });
 
-      if (withHeight.type !== "video" || withoutHeight.type !== "video")
-        throw new Error("expected video blocks");
-      expect(withHeight.height).toBe(280);
-      expect(withoutHeight.height).toBeUndefined();
+    it("keeps a px width under the room and fills it at the room", () => {
+      // 600px column less 10px padding each side leaves 580px.
+      const at = (width: string) =>
+        convertModule(
+          video(
+            { mode: "thumbnail" },
+            {
+              style: { width, "padding-left": "10px", "padding-right": "10px" },
+              computedStyle: { class: "center", width },
+            },
+          ),
+          [],
+          { columnWidth: 600 },
+        );
+
+      const under = at("579px");
+      const room = at("580px");
+      if (under.block.type !== "video" || room.block.type !== "video")
+        throw new Error("expected videos");
+      expect(under.block.width).toBe(579);
+      expect(room.block.width).toBe("full");
+      expect(under.entry.status).toBe("converted");
+    });
+
+    it("reads style.width when computedStyle has no width", () => {
+      const { block } = convertModule(
+        video({ mode: "thumbnail" }, { style: { width: "300px" } }),
+        [],
+        { columnWidth: 600 },
+      );
+      if (block.type !== "video") throw new Error("expected a video");
+      expect(block.width).toBe(300);
+    });
+
+    it("converts a percentage under 100% to px of the room, approximated", () => {
+      const { block, entry } = convertModule(
+        video(
+          { mode: "thumbnail" },
+          {
+            style: {
+              width: "50%",
+              "padding-left": "10px",
+              "padding-right": "10px",
+            },
+            computedStyle: { class: "center", width: "50%" },
+          },
+        ),
+        [],
+        { columnWidth: 600 },
+      );
+      if (block.type !== "video") throw new Error("expected a video");
+      expect(block.width).toBe(290);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("Video width 50% was converted to 290px.");
+    });
+
+    it("fills the column for a percentage when the column width is unknown", () => {
+      const { block, entry } = convertModule(
+        video(
+          { mode: "thumbnail" },
+          { computedStyle: { class: "center", width: "50%" } },
+        ),
+        [],
+      );
+      if (block.type !== "video") throw new Error("expected a video");
+      expect(block.width).toBe("full");
+      expect(entry.note).toBe("Video width 50% was converted to full width.");
+    });
+
+    it("fills the column when the width is missing or unreadable", () => {
+      const missing = convertModule(video({ mode: "thumbnail" }), [], {
+        columnWidth: 600,
+      });
+      const unreadable = convertModule(
+        video({ mode: "thumbnail" }, { style: { width: "auto" } }),
+        [],
+        { columnWidth: 600 },
+      );
+      if (missing.block.type !== "video" || unreadable.block.type !== "video")
+        throw new Error("expected videos");
+      expect(missing.block.width).toBe("full");
+      expect(unreadable.block.width).toBe("full");
+      expect(missing.entry.status).toBe("converted");
+      expect(unreadable.entry.status).toBe("converted");
+    });
+
+    it.each(["embedded", "custom"])(
+      "approximates a %s-mode video, which carries no thumbnail",
+      (mode) => {
+        const warnings: string[] = [];
+        const { block, entry } = convertModule(
+          video({ mode, controls: true, loop: false }),
+          warnings,
+        );
+        if (block.type !== "video") throw new Error("expected a video");
+        expect(block.thumbnailUrl).toBe("");
+        expect(entry.status).toBe("approximated");
+        expect(entry.note).toBe(
+          `BeeFree plays a ${mode} video in place; Templatical links a thumbnail of it.`,
+        );
+        expect(warnings).toEqual([]);
+      },
+    );
+
+    it("warns when a video with no thumbnail is not on YouTube or Vimeo", () => {
+      const warnings: string[] = [];
+      const { entry } = convertModule(
+        video({ src: "https://example.com/clip.mp4", mode: "custom" }),
+        warnings,
+      );
+      expect(entry.status).toBe("approximated");
+      expect(warnings).toEqual([
+        'Video "https://example.com/clip.mp4" has no thumbnail, and Templatical derives one only for YouTube and Vimeo links, so it renders nothing until a thumbnail is set.',
+      ]);
+    });
+
+    it("does not warn for a Vimeo link with no thumbnail", () => {
+      const warnings: string[] = [];
+      convertModule(
+        video({ src: "https://vimeo.com/123456", mode: "embedded" }),
+        warnings,
+      );
+      expect(warnings).toEqual([]);
+    });
+
+    it("does not read a thumbnail from the undocumented video.thumbnail key", () => {
+      const { block } = convertModule(
+        video({ thumbnail: "https://example.com/old.jpg" }),
+        [],
+      );
+      if (block.type !== "video") throw new Error("expected a video");
+      expect(block.thumbnailUrl).toBe("");
     });
   });
 
   describe("menu", () => {
-    it("converts menu items with separator and colors", () => {
-      const warnings: string[] = [];
-      const mod = makeModule("mailup-bee-newsletter-modules-menu", {
-        menu: {
+    function menu(
+      descriptor: Partial<BeeFreeeModule["descriptor"]>,
+    ): BeeFreeeModule {
+      return makeModule("mailup-bee-newsletter-modules-menu", {
+        menuItemsList: {
           items: [
-            { text: "Home", link: "https://example.com", target: "_blank" },
-            { text: "About", href: "https://example.com/about" },
+            { text: "Home", link: { href: "https://x.test", target: "_self" } },
+            { text: "Shop", link: { href: "https://x.test/shop" } },
           ],
-          separator: "-",
-          separatorColor: "#666666",
-          style: {
-            "font-size": "12px",
-            color: "#444444",
-            "text-align": "center",
-          },
         },
+        ...descriptor,
+      } as BeeFreeeModule["descriptor"]);
+    }
+
+    it("imports a real corpus menu", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(realMenu(), warnings);
+
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(
+        block.items.map(({ text, url, openInNewTab, bold, underline }) => ({
+          text,
+          url,
+          openInNewTab,
+          bold,
+          underline,
+        })),
+      ).toEqual(
+        ["NEW COLLECTION", "FURNITURE", "DECOR", "ACCESSORIES", "BLOG"].map(
+          (text) => ({
+            text,
+            url: "https://www.example.com",
+            openInNewTab: false,
+            bold: false,
+            underline: false,
+          }),
+        ),
+      );
+      expect(block.fontSize).toBe(14);
+      expect(block.color).toBe("#323e49");
+      expect(block.linkColor).toBe("#323e49");
+      expect(block.fontFamily).toBeUndefined();
+      expect(block.textAlign).toBe("center");
+      expect(block.separator).toBe("");
+      expect(block.separatorColor).toBe("#323e49");
+      expect(block.spacing).toBe(15);
+      expect(block.styles.padding).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
       });
-
-      const { block } = convertModule(mod, warnings);
-
-      expect(block.type).toBe("menu");
-      if (block.type === "menu") {
-        expect(block.items).toHaveLength(2);
-        expect(block.items[0].text).toBe("Home");
-        expect(block.items[0].url).toBe("https://example.com");
-        expect(block.items[0].openInNewTab).toBe(true);
-        expect(block.items[1].text).toBe("About");
-        expect(block.items[1].url).toBe("https://example.com/about");
-        expect(block.items[1].openInNewTab).toBe(false);
-        expect(block.separator).toBe("-");
-        expect(block.separatorColor).toBe("#666666");
-        expect(block.fontSize).toBe(12);
-        expect(block.color).toBe("#444444");
-      }
+      expect(entry).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-menu",
+        templaticalBlockType: "menu",
+        status: "approximated",
+      });
+      expect(warnings).toEqual([]);
     });
 
-    it("report entry has isApproximation status", () => {
-      const warnings: string[] = [];
-      const mod = makeModule("mailup-bee-newsletter-modules-menu", {
-        menu: {
-          items: [{ text: "Link", link: "#" }],
-        },
+    it("opens a _blank item in a new tab and links an item with no href to #", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-menu", {
+          menuItemsList: {
+            items: [
+              {
+                text: "New",
+                link: { href: "https://x.test", target: "_blank" },
+              },
+              { text: "None", link: { href: "", target: "_self" } },
+            ],
+          },
+        } as BeeFreeeModule["descriptor"]),
+        [],
+      );
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.items[0].openInNewTab).toBe(true);
+      expect(block.items[0].url).toBe("https://x.test");
+      expect(block.items[1].openInNewTab).toBe(false);
+      expect(block.items[1].url).toBe("#");
+    });
+
+    it("keeps the separator BeeFree computed", () => {
+      const { block } = convertModule(
+        menu({ computedStyle: { separator: "•" } }),
+        [],
+      );
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.separator).toBe("•");
+    });
+
+    it("spaces items by half the left and right item padding", () => {
+      const { block } = convertModule(
+        menu({
+          computedStyle: {
+            menuItemsSpacing: {
+              "padding-left": "35px",
+              "padding-right": "5px",
+            },
+          },
+        }),
+        [],
+      );
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.spacing).toBe(20);
+    });
+
+    it("keeps an explicit 0px item padding", () => {
+      const { block } = convertModule(
+        menu({
+          computedStyle: {
+            menuItemsSpacing: { "padding-left": "0px", "padding-right": "0px" },
+          },
+        }),
+        [],
+      );
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.spacing).toBe(0);
+    });
+
+    it("counts an unreadable side as 0 when the other side is readable", () => {
+      const { block } = convertModule(
+        menu({
+          computedStyle: {
+            menuItemsSpacing: {
+              "padding-left": "auto",
+              "padding-right": "10px",
+            },
+          },
+        }),
+        [],
+      );
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.spacing).toBe(5);
+    });
+
+    it("uses the 10px default spacing when no side is readable", () => {
+      const missing = convertModule(menu({}), []).block;
+      const unreadable = convertModule(
+        menu({
+          computedStyle: {
+            menuItemsSpacing: { "padding-left": "a", "padding-right": "-4px" },
+          },
+        }),
+        [],
+      ).block;
+      if (missing.type !== "menu" || unreadable.type !== "menu")
+        throw new Error("expected menus");
+      expect(missing.spacing).toBe(10);
+      expect(unreadable.spacing).toBe(10);
+    });
+
+    it("keeps an explicit 0px font size and defaults a missing one to 15px", () => {
+      const zero = convertModule(
+        menu({ style: { "font-size": "0px" } }),
+        [],
+      ).block;
+      const missing = convertModule(menu({ style: {} }), []).block;
+      const unreadable = convertModule(
+        menu({ style: { "font-size": "large" } }),
+        [],
+      ).block;
+      if (
+        zero.type !== "menu" ||
+        missing.type !== "menu" ||
+        unreadable.type !== "menu"
+      )
+        throw new Error("expected menus");
+      expect(zero.fontSize).toBe(0);
+      expect(missing.fontSize).toBe(15);
+      expect(unreadable.fontSize).toBe(15);
+    });
+
+    it("colors the separator with the template text color when the menu sets none", () => {
+      const { block } = convertModule(menu({ style: {} }), [], {
+        textColor: "#333333",
       });
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.separatorColor).toBe("#333333");
+      expect("color" in block).toBe(false);
+      expect("linkColor" in block).toBe(false);
+    });
 
-      const { entry } = convertModule(mod, warnings);
-
+    it("notes a vertical layout, which imports horizontal", () => {
+      const { entry } = convertModule(
+        menu({ computedStyle: { layout: "vertical" } }),
+        [],
+      );
       expect(entry.status).toBe("approximated");
-      expect(entry.templaticalBlockType).toBe("menu");
+      expect(entry.note).toBe(
+        "BeeFree's vertical menu layout was imported horizontal.",
+      );
+    });
+
+    it("does not read items from the undocumented descriptor.menu key", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-menu", {
+          menu: { items: [{ text: "Old", link: "https://x.test" }] },
+        } as unknown as BeeFreeeModule["descriptor"]),
+        [],
+      );
+      if (block.type !== "menu") throw new Error("expected a menu");
+      expect(block.items).toEqual([]);
     });
   });
 
   describe("table", () => {
-    it("converts rows and cells", () => {
-      const warnings: string[] = [];
-      const mod = makeModule("mailup-bee-newsletter-modules-table", {
+    const row = (...cells: string[]) => ({
+      cells: cells.map((html) => ({ html })),
+    });
+    function table(
+      fields: {
+        headers?: ReturnType<typeof row>[];
+        rows?: ReturnType<typeof row>[];
+        style?: Record<string, string>;
+        computedStyle?: Record<string, string>;
+      } = {},
+    ): BeeFreeeModule {
+      return makeModule("mailup-bee-newsletter-modules-table", {
         table: {
-          rows: [
-            { cells: [{ content: "A1" }, { content: "B1" }] },
-            { cells: [{ html: "A2" }, { content: "B2" }] },
-          ],
+          content: {
+            headers: fields.headers ?? [],
+            rows: fields.rows ?? [row("A1", "B1")],
+          },
+          style: fields.style ?? {},
+          computedStyle: fields.computedStyle ?? {},
+        },
+      } as BeeFreeeModule["descriptor"]);
+    }
+    const contents = (block: { rows: { cells: { content: string }[] }[] }) =>
+      block.rows.map((r) => r.cells.map((c) => c.content));
+
+    it("imports BeeFree's documented table", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(realTable(), warnings);
+
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(contents(block)).toEqual([
+        ["Size", "Width", "Price"],
+        ["Small", "40cm", "$20"],
+        ["", "", ""],
+        ["", "", ""],
+      ]);
+      expect(block.hasHeaderRow).toBe(true);
+      expect(block.headerBackgroundColor).toBe("#eaeaea");
+      expect(block.borderWidth).toBe(1);
+      expect(block.borderColor).toBe("#dddddd");
+      expect(block.cellPadding).toBe(8);
+      expect(block.fontSize).toBe(14);
+      expect(block.color).toBe("#000000");
+      expect(block.fontFamily).toBeUndefined();
+      expect(block.textAlign).toBe("left");
+      expect(block.styles.padding).toEqual({
+        top: 10,
+        right: 10,
+        bottom: 10,
+        left: 10,
+      });
+      expect(entry).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-table",
+        templaticalBlockType: "table",
+        status: "approximated",
+        note: "Header row font weight 400, color #505659 not kept; Templatical draws the header bold in the body's color, size and alignment.",
+      });
+      expect(warnings).toEqual([]);
+    });
+
+    it("converts a header Templatical draws the same way", () => {
+      const { block, entry } = convertModule(
+        table({
+          headers: [row("H1", "H2")],
           style: {
-            "border-color": "#eeeeee",
-            "border-width": "2px",
-            "font-size": "13px",
             color: "#222222",
+            "font-size": "13px",
             "text-align": "center",
           },
-          cellPadding: 10,
-        },
-      });
+          computedStyle: {
+            headersFontWeight: "700",
+            headersColor: "#222222",
+            headersFontSize: "13px",
+            headersTextAlign: "center",
+            headersBackgroundColor: "#f0f0f0",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(contents(block)).toEqual([
+        ["H1", "H2"],
+        ["A1", "B1"],
+      ]);
+      expect(block.hasHeaderRow).toBe(true);
+      expect(block.headerBackgroundColor).toBe("#f0f0f0");
+      expect(block.textAlign).toBe("center");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
 
-      const { block, entry } = convertModule(mod, warnings);
+    it("names a header font size and alignment that differ from the body", () => {
+      const { entry } = convertModule(
+        table({
+          headers: [row("H")],
+          style: { "font-size": "14px", "text-align": "left" },
+          computedStyle: {
+            headersFontWeight: "bold",
+            headersFontSize: "18px",
+            headersTextAlign: "center",
+          },
+        }),
+        [],
+      );
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Header row font size 18px, alignment center not kept; Templatical draws the header bold in the body's color, size and alignment.",
+      );
+    });
 
-      expect(block.type).toBe("table");
-      if (block.type === "table") {
-        expect(block.rows).toHaveLength(2);
-        expect(block.rows[0].cells).toHaveLength(2);
-        expect(block.rows[0].cells[0].content).toBe("A1");
-        expect(block.rows[0].cells[1].content).toBe("B1");
-        expect(block.rows[1].cells[0].content).toBe("A2");
-        expect(block.borderColor).toBe("#eeeeee");
-        expect(block.borderWidth).toBe(2);
-        expect(block.cellPadding).toBe(10);
-        expect(block.fontSize).toBe(13);
-        expect(block.color).toBe("#222222");
-        expect(block.textAlign).toBe("center");
-      }
+    it("compares a header color with the template text color when the body sets none", () => {
+      const same = convertModule(
+        table({
+          headers: [row("H")],
+          computedStyle: { headersFontWeight: "700", headersColor: "#333333" },
+        }),
+        [],
+        { textColor: "#333333" },
+      ).entry;
+      const differs = convertModule(
+        table({
+          headers: [row("H")],
+          computedStyle: { headersFontWeight: "700", headersColor: "#333333" },
+        }),
+        [],
+        { textColor: "#1a1a1a" },
+      ).entry;
+      expect(same.status).toBe("converted");
+      expect(differs.note).toBe(
+        "Header row color #333333 not kept; Templatical draws the header bold in the body's color, size and alignment.",
+      );
+    });
+
+    it("has no header row when BeeFree writes no headers", () => {
+      const { block, entry } = convertModule(table(), []);
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.hasHeaderRow).toBe(false);
+      expect(contents(block)).toEqual([["A1", "B1"]]);
       expect(entry.status).toBe("converted");
     });
 
-    it("respects hasHeaderRow flag", () => {
-      const warnings: string[] = [];
-      const mod = makeModule("mailup-bee-newsletter-modules-table", {
-        table: {
-          rows: [{ cells: [{ content: "Header" }] }],
-          hasHeaderRow: true,
-          headerBackgroundColor: "#dddddd",
-        },
-      });
+    it("imports header rows after the first as body rows, approximated", () => {
+      const { block, entry } = convertModule(
+        table({
+          headers: [row("H1"), row("H2")],
+          rows: [row("A")],
+          computedStyle: { headersFontWeight: "700" },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(contents(block)).toEqual([["H1"], ["H2"], ["A"]]);
+      expect(block.hasHeaderRow).toBe(true);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("1 more header row imported as a body row.");
+    });
 
-      const { block } = convertModule(mod, warnings);
+    it("uses one width and color when all four borders match", () => {
+      const { block, entry } = convertModule(
+        table({
+          style: {
+            "border-top": "2px solid #eeeeee",
+            "border-right": "2px solid #eeeeee",
+            "border-bottom": "2px solid #eeeeee",
+            "border-left": "2px solid #eeeeee",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.borderWidth).toBe(2);
+      expect(block.borderColor).toBe("#eeeeee");
+      expect(entry.status).toBe("converted");
+    });
 
-      expect(block.type).toBe("table");
-      if (block.type === "table") {
-        expect(block.hasHeaderRow).toBe(true);
-        expect(block.headerBackgroundColor).toBe("#dddddd");
-      }
+    it("uses the widest drawn side when the borders differ, approximated", () => {
+      const { block, entry } = convertModule(
+        table({
+          style: {
+            "border-top": "1px solid #dddddd",
+            "border-right": "none",
+            "border-bottom": "3px solid #000000",
+            "border-left": "0px solid transparent",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.borderWidth).toBe(3);
+      expect(block.borderColor).toBe("#000000");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Table borders differ by side; every cell edge uses 3px #000000.",
+      );
+    });
+
+    it("counts a side BeeFree leaves out as drawing nothing", () => {
+      const side = "1px solid #dddddd";
+      const { block, entry } = convertModule(
+        table({
+          style: {
+            "border-top": side,
+            "border-right": side,
+            "border-bottom": side,
+          },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.borderWidth).toBe(1);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Table borders differ by side; every cell edge uses 1px #dddddd.",
+      );
+    });
+
+    it("keeps an explicit 0px border", () => {
+      const { block, entry } = convertModule(
+        table({
+          style: {
+            "border-top": "0px solid #dddddd",
+            "border-right": "0px solid #dddddd",
+            "border-bottom": "0px solid #dddddd",
+            "border-left": "0px solid #dddddd",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.borderWidth).toBe(0);
+      expect(entry.status).toBe("converted");
+    });
+
+    it("draws no border when every side is none", () => {
+      const { block } = convertModule(
+        table({
+          style: {
+            "border-top": "none",
+            "border-right": "none",
+            "border-bottom": "none",
+            "border-left": "none",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.borderWidth).toBe(0);
+    });
+
+    it("keeps the default 1px #e0e0e0 border when BeeFree states none", () => {
+      const { block } = convertModule(table(), []);
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.borderWidth).toBe(1);
+      expect(block.borderColor).toBe("#e0e0e0");
+    });
+
+    it("notes a dashed border, which is drawn solid", () => {
+      const side = "1px dashed #dddddd";
+      const { entry } = convertModule(
+        table({
+          style: {
+            "border-top": side,
+            "border-right": side,
+            "border-bottom": side,
+            "border-left": side,
+          },
+        }),
+        [],
+      );
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("Table border style dashed is drawn solid.");
+    });
+
+    it("keeps an explicit 0px font size and defaults a missing one to 15px", () => {
+      const zero = convertModule(
+        table({ style: { "font-size": "0px" } }),
+        [],
+      ).block;
+      const missing = convertModule(table(), []).block;
+      if (zero.type !== "table" || missing.type !== "table")
+        throw new Error("expected tables");
+      expect(zero.fontSize).toBe(0);
+      expect(missing.fontSize).toBe(15);
+    });
+
+    it("carries the font family", () => {
+      const { block } = convertModule(
+        table({ style: { "font-family": "'Open Sans', sans-serif" } }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.fontFamily).toBe("'Open Sans', sans-serif");
     });
 
     it("strips HTML in cell content to plain text and flags it as approximated", () => {
       const warnings: string[] = [];
-      const mod = makeModule("mailup-bee-newsletter-modules-table", {
-        table: {
-          rows: [
-            {
-              cells: [
-                { html: "<b>Weight</b>" },
-                { content: '<a href="https://example.com">Buy</a>' },
-              ],
-            },
-          ],
-        },
-      });
+      const { block, entry } = convertModule(
+        table({
+          rows: [row("<b>Weight</b>", '<a href="https://example.com">Buy</a>')],
+        }),
+        warnings,
+      );
 
-      const { block, entry } = convertModule(mod, warnings);
-
-      expect(block.type).toBe("table");
-      if (block.type === "table") {
-        // Tags removed; the cell keeps only its text (the link URL is lost).
-        expect(block.rows[0].cells[0].content).toBe("Weight");
-        expect(block.rows[0].cells[1].content).toBe("Buy");
-      }
+      if (block.type !== "table") throw new Error("expected a table");
+      // Tags removed; the cell keeps only its text (the link URL is lost).
+      expect(contents(block)).toEqual([["Weight", "Buy"]]);
       expect(entry.status).toBe("approximated");
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toContain("table cells");
+      expect(warnings).toEqual([
+        "HTML inside one or more table cells was reduced to plain text; any cell formatting or links were dropped.",
+      ]);
     });
 
     it("keeps a plain-text table as a clean conversion with no warning", () => {
       const warnings: string[] = [];
-      const mod = makeModule("mailup-bee-newsletter-modules-table", {
-        table: {
-          rows: [{ cells: [{ content: "Weight" }, { html: "10kg" }] }],
-        },
-      });
-
-      const { entry } = convertModule(mod, warnings);
+      const { entry } = convertModule(
+        table({ rows: [row("Weight", "10kg")] }),
+        warnings,
+      );
 
       expect(entry.status).toBe("converted");
-      expect(warnings).toHaveLength(0);
+      expect(warnings).toEqual([]);
+    });
+
+    it("does not read rows from the undocumented table.rows key", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-table", {
+          table: { rows: [{ cells: [{ content: "Old" }] }] },
+        } as unknown as BeeFreeeModule["descriptor"]),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(block.rows).toEqual([]);
     });
   });
 
@@ -3910,10 +4452,10 @@ describe("convertModule", () => {
       it.each(KEYWORDS)("leaves a menu's font unset for %s", (keyword) => {
         const { block } = convertModule(
           makeModule("mailup-bee-newsletter-modules-menu", {
-            menu: {
-              items: [{ text: "Home", link: "https://x.test" }],
-              style: { "font-family": keyword },
+            menuItemsList: {
+              items: [{ text: "Home", link: { href: "https://x.test" } }],
             },
+            style: { "font-family": keyword },
           }),
           [],
         );
@@ -4000,7 +4542,9 @@ describe("convertModule", () => {
       it("leaves a menu's color unset when the menu sets none", () => {
         const { block } = convertModule(
           makeModule("mailup-bee-newsletter-modules-menu", {
-            menu: { items: [{ text: "Home", link: "https://x.test" }] },
+            menuItemsList: {
+              items: [{ text: "Home", link: { href: "https://x.test" } }],
+            },
           }),
           [],
         );
@@ -4011,7 +4555,9 @@ describe("convertModule", () => {
       it("leaves a table's color unset when the table sets none", () => {
         const { block } = convertModule(
           makeModule("mailup-bee-newsletter-modules-table", {
-            table: { rows: [{ cells: [{ content: "A1" }] }] },
+            table: {
+              content: { headers: [], rows: [{ cells: [{ html: "A1" }] }] },
+            },
           }),
           [],
         );
@@ -4046,48 +4592,6 @@ describe("convertModule", () => {
         if (block.type !== "paragraph")
           throw new Error("expected a paragraph block");
         expect(block.content).toBe("<p>Hi</p>");
-      });
-    });
-
-    describe("menu item url precedence", () => {
-      it("prefers item.link over item.href when both are present", () => {
-        const { block } = convertModule(
-          makeModule("mailup-bee-newsletter-modules-menu", {
-            menu: {
-              items: [
-                {
-                  text: "Both",
-                  link: "https://link.test",
-                  href: "https://href.test",
-                },
-              ],
-            },
-          }),
-          [],
-        );
-
-        expect(block.type).toBe("menu");
-        if (block.type === "menu") {
-          expect(block.items).toHaveLength(1);
-          // `item.link || item.href || "#"` → link wins.
-          expect(block.items[0].url).toBe("https://link.test");
-        }
-      });
-
-      it("falls back to item.href when link is absent", () => {
-        const { block } = convertModule(
-          makeModule("mailup-bee-newsletter-modules-menu", {
-            menu: {
-              items: [{ text: "HrefOnly", href: "https://href.test" }],
-            },
-          }),
-          [],
-        );
-
-        expect(block.type).toBe("menu");
-        if (block.type === "menu") {
-          expect(block.items[0].url).toBe("https://href.test");
-        }
       });
     });
 

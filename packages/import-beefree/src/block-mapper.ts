@@ -37,12 +37,14 @@ import type {
   SpacingValue,
   TableRowData,
   TableCellData,
+  VideoBlock,
 } from "@templatical/types";
 import type {
   BeeFreeeIconItem,
   BeeFreeeModule,
   BeeFreeeModuleDescriptor,
   BeeFreeeSocialIcon,
+  BeeFreeeTableRow,
   ImportReportEntry,
 } from "./types";
 import {
@@ -132,7 +134,7 @@ const ADDON_PAYLOADS = [
   ["list", "list"],
   ["button", "button"],
   ["divider", "divider"],
-  ["menu", "menu"],
+  ["menuItemsList", "menu"],
   ["iconsList", "icons"],
 ] as const;
 
@@ -1341,22 +1343,32 @@ function resolveImageWidth(
     return { width: "full" };
   }
   const percent = computedPercent(descriptor.computedStyle?.width);
-  if (percent !== undefined) {
-    if (percent >= 100) return { width: "full" };
-    const width =
-      room === undefined
-        ? "full"
-        : shownWidth(Math.round((room * percent) / 100), room);
-    const label = width === "full" ? "full width" : `${width}px`;
-    return {
-      width,
-      note: `Image width ${percent}% was converted to ${label}.`,
-    };
-  }
+  if (percent !== undefined) return percentOfRoom("Image", percent, room);
   const shown =
     computedPx(descriptor.computedStyle?.width) ||
     parsePxValue(descriptor.image?.width);
   return { width: shownWidth(shown, room) };
+}
+
+/**
+ * A percentage width as the share of the room it shows at: `"full"` from
+ * 100%, or when the room is unknown; otherwise px, with a note.
+ */
+function percentOfRoom(
+  kind: "Image" | "Video",
+  percent: number,
+  room: number | undefined,
+): { width: number | "full"; note?: string } {
+  if (percent >= 100) return { width: "full" };
+  const width =
+    room === undefined
+      ? "full"
+      : shownWidth(Math.round((room * percent) / 100), room);
+  const label = width === "full" ? "full width" : `${width}px`;
+  return {
+    width,
+    note: `${kind} width ${percent}% was converted to ${label}.`,
+  };
 }
 
 /** A percentage BeeFree computed (`"50%"`), or `undefined` when it isn't one. */
@@ -2557,102 +2569,302 @@ function convertIcons(
   };
 }
 
-function convertVideo(descriptor: BeeFreeeModuleDescriptor): Block {
-  const video = descriptor.video;
-  if (!video) {
-    return createVideoBlock({ styles: makeStyles(descriptor) });
-  }
+/**
+ * Links `renderVideo` in `@templatical/renderer` derives a thumbnail for when
+ * the block has none: YouTube watch, short, embed and youtu.be links, and
+ * Vimeo. Keep it in step with that function's patterns.
+ */
+const DERIVED_THUMBNAIL_URL =
+  /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}|vimeo\.com\/(?:video\/)?\d+/;
 
-  return createVideoBlock({
-    url: decodeEntitiesInTokens(video.src || ""),
-    thumbnailUrl: decodeEntitiesInTokens(video.thumbnail || ""),
-    alt: decodeEntitiesInTokens(video.thumbAlt ?? video.alt ?? ""),
-    width: parsePxValue(video.style?.width) || 600,
-    height: parsePxValue(video.style?.height) || undefined,
-    align: toAlign(video.style?.["text-align"], "center"),
-    styles: makeStyles(descriptor),
-  });
+/**
+ * A video's shown width: BeeFree writes a percentage of the column
+ * (`computedStyle.width`, else `style.width`), or a px length. It follows the
+ * image rule: 100% or more, missing or unreadable is `"full"`, a percentage
+ * under 100% is px of the room, and a px width that reaches the room is
+ * `"full"`.
+ */
+function resolveVideoWidth(
+  descriptor: BeeFreeeModuleDescriptor,
+  room: number | undefined,
+): { width: VideoBlock["width"]; note?: string } {
+  const stated = descriptor.computedStyle?.width ?? descriptor.style?.width;
+  const percent = computedPercent(stated);
+  if (percent !== undefined) return percentOfRoom("Video", percent, room);
+  return { width: shownWidth(computedPx(stated), room) };
 }
 
-function convertMenu(descriptor: BeeFreeeModuleDescriptor): Block {
-  const menu = descriptor.menu;
-  if (!menu) {
-    return createMenuBlock({ styles: makeStyles(descriptor) });
+function convertVideo(
+  descriptor: BeeFreeeModuleDescriptor,
+  columnWidth: number | undefined,
+  paddingReturn: ModuleContext["paddingReturn"],
+  warnings: string[],
+): { block: Block; notes: string[] } {
+  const video = descriptor.video;
+  const styles = makeStyles(descriptor);
+  if (!video) {
+    return { block: createVideoBlock({ styles }), notes: [] };
   }
 
-  const style = menu.style ?? {};
+  const url = decodeEntitiesInTokens(video.src || "");
+  // `embedded` and `custom` play the video on the page and carry no
+  // thumbnail; an email can only link one.
+  const playsInPlace = video.mode === "embedded" || video.mode === "custom";
+  const thumbnailUrl = playsInPlace
+    ? ""
+    : decodeEntitiesInTokens(video.thumbSrc || "");
+  const room = measuredRoom(columnWidth, styles.padding, paddingReturn);
+  const { width, note } = resolveVideoWidth(descriptor, room);
+  const notes = note ? [note] : [];
+  if (playsInPlace) {
+    notes.push(
+      `BeeFree plays a ${video.mode} video in place; Templatical links a thumbnail of it.`,
+    );
+  }
+  if (!thumbnailUrl && url && !DERIVED_THUMBNAIL_URL.test(url)) {
+    warnings.push(
+      `Video "${url}" has no thumbnail, and Templatical derives one only for YouTube and Vimeo links, so it renders nothing until a thumbnail is set.`,
+    );
+  }
 
-  const items: MenuItemData[] = (menu.items ?? []).map((item) => ({
+  const classes = computedClasses(descriptor);
+  return {
+    block: createVideoBlock({
+      url,
+      thumbnailUrl,
+      alt: decodeEntitiesInTokens(video.thumbAlt ?? ""),
+      width,
+      align:
+        (["left", "center", "right"] as const).find((side) =>
+          classes.includes(side),
+        ) ?? "center",
+      styles,
+    }),
+    notes,
+  };
+}
+
+/**
+ * The gap on each side of a menu separator: half of BeeFree's left and right
+ * item padding, so the space between two items matches. An unreadable side
+ * counts as 0 when the other side reads; with neither, the factory spacing
+ * applies.
+ */
+function menuItemSpacing(value: unknown): number | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const sides = value as Record<string, unknown>;
+  const side = (key: string) => {
+    const length = sides[key];
+    return typeof length === "string" ? readPxLength(length) : undefined;
+  };
+  const left = side("padding-left");
+  const right = side("padding-right");
+  if (left === undefined && right === undefined) return undefined;
+  return Math.round(((left ?? 0) + (right ?? 0)) / 2);
+}
+
+function convertMenu(
+  descriptor: BeeFreeeModuleDescriptor,
+  textColor: string,
+): { block: Block; notes: string[] } {
+  const list = descriptor.menuItemsList;
+  const styles = makeStyles(descriptor);
+  if (!list) {
+    return { block: createMenuBlock({ styles }), notes: [] };
+  }
+
+  const style = descriptor.style ?? {};
+  const computed = descriptor.computedStyle ?? {};
+  const items: MenuItemData[] = (list.items ?? []).map((item) => ({
     id: generateId(),
     text: decodeEntitiesInTokens(item.text || ""),
-    url: decodeEntitiesInTokens(item.link || item.href || "#"),
-    openInNewTab: item.target === "_blank",
+    url: decodeEntitiesInTokens(item.link?.href || "#"),
+    openInNewTab: item.link?.target === "_blank",
     bold: false,
     underline: false,
   }));
+  const color = parseColor(style.color);
+  const linkColor =
+    typeof computed.linkColor === "string"
+      ? parseColor(computed.linkColor)
+      : "";
 
-  return createMenuBlock({
-    items,
-    separator: decodeEntitiesInTokens(menu.separator || "|"),
-    separatorColor: parseColor(menu.separatorColor) || "#999999",
-    fontSize: parsePxValue(style["font-size"]) || 14,
-    color: parseColor(style.color) || undefined,
-    fontFamily: canonicalFontStack(style["font-family"]) || undefined,
-    textAlign: toAlign(style["text-align"], "center"),
-    styles: makeStyles(descriptor),
-  });
+  return {
+    block: createMenuBlock({
+      items,
+      // BeeFree writes `separator` only when the menu has one.
+      separator:
+        typeof computed.separator === "string"
+          ? decodeEntitiesInTokens(computed.separator)
+          : "",
+      // The separator is drawn in the menu's text color.
+      separatorColor: color || textColor,
+      spacing: menuItemSpacing(computed.menuItemsSpacing),
+      fontSize: readPxLength(style["font-size"]),
+      color: color || undefined,
+      linkColor: linkColor || undefined,
+      fontFamily: canonicalFontStack(style["font-family"]) || undefined,
+      textAlign: toAlign(style["text-align"], "center"),
+      styles,
+    }),
+    notes:
+      computed.layout === "vertical"
+        ? ["BeeFree's vertical menu layout was imported horizontal."]
+        : [],
+  };
 }
 
-function convertTable(descriptor: BeeFreeeModuleDescriptor): {
+const TABLE_BORDER_SIDES = [
+  "border-top",
+  "border-right",
+  "border-bottom",
+  "border-left",
+] as const;
+
+/**
+ * One border for every cell edge from BeeFree's four sides. Equal sides keep
+ * their width and color; sides that differ take the widest drawn one, with a
+ * note. A side BeeFree leaves out draws nothing. With no side stated, the
+ * factory border applies.
+ */
+function tableBorder(style: Record<string, string>): {
+  borderWidth?: number;
+  borderColor?: string;
+  notes: string[];
+} {
+  if (TABLE_BORDER_SIDES.every((side) => style[side] === undefined)) {
+    return { notes: [] };
+  }
+  const drawn = TABLE_BORDER_SIDES.map((side) =>
+    parseBorderTop(style[side] ?? "none"),
+  ).filter((side) => side.drawn && side.width > 0);
+  if (drawn.length === 0) return { borderWidth: 0, notes: [] };
+
+  const widest = drawn.reduce((a, b) => (b.width > a.width ? b : a));
+  const notes: string[] = [];
+  const same =
+    drawn.length === TABLE_BORDER_SIDES.length &&
+    drawn.every(
+      (side) => side.width === widest.width && side.color === widest.color,
+    );
+  if (!same) {
+    notes.push(
+      `Table borders differ by side; every cell edge uses ${widest.width}px ${widest.color}.`,
+    );
+  }
+  const patterned = drawn.find((side) => side.style !== "solid");
+  if (patterned) {
+    notes.push(`Table border style ${patterned.style} is drawn solid.`);
+  }
+  return { borderWidth: widest.width, borderColor: widest.color, notes };
+}
+
+/**
+ * What a BeeFree header row states that Templatical's does not draw: its
+ * header row is bold in the body's color, size and alignment. Only stated
+ * header styles are compared.
+ */
+function tableHeaderNote(
+  computed: Record<string, string>,
+  body: { color: string; fontSize: number; textAlign: string },
+): string | undefined {
+  const lost: string[] = [];
+  const weight = cssFontWeightNumber(computed.headersFontWeight);
+  if (weight !== undefined && weight < 600) lost.push(`font weight ${weight}`);
+  const color = parseColor(computed.headersColor);
+  if (color && color !== body.color) lost.push(`color ${color}`);
+  const fontSize = readPxLength(computed.headersFontSize);
+  if (fontSize !== undefined && fontSize !== body.fontSize) {
+    lost.push(`font size ${fontSize}px`);
+  }
+  const align = computed.headersTextAlign;
+  if (
+    (align === "left" || align === "center" || align === "right") &&
+    align !== body.textAlign
+  ) {
+    lost.push(`alignment ${align}`);
+  }
+  return lost.length > 0
+    ? `Header row ${lost.join(", ")} not kept; Templatical draws the header bold in the body's color, size and alignment.`
+    : undefined;
+}
+
+function convertTable(
+  descriptor: BeeFreeeModuleDescriptor,
+  textColor: string,
+): {
   block: Block;
-  approximated: boolean;
+  cellHtmlStripped: boolean;
+  notes: string[];
 } {
   const table = descriptor.table;
+  const styles = makeStyles(descriptor);
   if (!table) {
     return {
-      block: createTableBlock({ styles: makeStyles(descriptor) }),
-      approximated: false,
+      block: createTableBlock({ styles }),
+      cellHtmlStripped: false,
+      notes: [],
     };
   }
 
   const style = table.style ?? {};
+  const computed = table.computedStyle ?? {};
 
   // Templatical table cells are a plain-text field (the editor stores the
   // cell's innerText), so strip any HTML a BeeFree cell carried the same way
   // button labels are stripped. If a strip actually removed markup, the cell
   // lost formatting or a link URL, so the conversion is an approximation.
-  let approximated = false;
-  const rows: TableRowData[] = (table.rows ?? []).map((row) => ({
+  let cellHtmlStripped = false;
+  const toRow = (row: BeeFreeeTableRow): TableRowData => ({
     id: generateId(),
     cells: (row.cells ?? []).map((cell): TableCellData => {
-      const raw = cell.content ?? cell.html ?? "";
+      const raw = cell.html ?? "";
       const content = importedPlainText(raw);
       if (content !== raw) {
-        approximated = true;
+        cellHtmlStripped = true;
       }
       return { id: generateId(), content };
     }),
-  }));
+  });
+  const headers = (table.content?.headers ?? []).map(toRow);
+  const rows = (table.content?.rows ?? []).map(toRow);
 
-  return {
-    block: createTableBlock({
-      rows,
-      hasHeaderRow: table.hasHeaderRow ?? false,
-      headerBackgroundColor:
-        parseColor(table.headerBackgroundColor) || undefined,
-      borderColor: parseColor(style["border-color"]) || "#dddddd",
-      borderWidth: parsePxValue(style["border-width"]) || 1,
-      cellPadding:
-        typeof table.cellPadding === "number"
-          ? table.cellPadding
-          : parsePxValue(table.cellPadding as string) || 8,
-      fontSize: parsePxValue(style["font-size"]) || 14,
-      color: parseColor(style.color) || undefined,
-      textAlign: toAlign(style["text-align"]),
-      styles: makeStyles(descriptor),
-    }),
-    approximated,
-  };
+  const color = parseColor(style.color);
+  const border = tableBorder(style);
+  const block = createTableBlock({
+    rows: [...headers, ...rows],
+    hasHeaderRow: headers.length > 0,
+    headerBackgroundColor:
+      parseColor(computed.headersBackgroundColor) || undefined,
+    borderColor: border.borderColor,
+    borderWidth: border.borderWidth,
+    fontSize: readPxLength(style["font-size"]),
+    fontFamily: canonicalFontStack(style["font-family"]) || undefined,
+    color: color || undefined,
+    textAlign: toAlign(style["text-align"]),
+    styles,
+  });
+
+  const notes: string[] = [];
+  if (headers.length > 0) {
+    const headerNote = tableHeaderNote(computed, {
+      color: color || textColor,
+      fontSize: block.fontSize,
+      textAlign: block.textAlign,
+    });
+    if (headerNote) notes.push(headerNote);
+    const extra = headers.length - 1;
+    if (extra > 0) {
+      notes.push(
+        extra === 1
+          ? "1 more header row imported as a body row."
+          : `${extra} more header rows imported as body rows.`,
+      );
+    }
+  }
+  notes.push(...border.notes);
+
+  return { block, cellHtmlStripped, notes };
 }
 
 function convertHtmlFallback(module: BeeFreeeModule): Block {
@@ -2792,17 +3004,32 @@ function convertModuleBase(
       isApproximation = notes.length > 0;
       break;
     }
-    case "video":
-      block = convertVideo(descriptor);
-      break;
-    case "menu":
-      block = convertMenu(descriptor);
-      isApproximation = true; // menu styles are approximate
-      break;
-    case "table": {
-      const result = convertTable(descriptor);
+    case "video": {
+      const result = convertVideo(
+        descriptor,
+        context.columnWidth,
+        context.paddingReturn,
+        warnings,
+      );
       block = result.block;
-      if (result.approximated) {
+      notes = result.notes;
+      isApproximation = notes.length > 0;
+      break;
+    }
+    case "menu": {
+      const result = convertMenu(descriptor, textColor);
+      block = result.block;
+      notes = result.notes;
+      // Item padding, the hamburger and link titles have no menu field.
+      isApproximation = true;
+      break;
+    }
+    case "table": {
+      const result = convertTable(descriptor, textColor);
+      block = result.block;
+      notes = result.notes;
+      isApproximation = notes.length > 0;
+      if (result.cellHtmlStripped) {
         isApproximation = true;
         warnings.push(
           "HTML inside one or more table cells was reduced to plain text; any cell formatting or links were dropped.",
@@ -2883,7 +3110,7 @@ export function convertModule(
     ["button", descriptor.button],
     ["image", descriptor.image],
     ["video", descriptor.video],
-    ["menu", descriptor.menu],
+    ["menuItemsList", descriptor.menuItemsList],
   ] as const;
   const active = payloads.find(([, payload]) => payload !== undefined);
   const sources = [
