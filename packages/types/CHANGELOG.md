@@ -1,5 +1,11 @@
 # @templatical/types
 
+## 0.57.2
+
+### Patch Changes
+
+- 27eb4be: A locale operation (`updateBlockLocale`, `updateSettingsLocale`) writes only to the block's or settings' own `l10n` layer for that language. A layer inherited through the object's prototype is no longer reused and changed in place; the edit gets a fresh own layer instead.
+
 ## 0.57.1
 
 ### Patch Changes
