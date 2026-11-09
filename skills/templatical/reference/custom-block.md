@@ -207,21 +207,23 @@ With the user's go-ahead, put it in their codebase following
   so without a matching definition the block is silently left out, and its
   media queries need the definition's stylesheet. Ask whether they render on
   a server; if so, keep the definition in a module the server can import too
-  and pass it as `customBlocks` to `renderToMjml`. Install the optional
-  `liquidjs` peer in the server project (range in the guide):
+  and pass it as `customBlocks` to `renderToMjml`, with the `liquidjs`
+  module as `liquidjs`. Install `liquidjs` in the server project (range in
+  the guide); the renderer never imports it itself:
 
+      import * as liquidjs from "liquidjs";
       import { renderToMjml } from "@templatical/renderer";
       import type { CustomBlockDefinition, TemplateContent } from "@templatical/types";
 
       export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
-        return renderToMjml(content, { customBlocks: definitions });
+        return renderToMjml(content, { customBlocks: definitions, liquidjs });
       }
 
   Unknown types use `renderedHtml` and `renderedStylesheet`; duplicate types
   use the last definition. A listed definition without a stylesheet emits no
   saved stylesheet. `customBlocks` cannot be combined with
-  `renderCustomBlock` or `getCustomBlockStylesheet`. A missing `liquidjs`
-  peer throws `[Templatical] customBlocks requires the optional liquidjs package.`
+  `renderCustomBlock` or `getCustomBlockStylesheet`. Without `liquidjs`,
+  a custom block throws `TypeError: [Templatical] customBlocks requires the liquidjs option: import * as liquidjs from "liquidjs" and pass { customBlocks, liquidjs }.`
   For a lower-level resolver, use `createCustomBlockLiquid(liquidjs)` from
   `@templatical/types`; its fixed options are in the
   [Custom blocks guide](https://docs.templatical.com/guide/custom-blocks).

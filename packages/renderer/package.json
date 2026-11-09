@@ -36,14 +36,6 @@
   ],
   "license": "MIT",
   "module": "./dist/index.js",
-  "peerDependencies": {
-    "liquidjs": "^10.30.1"
-  },
-  "peerDependenciesMeta": {
-    "liquidjs": {
-      "optional": true
-    }
-  },
   "publishConfig": {
     "access": "public"
   },

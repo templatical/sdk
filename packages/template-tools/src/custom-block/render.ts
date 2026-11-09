@@ -2,6 +2,7 @@
 // definition to the renderer, which resolves field values and stylesheet.
 
 import { renderToMjml } from "@templatical/renderer";
+import * as liquidjs from "liquidjs";
 import type { TemplateContent } from "@templatical/types";
 import { createLiquid } from "./liquid";
 import {
@@ -34,5 +35,5 @@ export async function renderSpecimenMjml(
   def: CustomBlockWorkingFile,
   template: TemplateContent = buildSpecimenTemplate(def),
 ): Promise<string> {
-  return renderToMjml(template, { customBlocks: [def] });
+  return renderToMjml(template, { customBlocks: [def], liquidjs });
 }

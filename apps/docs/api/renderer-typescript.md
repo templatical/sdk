@@ -72,7 +72,8 @@ interface RenderOptions {
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
-| `customBlocks` | -- | `CustomBlockDefinition[]` for headless rendering. The last definition per type wins; unknown types use saved `renderedHtml` and `renderedStylesheet`. Requires optional `liquidjs` peer `^10.30.1` when custom blocks are present. See the [Custom blocks guide](/guide/custom-blocks). |
+| `customBlocks` | -- | `CustomBlockDefinition[]` for headless rendering. The last definition per type wins; unknown types use saved `renderedHtml` and `renderedStylesheet`. Pass the `liquidjs` module as `liquidjs` when custom blocks are present. See the [Custom blocks guide](/guide/custom-blocks). |
+| `liquidjs` | -- | The `liquidjs` module (`import * as liquidjs from 'liquidjs'`, `^10.30.1`) that renders `customBlocks` templates. Required when `customBlocks` is set and the content holds a custom block; ignored otherwise. The renderer never imports `liquidjs` itself. |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. The editor passes this through `editor.toMjml()`. Mutually exclusive with `customBlocks`. When neither option is passed, every custom block uses `renderedHtml` (if present). |
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Mutually exclusive with `customBlocks`. A listed definition decides its type's stylesheet, including emitting none; unknown types use saved `renderedStylesheet`. A passed resolver decides every type and ignores saved copies. |
@@ -85,11 +86,12 @@ interface RenderOptions {
 Headless callers pass the same definitions they register with the editor:
 
 ```ts
+import * as liquidjs from 'liquidjs';
 import { renderToMjml } from '@templatical/renderer';
 import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
 
 export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
-  return renderToMjml(content, { customBlocks: definitions });
+  return renderToMjml(content, { customBlocks: definitions, liquidjs });
 }
 ```
 
@@ -101,7 +103,7 @@ import { createCustomBlockLiquid } from '@templatical/types';
 const liquid = createCustomBlockLiquid(liquidjs);
 ```
 
-The option's fallback, exact conflicts and missing-peer error, and the factory's fixed options are in the [Custom blocks guide](/guide/custom-blocks). <code v-pre>{{ body | raw }}</code> keeps HTML from an intentional HTML field. Always quote attribute values and validate URL schemes from untrusted sources. Only the editor canvas sanitizes the rendered block; email output keeps the template's HTML.
+The option's fallback, exact conflicts and missing-module error, and the factory's fixed options are in the [Custom blocks guide](/guide/custom-blocks). <code v-pre>{{ body | raw }}</code> keeps HTML from an intentional HTML field. Always quote attribute values and validate URL schemes from untrusted sources. Only the editor canvas sanitizes the rendered block; email output keeps the template's HTML.
 
 ### Social icons
 

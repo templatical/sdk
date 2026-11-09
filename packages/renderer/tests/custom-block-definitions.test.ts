@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import * as liquidjs from "liquidjs";
 import {
   createCustomBlock,
   createDefaultTemplateContent,
@@ -34,13 +35,12 @@ function content(
   return result;
 }
 
-afterEach(() => vi.doUnmock("liquidjs"));
-
 describe("renderToMjml customBlocks definitions", () => {
   it("escapes field values in output and echo tags", async () => {
     const def = definition("card", "<p>{{ value }} {% echo value %}</p>");
     const mjml = await renderToMjml(content(def, ["<script>x</script>"]), {
       customBlocks: [def],
+      liquidjs,
     });
     expect(mjml).toContain(
       "<p>&lt;script&gt;x&lt;/script&gt; &lt;script&gt;x&lt;/script&gt;</p>",
@@ -51,6 +51,7 @@ describe("renderToMjml customBlocks definitions", () => {
     const def = definition("card", "<p>{{ value | raw }}</p>");
     const mjml = await renderToMjml(content(def, ["<b>x</b>"]), {
       customBlocks: [def],
+      liquidjs,
     });
     expect(mjml).toContain("<p><b>x</b></p>");
   });
@@ -60,6 +61,7 @@ describe("renderToMjml customBlocks definitions", () => {
     const def = definition("card", "<p>{{ value }}</p>", css);
     const mjml = await renderToMjml(content(def, ["a", "b"]), {
       customBlocks: [def],
+      liquidjs,
     });
     expect(mjml.match(/\.card \{ color: red; \}/g)).toHaveLength(1);
   });
@@ -69,6 +71,7 @@ describe("renderToMjml customBlocks definitions", () => {
     const last = definition("card", "<p>last</p>", ".last {}");
     const mjml = await renderToMjml(content(first, ["x"]), {
       customBlocks: [first, last],
+      liquidjs,
     });
     expect(mjml).toContain("<p>last</p>");
     expect(mjml).toContain(".last {}");
@@ -83,7 +86,7 @@ describe("renderToMjml customBlocks definitions", () => {
     if (block.type !== "custom") throw new Error("expected custom block");
     block.renderedHtml = "<p>saved</p>";
     block.renderedStylesheet = ".saved { color: blue; }";
-    const mjml = await renderToMjml(saved, { customBlocks: [] });
+    const mjml = await renderToMjml(saved, { customBlocks: [], liquidjs });
     expect(mjml).toContain("<p>saved</p>");
     expect(mjml).toContain(".saved { color: blue; }");
   });
@@ -94,7 +97,7 @@ describe("renderToMjml customBlocks definitions", () => {
     const block = saved.blocks[0];
     if (block.type !== "custom") throw new Error("expected custom block");
     block.renderedStylesheet = ".saved { color: blue; }";
-    const mjml = await renderToMjml(saved, { customBlocks: [def] });
+    const mjml = await renderToMjml(saved, { customBlocks: [def], liquidjs });
     expect(mjml).not.toContain(".saved { color: blue; }");
   });
 
@@ -111,22 +114,38 @@ describe("renderToMjml customBlocks definitions", () => {
 
   it("propagates a Liquid template error like a rejected callback", async () => {
     const def = definition("card", "{% include 'missing' %}");
-    await expect(renderToMjml(content(def, ["x"]), { customBlocks: [def] })).rejects.toThrow(/missing/);
+    await expect(renderToMjml(content(def, ["x"]), { customBlocks: [def], liquidjs })).rejects.toThrow(/missing/);
   });
 
   it("rejects a custom block whose Liquid range exceeds the memory budget", async () => {
     const huge = definition("card", "{% for i in (1..100000000) %}{{ i }}{% endfor %}");
-    await expect(renderToMjml(content(huge, ["x"]), { customBlocks: [huge] })).rejects.toMatchObject({ message: "memory alloc limit exceeded, line:1, col:1" });
+    await expect(renderToMjml(content(huge, ["x"]), { customBlocks: [huge], liquidjs })).rejects.toMatchObject({ message: "memory alloc limit exceeded, line:1, col:1" });
   });
 
-  it("does not import liquidjs without custom blocks, but reports a missing peer when needed", async () => {
-    vi.doMock("liquidjs", () => {
-      throw new Error("Cannot find module 'liquidjs'");
-    });
-    await expect(renderToMjml(createDefaultTemplateContent(), { customBlocks: [] })).resolves.toContain("<mjml");
+  it("needs no liquidjs module when the content holds no custom block", async () => {
+    const mjml = await renderToMjml(createDefaultTemplateContent(), { customBlocks: [] });
+    expect(mjml).toContain("<mj-body");
+  });
+
+  it.each([
+    ["omitted", undefined],
+    ["not a liquidjs module", {} as never],
+  ] as const)("rejects a custom block when liquidjs is %s", async (_name, module) => {
     const def = definition("card", "<p>{{ value }}</p>");
-    await expect(renderToMjml(content(def, ["x"]), { customBlocks: [def] })).rejects.toThrowError(
-      "[Templatical] customBlocks requires the optional liquidjs package.",
-    );
+    const render = () => renderToMjml(content(def, ["x"]), { customBlocks: [def], liquidjs: module });
+    await expect(render()).rejects.toThrowError(TypeError);
+    await expect(render()).rejects.toMatchObject({
+      message: '[Templatical] customBlocks requires the liquidjs option: import * as liquidjs from "liquidjs" and pass { customBlocks, liquidjs }.',
+    });
+  });
+
+  it("ignores liquidjs without customBlocks", async () => {
+    const def = definition("card", "<p>{{ value }}</p>");
+    const saved = content(def, ["x"]);
+    const block = saved.blocks[0];
+    if (block.type !== "custom") throw new Error("expected custom block");
+    block.renderedHtml = "<p>saved</p>";
+    const mjml = await renderToMjml(saved, { liquidjs });
+    expect(mjml).toContain("<p>saved</p>");
   });
 });
