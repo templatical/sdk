@@ -6,6 +6,7 @@ import {
   readMjmlBackgroundImage,
   readPadding,
 } from "../attribute-parser";
+import { expectLinear } from "./expectLinear";
 
 describe("parsePx", () => {
   it("parses 10px", () => {
@@ -154,20 +155,25 @@ describe("readMjmlBackgroundImage", () => {
 });
 
 describe("readMjmlBackgroundImage on adversarial input", () => {
-  const digits = "0".repeat(100_000);
-
-  it("reads runs of digits in linear time", () => {
+  const run = (length: number) => {
+    const digits = "0".repeat(length);
     const attrs: Record<string, string> = {
       "background-url": "u",
       "background-size": `${digits}!`,
       "background-position": `${digits}! ${digits}!`,
       "background-position-x": `${digits}!`,
     };
-    const run = () =>
-      readMjmlBackgroundImage((name) => attrs[name], "Section", 600);
-    const started = performance.now();
-    run();
-    expect(performance.now() - started).toBeLessThan(1000);
+    return readMjmlBackgroundImage((name) => attrs[name], "Section", 600);
+  };
+
+  it("reads runs of digits in linear time", () => {
+    expect(run(100_000)?.image).toEqual({
+      url: "u",
+      size: "auto",
+      position: { x: "center", y: "top" },
+      repeat: true,
+    });
+    expectLinear((n) => () => run(n), 8_000);
   });
 });
 

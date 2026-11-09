@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decodeEntities } from "../block-mapper";
+import { expectLinear } from "./expectLinear";
 
 function oldDecodeEntities(text: string): string {
   const entities: Record<string, string> = {
@@ -58,23 +59,9 @@ describe("button entity decoding", () => {
   });
 
   it("scales ampersands without semicolons linearly", () => {
-    const bestOfThree = (input: string) => {
-      let best = Infinity;
-      for (let i = 0; i < 3; i++) {
-        const start = performance.now();
-        for (let j = 0; j < 40; j++) decodeEntities(input);
-        best = Math.min(best, performance.now() - start);
-      }
-      return best;
-    };
-    const n = 4_000;
-    const small = bestOfThree("&".repeat(n));
-    const large = bestOfThree("&".repeat(4 * n));
-    const ratio = large / small;
-    if (process.env.LINEAR_SCAN_REPORT)
-      console.info(
-        `decodeEntities n=${n} small=${small.toFixed(2)}ms large=${large.toFixed(2)}ms ratio=${ratio.toFixed(2)}`,
-      );
-    expect(ratio).toBeLessThan(10);
-  }, 30_000);
+    expectLinear((n) => {
+      const input = "&".repeat(n);
+      return () => decodeEntities(input);
+    }, 16_000);
+  });
 });

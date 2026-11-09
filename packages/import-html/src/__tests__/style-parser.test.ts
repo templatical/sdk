@@ -779,10 +779,11 @@ describe("readCssBackground url() scanning", () => {
     readCssBackground({ "background-image": value }, "Section", 600);
 
   it("reads a repeated unclosed url( in linear time", () => {
-    const value = "url(" + "url(!".repeat(20_000);
-    const started = performance.now();
-    expect(read(value)).toBeNull();
-    expect(performance.now() - started).toBeLessThan(1000);
+    expect(read("url(" + "url(!".repeat(20_000))).toBeNull();
+    expectLinear((n) => {
+      const value = "url(" + "url(!".repeat(n);
+      return () => read(value);
+    }, 1_000);
   });
 
   it.each(['url("a.png', 'url("a.png" x)', 'url(a"b)', "url(a.png"])(
