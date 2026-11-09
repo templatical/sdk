@@ -119,8 +119,8 @@ describe("built-in merge-tag scanning", () => {
         const value = "{{".repeat(n);
         return () => containsMergeTag(value, syntax);
       },
-      100,
-      2_000,
+      400,
+      500,
     );
   });
 
@@ -298,19 +298,30 @@ describe("built-in merge-tag scanning", () => {
       false,
     );
     // A full scan grows with the tags after the first; an early exit does not.
-    const time = (tags: number) => {
+    // Measured like expectLinear (this thread's CPU time, repetitions doubled
+    // until a run costs 5 ms, cheapest of five interleaved rounds), but against
+    // 64 times the tags: a full scan measures about 64 here, an early exit 1.
+    const run = (tags: number) => {
       const text = "{{a}}" + "{{x}}".repeat(tags);
-      let best = Infinity;
-      for (let sample = 0; sample < 3; sample++) {
-        const start = performance.now();
-        for (let i = 0; i < 200; i++)
-          containsMergeTag(text, SYNTAX_PRESETS.liquid);
-        best = Math.min(best, performance.now() - start);
-      }
-      return best;
+      return () => containsMergeTag(text, SYNTAX_PRESETS.liquid);
     };
-    time(1_000);
-    expect(time(64_000) / Math.max(time(1_000), 0.5)).toBeLessThan(8);
+    const few = run(1_000);
+    const many = run(64_000);
+    let repetitions = 1;
+    const cost = (scan: () => boolean) => {
+      const started = process.threadCpuUsage();
+      for (let i = 0; i < repetitions; i++) scan();
+      const { user, system } = process.threadCpuUsage(started);
+      return (user + system) / 1000;
+    };
+    while (cost(few) < 5 && repetitions < 1_000_000) repetitions *= 2;
+    let fewCost = Infinity;
+    let manyCost = Infinity;
+    for (let round = 0; round < 5; round++) {
+      fewCost = Math.min(fewCost, cost(few));
+      manyCost = Math.min(manyCost, cost(many));
+    }
+    expect(manyCost / fewCost).toBeLessThan(8);
   });
 
   it("rewrites past malformed span prefixes linearly", () => {
@@ -334,8 +345,8 @@ describe("built-in merge-tag scanning", () => {
         const value = "{{".repeat(n);
         return () => containsMergeTag(value, SYNTAX_PRESETS.liquid);
       },
-      100,
-      2_000,
+      400,
+      500,
     );
   });
 

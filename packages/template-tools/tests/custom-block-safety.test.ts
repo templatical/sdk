@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkEmailSafety, stripCssComments, stripCssUrlsAndStrings } from "../src/custom-block/safety";
+import { expectLinear } from "./helpers/expectLinear";
 
 const def = (stylesheet = "") => ({ type: "promo", name: "P", fields: [], template: "", stylesheet }) as never;
 const lint = (html: string, stylesheet = "", state = "defaults") =>
@@ -46,12 +47,16 @@ describe("stripCssComments", () => {
   it("leaves text without comments untouched", () => {
     expect(stripCssComments(".a { color: red }")).toBe(".a { color: red }");
   });
-  it("scans adversarial input in linear time", () => {
-    for (const input of ["/*" + "a/*".repeat(50000), "/*/".repeat(60000), "/* */".repeat(40000)]) {
-      const t = performance.now();
-      stripCssComments(input);
-      expect(performance.now() - t).toBeLessThan(200);
-    }
+  it.each([
+    ["an unclosed comment full of openers", (n: number) => "/*" + "a/*".repeat(n), 50_000],
+    ["a run of `/*/`", (n: number) => "/*/".repeat(n), 60_000],
+    ["a run of empty comments", (n: number) => "/* */".repeat(n), 40_000],
+  ])("scans %s in linear time", (_, build, size) => {
+    expect(stripCssComments(build(size))).toBe("");
+    expectLinear((n) => {
+      const input = build(n);
+      return () => stripCssComments(input);
+    }, 2_000);
   });
 });
 
@@ -67,11 +72,16 @@ describe("stripCssUrlsAndStrings", () => {
   it("leaves text without urls or strings untouched", () => {
     expect(stripCssUrlsAndStrings(".a { color: red } .curl { x: 1 }")).toBe(".a { color: red } .curl { x: 1 }");
   });
-  it("scans adversarial input in linear time", () => {
-    for (const input of ["url(".repeat(50000), "uRl(".repeat(50000), '"'.repeat(1) + "a".repeat(200000), "url(\")".repeat(40000)]) {
-      const t = performance.now();
-      stripCssUrlsAndStrings(input);
-      expect(performance.now() - t).toBeLessThan(200);
-    }
+  it.each([
+    ["a run of `url(`", (n: number) => "url(".repeat(n), 50_000],
+    ["a run of mixed-case `uRl(`", (n: number) => "uRl(".repeat(n), 50_000],
+    ["an unclosed quote", (n: number) => '"' + "a".repeat(4 * n), 50_000],
+    ["a run of `url(\")`", (n: number) => "url(\")".repeat(n), 40_000],
+  ])("scans %s in linear time", (_, build, size) => {
+    expect(stripCssUrlsAndStrings(build(size))).toBe("");
+    expectLinear((n) => {
+      const input = build(n);
+      return () => stripCssUrlsAndStrings(input);
+    }, 2_000);
   });
 });

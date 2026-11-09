@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findOpenTagEnd, getTagAttrValue } from "../src/html-scan";
+import { expectLinear } from "./helpers/expectLinear";
 
 describe("findOpenTagEnd", () => {
   it("treats a quote inside an unquoted value as an ordinary character", () => {
@@ -177,11 +178,13 @@ describe("getTagAttrValue", () => {
   it("runs in linear time over many attributes ending in an unterminated quote", () => {
     // The shape a backtracking regex chokes on: thousands of candidate
     // positions for the attribute name, and a value whose quote never closes.
-    const adversarial =
-      ' class="x"'.repeat(20_000) + ' data-merge-tag="unterminated';
-    const start = Date.now();
-    expect(getTagAttrValue(adversarial, "data-merge-tag")).toBe(null);
-    expect(Date.now() - start).toBeLessThan(500);
+    const adversarial = (n: number) =>
+      ' class="x"'.repeat(n) + ' data-merge-tag="unterminated';
+    expect(getTagAttrValue(adversarial(20_000), "data-merge-tag")).toBe(null);
+    expectLinear((n) => {
+      const attrs = adversarial(n);
+      return () => getTagAttrValue(attrs, "data-merge-tag");
+    }, 2_000);
   });
 
   it("pairs quotes the way an HTML parser does", () => {

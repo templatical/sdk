@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { escapeHtml, escapeAttr, convertMergeTagsToValues } from '../src';
 import { escapeFontFamily } from '../src/escape';
+import { expectLinear } from './helpers/expectLinear';
 
 describe('escapeHtml', () => {
   it('escapes HTML entities', () => {
@@ -111,11 +112,11 @@ describe('convertMergeTagsToValues', () => {
   // old regex for seconds; the linear scanner completes in ms.
   it('runs in linear time on adversarial `<span<span<span…` input (ReDoS regression)', () => {
     const adversarial = '<span'.repeat(10_000);
-    const start = Date.now();
-    const result = convertMergeTagsToValues(adversarial);
-    const elapsed = Date.now() - start;
-    expect(result).toBe(adversarial);
-    expect(elapsed).toBeLessThan(500);
+    expect(convertMergeTagsToValues(adversarial)).toBe(adversarial);
+    expectLinear((n) => {
+      const html = '<span'.repeat(n);
+      return () => convertMergeTagsToValues(html);
+    }, 2_000);
   });
 
   // Regression (#543). This is the send path: a tag value the scanner cannot
@@ -148,11 +149,11 @@ describe('convertMergeTagsToValues', () => {
 
   it('runs in linear time when many tag values contain `>` (ReDoS regression)', () => {
     const adversarial = '<span data-merge-tag="<% $email %>">x</span>'.repeat(5_000);
-    const start = Date.now();
-    const result = convertMergeTagsToValues(adversarial);
-    const elapsed = Date.now() - start;
-    expect(result).toBe('<% $email %>'.repeat(5_000));
-    expect(elapsed).toBeLessThan(500);
+    expect(convertMergeTagsToValues(adversarial)).toBe('<% $email %>'.repeat(5_000));
+    expectLinear((n) => {
+      const html = '<span data-merge-tag="<% $email %>">x</span>'.repeat(n);
+      return () => convertMergeTagsToValues(html);
+    }, 500);
   });
 
   // Regression (#548). Stored content carries the tag value entity-encoded in

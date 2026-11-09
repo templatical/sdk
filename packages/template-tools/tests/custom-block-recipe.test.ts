@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createServer, type Server } from "node:http";
 import { checkRecipe, getPath, replaceLiquid, runRecipe } from "../src/custom-block/recipe";
+import { expectLinear } from "./helpers/expectLinear";
 
 const SECRET = "sk_live_verysecretvalue123";
 const fields = [
@@ -341,11 +342,17 @@ describe("replaceLiquid", () => {
   it("leaves text without Liquid untouched", () => {
     expect(replaceLiquid("https://x.test/{ a }")).toBe("https://x.test/{ a }");
   });
-  it("scans adversarial input in linear time", () => {
-    for (const input of ["{{".repeat(50000), "{{%".repeat(30000), "{%{{".repeat(25000), "{% %}".repeat(50000), "{{ }}".repeat(50000)]) {
-      const t = performance.now();
-      replaceLiquid(input);
-      expect(performance.now() - t).toBeLessThan(200);
-    }
+  it.each([
+    ["a run of `{{`", (n: number) => "{{".repeat(n), 50_000, "x"],
+    ["a run of `{{%`", (n: number) => "{{%".repeat(n), 30_000, "x"],
+    ["a run of `{%{{`", (n: number) => "{%{{".repeat(n), 25_000, "x"],
+    ["a run of closed tags", (n: number) => "{% %}".repeat(n), 50_000, "x".repeat(50_000)],
+    ["a run of closed outputs", (n: number) => "{{ }}".repeat(n), 50_000, "x".repeat(50_000)],
+  ])("scans %s in linear time", (_, build, size, expected) => {
+    expect(replaceLiquid(build(size))).toBe(expected);
+    expectLinear((n) => {
+      const input = build(n);
+      return () => replaceLiquid(input);
+    }, 2_000);
   });
 });
