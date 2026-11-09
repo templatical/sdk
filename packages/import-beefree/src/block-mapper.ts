@@ -2259,9 +2259,16 @@ function convertSocial(
     };
   }
 
-  const icons: SocialIcon[] = [];
-  const extras: Block[] = [];
+  // Blocks come out in source order: each run of recognized icons is one
+  // social block, and a routed-out icon keeps its place between runs.
+  let icons: SocialIcon[] = [];
+  const blocks: Block[] = [];
   const notes: string[] = [];
+  const flushIcons = () => {
+    if (icons.length === 0) return;
+    blocks.push(createSocialIconsBlock({ icons, styles, ...appearance }));
+    icons = [];
+  };
 
   // The Icons module keeps items of another shape under the same key.
   for (const beeIcon of iconsList.icons as BeeFreeeSocialIcon[]) {
@@ -2274,7 +2281,8 @@ function convertSocial(
         notes.push(kept.note);
         continue;
       }
-      extras.push(kept.block);
+      flushIcons();
+      blocks.push(kept.block);
       notes.push(kept.note);
       continue;
     }
@@ -2286,19 +2294,19 @@ function convertSocial(
       url: href || "#",
     });
   }
+  flushIcons();
 
-  // A module of only custom icons is those images. An empty social block
-  // would render nothing beside them.
-  if (icons.length === 0 && extras.length > 0) {
-    const [block, ...rest] = extras;
-    return { block, extras: rest, notes };
+  // An empty social block is the fallback when nothing else was kept.
+  if (blocks.length === 0) {
+    return {
+      block: createSocialIconsBlock({ icons, styles, ...appearance }),
+      extras: [],
+      notes,
+    };
   }
 
-  return {
-    block: createSocialIconsBlock({ icons, styles, ...appearance }),
-    extras,
-    notes,
-  };
+  const [block, ...extras] = blocks;
+  return { block, extras, notes };
 }
 
 /** Escape `& < > "` for text content and attribute values. */
