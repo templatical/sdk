@@ -14,56 +14,6 @@ const enNav: DefaultTheme.NavItem[] = [
 ];
 
 const enSidebar: DefaultTheme.SidebarMulti = {
-  "/quality/": [
-    {
-      text: "Quality",
-      items: [
-        { text: "Overview", link: "/quality/" },
-        { text: "Options", link: "/quality/options" },
-        { text: "Severity & fixes", link: "/quality/severity-and-fixes" },
-        { text: "Headless usage", link: "/quality/headless-usage" },
-        {
-          text: "Contributing locales",
-          link: "/quality/contributing-locales",
-        },
-      ],
-    },
-    {
-      text: "Accessibility",
-      items: [
-        { text: "Overview", link: "/quality/accessibility/" },
-        { text: "Rule catalog", link: "/quality/accessibility/rule-catalog" },
-      ],
-    },
-    {
-      text: "Structure",
-      items: [
-        { text: "Overview", link: "/quality/structure/" },
-        { text: "Rule catalog", link: "/quality/structure/rule-catalog" },
-      ],
-    },
-    {
-      text: "Links",
-      items: [
-        { text: "Overview", link: "/quality/links/" },
-        { text: "Rule catalog", link: "/quality/links/rule-catalog" },
-      ],
-    },
-    {
-      text: "Deliverability",
-      items: [
-        { text: "Overview", link: "/quality/deliverability/" },
-        { text: "Rule catalog", link: "/quality/deliverability/rule-catalog" },
-      ],
-    },
-    {
-      text: "Compatibility",
-      items: [
-        { text: "Overview", link: "/quality/compatibility/" },
-        { text: "Rule catalog", link: "/quality/compatibility/rule-catalog" },
-      ],
-    },
-  ],
   "/": [
     {
       text: "Start here",
@@ -160,6 +110,65 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       ],
     },
     {
+      text: "Quality",
+      items: [
+        { text: "Overview", link: "/quality/" },
+        { text: "Options", link: "/quality/options" },
+        { text: "Severity & fixes", link: "/quality/severity-and-fixes" },
+        { text: "Headless usage", link: "/quality/headless-usage" },
+        { text: "Contributing locales", link: "/quality/contributing-locales" },
+        {
+          text: "Accessibility",
+          collapsed: true,
+          items: [
+            { text: "Overview", link: "/quality/accessibility/" },
+            {
+              text: "Rule catalog",
+              link: "/quality/accessibility/rule-catalog",
+            },
+          ],
+        },
+        {
+          text: "Structure",
+          collapsed: true,
+          items: [
+            { text: "Overview", link: "/quality/structure/" },
+            { text: "Rule catalog", link: "/quality/structure/rule-catalog" },
+          ],
+        },
+        {
+          text: "Links",
+          collapsed: true,
+          items: [
+            { text: "Overview", link: "/quality/links/" },
+            { text: "Rule catalog", link: "/quality/links/rule-catalog" },
+          ],
+        },
+        {
+          text: "Deliverability",
+          collapsed: true,
+          items: [
+            { text: "Overview", link: "/quality/deliverability/" },
+            {
+              text: "Rule catalog",
+              link: "/quality/deliverability/rule-catalog",
+            },
+          ],
+        },
+        {
+          text: "Compatibility",
+          collapsed: true,
+          items: [
+            { text: "Overview", link: "/quality/compatibility/" },
+            {
+              text: "Rule catalog",
+              link: "/quality/compatibility/rule-catalog",
+            },
+          ],
+        },
+      ],
+    },
+    {
       text: "API Reference",
       items: [
         { text: "Editor", link: "/api/editor" },
@@ -213,62 +222,6 @@ const deNav: DefaultTheme.NavItem[] = [
 ];
 
 const deSidebar: DefaultTheme.SidebarMulti = {
-  "/de/quality/": [
-    {
-      text: "Qualität",
-      items: [
-        { text: "Überblick", link: "/de/quality/" },
-        { text: "Optionen", link: "/de/quality/options" },
-        {
-          text: "Schweregrade & Fixes",
-          link: "/de/quality/severity-and-fixes",
-        },
-        { text: "Headless-Nutzung", link: "/de/quality/headless-usage" },
-        {
-          text: "Lokalen beitragen",
-          link: "/de/quality/contributing-locales",
-        },
-      ],
-    },
-    {
-      text: "Barrierefreiheit",
-      items: [
-        { text: "Überblick", link: "/de/quality/accessibility/" },
-        {
-          text: "Regelkatalog",
-          link: "/de/quality/accessibility/rule-catalog",
-        },
-      ],
-    },
-    {
-      text: "Struktur",
-      items: [
-        { text: "Überblick", link: "/de/quality/structure/" },
-        { text: "Regelkatalog", link: "/de/quality/structure/rule-catalog" },
-      ],
-    },
-    {
-      text: "Links",
-      items: [
-        { text: "Überblick", link: "/de/quality/links/" },
-        { text: "Regelkatalog", link: "/de/quality/links/rule-catalog" },
-      ],
-    },
-    {
-      text: "Zustellbarkeit",
-      items: [
-        { text: "Überblick", link: "/de/quality/deliverability/" },
-        { text: "Regelkatalog", link: "/de/quality/deliverability/rule-catalog" },
-      ],
-    },
-    {
-      text: "Kompatibilität",
-      items: [
-        { text: "Überblick", link: "/de/quality/compatibility/" },
-        { text: "Regelkatalog", link: "/de/quality/compatibility/rule-catalog" },
-      ],
-    },
-  ],
   "/de/": [
     {
       text: "Einstieg",
@@ -374,6 +327,71 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Rendering & Export", link: "/de/backend/render" },
         { text: "KI", link: "/de/backend/ai" },
         { text: "Übersetzung", link: "/de/backend/translation" },
+      ],
+    },
+    {
+      text: "Qualität",
+      items: [
+        { text: "Überblick", link: "/de/quality/" },
+        { text: "Optionen", link: "/de/quality/options" },
+        {
+          text: "Schweregrade & Fixes",
+          link: "/de/quality/severity-and-fixes",
+        },
+        { text: "Headless-Nutzung", link: "/de/quality/headless-usage" },
+        { text: "Lokalen beitragen", link: "/de/quality/contributing-locales" },
+        {
+          text: "Barrierefreiheit",
+          collapsed: true,
+          items: [
+            { text: "Überblick", link: "/de/quality/accessibility/" },
+            {
+              text: "Regelkatalog",
+              link: "/de/quality/accessibility/rule-catalog",
+            },
+          ],
+        },
+        {
+          text: "Struktur",
+          collapsed: true,
+          items: [
+            { text: "Überblick", link: "/de/quality/structure/" },
+            {
+              text: "Regelkatalog",
+              link: "/de/quality/structure/rule-catalog",
+            },
+          ],
+        },
+        {
+          text: "Links",
+          collapsed: true,
+          items: [
+            { text: "Überblick", link: "/de/quality/links/" },
+            { text: "Regelkatalog", link: "/de/quality/links/rule-catalog" },
+          ],
+        },
+        {
+          text: "Zustellbarkeit",
+          collapsed: true,
+          items: [
+            { text: "Überblick", link: "/de/quality/deliverability/" },
+            {
+              text: "Regelkatalog",
+              link: "/de/quality/deliverability/rule-catalog",
+            },
+          ],
+        },
+        {
+          text: "Kompatibilität",
+          collapsed: true,
+          items: [
+            { text: "Überblick", link: "/de/quality/compatibility/" },
+            {
+              text: "Regelkatalog",
+              link: "/de/quality/compatibility/rule-catalog",
+            },
+          ],
+        },
       ],
     },
     {

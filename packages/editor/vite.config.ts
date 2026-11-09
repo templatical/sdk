@@ -3,8 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
-import { bundleStatsPlugin } from './scripts/bundle-stats-plugin'
-import { inlineStyleCssPlugin } from './scripts/inline-style-css-plugin'
+import { bundleStatsPlugin } from './scripts/bundle-stats-plugin.ts'
+import { inlineStyleCssPlugin } from './scripts/inline-style-css-plugin.ts'
 
 const pkg = JSON.parse(
   readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8'),
