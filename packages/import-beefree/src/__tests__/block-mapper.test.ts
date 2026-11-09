@@ -2023,6 +2023,31 @@ describe("convertModule", () => {
       expect(content.match(/padding-left: 15px/g)).toHaveLength(2);
     });
 
+    // `itemsSpacing` is the current key and `itemSpacing` the legacy one.
+    it("keeps an explicit 0px items spacing over the legacy key", () => {
+      const row = (computedStyle: Record<string, string>) =>
+        html(
+          iconsModule(
+            [
+              { ...gift, image: "https://example.com/a.png", alt: "A" },
+              { ...gift, image: "https://example.com/b.png", alt: "B" },
+            ],
+            { computedStyle },
+          ),
+        ).content;
+      const zero = row({ itemsSpacing: "0px", itemSpacing: "10px" });
+      expect(zero).not.toContain("padding-left:");
+      expect(zero.match(/<img /g)).toHaveLength(2);
+      expect(
+        row({ itemSpacing: "10px" }).match(/padding-left: 10px/g),
+      ).toHaveLength(1);
+      expect(
+        row({ itemsSpacing: "15px", itemSpacing: "10px" }).match(
+          /padding-left: 15px/g,
+        ),
+      ).toHaveLength(1);
+    });
+
     it("sizes an icon by height alone when its file size is unknown", () => {
       const { content } = html(
         iconsModule([{ image: "https://example.com/x.png", alt: "X" }]),
@@ -2367,24 +2392,66 @@ describe("convertModule", () => {
   });
 
   describe("spacer", () => {
-    it("uses height from descriptor or defaults to 24", () => {
-      const warnings: string[] = [];
+    const SPACER = "mailup-bee-newsletter-modules-spacer";
 
-      const withHeight = makeModule("mailup-bee-newsletter-modules-spacer", {
-        spacer: { style: { height: "40px" } },
+    function spacer(
+      style?: Record<string, string>,
+    ): ReturnType<typeof convertModule> {
+      return convertModule(
+        makeModule(SPACER, style ? { spacer: { style } } : {}),
+        [],
+      );
+    }
+
+    function spacerHeight(style?: Record<string, string>): number {
+      const { block } = spacer(style);
+      if (block.type !== "spacer") throw new Error("expected a spacer");
+      return block.height;
+    }
+
+    it("keeps the height BeeFree states", () => {
+      const { block, entry } = spacer({ height: "40px" });
+      expect(block.type === "spacer" && block.height).toBe(40);
+      expect(entry).toEqual({
+        beeFreeModuleType: SPACER,
+        templaticalBlockType: "spacer",
+        status: "converted",
       });
-      const { block: b1 } = convertModule(withHeight, warnings);
-      expect(b1.type).toBe("spacer");
-      if (b1.type === "spacer") {
-        expect(b1.height).toBe(40);
-      }
+      expect(spacerHeight({ height: "12.6px" })).toBe(13);
+    });
 
-      const noHeight = makeModule("mailup-bee-newsletter-modules-spacer", {});
-      const { block: b2 } = convertModule(noHeight, warnings);
-      expect(b2.type).toBe("spacer");
-      if (b2.type === "spacer") {
-        expect(b2.height).toBe(24);
+    // BeeFree draws a spacer it has no height for at its 60px default.
+    it("uses BeeFree's 60px default when the height is absent or unreadable", () => {
+      expect(spacerHeight()).toBe(60);
+      expect(spacerHeight({})).toBe(60);
+      expect(spacerHeight({ height: "" })).toBe(60);
+      expect(spacerHeight({ height: "auto" })).toBe(60);
+      expect(spacerHeight({ height: "40" })).toBe(60);
+      expect(spacerHeight({ height: "-10px" })).toBe(60);
+    });
+
+    it("skips a spacer that is 0px tall", () => {
+      for (const height of ["0px", "0", "0.0px"]) {
+        expect(
+          skippedModuleEntry(
+            makeModule(SPACER, { spacer: { style: { height } } }),
+          ),
+        ).toEqual({
+          beeFreeModuleType: SPACER,
+          templaticalBlockType: null,
+          status: "skipped",
+          note: "The spacer is 0px tall.",
+        });
       }
+    });
+
+    it("does not skip a spacer with a height or BeeFree's default", () => {
+      expect(
+        skippedModuleEntry(
+          makeModule(SPACER, { spacer: { style: { height: "1px" } } }),
+        ),
+      ).toBeUndefined();
+      expect(skippedModuleEntry(makeModule(SPACER, {}))).toBeUndefined();
     });
   });
 

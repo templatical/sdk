@@ -60,6 +60,7 @@ import {
   parseBorderTop,
   extractPadding,
   readButtonPadding,
+  readPxLength,
   parseDividerWidth,
 } from "./style-parser";
 
@@ -1899,12 +1900,19 @@ function convertUndrawnDivider(
   });
 }
 
-function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
-  const spacer = descriptor.spacer;
-  const height = parsePxValue(spacer?.style?.height) || 24;
+/** BeeFree's documented height for a spacer it has no height for. */
+const BEEFREE_SPACER_HEIGHT = 60;
 
+/** A spacer's height in px; an explicit 0 stays 0. */
+function spacerHeight(descriptor: BeeFreeeModuleDescriptor): number {
+  return (
+    readPxLength(descriptor.spacer?.style?.height) ?? BEEFREE_SPACER_HEIGHT
+  );
+}
+
+function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
   return createSpacerBlock({
-    height,
+    height: spacerHeight(descriptor),
     styles: makeStyles(descriptor),
   });
 }
@@ -2408,8 +2416,8 @@ function iconsHtml(descriptor: BeeFreeeModuleDescriptor): string {
   const align = toAlign(style["text-align"]);
   const color = parseColor(style.color);
   const textStyle = iconTextStyle(style);
-  const gap =
-    computedPx(computed.itemsSpacing) || computedPx(computed.itemSpacing);
+  // `itemSpacing` is the legacy key, read only when `itemsSpacing` is absent.
+  const gap = computedPx(computed.itemsSpacing ?? computed.itemSpacing);
   const spacing = iconSpacing(descriptor);
   const iconPadding =
     spacing.top || spacing.right || spacing.bottom || spacing.left
@@ -2833,6 +2841,10 @@ export function skippedModuleEntry(
     case "divider":
       return undrawnDividerHeight(module.descriptor) === 0
         ? skip("The divider draws no line and takes no space.")
+        : undefined;
+    case "spacer":
+      return spacerHeight(module.descriptor) === 0
+        ? skip("The spacer is 0px tall.")
         : undefined;
     default:
       return undefined;

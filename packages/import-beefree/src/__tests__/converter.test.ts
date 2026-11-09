@@ -1426,6 +1426,51 @@ describe("convertBeeFreeTemplate", () => {
       });
     });
 
+    it("skips a 0px spacer and keeps a spacer with no height at 60px", () => {
+      const spacer = (style: Record<string, string>) => ({
+        type: "mailup-bee-newsletter-modules-spacer",
+        descriptor: { spacer: { style } },
+      });
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          body: { content: { style: { width: "600px" } } },
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [text, spacer({ height: "0px" }), text, spacer({})],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(
+        content.blocks.map((b) => [b.type, b.type === "spacer" && b.height]),
+      ).toEqual([
+        ["paragraph", false],
+        ["paragraph", false],
+        ["spacer", 60],
+      ]);
+      expect(report.entries[1]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-spacer",
+        templaticalBlockType: null,
+        status: "skipped",
+        note: "The spacer is 0px tall.",
+      });
+      expect(report.entries[3]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-spacer",
+        templaticalBlockType: "spacer",
+        status: "converted",
+      });
+      expect(report.summary).toMatchObject({
+        total: 4,
+        converted: 3,
+        skipped: 1,
+      });
+    });
+
     it("converts an Icons module that holds icons", () => {
       const { content, report } = convertBeeFreeTemplate({
         page: {
