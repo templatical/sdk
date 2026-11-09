@@ -111,7 +111,6 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "Quality",
-      collapsed: true,
       items: [
         { text: "Overview", link: "/quality/" },
         { text: "Options", link: "/quality/options" },
@@ -332,7 +331,6 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "Qualität",
-      collapsed: true,
       items: [
         { text: "Überblick", link: "/de/quality/" },
         { text: "Optionen", link: "/de/quality/options" },
