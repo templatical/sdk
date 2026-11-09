@@ -38,7 +38,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.6",
-    "vue-eslint-parser": "^10.4.1"
+    "vue-eslint-parser": "^10.4.2"
   },
   "engines": {
     "node": ">=26.13.0"
