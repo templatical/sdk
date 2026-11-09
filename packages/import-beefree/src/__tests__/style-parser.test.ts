@@ -7,8 +7,34 @@ import {
   extractPadding,
   parseDividerWidth,
   readBeefreeBackgroundImage,
+  readPxLength,
 } from "../style-parser";
 import { expectLinear } from "./expectLinear";
+
+describe("readPxLength", () => {
+  it("reads a non-negative px length, rounded", () => {
+    expect(readPxLength("40px")).toBe(40);
+    expect(readPxLength(" 12.6PX ")).toBe(13);
+    expect(readPxLength(".4px")).toBe(0);
+  });
+
+  it("keeps an explicit 0, with or without a unit", () => {
+    expect(readPxLength("0px")).toBe(0);
+    expect(readPxLength("0")).toBe(0);
+    expect(readPxLength("0.0")).toBe(0);
+    expect(readPxLength("-0")).toBe(0);
+  });
+
+  it("is undefined for an absent, unreadable or negative length", () => {
+    expect(readPxLength(undefined)).toBeUndefined();
+    expect(readPxLength("")).toBeUndefined();
+    expect(readPxLength("auto")).toBeUndefined();
+    expect(readPxLength("40")).toBeUndefined();
+    expect(readPxLength("2em")).toBeUndefined();
+    expect(readPxLength("-10px")).toBeUndefined();
+    expect(readPxLength('10px" onmouseover="x')).toBeUndefined();
+  });
+});
 
 describe("parsePxValue", () => {
   it("extracts integer from px string", () => {

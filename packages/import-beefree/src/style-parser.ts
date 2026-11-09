@@ -231,7 +231,7 @@ export function extractPadding(
  */
 export function readButtonPadding(style: Record<string, string>): SpacingValue {
   const shorthandParts = style.padding?.trim().split(/\s+/) ?? [];
-  const shorthandValues = shorthandParts.map(buttonPaddingLength);
+  const shorthandValues = shorthandParts.map(readPxLength);
   const shorthand =
     shorthandParts.length >= 1 &&
     shorthandParts.length <= 4 &&
@@ -244,16 +244,19 @@ export function readButtonPadding(style: Record<string, string>): SpacingValue {
       : undefined;
 
   return {
-    top: buttonPaddingLength(style["padding-top"]) ?? shorthand?.top ?? 12,
-    right:
-      buttonPaddingLength(style["padding-right"]) ?? shorthand?.right ?? 24,
-    bottom:
-      buttonPaddingLength(style["padding-bottom"]) ?? shorthand?.bottom ?? 12,
-    left: buttonPaddingLength(style["padding-left"]) ?? shorthand?.left ?? 24,
+    top: readPxLength(style["padding-top"]) ?? shorthand?.top ?? 12,
+    right: readPxLength(style["padding-right"]) ?? shorthand?.right ?? 24,
+    bottom: readPxLength(style["padding-bottom"]) ?? shorthand?.bottom ?? 12,
+    left: readPxLength(style["padding-left"]) ?? shorthand?.left ?? 24,
   };
 }
 
-function buttonPaddingLength(value: string | undefined): number | undefined {
+/**
+ * A non-negative px length (or a unitless 0), rounded; `undefined` when the
+ * value is absent, unreadable or negative, so the caller's fallback applies
+ * and an explicit 0 stays 0.
+ */
+export function readPxLength(value: string | undefined): number | undefined {
   if (!value) return undefined;
   const raw = value.trim();
   if (/^-?0+(?:\.0+)?$/.test(raw)) return 0;
