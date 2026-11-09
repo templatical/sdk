@@ -651,18 +651,19 @@ dataSource: {
 
 ## Rendering outside the editor
 
-Render saved templates server-side with `renderToMjml(content, { customBlocks: definitions })`. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML. `editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) already resolve every custom block to HTML and carry its stylesheet, so `renderToMjml(payload.content)` needs no options for that payload. Install the optional `liquidjs` peer (`^10.30.1`) in the server project:
+Render saved templates server-side with `renderToMjml(content, { customBlocks: definitions, liquidjs })`. Template JSON from `getContent()` or a `templates` provider's `save` holds field values, not HTML. `editor.toMjml()` and the editor's calls to a [`render` provider](/backend/render) already resolve every custom block to HTML and carry its stylesheet, so `renderToMjml(payload.content)` needs no options for that payload. Install `liquidjs` (`^10.30.1`) in the server project and pass its module as `liquidjs`:
 
 ```ts
+import * as liquidjs from 'liquidjs';
 import { renderToMjml } from '@templatical/renderer';
 import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
 
 export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
-  return renderToMjml(content, { customBlocks: definitions });
+  return renderToMjml(content, { customBlocks: definitions, liquidjs });
 }
 ```
 
-`customBlocks?: CustomBlockDefinition[]` renders each matching definition's `template` with the block's `fieldValues` and emits its `stylesheet` once per type. The last definition for a duplicate type wins. An unknown type uses the block's saved `renderedHtml` and `renderedStylesheet`; a listed definition without a stylesheet emits none. A Liquid template error rejects `renderToMjml`. Passing `customBlocks` with `renderCustomBlock` throws `TypeError: [Templatical] customBlocks cannot be combined with renderCustomBlock`; with `getCustomBlockStylesheet` it throws `TypeError: [Templatical] customBlocks cannot be combined with getCustomBlockStylesheet`. The renderer imports `liquidjs` only when the content holds a custom block. If that peer is missing, it throws `[Templatical] customBlocks requires the optional liquidjs package.`
+`customBlocks?: CustomBlockDefinition[]` renders each matching definition's `template` with the block's `fieldValues` and emits its `stylesheet` once per type. The last definition for a duplicate type wins. An unknown type uses the block's saved `renderedHtml` and `renderedStylesheet`; a listed definition without a stylesheet emits none. A Liquid template error rejects `renderToMjml`. Passing `customBlocks` with `renderCustomBlock` throws `TypeError: [Templatical] customBlocks cannot be combined with renderCustomBlock`; with `getCustomBlockStylesheet` it throws `TypeError: [Templatical] customBlocks cannot be combined with getCustomBlockStylesheet`. The renderer never imports `liquidjs` itself, so a bundler never tries to resolve it. With `customBlocks` set, it needs the module only when the content holds a custom block; without it, `renderToMjml` throws `TypeError: [Templatical] customBlocks requires the liquidjs option: import * as liquidjs from "liquidjs" and pass { customBlocks, liquidjs }.`
 
 For a lower-level resolver, `createCustomBlockLiquid<M extends CustomBlockLiquidModule>(module: M): InstanceType<M['Liquid']>` creates the same engine and keeps the module's `Liquid` return type:
 

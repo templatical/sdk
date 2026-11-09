@@ -56,18 +56,19 @@ const mjml = await renderToMjml(content, {
 
 ### With custom blocks
 
-Editor consumers use `editor.toMjml()`. Headless callers pass the registered definitions as `customBlocks`. Install the optional `liquidjs` peer (`^10.30.1`) in the server project:
+Editor consumers use `editor.toMjml()`. Headless callers pass the registered definitions as `customBlocks` and the `liquidjs` module as `liquidjs`. Install `liquidjs` (`^10.30.1`) in the server project:
 
 ```ts
+import * as liquidjs from 'liquidjs';
 import { renderToMjml } from '@templatical/renderer';
 import type { CustomBlockDefinition, TemplateContent } from '@templatical/types';
 
 export async function renderTemplate(content: TemplateContent, definitions: CustomBlockDefinition[]) {
-  return renderToMjml(content, { customBlocks: definitions });
+  return renderToMjml(content, { customBlocks: definitions, liquidjs });
 }
 ```
 
-The [Custom blocks guide](https://docs.templatical.com/guide/custom-blocks) covers the option's fallback, conflicts and missing-peer error. For a lower-level resolver, use `createCustomBlockLiquid(liquidjs)` from `@templatical/types`. Use `{{ body | raw }}` for a field intended to hold HTML. Always quote attribute values and validate URL schemes from untrusted sources. The editor canvas also sanitizes each rendered block; email output keeps the template's HTML.
+The [Custom blocks guide](https://docs.templatical.com/guide/custom-blocks) covers the option's fallback, conflicts and missing-module error. For a lower-level resolver, use `createCustomBlockLiquid(liquidjs)` from `@templatical/types`. Use `{{ body | raw }}` for a field intended to hold HTML. Always quote attribute values and validate URL schemes from untrusted sources. The editor canvas also sanitizes each rendered block; email output keeps the template's HTML.
 
 Without a matching definition or callback, the renderer falls back to `renderedHtml` (if any) and otherwise omits the block.
 
@@ -80,6 +81,7 @@ Options:
 - `defaultFallbackFont` — fallback when a block doesn't specify a font
 - `allowHtmlBlocks` — pass `false` to strip HTML blocks before render (e.g. for untrusted content)
 - `customBlocks` — `CustomBlockDefinition[]` — render saved blocks from definitions
+- `liquidjs` — the `liquidjs` module (`import * as liquidjs from "liquidjs"`); required with `customBlocks` when the content holds a custom block
 - `renderCustomBlock` — `(block: CustomBlock) => Promise<string>` — resolves custom blocks to HTML
 
 ## Documentation

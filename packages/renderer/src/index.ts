@@ -3,6 +3,7 @@ import type {
   ContentDirection,
   CustomBlock,
   CustomBlockDefinition,
+  CustomBlockLiquidModule,
   TemplateContent,
   CustomFont,
   SectionWrapper,
@@ -46,8 +47,22 @@ export interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;
-  /** Headless custom block definitions. The last definition per type wins. */
+  /**
+   * Headless custom block definitions. The last definition per type wins.
+   * Rendering a custom block from a definition needs `liquidjs` as well.
+   */
   customBlocks?: CustomBlockDefinition[];
+  /**
+   * The `liquidjs` module (`import * as liquidjs from "liquidjs"`), which
+   * renders `customBlocks` templates. Required when `customBlocks` is set and
+   * the content holds a custom block; ignored otherwise.
+   *
+   * The renderer never imports `liquidjs` itself: a bundler resolves every
+   * literal `import()`, so a renderer that imported it would warn in every
+   * Webpack build that installs the renderer without `liquidjs`, the editor's
+   * `toMjml()` path included.
+   */
+  liquidjs?: CustomBlockLiquidModule;
   /**
    * Resolves custom blocks to their HTML representation. Called once per
    * custom block in the content tree before MJML rendering. The renderer
@@ -139,10 +154,10 @@ const BUTTON_FULL_WIDTH_RULE = `.${BUTTON_FULL_WIDTH_CSS_CLASS} a { display: blo
 /**
  * Render template content to an MJML string.
  *
- * With `customBlocks`, this imports the optional `liquidjs` peer only when
- * the content holds a custom block. The editor uses `renderCustomBlock` via
- * `toMjml()`; headless callers can pass definitions directly. The function
- * always returns a Promise.
+ * With `customBlocks`, pass the `liquidjs` module as `liquidjs` too; it is
+ * needed only when the content holds a custom block. The editor uses
+ * `renderCustomBlock` via `toMjml()`; headless callers can pass definitions
+ * directly. The function always returns a Promise.
  */
 export async function renderToMjml(
   content: TemplateContent,
@@ -186,7 +201,11 @@ export async function renderToMjml(
 
   const customBlockHtml =
     options?.customBlocks !== undefined
-      ? await resolveCustomBlockDefinitions(toRender, options.customBlocks)
+      ? await resolveCustomBlockDefinitions(
+          toRender,
+          options.customBlocks,
+          options.liquidjs,
+        )
       : await resolveCustomBlocks(toRender, options?.renderCustomBlock);
 
   const customBlockStylesheets = collectCustomBlockStylesheets(
@@ -470,18 +489,16 @@ async function resolveCustomBlocks(
 async function resolveCustomBlockDefinitions(
   content: TemplateContent,
   definitions: CustomBlockDefinition[],
+  liquidjs: CustomBlockLiquidModule | undefined,
 ): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   const blocks: CustomBlock[] = [];
   collectCustomBlocks(content.blocks, blocks);
   if (blocks.length === 0) return result;
 
-  let liquidjs: typeof import("liquidjs");
-  try {
-    liquidjs = await import("liquidjs");
-  } catch {
-    throw new Error(
-      "[Templatical] customBlocks requires the optional liquidjs package.",
+  if (typeof liquidjs?.Liquid !== "function") {
+    throw new TypeError(
+      '[Templatical] customBlocks requires the liquidjs option: import * as liquidjs from "liquidjs" and pass { customBlocks, liquidjs }.',
     );
   }
   const liquid = createCustomBlockLiquid(liquidjs);

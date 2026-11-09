@@ -17,8 +17,8 @@ describe("custom-block playbook", () => {
   });
   it("passes definitions to the renderer for server-side rendering", () => {
     const handoff = md.slice(md.indexOf("## 6. Handoff"));
-    expect(handoff).toContain("renderToMjml(content, { customBlocks: definitions })");
-    expect(handoff).toContain("liquidjs");
+    expect(handoff).toContain("renderToMjml(content, { customBlocks: definitions, liquidjs })");
+    expect(handoff).toContain('import * as liquidjs from "liquidjs";');
     expect(handoff).toMatch(/saved JSON holds field values, not HTML/);
   });
   it("escapes JSON body values with `| json` and keeps templates to one string", () => {

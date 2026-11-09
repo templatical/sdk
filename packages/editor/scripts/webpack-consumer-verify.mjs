@@ -18,7 +18,8 @@
  *   2. Materialize the webpack-consumer fixture into a clean cache dir.
  *   3. `npm install` the tarballs alongside webpack into that consumer.
  *   4. Run `webpack` against `entry.js`.
- *   5. Assert: build succeeds; unresolved optional-peer warnings are allowed.
+ *   5. Assert: build succeeds; unresolved optional-peer warnings are allowed,
+ *      but nothing may try to resolve a package in FORBIDDEN_SPECIFIERS.
  *
  * The try/catch at each of the four sites is what holds Webpack at a warning;
  * unwrap any one of them and this script fails exactly as the reporter's build
@@ -27,7 +28,7 @@
  * installation docs show consumers how to silence them.
  */
 
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -54,6 +55,20 @@ const OPTIONAL_PEERS = [
   "@templatical/renderer",
 ];
 
+// Packages no installed module may reference at all, warning or not. The
+// fixture installs the renderer without liquidjs, so a `liquidjs` specifier
+// back in the renderer shows up here as a warning in every editor + renderer
+// Webpack build (#1167); the renderer takes the module as an option instead.
+const FORBIDDEN_SPECIFIERS = ["liquidjs"];
+
+/** The FORBIDDEN_SPECIFIERS a webpack log tried and failed to resolve. */
+function forbiddenResolutions(output) {
+  return FORBIDDEN_SPECIFIERS.filter((name) => {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`Can't resolve ['"\`]${escaped}['"\`]`).test(output);
+  });
+}
+
 function logStep(msg) {
   process.stdout.write(`[webpack-verify] ${msg}\n`);
 }
@@ -74,23 +89,22 @@ try {
   });
 
   logStep("running webpack build");
-  // Capture both stdout and stderr — webpack writes "Module not found"
-  // diagnostics to stderr in some configurations.
-  let webpackOutput = "";
-  let webpackExitCode = 0;
-  try {
-    webpackOutput = execSync(
-      `node node_modules/webpack-cli/bin/cli.js --config webpack.config.cjs`,
-      {
-        cwd: CONSUMER_DIR,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-  } catch (err) {
-    webpackExitCode = err.status ?? 1;
-    webpackOutput = `${err.stdout ?? ""}\n${err.stderr ?? ""}`;
-  }
+  // Capture both stdout and stderr on success as well as failure — webpack
+  // writes "Module not found" diagnostics to stderr in some configurations,
+  // and execSync would return only stdout from a build that exits 0.
+  const webpackRun = spawnSync(
+    process.execPath,
+    ["node_modules/webpack-cli/bin/cli.js", "--config", "webpack.config.cjs"],
+    {
+      cwd: CONSUMER_DIR,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  if (webpackRun.error)
+    fail(`could not start webpack: ${webpackRun.error.message}`);
+  const webpackExitCode = webpackRun.status ?? 1;
+  const webpackOutput = `${webpackRun.stdout ?? ""}\n${webpackRun.stderr ?? ""}`;
 
   process.stdout.write(webpackOutput);
   process.stdout.write("\n");
@@ -113,6 +127,13 @@ try {
       );
     }
     fail(`webpack exited with code ${webpackExitCode}`);
+  }
+
+  const forbidden = forbiddenResolutions(webpackOutput);
+  if (forbidden.length > 0) {
+    fail(
+      `webpack tried to resolve a package no installed module may import (issue #1167):\n  - ${forbidden.join("\n  - ")}`,
+    );
   }
 
   logStep(
