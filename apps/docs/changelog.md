@@ -15,6 +15,35 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.58.0
+
+<time datetime="2026-11-09">2026-11-09</time>
+
+### Features
+
+**Breaking changes:**
+
+`@templatical/renderer`
+
+- `renderToMjml` no longer imports `liquidjs` for `customBlocks`. Pass the module as the new `liquidjs` option: `import * as liquidjs from "liquidjs"`, then `renderToMjml(content, { customBlocks: definitions, liquidjs })`. Without it, a custom block rendered from a definition throws `TypeError: [Templatical] customBlocks requires the liquidjs option`. Content without custom blocks, `renderCustomBlock` and saved `renderedHtml` need nothing.
+- `liquidjs` is no longer an optional peer of `@templatical/renderer`. Keep it installed in the project that passes `customBlocks`.
+
+The renderer's dynamic `import("liquidjs")` made Webpack print `Module not found: Error: Can't resolve 'liquidjs'` in every build that installed the renderer without `liquidjs`, including editor apps that call `editor.toMjml()` and never render custom blocks from definitions (#1167).
+
+### Fixes and improvements
+
+**`custom-block render` and `custom-block validate` pass their own `liquidjs` to `renderToMjml`, which no longer imports it. CLI output is unchanged.**
+
+`@templatical/template-tools`
+
+**Skip a BeeFree spacer whose height is an explicit 0px, reported as `skipped`, instead of importing it as a 24px spacer. A spacer with a missing, unreadable or negative height now imports at BeeFree's 60px default rather than 24px. In an Icons module, an explicit `0px` `itemsSpacing` no longer falls back to the legacy `itemSpacing` key.**
+
+`@templatical/import-beefree`
+
+**Preserve social icon scheme prefixes (`mailto:`, `tel:`, `sms:`) and keep custom social icons as images with their original file and link during Beefree imports.**
+
+`@templatical/import-beefree`
+
 ## 0.57.2
 
 <time datetime="2026-11-09">2026-11-09</time>
