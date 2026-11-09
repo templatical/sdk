@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "node:path";
-import { inlineStyleCssPlugin } from "./scripts/inline-style-css-plugin";
+import { inlineStyleCssPlugin } from "./scripts/inline-style-css-plugin.ts";
 
 export default defineConfig({
   plugins: [
