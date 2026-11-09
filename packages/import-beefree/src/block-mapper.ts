@@ -2040,6 +2040,19 @@ function safeCopiedUrl(
   return "";
 }
 
+function socialHref(icon: BeeFreeeSocialIcon): string {
+  const href = decodeEntitiesInTokens(icon.image?.href ?? "");
+  const prefix = icon.image?.prefix ?? "";
+  if (
+    /^(?:mailto|tel|sms):$/i.test(prefix) &&
+    href !== "" &&
+    !href.toLowerCase().startsWith(prefix.toLowerCase())
+  ) {
+    return prefix + href;
+  }
+  return href;
+}
+
 /**
  * A network Templatical does not draw. The file and the link stay, as an
  * image when there is a file and as a link when there is not.
@@ -2049,11 +2062,7 @@ function unknownSocialBlock(
   icon: BeeFreeeSocialIcon,
   warnings: string[],
 ): { block: Block; note: string } | undefined {
-  const href = safeCopiedUrl(
-    decodeEntitiesInTokens(icon.image?.href ?? ""),
-    "href",
-    warnings,
-  );
+  const href = safeCopiedUrl(socialHref(icon), "href", warnings);
   const src = safeCopiedUrl(
     decodeEntitiesInTokens(icon.image?.src ?? ""),
     "src",
@@ -2069,7 +2078,10 @@ function unknownSocialBlock(
     };
   }
   const asLink = !src;
-  const note = `Social network "${label}" has no Templatical icon; imported as ${asLink ? "a link" : "an image"}.`;
+  const note =
+    icon.type === "custom" && !asLink
+      ? `Custom social icon "${label}" imported as an image.`
+      : `Social network "${label}" has no Templatical icon; imported as ${asLink ? "a link" : "an image"}.`;
   warnings.push(note);
   if (asLink) {
     return {
@@ -2254,7 +2266,7 @@ function convertSocial(
   // The Icons module keeps items of another shape under the same key.
   for (const beeIcon of iconsList.icons as BeeFreeeSocialIcon[]) {
     const platform = socialPlatform(beeIcon);
-    if (!platform) {
+    if (!platform || beeIcon.type === "custom") {
       const kept = unknownSocialBlock(descriptor, beeIcon, warnings);
       if (!kept) continue;
       // An empty HTML block is the note for an icon with nothing to keep.
@@ -2267,11 +2279,7 @@ function convertSocial(
       continue;
     }
 
-    const href = safeCopiedUrl(
-      decodeEntitiesInTokens(beeIcon.image?.href ?? ""),
-      "href",
-      warnings,
-    );
+    const href = safeCopiedUrl(socialHref(beeIcon), "href", warnings);
     icons.push({
       id: generateId(),
       platform,

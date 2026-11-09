@@ -2389,6 +2389,68 @@ describe("convertModule", () => {
   });
 
   describe("social", () => {
+    it("keeps a mail icon's scheme prefix before its href", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "others",
+                name: "E-Mail",
+                image: {
+                  href: "https://www.maxgoelitz.com/en/mailing-list/",
+                  prefix: "mailto:",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons[0].url).toBe(
+        "mailto:https://www.maxgoelitz.com/en/mailing-list/",
+      );
+    });
+
+    it("keeps a custom Xing image when its link identifies a known network", () => {
+      const warnings: string[] = [];
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
+                image: {
+                  alt: "Xing",
+                  href: "https://www.xing.com/pages/sonepardeutschland",
+                  src: "https://core-beefree.s3.amazonaws.com/images/1eeabd3c-0ab0-6baa-8973-5b41c5e4a053/xing.png",
+                  width: 64,
+                  height: 64,
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("image");
+      if (block.type !== "image") return;
+      expect(block.src).toBe(
+        "https://core-beefree.s3.amazonaws.com/images/1eeabd3c-0ab0-6baa-8973-5b41c5e4a053/xing.png",
+      );
+      expect(block.linkUrl).toBe(
+        "https://www.xing.com/pages/sonepardeutschland",
+      );
+      expect(warnings).toEqual([
+        'Custom social icon "Xing" imported as an image.',
+      ]);
+    });
+
     it("maps known platform names to SocialPlatform values", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-social", {

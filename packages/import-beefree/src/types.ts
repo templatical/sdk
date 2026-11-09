@@ -171,6 +171,7 @@ export interface BeeFreeeSocialIcon {
     title?: string;
     src?: string;
     href?: string;
+    prefix?: string;
     alt?: string;
     target?: string;
     /** The icon file's size. A number of px, or a px length. */
