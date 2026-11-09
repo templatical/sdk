@@ -1,5 +1,25 @@
 # @templatical/template-tools
 
+## 0.58.0
+
+### Patch Changes
+
+- 3929e22: `custom-block render` and `custom-block validate` pass their own `liquidjs` to `renderToMjml`, which no longer imports it. CLI output is unchanged.
+- Updated dependencies [9f25448]
+- Updated dependencies [3929e22]
+- Updated dependencies [e6fd340]
+  - @templatical/import-beefree@0.58.0
+  - @templatical/renderer@0.58.0
+  - @templatical/import-html@0.58.0
+  - @templatical/import-mjml@0.58.0
+  - @templatical/import-chamaileon@0.58.0
+  - @templatical/import-easy-email-pro@0.58.0
+  - @templatical/import-stripo@0.58.0
+  - @templatical/import-topol@0.58.0
+  - @templatical/import-unlayer@0.58.0
+  - @templatical/quality@0.58.0
+  - @templatical/types@0.58.0
+
 ## 0.57.2
 
 ### Patch Changes
