@@ -58,6 +58,7 @@ interface RenderOptions {
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
   customBlocks?: CustomBlockDefinition[];
+  liquidjs?: CustomBlockLiquidModule;
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
   blockRenderers?: BlockRendererMap;
   getCustomBlockStylesheet?: (customType: string) => string | undefined | null;

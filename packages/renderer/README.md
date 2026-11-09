@@ -81,6 +81,7 @@ Options:
 - `defaultFallbackFont` — fallback when a block doesn't specify a font
 - `allowHtmlBlocks` — pass `false` to strip HTML blocks before render (e.g. for untrusted content)
 - `customBlocks` — `CustomBlockDefinition[]` — render saved blocks from definitions
+- `liquidjs` — the `liquidjs` module (`import * as liquidjs from "liquidjs"`); required with `customBlocks` when the content holds a custom block
 - `renderCustomBlock` — `(block: CustomBlock) => Promise<string>` — resolves custom blocks to HTML
 
 ## Documentation
