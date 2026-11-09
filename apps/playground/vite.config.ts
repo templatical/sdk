@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
-import { inlineStyleCssPlugin } from '../../packages/editor/scripts/inline-style-css-plugin';
-import { readBuildInfo } from './scripts/build-info';
+import { inlineStyleCssPlugin } from '../../packages/editor/scripts/inline-style-css-plugin.ts';
+import { readBuildInfo } from './scripts/build-info.ts';
 
 const packagesDir = resolve(import.meta.dirname, '../../packages');
 
