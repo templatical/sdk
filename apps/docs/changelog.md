@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.57.2
+
+<time datetime="2026-11-09">2026-11-09</time>
+
+### Fixes and improvements
+
+**A locale operation (`updateBlockLocale`, `updateSettingsLocale`) writes only to the block's or settings' own `l10n` layer for that language. A layer inherited through the object's prototype is no longer reused and changed in place; the edit gets a fresh own layer instead.**
+
+`@templatical/types`
+
 ## 0.57.1
 
 <time datetime="2026-11-08">2026-11-08</time>

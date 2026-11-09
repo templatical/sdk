@@ -18,8 +18,23 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.57.1",
+  "latest": "0.57.2",
   "versions": [
+    {
+      "version": "0.57.2",
+      "date": "2026-11-09",
+      "changes": [
+        {
+          "hash": "27eb4be",
+          "level": "patch",
+          "title": "A locale operation (`updateBlockLocale`, `updateSettingsLocale`) writes only to the block's or settings' own `l10n` layer for that language. A layer inherited through the object's prototype is no longer reused and changed in place; the edit gets a fresh own layer instead.",
+          "body": "",
+          "packages": [
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.57.1",
       "date": "2026-11-08",
