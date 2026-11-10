@@ -116,6 +116,8 @@ export interface UseEditorReturn {
   state: DeepReadonly<EditorState>;
   /** Increments when create/load commits, including a reload of the same id. */
   loadVersion: Readonly<Ref<number>>;
+  /** Increments when load or create with content replaces the open document. */
+  contentReplaced: Readonly<Ref<number>>;
   content: Ref<TemplateContent>;
   selectedBlock: Ref<Block | null>;
   activeLocale: Ref<string | null>;
@@ -401,6 +403,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   }
 
   const loadVersion = ref(0);
+  const contentReplaced = ref(0);
   let loadingRequest = 0;
 
   /**
@@ -848,8 +851,9 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     const request = ++loadingRequest;
     state.isLoading = true;
     try {
-      if (input?.content) {
+      if (input?.content !== undefined) {
         state.content = input.content;
+        contentReplaced.value++;
       }
       // Omit `name` entirely when unset rather than sending `undefined` — a
       // provider serialising the input to JSON would otherwise receive a key it
@@ -893,6 +897,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       if (shouldApply && !shouldApply()) return loaded;
       state.template = loaded;
       state.content = loaded.content;
+      contentReplaced.value++;
       state.isDirty = false;
       loadVersion.value++;
     } catch (error) {
@@ -973,6 +978,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   const editor: UseEditorReturn = {
     state: readonly(state),
     loadVersion: readonly(loadVersion),
+    contentReplaced: readonly(contentReplaced),
     content,
     selectedBlock,
     activeLocale,

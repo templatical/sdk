@@ -753,7 +753,11 @@ defineExpose({
     editor.activeLocale.value ?? defaultLocaleOf(editor.content.value),
   setLocale: (locale: string) => editor.setActiveLocale(locale),
   getContent: () => editor.content.value,
-  setContent: (content: TemplateContent) => editor.setContent(content),
+  setContent: (content: TemplateContent) => {
+    editor.setContent(content);
+    collaboration?.core.flush();
+    core.history.clear();
+  },
   insertBlock: (block: Block): string | null => {
     // The palette is hidden in preview mode, and preview has no selection.
     if (editor.state.previewMode) {

@@ -945,7 +945,8 @@ describe("structural history eligibility", () => {
               load: async () =>
                 ({ id: "template", content: safeClone(saved) }) as Template,
               create: false,
-              save: false,
+              save: async (id, patch) =>
+                ({ id, content: safeClone(patch.content!) }) as Template,
             },
           });
           const history = useHistory({
@@ -965,6 +966,10 @@ describe("structural history eligibility", () => {
           history.undo();
           saved = safeClone(editor.content.value);
           await editor.load("template");
+          editor.updateSettings({ width: 700 });
+          editor.updateSettings({ width: 750 });
+          history.undo();
+          await editor.save();
           if (dirty) editor.markDirty();
           editor.setActiveLocale("de");
           if (reason === "foreign lock" || reason === "locked section") {
@@ -1005,10 +1010,10 @@ describe("structural history eligibility", () => {
           expect.soft(history.canUndo.value, label).toBe(true);
           expect.soft(history.canRedo.value, label).toBe(true);
           history.redo();
-          expect.soft(editor.content.value.settings.width, label).toBe(700);
+          expect.soft(editor.content.value.settings.width, label).toBe(750);
           history.undo();
           history.undo();
-          expect.soft(editor.content.value.settings.width, label).toBe(600);
+          expect.soft(editor.content.value.settings.width, label).toBe(650);
           history.destroy();
         }
     },

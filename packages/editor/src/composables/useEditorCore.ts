@@ -201,6 +201,7 @@ const BLOCK_COMPONENT_MAP: Record<string, Component> = {
 export interface BaseEditorReturn {
   /** Committed create/load version, supplied by core. */
   loadVersion?: Readonly<Ref<number>>;
+  contentReplaced?: Readonly<Ref<number>>;
   state: DeepReadonly<{
     content: TemplateContent;
     selectedBlockId: string | null;
@@ -442,7 +443,10 @@ export function useEditorCore(
       setContent: (content: TemplateContent, markDirty?: boolean) =>
         editor.setContent(content, markDirty),
     });
-  if (!options.history) useHistoryInterceptor(editor, history);
+  if (options.history) {
+    if (editor.contentReplaced)
+      watch(editor.contentReplaced, () => history.clear(), { flush: "sync" });
+  } else useHistoryInterceptor(editor, history);
 
   // --- Block actions ---
   const blockActions = useBlockActions({
