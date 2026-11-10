@@ -216,6 +216,12 @@
       "prompt": "We already have our own condition builder. Plug it into the Templatical editor so authors add and edit a block's display condition there, keep our builder state, and cancel without changing the block.",
       "expected_output": "Follows reference/integrate.md and docs.md to guide/display-conditions. Uses init({ displayConditions: { onRequest } }). The callback receives { block } when the block has no condition and { current, block } when one is set; both are copies. Returns a DisplayCondition or null to cancel, with no undo step on null. current.data is opaque host state that must survive JSON.stringify and comes back on edit. With onRequest set, conditions and allowCustom are ignored. A resolved value needs string label, before and after. Remove condition clears it. Must not keep the built-in condition select alongside onRequest, and must not name an SDK version.",
       "files": []
+    },
+    {
+      "id": 37,
+      "prompt": "Embed the Templatical editor in our CRM, where users preview an email as a specific contact.",
+      "expected_output": "Follows integrate.md's Host capability map and docs.md to guide/preview-rendering. Uses init({ resolvePreview }) for the contact preview and does not build a preview-as or test-as bar outside the editor. The resolver receives { content, recipient? } (content is a copy), asks the CRM backend to resolve merge tags and evaluate logic tags for that contact, and returns TemplateContent. recipient is set only in the test-email dialog; in the editor's own preview mode the resolver returns its own default, such as the contact the CRM page is scoped to. States that the result is display-only, never in getContent(), a send or an export, and that a rejected resolver falls back to the unresolved template and says so. Pairs it with mergeTags (the CRM's token syntax and labelled tags), notes that resolvePreview supersedes MergeTag.sample, and offers testEmail for sending to the contact. Decides every capability-map row as use, not needed or later and reports those decisions. Never writes the contact's data into the saved template.",
+      "files": []
     }
   ]
 }

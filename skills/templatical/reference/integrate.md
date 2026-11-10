@@ -29,6 +29,64 @@ npm install @templatical/editor
 
 `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. The default install is recommended for the Issues panel and lint badges. `@templatical/renderer` and `pusher-js` stay optional peers; install them only for the features used (see [failure-modes.md](failure-modes.md)).
 
+## Host capability map
+
+Every `init()` option, by the host need it answers. When integrating, decide
+every row explicitly before writing the mount: **use**, **not needed** or
+**later**. Report the decisions to the user: each **use** and **later** row
+with a one-line reason, and the **not needed** options together on one line.
+A row the request does not settle is a question for the user, never a silent
+skip.
+
+Before building anything next to the editor (a preview-as bar, a media
+picker, a token inserter, a condition dialog), find its row. The editor
+usually has the hook, and a host-built copy sits outside the editor's
+preview, undo and export. Fetch the row's Docs page through
+[docs.md](docs.md) for the contract before wiring it; the storage providers'
+shared rules are in [providers.md](providers.md).
+
+| Host need | Options | When | Docs |
+| --- | --- | --- | --- |
+| Save and open templates in the host's backend | `templates` | The editor adds the name field, Save and the unsaved-changes guard; autosave is `templates.autoSave: true` (off by default). The host still opens a template with `editor.load(id)` or `editor.create()`. | `backend/templates` |
+| Keep the host's own persistence, or open existing JSON | `content`, `onChange` | `content` seeds the canvas (the editor edits a copy); `onChange` hands back the debounced content for the host to store. Use when the host owns saving and wants no editor Save button. | `backend/templates` |
+| Warn before a client-side route change drops unsaved edits | `onDirtyChange` | `beforeunload` cannot see SPA navigation. Fires on every dirty flip, with or without `templates`. | `backend/templates` |
+| Browse and restore past versions | `versionHistory` | Needs a loaded template. The editor never records a version itself: the host's `templates.save` decides when one is stored. | `backend/version-history` |
+| Sendable HTML from `toHtml()` | `render` | The SDK bundles no MJML compiler, so `toHtml()` rejects without `render.compileMjml` or `render.toHtml`. A local `toMjml()` needs the optional `@templatical/renderer` peer. | `backend/render` |
+| Self-hosted social icons in exported email | `socialIconsBaseUrl` | Local `toMjml()` / `toHtml()` path only. A `render.toMjml` provider passes the URL to its own `renderToMjml`. | `api/renderer-typescript` |
+| Preview an email as a specific recipient, with real data and evaluated logic | `resolvePreview` | Called with `{ content, recipient? }` when a preview opens and when the test-email recipient changes; `recipient` is set only in the test-email dialog. Returns `TemplateContent` resolved by the host's backend; with `layout`, `content` is the composed document, so return that shape. Display-only: never in `getContent()`, a send or an export. Supersedes `MergeTag.sample`, the no-backend option for value tags. | `guide/preview-rendering` |
+| Authors send themselves a test | `testEmail` | One `send({ recipient, content })`, plus `mjml` with `includeMjml`. `allowedRecipients` and `defaultRecipient` shape the dialog but are not a security boundary: validate the recipient on the server. | `backend/test-email` |
+| Personalization placeholders (first name, unsubscribe link) | `mergeTags` | `syntax` picks the token format (`liquid`, `handlebars`, `mailchimp`, `ampscript` or a custom `SyntaxPreset` object); `tags` lists them with `label`, `value` and an optional `sample` for previews; `onRequest` opens the host's own picker. | `guide/merge-tags` |
+| Conditionals and loops inside text | `logicTags` | Adds Insert logic with `tags` and open/close `pairs`, or the host's picker through `onRequest`. Typed or pasted logic is highlighted without it. | `guide/logic-tags` |
+| Show or hide a block per audience or segment | `displayConditions` | Wraps a block in before/after strings that the sending platform evaluates. A preset list, raw boxes with `allowCustom`, or the host's own condition builder through `onRequest` (see Display conditions below). | `guide/display-conditions` |
+| A media library over the host's storage | `media` | The editor's library modal over a `MediaProvider`; `createLocalStorageMediaProvider()` for demos. Without it (or `onRequestMedia`) image fields are URL-only. | `backend/media` |
+| The host's own DAM or picker (Bynder, Cloudinary, a host modal) | `onRequestMedia` | The editor calls it instead of its library and fills the field from the returned `{ url, alt?, width?, height? }`; it wins over `media`. Dropped files arrive in `context.files`. | `guide/images` |
+| Stored image srcs that are not directly displayable (file names, asset ids) | `resolveImageUrl` | Maps a stored src to a preview URL on the canvas, cached per src for the editor's lifetime, failures included. Content and export keep the stored value. | `guide/images` |
+| The host's own block types (product card, testimonial, data from its API) | `customBlocks` | Fields plus a Liquid template, optionally filled from the host's API. Follow [custom-block.md](custom-block.md). | `guide/custom-blocks` |
+| Reusable blocks or groups authors save and insert again | `savedBlocks` | The editor's save action and browser over the host's storage; `createLocalStorageSavedBlocksProvider()` for demos. Not `customBlocks`, which defines block types. | `backend/saved-blocks` |
+| Limit or reorder the block palette | `paletteBlocks` | Allowlist and order; custom blocks as `custom:<type>`; omitted or `[]` shows the full palette. Hiding a type never changes how existing content renders. | `api/editor` |
+| Platform chrome around every email (header, footer, imprint, background mat) | `layout`, `sectionWrapper` | A shell with one `slot`, composed at preview and export, never in `getContent()`. `sectionWrapper: false` hides Add wrapper; a card layout already disables it without the flag. | `guide/layout` |
+| House style for new blocks and empty templates | `blockDefaults`, `templateDefaults` | `blockDefaults` applies to new built-in blocks (custom blocks keep their own field defaults) and wins over the localized default text; `templateDefaults` applies only when no content is supplied. Existing content keeps its values. | `guide/defaults` |
+| Brand fonts | `fonts` | `customFonts` adds web fonts, `defaultFont` is the font new templates start on, `builtIns` narrows or removes the built-in list. | `guide/fonts` |
+| Brand colours in every colour picker | `colors` | `presets` show as a grid; `allowCustom: false` together with `presets` locks authors to them. | `api/editor` |
+| Hide template settings the host controls | `templateSettings` | `fields` is an allowlist, or `fields: false` for no Settings tab. Presentation only: set the hidden values in the content the host loads. | `api/editor` |
+| Match the host's design system and dark mode | `theme`, `uiTheme` | Prefer `--tpl-user-*` CSS variables (see Theming below); `theme` is for runtime-computed values. Dark values apply when `uiTheme` is `"dark"`, or `"auto"` (the default) on a dark system. | `guide/theming` |
+| White-label: no Templatical footer | `branding` | `false` hides "Powered by Templatical"; the licence does not require it. | `api/editor` |
+| Editor interface language | `locale` | The chrome's language and the default text of new Title, Paragraph and Button blocks. It also seeds a blank template's `settings.locale` unless `templateDefaults.locale` is set; loaded content keeps its own. Language versions are `localization`. | `guide/i18n` |
+| Review comments on a template | `comments`, `user` | `comments` needs `user` (`{ id, name }`) and a loaded template; an optional `subscribe` adds realtime. `user` also leaves this user's own sessions out of the collaborator bar. | `backend/comments` |
+| Real-time co-editing over the host's backend | `collaboration`, `onRemoteChange` | Needs `templates`, whose `load` returns the `revision`; edits travel as operations through `submit`. `onRemoteChange` tells the host about another session's batches. | `backend/collaboration` |
+| AI assistant, rewrite, alt text, Fix with AI | `ai` | Over the host's own model and backend; `createHttpAiProvider` from `@templatical/ai-kit/client` speaks the documented wire. Needs a loaded template; Fix with AI and Write alt text also need `lint` on. | `backend/ai` |
+| Quality checks in the Issues panel | `lint` | Needs the optional `@templatical/quality`, installed by default. A category set to `false` is off; `disabled: true` removes the Issues tab and badges. | `quality/options` |
+| Language versions of one template | `localization`, `onLocaleChange` | `localization.locales` enables the versions authors add in Languages; `onLocaleChange` reports the language on the canvas. Follow [localize.md](localize.md). | `guide/localized-templates` |
+| Machine translation of language versions | `translation` | Translate shows in an enabled non-default language view, so it needs `localization`; independent of `ai`. Keep model and service keys on the backend. | `backend/translation` |
+| Host code that reaches into the editor's DOM, or old browsers | `shadowDom` | Keep the default `true`. `false` only when host code needs `document.querySelector` on editor internals (`container.shadowRoot` usually works instead), or for browsers without `adoptedStyleSheets` (Firefox before 101, Safari before 16.4). Never for theming. | `guide/shadow-dom` |
+| The host handles small viewports itself | `smallScreenNotice` | Below a ~768px viewport the editor shows a "use a larger screen" notice; `false` renders the editor anyway. The check reads the viewport, not the container. | `api/editor` |
+| Live previews of HTML blocks on the canvas | `htmlBlockPreview` | Renders each HTML block in a sandboxed iframe with no scripts instead of a placeholder card. Off by default; export is unaffected. | `api/editor` |
+
+Not in the map, because no feature hangs on them: `container` is the mount
+target in every snippet, `onError` hands editor errors to the host's
+logger, and `changeDebounce` tunes the timer behind `onChange` and, with
+`templates.autoSave`, autosave (2000 ms by default).
+
 ## Vanilla
 
 ```html
@@ -56,8 +114,8 @@ Platform chrome around every email — view-in-browser, Imprint, a grey mat, a
 card — is `init({ layout })`, a JSON document with one `slot`. It is not
 blocks in the template JSON and not a `render.toMjml` splice. Preview and
 `toMjml()` / `toHtml()` compose the shell; `getContent()` does not.
-`sectionWrapper: false` hides Add wrapper on author sections (needed when the
-slot sits in a layout card). See [docs.md](docs.md) → `guide/layout`.
+`sectionWrapper: false` hides Add wrapper on author sections; a card layout
+already disables it, so the flag only removes the control. See [docs.md](docs.md) → `guide/layout`.
 
 ## Framework
 
