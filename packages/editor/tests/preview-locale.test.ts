@@ -3,7 +3,7 @@ import "./dom-stubs";
 import { expect, it } from "vitest";
 import { flushPromises } from "@vue/test-utils";
 import { nextTick } from "vue";
-import { type TemplateContent } from "@templatical/types";
+import { type PreviewResolveContext, type TemplateContent } from "@templatical/types";
 import { openLanguages } from "./helpers/localization";
 
 it("resolves the active language and renders its plain result without reapplying layers", async () => {
@@ -35,6 +35,31 @@ it("resolves the active language and renders its plain result without reapplying
   expect(wrapper.get('[data-block-id="title"]').text()).toContain(
     "Resolved fr: Hello",
   );
+});
+
+it("sends the preview surface on preview mode's open, locale and refresh calls", async () => {
+  const calls: Array<[PreviewResolveContext["surface"], PreviewResolveContext["trigger"]]> = [];
+  const { wrapper, editor } = await openLanguages({
+    localization: { locales: ["de", "fr"] },
+    resolvePreview: async ({ content, surface, trigger }) => {
+      calls.push([surface, trigger]);
+      return content;
+    },
+  });
+  editor.setActiveLocale("de");
+  editor.setPreviewMode(true);
+  await flushPromises();
+  editor.setActiveLocale("fr");
+  await nextTick();
+  await flushPromises();
+  (wrapper.vm as unknown as { refreshPreview: () => void }).refreshPreview();
+  await flushPromises();
+
+  expect(calls).toEqual([
+    ["preview", "open"],
+    ["preview", "locale"],
+    ["preview", "refresh"],
+  ]);
 });
 
 it("discards a pending response after the language changes", async () => {

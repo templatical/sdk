@@ -93,20 +93,22 @@ Deshalb übergibt der Hook die Vorlage dem System, das alle drei bereits besitzt
 ```ts
 interface PreviewResolveContext {
   content: TemplateContent; // die Vorlage im aktuellen Stand, als Kopie
-  recipient?: string;       // nur vorhanden, wo die Fläche einen Empfänger hat
+  recipient?: string;       // Adresse des Test-E-Mail-Dialogs, wenn dessen Feld eine enthält
+  surface: PreviewSurface;  // welche Vorschau aufruft
   trigger: PreviewResolveTrigger; // Grund für den Aufruf
 }
 
+type PreviewSurface = 'preview' | 'test-email';
 type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 ```
 
-`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. Wenn `layout` gesetzt ist, ist `content` das zusammengesetzte Dokument. Siehe [Layout](/de/guide/layout). `recipient` ist im Test-E-Mail-Dialog vorhanden und im Vorschaumodus des Editors nicht. Das Fehlen bedeutet *„kein bestimmter Empfänger"*: Geben Sie Ihren eigenen Standard zurück oder ermitteln Sie selbst einen, zum Beispiel indem Sie auf Ihre eigene Auswahl warten (siehe [Nutzer eine Beispielzielgruppe wählen lassen](#let-the-user-pick-an-example-audience)). Das erforderliche Feld `trigger` zeigt an, ob neue Beispieldaten ausgewählt oder die aktuelle Auswahl wiederverwendet werden soll.
+`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. Wenn `layout` gesetzt ist, ist `content` das zusammengesetzte Dokument. Siehe [Layout](/de/guide/layout). `surface` ist bei jedem Aufruf `"preview"` im Vorschaumodus des Editors und `"test-email"` im Test-E-Mail-Dialog. Unterscheiden Sie beide an `surface`, nicht an `recipient`: `recipient` fehlt im Vorschaumodus und auch im Dialog, solange dessen Empfängerfeld leer ist. Das Fehlen bedeutet *„kein bestimmter Empfänger"*: Geben Sie Ihren eigenen Standard zurück oder ermitteln Sie selbst einen, zum Beispiel indem Sie auf Ihre eigene Auswahl warten (siehe [Nutzer eine Beispielzielgruppe wählen lassen](#let-the-user-pick-an-example-audience)). Das erforderliche Feld `trigger` zeigt an, ob neue Beispieldaten ausgewählt oder die aktuelle Auswahl wiederverwendet werden soll.
 
 Geben Sie ein `TemplateContent` zurück. Alles andere wird als Fehler behandelt (siehe unten).
 
 ### Wann sie ausgeführt wird
 
-- **`open`**, sofort beim Öffnen des Vorschaumodus oder des Test-E-Mail-Dialogs. Der Dialog übergibt den vorausgewählten Empfänger in diesem einen Aufruf.
+- **`open`**, sofort beim Öffnen des Vorschaumodus oder des Test-E-Mail-Dialogs. Der Dialog übergibt den vorausgewählten Empfänger in diesem einen Aufruf, oder keinen, wenn sein Feld leer startet.
 - **`refresh`**, sofort beim Klick auf **Vorschau aktualisieren** oder beim Aufruf von `editor.refreshPreview()` durch den Host.
 - **`recipient`**, nach 500 ms Verzögerung beim Wechsel des Test-E-Mail-Empfängers. Schnelle Wechsel werden zu einem Aufruf zusammengefasst.
 - **`locale`**, sofort beim Wechsel der Template-Sprache während einer geöffneten Vorschau.
@@ -132,7 +134,7 @@ Das ist die Garantie, die es erlaubt, mit dem Hook kreativ zu sein: nichts, was 
 
 ### Prüfen {#check-it}
 
-Öffnen Sie die Vorschau: Der Resolver wird einmal mit `trigger: "open"` aufgerufen. Klicken Sie auf **Vorschau aktualisieren**: Er wird erneut mit `trigger: "refresh"` aufgerufen, und die Vorschau zeigt, was dieser Aufruf zurückgibt.
+Öffnen Sie die Vorschau: Der Resolver wird einmal mit `surface: "preview"` und `trigger: "open"` aufgerufen. Klicken Sie auf **Vorschau aktualisieren**: Er wird erneut mit `surface: "preview"` und `trigger: "refresh"` aufgerufen, und die Vorschau zeigt, was dieser Aufruf zurückgibt. Öffnen Sie den Test-E-Mail-Dialog: Er wird einmal mit `surface: "test-email"` und `trigger: "open"` aufgerufen, mit `recipient` nur, wenn das Feld vorausgefüllt startet.
 
 ## Anwendungsfälle
 
@@ -151,7 +153,7 @@ resolvePreview: async ({ content, recipient }) => {
 
 ### Nutzer eine Beispielzielgruppe wählen lassen {#let-the-user-pick-an-example-audience}
 
-Da der Callback `async` ist, können Sie **Ihre eigene UI** darin öffnen und erst nach der Auswahl auflösen. Öffnen Sie die Auswahl bei `open` und `refresh`; verwenden Sie die aktuelle Auswahl bei `recipient` und `locale` erneut. Wenn Sie verschiedene Arten von Abonnenten haben — kostenlos vs. Pro, Testphase vs. abgewandert, EU vs. USA — kann jemand so zwischen ihnen wechseln und jede Version der E-Mail sehen. Die einfache Auswahl unten nutzt eine Browser-Eingabe; ersetzen Sie sie durch Ihren eigenen Dialog.
+Da der Callback `async` ist, können Sie **Ihre eigene UI** darin öffnen und erst nach der Auswahl auflösen. Öffnen Sie die Auswahl im Vorschaumodus (`surface: "preview"`) bei `open` und `refresh`, und verwenden Sie bei jedem anderen Aufruf die aktuelle Auswahl erneut. Im Test-E-Mail-Dialog (`surface: "test-email"`) ist das Empfängerfeld die Wahl des Nutzers, daher bleibt Ihre Auswahl dort geschlossen, auch solange das Feld leer ist. Wenn Sie verschiedene Arten von Abonnenten haben — kostenlos vs. Pro, Testphase vs. abgewandert, EU vs. USA — kann jemand so zwischen ihnen wechseln und jede Version der E-Mail sehen. Die einfache Auswahl unten nutzt eine Browser-Eingabe; ersetzen Sie sie durch Ihren eigenen Dialog.
 
 ```ts
 import { init } from '@templatical/editor';
@@ -164,12 +166,12 @@ function openMyAudiencePicker(): string | null {
 
 await init({
   container: '#editor',
-  resolvePreview: async ({ content, recipient, trigger }) => {
-    if (trigger === 'open' || trigger === 'refresh') {
+  resolvePreview: async ({ content, recipient, surface, trigger }) => {
+    if (surface === 'preview' && (trigger === 'open' || trigger === 'refresh')) {
       // Eine abgebrochene Auswahl behält die aktuelle Wahl.
       selectedAudience = openMyAudiencePicker() ?? selectedAudience;
     }
-    if (!selectedAudience) return content;
+    if (!selectedAudience && !recipient) return content;
 
     const res = await fetch('/api/resolve-preview', {
       method: 'POST',
@@ -182,7 +184,7 @@ await init({
 });
 ```
 
-Während Ihre Auswahl bei der ersten Auflösung geöffnet ist, zeigt die Vorschau ihren Platzhalter; bei einer Aktualisierung bleibt die aktuelle Vorschau sichtbar. Solange noch keine Wahl getroffen wurde, zeigt die Rückgabe von `content` die unaufgelöste Vorlage ohne Fehlerhinweis.
+Während Ihre Auswahl bei der ersten Auflösung geöffnet ist, zeigt die Vorschau ihren Platzhalter; bei einer Aktualisierung bleibt die aktuelle Vorschau sichtbar. Solange weder eine Wahl getroffen wurde noch ein Empfänger vorliegt, zeigt die Rückgabe von `content` die unaufgelöste Vorlage ohne Fehlerhinweis. Ein im Test-E-Mail-Dialog eingegebener Empfänger wird auch aufgelöst, bevor jemand die Auswahl genutzt hat.
 
 ### Anzeigebedingungen auswerten
 

@@ -304,7 +304,7 @@ describe("TestEmailModal preview", () => {
     expect(resolver).toHaveBeenCalledTimes(1);
     await click(button);
     expect(resolver).toHaveBeenCalledTimes(2);
-    expect(resolver.mock.calls[1]![0]).toEqual({ content, trigger: "refresh" });
+    expect(resolver.mock.calls[1]![0]).toEqual({ content, surface: "test-email", trigger: "refresh" });
   });
 
   it("does not render Refresh preview without a resolver", () => {
@@ -320,6 +320,7 @@ describe("TestEmailModal preview", () => {
     expect(resolver.mock.calls[0]![0]).toEqual({
       content,
       recipient: "first@example.com",
+      surface: "test-email",
       trigger: "open",
     });
   });
@@ -332,6 +333,7 @@ describe("TestEmailModal preview", () => {
     expect(allowed.mock.calls[0]![0]).toEqual({
       content,
       recipient: "only@example.com",
+      surface: "test-email",
       trigger: "open",
     });
     wrapper.unmount();
@@ -339,7 +341,29 @@ describe("TestEmailModal preview", () => {
     const unseeded = vi.fn(async () => content);
     mountModal({ editorContent: content, resolver: unseeded });
     expect(unseeded).toHaveBeenCalledTimes(1);
-    expect(unseeded.mock.calls[0]![0]).toEqual({ content, trigger: "open" });
+    expect(unseeded.mock.calls[0]![0]).toEqual({ content, surface: "test-email", trigger: "open" });
+  });
+
+  it("resolves an address typed into the empty field as the test-email surface", async () => {
+    vi.useFakeTimers();
+    try {
+      const content = createDefaultTemplateContent();
+      const resolver = vi.fn(async () => content);
+      mountModal({ editorContent: content, resolver });
+      await vi.advanceTimersByTimeAsync(0);
+      await setValue(get<HTMLInputElement>(FIELD), "typed@example.com");
+      await vi.advanceTimersByTimeAsync(500);
+
+      expect(resolver).toHaveBeenCalledTimes(2);
+      expect(resolver.mock.calls[1]![0]).toEqual({
+        content,
+        recipient: "typed@example.com",
+        surface: "test-email",
+        trigger: "recipient",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("re-seeds and resolves once when a mounted dialog reopens, and is the refresh target only while open", async () => {
@@ -367,6 +391,7 @@ describe("TestEmailModal preview", () => {
     expect(resolver.mock.calls[0]![0]).toEqual({
       content,
       recipient: "me@example.com",
+      surface: "test-email",
       trigger: "open",
     });
     expect(registered).toBeTypeOf("function");
@@ -376,6 +401,7 @@ describe("TestEmailModal preview", () => {
     expect(resolver.mock.calls[1]![0]).toEqual({
       content,
       recipient: "me@example.com",
+      surface: "test-email",
       trigger: "refresh",
     });
 

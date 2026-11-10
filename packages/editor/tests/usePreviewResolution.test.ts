@@ -5,6 +5,7 @@ import { effectScope, nextTick, ref } from "vue";
 import {
   createDefaultTemplateContent,
   createParagraphBlock,
+  type PreviewSurface,
   type TemplateContent,
 } from "@templatical/types";
 import { usePreviewResolution } from "../src/composables/usePreviewResolution";
@@ -52,6 +53,7 @@ function setup(opts: {
   active?: boolean;
   recipient?: string;
   locale?: string;
+  surface?: PreviewSurface;
 }) {
   const active = ref(opts.active ?? true);
   const recipient = ref(opts.recipient);
@@ -62,6 +64,7 @@ function setup(opts: {
   const api = scope.run(() =>
     usePreviewResolution({
       resolvePreview: opts.resolvePreview,
+      surface: opts.surface ?? "test-email",
       getContent: () => content,
       isActive: () => active.value,
       getRecipient: () => recipient.value,
@@ -102,7 +105,7 @@ describe("usePreviewResolution happy path", () => {
   it("reports open, recipient, and locale with exact contexts", async () => {
     const hook = vi.fn().mockResolvedValue(resolvedWith("ready"));
     const { recipient, locale, content } = setup({ resolvePreview: hook });
-    expect(hook.mock.calls[0]![0]).toEqual({ content, trigger: "open" });
+    expect(hook.mock.calls[0]![0]).toEqual({ content, surface: "test-email", trigger: "open" });
     await vi.advanceTimersByTimeAsync(0);
 
     recipient.value = "a@example.com";
@@ -111,6 +114,7 @@ describe("usePreviewResolution happy path", () => {
     expect(hook.mock.calls[1]![0]).toEqual({
       content,
       recipient: "a@example.com",
+      surface: "test-email",
       trigger: "recipient",
     });
 
@@ -118,6 +122,7 @@ describe("usePreviewResolution happy path", () => {
     expect(hook.mock.calls[2]![0]).toEqual({
       content,
       recipient: "a@example.com",
+      surface: "test-email",
       trigger: "locale",
     });
   });
@@ -132,6 +137,7 @@ describe("usePreviewResolution happy path", () => {
     expect(hook.mock.calls[1]![0]).toEqual({
       content,
       recipient: "a@example.com",
+      surface: "test-email",
       trigger: "refresh",
     });
     await vi.advanceTimersByTimeAsync(DEBOUNCE);
@@ -377,6 +383,35 @@ describe("usePreviewResolution debouncing and staleness", () => {
   });
 });
 
+describe("usePreviewResolution surface", () => {
+  // A host that opens its own picker on preview mode's `open` must be able to
+  // tell the test-email dialog apart even while the dialog's field is empty,
+  // so the surface rides on every call rather than being implied by a
+  // recipient.
+  it.each(["preview", "test-email"] as const)(
+    "sends the caller's surface %s on open, recipient, locale and refresh",
+    async (surface) => {
+      const hook = vi.fn().mockResolvedValue(resolvedWith("ready"));
+      const { api, recipient, locale } = setup({ resolvePreview: hook, surface });
+      await vi.advanceTimersByTimeAsync(0);
+      recipient.value = "a@example.com";
+      await vi.advanceTimersByTimeAsync(DEBOUNCE);
+      locale.value = "de";
+      await vi.advanceTimersByTimeAsync(0);
+      api.refresh();
+
+      expect(
+        hook.mock.calls.map(([context]) => [context.surface, context.trigger]),
+      ).toEqual([
+        [surface, "open"],
+        [surface, "recipient"],
+        [surface, "locale"],
+        [surface, "refresh"],
+      ]);
+    },
+  );
+});
+
 describe("usePreviewResolution trigger scheduling", () => {
   it("debounces a recipient change made before the first answer lands", async () => {
     // Typing an address while the opening resolve is still out must not fire
@@ -387,7 +422,7 @@ describe("usePreviewResolution trigger scheduling", () => {
       .mockResolvedValue(resolvedWith("typed"));
     const { api, recipient, content } = setup({ resolvePreview: hook, recipient: "a@example.com" });
     expect(hook).toHaveBeenCalledTimes(1);
-    expect(hook.mock.calls[0]![0]).toEqual({ content, recipient: "a@example.com", trigger: "open" });
+    expect(hook.mock.calls[0]![0]).toEqual({ content, recipient: "a@example.com", surface: "test-email", trigger: "open" });
 
     recipient.value = "b@example.com";
     recipient.value = "bc@example.com";
@@ -400,7 +435,7 @@ describe("usePreviewResolution trigger scheduling", () => {
 
     await vi.advanceTimersByTimeAsync(1);
     expect(hook).toHaveBeenCalledTimes(2);
-    expect(hook.mock.calls[1]![0]).toEqual({ content, recipient: "bc@example.com", trigger: "recipient" });
+    expect(hook.mock.calls[1]![0]).toEqual({ content, recipient: "bc@example.com", surface: "test-email", trigger: "recipient" });
   });
 
   it("makes no call when a watched source re-fires with unchanged values", async () => {
@@ -413,6 +448,7 @@ describe("usePreviewResolution trigger scheduling", () => {
     scope.run(() =>
       usePreviewResolution({
         resolvePreview: hook,
+        surface: "preview",
         getContent: () => raw(),
         isActive: () => true,
         getLocale: () => settings.value.locale,

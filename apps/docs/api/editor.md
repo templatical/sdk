@@ -228,19 +228,22 @@ Other parts of the editor's chrome have their own keys: [`paletteBlocks`](#custo
 
 ## Preview resolution types {#preview-resolution-types}
 
-`resolvePreview` receives a required `trigger` that identifies why the preview was resolved. `PreviewResolveTrigger` and `PreviewResolveContext` are exported by `@templatical/types` and `@templatical/editor`.
+`resolvePreview` receives a required `surface` that identifies which preview is calling and a required `trigger` that identifies why the preview was resolved. `PreviewSurface`, `PreviewResolveTrigger` and `PreviewResolveContext` are exported by `@templatical/types` and `@templatical/editor`.
 
 ```ts
+export type PreviewSurface = "preview" | "test-email";
+
 export type PreviewResolveTrigger = "open" | "refresh" | "recipient" | "locale";
 
 export interface PreviewResolveContext {
   content: TemplateContent;
   recipient?: string;
+  surface: PreviewSurface;
   trigger: PreviewResolveTrigger;
 }
 ```
 
-See [Preview Rendering](/guide/preview-rendering) for the four triggers and the resolver lifecycle.
+See [Preview Rendering](/guide/preview-rendering) for the two surfaces, the four triggers and the resolver lifecycle.
 
 ## TemplaticalEditor
 

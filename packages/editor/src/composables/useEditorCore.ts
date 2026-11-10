@@ -777,6 +777,7 @@ export function useEditorCore(
   // public instance `getContent()` stays unshelled.
   const previewResolution = usePreviewResolution({
     resolvePreview: config.resolvePreview,
+    surface: "preview",
     getContent: () => {
       const raw = editor.content.value;
       if (!editor.state.previewMode) return raw;

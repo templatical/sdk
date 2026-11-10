@@ -228,19 +228,22 @@ Andere Teile der Editor-Oberfläche haben eigene Schlüssel: [`paletteBlocks`](#
 
 ## Typen für die Vorschauauflösung {#preview-resolution-types}
 
-`resolvePreview` erhält das erforderliche Feld `trigger`, das den Grund für die Auflösung angibt. `PreviewResolveTrigger` und `PreviewResolveContext` werden von `@templatical/types` und `@templatical/editor` exportiert.
+`resolvePreview` erhält das erforderliche Feld `surface`, das die aufrufende Vorschau angibt, und das erforderliche Feld `trigger`, das den Grund für die Auflösung angibt. `PreviewSurface`, `PreviewResolveTrigger` und `PreviewResolveContext` werden von `@templatical/types` und `@templatical/editor` exportiert.
 
 ```ts
+export type PreviewSurface = "preview" | "test-email";
+
 export type PreviewResolveTrigger = "open" | "refresh" | "recipient" | "locale";
 
 export interface PreviewResolveContext {
   content: TemplateContent;
   recipient?: string;
+  surface: PreviewSurface;
   trigger: PreviewResolveTrigger;
 }
 ```
 
-Die vier Auslöser und den Ablauf beschreibt [Vorschau-Rendering](/de/guide/preview-rendering).
+Die zwei Vorschauen, die vier Auslöser und den Ablauf beschreibt [Vorschau-Rendering](/de/guide/preview-rendering).
 
 ## TemplaticalEditor
 
