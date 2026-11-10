@@ -229,6 +229,7 @@ const content = editor.getContent();
 ### `setContent(content)`
 
 Ersetzt den Editor-Inhalt durch eine Kopie von `content`; spätere Änderungen an Ihrem Objekt erreichen den Editor nicht.
+Dabei werden der Rückgängig- und der Wiederholen-Verlauf gelöscht, ebenso wie bei `load(id)` und `create({ content })`.
 
 ```ts
 import { createDefaultTemplateContent } from "@templatical/types";
@@ -312,6 +313,8 @@ await editor.save();
 - **`create(input?)`** speichert den aktuellen Inhalt als neue Vorlage und übernimmt das Ergebnis. Übergeben Sie `content`, um zuvor den Inhalt des Editors zu ersetzen.
 - **`load(id)`** holt eine Vorlage und macht sie zum Inhalt des Editors; lokale Änderungen werden verworfen.
 - **`save()`** speichert Name und Inhalt der geladenen Vorlage als einen Patch.
+
+`load(id)` und `create({ content })` löschen den Rückgängig- und den Wiederholen-Verlauf; `create()` und `create({ name })` behalten ihn bei.
 
 Alle drei geben ein `Promise<Template>` zurück und sind stets im Typ vorhanden. Sie werden mit einer erklärenden Fehlermeldung abgelehnt, wenn kein `templates`-Provider konfiguriert ist, wenn der Provider die jeweilige Methode zurückhält (`create: false` / `save: false`) oder — bei `save()` — wenn noch nichts erstellt oder geladen wurde. Siehe [Speichern & Laden](/de/backend/templates).
 
@@ -413,6 +416,8 @@ const history = useHistory({
 history.undo();
 history.redo();
 ```
+
+Wenn Sie `useEditor`, `useHistory` und `useHistoryInterceptor` verbinden, löschen `load()` und `create({ content })` beide Verlaufsstapel. Das `editor.setContent()` des Core-Pakets löscht sie nicht, weil Rückgängig und Wiederholen damit Snapshots anwenden; rufen Sie `history.clear()` auf, wenn Sie Inhalte selbst ersetzen.
 
 ### `useCollaboration(options)`
 

@@ -26,6 +26,7 @@ export interface HistoryInterceptorEditor {
   updateSettings: (updates: Partial<TemplateSettings>) => void;
   isBlockLocked: (blockId: string) => boolean;
   activeLocale?: Ref<string | null>;
+  contentReplaced?: Readonly<Ref<number>>;
   addLocale?: (locale: string) => void;
   removeLocale?: (locale: string) => void;
   setBlockHidden?: (blockId: string, hidden: boolean) => void;
@@ -44,6 +45,10 @@ export function useHistoryInterceptor(
   editor: HistoryInterceptorEditor,
   history: UseHistoryReturn,
 ): void {
+  if (editor.contentReplaced) {
+    // @vue/reactivity watchers run synchronously by default.
+    watch(editor.contentReplaced, () => history.clear());
+  }
   if (editor.activeLocale)
     watch(editor.activeLocale, () => history.flushDebounce?.());
   for (const key of [

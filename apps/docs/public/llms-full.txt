@@ -1134,6 +1134,7 @@ const content = editor.getContent();
 ### `setContent(content)`
 
 Replaces the editor content with a copy of `content`; later changes to your object don't reach the editor.
+This clears undo and redo history, as do `load(id)` and `create({ content })`.
 
 ```ts
 import { createDefaultTemplateContent } from "@templatical/types";
@@ -1217,6 +1218,8 @@ await editor.save();
 - **`create(input?)`** persists the current content as a new template and adopts the result. Pass `content` to replace the editor's content first.
 - **`load(id)`** fetches a template and makes it the editor's content, discarding local edits.
 - **`save()`** persists the loaded template's name and content as one patch.
+
+`load(id)` and `create({ content })` clear undo and redo history; `create()` and `create({ name })` keep it.
 
 All three return a `Promise<Template>` and are always present on the type. They reject with an explanatory error when no `templates` provider is configured, when the provider withheld the relevant method (`create: false` / `save: false`), or — for `save()` — when nothing has been created or loaded yet. See [Saving & Loading](/backend/templates).
 
@@ -1318,6 +1321,8 @@ const history = useHistory({
 history.undo();
 history.redo();
 ```
+
+When you wire `useEditor`, `useHistory`, and `useHistoryInterceptor` together, `load()` and `create({ content })` clear both stacks. The core `editor.setContent()` does not clear them because undo and redo use it to apply snapshots; call `history.clear()` when you replace content yourself.
 
 ### `useCollaboration(options)`
 

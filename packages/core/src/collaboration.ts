@@ -81,6 +81,10 @@ export interface CollaborationEditor {
   selectBlock: (blockId: string | null) => void;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   markDirty: () => void;
+  /** Distinguishes a committed create/load from a save or a name change. */
+  loadVersion?: Readonly<Ref<number>>;
+  /** Distinguishes a replacement from create() persisting the current content. */
+  contentReplaced?: Readonly<Ref<number>>;
 }
 
 /** Something to tell the person at this editor. */
@@ -945,26 +949,37 @@ export function useCollaboration(
     try {
       const template = await options.loadTemplate(session.templateId);
       if (session.retired) return;
-      const at = template.revision ?? session.revision;
-      session.confirmed = safeClone(template.content);
-      session.revision = at;
-      session.remote = new Map(
-        [...session.remote].filter(([remoteAt]) => remoteAt > at),
-      );
-      for (const [ownAt, batch] of [...session.own]) {
-        if (ownAt <= at) {
-          session.own.delete(ownAt);
-          dropPending(session, batch);
-        }
-      }
-      if (session === active) revision.value = at;
-      rebuild(session);
-      drain(session);
+      adoptConfirmed(session, template);
     } catch (error) {
       reportError(error);
     } finally {
       session.recovering = false;
     }
+  }
+
+  /** The same baseline/replay rule serves a backend re-sync and an explicit same-id load. */
+  function adoptConfirmed(
+    session: Session,
+    template: {
+      revision?: number;
+      content: TemplateContent | CollaborationTemplate["content"];
+    },
+  ): void {
+    const at = template.revision ?? session.revision;
+    session.confirmed = safeClone(template.content) as TemplateContent;
+    session.revision = at;
+    session.remote = new Map(
+      [...session.remote].filter(([remoteAt]) => remoteAt > at),
+    );
+    for (const [ownAt, batch] of [...session.own]) {
+      if (ownAt <= at) {
+        session.own.delete(ownAt);
+        dropPending(session, batch);
+      }
+    }
+    if (session === active) revision.value = at;
+    rebuild(session);
+    drain(session);
   }
 
   // --- Sessions --------------------------------------------------------------
@@ -1020,7 +1035,10 @@ export function useCollaboration(
     );
   }
 
-  function start(template: CollaborationTemplate): void {
+  function start(
+    template: CollaborationTemplate,
+    history?: Pick<Session, "undo" | "redo">,
+  ): void {
     const content = safeClone(template.content) as TemplateContent;
     const session: Session = {
       templateId: template.id,
@@ -1036,8 +1054,8 @@ export function useCollaboration(
       leave: null,
       retired: false,
       recovering: false,
-      undo: [],
-      redo: [],
+      undo: history?.undo ?? [],
+      redo: history?.redo ?? [],
       waiters: [],
     };
     active = session;
@@ -1073,7 +1091,10 @@ export function useCollaboration(
     }
   }
 
-  function switchTo(template: CollaborationTemplate | null): void {
+  function switchTo(
+    template: CollaborationTemplate | null,
+    history?: Pick<Session, "undo" | "redo">,
+  ): void {
     if (active && active.templateId === template?.id) return;
     if (active) {
       clearTypingTimer();
@@ -1086,7 +1107,7 @@ export function useCollaboration(
     wanted = null;
     reconcileLock();
     bumpHistory();
-    if (template) start(template);
+    if (template) start(template, history);
   }
 
   // --- Locks -----------------------------------------------------------------
@@ -1358,6 +1379,13 @@ export function useCollaboration(
 
   // --- History ---------------------------------------------------------------
 
+  function clearHistory(): void {
+    if (!active) return;
+    active.undo = [];
+    active.redo = [];
+    bumpHistory();
+  }
+
   function step(direction: "undo" | "redo"): void {
     const session = active;
     if (!session || suspended) return;
@@ -1467,6 +1495,7 @@ export function useCollaboration(
 
   function attach(target: CollaborationEditor): void {
     editor = target;
+    let replacementAtLastCommit = target.contentReplaced?.value ?? 0;
     // A snapshot cannot distinguish which sibling was dragged in an adjacent
     // swap. Capture the explicit move before the queued snapshot diff can pick
     // its neighbour and conflict with that neighbour's lock instead.
@@ -1519,7 +1548,15 @@ export function useCollaboration(
     stopWatching.push(
       watch(
         () => target.state.template,
-        (template) => switchTo(template),
+        (template) => {
+          // create/load commit through loadVersion after all of their state is set.
+          if (
+            !target.loadVersion ||
+            !target.contentReplaced ||
+            !target.state.isLoading
+          )
+            switchTo(template);
+        },
         {
           immediate: true,
         },
@@ -1531,6 +1568,29 @@ export function useCollaboration(
         (loading) => (loading ? capture(true, true) : scheduleCapture()),
       ),
     );
+    const replacement = target.contentReplaced;
+    const committed = target.loadVersion;
+    if (replacement && committed) {
+      stopWatching.push(
+        watch(replacement, clearHistory),
+        watch(committed, () => {
+          const replaced = replacement.value !== replacementAtLastCommit;
+          replacementAtLastCommit = replacement.value;
+          const template = target.state.template;
+          if (active?.templateId === template?.id) {
+            if (replaced && active && template)
+              adoptConfirmed(active, template);
+            return;
+          }
+          // A contentless create copies the current document and its valid steps.
+          const history =
+            !replaced && active && template
+              ? { undo: active.undo, redo: active.redo }
+              : undefined;
+          switchTo(template, history);
+        }),
+      );
+    }
     if (typeof window !== "undefined") {
       window.addEventListener("pagehide", onPageHide);
       window.addEventListener("blur", flush);
@@ -1587,12 +1647,7 @@ export function useCollaboration(
     attach,
     undo: () => step("undo"),
     redo: () => step("redo"),
-    clearHistory: () => {
-      if (!active) return;
-      active.undo = [];
-      active.redo = [];
-      bumpHistory();
-    },
+    clearHistory,
     flush,
     settle,
     suspend,
