@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
@@ -77,7 +78,7 @@ function exported(...args: string[]) {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(import.meta.dirname, ".strings-"));
+  dir = mkdtempSync(join(tmpdir(), "tt-strings-"));
   file = join(dir, "template.json");
   fixture();
 });

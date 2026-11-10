@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   createCustomBlock,
@@ -524,7 +525,7 @@ describe("localized template validation", () => {
       const result = validateTemplate(content);
       expect(result.valid).toBe(false);
       expect(result.errors.join("\n")).toMatch(message);
-      const dir = mkdtempSync(join(import.meta.dirname, ".validate-l10n-"));
+      const dir = mkdtempSync(join(tmpdir(), "tt-validate-l10n-"));
       try {
         const file = join(dir, "template.json");
         writeFileSync(file, JSON.stringify(content));
