@@ -902,12 +902,12 @@ function processRow(
     return blocks;
   });
   if (!promoted) warnIfColumnBoxDropped(columns, warnings);
-  // Widths that are a length of this room — an image, a lone icon, a px
-  // divider — are chosen with the padding already returned, so giving it
-  // back does not resize them. A full button, a percentage divider, a menu
-  // and an HTML block are a share of the column; the returned padding is
-  // what makes that share the source column. A video keeps its stated px
-  // width and a social row keeps its icon size.
+  // Widths that are a length of this room — an image, a video, a lone icon,
+  // a px divider — are chosen with the padding already returned, so giving
+  // it back does not resize them. A full button, a percentage divider, a
+  // menu and an HTML block are a share of the column; the returned padding
+  // is what makes that share the source column. A social row keeps its icon
+  // size.
   children.forEach((column, index) => {
     if (sourceWidths) {
       giveBackInnerPadding(
