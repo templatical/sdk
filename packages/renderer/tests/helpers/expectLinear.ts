@@ -14,12 +14,17 @@ import { expect } from "vitest";
  * character and skew the ratio. Each size keeps its cheapest of five interleaved
  * rounds, so a garbage-collection pause or a JIT tier-up in one round does not
  * count.
+ *
+ * Repetitions always start at one and only double, so each round costs just
+ * over the 5 ms floor. A caller-chosen starting count above the floor would make
+ * all ten rounds that expensive and push the test past vitest's timeout under CI
+ * coverage.
  */
 export function expectLinear(
   build: (n: number) => () => unknown,
   n: number,
-  repetitions = 1,
 ): { repetitions: number; ratio: number } {
+  let repetitions = 1;
   const runSmall = build(n);
   const runLarge = build(4 * n);
   function cost(run: () => unknown): number {

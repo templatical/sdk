@@ -74,29 +74,21 @@ describe("compatibility grouping", () => {
   });
 
   it("scales same-group declaration collection linearly", () => {
-    expectLinear(
-      (n) => {
-        const css = Array.from({ length: n }, () =>
-          declaration("background", "url(hero.png)"),
-        );
-        const input = scan(css);
-        return () => detect(input, "compat.css-background-image");
-      },
-      4_000,
-      7,
-    );
+    expectLinear((n) => {
+      const css = Array.from({ length: n }, () =>
+        declaration("background", "url(hero.png)"),
+      );
+      const input = scan(css);
+      return () => detect(input, "compat.css-background-image");
+    }, 4_000);
   }, 30_000);
 
   it("scales client family collection linearly", () => {
-    expectLinear(
-      (n) => {
-        const clients = Array.from({ length: n }, (_, i) =>
-          client(`gmail.web${i}`, "unsupported"),
-        );
-        return () => formatClientGroups(clients, "unsupported", "en");
-      },
-      3_000,
-      16,
-    );
+    expectLinear((n) => {
+      const clients = Array.from({ length: n }, (_, i) =>
+        client(`gmail.web${i}`, "unsupported"),
+      );
+      return () => formatClientGroups(clients, "unsupported", "en");
+    }, 3_000);
   }, 30_000);
 });

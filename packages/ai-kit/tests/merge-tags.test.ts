@@ -10,14 +10,10 @@ import { expectLinear } from "./helpers/expectLinear";
 describe("merge tags in AI input and output (S7 Y5)", () => {
   it("scans unclosed built-in openers linearly", () => {
     expect(mergeTagTokens("{{".repeat(90_000), "liquid")).toEqual([]);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => mergeTagTokens(value, "liquid");
-      },
-      500,
-      1_000,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => mergeTagTokens(value, "liquid");
+    }, 500);
   });
   it.each([
     [

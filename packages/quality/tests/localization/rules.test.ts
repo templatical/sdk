@@ -43,26 +43,22 @@ describe("localization rules", () => {
       }),
     ];
     expect(localization(content)).toEqual([]);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        const content = template();
-        content.blocks = [
-          createParagraphBlock({
-            id: "copy",
-            content: value,
-            l10n: {
-              de: {
-                text: { content: { value, sourceHash: sourceHash(value) } },
-              },
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      const content = template();
+      content.blocks = [
+        createParagraphBlock({
+          id: "copy",
+          content: value,
+          l10n: {
+            de: {
+              text: { content: { value, sourceHash: sourceHash(value) } },
             },
-          }),
-        ];
-        return () => localization(content);
-      },
-      1_000,
-      25,
-    );
+          },
+        }),
+      ];
+      return () => localization(content);
+    }, 1_000);
   }, 30_000);
   it("compares complete tags followed by unclosed openers linearly", () => {
     const value = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
@@ -77,26 +73,22 @@ describe("localization rules", () => {
       }),
     ];
     expect(localization(content)).toEqual([]);
-    expectLinear(
-      (n) => {
-        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
-        const content = template();
-        content.blocks = [
-          createParagraphBlock({
-            id: "copy",
-            content: value,
-            l10n: {
-              de: {
-                text: { content: { value, sourceHash: sourceHash(value) } },
-              },
+    expectLinear((n) => {
+      const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+      const content = template();
+      content.blocks = [
+        createParagraphBlock({
+          id: "copy",
+          content: value,
+          l10n: {
+            de: {
+              text: { content: { value, sourceHash: sourceHash(value) } },
             },
-          }),
-        ];
-        return () => localization(content);
-      },
-      500,
-      10,
-    );
+          },
+        }),
+      ];
+      return () => localization(content);
+    }, 500);
   }, 30_000);
   it("reports each missing field including settings with null blockId, only in a version", () => {
     const content = template();

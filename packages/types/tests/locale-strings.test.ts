@@ -161,39 +161,27 @@ describe("maskTags", () => {
   it("masks many unclosed built-in openers linearly", () => {
     const text = "{{".repeat(90_000);
     expect(maskTags(text, liquid, "text")).toEqual({ text, tokens: [] });
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => maskTags(value, liquid, "text");
-      },
-      5_000,
-      40,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => maskTags(value, liquid, "text");
+    }, 5_000);
   });
   it("masks unclosed openers from a spread preset linearly", () => {
     const syntax = { ...liquid, opener: "<<" };
     const text = "{{".repeat(90_000);
     expect(maskTags(text, syntax, "text")).toEqual({ text, tokens: [] });
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => maskTags(value, syntax, "text");
-      },
-      5_000,
-      40,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => maskTags(value, syntax, "text");
+    }, 5_000);
   });
   it("masks many complete tags followed by unclosed openers linearly", () => {
     const text = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
     expect(maskTags(text, liquid, "text").tokens).toHaveLength(20_000);
-    expectLinear(
-      (n) => {
-        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
-        return () => maskTags(value, liquid, "text");
-      },
-      500,
-      40,
-    );
+    expectLinear((n) => {
+      const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+      return () => maskTags(value, liquid, "text");
+    }, 500);
   });
   it("masks overlapping candidates and unclosed openers linearly", () => {
     expect(
@@ -206,14 +194,10 @@ describe("maskTags", () => {
     expect(
       maskTags(text, SYNTAX_PRESETS.handlebars, "text").tokens,
     ).toHaveLength(20_000);
-    expectLinear(
-      (n) => {
-        const value = "{{#if x}}}".repeat(n) + "{{".repeat(n * 3);
-        return () => maskTags(value, SYNTAX_PRESETS.handlebars, "text");
-      },
-      500,
-      20,
-    );
+    expectLinear((n) => {
+      const value = "{{#if x}}}".repeat(n) + "{{".repeat(n * 3);
+      return () => maskTags(value, SYNTAX_PRESETS.handlebars, "text");
+    }, 500);
   });
   it("masks chips whole and raw tags in document order, preserving original bytes", () => {
     const html = `<p>{{before}} Hi ${chip}, {{ city }} and {{first_name}}</p>`;

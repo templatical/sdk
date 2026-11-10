@@ -70,14 +70,10 @@ describe("built-in merge-tag consumers", () => {
     const spread = { ...liquid, opener: "<<" };
     const text = "{{".repeat(90_000);
     expect(collectHits(text, [], spread)).toEqual([]);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => collectHits(value, [], spread);
-      },
-      500,
-      100,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => collectHits(value, [], spread);
+    }, 500);
   });
 
   it("segments a field with unclosed openers linearly", () => {
@@ -105,48 +101,40 @@ describe("built-in merge-tag consumers", () => {
     expect(segments(unclosed)).toEqual([{ type: "text", value: unclosed }]);
     const apps: ReturnType<typeof createApp>[] = [];
     onTestFinished(() => apps.forEach((app) => app.unmount()));
-    expectLinear(
-      (n) => {
-        const first = "{{".repeat(n);
-        const model = ref(first);
-        let field: ReturnType<typeof useMergeTagField> | undefined;
-        const app = createApp(
-          defineComponent({
-            setup() {
-              field = useMergeTagField({
-                modelValue: () => model.value,
-                emit: () => {},
-                elementRef: ref(null),
-              });
-              return () => h("div");
-            },
-          }),
-        );
-        app.provide(MERGE_TAGS_KEY, shallowRef([]));
-        app.provide(MERGE_TAG_SYNTAX_KEY, liquid);
-        app.mount(document.createElement("div"));
-        apps.push(app);
-        return () => {
-          model.value = model.value === first ? first + " " : first;
-          return field!.segments.value;
-        };
-      },
-      500,
-      400,
-    );
+    expectLinear((n) => {
+      const first = "{{".repeat(n);
+      const model = ref(first);
+      let field: ReturnType<typeof useMergeTagField> | undefined;
+      const app = createApp(
+        defineComponent({
+          setup() {
+            field = useMergeTagField({
+              modelValue: () => model.value,
+              emit: () => {},
+              elementRef: ref(null),
+            });
+            return () => h("div");
+          },
+        }),
+      );
+      app.provide(MERGE_TAGS_KEY, shallowRef([]));
+      app.provide(MERGE_TAG_SYNTAX_KEY, liquid);
+      app.mount(document.createElement("div"));
+      apps.push(app);
+      return () => {
+        model.value = model.value === first ? first + " " : first;
+        return field!.segments.value;
+      };
+    }, 500);
   });
   it("splits unclosed openers linearly", () => {
     expect(splitMergeTagLabelSegments(unclosed, [], liquid)).toEqual([
       { type: "text", value: unclosed },
     ]);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => splitMergeTagLabelSegments(value, [], liquid);
-      },
-      500,
-      300,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => splitMergeTagLabelSegments(value, [], liquid);
+    }, 500);
   });
 
   it("checks complete tags before the caret linearly", () => {
@@ -154,15 +142,11 @@ describe("built-in merge-tag consumers", () => {
     expect(
       findOpenMergeTagTrigger(value, value.length, "{{", "}}", liquid),
     ).toBeNull();
-    expectLinear(
-      (n) => {
-        const text = "{{".repeat(n) + "\n{{done}}";
-        return () =>
-          findOpenMergeTagTrigger(text, text.length, "{{", "}}", liquid);
-      },
-      500,
-      350,
-    );
+    expectLinear((n) => {
+      const text = "{{".repeat(n) + "\n{{done}}";
+      return () =>
+        findOpenMergeTagTrigger(text, text.length, "{{", "}}", liquid);
+    }, 500);
   });
 
   it("checks complete tags with a spread syntax linearly", () => {
@@ -171,40 +155,28 @@ describe("built-in merge-tag consumers", () => {
     expect(
       findOpenMergeTagTrigger(value, value.length, "{{", "}}", spread),
     ).toBeNull();
-    expectLinear(
-      (n) => {
-        const text = "{{".repeat(n) + "\n{{done}}";
-        return () =>
-          findOpenMergeTagTrigger(text, text.length, "{{", "}}", spread);
-      },
-      500,
-      350,
-    );
+    expectLinear((n) => {
+      const text = "{{".repeat(n) + "\n{{done}}";
+      return () =>
+        findOpenMergeTagTrigger(text, text.length, "{{", "}}", spread);
+    }, 500);
   });
 
   it("extracts raw tokens linearly", () => {
     expect(mergeTagTokens(unclosed, liquid, "text")).toEqual([]);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => mergeTagTokens(value, liquid, "text");
-      },
-      500,
-      350,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => mergeTagTokens(value, liquid, "text");
+    }, 500);
   });
   it("extracts many complete raw tokens linearly", () => {
     expect(
       mergeTagTokens("{{x}}".repeat(110_000), liquid, "text"),
     ).toHaveLength(110_000);
-    expectLinear(
-      (n) => {
-        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
-        return () => mergeTagTokens(value, liquid, "text");
-      },
-      500,
-      60,
-    );
+    expectLinear((n) => {
+      const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+      return () => mergeTagTokens(value, liquid, "text");
+    }, 500);
   });
 
   it("normalizes text after unclosed openers linearly", () => {
@@ -212,14 +184,10 @@ describe("built-in merge-tag consumers", () => {
     expect(normalizeMergeTagsInHtml(html, [], liquid)).toContain(
       '<span data-merge-tag="{{done}}">{{done}}</span>',
     );
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n) + "\n{{done}}";
-        return () => normalizeMergeTagsInHtml(value, [], liquid);
-      },
-      500,
-      350,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n) + "\n{{done}}";
+      return () => normalizeMergeTagsInHtml(value, [], liquid);
+    }, 500);
   });
   it("collects many nonoverlapping hits linearly", () => {
     const hits = collectHits("{{x}}".repeat(130_000), [], liquid);
@@ -232,13 +200,9 @@ describe("built-in merge-tag consumers", () => {
       label: "{{x}}",
     });
     expect(hits.at(-1)?.start).toBe(649_995);
-    expectLinear(
-      (n) => {
-        const value = "{{x}}".repeat(n);
-        return () => collectHits(value, [], liquid);
-      },
-      500,
-      80,
-    );
+    expectLinear((n) => {
+      const value = "{{x}}".repeat(n);
+      return () => collectHits(value, [], liquid);
+    }, 500);
   });
 });
