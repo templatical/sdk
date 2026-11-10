@@ -147,6 +147,10 @@ describe("convertModule", () => {
     // polynomial-ReDoS — every `<p` start re-scanned the rest of the input
     // for `</p>`. Adversarial input with many `<p>a` chunks but no `</p>`
     // used to stall the regex. The manual scanner is strictly linear.
+    // Coverage slows convertModule's linear passes but not the regex engine,
+    // so the old pattern clears the ratio limit under coverage (CI's only mode)
+    // from n = 8000, at about 12; at 4000 it reads 9–10. That size needs more
+    // than the default 5 s timeout on CI.
     it("wraps paragraph content in linear time on `<p>a<p>a<p>a…` input (ReDoS regression)", () => {
       const wrap = (chunks: number) =>
         makeModule("mailup-bee-newsletter-modules-text", {
@@ -162,31 +166,36 @@ describe("convertModule", () => {
       expectLinear((n) => {
         const mod = wrap(n);
         return () => convertModule(mod, []);
-      }, 4_000);
-    });
+      }, 8_000);
+    }, 30_000);
 
-    // Unclosed roots stay nested. Styling that chain has to stay linear.
+    // Unclosed roots stay nested. Styling that chain has to stay linear. CI's
+    // coverage run needs more than the default 5 s timeout for the two sizes.
     it.each([
       ["<li>a", "list"],
       ["<h1>a", "text"],
       ["<ul>a", "list"],
-    ] as const)("styles unclosed %s in linear time", (chunk, kind) => {
-      const styled = (tags: number) => {
-        const payload = {
-          style: { color: "#123456" },
-          html: chunk.repeat(tags),
+    ] as const)(
+      "styles unclosed %s in linear time",
+      (chunk, kind) => {
+        const styled = (tags: number) => {
+          const payload = {
+            style: { color: "#123456" },
+            html: chunk.repeat(tags),
+          };
+          return makeModule(
+            `mailup-bee-newsletter-modules-${kind}`,
+            kind === "list" ? { list: payload } : { text: payload },
+          );
         };
-        return makeModule(
-          `mailup-bee-newsletter-modules-${kind}`,
-          kind === "list" ? { list: payload } : { text: payload },
-        );
-      };
-      expect(convertModule(styled(20_000), []).block.type).toBe("paragraph");
-      expectLinear((n) => {
-        const mod = styled(n);
-        return () => convertModule(mod, []);
-      }, 4_000);
-    });
+        expect(convertModule(styled(20_000), []).block.type).toBe("paragraph");
+        expectLinear((n) => {
+          const mod = styled(n);
+          return () => convertModule(mod, []);
+        }, 4_000);
+      },
+      30_000,
+    );
   });
 
   // BeeFree paragraphs are margin 0. An absent `paragraphSpacing` renders as
