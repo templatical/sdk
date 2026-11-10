@@ -6,14 +6,10 @@ import { expectLinear } from "./expectLinear";
 describe("parseStyleSheet", () => {
   it("scans brace-free CSS linearly", () => {
     expect(parseStyleSheet("div;".repeat(20_000))).toEqual([]);
-    expectLinear(
-      (n) => {
-        const value = "div;".repeat(n);
-        return () => parseStyleSheet(value);
-      },
-      100,
-      2_500,
-    );
+    expectLinear((n) => {
+      const value = "div;".repeat(n);
+      return () => parseStyleSheet(value);
+    }, 100);
   });
   it("keeps brace-free inner rules after malformed outer bodies", () => {
     expect(parseStyleSheet(".card { .title { font-size: 20px } }")).toEqual([

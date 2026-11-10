@@ -53,14 +53,10 @@ describe("built-in merge-tag scanning", () => {
     const syntax = { ...SYNTAX_PRESETS.liquid, opener: "<<" };
     const text = "{{".repeat(90_000);
     expect(scanSyntaxMatches(text, syntax, "value")).toEqual([]);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => scanSyntaxMatches(value, syntax, "value");
-      },
-      500,
-      200,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => scanSyntaxMatches(value, syntax, "value");
+    }, 500);
   });
 
   it("keeps changed flags and custom value patterns on the regex path", () => {
@@ -100,28 +96,20 @@ describe("built-in merge-tag scanning", () => {
     const syntax = { ...SYNTAX_PRESETS.liquid, opener: "<<" };
     const text = "{{x}}".repeat(20_000) + "{{".repeat(90_000);
     expect(scanCombinedSyntaxMatches(text, syntax)).toHaveLength(20_000);
-    expectLinear(
-      (n) => {
-        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
-        return () => scanCombinedSyntaxMatches(value, syntax);
-      },
-      100,
-      200,
-    );
+    expectLinear((n) => {
+      const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+      return () => scanCombinedSyntaxMatches(value, syntax);
+    }, 100);
   });
 
   it("rejects unclosed openers in a spread preset without a full regex scan", () => {
     const syntax = { ...SYNTAX_PRESETS.liquid, opener: "<<" };
     const text = "{{".repeat(90_000);
     expect(containsMergeTag(text, syntax)).toBe(false);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => containsMergeTag(value, syntax);
-      },
-      400,
-      500,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => containsMergeTag(value, syntax);
+    }, 400);
   });
 
   it("scans custom syntax from an offset without changing its regex state", () => {
@@ -265,14 +253,10 @@ describe("built-in merge-tag scanning", () => {
     expect(scanCombinedSyntaxMatches(text, SYNTAX_PRESETS.liquid)).toHaveLength(
       20_000,
     );
-    expectLinear(
-      (n) => {
-        const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
-        return () => scanCombinedSyntaxMatches(value, SYNTAX_PRESETS.liquid);
-      },
-      100,
-      200,
-    );
+    expectLinear((n) => {
+      const value = "{{x}}".repeat(n) + "{{".repeat(n * 4);
+      return () => scanCombinedSyntaxMatches(value, SYNTAX_PRESETS.liquid);
+    }, 100);
   });
 
   it("rewrites many spans without the target attribute linearly", () => {
@@ -282,14 +266,10 @@ describe("built-in merge-tag scanning", () => {
     ).toBe('<span>a</span><span data-merge-tag="{{x}}">X</span>');
     const html = "<span>".repeat(40_000) + "</span>";
     expect(resolveHtmlMergeTagLabels(html, [])).toBe(html);
-    expectLinear(
-      (n) => {
-        const value = "<span>".repeat(n) + "<span ".repeat(n) + "</span>";
-        return () => resolveHtmlMergeTagLabels(value, []);
-      },
-      100,
-      1_000,
-    );
+    expectLinear((n) => {
+      const value = "<span>".repeat(n) + "<span ".repeat(n) + "</span>";
+      return () => resolveHtmlMergeTagLabels(value, []);
+    }, 100);
   });
 
   it("stops at the first match when only asked whether a tag exists", () => {
@@ -327,27 +307,19 @@ describe("built-in merge-tag scanning", () => {
   it("rewrites past malformed span prefixes linearly", () => {
     const html = "<span ".repeat(16_000) + "<span></span>";
     expect(resolveHtmlMergeTagLabels(html, [])).toBe(html);
-    expectLinear(
-      (n) => {
-        const value = "<span ".repeat(n) + "<span></span>";
-        return () => resolveHtmlMergeTagLabels(value, []);
-      },
-      100,
-      1_000,
-    );
+    expectLinear((n) => {
+      const value = "<span ".repeat(n) + "<span></span>";
+      return () => resolveHtmlMergeTagLabels(value, []);
+    }, 100);
   });
 
   it("rejects many unclosed liquid openers linearly", () => {
     const input = "{{".repeat(90_000);
     expect(containsMergeTag(input, SYNTAX_PRESETS.liquid)).toBe(false);
-    expectLinear(
-      (n) => {
-        const value = "{{".repeat(n);
-        return () => containsMergeTag(value, SYNTAX_PRESETS.liquid);
-      },
-      400,
-      500,
-    );
+    expectLinear((n) => {
+      const value = "{{".repeat(n);
+      return () => containsMergeTag(value, SYNTAX_PRESETS.liquid);
+    }, 400);
   });
 
   it("rejects liquid logic prefixes ending at line breaks linearly", () => {
@@ -355,14 +327,10 @@ describe("built-in merge-tag scanning", () => {
     expect(scanSyntaxMatches(input, SYNTAX_PRESETS.liquid, "logic")).toEqual(
       [],
     );
-    expectLinear(
-      (n) => {
-        const value = "{% if\n".repeat(n) + "%}" + "{% if ".repeat(n * 3);
-        return () => scanSyntaxMatches(value, SYNTAX_PRESETS.liquid, "logic");
-      },
-      100,
-      350,
-    );
+    expectLinear((n) => {
+      const value = "{% if\n".repeat(n) + "%}" + "{% if ".repeat(n * 3);
+      return () => scanSyntaxMatches(value, SYNTAX_PRESETS.liquid, "logic");
+    }, 100);
   });
 
   it("matches Mailchimp values after many failed prefixes", () => {
@@ -377,13 +345,9 @@ describe("built-in merge-tag scanning", () => {
     expect(scanCombinedSyntaxMatches(input, SYNTAX_PRESETS.mailchimp)).toEqual(
       [],
     );
-    expectLinear(
-      (n) => {
-        const value = "*|IF:\n".repeat(n) + "|*" + "*|IF:".repeat(n * 4);
-        return () => scanCombinedSyntaxMatches(value, SYNTAX_PRESETS.mailchimp);
-      },
-      100,
-      350,
-    );
+    expectLinear((n) => {
+      const value = "*|IF:\n".repeat(n) + "|*" + "*|IF:".repeat(n * 4);
+      return () => scanCombinedSyntaxMatches(value, SYNTAX_PRESETS.mailchimp);
+    }, 100);
   });
 });

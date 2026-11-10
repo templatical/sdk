@@ -51,13 +51,9 @@ describe("non-production host glob", () => {
   });
 
   it("scales a failing wildcard host linearly", () => {
-    expectLinear(
-      (n) => {
-        const url = `https://${"a".repeat(n)}c/`;
-        return () => matchesHostGlob("*a*b*c", new URL(url).hostname);
-      },
-      1_000,
-      100,
-    );
+    expectLinear((n) => {
+      const url = `https://${"a".repeat(n)}c/`;
+      return () => matchesHostGlob("*a*b*c", new URL(url).hostname);
+    }, 1_000);
   }, 30_000);
 });

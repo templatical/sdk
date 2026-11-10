@@ -9,14 +9,10 @@ import { expectLinear } from "./helpers/expectLinear";
 
 describe("merge-tag HTML scanning", () => {
   it("scans malformed span prefixes linearly and finds a later chip", () => {
-    expectLinear(
-      (n) => {
-        const text = "<span ".repeat(n) + "<span></span>";
-        return () => scanMergeTagSpans(text);
-      },
-      100,
-      1_000,
-    );
+    expectLinear((n) => {
+      const text = "<span ".repeat(n) + "<span></span>";
+      return () => scanMergeTagSpans(text);
+    }, 100);
     const html = "<span ".repeat(16_000) + "<span></span>";
     expect(scanMergeTagSpans(html)).toEqual([]);
     const prefix = "<span ".repeat(16_000);
