@@ -221,6 +221,9 @@ describe("BeeFree merge-tag code wrappers", () => {
     expect(html.content).toBe("<p>Hi {{ guest.name }}</p>");
   });
 
+  // The two linear-growth tests run the scan at the adversarial size and then
+  // at two sizes, cheapest of five rounds each; CI's coverage run needs more
+  // than the default 5 s for that.
   it("unwraps nested mergetag code in linear time", () => {
     const nested = (tags: number) =>
       '<code data-bee-type="mergetag">T'.repeat(tags) + "</code>".repeat(tags);
@@ -229,7 +232,7 @@ describe("BeeFree merge-tag code wrappers", () => {
       const html = nested(n);
       return () => unwrapMergeTagCode(html);
     }, 1_000);
-  });
+  }, 30_000);
 
   it("unwraps unclosed mergetag code in linear time", () => {
     const chunk = '<code data-bee-type="mergetag">a';
@@ -242,7 +245,7 @@ describe("BeeFree merge-tag code wrappers", () => {
       const html = chunk.repeat(n);
       return () => paragraph(html);
     }, 1_000);
-  });
+  }, 30_000);
 
   it("unwraps the trimmed MERGETAG_CODE fixture", () => {
     const { content } = convertBeeFreeTemplate(fixture as BeeFreeTemplate);
