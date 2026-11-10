@@ -1,5 +1,18 @@
 # @templatical/editor
 
+## 0.59.0
+
+### Minor Changes
+
+- 5cb01d4: Add `header.actions` for host-owned controls in the editor header, with `darkModeToggle`, `previewToggle` and `viewportToggle` opt-outs. The editor reports compact and resolved-theme state on the host element.
+- 4c545b1: Add `PreviewResolveTrigger` (`"open" | "refresh" | "recipient" | "locale"`), the required `PreviewResolveContext.trigger`, and the `refreshPreview()` instance method. A Refresh preview button is available in preview mode and the test-email dialog when `resolvePreview` is configured. A resolver the editor calls needs no change; code that builds a `PreviewResolveContext` itself, such as a test that calls its own resolver, adds `trigger: "open"`. A failed re-resolve now shows the unresolved template instead of stale resolved content, opening the test-email dialog makes one resolver call with its seeded recipient, and a test-email recipient change always waits 500 ms, including before the first answer lands.
+
+### Patch Changes
+
+- 04375d9: Fix undo history after replacing an editor document. Undo after loading another template could write the previous template's content into it on save, and undo after `setContent()` could restore part of the old document. Loading a template, creating one with new content, or calling the public `setContent()` now clears undo and redo; creating a template from the current content keeps history. In collaborative editing, reloading the same template no longer sends the loaded document as an edit or drops presence and locks, and creating a template from the current content keeps undo and redo available in the new template.
+- @templatical/quality@0.59.0
+  - @templatical/renderer@0.59.0
+
 ## 0.58.0
 
 ### Patch Changes
