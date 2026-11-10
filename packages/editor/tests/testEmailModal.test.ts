@@ -1,14 +1,17 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import TestEmailModal from "../src/components/TestEmailModal.vue";
 import { mountEditor } from "./helpers/mount";
+import { flushPromises } from "@vue/test-utils";
 import {
   EDITOR_KEY,
   LAYOUT_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   POPOVER_ROOT_KEY,
+  RESOLVE_PREVIEW_KEY,
+  TRANSLATIONS_KEY,
 } from "../src/keys";
 import type { MergeTag, TemplateContent } from "@templatical/types";
 import {
@@ -19,6 +22,7 @@ import {
 } from "@templatical/types";
 import { shallowRef, nextTick, ref } from "vue";
 import type { TestEmailError } from "../src/composables/useTestEmailFeature";
+import en from "../src/i18n/locales/en";
 
 /**
  * The dialog's three recipient shapes and its two outcome states.
@@ -79,6 +83,7 @@ function mountModal(
     sampleMode?: boolean;
     editorContent?: TemplateContent;
     layout?: TemplateContent;
+    resolver?: (context: any) => Promise<TemplateContent>;
   } = {},
 ) {
   return mountEditor(TestEmailModal, {
@@ -104,6 +109,9 @@ function mountModal(
         ? { [EDITOR_KEY]: { content: ref(props.editorContent), state: {} } }
         : {}),
       ...(props.layout ? { [LAYOUT_KEY]: props.layout } : {}),
+      ...(props.resolver
+        ? { [RESOLVE_PREVIEW_KEY]: props.resolver, [TRANSLATIONS_KEY]: en }
+        : {}),
     },
   } as never);
 }
@@ -281,6 +289,70 @@ describe("TestEmailModal outcome states", () => {
  * receives, which is worse than showing nothing.
  */
 describe("TestEmailModal preview", () => {
+  it("shows Refresh preview only with a resolver and calls it immediately on click", async () => {
+    const content = createDefaultTemplateContent();
+    const resolver = vi.fn(async () => content);
+    mountModal({ editorContent: content, resolver });
+    const button = get<HTMLButtonElement>('[aria-label="Refresh preview"]');
+    expect(button.title).toBe("Refresh preview");
+    expect(resolver).toHaveBeenCalledTimes(1);
+    await click(button);
+    expect(resolver).toHaveBeenCalledTimes(2);
+    expect(resolver.mock.calls[1]![0]).toEqual({ content, trigger: "refresh" });
+  });
+
+  it("does not render Refresh preview without a resolver", () => {
+    mountModal();
+    expect(has('[aria-label="Refresh preview"]')).toBe(false);
+  });
+
+  it("opens with exactly one seeded recipient resolve", () => {
+    const content = createDefaultTemplateContent();
+    const resolver = vi.fn(async () => content);
+    mountModal({ editorContent: content, resolver, defaultRecipient: "first@example.com" });
+    expect(resolver).toHaveBeenCalledTimes(1);
+    expect(resolver.mock.calls[0]![0]).toEqual({
+      content,
+      recipient: "first@example.com",
+      trigger: "open",
+    });
+  });
+
+  it("opens with one call for a single allowed recipient and omits an unseeded recipient", () => {
+    const content = createDefaultTemplateContent();
+    const allowed = vi.fn(async () => content);
+    const wrapper = mountModal({ editorContent: content, resolver: allowed, allowedRecipients: ["only@example.com"] });
+    expect(allowed).toHaveBeenCalledTimes(1);
+    expect(allowed.mock.calls[0]![0]).toEqual({
+      content,
+      recipient: "only@example.com",
+      trigger: "open",
+    });
+    wrapper.unmount();
+    popoverRootEl.replaceChildren();
+    const unseeded = vi.fn(async () => content);
+    mountModal({ editorContent: content, resolver: unseeded });
+    expect(unseeded).toHaveBeenCalledTimes(1);
+    expect(unseeded.mock.calls[0]![0]).toEqual({ content, trigger: "open" });
+  });
+
+  it("marks the refresh button busy only while its request is in flight", async () => {
+    const content = createDefaultTemplateContent();
+    let settle: ((value: TemplateContent) => void) | undefined;
+    const resolver = vi.fn()
+      .mockResolvedValueOnce(content)
+      .mockImplementationOnce(() => new Promise<TemplateContent>((resolve) => { settle = resolve; }));
+    mountModal({ editorContent: content, resolver });
+    await flushPromises();
+    const button = get<HTMLButtonElement>('[aria-label="Refresh preview"]');
+    expect(button.getAttribute("aria-busy")).not.toBe("true");
+    await click(button);
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    settle!(content);
+    await flushPromises();
+    expect(button.getAttribute("aria-busy")).not.toBe("true");
+  });
+
   const REGION = '[data-testid="test-email-preview"]';
   /**
    * The dialog reuses the editor header's `ViewportToggle`, so these query its

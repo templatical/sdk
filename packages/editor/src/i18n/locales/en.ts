@@ -997,6 +997,7 @@ export default {
     },
   },
   previewResolution: {
+    refresh: "Refresh preview",
     resolving: "Resolving preview…",
     failed: "Preview couldn't be resolved — showing the unresolved template.",
     hint: "Preview uses resolved data from your backend.",

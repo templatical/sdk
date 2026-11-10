@@ -305,6 +305,11 @@ export const READ_ONLY_SURFACE_KEY: InjectionKey<ComputedRef<boolean>> =
 export const RESOLVE_PREVIEW_KEY: InjectionKey<ResolvePreview | undefined> =
   Symbol("resolvePreview");
 
+/** Registers the dialog's resolver as the topmost preview while it is open. */
+export const REGISTER_DIALOG_PREVIEW_REFRESH_KEY: InjectionKey<
+  (refresh: () => void) => () => void
+> = Symbol("registerDialogPreviewRefresh");
+
 export const PREVIEW_RESOLUTION_KEY: InjectionKey<
   import("./composables/usePreviewResolution").UsePreviewResolutionReturn | null
 > = Symbol("previewResolution");

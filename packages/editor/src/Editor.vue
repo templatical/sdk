@@ -73,8 +73,11 @@ import {
   TRANSLATION_FEATURE_KEY,
 } from "./keys";
 
-import { RotateCcw } from "@lucide/vue";
-import { warningBtnCompactClass } from "./constants/styleConstants";
+import { RefreshCw, RotateCcw } from "@lucide/vue";
+import {
+  secondaryBtnCompactClass,
+  warningBtnCompactClass,
+} from "./constants/styleConstants";
 import Canvas from "./components/Canvas.vue";
 import CustomBlockStylesheets from "./components/CustomBlockStylesheets.vue";
 import Sidebar from "./components/Sidebar.vue";
@@ -745,6 +748,7 @@ const templateLifecycle = templates ?? editor;
 const scrollToBlock = useScrollToBlock(core.editorRoot);
 
 defineExpose({
+  refreshPreview: core.refreshPreview,
   getLocale: () =>
     editor.activeLocale.value ?? defaultLocaleOf(editor.content.value),
   setLocale: (locale: string) => editor.setActiveLocale(locale),
@@ -883,6 +887,34 @@ defineExpose({
                   @change="core.mergeTagSampleMode.value = $event"
                 />
               </div>
+            </Transition>
+            <!-- Refresh preview. Needs a resolver, which hides the Sample/Label
+                 switch and the restore pill, so it takes their slot rather than
+                 stacking with them. A host that opens its own picker inside
+                 `resolvePreview` lets the user choose again from here. -->
+            <Transition name="tpl-preview-pill">
+              <button
+                v-if="
+                  editor.state.previewMode &&
+                  core.previewResolution.isConfigured
+                "
+                type="button"
+                :class="secondaryBtnCompactClass"
+                class="tpl:shadow-[var(--tpl-shadow-md)]"
+                data-testid="refresh-preview"
+                :title="core.t.previewResolution.refresh"
+                :aria-busy="core.previewResolution.isResolving.value"
+                @click="core.previewResolution.refresh()"
+              >
+                <RefreshCw
+                  :size="16"
+                  :stroke-width="2"
+                  :class="{
+                    'tpl-spinner': core.previewResolution.isResolving.value,
+                  }"
+                />
+                {{ core.t.previewResolution.refresh }}
+              </button>
             </Transition>
             <!-- Show all hidden blocks. The shared warning recipe, not a bespoke
                  string: it has to read as the Sample/Label switch's sibling,

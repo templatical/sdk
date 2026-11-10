@@ -1012,6 +1012,7 @@ const ca: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "Actualitza la vista prèvia",
     resolving: "S’està resolent la vista prèvia…",
     failed:
       "No s’ha pogut resoldre la vista prèvia; es mostra la plantilla sense resoldre.",

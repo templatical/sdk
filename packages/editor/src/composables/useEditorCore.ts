@@ -93,6 +93,7 @@ import {
   MERGE_TAG_SAMPLE_MODE_KEY,
   PREVIEW_RESOLUTION_KEY,
   RESOLVE_PREVIEW_KEY,
+  REGISTER_DIALOG_PREVIEW_REFRESH_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   LOGIC_TAGS_KEY,
   LOGIC_PAIRS_KEY,
@@ -352,6 +353,8 @@ export interface UseEditorCoreReturn {
   mergeTagSampleMode: Ref<boolean>;
   /** The `resolvePreview` seam, shared by every preview surface. */
   previewResolution: UsePreviewResolutionReturn;
+  /** Refresh the topmost open preview surface. */
+  refreshPreview: () => void;
   /**
    * Whether the hand-toggled display-condition filter applies. False only while
    * previewing with a configured resolver, which owns what the preview shows.
@@ -788,6 +791,15 @@ export function useEditorCore(
   });
   provide(PREVIEW_RESOLUTION_KEY, previewResolution);
   provide(RESOLVE_PREVIEW_KEY, config.resolvePreview);
+  let dialogPreviewRefresh: (() => void) | null = null;
+  provide(REGISTER_DIALOG_PREVIEW_REFRESH_KEY, (refresh) => {
+    dialogPreviewRefresh = refresh;
+    return () => {
+      if (dialogPreviewRefresh === refresh) dialogPreviewRefresh = null;
+    };
+  });
+  const refreshPreview = () =>
+    (dialogPreviewRefresh ?? previewResolution.refresh)();
 
   // Whether the hand-toggled display-condition filter applies. It always does
   // while editing — that is the feature — and while previewing *without* a
@@ -920,6 +932,7 @@ export function useEditorCore(
     popoverRoot,
     mergeTagSampleMode,
     previewResolution,
+    refreshPreview,
     appliesConditionFilter,
     registerCustomBlocks,
     setMergeTags,

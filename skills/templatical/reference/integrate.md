@@ -41,9 +41,13 @@ skip.
 Before building anything next to the editor (a preview-as bar, a media
 picker, a token inserter, a condition dialog), find its row. The editor
 usually has the hook, and a host-built copy sits outside the editor's
-preview, undo and export. Fetch the row's Docs page through
-[docs.md](docs.md) for the contract before wiring it; the storage providers'
-shared rules are in [providers.md](providers.md).
+preview, undo and export. The async hooks (`resolvePreview`,
+`onRequestMedia`, and the `onRequest` of `mergeTags`, `logicTags` and
+`displayConditions`) may open the host's own UI before they resolve, so "the
+SDK doesn't pass X" usually means "the host provides X". Fetch the row's Docs
+page through [docs.md](docs.md) before proposing a design or an SDK change,
+not only before wiring it; the storage providers' shared rules are in
+[providers.md](providers.md).
 
 | Host need | Options | When | Docs |
 | --- | --- | --- | --- |
@@ -53,7 +57,7 @@ shared rules are in [providers.md](providers.md).
 | Browse and restore past versions | `versionHistory` | Needs a loaded template. The editor never records a version itself: the host's `templates.save` decides when one is stored. | `backend/version-history` |
 | Sendable HTML from `toHtml()` | `render` | The SDK bundles no MJML compiler, so `toHtml()` rejects without `render.compileMjml` or `render.toHtml`. A local `toMjml()` needs the optional `@templatical/renderer` peer. | `backend/render` |
 | Self-hosted social icons in exported email | `socialIconsBaseUrl` | Local `toMjml()` / `toHtml()` path only. A `render.toMjml` provider passes the URL to its own `renderToMjml`. | `api/renderer-typescript` |
-| Preview an email as a specific recipient, with real data and evaluated logic | `resolvePreview` | Called with `{ content, recipient? }` when a preview opens and when the test-email recipient changes; `recipient` is set only in the test-email dialog. Returns `TemplateContent` resolved by the host's backend; with `layout`, `content` is the composed document, so return that shape. Display-only: never in `getContent()`, a send or an export. Supersedes `MergeTag.sample`, the no-backend option for value tags. | `guide/preview-rendering` |
+| Preview an email as a specific recipient, with real data and evaluated logic | `resolvePreview` | Called with `{ content, recipient?, trigger }`: `open` on opening a preview, `refresh` from the Refresh preview pill or the instance method `refreshPreview()`, `recipient` after a test-email recipient change, and `locale` after a template-language switch. `recipient` is set only in the test-email dialog. No recipient in preview mode? The callback is async: open the host's own picker on `trigger: "open"` / `"refresh"` and resolve after the user chooses; reuse that choice on `recipient` and `locale` calls. Returns `TemplateContent` resolved by the host's backend; with `layout`, `content` is the composed document, so return that shape. Display-only: never in `getContent()`, a send or an export. Supersedes `MergeTag.sample`, the no-backend option for value tags. | `guide/preview-rendering` |
 | Authors send themselves a test | `testEmail` | One `send({ recipient, content })`, plus `mjml` with `includeMjml`. `allowedRecipients` and `defaultRecipient` shape the dialog but are not a security boundary: validate the recipient on the server. | `backend/test-email` |
 | Personalization placeholders (first name, unsubscribe link) | `mergeTags` | `syntax` picks the token format (`liquid`, `handlebars`, `mailchimp`, `ampscript` or a custom `SyntaxPreset` object); `tags` lists them with `label`, `value` and an optional `sample` for previews; `onRequest` opens the host's own picker. | `guide/merge-tags` |
 | Conditionals and loops inside text | `logicTags` | Adds Insert logic with `tags` and open/close `pairs`, or the host's picker through `onRequest`. Typed or pasted logic is highlighted without it. | `guide/logic-tags` |

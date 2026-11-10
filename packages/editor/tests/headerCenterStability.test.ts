@@ -176,8 +176,20 @@ describe("preview overlay pills stack in a centred column", () => {
   }
 
   it("orders the switch above the restore pill", () => {
-    const [toggle, restore] = pills();
+    const [toggle, , restore] = pills();
     expect(toggle).toContain("merge-tag-mode-toggle-anchor");
+    expect(restore).toContain("restore-hidden-blocks");
+  });
+
+  it("places a Refresh preview pill in the same centred column and transition family", () => {
+    const [toggle, refresh, restore] = pills();
+    expect(toggle).toContain("merge-tag-mode-toggle-anchor");
+    expect(refresh).toContain('data-testid="refresh-preview"');
+    expect(refresh).toContain("tpl-preview-pill");
+    expect(refresh).toContain("secondaryBtnCompactClass");
+    expect(refresh).toContain("tpl:shadow-[var(--tpl-shadow-md)]");
+    expect(refresh).toContain("core.previewResolution.isConfigured");
+    expect(refresh).toContain("core.previewResolution.refresh()");
     expect(restore).toContain("restore-hidden-blocks");
   });
 
@@ -194,12 +206,23 @@ describe("preview overlay pills stack in a centred column", () => {
     // Not a bespoke string: it stacks with the Sample/Label switch, so it has
     // to be the same height and radius. Hand-rolling it is how it came to sit
     // 8px shorter, `rounded-full`, with a 1.85:1 label.
-    const [, restore] = pills();
-    expect(restore).toContain("warningBtnCompactClass");
+    const [, , restore] = pills();
+    expect(restore).toContain('data-testid="restore-hidden-blocks"');
+    expect(restore).toContain(':class="warningBtnCompactClass"');
     expect(restore).not.toContain("tpl:rounded-full");
     expect(restore).not.toContain("var(--tpl-warning-light)");
-    expect(editorSource).toContain(
-      'import { warningBtnCompactClass } from "./constants/styleConstants"',
+    expect(editorSource).toMatch(
+      /import \{[^}]*\bwarningBtnCompactClass\b[^}]*\} from "\.\/constants\/styleConstants"/,
+    );
+  });
+
+  it("styles the Refresh preview pill with the shared secondary recipe", () => {
+    const [, refresh] = pills();
+    expect(refresh).toContain('data-testid="refresh-preview"');
+    expect(refresh).toContain(':class="secondaryBtnCompactClass"');
+    expect(refresh).not.toContain("tpl:rounded-full");
+    expect(editorSource).toMatch(
+      /import \{[^}]*\bsecondaryBtnCompactClass\b[^}]*\} from "\.\/constants\/styleConstants"/,
     );
   });
 

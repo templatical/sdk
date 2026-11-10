@@ -66,11 +66,11 @@ import { init } from '@templatical/editor';
 
 await init({
   container: '#editor',
-  resolvePreview: async ({ content, recipient }) => {
+  resolvePreview: async ({ content, recipient, trigger }) => {
     const res = await fetch('/api/resolve-preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, recipient }),
+      body: JSON.stringify({ content, recipient, trigger }),
     });
     if (!res.ok) throw new Error('Could not resolve the preview');
     return res.json(); // a TemplateContent
@@ -94,26 +94,33 @@ So the hook hands the template to the system that already holds all three. Whate
 interface PreviewResolveContext {
   content: TemplateContent; // the template as it currently stands, as a copy
   recipient?: string;       // present only where the surface has one
+  trigger: PreviewResolveTrigger; // why the resolver was called
 }
+
+type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 ```
 
-`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `recipient` is present in the test-email dialog and absent in the editor's preview mode; treat its absence as *"no particular recipient"* and return something renderable anyway.
+`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `recipient` is present in the test-email dialog and absent in the editor's preview mode. Its absence means *"no particular recipient"*: return your own default, or obtain one yourself, for example by awaiting your own picker (see [Let the user pick an example audience](#let-the-user-pick-an-example-audience)). `trigger` is required and tells you whether to choose new example data or reuse the current choice.
 
 Return a `TemplateContent`. Anything else is treated as a failure (see below).
 
 ### When it runs
 
-- **Immediately** when a preview opens. There is nothing to coalesce at that moment, so it is not debounced — the skeleton is up in the same frame as the click.
-- **Debounced 500ms** on subsequent re-resolves, which today means the test-email recipient changing. Rapid changes collapse into one call.
+- **`open`**, immediately when preview mode or the test-email dialog opens. The dialog passes its seeded recipient in this one call.
+- **`refresh`**, immediately when the user clicks **Refresh preview** or the host calls `editor.refreshPreview()`.
+- **`recipient`**, after a 500ms debounce when the test-email recipient changes. Rapid changes collapse into one call.
+- **`locale`**, immediately when the template language changes while a preview is open.
 - **Never while editing.** An editor that never enters preview mode never calls your hook.
 
-A **first** resolve shows a skeleton. A re-resolve keeps the previous result on screen instead of flashing a skeleton over content that is already correct.
+The Refresh preview button appears in preview mode and in the test-email dialog only when `resolvePreview` is configured. `refreshPreview(): void` targets the dialog while it is open, otherwise preview mode; it does nothing when neither preview is open, no resolver is configured, or the editor is unmounted. A refresh also supersedes a pending recipient re-resolve.
+
+A **first** resolve shows a skeleton. Later requests keep the last result on screen until they settle. After a failure, the unresolved template and failure note stay visible during the next request.
 
 Slow answers are discarded when a newer request supersedes them, so switching recipient twice cannot land the first answer last.
 
 ### When it fails
 
-If your callback rejects — or returns something that isn't a `TemplateContent` — the preview falls back to the **unresolved** template and says so inline. A resolver outage degrades the preview; it never blanks or breaks it.
+If your callback rejects — or returns something that isn't a `TemplateContent` — the preview falls back to the **unresolved** template and says so inline. This also applies after an earlier successful resolve: a failed re-resolve drops the older result. A resolver outage degrades the preview; it never blanks or breaks it.
 
 Failures are **not** routed to `config.onError`. A degraded preview is visible to the user and non-fatal, and reporting it there would read as more severe than it is.
 
@@ -122,6 +129,10 @@ Failures are **not** routed to `config.onError`. A degraded preview is visible t
 Resolved content reaches preview surfaces and nothing else. It is never written to editor state, never returned by `getContent()`, never sent by the test-email feature, and never exported — those always carry the real tokens.
 
 That is the guarantee that makes the hook safe to be creative with: nothing you return can reach a recipient.
+
+### Check it
+
+Open the preview: the resolver is called once with `trigger: "open"`. Click **Refresh preview**: it is called again with `trigger: "refresh"`, and the preview shows what that call returns.
 
 ## Use cases
 
@@ -138,23 +149,40 @@ resolvePreview: async ({ content, recipient }) => {
 },
 ```
 
-### Let the user pick an example audience
+### Let the user pick an example audience {#let-the-user-pick-an-example-audience}
 
-Because the callback is `async`, you can open **your own UI** inside it and resolve once the user has chosen. If you have several kinds of subscriber — free vs pro, trial vs churned, EU vs US — this lets someone flip between them and see each version of the email.
+Because the callback is `async`, you can open **your own UI** inside it and resolve once the user has chosen. Open the picker on `open` and `refresh`; reuse the current choice on `recipient` and `locale`. If you have several kinds of subscriber — free vs pro, trial vs churned, EU vs US — this lets someone flip between them and see each version of the email. The small picker below uses a browser prompt; replace it with your own dialog.
 
 ```ts
-resolvePreview: async ({ content }) => {
-  const audience = await openMyAudiencePicker();
-  if (!audience) {
-    // Dismissed. Throwing shows the unresolved template *and* the inline note;
-    // returning `content` unchanged shows it with no note. Pick one.
-    return content;
-  }
-  return renderWithMyEngine(content, audience.data);
-},
+import { init } from '@templatical/editor';
+
+let selectedAudience: string | null = null;
+
+function openMyAudiencePicker(): string | null {
+  return window.prompt('Example audience', selectedAudience ?? 'pro');
+}
+
+await init({
+  container: '#editor',
+  resolvePreview: async ({ content, recipient, trigger }) => {
+    if (trigger === 'open' || trigger === 'refresh') {
+      // A dismissed picker keeps the current choice.
+      selectedAudience = openMyAudiencePicker() ?? selectedAudience;
+    }
+    if (!selectedAudience) return content;
+
+    const res = await fetch('/api/resolve-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, recipient, audience: selectedAudience }),
+    });
+    if (!res.ok) throw new Error('Could not resolve the preview');
+    return res.json();
+  },
+});
 ```
 
-While your dialog is open the preview shows its skeleton — the preview is not ready yet.
+While your picker is open on the first resolve, the preview shows its skeleton; on a refresh it keeps the current preview on screen. With no choice made yet, returning `content` shows the unresolved template without a failure note.
 
 ### Evaluate display conditions
 

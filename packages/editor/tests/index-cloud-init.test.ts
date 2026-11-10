@@ -389,6 +389,7 @@ describe("initCloud — a thin wrapper over init()", () => {
       "insertBlock",
       "isDirty",
       "load",
+      "refreshPreview",
       "renderCustomBlock",
       "save",
       "setContent",

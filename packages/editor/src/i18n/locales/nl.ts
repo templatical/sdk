@@ -938,6 +938,7 @@ const nl: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "Voorbeeld vernieuwen",
     resolving: "Voorbeeld wordt opgelost…",
     failed:
       "Het voorbeeld kon niet worden opgelost — het niet-opgeloste sjabloon wordt weergegeven.",
