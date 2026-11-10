@@ -86,6 +86,7 @@ unmount();
 | `branding`           | `boolean`                                                         | Nein     | Zeigt den "Powered by Templatical"-Footer. Standardwert `true`. Auf `false` setzen, um ihn auszublenden                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `smallScreenNotice`  | `boolean`                                                         | Nein     | Zeigt auf Viewports schmaler als ~768px einen Hinweis „Bitte größeren Bildschirm verwenden" anstelle des Editors. Standardwert `true`. Der Drag-and-Drop-Editor ist ein Desktop-Werkzeug und lässt sich auf einem Smartphone nicht sinnvoll darstellen. Auf `false` setzen, um den Editor bei jeder Breite zu rendern, wenn Sie kleine Bildschirme selbst behandeln                                                                                                                                                                                                                        |
 | `lint`               | `LintOptions`                                                     | Nein     | Konfiguration des Template-Linters. `@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus. Ohne Angabe startet Linting beim Mounten des Editors. `disabled: true` überspringt den Import vollständig und blendet den Sidebar-Tab sowie die Inline-Marker aus. Siehe [Quality-Optionen](/de/quality/options)                                                                                                                                                                                                                                                 |
+| `header` | `HeaderOptions` | Nein | Host-eigenes `actions?: HTMLElement` vor Test-E-Mail und Speichern; `darkModeToggle`, `previewToggle` und `viewportToggle` sind standardmäßig `true` und blenden ihr Bedienelement bei `false` aus. Siehe [Header-Aktionen](#header-actions). |
 
 ### Anforderungen an das Container-Element
 
@@ -96,6 +97,34 @@ Das Standard-Mount (Shadow DOM) ruft `attachShadow()` auf Ihrem Container auf, u
 **Nicht erlaubt:** `<table>`, `<tr>`, `<td>`, `<form>`, `<input>`, `<button>`, `<select>`, Listenelemente (`<ul>`, `<ol>`, `<li>`), `<iframe>`, ersetzte Elemente (`<img>`, `<video>` usw.). Die Übergabe eines dieser Elemente wirft eine `DOMException` aus `attachShadow()`.
 
 Wenn Ihre Integration ein nicht unterstütztes Element verwenden muss (z. B. Mount in eine `<form>`-Zelle eines CMS-Layouts), übergeben Sie `shadowDom: false` — das Light-DOM-Mount akzeptiert jedes Element. Der Kompromiss ist die Host-CSS-Isolation, auf die Sie verzichten.
+
+### Header-Aktionen {#header-actions}
+
+`header.actions` verschiebt ein Host-eigenes `HTMLElement` in die rechte Header-Spalte, nach AI und vor Test-E-Mail und Speichern. `header.darkModeToggle`, `header.previewToggle` und `header.viewportToggle` sind standardmäßig `true`; mit `false` bleibt das jeweilige Bedienelement während der gesamten Editor-Sitzung ausgeblendet. Dieselbe `header`-Option funktioniert mit `initCloud()`.
+
+```ts
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+
+const actions = document.createElement("div");
+actions.className = "my-header-actions";
+actions.innerHTML = '<button type="button"><span class="label">Template</span> ▾</button>';
+
+const editor = await init({
+  container: document.getElementById("editor")!,
+  header: { actions, previewToggle: false, darkModeToggle: false },
+});
+```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/header-actions)
+
+Der Editor schreibt `data-tpl-compact="true" | "false"` und `data-tpl-theme="light" | "dark"` auf `actions`. Gestalten Sie den kompakten Zustand per CSS, etwa mit `.my-header-actions[data-tpl-compact="true"] .label { display: none; }`. Lesen Sie das Attribut nicht per JavaScript aus, um die Bedienelemente neu zu rendern: Der Header muss die volle Breite synchron messen. Der Editor verschiebt dieses Element im DOM. Erstellen Sie es daher außerhalb jedes Kindbaums, den Ihr Framework abgleicht, und rendern Sie einen Framework-Root hinein. Der Editor klont, gestaltet oder entfernt seine Kinder nicht. Bei `editor.unmount()` entfernt er das Element und stellt dessen vorheriges `slot`-Attribut wieder her.
+
+Portalisieren Sie Menüs nach `document.body`, oder positionieren Sie sie `absolute` innerhalb des Aktionselements. Ein `position: fixed`-Menü im Header wird in Safari am Editorrand abgeschnitten. Die `--tpl-*`-Tokens des Editors werden an das Element vererbt, aber nur `--tpl-user-*` ist öffentlich; verwenden Sie eigene Styles für das Host-Design.
+
+Wird Vorschau ausgeblendet, entfällt der einzige Weg in den Vorschaumodus: der Sample/Label-Schalter, die Filterung nach Anzeigebedingungen, die schreibgeschützte Vorschau und der `resolvePreview`-Aufruf des Vorschaumodus sind nicht mehr erreichbar. Der Test-E-Mail-Dialog zeigt seine Vorschau weiterhin über `resolvePreview`. Das Ausblenden des Dunkelmodus entfernt die dunkle Canvas-Vorschau. Das Ausblenden des Viewport-Schalters entfernt die mobile Vorschau. Für diese Schalter gibt es weder Tastenkürzel noch Instanzmethode.
+
+**Prüfen:** Öffnen Sie die [Header-Aktionen im Playground](https://play.templatical.com/scenes/header-actions), klicken Sie auf Template und verkleinern Sie den Editor, bis die Beschriftung verschwindet und das Menü weiterhin öffnet.
 
 ### Block-Palette anpassen
 

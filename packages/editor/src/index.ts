@@ -712,6 +712,19 @@ export interface TemplaticalEditorConfig {
   branding?: boolean;
 
   /**
+   * Header controls and view-toggle visibility. The editor moves your
+   * `actions` element into the right column before Test email and Save.
+   * Toggle flags are read once when the editor mounts.
+   *
+   * @example
+   * const actions = document.createElement("div");
+   * const editor = await init({ container, header: {
+   *   actions, previewToggle: false,
+   * } });
+   */
+  header?: HeaderOptions;
+
+  /**
    * Show a "use a larger screen" notice instead of the editor chrome on
    * viewports narrower than ~768px. Defaults to `true`.
    *
@@ -738,6 +751,22 @@ export interface TemplaticalEditorConfig {
    * - `rules`/`thresholds` follow the shape exported by `@templatical/quality`.
    */
   lint?: import("@templatical/quality").LintOptions;
+}
+
+export interface HeaderOptions {
+  /**
+   * An element the host owns and renders into. The editor places it in the
+   * header's right column before Test email and Save, and never clones,
+   * restyles or removes its children. It sets `data-tpl-compact` and
+   * `data-tpl-theme` so the host can style it.
+   */
+  actions?: HTMLElement;
+  /** `false` hides the dark-mode preview toggle. Defaults to `true`. */
+  darkModeToggle?: boolean;
+  /** `false` hides the Preview toggle. Defaults to `true`. */
+  previewToggle?: boolean;
+  /** `false` hides the Desktop/Mobile viewport switch. Defaults to `true`. */
+  viewportToggle?: boolean;
 }
 
 /** Function type for media browser requests, used by both OSS and Cloud editors. */
@@ -1599,6 +1628,7 @@ export async function initCloud(
       uiTheme: config.uiTheme,
       theme: config.theme,
       branding: config.branding,
+      header: config.header,
       smallScreenNotice: config.smallScreenNotice,
       blockDefaults: config.blockDefaults,
       templateDefaults: config.templateDefaults,

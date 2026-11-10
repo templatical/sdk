@@ -19,12 +19,11 @@ import { join } from "node:path";
  * `CollaboratorBar` sat in the same track, so the button slid out from under
  * the cursor whenever anyone joined or left.
  *
- * The invariant that fixes the whole class, rather than the one instance:
- * **nothing inside the centre track may be conditional.** No `v-if`, no
- * `v-show`, no `<slot>`. A track whose children are all unconditional has a
- * constant width, so it cannot re-centre. Conditional controls belong in the
- * edge-anchored `fr` columns, which grow away from their anchored edge and
- * therefore move nothing already in them.
+ * The invariant that fixes the whole class: the centre track's width must
+ * stay constant during a session. Its three setup-time opt-outs are plain
+ * booleans; no other `v-if`, `v-show` or `<slot>` belongs here. Runtime-
+ * conditional controls belong in the edge-anchored `fr` columns, which grow
+ * away from their anchored edge and move nothing already in them.
  *
  * Preview-only controls belong on the preview surface instead — see the
  * overlay-layer group below.
@@ -34,6 +33,7 @@ const headerComponent = readFileSync(
   join(SRC, "components", "EditorHeader.vue"),
   "utf8",
 );
+const headerStyles = readFileSync(join(SRC, "styles", "index.css"), "utf8");
 const editorSource = readFileSync(join(SRC, "Editor.vue"), "utf8");
 const styleConstantsSource = readFileSync(
   join(SRC, "constants", "styleConstants.ts"),
@@ -85,13 +85,39 @@ describe("header centre track holds a constant width", () => {
     expect(center).toContain("<PreviewToggle");
   });
 
-  it("renders nothing conditionally inside the track", () => {
-    // The load-bearing assertion. Anything conditional here changes the
-    // track's width, and the grid re-centres it — moving Preview.
+  it("gates only the three setup-time toggle constants inside the track", () => {
+    // A setup-time opt-out holds the width for the whole session. Any other
+    // conditional would re-centre the track while the user is interacting.
     const center = centerTrack();
-    expect(center).not.toMatch(/\bv-if\b/);
+    expect(
+      [...center.matchAll(/\bv-if="([^"]+)"/g)].map((match) => match[1]),
+    ).toEqual([
+      "showViewportToggle",
+      "showDarkModeToggle",
+      "showPreviewToggle",
+    ]);
+    for (const name of [
+      "showViewportToggle",
+      "showDarkModeToggle",
+      "showPreviewToggle",
+    ]) {
+      expect(headerComponent).toContain(`const ${name} = props.header?.`);
+    }
     expect(center).not.toMatch(/\bv-else\b/);
     expect(center).not.toMatch(/\bv-show\b/);
+  });
+
+  it("uses the same compact track and gaps with any setup-time opt-out", () => {
+    expect(headerComponent).not.toContain("data-center-opt-outs");
+    expect(headerStyles).not.toContain("data-center-opt-outs");
+    const compact = headerStyles.slice(
+      headerStyles.indexOf('.tpl-header[data-compact="true"] {'),
+      headerStyles.indexOf("/* Sized by the name itself"),
+    );
+    expect(compact).toContain(
+      "grid-template-columns: minmax(0, 1fr) auto auto",
+    );
+    expect(compact).toContain("gap: 4px");
   });
 
   it("offers no slot in the centre column", () => {
@@ -260,7 +286,9 @@ describe("preview overlay pills stack in a centred column", () => {
     // (`p-1` around a 30px segment), muted 12px/500 label, no border.
     for (const switchSource of [mergeTagToggleSource, viewportToggleSource]) {
       expect(switchSource).toContain("backgroundColor: 'var(--tpl-bg-hover)'");
-      expect(switchSource).toContain("tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1");
+      expect(switchSource).toContain(
+        "tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1",
+      );
       expect(switchSource).toContain("tpl:text-xs tpl:font-medium");
     }
     for (const token of [

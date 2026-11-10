@@ -32,6 +32,7 @@ export const SCENE_ICONS: Record<string, Component> = {
   fonts: Type,
   defaults: Palette,
   theming: Paintbrush,
+  "header-actions": MousePointerClick,
   layout: LayoutTemplate,
   i18n: Languages,
   languages: Languages,

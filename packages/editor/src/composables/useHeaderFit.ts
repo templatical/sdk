@@ -43,6 +43,7 @@ export function decideHeaderFit(measurement: HeaderFitMeasurement) {
 export function useHeaderFit(
   container: ShallowRef<HTMLElement | null>,
   header: ShallowRef<HTMLElement | null>,
+  actions?: HTMLElement,
 ) {
   const compact = shallowRef(false);
   const fullWidth = shallowRef(0);
@@ -51,6 +52,7 @@ export function useHeaderFit(
   let labelledWidth = 0;
   let resizeObserver: ResizeObserver | undefined;
   let mutationObserver: MutationObserver | undefined;
+  let actionsObserver: MutationObserver | undefined;
   let mounted = false;
   let contentDirty = true;
   let scheduledFrame: number | null = null;
@@ -64,13 +66,21 @@ export function useHeaderFit(
       const track = group.getBoundingClientRect();
       // Only direct controls count: an open, absolutely positioned popover can
       // extend beyond its track without changing the header's natural width.
-      return Array.from(group.children).some((control) => {
-        const bounds = control.getBoundingClientRect();
-        return (
-          bounds.width > 0 &&
-          (bounds.left < track.left - 0.5 || bounds.right > track.right + 0.5)
-        );
-      });
+      return Array.from(group.children)
+        .flatMap((control) => {
+          if (control instanceof HTMLSlotElement)
+            return control.assignedElements();
+          if (control.classList.contains("tpl-header-actions"))
+            return Array.from(control.children);
+          return [control];
+        })
+        .some((control) => {
+          const bounds = control.getBoundingClientRect();
+          return (
+            bounds.width > 0 &&
+            (bounds.left < track.left - 0.5 || bounds.right > track.right + 0.5)
+          );
+        });
     });
   }
 
@@ -94,6 +104,35 @@ export function useHeaderFit(
     }
 
     const element = header.value;
+    // A cloned slot has no assigned nodes, and a cloned light-DOM host can
+    // already carry compact CSS. Read the live element in its full state.
+    let actionsWidth = 0;
+    if (actions?.isConnected) {
+      const previous = actions.getAttribute("data-tpl-compact");
+      const previousInlineStyle = actions.getAttribute("style");
+      // The temporary inline declarations are visible to both observers in
+      // light DOM. Keep earlier host mutations and discard only our own writes.
+      if (
+        mutationObserver?.takeRecords().length ||
+        actionsObserver?.takeRecords().length
+      )
+        contentDirty = true;
+      actions.removeAttribute("data-tpl-compact");
+      actions.style.width = "max-content";
+      actions.style.flexShrink = "0";
+      try {
+        // max-content unsqueezes the flex item without counting an open,
+        // absolutely positioned menu inside its scrollable overflow.
+        actionsWidth = actions.getBoundingClientRect().width;
+      } finally {
+        if (previousInlineStyle === null) actions.removeAttribute("style");
+        else actions.setAttribute("style", previousInlineStyle);
+        if (previous === null) actions.removeAttribute("data-tpl-compact");
+        else actions.setAttribute("data-tpl-compact", previous);
+        mutationObserver?.takeRecords();
+        actionsObserver?.takeRecords();
+      }
+    }
     const copy = element.ownerDocument.createElement("div");
     for (const attribute of element.attributes) {
       if (!attribute.name.startsWith("data-")) {
@@ -106,6 +145,23 @@ export function useHeaderFit(
     copy.inert = true;
     for (const child of element.childNodes) {
       if (child !== metricProbe) copy.appendChild(child.cloneNode(true));
+    }
+    const actionsClone = copy.querySelector(
+      'slot[name="tpl-header-actions"], .tpl-header-actions',
+    );
+    if (actionsClone) {
+      if (actions?.isConnected) {
+        const placeholder = element.ownerDocument.createElement("span");
+        placeholder.className = "tpl-header-action-measure";
+        Object.assign(placeholder.style, {
+          display: "inline-block",
+          flex: "none",
+          width: `${actionsWidth}px`,
+        });
+        actionsClone.replaceWith(placeholder);
+      } else {
+        actionsClone.remove();
+      }
     }
     // No second Vue tree, duplicate IDs, test targets or focusable controls.
     for (const child of copy.querySelectorAll("*")) {
@@ -238,6 +294,7 @@ export function useHeaderFit(
       resizeObserver.observe(container.value);
       for (const group of headerGroups) resizeObserver.observe(group);
       resizeObserver.observe(metricProbe);
+      if (actions) resizeObserver.observe(actions);
     }
     // Includes lazy provider controls, slots, translated labels, language
     // names/counts, save states and comment counts. It also works while the
@@ -250,6 +307,27 @@ export function useHeaderFit(
       attributes: true,
       attributeFilter: ["class", "style", "title", "aria-label", "hidden"],
     });
+    if (actions) {
+      // The host owns everything inside this node. Its content may change
+      // without any Vue update. Ignore only the two attributes we write.
+      actionsObserver = new MutationObserver((records) => {
+        if (
+          records.some(
+            (record) =>
+              record.type !== "attributes" ||
+              (record.attributeName !== "data-tpl-compact" &&
+                record.attributeName !== "data-tpl-theme"),
+          )
+        )
+          invalidateContent();
+      });
+      actionsObserver.observe(actions, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+      });
+    }
     window.addEventListener("resize", invalidateSize);
     const fonts = header.value.ownerDocument.fonts;
     fonts?.addEventListener("loadingdone", invalidateContent);
@@ -264,6 +342,7 @@ export function useHeaderFit(
     }
     resizeObserver?.disconnect();
     mutationObserver?.disconnect();
+    actionsObserver?.disconnect();
     metricProbe?.remove();
     metricProbe = undefined;
     headerGroups = [];
@@ -274,5 +353,5 @@ export function useHeaderFit(
     );
   });
 
-  return { compact, fullWidth, statusLabel };
+  return { compact, fullWidth, statusLabel, invalidateContent };
 }

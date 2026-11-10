@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { defineAsyncComponent, shallowRef } from "vue";
+import {
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  shallowRef,
+  watch,
+} from "vue";
+import type { HeaderOptions } from "../index";
 import { useHeaderFit } from "../composables/useHeaderFit";
 import { LoaderCircle, MessageCircle, Save, Send } from "@lucide/vue";
 
@@ -60,12 +67,10 @@ const CollaboratorBar = defineAsyncComponent(
  */
 const containerElement = shallowRef<HTMLElement | null>(null);
 const headerElement = shallowRef<HTMLElement | null>(null);
-const { compact, fullWidth, statusLabel } = useHeaderFit(
-  containerElement,
-  headerElement,
-);
-
-defineProps<{
+const actionsTarget = shallowRef<HTMLElement | null>(null);
+const props = defineProps<{
+  header?: HeaderOptions;
+  shadowRoot?: ShadowRoot;
   editor: BaseEditorReturn;
   localization?: { locales: string[] };
   core: UseEditorCoreReturn;
@@ -120,6 +125,51 @@ defineProps<{
     "panel" | "isAvailable" | "has" | "open" | "close"
   > | null;
 }>();
+const actions = props.header?.actions;
+const showViewportToggle = props.header?.viewportToggle !== false;
+const showDarkModeToggle = props.header?.darkModeToggle !== false;
+const showPreviewToggle = props.header?.previewToggle !== false;
+const { compact, fullWidth, statusLabel, invalidateContent } = useHeaderFit(
+  containerElement,
+  headerElement,
+  actions,
+);
+const oldSlot = actions?.getAttribute("slot");
+let appendedTo: Element | null = null;
+
+if (actions) {
+  watch(
+    [compact, () => props.core.resolvedTheme.value],
+    ([isCompact, theme]) => {
+      actions.setAttribute("data-tpl-compact", String(isCompact));
+      actions.setAttribute(
+        "data-tpl-theme",
+        theme === "dark" ? "dark" : "light",
+      );
+    },
+    { immediate: true, flush: "sync" },
+  );
+}
+
+onMounted(() => {
+  if (!actions) return;
+  const target = props.shadowRoot?.host ?? actionsTarget.value;
+  if (!target) return;
+  if (props.shadowRoot) actions.setAttribute("slot", "tpl-header-actions");
+  target.appendChild(actions);
+  appendedTo = target;
+  invalidateContent();
+});
+
+onBeforeUnmount(() => {
+  if (!actions || actions.parentElement !== appendedTo) return;
+  actions.remove();
+  if (props.shadowRoot) {
+    if (oldSlot == null) actions.removeAttribute("slot");
+    else actions.setAttribute("slot", oldSlot);
+  }
+  appendedTo = null;
+});
 </script>
 
 <template>
@@ -229,23 +279,26 @@ defineProps<{
          used to live here, and repeatedly in Cloud as collaborators came and
          went (#574).
 
-         Hence the rule: nothing in this track may be conditional. No `v-if`, no
-         `v-show`, no slot. Conditional controls go in the edge-anchored `fr`
-         columns, which grow away from their anchored edge; preview-only ones go
-         on the preview surface, where `Editor.vue` floats them over the canvas.
+         The three opt-outs below are plain booleans captured at setup, so they
+         cannot change this track's width during the session. No other `v-if`,
+         `v-show` or slot belongs here. Runtime-conditional controls go in the
+         edge-anchored `fr` columns; preview-only ones go on the preview surface.
          Locked by `tests/headerCenterStability.test.ts`. -->
       <div
         class="tpl-header-center tpl:flex tpl:items-center tpl:justify-center tpl:gap-10"
       >
         <ViewportToggle
+          v-if="showViewportToggle"
           :viewport="editor.state.viewport"
           @change="editor.setViewport"
         />
         <DarkModeToggle
+          v-if="showDarkModeToggle"
           :dark-mode="editor.state.darkMode"
           @change="editor.setDarkMode"
         />
         <PreviewToggle
+          v-if="showPreviewToggle"
           :preview-mode="editor.state.previewMode"
           @change="editor.setPreviewMode"
         />
@@ -311,6 +364,9 @@ defineProps<{
         <AiHeaderMenu v-if="ai" :feature="ai" />
 
         <slot name="right-extras" />
+
+        <component :is="'slot'" v-if="shadowRoot" name="tpl-header-actions" />
+        <span v-else ref="actionsTarget" class="tpl-header-actions" />
 
         <!-- The shared recipe, like every control in this row. Shared rather than
            hand-rolled so all three keep one height — a bespoke string is how
