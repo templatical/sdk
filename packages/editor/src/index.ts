@@ -342,6 +342,9 @@ export interface TemplaticalEditorConfig {
    * test-email recipient changes, `"locale"` when the template language changes,
    * and `"refresh"` when the user clicks Refresh preview or calls
    * `refreshPreview()`. Recipient changes debounce; refresh runs immediately.
+   * `surface` is `"preview"` for preview mode and `"test-email"` for the
+   * test-email dialog; tell them apart by it, not by `recipient`, which the
+   * dialog omits while its recipient field is empty.
    * Display-only: the result never reaches `getContent()`, a send or
    * an export. Rejecting is safe — the preview falls back to the unresolved
    * template and says so.
@@ -1739,6 +1742,7 @@ export type {
   MediaRequestContext,
   PreviewResolveContext,
   PreviewResolveTrigger,
+  PreviewSurface,
   ResolvePreview,
   SdkErrorCode,
   BlockLock,

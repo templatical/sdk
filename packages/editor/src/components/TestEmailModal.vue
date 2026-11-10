@@ -105,6 +105,7 @@ const previewViewport = ref<ViewportSize>("desktop");
 const resolvePreviewHook = inject(RESOLVE_PREVIEW_KEY, undefined);
 const previewResolution = usePreviewResolution({
   resolvePreview: resolvePreviewHook ?? undefined,
+  surface: "test-email",
   getContent: () => {
     const raw = editor?.content.value ?? { blocks: [], settings: {} as never };
     if (!props.visible) return raw;

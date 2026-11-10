@@ -93,20 +93,22 @@ So the hook hands the template to the system that already holds all three. Whate
 ```ts
 interface PreviewResolveContext {
   content: TemplateContent; // the template as it currently stands, as a copy
-  recipient?: string;       // present only where the surface has one
+  recipient?: string;       // the test-email dialog's field value, when non-empty
+  surface: PreviewSurface;  // which preview is calling
   trigger: PreviewResolveTrigger; // why the resolver was called
 }
 
+type PreviewSurface = 'preview' | 'test-email';
 type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 ```
 
-`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `recipient` is present in the test-email dialog and absent in the editor's preview mode. Its absence means *"no particular recipient"*: return your own default, or obtain one yourself, for example by awaiting your own picker (see [Let the user pick an example audience](#let-the-user-pick-an-example-audience)). `trigger` is required and tells you whether to choose new example data or reuse the current choice.
+`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `surface` is `"preview"` in the editor's preview mode and `"test-email"` in the test-email dialog, on every call. Tell the two apart by `surface`, not by `recipient`: `recipient` is absent in preview mode, and also in the dialog while its recipient field is empty. In a free-text field it is what the user has typed so far and can be an incomplete address, so validate it before looking up recipient data. Its absence means *"no particular recipient"*: return your own default, or obtain one yourself, for example by awaiting your own picker (see [Let the user pick an example audience](#let-the-user-pick-an-example-audience)). `trigger` is required and tells you whether to choose new example data or reuse the current choice.
 
 Return a `TemplateContent`. Anything else is treated as a failure (see below).
 
 ### When it runs
 
-- **`open`**, immediately when preview mode or the test-email dialog opens. The dialog passes its seeded recipient in this one call.
+- **`open`**, immediately when preview mode or the test-email dialog opens. The dialog passes its seeded recipient in this one call, or none when its field starts empty.
 - **`refresh`**, immediately when the user clicks **Refresh preview** or the host calls `editor.refreshPreview()`.
 - **`recipient`**, after a 500ms debounce when the test-email recipient changes. Rapid changes collapse into one call.
 - **`locale`**, immediately when the template language changes while a preview is open.
@@ -132,7 +134,7 @@ That is the guarantee that makes the hook safe to be creative with: nothing you 
 
 ### Check it
 
-Open the preview: the resolver is called once with `trigger: "open"`. Click **Refresh preview**: it is called again with `trigger: "refresh"`, and the preview shows what that call returns.
+Open the preview: the resolver is called once with `surface: "preview"` and `trigger: "open"`. Click **Refresh preview**: it is called again with `surface: "preview"` and `trigger: "refresh"`, and the preview shows what that call returns. Open the test-email dialog: it is called once with `surface: "test-email"` and `trigger: "open"`, with `recipient` only when the field starts filled.
 
 ## Use cases
 
@@ -151,7 +153,7 @@ resolvePreview: async ({ content, recipient }) => {
 
 ### Let the user pick an example audience {#let-the-user-pick-an-example-audience}
 
-Because the callback is `async`, you can open **your own UI** inside it and resolve once the user has chosen. Open the picker on `open` and `refresh`; reuse the current choice on `recipient` and `locale`. If you have several kinds of subscriber — free vs pro, trial vs churned, EU vs US — this lets someone flip between them and see each version of the email. The small picker below uses a browser prompt; replace it with your own dialog.
+Because the callback is `async`, you can open **your own UI** inside it and resolve once the user has chosen. Open the picker in preview mode (`surface: "preview"`) on `open` and `refresh`, and reuse the current choice on every other call. In the test-email dialog (`surface: "test-email"`) the recipient field is the user's choice, so the picker stays closed there, even while that field is empty. If you have several kinds of subscriber — free vs pro, trial vs churned, EU vs US — this lets someone flip between them and see each version of the email. The small picker below uses a browser prompt; replace it with your own dialog.
 
 ```ts
 import { init } from '@templatical/editor';
@@ -164,12 +166,12 @@ function openMyAudiencePicker(): string | null {
 
 await init({
   container: '#editor',
-  resolvePreview: async ({ content, recipient, trigger }) => {
-    if (trigger === 'open' || trigger === 'refresh') {
+  resolvePreview: async ({ content, recipient, surface, trigger }) => {
+    if (surface === 'preview' && (trigger === 'open' || trigger === 'refresh')) {
       // A dismissed picker keeps the current choice.
       selectedAudience = openMyAudiencePicker() ?? selectedAudience;
     }
-    if (!selectedAudience) return content;
+    if (!selectedAudience && !recipient) return content;
 
     const res = await fetch('/api/resolve-preview', {
       method: 'POST',
@@ -182,7 +184,7 @@ await init({
 });
 ```
 
-While your picker is open on the first resolve, the preview shows its skeleton; on a refresh it keeps the current preview on screen. With no choice made yet, returning `content` shows the unresolved template without a failure note.
+While your picker is open on the first resolve, the preview shows its skeleton; on a refresh it keeps the current preview on screen. With no choice made yet and no recipient, returning `content` shows the unresolved template without a failure note. A recipient typed in the test-email dialog still resolves before anyone has used the picker. In the dialog, `recipient` is only where the test is sent: the remembered audience decides whose data renders, and your backend combines the two.
 
 ### Evaluate display conditions
 

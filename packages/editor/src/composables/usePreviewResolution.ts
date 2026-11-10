@@ -3,6 +3,7 @@ import {
   safeClone,
   type PreviewResolveContext,
   type PreviewResolveTrigger,
+  type PreviewSurface,
   type ResolvePreview,
   type TemplateContent,
 } from "@templatical/types";
@@ -37,6 +38,12 @@ const DEBOUNCE_MS = 500;
 export interface UsePreviewResolutionOptions {
   /** The consumer's hook. `undefined` disables the whole feature. */
   resolvePreview?: ResolvePreview;
+  /**
+   * Which preview this instance serves, sent on every call so a resolver can
+   * tell preview mode from the test-email dialog without inferring it from
+   * `recipient`.
+   */
+  surface: PreviewSurface;
   /** The template to resolve, read live so edits are picked up on re-resolve. */
   getContent: () => TemplateContent;
   /**
@@ -123,6 +130,7 @@ export function usePreviewResolution(
     // cycle-safety rule.
     const context: PreviewResolveContext = {
       content: safeClone(options.getContent()),
+      surface: options.surface,
       trigger,
       ...(options.getRecipient?.() !== undefined
         ? { recipient: options.getRecipient() }

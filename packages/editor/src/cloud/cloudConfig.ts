@@ -347,6 +347,9 @@ export interface TemplaticalCloudEditorConfig {
    * test-email recipient changes, `"locale"` when the template language changes,
    * and `"refresh"` when the user clicks Refresh preview or calls
    * `refreshPreview()`. Recipient changes debounce; refresh runs immediately.
+   * `surface` is `"preview"` for preview mode and `"test-email"` for the
+   * test-email dialog; tell them apart by it, not by `recipient`, which the
+   * dialog omits while its recipient field is empty.
    *
    * Supersedes `MergeTag.sample` when configured, and the Sample/Label switch
    * stops rendering.

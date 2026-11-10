@@ -440,6 +440,7 @@ export {
 export type {
   PreviewResolveContext,
   PreviewResolveTrigger,
+  PreviewSurface,
   ResolvePreview,
 } from "./preview-resolution";
 export { isRenderableTemplateContent } from "./preview-resolution";

@@ -61,7 +61,8 @@ describe("Refresh preview surfaces", () => {
     expect(button.attributes("title")).toBe("Refresh preview");
     await button.trigger("click");
     expect(resolver).toHaveBeenCalledTimes(2);
-    expect(resolver.mock.calls[1]![0]).toEqual({ content, trigger: "refresh" });
+    expect(resolver.mock.calls[0]![0]).toEqual({ content, surface: "preview", trigger: "open" });
+    expect(resolver.mock.calls[1]![0]).toEqual({ content, surface: "preview", trigger: "refresh" });
 
     const without = await realEditor();
     await without.find(".tpl-preview-toggle").trigger("click");
@@ -120,7 +121,7 @@ describe("refreshPreview() public instance", () => {
     handle.refreshPreview();
     expect(resolver).toHaveBeenCalledTimes(1);
     expect(resolver.mock.calls[0]![0]).toEqual({
-      content: handle.getContent(), trigger: "refresh",
+      content: handle.getContent(), surface: "preview", trigger: "refresh",
     });
 
     container.querySelector<HTMLButtonElement>('[data-testid="test-email-trigger"]')!.click();
@@ -134,7 +135,7 @@ describe("refreshPreview() public instance", () => {
     handle.refreshPreview();
     expect(resolver).toHaveBeenCalledTimes(1);
     expect(resolver.mock.calls[0]![0]).toEqual({
-      content: handle.getContent(), recipient: "guest@example.com", trigger: "refresh",
+      content: handle.getContent(), recipient: "guest@example.com", surface: "test-email", trigger: "refresh",
     });
   });
 });

@@ -3,15 +3,20 @@ import type { TemplateContent } from "./template";
 /** Why `resolvePreview` was called. */
 export type PreviewResolveTrigger = "open" | "refresh" | "recipient" | "locale";
 
+/** Which preview is calling `resolvePreview`. */
+export type PreviewSurface = "preview" | "test-email";
+
 /**
  * Context handed to `resolvePreview`.
  *
- * `recipient` is present only on surfaces that have one — the test-email
- * dialog — and absent in the editor's own preview mode. Treat its absence as
- * "no particular recipient", not as an error: a resolver should still return
- * something renderable, its own default or sample data, or obtain a recipient
- * itself, for example by awaiting its own picker on `trigger: "open"` or
- * `"refresh"` (see guide/preview-rendering).
+ * `surface` tells the editor's own preview mode and the test-email dialog
+ * apart; the presence of `recipient` does not. `recipient` is absent in preview
+ * mode, and also in the test-email dialog while its recipient field is empty.
+ * Treat its absence as "no particular recipient", not as an error: a resolver
+ * should still return something renderable, its own default or sample data,
+ * or obtain a recipient itself, for example by awaiting its own picker on
+ * `surface: "preview"` with `trigger: "open"` or `"refresh"` (see
+ * guide/preview-rendering).
  */
 export interface PreviewResolveContext {
   /**
@@ -19,8 +24,19 @@ export interface PreviewResolveContext {
    * effect on the editor, and returning it unchanged is a valid no-op.
    */
   content: TemplateContent;
-  /** The address the preview is being shown for, when the surface has one. */
+  /**
+   * The test-email dialog's recipient field value, set only while that field
+   * is non-empty. A free-text field passes what the user has typed so far,
+   * which may be an incomplete address: validate it before looking up
+   * recipient data.
+   */
   recipient?: string;
+  /**
+   * Which preview is calling, on every call including a refresh:
+   * - "preview": the editor's own preview mode;
+   * - "test-email": the test-email dialog's preview.
+   */
+  surface: PreviewSurface;
   /**
    * Why this call happened:
    * - "open": a preview surface opened (editor preview mode, or the test-email dialog);
