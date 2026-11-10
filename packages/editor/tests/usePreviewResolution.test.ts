@@ -377,6 +377,56 @@ describe("usePreviewResolution debouncing and staleness", () => {
   });
 });
 
+describe("usePreviewResolution trigger scheduling", () => {
+  it("debounces a recipient change made before the first answer lands", async () => {
+    // Typing an address while the opening resolve is still out must not fire
+    // one call per keystroke, nor cut the pending `open` call short.
+    let settleOpen: ((value: TemplateContent) => void) | undefined;
+    const hook = vi.fn()
+      .mockImplementationOnce(() => new Promise<TemplateContent>((resolve) => { settleOpen = resolve; }))
+      .mockResolvedValue(resolvedWith("typed"));
+    const { api, recipient, content } = setup({ resolvePreview: hook, recipient: "a@example.com" });
+    expect(hook).toHaveBeenCalledTimes(1);
+    expect(hook.mock.calls[0]![0]).toEqual({ content, recipient: "a@example.com", trigger: "open" });
+
+    recipient.value = "b@example.com";
+    recipient.value = "bc@example.com";
+    await vi.advanceTimersByTimeAsync(DEBOUNCE - 1);
+    expect(hook).toHaveBeenCalledTimes(1);
+
+    settleOpen!(resolvedWith("opened"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(firstText(api.content.value)).toBe("<p>opened</p>");
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(hook).toHaveBeenCalledTimes(2);
+    expect(hook.mock.calls[1]![0]).toEqual({ content, recipient: "bc@example.com", trigger: "recipient" });
+  });
+
+  it("makes no call when a watched source re-fires with unchanged values", async () => {
+    // `getLocale` can read a whole content object; replacing it with one in
+    // the same language (setContent, a remote change) must not reach the host
+    // as a spurious `open`.
+    const hook = vi.fn(async ({ content }: { content: TemplateContent }) => content);
+    const settings = ref({ locale: "en" });
+    scope = effectScope();
+    scope.run(() =>
+      usePreviewResolution({
+        resolvePreview: hook,
+        getContent: () => raw(),
+        isActive: () => true,
+        getLocale: () => settings.value.locale,
+      }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(hook).toHaveBeenCalledTimes(1);
+
+    settings.value = { locale: "en" };
+    await vi.advanceTimersByTimeAsync(DEBOUNCE * 2);
+    expect(hook).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("usePreviewResolution failure degrades", () => {
   it("drops an older result after a failed re-resolve and keeps the failure note through retry", async () => {
     let rejectRetry: ((error: Error) => void) | undefined;
@@ -393,9 +443,12 @@ describe("usePreviewResolution failure degrades", () => {
     recipient.value = "c@example.com";
     await vi.advanceTimersByTimeAsync(DEBOUNCE);
     expect(api.isInitialResolve.value).toBe(false);
+    expect(api.hasFailed.value).toBe(true);
     expect(firstText(api.content.value)).toBe("<p>raw</p>");
     rejectRetry!(new Error("still failed"));
     await Promise.resolve();
+    expect(api.isResolving.value).toBe(false);
+    expect(api.hasFailed.value).toBe(true);
   });
 
   it("falls back to the unresolved template when the hook rejects", async () => {

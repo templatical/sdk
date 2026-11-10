@@ -168,13 +168,14 @@ export function usePreviewResolution(
     //
     // `run()` sets `isResolving` synchronously before its first await, so the
     // skeleton is up in the same frame as the click.
-    if (!hasSettled.value) {
+    if (!hasSettled.value && trigger !== "recipient") {
       void run(trigger);
       return;
     }
 
-    // A view has settled, so a recipient re-resolve debounces. This also holds
-    // after failure, when the unresolved template and note stay visible.
+    // A recipient change always debounces, including before the first answer
+    // lands: typing an address coalesces into one call and leaves the pending
+    // `open` call (which may be waiting on the host's own picker) to finish.
     timer = setTimeout(() => {
       timer = null;
       void run(trigger);
@@ -216,14 +217,18 @@ export function usePreviewResolution(
         hasSettled.value = false;
         return;
       }
-      const trigger: PreviewResolveTrigger =
+      const trigger: PreviewResolveTrigger | null =
         !previous || !previous[0]
           ? "open"
           : locale !== previous[2]
             ? "locale"
             : recipient !== previous[1]
               ? "recipient"
-              : "open";
+              : null;
+      // A source can re-fire with the same values (`getLocale` reading a
+      // replaced content object in the same language). Nothing the host cares
+      // about changed, so nothing is resolved.
+      if (trigger === null) return;
       schedule(trigger);
     },
     { immediate: true, flush: "sync" },

@@ -10,6 +10,7 @@ import {
   MERGE_TAGS_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   POPOVER_ROOT_KEY,
+  REGISTER_DIALOG_PREVIEW_REFRESH_KEY,
   RESOLVE_PREVIEW_KEY,
   TRANSLATIONS_KEY,
 } from "../src/keys";
@@ -84,11 +85,13 @@ function mountModal(
     editorContent?: TemplateContent;
     layout?: TemplateContent;
     resolver?: (context: any) => Promise<TemplateContent>;
+    visible?: boolean;
+    registerRefresh?: (refresh: () => void) => () => void;
   } = {},
 ) {
   return mountEditor(TestEmailModal, {
     props: {
-      visible: true,
+      visible: props.visible ?? true,
       isSending: props.isSending ?? false,
       justSent: props.justSent ?? false,
       error: props.error ?? null,
@@ -111,6 +114,9 @@ function mountModal(
       ...(props.layout ? { [LAYOUT_KEY]: props.layout } : {}),
       ...(props.resolver
         ? { [RESOLVE_PREVIEW_KEY]: props.resolver, [TRANSLATIONS_KEY]: en }
+        : {}),
+      ...(props.registerRefresh
+        ? { [REGISTER_DIALOG_PREVIEW_REFRESH_KEY]: props.registerRefresh }
         : {}),
     },
   } as never);
@@ -334,6 +340,52 @@ describe("TestEmailModal preview", () => {
     mountModal({ editorContent: content, resolver: unseeded });
     expect(unseeded).toHaveBeenCalledTimes(1);
     expect(unseeded.mock.calls[0]![0]).toEqual({ content, trigger: "open" });
+  });
+
+  it("re-seeds and resolves once when a mounted dialog reopens, and is the refresh target only while open", async () => {
+    const content = createDefaultTemplateContent();
+    const resolver = vi.fn(async () => content);
+    let registered: (() => void) | null = null;
+    const registerRefresh = (refresh: () => void) => {
+      registered = refresh;
+      return () => {
+        if (registered === refresh) registered = null;
+      };
+    };
+    const wrapper = mountModal({
+      editorContent: content,
+      resolver,
+      defaultRecipient: "me@example.com",
+      visible: false,
+      registerRefresh,
+    });
+    expect(resolver).toHaveBeenCalledTimes(0);
+    expect(registered).toBeNull();
+
+    await wrapper.setProps({ visible: true });
+    expect(resolver).toHaveBeenCalledTimes(1);
+    expect(resolver.mock.calls[0]![0]).toEqual({
+      content,
+      recipient: "me@example.com",
+      trigger: "open",
+    });
+    expect(registered).toBeTypeOf("function");
+
+    registered!();
+    expect(resolver).toHaveBeenCalledTimes(2);
+    expect(resolver.mock.calls[1]![0]).toEqual({
+      content,
+      recipient: "me@example.com",
+      trigger: "refresh",
+    });
+
+    await wrapper.setProps({ visible: false });
+    expect(registered).toBeNull();
+
+    await wrapper.setProps({ visible: true });
+    expect(registered).toBeTypeOf("function");
+    wrapper.unmount();
+    expect(registered).toBeNull();
   });
 
   it("marks the refresh button busy only while its request is in flight", async () => {
