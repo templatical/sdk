@@ -15,6 +15,36 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.59.0
+
+<time datetime="2026-11-10">2026-11-10</time>
+
+### Features
+
+**Add `PreviewResolveTrigger` (`"open" | "refresh" | "recipient" | "locale"`), the required `PreviewResolveContext.trigger`, and the `refreshPreview()` instance method. A Refresh preview button is available in preview mode and the test-email dialog when `resolvePreview` is configured. A resolver the editor calls needs no change; code that builds a `PreviewResolveContext` itself, such as a test that calls its own resolver, adds `trigger: "open"`. A failed re-resolve now shows the unresolved template instead of stale resolved content, opening the test-email dialog makes one resolver call with its seeded recipient, and a test-email recipient change always waits 500 ms, including before the first answer lands.**
+
+`@templatical/editor` · `@templatical/types`
+
+**Add `header.actions` for host-owned controls in the editor header, with `darkModeToggle`, `previewToggle` and `viewportToggle` opt-outs. The editor reports compact and resolved-theme state on the host element.**
+
+`@templatical/editor`
+
+### Fixes and improvements
+
+**Fix undo history after replacing an editor document. Undo after loading another template could write the previous template's content into it on save, and undo after `setContent()` could restore part of the old document. Loading a template, creating one with new content, or calling the public `setContent()` now clears undo and redo; creating a template from the current content keeps history. In collaborative editing, reloading the same template no longer sends the loaded document as an edit or drops presence and locks, and creating a template from the current content keeps undo and redo available in the new template.**
+
+`@templatical/core` · `@templatical/editor`
+
+**Read the Menu, Table and Video modules in the shape BeeFree exports (`IPluginModuleMenu`, `IPluginModuleTable` and `IPluginModuleVideo` in BeeFree's `bee.ts`). The importer read keys BeeFree never writes, so a real menu or table imported with no content and a video lost its thumbnail and width.**
+
+`@templatical/import-beefree`
+
+- **Menu**: items come from `descriptor.menuItemsList.items` (`text`, `link.href`, `link.target`), the font, color and alignment from `descriptor.style`, the link color from `computedStyle.linkColor`, and the separator from `computedStyle.separator` (none when BeeFree writes none). `spacing` is half of `computedStyle.menuItemsSpacing` `padding-left` plus `padding-right`. A vertical layout is noted. Menu translations are read from `menuItemsList.translations` or the module's `translations`.
+- **Table**: rows come from `table.content.headers` then `table.content.rows`. The first header row is the header row, with `headersBackgroundColor`; a header styled differently from Templatical's bold header, extra header rows, borders that differ by side and dashed or dotted borders are `approximated` with a note. The four `border-*` sides become one `borderWidth` and `borderColor`. `font-family` is now carried. A cell's paragraphs and line breaks become one space, so `<p>First</p><p>Second</p>` reads `First Second`.
+- **Video**: `thumbSrc` is the thumbnail in `thumbnail` mode; `embedded` and `custom` mode are `approximated`, and a video with no thumbnail on a link other than YouTube or Vimeo adds a `report.warnings` entry. The width (`computedStyle.width`, else `style.width`) follows the image width rule, so `100%` is `"full"` instead of 600px, and the alignment comes from `computedStyle.class`.
+
+An explicit `0px` font size, item spacing or border is kept; only a missing or unreadable value takes the default.
+
 ## 0.58.0
 
 <time datetime="2026-11-09">2026-11-09</time>
