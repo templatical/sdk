@@ -1,5 +1,10 @@
 # Install and mount
 
+For host controls in the editor header, or requests to hide its Preview,
+dark-mode or viewport toggle, use the `header` row in the capability map and
+fetch `api/editor#header-actions` through [docs.md](docs.md). The host owns the
+element and its CSS; the editor moves it into the header.
+
 For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the compatibility rule (no template migration, one version for every `@templatical/*` package) and the `validate --locale` check.
 
 For `translation`, Translate availability, provider errors or tag masking, follow [localize.md](localize.md) and fetch `backend/translation` through [docs.md](docs.md). Check `translation`, `localization` and an enabled non-default language view before changing the backend. Verify mask placeholders and run `runTranslationConformance` for backend conformance; then validate the saved language with `validate --locale de`.
@@ -53,6 +58,7 @@ not only before wiring it; the storage providers' shared rules are in
 | --- | --- | --- | --- |
 | Save and open templates in the host's backend | `templates` | The editor adds the name field, Save and the unsaved-changes guard; autosave is `templates.autoSave: true` (off by default). The host still opens a template with `editor.load(id)` or `editor.create()`. | `backend/templates` |
 | Keep the host's own persistence, or open existing JSON | `content`, `onChange` | `content` seeds the canvas (the editor edits a copy); `onChange` hands back the debounced content for the host to store. Use when the host owns saving and wants no editor Save button. | `backend/templates` |
+| Host controls in the editor header | `header` | `actions` is a host-owned `HTMLElement` before Test email and Save; `darkModeToggle`, `previewToggle` and `viewportToggle` opt out of the centre controls for the session. Style `[data-tpl-compact="true"]` in CSS, and portal menus to `document.body` or position them absolutely inside the element. Hiding Preview removes the editor's preview mode; the Test email dialog still calls `resolvePreview`. | `api/editor` |
 | Warn before a client-side route change drops unsaved edits | `onDirtyChange` | `beforeunload` cannot see SPA navigation. Fires on every dirty flip, with or without `templates`. | `backend/templates` |
 | Browse and restore past versions | `versionHistory` | Needs a loaded template. The editor never records a version itself: the host's `templates.save` decides when one is stored. | `backend/version-history` |
 | Sendable HTML from `toHtml()` | `render` | The SDK bundles no MJML compiler, so `toHtml()` rejects without `render.compileMjml` or `render.toHtml`. A local `toMjml()` needs the optional `@templatical/renderer` peer. | `backend/render` |

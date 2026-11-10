@@ -84,6 +84,7 @@ const CONFIGURE_IDS = [
   "fonts",
   "defaults",
   "theming",
+  "header-actions",
   "layout",
   "i18n",
   "languages",
@@ -130,6 +131,7 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   fonts: "/guide/fonts#restricting-the-built-in-fonts",
   defaults: "/guide/defaults#block-defaults",
   theming: "/guide/theming#themeoverrides-config",
+  "header-actions": "/api/editor#header-actions",
   layout: "/guide/layout",
   i18n: "/guide/i18n#setting-the-locale",
   languages: "/guide/localized-templates",
@@ -171,7 +173,7 @@ const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
 
 describe("registry", () => {
   it("registers minimum, then configure, personalization, backend, import, examples", () => {
-    expect(SCENES).toHaveLength(42);
+    expect(SCENES).toHaveLength(43);
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
       ...CONFIGURE_IDS,

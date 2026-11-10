@@ -268,10 +268,16 @@ test.describe("Scene rail", () => {
     const next = page.getByTestId("scene-next");
     const before = (await next.boundingBox())!.x;
 
-    // Defaults → Theming → Layout → Internationalization, a much longer
-    // title. Waiting on the title each step means the next click lands on
+    // Defaults → Theming → Header actions → Layout → Internationalization,
+    // titles of very different lengths.
+    // Waiting on the title each step means the next click lands on
     // the re-rendered arrow, not the previous scene's.
-    for (const title of ["Theming", "Layout", "Internationalization"]) {
+    for (const title of [
+      "Theming",
+      "Header actions",
+      "Layout",
+      "Internationalization",
+    ]) {
       await next.click();
       await expect(page.getByTestId("scene-header").locator("h1")).toHaveText(
         title,

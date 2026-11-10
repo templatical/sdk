@@ -2,6 +2,7 @@ import { customBlocks } from "./author/custom-blocks";
 import { defaults } from "./author/defaults";
 import { displayConditions } from "./author/display-conditions";
 import { fonts } from "./author/fonts";
+import { headerActions } from "./author/header-actions";
 import { i18n } from "./author/i18n";
 import { issues } from "./author/issues";
 import { languages } from "./author/languages";
@@ -57,6 +58,7 @@ export const SCENES: readonly Scene[] = [
   fonts,
   defaults,
   theming,
+  headerActions,
   layout,
   i18n,
   languages,

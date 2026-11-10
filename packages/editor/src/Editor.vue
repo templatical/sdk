@@ -826,6 +826,8 @@ defineExpose({
         :comments="comments"
         :collaboration="collaboration"
         :ai="ai"
+        :header="props.config.header"
+        :shadow-root="props.shadowRoot"
       >
         <template v-if="cloudAttachment" #left-extras>
           <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
