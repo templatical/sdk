@@ -91,7 +91,7 @@ Das JSON, das BeeFrees Editor speichert (`page.rows`), ist die Eingabe. Ein komp
 
 ## Sprachen {#languages}
 
-Die Standardsprache stammt aus `language.value` bei `page.body.language`, `page.language`, dann der Wurzel, in dieser Reihenfolge. Übersetzungen in Modul-Deskriptoren (oder am Modul) werden zu `l10n`-Text: Heading `text`, Paragraph/List `html`, Button `label`, Image `alt`, Video `thumbAlt` sowie Menüeinträge `text` nach Position. Bei abweichender Anzahl der Menüeinträge entfällt die Menüübersetzung mit Warnung. `head.meta.preheader` liefert den Standard-Preheader; `head.meta.translations[locale].preheader` liefert seine Übersetzung.
+Die Standardsprache stammt aus `language.value` bei `page.body.language`, `page.language`, dann der Wurzel, in dieser Reihenfolge. Übersetzungen in Modul-Deskriptoren (oder am Modul) werden zu `l10n`-Text: Heading `text`, Paragraph/List `html`, Button `label`, Image `alt`, Video `thumbAlt` sowie Menüeinträge `text` nach Position, aus `menuItemsList.translations` oder den `translations` des Moduls. Bei abweichender Anzahl der Menüeinträge entfällt die Menüübersetzung mit Warnung. `head.meta.preheader` liefert den Standard-Preheader; `head.meta.translations[locale].preheader` liefert seine Übersetzung.
 
 Übersetzte `subject`, `title` und `description` bleiben beim Host und erzeugen Warnungen. Unbekannte Übersetzungsschlüssel, einschließlich URL- oder Bildquellenschlüssel, warnen einmal pro Schlüssel und Sprache. Übersetzungen für HTML-Fallbacks werden mit Warnung verworfen.
 
@@ -113,24 +113,24 @@ export interface ConvertBeeFreeOptions {
 
 BeeFree-Blocktypen werden den Templatical-Äquivalenten zugeordnet:
 
-| BeeFree-Modul | Templatical-Block                                                                                                            | Status                                                                                                                                                             |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Text          | `paragraph`                                                                                                                  | Konvertiert                                                                                                                                                        |
-| Paragraph     | `paragraph`                                                                                                                  | Konvertiert                                                                                                                                                        |
-| Heading       | `title`                                                                                                                      | Konvertiert                                                                                                                                                        |
-| List          | `paragraph`                                                                                                                  | Konvertiert                                                                                                                                                        |
-| Image         | `image`                                                                                                                      | Konvertiert                                                                                                                                                        |
-| Button        | `button`                                                                                                                     | Konvertiert (angenähert, wenn Zeichenabstand, teilweiser Fettdruck in der Beschriftung oder eine Prozentbreite außer 100% nicht übernommen wird)                   |
-| Divider       | `divider`, oder `spacer`, wenn er [keine Linie zeichnet](#undrawn-dividers)                                                  | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn er keine Linie zeichnet und keinen Platz einnimmt) |
+| BeeFree-Modul | Templatical-Block                                                           | Status                                                                                                                                                             |
+| ------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Text          | `paragraph`                                                                 | Konvertiert                                                                                                                                                        |
+| Paragraph     | `paragraph`                                                                 | Konvertiert                                                                                                                                                        |
+| Heading       | `title`                                                                     | Konvertiert                                                                                                                                                        |
+| List          | `paragraph`                                                                 | Konvertiert                                                                                                                                                        |
+| Image         | `image`                                                                     | Konvertiert                                                                                                                                                        |
+| Button        | `button`                                                                    | Konvertiert (angenähert, wenn Zeichenabstand, teilweiser Fettdruck in der Beschriftung oder eine Prozentbreite außer 100% nicht übernommen wird)                   |
+| Divider       | `divider`, oder `spacer`, wenn er [keine Linie zeichnet](#undrawn-dividers) | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn er keine Linie zeichnet und keinen Platz einnimmt) |
 | Spacer        | `spacer`, so hoch wie `spacer.style.height` (BeeFrees Standard von 60px, wenn sie fehlt oder nicht lesbar ist)               | Konvertiert (übersprungen bei 0px Höhe)                                                                                                                            |
-| Social        | `social`                                                                                                                     | Konvertiert                                                                                                                                                        |
-| Icons         | `image` für ein Icon ohne Text, mit nicht-leerem Bild und positiver px-Dateibreite und -höhe, sonst `html` ([Icons](#icons)) | Konvertiert oder HTML-Fallback                                                                                                                                     |
-| Addon         | der Block für das Payload, das es trägt ([Addons](#addons))                                                                  | Wie dieses Modul                                                                                                                                                   |
-| Empty         | keiner                                                                                                                       | Übersprungen                                                                                                                                                       |
-| Html          | `html`                                                                                                                       | Konvertiert                                                                                                                                                        |
-| Menu          | `menu`                                                                                                                       | Angenähert (Stile können abweichen)                                                                                                                                |
-| Video         | `video`                                                                                                                      | Konvertiert                                                                                                                                                        |
-| Table         | `table`                                                                                                                      | Konvertiert (angenähert, wenn HTML in Zellen auf Klartext reduziert wird)                                                                                          |
+| Social        | `social`                                                                    | Konvertiert                                                                                                                                                        |
+| Icons         | `image` für ein Icon ohne Text, mit nicht-leerem Bild und positiver px-Dateibreite und -höhe, sonst `html` ([Icons](#icons)) | Konvertiert oder HTML-Fallback |
+| Addon         | der Block für das Payload, das es trägt ([Addons](#addons))                 | Wie dieses Modul                                                                                                                                                   |
+| Empty         | keiner                                                                      | Übersprungen                                                                                                                                                       |
+| Html          | `html`                                                                      | Konvertiert                                                                                                                                                        |
+| Menu          | `menu`                                                                      | Angenähert ([Menü](#menu))                                                                                                                                         |
+| Video         | `video`                                                                     | Konvertiert (angenähert im Modus `embedded` oder `custom` oder bei einer Breite unter 100%; [Video](#video))                                                     |
+| Table         | `table`                                                                     | Konvertiert (angenähert, wenn HTML in Zellen auf Klartext reduziert wird, die Kopfzeile anders gestaltet ist oder die Rahmen je Seite abweichen oder nicht durchgezogen sind; [Tabelle](#table)) |
 
 Unbekannte Modultypen — Formulare eingeschlossen — werden als Fallback in HTML-Blöcke konvertiert und als `html-fallback` gemeldet. Inhalt des Blocks ist `descriptor.text.html`, `descriptor.html.html` oder `descriptor.heading.text` des Moduls, das erste gesetzte Feld. Fehlen alle drei, ist es ein Kommentar `<!-- Unsupported BeeFree module: <type> -->`, der nichts rendert.
 
@@ -230,10 +230,42 @@ Ein Addon-Modul (`mailup-bee-newsletter-modules-addon`) behält das Payload des 
 | `list`                  | List            |
 | `button`                | Button          |
 | `divider`               | Divider         |
-| `menu`                  | Menu            |
+| `menuItemsList`         | Menu            |
 | `iconsList`             | Icons           |
 
 Ein Bild-Addon verlinkt nur auf `image.href`. Das GIPHY-Addon schreibt zusätzlich `image.url`, die Seite des GIFs auf giphy.com; sie wird nicht importiert. Ein Addon ohne eines dieser Payloads wird zum Kommentar `<!-- Unsupported BeeFree module: … -->` und als `html-fallback` gemeldet. Das Bild-Payload ist an einem echten GIPHY-Export geprüft; die übrigen folgen BeeFrees [Addon-Inhaltstypen](https://docs.beefree.io/beefree-sdk/builder-addons/custom-addons/custom-addon-types).
+
+### Menü {#menu}
+
+Die Einträge eines Menu-Moduls stehen in `descriptor.menuItemsList.items`. Der `text` eines Eintrags wird zum Eintragstext, `link.href` zu seiner URL (`#`, wenn leer), und `link.target: "_blank"` öffnet ihn in einem neuen Tab. `link.title` wird nicht übernommen.
+
+| BeeFree                          | Menu-Block                                                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `style.font-size`                | `fontSize`; 15px, wenn fehlend oder unlesbar, und `0px` bleibt 0                                               |
+| `style.color`                    | `color` und `separatorColor`; ohne Farbe übernimmt das Trennzeichen die Textfarbe des Templates                |
+| `computedStyle.linkColor`        | `linkColor`                                                                                                    |
+| `style.font-family`              | `fontFamily`                                                                                                   |
+| `style.text-align`               | `textAlign`; `center`, wenn nicht gesetzt                                                                      |
+| `computedStyle.separator`        | `separator`; keines (`""`), wenn BeeFree keines schreibt, da BeeFree dann keines zeichnet                      |
+| `computedStyle.menuItemsSpacing` | `spacing`: die Hälfte von `padding-left` plus `padding-right`, damit der Abstand zwischen Einträgen gleich bleibt. Eine unlesbare Seite zählt als 0; ist keine Seite lesbar, 10px |
+| `style.padding-*`                | `styles.padding`                                                                                               |
+
+Ein Menü ist immer `approximated`: Das obere und untere Padding der Einträge, das mobile Hamburger-Menü (`computedStyle.hamburger`) und Link-Titel haben kein Feld im Menu-Block. Ein `computedStyle.layout` mit dem Wert `vertical` wird horizontal importiert, mit der `note` `BeeFree's vertical menu layout was imported horizontal.`
+
+### Tabelle {#table}
+
+Die Zeilen eines Table-Moduls sind `table.content.headers`, gefolgt von `table.content.rows`. Das `html` jeder Zelle wird auf Klartext reduziert, mit einem Leerzeichen, wo ein Absatz oder Zeilenumbruch endete; geht dabei Markup verloren, ist die Tabelle `approximated` und `report.warnings` nennt es. Das Zellen-Padding behält den Standardwert 8px, da BeeFree keine Einstellung dafür hat.
+
+- **Kopfzeile** -- Der erste Eintrag von `headers` wird zu Zeile 0 mit `hasHeaderRow: true`, und `table.computedStyle.headersBackgroundColor` wird zu `headerBackgroundColor`. Templatical zeichnet die Kopfzeile fett in Farbe, Größe und Ausrichtung des Tabellenkörpers. Ein angegebenes `headersFontWeight` unter 600 oder ein `headersColor`, `headersFontSize` oder `headersTextAlign`, das vom Tabellenkörper abweicht, macht die Tabelle `approximated` mit einer `note`, die sie nennt, etwa `Header row font weight 400, color #505659 not kept; Templatical draws the header bold in the body's color, size and alignment.` Weitere Kopfzeilen werden als normale Zeilen importiert, `approximated`. Ein leeres `headers` ergibt `hasHeaderRow: false`.
+- **Rahmen** -- `border-top`, `border-right`, `border-bottom` und `border-left` in `table.style` werden zu einem `borderWidth` und `borderColor` für jede Zellkante. Vier gleiche Seiten behalten ihre Breite und Farbe. Abweichende Seiten, auch eine Seite, die BeeFree weglässt, übernehmen die breiteste gezeichnete Seite, `approximated`. Ohne gezeichnete Seite (0 breit, `none`, `hidden` oder transparent) ist `borderWidth` 0. Ohne jeden Rahmenschlüssel gilt der Standard 1px `#e0e0e0`. Ein `dashed`- oder `dotted`-Rahmen wird durchgezogen gezeichnet, `approximated`.
+- **Text** -- `font-size` (15px, wenn fehlend oder unlesbar; `0px` bleibt 0), `color`, `font-family` und `text-align` in `table.style` werden dem Block zugeordnet. `alternateRowBackgroundColor`, `linkColor`, `background-color`, `font-weight`, `line-height`, `letter-spacing` und `direction` haben kein Feld im Table-Block.
+
+### Video {#video}
+
+`video.src` eines Video-Moduls wird zu `url`, und `video.thumbAlt` wird zu `alt`. Die Ausrichtung ist `left`, `center` oder `right` in `computedStyle.class`, sonst `center`.
+
+- **Modus** -- Im Modus `thumbnail` wird `video.thumbSrc` zu `thumbnailUrl`, `converted`. BeeFrees Play-Icon (`iconSrc`) zeichnet der Standard-Renderer nicht. `embedded` und `custom` spielen das Video an Ort und Stelle ab und haben kein Vorschaubild, daher ist der Block `approximated` mit leerem `thumbnailUrl`, und der Renderer leitet für YouTube- und Vimeo-Links ein Vorschaubild ab. Ein Video ohne Vorschaubild mit einem anderen Link rendert nichts, und `report.warnings` nennt es.
+- **Breite** -- `computedStyle.width`, sonst `style.width`, folgt der Regel für die [Bildbreite](#image-width). 100% oder mehr, fehlend oder unlesbar ergibt `"full"`. Ein Prozentwert unter 100% wird zu px des verfügbaren Raums, `approximated`, mit einer `note` wie `Video width 50% was converted to 290px.` Eine px-Breite, die den Raum erreicht, ergibt `"full"`.
 
 ## Konvertierung von Spaltenlayouts {#column-layout-conversion}
 

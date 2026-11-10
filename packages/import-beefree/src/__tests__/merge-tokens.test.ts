@@ -216,18 +216,22 @@ describe("HTML entities inside Twig and Liquid tokens", () => {
     );
   });
 
-  it("decodes menu item text and both link fields", () => {
+  it("decodes menu item text and links", () => {
     const block = convertModule(
       moduleOf("mailup-bee-newsletter-modules-menu", {
-        menu: {
+        menuItemsList: {
           items: [
             {
               text: "{% if n &gt; 1 %}Shop{% endif %}",
-              link: "https://example.com/{{ id|default(&quot;a&quot;) }}",
+              link: {
+                href: "https://example.com/{{ id|default(&quot;a&quot;) }}",
+              },
             },
             {
               text: "About",
-              href: "https://example.com/{{ slug|default(&#39;about&#39;) }}",
+              link: {
+                href: "https://example.com/{{ slug|default(&#39;about&#39;) }}",
+              },
             },
           ],
         },
@@ -273,8 +277,9 @@ describe("HTML entities inside Twig and Liquid tokens", () => {
       moduleOf("mailup-bee-newsletter-modules-video", {
         video: {
           src: "https://example.com/{{ id|default(&quot;a&quot;) }}",
-          thumbnail: "https://example.com/{{ thumb|default(&#39;t&#39;) }}.jpg",
-          alt: "Preview {{ label|default(&quot;video&quot;) }}",
+          mode: "thumbnail",
+          thumbSrc: "https://example.com/{{ thumb|default(&#39;t&#39;) }}.jpg",
+          thumbAlt: "Preview {{ label|default(&quot;video&quot;) }}",
         },
       }),
       [],
@@ -291,15 +296,18 @@ describe("HTML entities inside Twig and Liquid tokens", () => {
     const block = convertModule(
       moduleOf("mailup-bee-newsletter-modules-table", {
         table: {
-          rows: [
-            {
-              cells: [
-                {
-                  html: "<b>{% if n &gt; 1 %}Many</b>",
-                },
-              ],
-            },
-          ],
+          content: {
+            headers: [],
+            rows: [
+              {
+                cells: [
+                  {
+                    html: "<b>{% if n &gt; 1 %}Many</b>",
+                  },
+                ],
+              },
+            ],
+          },
         },
       }),
       [],
@@ -388,8 +396,13 @@ describe("HTML entities inside Twig and Liquid tokens", () => {
                   {
                     type: "mailup-bee-newsletter-modules-menu",
                     descriptor: {
-                      menu: {
-                        items: [{ text: "{% if n &gt; 1 %}Shop{% endif %}" }],
+                      menuItemsList: {
+                        items: [
+                          {
+                            text: "{% if n &gt; 1 %}Shop{% endif %}",
+                            link: { href: "https://example.com" },
+                          },
+                        ],
                         translations: {
                           "es-ES": {
                             items: [

@@ -90,7 +90,8 @@ export interface BeeFreeeModuleDescriptor {
   /** Social icons for the Social module, icon items for the Icons module. */
   iconsList?: BeeFreeeSocialContent | BeeFreeeIconsContent;
   video?: BeeFreeeVideoContent;
-  menu?: BeeFreeeMenuContent;
+  /** The Menu module's items; its style is `style` and `computedStyle`. */
+  menuItemsList?: BeeFreeeMenuItemsList;
   table?: BeeFreeeTableContent;
 }
 
@@ -184,36 +185,51 @@ export interface BeeFreeeSocialIcon {
   id?: string;
 }
 
+/**
+ * The Video module's `video` (`IPluginModuleVideo` in BeeFree's `bee.ts`).
+ * The width is the module's `style.width` / `computedStyle.width` and the
+ * alignment its `computedStyle.class`.
+ */
 export interface BeeFreeeVideoContent {
-  thumbAlt?: string;
   translations?: BeeFreeTranslations;
   src: string;
-  thumbnail?: string;
-  alt?: string;
-  style?: Record<string, string>;
+  /** `thumbnail` carries `thumbSrc`; `embedded` and `custom` play in place. */
+  mode?: "thumbnail" | "embedded" | "custom";
+  thumbSrc?: string;
+  thumbAlt?: string;
+  thumbRatio?: string;
+  /** The play icon BeeFree draws over the thumbnail. */
+  iconSrc?: string;
+  iconType?: number;
+  iconSize?: number;
+  iconColor1?: string;
+  iconColor2?: string;
+  controls?: boolean;
+  loop?: boolean;
 }
 
-export interface BeeFreeeMenuContent {
+/** The Menu module's `menuItemsList` (`IPluginModuleMenu` in `bee.ts`). */
+export interface BeeFreeeMenuItemsList {
   translations?: BeeFreeTranslations;
   items: BeeFreeeMenuItem[];
-  separator?: string;
-  separatorColor?: string;
-  style?: Record<string, string>;
 }
 
 export interface BeeFreeeMenuItem {
   text: string;
-  link?: string;
-  href?: string;
-  target?: string;
+  link?: { href?: string; target?: string; title?: string };
 }
 
+/** The Table module's `table` (`IPluginModuleTable` in `bee.ts`). */
 export interface BeeFreeeTableContent {
-  rows: BeeFreeeTableRow[];
-  hasHeaderRow?: boolean;
-  headerBackgroundColor?: string;
-  cellPadding?: number | string;
+  content?: {
+    /** Header rows; BeeFree writes one, or none when the header is off. */
+    headers?: BeeFreeeTableRow[];
+    rows?: BeeFreeeTableRow[];
+  };
+  /** Body text style and the `border-{top,right,bottom,left}` shorthands. */
   style?: Record<string, string>;
+  /** `headers{BackgroundColor,Color,FontSize,FontWeight,TextAlign}`, `linkColor`, `alternateRowBackgroundColor`. */
+  computedStyle?: Record<string, string>;
 }
 
 export interface BeeFreeeTableRow {
@@ -221,7 +237,6 @@ export interface BeeFreeeTableRow {
 }
 
 export interface BeeFreeeTableCell {
-  content?: string;
   html?: string;
 }
 

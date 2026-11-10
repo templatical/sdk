@@ -116,7 +116,7 @@ describe("BeeFree languages", () => {
   );
   it("warns and skips a menu with different item counts", () => {
     const source = structuredClone(multilingual);
-    source.page.rows[0].columns[0].modules[6].descriptor.menu!.translations[
+    source.page.rows[0].columns[0].modules[6].descriptor.menuItemsList!.translations![
       "es-ES"
     ].items.pop();
     const { content, report } = convertBeeFreeTemplate(source);
@@ -166,7 +166,7 @@ describe("BeeFree languages", () => {
   });
   it("warns about an unmapped URL inside a translated menu item", () => {
     const source = structuredClone(multilingual) as any;
-    source.page.rows[0].columns[0].modules[6].descriptor.menu.translations[
+    source.page.rows[0].columns[0].modules[6].descriptor.menuItemsList.translations[
       "es-ES"
     ].items[0].url = "https://example.com/es";
     const { report } = convertBeeFreeTemplate(source);

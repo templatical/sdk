@@ -70,8 +70,14 @@ export const multilingual = {
               {
                 type: "mailup-bee-newsletter-modules-menu",
                 descriptor: {
-                  menu: {
-                    items: [{ text: "Home" }, { text: "About" }],
+                  menuItemsList: {
+                    items: [
+                      { text: "Home", link: { href: "https://example.com" } },
+                      {
+                        text: "About",
+                        link: { href: "https://example.com/about" },
+                      },
+                    ],
                     translations: {
                       "es-ES": {
                         items: [{ text: "Inicio" }, { text: "Nosotros" }],
