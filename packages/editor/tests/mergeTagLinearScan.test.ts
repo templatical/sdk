@@ -179,6 +179,8 @@ describe("built-in merge-tag consumers", () => {
     }, 500);
   });
 
+  // The normalizer's DOM pass dilutes a regression in its scan, so the old
+  // preset regex reads about 11.5 under coverage at n = 500 and 13–14 at 1000.
   it("normalizes text after unclosed openers linearly", () => {
     const html = unclosed + "\n{{done}}";
     expect(normalizeMergeTagsInHtml(html, [], liquid)).toContain(
@@ -187,7 +189,7 @@ describe("built-in merge-tag consumers", () => {
     expectLinear((n) => {
       const value = "{{".repeat(n) + "\n{{done}}";
       return () => normalizeMergeTagsInHtml(value, [], liquid);
-    }, 500);
+    }, 1_000);
   });
   it("collects many nonoverlapping hits linearly", () => {
     const hits = collectHits("{{x}}".repeat(130_000), [], liquid);

@@ -58,10 +58,14 @@ describe("button entity decoding", () => {
     }
   });
 
+  // The old decoder's quadratic work is a native `indexOf(";")` from every
+  // `&`, which coverage does not slow while it slows the linear JS around it.
+  // Under coverage (CI's only mode) it clears the ratio limit only from about
+  // n = 48000, where it reads about 13.7; at 16000 it reads 9–10.
   it("scales ampersands without semicolons linearly", () => {
     expectLinear((n) => {
       const input = "&".repeat(n);
       return () => decodeEntities(input);
-    }, 16_000);
+    }, 48_000);
   });
 });
