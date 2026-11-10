@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { primaryBtnClass } from "../constants/styleConstants";
+import {
+  primaryBtnClass,
+  trackActionBtnClass,
+} from "../constants/styleConstants";
 /**
  * Send-a-test dialog, shared by the OSS and Cloud editors.
  *
@@ -341,15 +344,15 @@ function handleKeydown(event: KeyboardEvent): void {
               :viewport="previewViewport"
               @change="previewViewport = $event"
             />
-            <!-- Borderless on the toggle's own `--tpl-bg-hover` track, so it
-                 reads as the viewport switch's neighbour at the same 38px. -->
+            <!-- The switches' track recipe, so it reads as the viewport
+                 switch's neighbour at the same 38px. -->
             <button
               v-if="previewResolution.isConfigured"
               type="button"
               :aria-label="t.previewResolution.refresh"
               :title="t.previewResolution.refresh"
               :aria-busy="previewResolution.isResolving.value"
-              class="tpl:flex tpl:h-[38px] tpl:w-[38px] tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:hover:text-[var(--tpl-text)] tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)]"
+              :class="[trackActionBtnClass, 'tpl:w-[38px]']"
               @click="previewResolution.refresh()"
             >
               <RefreshCw

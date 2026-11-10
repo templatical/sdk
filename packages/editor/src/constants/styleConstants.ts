@@ -151,6 +151,17 @@ export const warningBtnCompactClass = `${btnBase} ${btnWarningSkin} ${btnSizeCom
 export const ghostBtnClass = `${btnBase} ${btnGhostSkin} ${btnSizeDefault}`;
 export const ghostBtnCompactClass = `${btnBase} ${btnGhostSkin} ${btnSizeCompact}`;
 
+/**
+ * A single action on the segmented switches' track (`ViewportToggle`,
+ * `MergeTagModeToggle`): the same `--tpl-bg-hover` surface, 38px height and
+ * `--tpl-radius-sm`, with an unselected segment's muted 12px/500 label. For an
+ * action that sits beside or in place of one of those switches, so it reads as
+ * their sibling rather than as a bordered button. Callers add the horizontal
+ * size: `tpl:px-4` for a labelled pill, `tpl:w-[38px]` for an icon button.
+ */
+export const trackActionBtnClass =
+  "tpl:inline-flex tpl:h-[38px] tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:hover:text-[var(--tpl-text)] tpl:focus-visible:outline-none tpl:focus-visible:shadow-[var(--tpl-ring)]";
+
 export const chromePillClass =
   "tpl:rounded-[var(--tpl-radius-sm)] tpl:bg-[var(--tpl-bg-active)] tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:text-[var(--tpl-text-muted)]";
 

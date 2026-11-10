@@ -75,7 +75,7 @@ import {
 
 import { RefreshCw, RotateCcw } from "@lucide/vue";
 import {
-  secondaryBtnCompactClass,
+  trackActionBtnClass,
   warningBtnCompactClass,
 } from "./constants/styleConstants";
 import Canvas from "./components/Canvas.vue";
@@ -891,30 +891,36 @@ defineExpose({
             <!-- Refresh preview. Needs a resolver, which hides the Sample/Label
                  switch and the restore pill, so it takes their slot rather than
                  stacking with them. A host that opens its own picker inside
-                 `resolvePreview` lets the user choose again from here. -->
+                 `resolvePreview` lets the user choose again from here.
+
+                 Same track, wrapper and icon size as the switch whose slot it
+                 takes, so the two read as one control family. -->
             <Transition name="tpl-preview-pill">
-              <button
+              <div
                 v-if="
                   editor.state.previewMode &&
                   core.previewResolution.isConfigured
                 "
-                type="button"
-                :class="secondaryBtnCompactClass"
-                class="tpl:shadow-[var(--tpl-shadow-md)]"
-                data-testid="refresh-preview"
-                :title="core.t.previewResolution.refresh"
-                :aria-busy="core.previewResolution.isResolving.value"
-                @click="core.previewResolution.refresh()"
+                class="tpl:rounded-[var(--tpl-radius-sm)] tpl:shadow-[var(--tpl-shadow-md)]"
               >
-                <RefreshCw
-                  :size="16"
-                  :stroke-width="2"
-                  :class="{
-                    'tpl-spinner': core.previewResolution.isResolving.value,
-                  }"
-                />
-                {{ core.t.previewResolution.refresh }}
-              </button>
+                <button
+                  type="button"
+                  :class="[trackActionBtnClass, 'tpl:px-4']"
+                  data-testid="refresh-preview"
+                  :title="core.t.previewResolution.refresh"
+                  :aria-busy="core.previewResolution.isResolving.value"
+                  @click="core.previewResolution.refresh()"
+                >
+                  <RefreshCw
+                    :size="18"
+                    :stroke-width="1.5"
+                    :class="{
+                      'tpl-spinner': core.previewResolution.isResolving.value,
+                    }"
+                  />
+                  {{ core.t.previewResolution.refresh }}
+                </button>
+              </div>
             </Transition>
             <!-- Show all hidden blocks. The shared warning recipe, not a bespoke
                  string: it has to read as the Sample/Label switch's sibling,
