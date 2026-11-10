@@ -184,7 +184,7 @@ await init({
 });
 ```
 
-Während Ihre Auswahl bei der ersten Auflösung geöffnet ist, zeigt die Vorschau ihren Platzhalter; bei einer Aktualisierung bleibt die aktuelle Vorschau sichtbar. Solange weder eine Wahl getroffen wurde noch ein Empfänger vorliegt, zeigt die Rückgabe von `content` die unaufgelöste Vorlage ohne Fehlerhinweis. Ein im Test-E-Mail-Dialog eingegebener Empfänger wird auch aufgelöst, bevor jemand die Auswahl genutzt hat.
+Während Ihre Auswahl bei der ersten Auflösung geöffnet ist, zeigt die Vorschau ihren Platzhalter; bei einer Aktualisierung bleibt die aktuelle Vorschau sichtbar. Solange weder eine Wahl getroffen wurde noch ein Empfänger vorliegt, zeigt die Rückgabe von `content` die unaufgelöste Vorlage ohne Fehlerhinweis. Ein im Test-E-Mail-Dialog eingegebener Empfänger wird auch aufgelöst, bevor jemand die Auswahl genutzt hat. Im Dialog ist `recipient` nur die Adresse, an die der Test geht: Die gemerkte Zielgruppe bestimmt, wessen Daten gerendert werden, und Ihr Backend kombiniert beides.
 
 ### Anzeigebedingungen auswerten
 

@@ -15570,7 +15570,7 @@ await init({
 });
 ```
 
-While your picker is open on the first resolve, the preview shows its skeleton; on a refresh it keeps the current preview on screen. With no choice made yet and no recipient, returning `content` shows the unresolved template without a failure note. A recipient typed in the test-email dialog still resolves before anyone has used the picker.
+While your picker is open on the first resolve, the preview shows its skeleton; on a refresh it keeps the current preview on screen. With no choice made yet and no recipient, returning `content` shows the unresolved template without a failure note. A recipient typed in the test-email dialog still resolves before anyone has used the picker. In the dialog, `recipient` is only where the test is sent: the remembered audience decides whose data renders, and your backend combines the two.
 
 ### Evaluate display conditions
 
