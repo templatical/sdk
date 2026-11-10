@@ -25,8 +25,10 @@ export interface PreviewResolveContext {
    */
   content: TemplateContent;
   /**
-   * The address the preview is being shown for. Only the test-email dialog
-   * sets it, and only while its recipient field holds an address.
+   * The test-email dialog's recipient field value, set only while that field
+   * is non-empty. A free-text field passes what the user has typed so far,
+   * which may be an incomplete address: validate it before looking up
+   * recipient data.
    */
   recipient?: string;
   /**

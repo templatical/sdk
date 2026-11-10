@@ -93,7 +93,7 @@ So the hook hands the template to the system that already holds all three. Whate
 ```ts
 interface PreviewResolveContext {
   content: TemplateContent; // the template as it currently stands, as a copy
-  recipient?: string;       // the test-email dialog's address, when its field holds one
+  recipient?: string;       // the test-email dialog's field value, when non-empty
   surface: PreviewSurface;  // which preview is calling
   trigger: PreviewResolveTrigger; // why the resolver was called
 }
@@ -102,7 +102,7 @@ type PreviewSurface = 'preview' | 'test-email';
 type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 ```
 
-`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `surface` is `"preview"` in the editor's preview mode and `"test-email"` in the test-email dialog, on every call. Tell the two apart by `surface`, not by `recipient`: `recipient` is absent in preview mode, and also in the dialog while its recipient field is empty. Its absence means *"no particular recipient"*: return your own default, or obtain one yourself, for example by awaiting your own picker (see [Let the user pick an example audience](#let-the-user-pick-an-example-audience)). `trigger` is required and tells you whether to choose new example data or reuse the current choice.
+`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `surface` is `"preview"` in the editor's preview mode and `"test-email"` in the test-email dialog, on every call. Tell the two apart by `surface`, not by `recipient`: `recipient` is absent in preview mode, and also in the dialog while its recipient field is empty. In a free-text field it is what the user has typed so far and can be an incomplete address, so validate it before looking up recipient data. Its absence means *"no particular recipient"*: return your own default, or obtain one yourself, for example by awaiting your own picker (see [Let the user pick an example audience](#let-the-user-pick-an-example-audience)). `trigger` is required and tells you whether to choose new example data or reuse the current choice.
 
 Return a `TemplateContent`. Anything else is treated as a failure (see below).
 

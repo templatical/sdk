@@ -93,7 +93,7 @@ Deshalb übergibt der Hook die Vorlage dem System, das alle drei bereits besitzt
 ```ts
 interface PreviewResolveContext {
   content: TemplateContent; // die Vorlage im aktuellen Stand, als Kopie
-  recipient?: string;       // Adresse des Test-E-Mail-Dialogs, wenn dessen Feld eine enthält
+  recipient?: string;       // Feldwert des Test-E-Mail-Dialogs, wenn nicht leer
   surface: PreviewSurface;  // welche Vorschau aufruft
   trigger: PreviewResolveTrigger; // Grund für den Aufruf
 }
@@ -102,7 +102,7 @@ type PreviewSurface = 'preview' | 'test-email';
 type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 ```
 
-`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. Wenn `layout` gesetzt ist, ist `content` das zusammengesetzte Dokument. Siehe [Layout](/de/guide/layout). `surface` ist bei jedem Aufruf `"preview"` im Vorschaumodus des Editors und `"test-email"` im Test-E-Mail-Dialog. Unterscheiden Sie beide an `surface`, nicht an `recipient`: `recipient` fehlt im Vorschaumodus und auch im Dialog, solange dessen Empfängerfeld leer ist. Das Fehlen bedeutet *„kein bestimmter Empfänger"*: Geben Sie Ihren eigenen Standard zurück oder ermitteln Sie selbst einen, zum Beispiel indem Sie auf Ihre eigene Auswahl warten (siehe [Nutzer eine Beispielzielgruppe wählen lassen](#let-the-user-pick-an-example-audience)). Das erforderliche Feld `trigger` zeigt an, ob neue Beispieldaten ausgewählt oder die aktuelle Auswahl wiederverwendet werden soll.
+`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. Wenn `layout` gesetzt ist, ist `content` das zusammengesetzte Dokument. Siehe [Layout](/de/guide/layout). `surface` ist bei jedem Aufruf `"preview"` im Vorschaumodus des Editors und `"test-email"` im Test-E-Mail-Dialog. Unterscheiden Sie beide an `surface`, nicht an `recipient`: `recipient` fehlt im Vorschaumodus und auch im Dialog, solange dessen Empfängerfeld leer ist. In einem Freitextfeld ist der Wert das bisher Eingegebene und kann eine unvollständige Adresse sein; prüfen Sie ihn, bevor Sie Empfängerdaten nachschlagen. Das Fehlen bedeutet *„kein bestimmter Empfänger"*: Geben Sie Ihren eigenen Standard zurück oder ermitteln Sie selbst einen, zum Beispiel indem Sie auf Ihre eigene Auswahl warten (siehe [Nutzer eine Beispielzielgruppe wählen lassen](#let-the-user-pick-an-example-audience)). Das erforderliche Feld `trigger` zeigt an, ob neue Beispieldaten ausgewählt oder die aktuelle Auswahl wiederverwendet werden soll.
 
 Geben Sie ein `TemplateContent` zurück. Alles andere wird als Fehler behandelt (siehe unten).
 
