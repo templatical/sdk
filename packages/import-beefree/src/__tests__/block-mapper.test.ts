@@ -3849,6 +3849,22 @@ describe("convertModule", () => {
       expect(entry.note).toBe("1 more header row imported as a body row.");
     });
 
+    it("counts several extra header rows in one note", () => {
+      const { block, entry } = convertModule(
+        table({
+          headers: [row("H1"), row("H2"), row("H3")],
+          rows: [row("A")],
+          computedStyle: { headersFontWeight: "700" },
+        }),
+        [],
+      );
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(contents(block)).toEqual([["H1"], ["H2"], ["H3"], ["A"]]);
+      expect(block.hasHeaderRow).toBe(true);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("2 more header rows imported as body rows.");
+    });
+
     it("uses one width and color when all four borders match", () => {
       const { block, entry } = convertModule(
         table({

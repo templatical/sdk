@@ -3485,8 +3485,7 @@ describe("image fluidOnMobile", () => {
 });
 
 // The descriptors BeeFree writes for a menu, a table and a video, imported in
-// one row. Each used to read a shape BeeFree never writes, so a real menu or
-// table imported empty and a video lost its thumbnail.
+// one row: each keeps its content and gets its own report entry.
 describe("real menu, table and video exports", () => {
   it("imports their content and reports each one", () => {
     const { content, report } = convertBeeFreeTemplate({
