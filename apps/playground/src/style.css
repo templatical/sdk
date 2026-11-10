@@ -958,3 +958,18 @@ textarea {
         animation: none;
     }
 }
+/* Host-owned controls remain in light DOM even when the editor uses a shadow
+   root. This is the playground's styling, not a rule in the editor stylesheet. */
+.pg-header-actions { position: relative; display: inline-flex; flex: none; }
+.pg-header-action-trigger { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--color-gray-200); border-radius: 6px; background: var(--color-white); color: var(--color-gray-700); font: 500 12px/1 var(--font-sans); cursor: pointer; }
+.pg-header-action-trigger:hover { background: var(--color-gray-50); }
+.pg-header-actions[data-tpl-compact="true"] .pg-header-action-label { display: none; }
+.pg-header-action-menu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 100; min-width: 160px; padding: 4px; border: 1px solid var(--color-gray-200); border-radius: 6px; background: var(--color-white); box-shadow: var(--shadow-lg); }
+.pg-header-action-menu[hidden] { display: none; }
+.pg-header-action-menu button { display: block; width: 100%; padding: 8px; border: 0; background: transparent; color: var(--color-gray-700); font: 500 12px/1.3 var(--font-sans); text-align: left; cursor: pointer; }
+.pg-header-action-menu button:hover { background: var(--color-gray-50); }
+.pg-header-actions[data-tpl-theme="dark"] .pg-header-action-trigger,
+.pg-header-actions[data-tpl-theme="dark"] .pg-header-action-menu { background: var(--color-gray-800); border-color: var(--color-gray-700); color: var(--color-gray-100); }
+.pg-header-actions[data-tpl-theme="dark"] .pg-header-action-menu button { color: var(--color-gray-100); }
+.pg-header-actions[data-tpl-theme="dark"] .pg-header-action-trigger:hover,
+.pg-header-actions[data-tpl-theme="dark"] .pg-header-action-menu button:hover { background: var(--color-gray-700); }

@@ -140,6 +140,12 @@ export default {
       seeIt:
         "It looks the same: the editor mounts straight into the page, with no shadow root.",
     },
+    "header-actions": {
+      title: "Header actions",
+      seeIt:
+        "Open Template in the header: these controls come from the host. Preview and dark mode are hidden.",
+      note: "your Template menu",
+    },
     issues: {
       title: "Issues",
       seeIt:

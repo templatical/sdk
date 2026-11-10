@@ -8,6 +8,11 @@ Optional config keys, each a plain object of methods: `templates`,
 `collaboration`, `ai`, `translation`. Most keys stand alone; `collaboration` requires `templates`. A feature is absent until its key
 is passed, not merely disabled: no half-rendered panel, no dead button.
 
+`header`: Host-owned actions and centre-toggle opt-outs; fetch `api/editor#header-actions` through [docs.md](docs.md).
+- Create the actions element with `document.createElement` outside a framework-reconciled child tree; the editor moves it.
+- Style `[data-tpl-compact="true"]` in CSS so the editor can measure its full width synchronously.
+- Portal menus to `document.body` or position them absolutely inside the actions element.
+
 **On the storage providers (`templates`, `versionHistory`, `comments`,
 `savedBlocks`, `media`) every mutation is `false | fn`, and it's required,
 never optional.** Passing `false` is a typed statement that the action is

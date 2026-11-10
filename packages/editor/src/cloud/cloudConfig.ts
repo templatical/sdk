@@ -25,6 +25,7 @@ import type {
   ResolvePreview,
 } from "@templatical/types";
 import type { HtmlBlockPreviewConfig } from "../utils/resolveHtmlBlockPreview";
+import type { HeaderOptions } from "../index";
 
 export interface TemplaticalCloudEditorConfig {
   container: string | HTMLElement;
@@ -87,6 +88,9 @@ export interface TemplaticalCloudEditorConfig {
    * Cloud white-label plans hide the footer regardless of this setting.
    */
   branding?: boolean;
+
+  /** Header actions and view-toggle opt-outs; forwarded to `init()`. */
+  header?: HeaderOptions;
 
   /**
    * Show a "use a larger screen" notice instead of the editor chrome on

@@ -1,5 +1,13 @@
 # Diagnosing an existing integration
 
+For missing or clipped host header controls, read `header.actions`, the
+element's placement and `data-tpl-compact` CSS, then fetch
+`api/editor#header-actions` through [docs.md](docs.md). The element belongs to
+the host: a framework must not reconcile it as a child elsewhere. A menu
+inside the header should portal to `document.body` or use absolute positioning;
+`position: fixed` is clipped at the editor edge in Safari. Check toggle opt-outs
+before investigating a missing Preview, dark-mode or viewport control.
+
 For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the compatibility rule (no template migration, one version for every `@templatical/*` package) and the `validate --locale` check.
 
 For `translation`, Translate availability, provider errors or tag masking, follow [localize.md](localize.md) and fetch `backend/translation` through [docs.md](docs.md). Check `translation`, `localization` and an enabled non-default language view before changing the backend. Verify mask placeholders and run `runTranslationConformance` for backend conformance; then validate the saved language with `validate --locale de`.

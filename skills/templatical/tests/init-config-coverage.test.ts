@@ -15,6 +15,7 @@ import { resolve } from "node:path";
  */
 
 const INTEGRATE = resolve(import.meta.dirname, "../reference/integrate.md");
+const PROVIDERS = resolve(import.meta.dirname, "../reference/providers.md");
 const EDITOR_INDEX = resolve(
   import.meta.dirname,
   "../../../packages/editor/src/index.ts",
@@ -168,5 +169,14 @@ describe("init() config keys reach the skill's capability map", () => {
       expect(EXEMPT.has(key), key).toBe(false);
       expect(keys, `${key} left TemplaticalEditorConfig`).toContain(key);
     }
+  });
+
+  it("routes header actions to the anchored contract and host duties", () => {
+    const providers = readFileSync(PROVIDERS, "utf8");
+    const header = providers.split("`header`:")[1]?.split("\n\n")[0] ?? "";
+    expect(header).toContain("`api/editor#header-actions`");
+    expect(header).toContain("document.createElement");
+    expect(header).toContain("data-tpl-compact");
+    expect(header).toContain("document.body");
   });
 });

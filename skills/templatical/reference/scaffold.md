@@ -1,5 +1,10 @@
 # Scaffolding a new integration
 
+For header customisation, route through [integrate.md](integrate.md)'s `header`
+capability row and fetch `api/editor#header-actions` through [docs.md](docs.md).
+Create a host-owned element for `header.actions` and render the host framework
+into it; style the compact attribute in CSS.
+
 For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the compatibility rule (no template migration, one version for every `@templatical/*` package) and the `validate --locale` check.
 
 For `translation`, Translate availability, provider errors or tag masking, follow [localize.md](localize.md) and fetch `backend/translation` through [docs.md](docs.md). Check `translation`, `localization` and an enabled non-default language view before changing the backend. Verify mask placeholders and run `runTranslationConformance` for backend conformance; then validate the saved language with `validate --locale de`.

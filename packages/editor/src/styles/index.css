@@ -1213,6 +1213,12 @@
     flex-shrink: 1;
 }
 
+/* The light-DOM holder contributes no flex item of its own. Its host-owned
+   child takes the same place as a node assigned to the shadow-DOM slot. */
+.tpl-header-actions {
+    display: contents;
+}
+
 .tpl-header-timestamp {
     max-width: 100%;
 }

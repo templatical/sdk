@@ -221,6 +221,21 @@ describe("initCloud — a thin wrapper over init()", () => {
     expect(config.displayConditions).toBe(displayConditions);
   });
 
+  it("forwards header actions and toggle opt-outs by reference", async () => {
+    const header = {
+      actions: document.createElement("div"),
+      previewToggle: false,
+      darkModeToggle: false,
+      viewportToggle: false,
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    await initCloudFn(cloudConfig(container, { header }));
+    expect((captured.props!.config as Record<string, unknown>).header).toBe(
+      header,
+    );
+  });
+
   it("forwards onRequestMedia as the UI override", async () => {
     const onRequestMedia = vi.fn();
     const container = document.createElement("div");

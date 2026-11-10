@@ -138,6 +138,12 @@ export default {
       seeIt:
         "Sieht gleich aus: Der Editor wird direkt in die Seite eingehängt, ohne Shadow Root.",
     },
+    "header-actions": {
+      title: "Header-Aktionen",
+      seeIt:
+        "Öffnen Sie „Template“ im Header: Diese Bedienelemente kommen vom Host. Vorschau und Dunkelmodus sind ausgeblendet.",
+      note: "Ihr Template-Menü",
+    },
     issues: {
       title: "Probleme",
       seeIt:
