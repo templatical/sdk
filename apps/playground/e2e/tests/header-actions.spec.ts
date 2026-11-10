@@ -78,7 +78,7 @@ test("host dropdown is clickable and precedes Test and Save", async ({
   await expect(page.locator(menu)).toContainText("Change template");
   await expect(page.locator(".tpl-preview-toggle")).toHaveCount(0);
   await expect(page.locator(".tpl-dark-mode-toggle")).toHaveCount(0);
-  const viewport = page.getByRole("radiogroup", { name: "Viewport" });
+  const viewport = page.locator(".tpl-header-center").getByRole("radiogroup");
   await expect(viewport).toBeVisible();
   await expect(viewport.getByRole("radio")).toHaveCount(2);
 });

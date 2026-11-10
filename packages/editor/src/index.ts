@@ -757,8 +757,10 @@ export interface HeaderOptions {
   /**
    * An element the host owns and renders into. The editor places it in the
    * header's right column before Test email and Save, and never clones,
-   * restyles or removes its children. It sets `data-tpl-compact` and
-   * `data-tpl-theme` so the host can style it.
+   * rewrites or removes its children. It sets `data-tpl-compact` and
+   * `data-tpl-theme` so the host can style it. To measure the header's full
+   * width it briefly removes `data-tpl-compact` and sets an inline
+   * `width: max-content` and `flex-shrink: 0`, restoring both in the same task.
    */
   actions?: HTMLElement;
   /** `false` hides the dark-mode preview toggle. Defaults to `true`. */

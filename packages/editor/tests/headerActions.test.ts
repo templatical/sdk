@@ -115,6 +115,68 @@ describe.each([true, false])(
       expect(container.querySelector("[slot='tpl-header-actions']")).toBeNull();
     });
 
+    it("never clones the host's element or its children while measuring", async () => {
+      const actions = document.createElement("span");
+      actions.innerHTML = "<button>Template</button><span>menu</span>";
+      const original = Node.prototype.cloneNode;
+      const offending: string[] = [];
+      let clones = 0;
+      const spy = vi
+        .spyOn(Node.prototype, "cloneNode")
+        .mockImplementation(function (this: Node, deep?: boolean) {
+          clones++;
+          if (actions.contains(this) || (deep && this.contains(actions)))
+            offending.push(this.nodeName);
+          return original.call(this, deep);
+        });
+      onTestFinished(() => spy.mockRestore());
+      const box = HTMLElement.prototype.getBoundingClientRect;
+      const boxes = vi
+        .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+        .mockImplementation(function (this: HTMLElement) {
+          const width = this.classList.contains("tpl-header-container")
+            ? 1200
+            : this.classList.contains("tpl-header-measure")
+              ? 0
+              : [
+                    "tpl-header-left",
+                    "tpl-header-center",
+                    "tpl-header-right",
+                  ].some((name) => this.classList.contains(name))
+                ? 100
+                : null;
+          if (width === null) return box.call(this);
+          return {
+            width,
+            left: 0,
+            right: width,
+            top: 0,
+            bottom: 20,
+            x: 0,
+            y: 0,
+            height: 20,
+            toJSON() {},
+          } as DOMRect;
+        });
+      onTestFinished(() => boxes.mockRestore());
+      const { root } = await open(shadowDom, { actions });
+      const header = root.querySelector(".tpl-header")!;
+      await vi.waitFor(() =>
+        expect(Number(header.getAttribute("data-full-width"))).toBeGreaterThan(
+          0,
+        ),
+      );
+      // Appending the element schedules a re-measure on the next frame.
+      for (let frame = 0; frame < 3; frame++) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+      }
+      expect(actions.isConnected).toBe(true);
+      expect(clones).toBeGreaterThan(0);
+      expect(offending).toEqual([]);
+    });
+
     it("remeasures when host content changes without listening to its own attributes", async () => {
       const actions = document.createElement("span");
       actions.innerHTML = "<span hidden>short</span>";

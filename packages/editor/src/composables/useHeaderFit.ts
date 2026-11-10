@@ -39,6 +39,21 @@ export function decideHeaderFit(measurement: HeaderFitMeasurement) {
   };
 }
 
+/**
+ * Deep-clones `node` but copies the light-DOM action holder without its
+ * children. The host owns that subtree: cloning it would run custom-element
+ * constructors and copy framework DOM on every measurement, and the clone
+ * replaces the holder with a placeholder of the measured width anyway.
+ */
+function cloneOutsideActions(node: Node): Node {
+  const copy = node.cloneNode(false);
+  if (node instanceof Element && node.classList.contains("tpl-header-actions"))
+    return copy;
+  for (const child of node.childNodes)
+    copy.appendChild(cloneOutsideActions(child));
+  return copy;
+}
+
 /** Keep the full header until its labels would overlap the centred controls. */
 export function useHeaderFit(
   container: ShallowRef<HTMLElement | null>,
@@ -144,7 +159,7 @@ export function useHeaderFit(
     copy.setAttribute("aria-hidden", "true");
     copy.inert = true;
     for (const child of element.childNodes) {
-      if (child !== metricProbe) copy.appendChild(child.cloneNode(true));
+      if (child !== metricProbe) copy.appendChild(cloneOutsideActions(child));
     }
     const actionsClone = copy.querySelector(
       'slot[name="tpl-header-actions"], .tpl-header-actions',
