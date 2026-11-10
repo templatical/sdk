@@ -939,6 +939,7 @@ const fr: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "Actualiser l’aperçu",
     resolving: "Résolution de l’aperçu…",
     failed:
       "L’aperçu n’a pas pu être résolu — le modèle non résolu est affiché.",

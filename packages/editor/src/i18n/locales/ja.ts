@@ -919,6 +919,7 @@ const translations: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "プレビューを更新",
     resolving: "プレビューを生成中…",
     failed:
       "プレビューを生成できませんでした。差し込み前のテンプレートを表示します。",

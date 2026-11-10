@@ -51,9 +51,11 @@ function setup(opts: {
   resolvePreview?: Parameters<typeof usePreviewResolution>[0]["resolvePreview"];
   active?: boolean;
   recipient?: string;
+  locale?: string;
 }) {
   const active = ref(opts.active ?? true);
   const recipient = ref(opts.recipient);
+  const locale = ref(opts.locale ?? "en");
   const content = raw();
 
   scope = effectScope();
@@ -63,10 +65,11 @@ function setup(opts: {
       getContent: () => content,
       isActive: () => active.value,
       getRecipient: () => recipient.value,
+      getLocale: () => locale.value,
     }),
   )!;
 
-  return { api, active, recipient, content };
+  return { api, active, recipient, locale, content };
 }
 
 beforeEach(() => {
@@ -96,6 +99,56 @@ describe("usePreviewResolution without a hook", () => {
 });
 
 describe("usePreviewResolution happy path", () => {
+  it("reports open, recipient, and locale with exact contexts", async () => {
+    const hook = vi.fn().mockResolvedValue(resolvedWith("ready"));
+    const { recipient, locale, content } = setup({ resolvePreview: hook });
+    expect(hook.mock.calls[0]![0]).toEqual({ content, trigger: "open" });
+    await vi.advanceTimersByTimeAsync(0);
+
+    recipient.value = "a@example.com";
+    expect(hook).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(DEBOUNCE);
+    expect(hook.mock.calls[1]![0]).toEqual({
+      content,
+      recipient: "a@example.com",
+      trigger: "recipient",
+    });
+
+    locale.value = "de";
+    expect(hook.mock.calls[2]![0]).toEqual({
+      content,
+      recipient: "a@example.com",
+      trigger: "locale",
+    });
+  });
+
+  it("refreshes immediately and supersedes a queued recipient resolve", async () => {
+    const hook = vi.fn().mockResolvedValue(resolvedWith("ready"));
+    const { api, recipient, content } = setup({ resolvePreview: hook });
+    await vi.advanceTimersByTimeAsync(0);
+    recipient.value = "a@example.com";
+    api.refresh();
+    expect(hook).toHaveBeenCalledTimes(2);
+    expect(hook.mock.calls[1]![0]).toEqual({
+      content,
+      recipient: "a@example.com",
+      trigger: "refresh",
+    });
+    await vi.advanceTimersByTimeAsync(DEBOUNCE);
+    expect(hook).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not refresh without a resolver or an active preview", () => {
+    const disabled = setup({ active: false });
+    disabled.api.refresh();
+    expect(disabled.api.isResolving.value).toBe(false);
+    scope.stop();
+    const hook = vi.fn().mockResolvedValue(resolvedWith("unused"));
+    const inactive = setup({ resolvePreview: hook, active: false });
+    inactive.api.refresh();
+    expect(hook).toHaveBeenCalledTimes(0);
+  });
+
   it("resolves immediately on the first attempt, with no debounce", async () => {
     const hook = vi.fn().mockResolvedValue(resolvedWith("resolved"));
     const { api } = setup({ resolvePreview: hook });
@@ -161,6 +214,33 @@ describe("usePreviewResolution happy path", () => {
 });
 
 describe("usePreviewResolution debouncing and staleness", () => {
+  it("discards an older success and rejection after refresh settles", async () => {
+    const pending: Array<{
+      resolve: (value: TemplateContent) => void;
+      reject: (error: Error) => void;
+    }> = [];
+    const hook = vi.fn(() => new Promise<TemplateContent>((resolve, reject) => {
+      pending.push({ resolve, reject });
+    }));
+    const { api } = setup({ resolvePreview: hook });
+    api.refresh();
+    pending[1]!.resolve(resolvedWith("new"));
+    await Promise.resolve();
+    pending[0]!.resolve(resolvedWith("old"));
+    await Promise.resolve();
+    expect(firstText(api.content.value)).toBe("<p>new</p>");
+    expect(api.hasFailed.value).toBe(false);
+
+    api.refresh();
+    api.refresh();
+    pending[3]!.resolve(resolvedWith("newer"));
+    await Promise.resolve();
+    pending[2]!.reject(new Error("stale"));
+    await Promise.resolve();
+    expect(firstText(api.content.value)).toBe("<p>newer</p>");
+    expect(api.hasFailed.value).toBe(false);
+  });
+
   it("collapses rapid recipient changes into one call once content is showing", async () => {
     const hook = vi.fn().mockResolvedValue(resolvedWith("x"));
     const { recipient } = setup({
@@ -297,7 +377,80 @@ describe("usePreviewResolution debouncing and staleness", () => {
   });
 });
 
+describe("usePreviewResolution trigger scheduling", () => {
+  it("debounces a recipient change made before the first answer lands", async () => {
+    // Typing an address while the opening resolve is still out must not fire
+    // one call per keystroke, nor cut the pending `open` call short.
+    let settleOpen: ((value: TemplateContent) => void) | undefined;
+    const hook = vi.fn()
+      .mockImplementationOnce(() => new Promise<TemplateContent>((resolve) => { settleOpen = resolve; }))
+      .mockResolvedValue(resolvedWith("typed"));
+    const { api, recipient, content } = setup({ resolvePreview: hook, recipient: "a@example.com" });
+    expect(hook).toHaveBeenCalledTimes(1);
+    expect(hook.mock.calls[0]![0]).toEqual({ content, recipient: "a@example.com", trigger: "open" });
+
+    recipient.value = "b@example.com";
+    recipient.value = "bc@example.com";
+    await vi.advanceTimersByTimeAsync(DEBOUNCE - 1);
+    expect(hook).toHaveBeenCalledTimes(1);
+
+    settleOpen!(resolvedWith("opened"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(firstText(api.content.value)).toBe("<p>opened</p>");
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(hook).toHaveBeenCalledTimes(2);
+    expect(hook.mock.calls[1]![0]).toEqual({ content, recipient: "bc@example.com", trigger: "recipient" });
+  });
+
+  it("makes no call when a watched source re-fires with unchanged values", async () => {
+    // `getLocale` can read a whole content object; replacing it with one in
+    // the same language (setContent, a remote change) must not reach the host
+    // as a spurious `open`.
+    const hook = vi.fn(async ({ content }: { content: TemplateContent }) => content);
+    const settings = ref({ locale: "en" });
+    scope = effectScope();
+    scope.run(() =>
+      usePreviewResolution({
+        resolvePreview: hook,
+        getContent: () => raw(),
+        isActive: () => true,
+        getLocale: () => settings.value.locale,
+      }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(hook).toHaveBeenCalledTimes(1);
+
+    settings.value = { locale: "en" };
+    await vi.advanceTimersByTimeAsync(DEBOUNCE * 2);
+    expect(hook).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("usePreviewResolution failure degrades", () => {
+  it("drops an older result after a failed re-resolve and keeps the failure note through retry", async () => {
+    let rejectRetry: ((error: Error) => void) | undefined;
+    const hook = vi.fn()
+      .mockResolvedValueOnce(resolvedWith("first"))
+      .mockRejectedValueOnce(new Error("failed"))
+      .mockImplementationOnce(() => new Promise<TemplateContent>((_, reject) => { rejectRetry = reject; }));
+    const { api, recipient } = setup({ resolvePreview: hook });
+    await vi.advanceTimersByTimeAsync(0);
+    recipient.value = "b@example.com";
+    await vi.advanceTimersByTimeAsync(DEBOUNCE);
+    expect(api.hasFailed.value).toBe(true);
+    expect(firstText(api.content.value)).toBe("<p>raw</p>");
+    recipient.value = "c@example.com";
+    await vi.advanceTimersByTimeAsync(DEBOUNCE);
+    expect(api.isInitialResolve.value).toBe(false);
+    expect(api.hasFailed.value).toBe(true);
+    expect(firstText(api.content.value)).toBe("<p>raw</p>");
+    rejectRetry!(new Error("still failed"));
+    await Promise.resolve();
+    expect(api.isResolving.value).toBe(false);
+    expect(api.hasFailed.value).toBe(true);
+  });
+
   it("falls back to the unresolved template when the hook rejects", async () => {
     const hook = vi.fn().mockRejectedValue(new Error("backend down"));
     const { api } = setup({ resolvePreview: hook });

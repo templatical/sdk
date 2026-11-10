@@ -1013,6 +1013,7 @@ const de: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "Vorschau aktualisieren",
     resolving: "Vorschau wird aufgelöst…",
     failed:
       "Die Vorschau konnte nicht aufgelöst werden — die unaufgelöste Vorlage wird angezeigt.",

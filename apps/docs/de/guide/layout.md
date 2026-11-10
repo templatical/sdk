@@ -186,7 +186,7 @@ Vorschau, `toMjml` und `toHtml` setzen zuerst zusammen, dann optional `resolvePr
 
 ```
 base = applyLayout(resolveLocale(layout, locale, { missing: "default" }), resolveLocale(content, locale))
-if (resolvePreview) base = await resolvePreview({ content: base, recipient })
+if (resolvePreview) base = await resolvePreview({ content: base, recipient, trigger })
 ```
 
 `locale` ist in der Vorschau die aktive Sprache, sonst die Option `locale` von `toMjml` / `toHtml`, standardmäßig die Standardsprache des Templates. Layout und Template werden getrennt projiziert, das Layout mit `missing: "default"`: Seine Standardsprache muss nicht der des Templates entsprechen, und eine Sprache, die dem Layout fehlt, nutzt die Standardsprache des Layouts. Siehe [Lokalisierte Templates](/de/guide/localized-templates#layouts).

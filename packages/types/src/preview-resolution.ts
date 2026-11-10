@@ -1,12 +1,17 @@
 import type { TemplateContent } from "./template";
 
+/** Why `resolvePreview` was called. */
+export type PreviewResolveTrigger = "open" | "refresh" | "recipient" | "locale";
+
 /**
  * Context handed to `resolvePreview`.
  *
  * `recipient` is present only on surfaces that have one — the test-email
  * dialog — and absent in the editor's own preview mode. Treat its absence as
  * "no particular recipient", not as an error: a resolver should still return
- * something renderable, typically its own default or sample data.
+ * something renderable, its own default or sample data, or obtain a recipient
+ * itself, for example by awaiting its own picker on `trigger: "open"` or
+ * `"refresh"` (see guide/preview-rendering).
  */
 export interface PreviewResolveContext {
   /**
@@ -16,6 +21,14 @@ export interface PreviewResolveContext {
   content: TemplateContent;
   /** The address the preview is being shown for, when the surface has one. */
   recipient?: string;
+  /**
+   * Why this call happened:
+   * - "open": a preview surface opened (editor preview mode, or the test-email dialog);
+   * - "refresh": the user clicked Refresh preview, or the host called `refreshPreview()`;
+   * - "recipient": the test-email recipient changed;
+   * - "locale": the template language changed while a preview was open.
+   */
+  trigger: PreviewResolveTrigger;
 }
 
 /**

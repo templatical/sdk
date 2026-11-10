@@ -197,6 +197,22 @@ The fields are `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderl
 Other parts of the editor's chrome have their own keys: [`paletteBlocks`](#customizing-the-block-palette) for the block palette, [`fonts.builtIns`](/guide/fonts) for the font picker, [`colors.allowCustom`](#preset-colors) for free-form colours, and `templates.nameField` for the header's name field.
 :::
 
+## Preview resolution types {#preview-resolution-types}
+
+`resolvePreview` receives a required `trigger` that identifies why the preview was resolved. `PreviewResolveTrigger` and `PreviewResolveContext` are exported by `@templatical/types` and `@templatical/editor`.
+
+```ts
+export type PreviewResolveTrigger = "open" | "refresh" | "recipient" | "locale";
+
+export interface PreviewResolveContext {
+  content: TemplateContent;
+  recipient?: string;
+  trigger: PreviewResolveTrigger;
+}
+```
+
+See [Preview Rendering](/guide/preview-rendering) for the four triggers and the resolver lifecycle.
+
 ## TemplaticalEditor
 
 The object returned by `init()`.
@@ -218,6 +234,14 @@ Replaces the editor content with a copy of `content`; later changes to your obje
 import { createDefaultTemplateContent } from "@templatical/types";
 
 editor.setContent(createDefaultTemplateContent());
+```
+
+### `refreshPreview()`
+
+Re-runs `resolvePreview` immediately with `trigger: "refresh"` for the preview that is showing. If the test-email dialog is open, it targets that dialog only; otherwise it targets preview mode. The method silently does nothing when no preview is open, no resolver is configured, or the editor is unmounted. The Refresh preview button is available on both surfaces when a resolver is configured.
+
+```ts
+editor.refreshPreview();
 ```
 
 ### `insertBlock(block)`

@@ -1003,6 +1003,7 @@ const da: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "Opdater eksempelvisning",
     resolving: "Henter data til eksempelvisning…",
     failed: "Eksempelvisningen kunne ikke hentes — viser skabelonen uden data.",
     hint: "Eksempelvisningen bruger data fra din backend.",

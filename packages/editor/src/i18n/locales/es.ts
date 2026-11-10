@@ -1009,6 +1009,7 @@ const es: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "Actualizar vista previa",
     resolving: "Resolviendo la vista previa…",
     failed:
       "No se pudo resolver la vista previa; se muestra la plantilla sin resolver.",

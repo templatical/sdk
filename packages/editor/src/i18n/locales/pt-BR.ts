@@ -1005,6 +1005,7 @@ const ptBR: typeof en = {
     },
   },
   previewResolution: {
+    refresh: "Atualizar pré-visualização",
     resolving: "Resolvendo a pré-visualização…",
     failed:
       "Não foi possível resolver a pré-visualização — exibindo o modelo não resolvido.",

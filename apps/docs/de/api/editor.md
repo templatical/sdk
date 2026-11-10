@@ -197,6 +197,22 @@ Die Felder sind `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnder
 Andere Teile der Editor-Oberfläche haben eigene Schlüssel: [`paletteBlocks`](#block-palette-anpassen) für die Block-Palette, [`fonts.builtIns`](/de/guide/fonts) für die Schriftauswahl, [`colors.allowCustom`](#vordefinierte-farben) für freie Farbeingaben und `templates.nameField` für das Namensfeld in der Kopfzeile.
 :::
 
+## Typen für die Vorschauauflösung {#preview-resolution-types}
+
+`resolvePreview` erhält das erforderliche Feld `trigger`, das den Grund für die Auflösung angibt. `PreviewResolveTrigger` und `PreviewResolveContext` werden von `@templatical/types` und `@templatical/editor` exportiert.
+
+```ts
+export type PreviewResolveTrigger = "open" | "refresh" | "recipient" | "locale";
+
+export interface PreviewResolveContext {
+  content: TemplateContent;
+  recipient?: string;
+  trigger: PreviewResolveTrigger;
+}
+```
+
+Die vier Auslöser und den Ablauf beschreibt [Vorschau-Rendering](/de/guide/preview-rendering).
+
 ## TemplaticalEditor
 
 Das von `init()` zurückgegebene Objekt.
@@ -218,6 +234,14 @@ Ersetzt den Editor-Inhalt durch eine Kopie von `content`; spätere Änderungen a
 import { createDefaultTemplateContent } from "@templatical/types";
 
 editor.setContent(createDefaultTemplateContent());
+```
+
+### `refreshPreview()`
+
+Ruft `resolvePreview` für die angezeigte Vorschau sofort mit `trigger: "refresh"` erneut auf. Bei geöffnetem Test-E-Mail-Dialog wird nur dessen Vorschau aktualisiert, sonst der Vorschaumodus. Ohne geöffnete Vorschau, ohne konfigurierten Resolver oder nach dem Abbau des Editors bewirkt die Methode stillschweigend nichts. Die Schaltfläche **Vorschau aktualisieren** erscheint bei konfiguriertem Resolver auf beiden Flächen.
+
+```ts
+editor.refreshPreview();
 ```
 
 ### `insertBlock(block)`

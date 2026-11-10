@@ -35,6 +35,22 @@ const headerComponent = readFileSync(
   "utf8",
 );
 const editorSource = readFileSync(join(SRC, "Editor.vue"), "utf8");
+const styleConstantsSource = readFileSync(
+  join(SRC, "constants", "styleConstants.ts"),
+  "utf8",
+);
+const mergeTagToggleSource = readFileSync(
+  join(SRC, "components", "MergeTagModeToggle.vue"),
+  "utf8",
+);
+const viewportToggleSource = readFileSync(
+  join(SRC, "components", "ViewportToggle.vue"),
+  "utf8",
+);
+const testEmailModalSource = readFileSync(
+  join(SRC, "components", "TestEmailModal.vue"),
+  "utf8",
+);
 
 /** The centre track's markup: its own div through to the right column's. */
 function centerTrack(): string {
@@ -176,8 +192,20 @@ describe("preview overlay pills stack in a centred column", () => {
   }
 
   it("orders the switch above the restore pill", () => {
-    const [toggle, restore] = pills();
+    const [toggle, , restore] = pills();
     expect(toggle).toContain("merge-tag-mode-toggle-anchor");
+    expect(restore).toContain("restore-hidden-blocks");
+  });
+
+  it("places a Refresh preview pill in the same centred column and transition family", () => {
+    const [toggle, refresh, restore] = pills();
+    expect(toggle).toContain("merge-tag-mode-toggle-anchor");
+    expect(refresh).toContain('data-testid="refresh-preview"');
+    expect(refresh).toContain("tpl-preview-pill");
+    expect(refresh).toContain("trackActionBtnClass");
+    expect(refresh).toContain("tpl:shadow-[var(--tpl-shadow-md)]");
+    expect(refresh).toContain("core.previewResolution.isConfigured");
+    expect(refresh).toContain("core.previewResolution.refresh()");
     expect(restore).toContain("restore-hidden-blocks");
   });
 
@@ -194,12 +222,67 @@ describe("preview overlay pills stack in a centred column", () => {
     // Not a bespoke string: it stacks with the Sample/Label switch, so it has
     // to be the same height and radius. Hand-rolling it is how it came to sit
     // 8px shorter, `rounded-full`, with a 1.85:1 label.
-    const [, restore] = pills();
-    expect(restore).toContain("warningBtnCompactClass");
+    const [, , restore] = pills();
+    expect(restore).toContain('data-testid="restore-hidden-blocks"');
+    expect(restore).toContain(':class="warningBtnCompactClass"');
     expect(restore).not.toContain("tpl:rounded-full");
     expect(restore).not.toContain("var(--tpl-warning-light)");
-    expect(editorSource).toContain(
-      'import { warningBtnCompactClass } from "./constants/styleConstants"',
+    expect(editorSource).toMatch(
+      /import \{[^}]*\bwarningBtnCompactClass\b[^}]*\} from "\.\/constants\/styleConstants"/,
+    );
+  });
+
+  it("styles the Refresh preview pill as the Sample/Label switch's twin", () => {
+    // It takes the switch's slot (a resolver hides the switch), so it wears the
+    // switch's track rather than a bordered button, inside the same shadowed
+    // wrapper the switch's anchor uses.
+    const [toggle, refresh] = pills();
+    const anchorWrapper =
+      'class="tpl:rounded-[var(--tpl-radius-sm)] tpl:shadow-[var(--tpl-shadow-md)]"';
+    expect(toggle).toContain(anchorWrapper);
+    expect(refresh).toContain(anchorWrapper);
+    expect(refresh).toContain('data-testid="refresh-preview"');
+    expect(refresh).toContain(":class=\"[trackActionBtnClass, 'tpl:px-4']\"");
+    expect(refresh).toContain(':size="18"');
+    expect(refresh).toContain(':stroke-width="1.5"');
+    expect(refresh).not.toContain("secondaryBtnCompactClass");
+    expect(editorSource).toMatch(
+      /import \{[^}]*\btrackActionBtnClass\b[^}]*\} from "\.\/constants\/styleConstants"/,
+    );
+  });
+
+  it("gives the track action recipe the segmented switches' surface", () => {
+    const recipe = /export const trackActionBtnClass =\s*"([^"]+)"/.exec(
+      styleConstantsSource,
+    )?.[1];
+    expect(recipe).toBeDefined();
+    // The switches' track: `--tpl-bg-hover`, `--tpl-radius-sm`, 38px tall
+    // (`p-1` around a 30px segment), muted 12px/500 label, no border.
+    for (const switchSource of [mergeTagToggleSource, viewportToggleSource]) {
+      expect(switchSource).toContain("backgroundColor: 'var(--tpl-bg-hover)'");
+      expect(switchSource).toContain("tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1");
+      expect(switchSource).toContain("tpl:text-xs tpl:font-medium");
+    }
+    for (const token of [
+      "tpl:h-[38px]",
+      "tpl:rounded-[var(--tpl-radius-sm)]",
+      "tpl:bg-[var(--tpl-bg-hover)]",
+      "tpl:text-xs",
+      "tpl:font-medium",
+      "tpl:text-[var(--tpl-text-muted)]",
+      "tpl:focus-visible:shadow-[var(--tpl-ring)]",
+    ]) {
+      expect(recipe).toContain(token);
+    }
+    expect(recipe).not.toMatch(/tpl:border(\s|-\[)/);
+  });
+
+  it("gives the test-email dialog's refresh button the same recipe", () => {
+    expect(testEmailModalSource).toContain(
+      ":class=\"[trackActionBtnClass, 'tpl:w-[38px]']\"",
+    );
+    expect(testEmailModalSource).toMatch(
+      /import \{[^}]*\btrackActionBtnClass\b[^}]*\} from "\.\.\/constants\/styleConstants"/,
     );
   });
 

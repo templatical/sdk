@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { primaryBtnClass } from "../constants/styleConstants";
+import {
+  primaryBtnClass,
+  trackActionBtnClass,
+} from "../constants/styleConstants";
 /**
  * Send-a-test dialog, shared by the OSS and Cloud editors.
  *
@@ -30,8 +33,8 @@ import ViewportToggle from "./ViewportToggle.vue";
 import MergeTagModeToggle from "./MergeTagModeToggle.vue";
 import { useI18n } from "../composables/useI18n";
 import { looksLikeEmail } from "../utils/validateEmailShape";
-import { Check, LoaderCircle } from "@lucide/vue";
-import { computed, inject, ref, watch } from "vue";
+import { Check, LoaderCircle, RefreshCw } from "@lucide/vue";
+import { computed, inject, onScopeDispose, ref, watch } from "vue";
 import {
   applyLayout,
   resolveLocale,
@@ -45,6 +48,7 @@ import {
   NO_MERGE_TAGS,
   MERGE_TAG_SAMPLE_MODE_KEY,
   RESOLVE_PREVIEW_KEY,
+  REGISTER_DIALOG_PREVIEW_REFRESH_KEY,
 } from "../keys";
 import { usePreviewResolution } from "../composables/usePreviewResolution";
 import type { TestEmailError } from "../composables/useTestEmailFeature";
@@ -68,7 +72,24 @@ const { t } = useI18n();
 const editor = inject(EDITOR_KEY, null);
 const layout = inject(LAYOUT_KEY, undefined);
 
-const recipient = ref("");
+// Seed before the resolution instance installs its immediate watcher, so an
+// opening dialog makes one `open` call with the selected recipient.
+const recipient = ref(
+  props.visible
+    ? (props.defaultRecipient ?? props.allowedRecipients?.[0] ?? "")
+    : "",
+);
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      recipient.value =
+        props.defaultRecipient ?? props.allowedRecipients?.[0] ?? "";
+    }
+  },
+  { flush: "sync" },
+);
 
 const previewViewport = ref<ViewportSize>("desktop");
 
@@ -101,6 +122,20 @@ const previewResolution = usePreviewResolution({
     editor?.activeLocale?.value ?? editor?.content.value.settings.locale,
   getRecipient: () => recipient.value || undefined,
 });
+
+const registerDialogRefresh = inject(REGISTER_DIALOG_PREVIEW_REFRESH_KEY, null);
+let unregisterDialogRefresh: (() => void) | null = null;
+watch(
+  () => props.visible,
+  (visible) => {
+    unregisterDialogRefresh?.();
+    unregisterDialogRefresh = visible
+      ? (registerDialogRefresh?.(previewResolution.refresh) ?? null)
+      : null;
+  },
+  { immediate: true, flush: "sync" },
+);
+onScopeDispose(() => unregisterDialogRefresh?.());
 
 /**
  * Shared with the editor's own preview, so switching here and switching there
@@ -140,19 +175,6 @@ const hasAllowlist = computed(
     props.allowedRecipients !== undefined && props.allowedRecipients.length > 0,
 );
 const isSingleRecipient = computed(() => props.allowedRecipients?.length === 1);
-
-// Mounted behind a `v-if` on the same state that drives `visible`, so it can
-// mount with `visible` already true — without `immediate` the field would never
-// be seeded.
-watch(
-  () => props.visible,
-  (visible) => {
-    if (!visible) return;
-    recipient.value =
-      props.defaultRecipient ?? props.allowedRecipients?.[0] ?? "";
-  },
-  { immediate: true },
-);
 
 /** Shape-check free text only; a picker can't produce a malformed value. */
 const isRecipientValid = computed(() =>
@@ -322,6 +344,23 @@ function handleKeydown(event: KeyboardEvent): void {
               :viewport="previewViewport"
               @change="previewViewport = $event"
             />
+            <!-- The switches' track recipe, so it reads as the viewport
+                 switch's neighbour at the same 38px. -->
+            <button
+              v-if="previewResolution.isConfigured"
+              type="button"
+              :aria-label="t.previewResolution.refresh"
+              :title="t.previewResolution.refresh"
+              :aria-busy="previewResolution.isResolving.value"
+              :class="[trackActionBtnClass, 'tpl:w-[38px]']"
+              @click="previewResolution.refresh()"
+            >
+              <RefreshCw
+                :size="18"
+                :stroke-width="1.5"
+                :class="{ 'tpl-spinner': previewResolution.isResolving.value }"
+              />
+            </button>
           </div>
         </div>
 

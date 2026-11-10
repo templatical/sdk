@@ -339,6 +339,10 @@ export interface TemplaticalCloudEditorConfig {
    * The **same key and the same type as `init()`**, so adopting or dropping it
    * is a one-line change either way. Not plan-gated: this is a display concern,
    * and Cloud has no server-side resolver of its own to supersede it.
+   * Called with `trigger: "open"` when a preview opens, `"recipient"` when the
+   * test-email recipient changes, `"locale"` when the template language changes,
+   * and `"refresh"` when the user clicks Refresh preview or calls
+   * `refreshPreview()`. Recipient changes debounce; refresh runs immediately.
    *
    * Supersedes `MergeTag.sample` when configured, and the Sample/Label switch
    * stops rendering.

@@ -66,11 +66,11 @@ import { init } from '@templatical/editor';
 
 await init({
   container: '#editor',
-  resolvePreview: async ({ content, recipient }) => {
+  resolvePreview: async ({ content, recipient, trigger }) => {
     const res = await fetch('/api/resolve-preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, recipient }),
+      body: JSON.stringify({ content, recipient, trigger }),
     });
     if (!res.ok) throw new Error('Vorschau konnte nicht aufgelöst werden');
     return res.json(); // ein TemplateContent
@@ -94,26 +94,33 @@ Deshalb übergibt der Hook die Vorlage dem System, das alle drei bereits besitzt
 interface PreviewResolveContext {
   content: TemplateContent; // die Vorlage im aktuellen Stand, als Kopie
   recipient?: string;       // nur vorhanden, wo die Fläche einen Empfänger hat
+  trigger: PreviewResolveTrigger; // Grund für den Aufruf
 }
+
+type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 ```
 
-`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. Wenn `layout` gesetzt ist, ist `content` das zusammengesetzte Dokument. Siehe [Layout](/de/guide/layout). `recipient` ist im Test-E-Mail-Dialog vorhanden und im Vorschaumodus des Editors nicht; behandeln Sie das Fehlen als *„kein bestimmter Empfänger"* und geben Sie trotzdem darstellbaren Inhalt zurück.
+`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. Wenn `layout` gesetzt ist, ist `content` das zusammengesetzte Dokument. Siehe [Layout](/de/guide/layout). `recipient` ist im Test-E-Mail-Dialog vorhanden und im Vorschaumodus des Editors nicht. Das Fehlen bedeutet *„kein bestimmter Empfänger"*: Geben Sie Ihren eigenen Standard zurück oder ermitteln Sie selbst einen, zum Beispiel indem Sie auf Ihre eigene Auswahl warten (siehe [Nutzer eine Beispielzielgruppe wählen lassen](#let-the-user-pick-an-example-audience)). Das erforderliche Feld `trigger` zeigt an, ob neue Beispieldaten ausgewählt oder die aktuelle Auswahl wiederverwendet werden soll.
 
 Geben Sie ein `TemplateContent` zurück. Alles andere wird als Fehler behandelt (siehe unten).
 
 ### Wann sie ausgeführt wird
 
-- **Sofort**, wenn eine Vorschau geöffnet wird. In diesem Moment gibt es nichts zusammenzufassen, daher ohne Verzögerung — der Platzhalter erscheint im selben Frame wie der Klick.
-- **Mit 500 ms Verzögerung** bei erneutem Auflösen, was heute den Empfängerwechsel im Test-E-Mail-Dialog bedeutet. Schnelle Wechsel werden zu einem Aufruf zusammengefasst.
+- **`open`**, sofort beim Öffnen des Vorschaumodus oder des Test-E-Mail-Dialogs. Der Dialog übergibt den vorausgewählten Empfänger in diesem einen Aufruf.
+- **`refresh`**, sofort beim Klick auf **Vorschau aktualisieren** oder beim Aufruf von `editor.refreshPreview()` durch den Host.
+- **`recipient`**, nach 500 ms Verzögerung beim Wechsel des Test-E-Mail-Empfängers. Schnelle Wechsel werden zu einem Aufruf zusammengefasst.
+- **`locale`**, sofort beim Wechsel der Template-Sprache während einer geöffneten Vorschau.
 - **Niemals während der Bearbeitung.** Ein Editor, der nie in den Vorschaumodus wechselt, ruft Ihren Hook nie auf.
 
-Beim **ersten** Auflösen erscheint ein Platzhalter. Bei einem erneuten Auflösen bleibt das vorherige Ergebnis stehen, statt einen Platzhalter über bereits korrekten Inhalt zu blitzen.
+Die Schaltfläche **Vorschau aktualisieren** erscheint im Vorschaumodus und im Test-E-Mail-Dialog nur bei konfiguriertem `resolvePreview`. `refreshPreview(): void` aktualisiert den Dialog, solange er geöffnet ist, sonst den Vorschaumodus. Ohne geöffnete Vorschau, ohne Resolver oder nach dem Abbau des Editors bewirkt die Methode nichts. Eine Aktualisierung ersetzt auch eine ausstehende Empfängerauflösung.
+
+Beim **ersten** Auflösen erscheint ein Platzhalter. Spätere Anfragen zeigen das letzte Ergebnis, bis sie abgeschlossen sind. Nach einem Fehler bleiben die unaufgelöste Vorlage und der Fehlerhinweis während der nächsten Anfrage sichtbar.
 
 Langsame Antworten werden verworfen, wenn eine neuere Anfrage sie überholt — ein zweifacher Empfängerwechsel kann also nicht die erste Antwort zuletzt anzeigen.
 
 ### Wenn sie fehlschlägt
 
-Wenn Ihr Callback abbricht — oder etwas zurückgibt, das kein `TemplateContent` ist — fällt die Vorschau auf die **unaufgelöste** Vorlage zurück und weist darauf hin. Ein Ausfall verschlechtert die Vorschau, macht sie aber nie leer oder kaputt.
+Wenn Ihr Callback abbricht — oder etwas zurückgibt, das kein `TemplateContent` ist — fällt die Vorschau auf die **unaufgelöste** Vorlage zurück und weist darauf hin. Das gilt auch nach einer erfolgreichen Auflösung: Eine fehlgeschlagene erneute Auflösung verwirft das ältere Ergebnis. Ein Ausfall verschlechtert die Vorschau, macht sie aber nie leer oder kaputt.
 
 Fehler werden **nicht** an `config.onError` gemeldet. Eine verschlechterte Vorschau ist für Nutzer sichtbar und nicht fatal; sie dort zu melden würde schwerwiegender wirken, als sie ist.
 
@@ -122,6 +129,10 @@ Fehler werden **nicht** an `config.onError` gemeldet. Eine verschlechterte Vorsc
 Aufgelöster Inhalt erreicht nur Vorschauflächen. Er wird nie in den Editor-Zustand geschrieben, nie von `getContent()` zurückgegeben, nie von der Test-E-Mail-Funktion versendet und nie exportiert — dort stehen immer die echten Tokens.
 
 Das ist die Garantie, die es erlaubt, mit dem Hook kreativ zu sein: nichts, was Sie zurückgeben, kann einen Empfänger erreichen.
+
+### Prüfen {#check-it}
+
+Öffnen Sie die Vorschau: Der Resolver wird einmal mit `trigger: "open"` aufgerufen. Klicken Sie auf **Vorschau aktualisieren**: Er wird erneut mit `trigger: "refresh"` aufgerufen, und die Vorschau zeigt, was dieser Aufruf zurückgibt.
 
 ## Anwendungsfälle
 
@@ -138,24 +149,40 @@ resolvePreview: async ({ content, recipient }) => {
 },
 ```
 
-### Nutzer eine Beispielzielgruppe wählen lassen
+### Nutzer eine Beispielzielgruppe wählen lassen {#let-the-user-pick-an-example-audience}
 
-Da der Callback `async` ist, können Sie **Ihre eigene UI** darin öffnen und erst nach der Auswahl auflösen. Wenn Sie verschiedene Arten von Abonnenten haben — kostenlos vs. Pro, Testphase vs. abgewandert, EU vs. USA — kann jemand so zwischen ihnen wechseln und jede Version der E-Mail sehen.
+Da der Callback `async` ist, können Sie **Ihre eigene UI** darin öffnen und erst nach der Auswahl auflösen. Öffnen Sie die Auswahl bei `open` und `refresh`; verwenden Sie die aktuelle Auswahl bei `recipient` und `locale` erneut. Wenn Sie verschiedene Arten von Abonnenten haben — kostenlos vs. Pro, Testphase vs. abgewandert, EU vs. USA — kann jemand so zwischen ihnen wechseln und jede Version der E-Mail sehen. Die einfache Auswahl unten nutzt eine Browser-Eingabe; ersetzen Sie sie durch Ihren eigenen Dialog.
 
 ```ts
-resolvePreview: async ({ content }) => {
-  const audience = await openMyAudiencePicker();
-  if (!audience) {
-    // Abgebrochen. Ein Fehler zeigt die unaufgelöste Vorlage *mit* Hinweis;
-    // `content` unverändert zurückzugeben zeigt sie ohne Hinweis.
-    // Eine der beiden Varianten wählen.
-    return content;
-  }
-  return renderWithMyEngine(content, audience.data);
-},
+import { init } from '@templatical/editor';
+
+let selectedAudience: string | null = null;
+
+function openMyAudiencePicker(): string | null {
+  return window.prompt('Beispielzielgruppe', selectedAudience ?? 'pro');
+}
+
+await init({
+  container: '#editor',
+  resolvePreview: async ({ content, recipient, trigger }) => {
+    if (trigger === 'open' || trigger === 'refresh') {
+      // Eine abgebrochene Auswahl behält die aktuelle Wahl.
+      selectedAudience = openMyAudiencePicker() ?? selectedAudience;
+    }
+    if (!selectedAudience) return content;
+
+    const res = await fetch('/api/resolve-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, recipient, audience: selectedAudience }),
+    });
+    if (!res.ok) throw new Error('Vorschau konnte nicht aufgelöst werden');
+    return res.json();
+  },
+});
 ```
 
-Während Ihr Dialog offen ist, zeigt die Vorschau ihren Platzhalter — genau richtig, denn sie ist tatsächlich noch nicht fertig.
+Während Ihre Auswahl bei der ersten Auflösung geöffnet ist, zeigt die Vorschau ihren Platzhalter; bei einer Aktualisierung bleibt die aktuelle Vorschau sichtbar. Solange noch keine Wahl getroffen wurde, zeigt die Rückgabe von `content` die unaufgelöste Vorlage ohne Fehlerhinweis.
 
 ### Anzeigebedingungen auswerten
 

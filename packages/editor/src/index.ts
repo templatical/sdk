@@ -338,8 +338,11 @@ export interface TemplaticalEditorConfig {
    * Resolves the template for preview surfaces — typically evaluating logic
    * tags (`{% if %}` … `{% endif %}`) against real data on your backend.
    *
-   * Called when a preview opens and when the test-email recipient changes,
-   * debounced. Display-only: the result never reaches `getContent()`, a send or
+   * Called with `trigger: "open"` when a preview opens, `"recipient"` when the
+   * test-email recipient changes, `"locale"` when the template language changes,
+   * and `"refresh"` when the user clicks Refresh preview or calls
+   * `refreshPreview()`. Recipient changes debounce; refresh runs immediately.
+   * Display-only: the result never reaches `getContent()`, a send or
    * an export. Rejecting is safe — the preview falls back to the unresolved
    * template and says so.
    *
@@ -747,6 +750,13 @@ interface TemplaticalEditorBase {
   getLocale(): string;
   setLocale(locale: string): void;
   setContent(content: TemplateContent): void;
+  /**
+   * Re-run `resolvePreview` for the preview that is showing, immediately and with
+   * `trigger: "refresh"`. Targets the test-email dialog's preview while that dialog
+   * is open, otherwise the editor's preview mode. Does nothing when no preview is
+   * open, when `resolvePreview` isn't configured, or once the instance is unmounted.
+   */
+  refreshPreview(): void;
   /**
    * Insert a block where a click on a palette item would put it: below the
    * selected block, in the same column when the selection is inside a section
@@ -1371,6 +1381,9 @@ function createEditorInstance({
       }
       config.content = normalized;
     },
+    refreshPreview() {
+      editorRef.value?.refreshPreview();
+    },
     insertBlock(block: Block) {
       // Before the mount and preview checks, so the mistake surfaces on every
       // path, not only once core's `addBlock` is reached. The asserts read
@@ -1692,6 +1705,9 @@ export type {
   MediaOptions,
   MediaProvider,
   MediaRequestContext,
+  PreviewResolveContext,
+  PreviewResolveTrigger,
+  ResolvePreview,
   SdkErrorCode,
   BlockLock,
   BlockLockHolder,
