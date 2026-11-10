@@ -2714,6 +2714,26 @@ function convertMenu(
   };
 }
 
+/**
+ * A line break, or a block element's opening or closing tag. The attributes
+ * stop at the next `<`, so unclosed tags are scanned in linear time.
+ */
+const CELL_TEXT_BOUNDARY =
+  /<br\s*\/?>|<\/?(?:p|div|li|ul|ol|h[1-6]|blockquote)(?:\s[^<>]*)?>/gi;
+
+/**
+ * A table cell's plain text. Paragraphs and line breaks become one space, so
+ * `<p>First</p><p>Second</p>` reads `First Second`; inline markup leaves its
+ * text joined. A cell with no such boundary is read as before.
+ */
+function tableCellText(html: string): string {
+  const spaced = html.replace(CELL_TEXT_BOUNDARY, " ");
+  if (spaced === html) return importedPlainText(html);
+  return importedPlainText(spaced)
+    .replace(/[ \t\r\n]+/g, " ")
+    .trim();
+}
+
 const TABLE_BORDER_SIDES = [
   "border-top",
   "border-right",
@@ -2819,7 +2839,7 @@ function convertTable(
     id: generateId(),
     cells: (row.cells ?? []).map((cell): TableCellData => {
       const raw = cell.html ?? "";
-      const content = importedPlainText(raw);
+      const content = tableCellText(raw);
       if (content !== raw) {
         cellHtmlStripped = true;
       }

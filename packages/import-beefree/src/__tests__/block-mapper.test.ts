@@ -4020,6 +4020,43 @@ describe("convertModule", () => {
       ]);
     });
 
+    it("keeps a space between a cell's paragraphs and line breaks", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        table({
+          rows: [
+            row(
+              "<p>First</p><p>Second</p>",
+              "First<br>Second<br/>Third",
+              "<div>One</div>\n<div>Two</div>",
+              "<p><b>Bold</b>face</p>",
+            ),
+          ],
+        }),
+        warnings,
+      );
+
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(contents(block)).toEqual([
+        ["First Second", "First Second Third", "One Two", "Boldface"],
+      ]);
+      expect(entry.status).toBe("approximated");
+      expect(warnings).toEqual([
+        "HTML inside one or more table cells was reduced to plain text; any cell formatting or links were dropped.",
+      ]);
+    });
+
+    it("reads a cell of unclosed paragraph tags in linear time", () => {
+      const cell = (n: number) => table({ rows: [row("<p a".repeat(n))] });
+      const { block } = convertModule(cell(50_000), []);
+      if (block.type !== "table") throw new Error("expected a table");
+      expect(contents(block)).toEqual([[""]]);
+      expectLinear((n) => {
+        const mod = cell(n);
+        return () => convertModule(mod, []);
+      }, 2_000);
+    });
+
     it("keeps a plain-text table as a clean conversion with no warning", () => {
       const warnings: string[] = [];
       const { entry } = convertModule(
