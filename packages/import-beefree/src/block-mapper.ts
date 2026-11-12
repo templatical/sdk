@@ -97,6 +97,11 @@ export interface ModuleContext {
     sides: Array<"left" | "right">;
     columnPadding: Pick<SpacingValue, "left" | "right">;
   };
+  /**
+   * A blank paragraph module becomes a spacer. A translation sets this to
+   * false so its content stays a paragraph and can be stored in `l10n`.
+   */
+  blankParagraphAsSpacer?: boolean;
 }
 
 /**
@@ -246,9 +251,11 @@ function finishTextHtml(html: string): string {
  * A `<p>` with no line box: no text other than ASCII whitespace, no
  * non-breaking space, and no replaced or void element. Removing it keeps
  * `fillEmptyParagraphs` from painting a line BeeFree does not draw.
- * `<p>&nbsp;</p>` and `<p><br></p>` stay. A `<p>` that opens while another
- * `<p>` is open stays as written. When dropping leaves no visible content,
- * the HTML stays, so a blank text module is unchanged.
+ * `<p>&nbsp;</p>` and `<p><br></p>` stay, and so does a `<p>` whose own
+ * `style` paints a box. A `<p>` that opens while another `<p>` is open stays
+ * as written. When dropping leaves no visible content, the HTML stays, so a
+ * blank text module is unchanged. A `<p>` whose own style paints a box is
+ * visible content, so an empty sibling of one is dropped.
  */
 const LINE_BOX_TAGS = new Set([
   "area",
@@ -316,6 +323,160 @@ function tagSelfCloses(html: string, end: number): boolean {
   return html[i] === "/";
 }
 
+function isNoneOrHidden(token: string): boolean {
+  const value = token.toLowerCase();
+  return value === "none" || value === "hidden";
+}
+
+/**
+ * A zero length. `0px` is zero, the same way a module's letter-spacing
+ * treats it.
+ */
+function isZeroLength(token: string): boolean {
+  const value = token.toLowerCase();
+  let i = 0;
+  if (value[i] !== "0") return false;
+  while (value[i] === "0") i++;
+  if (value[i] === ".") {
+    i++;
+    if (value[i] !== "0") return false;
+    while (value[i] === "0") i++;
+  }
+  const unit = value.slice(i);
+  return (
+    unit === "" ||
+    unit === "px" ||
+    unit === "em" ||
+    unit === "rem" ||
+    unit === "%" ||
+    unit === "pt" ||
+    unit === "pc" ||
+    unit === "in" ||
+    unit === "cm" ||
+    unit === "mm" ||
+    unit === "ex" ||
+    unit === "ch" ||
+    unit === "vw" ||
+    unit === "vh" ||
+    unit === "vmin" ||
+    unit === "vmax"
+  );
+}
+
+/** A zero length, `none`, or `hidden`. */
+function isInertBoxToken(token: string): boolean {
+  return isNoneOrHidden(token) || isZeroLength(token);
+}
+
+const BORDER_SHORTHANDS = new Set([
+  "border",
+  "border-top",
+  "border-right",
+  "border-bottom",
+  "border-left",
+]);
+
+/** `border-style` and `border-*-style`. A style alone draws at medium width. */
+function isBorderStyleProperty(name: string): boolean {
+  return (
+    name === "border-style" ||
+    (name.startsWith("border-") && name.endsWith("-style"))
+  );
+}
+
+/**
+ * Whether one border declaration paints. Shorthands paint unless a token is
+ * a zero length or `none`/`hidden`. Style longhands paint unless every token
+ * is `none`/`hidden`. Width, color, radius and every other longhand do not.
+ */
+function borderDeclarationPaints(name: string, tokens: string[]): boolean {
+  if (tokens.length === 0) return false;
+  if (BORDER_SHORTHANDS.has(name)) {
+    return !tokens.some(
+      (token) => isZeroLength(token) || isNoneOrHidden(token),
+    );
+  }
+  if (isBorderStyleProperty(name)) return !tokens.every(isNoneOrHidden);
+  return false;
+}
+
+function isBoxProperty(name: string): boolean {
+  return (
+    name === "height" ||
+    name === "min-height" ||
+    name.startsWith("padding") ||
+    name.startsWith("border") ||
+    name.startsWith("margin")
+  );
+}
+
+/**
+ * Tokens of one declaration value. A trailing `!important`, including
+ * `! important`, is cut off. ASCII whitespace splits tokens only at
+ * parenthesis depth 0, so `rgb(0 0 0)` stays one token.
+ */
+function boxValueTokens(value: string): string[] {
+  let text = value.trim();
+  const bang = text.lastIndexOf("!");
+  if (
+    bang !== -1 &&
+    text
+      .slice(bang + 1)
+      .trim()
+      .toLowerCase() === "important"
+  ) {
+    text = text.slice(0, bang);
+  }
+
+  const tokens: string[] = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === "(") depth++;
+    else if (char === ")" && depth > 0) depth--;
+    if (depth === 0 && isAsciiSpace(char)) {
+      if (start !== -1) {
+        tokens.push(text.slice(start, i));
+        start = -1;
+      }
+      continue;
+    }
+    if (start === -1) start = i;
+  }
+  if (start !== -1) tokens.push(text.slice(start));
+  return tokens;
+}
+
+/**
+ * Whether a `<p>` `style` paints a box. Typography (`font-size`,
+ * `line-height`, `text-align`, `color`, `font-family`) does not. Padding,
+ * height, min-height and margin do, unless every token of the value is
+ * zero, `none` or `hidden`. Border declarations follow `borderDeclarationPaints`.
+ */
+function stylePaintsBox(css: string): boolean {
+  for (const part of css.split(";")) {
+    const colon = part.indexOf(":");
+    if (colon === -1) continue;
+    const name = part.slice(0, colon).trim().toLowerCase();
+    if (!isBoxProperty(name)) continue;
+    const tokens = boxValueTokens(part.slice(colon + 1));
+    if (tokens.length === 0) continue;
+    if (name.startsWith("border")) {
+      if (borderDeclarationPaints(name, tokens)) return true;
+      continue;
+    }
+    if (!tokens.every(isInertBoxToken)) return true;
+  }
+  return false;
+}
+
+/** The open tag's own `style`, read inside the quote-aware tag bounds. */
+function openTagPaintsBox(html: string, start: number, end: number): boolean {
+  const css = findStyleAttr(html.slice(start, end + 1))?.value;
+  return css !== undefined && stylePaintsBox(css);
+}
+
 /** Paragraphs with no line box, as source ranges. One forward pass. */
 function emptyParagraphRanges(html: string): Array<[number, number]> {
   const skip: Array<[number, number]> = [];
@@ -370,9 +531,14 @@ function emptyParagraphRanges(html: string): Array<[number, number]> {
         open.malformed = true;
         if (!tagSelfCloses(html, end)) open.depth += 1;
       } else if (tagSelfCloses(html, end)) {
-        skip.push([lt, end + 1]);
+        if (!openTagPaintsBox(html, lt, end)) skip.push([lt, end + 1]);
       } else {
-        open = { start: lt, ink: false, depth: 1, malformed: false };
+        open = {
+          start: lt,
+          ink: openTagPaintsBox(html, lt, end),
+          depth: 1,
+          malformed: false,
+        };
       }
     } else if (open && LINE_BOX_TAGS.has(name)) {
       open.ink = true;
@@ -383,9 +549,10 @@ function emptyParagraphRanges(html: string): Array<[number, number]> {
 }
 
 /**
- * Text other than ASCII whitespace, a character reference, or a line-box
- * element. Comments are not content. One forward pass; an open tag ends at
- * `findOpenTagEnd`, so a quoted `>` does not end it.
+ * Text other than ASCII whitespace, a character reference, a line-box
+ * element, or a `<p>` whose own style paints a box. Comments are not
+ * content. One forward pass; an open tag ends at `findOpenTagEnd`, so a
+ * quoted `>` does not end it.
  */
 function hasVisibleContent(html: string): boolean {
   let i = 0;
@@ -413,6 +580,44 @@ function hasVisibleContent(html: string): boolean {
     }
     const end = findOpenTagEnd(html, nameEnd);
     if (end === -1) return rangeHasInk(html, lt, html.length);
+    if (name === "p" && openTagPaintsBox(html, lt, end)) return true;
+    i = end + 1;
+  }
+  return false;
+}
+
+/**
+ * Whether converted HTML has a `<p>` whose own style paints a box. One
+ * forward pass, same tag bounds as `hasVisibleContent`.
+ */
+function paragraphHtmlPaintsBox(html: string): boolean {
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) return false;
+    if (html.startsWith("<!--", lt)) {
+      const end = html.indexOf("-->", lt + 4);
+      i = end === -1 ? html.length : end + 3;
+      continue;
+    }
+    const slash = html[lt + 1] === "/";
+    const nameStart = lt + (slash ? 2 : 1);
+    if (!isAsciiLetter(html[nameStart])) {
+      i = lt + 1;
+      continue;
+    }
+    let nameEnd = nameStart + 1;
+    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
+    const name = html.slice(nameStart, nameEnd).toLowerCase();
+    if (slash) {
+      const gt = html.indexOf(">", nameEnd);
+      if (gt === -1) return false;
+      i = gt + 1;
+      continue;
+    }
+    const end = findOpenTagEnd(html, nameEnd);
+    if (end === -1) return false;
+    if (name === "p" && openTagPaintsBox(html, lt, end)) return true;
     i = end + 1;
   }
   return false;
@@ -3236,12 +3441,18 @@ function convertModuleBase(
       if (
         module.type === PARAGRAPH_MODULE &&
         block.type === "paragraph" &&
+        context.blankParagraphAsSpacer !== false &&
         blankParagraphModule(descriptor.paragraph?.html, block.content)
       ) {
         const height = blankParagraphHeight(descriptor);
+        const boxLost = paragraphHtmlPaintsBox(block.content);
         block = blankParagraphSpacer(descriptor, height);
-        notes = [`Blank paragraph imported as a ${height}px spacer.`];
-        isApproximation = false;
+        notes = [
+          boxLost
+            ? `Blank paragraph imported as a ${height}px spacer; its box styling is not carried.`
+            : `Blank paragraph imported as a ${height}px spacer.`,
+        ];
+        isApproximation = boxLost;
       } else {
         isApproximation = notes.length > 0;
       }
@@ -3445,6 +3656,7 @@ export function convertModule(
     module.translations,
     ...payloads.map(([, payload]) => payload?.translations),
   ];
+  const droppedSpacerLocales: string[] = [];
   for (const translations of sources) {
     for (const [code, values] of Object.entries(translations ?? {})) {
       const locale = localeTag(code, warnings);
@@ -3454,6 +3666,16 @@ export function convertModule(
           warnings,
           `Dropped language "${locale}" on module "${module.type}": target converted to HTML fallback.`,
         );
+        continue;
+      }
+      if (module.type === PARAGRAPH_MODULE && block.type === "spacer") {
+        warn(
+          warnings,
+          `Dropped language "${locale}" on module "${module.type}": the default paragraph is blank and imported as a spacer.`,
+        );
+        if (!droppedSpacerLocales.includes(locale)) {
+          droppedSpacerLocales.push(locale);
+        }
         continue;
       }
       const key = active?.[0];
@@ -3516,7 +3738,7 @@ export function convertModule(
             },
           },
           [],
-          context,
+          { ...context, blankParagraphAsSpacer: false },
         ).block;
         if (
           (block.type === "title" || block.type === "paragraph") &&
@@ -3532,6 +3754,13 @@ export function convertModule(
           text(block, locale, "alt", block.alt, translated.alt ?? "");
       }
     }
+  }
+  if (droppedSpacerLocales.length > 0) {
+    const dropped = `Translations ${droppedSpacerLocales.join(", ")} dropped: the default paragraph is blank and imported as a spacer.`;
+    result.entry.status = "approximated";
+    result.entry.note = result.entry.note
+      ? `${result.entry.note} ${dropped}`
+      : dropped;
   }
   return result;
 }

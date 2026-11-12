@@ -287,8 +287,8 @@ function convertColumnModules(
     const { block, entry, extras } = convertModule(module, warnings, context);
     const visibility = visibilityFromHideFlags(module.descriptor.computedStyle);
     if (visibility) {
-      block.visibility = visibility;
-      for (const extra of extras ?? []) extra.visibility = visibility;
+      block.visibility = { ...visibility };
+      for (const extra of extras ?? []) extra.visibility = { ...visibility };
     }
     blocks.push(block);
     if (extras?.length) blocks.push(...extras);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Block, SectionBlock } from "@templatical/types";
+import { sourceHash, type Block, type SectionBlock } from "@templatical/types";
 import { convertModule } from "../block-mapper";
 import { convertBeeFreeTemplate } from "../converter";
 import type { BeeFreeeModule, BeeFreeTemplate } from "../types";
@@ -239,6 +239,47 @@ describe("BeeFree module gaps", () => {
       expect(section.visibility).toBeUndefined();
     });
 
+    it("gives each extra block its own visibility object", () => {
+      const social: BeeFreeeModule = {
+        type: "mailup-bee-newsletter-modules-social",
+        descriptor: {
+          computedStyle: { hideContentOnMobile: true },
+          iconsList: {
+            icons: [
+              {
+                name: "myspace",
+                image: {
+                  alt: "Myspace",
+                  href: "https://myspace.com/band",
+                  src: "https://cdn.example.com/myspace.png",
+                },
+              },
+              {
+                name: "facebook",
+                image: { href: "https://facebook.com/page" },
+              },
+            ],
+          },
+        },
+      };
+      const { content } = imported(
+        template([column([textModule("<p>Copy</p>")], 6), column([social], 6)]),
+      );
+      const blocks = sectionBlock(content.blocks[0]).children[1];
+      const block = blocks[0];
+      const extra = blocks[1];
+      if (!block.visibility || !extra.visibility) {
+        throw new Error("expected visibility on the block and the extra");
+      }
+
+      expect(blocks.map((item) => item.type)).toEqual(["image", "social"]);
+      expect(block.visibility).toEqual({ desktop: true, mobile: false });
+      expect(extra.visibility).toEqual({ desktop: true, mobile: false });
+      extra.visibility.mobile = true;
+      expect(block.visibility).toEqual({ desktop: true, mobile: false });
+      expect(extra.visibility).toEqual({ desktop: true, mobile: true });
+    });
+
     it("keeps a module flag on a block left bare in a flattened row", () => {
       const { content } = imported(
         template([
@@ -325,6 +366,182 @@ describe("BeeFree module gaps", () => {
       expect(paragraphContent("<p>a</p><p></p><p>b</p>")).toBe(
         "<p>a</p><p>b</p>",
       );
+    });
+
+    it("keeps a paragraph whose border paints a box", () => {
+      expect(
+        paragraphContent(
+          '<p style="border-top:2px solid red;padding-top:12px"></p><p>Text</p>',
+        ),
+      ).toBe(
+        '<p style="border-top:2px solid red;padding-top:12px"></p><p>Text</p>',
+      );
+    });
+
+    it("keeps a paragraph whose padding paints a box", () => {
+      expect(paragraphContent('<p style="padding:12px"></p><p>Text</p>')).toBe(
+        '<p style="padding:12px"></p><p>Text</p>',
+      );
+    });
+
+    it("keeps a paragraph whose height paints a box", () => {
+      expect(paragraphContent('<p style="height:20px"></p><p>Text</p>')).toBe(
+        '<p style="height:20px"></p><p>Text</p>',
+      );
+    });
+
+    it("drops an empty sibling of a box-styled paragraph", () => {
+      expect(paragraphContent('<p style="height:20px"></p><p></p>')).toBe(
+        '<p style="height:20px"></p>',
+      );
+    });
+
+    it("keeps a paragraph whose min-height paints a box", () => {
+      expect(
+        paragraphContent('<p style="min-height:8px"></p><p>Text</p>'),
+      ).toBe('<p style="min-height:8px"></p><p>Text</p>');
+    });
+
+    it("keeps a paragraph whose margin is not zero", () => {
+      expect(paragraphContent('<p style="margin:10px"></p><p>Text</p>')).toBe(
+        '<p style="margin:10px"></p><p>Text</p>',
+      );
+    });
+
+    it("drops a paragraph whose padding is zero", () => {
+      expect(paragraphContent('<p style="padding:0"></p><p>Text</p>')).toBe(
+        "<p>Text</p>",
+      );
+    });
+
+    it("drops a paragraph whose border is none", () => {
+      expect(paragraphContent('<p style="border:none"></p><p>Text</p>')).toBe(
+        "<p>Text</p>",
+      );
+    });
+
+    it("drops a border that does not paint", () => {
+      for (const style of [
+        "border:0 solid red",
+        "border:1px none red",
+        "border-color:red",
+        "border-width:2px",
+        "border-radius:4px",
+      ]) {
+        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
+          "<p>Text</p>",
+        );
+      }
+    });
+
+    it("keeps a border shorthand or style that paints", () => {
+      for (const style of [
+        "border:1px solid red",
+        "border-top:2px dashed #000",
+        "border-style:solid",
+        "border:solid",
+      ]) {
+        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
+          `<p style="${style}"></p><p>Text</p>`,
+        );
+      }
+    });
+
+    it("drops an inert box value written with !important or a colour function", () => {
+      for (const style of [
+        "margin:0!important",
+        "padding:0px!IMPORTANT",
+        "border:none !important",
+        "padding:0 ! important",
+        "border:0 solid rgb(0 0 0)",
+      ]) {
+        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
+          "<p>Text</p>",
+        );
+      }
+    });
+
+    it("keeps a painting box value written with !important or a colour function", () => {
+      for (const style of [
+        "padding:4px!important",
+        "border:1px solid rgb(0 0 0)",
+        "border:2px dashed rgba(0, 0, 0, 0.5)",
+        "border-top:1px solid hsl(0 0% 0%)",
+      ]) {
+        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
+          `<p style="${style}"></p><p>Text</p>`,
+        );
+      }
+    });
+
+    it("treats a truncated < or </ at the end of the string as not a tag", () => {
+      expect(paragraphContent("<p>Stay</p><")).toBe("<p>Stay</p><");
+      expect(paragraphContent("<p>Stay</p></")).toBe("<p>Stay</p></");
+    });
+
+    it("reads a slash after whitespace as a self-closing paragraph", () => {
+      expect(paragraphContent('<p style="padding:4px" /><p>Text</p>')).toBe(
+        '<p style="padding:4px" /><p>Text</p>',
+      );
+      expect(paragraphContent("<p /><p>Text</p>")).toBe("<p>Text</p>");
+      expect(paragraphContent('<p style="padding:4px" / ><p>Text</p>')).toBe(
+        '<p style="padding:4px" / ><p>Text</p>',
+      );
+      expect(paragraphContent("<p / ><p>Text</p>")).toBe("<p>Text</p>");
+    });
+
+    it("drops a zero length written with a decimal or leading zeros", () => {
+      expect(paragraphContent('<p style="padding:0.0px"></p><p>Text</p>')).toBe(
+        "<p>Text</p>",
+      );
+      expect(paragraphContent('<p style="margin:00"></p><p>Text</p>')).toBe(
+        "<p>Text</p>",
+      );
+      expect(paragraphContent('<p style="padding:0.1px"></p><p>Text</p>')).toBe(
+        '<p style="padding:0.1px"></p><p>Text</p>',
+      );
+    });
+
+    it("drops a paragraph whose style declaration is empty", () => {
+      expect(paragraphContent('<p style=";;padding:0;"></p><p>Text</p>')).toBe(
+        "<p>Text</p>",
+      );
+      expect(paragraphContent('<p style=";;padding:;"></p><p>Text</p>')).toBe(
+        "<p>Text</p>",
+      );
+    });
+
+    it("leaves an unclosed paragraph at the end of the string", () => {
+      expect(paragraphContent("<p>Hello")).toBe("<p>Hello");
+      expect(paragraphContent("<p> \t")).toBe("<p> \t");
+    });
+
+    it("leaves a closing tag that never reaches >", () => {
+      expect(paragraphContent("<p></p></p")).toBe("<p></p></p");
+    });
+
+    it("keeps a self-closing paragraph that paints a box and drops one that does not", () => {
+      expect(paragraphContent('<p style="padding:4px"/><p>Text</p>')).toBe(
+        '<p style="padding:4px"/><p>Text</p>',
+      );
+      expect(paragraphContent("<p/><p>Text</p>")).toBe("<p>Text</p>");
+    });
+
+    it("keeps whatever remains when every paragraph is empty", () => {
+      expect(paragraphContent("<p></p>tail")).toBe("tail");
+      expect(paragraphContent("<p></p> < 3")).toBe(" < 3");
+      expect(paragraphContent('<p></p><img src="x">')).toBe('<img src="x">');
+      expect(paragraphContent("<p></p></div>")).toBe("<p></p></div>");
+      expect(paragraphContent("<p></p></div")).toBe("<p></p></div");
+      expect(paragraphContent("<p></p><div")).toBe("<div");
+    });
+
+    it("drops the corpus paragraph that only sets typography", () => {
+      expect(
+        paragraphContent(
+          '<p style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;"><span style="font-size: 16px; line-height: 32px;"><span style="font-size: 18px; line-height: 36px;"><strong></strong></span></span></p><p>Text</p>',
+        ),
+      ).toBe("<p>Text</p>");
     });
 
     it("ignores a paragraph tag inside a comment", () => {
@@ -448,6 +665,20 @@ describe("BeeFree module gaps", () => {
       );
     });
 
+    it("uses the 14px default when the font size is not in px", () => {
+      const { block, entry } = blank({ fontSize: "1em" });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
+        templaticalBlockType: "spacer",
+        status: "converted",
+        note: "Blank paragraph imported as a 37px spacer.",
+      });
+    });
+
     it("uses 14px and 1.2 when font-size and line-height are missing", () => {
       const { block, entry } = blank({
         paddingTop: "4px",
@@ -511,6 +742,109 @@ describe("BeeFree module gaps", () => {
         '<p style="font-size: 14px; line-height: 1.2"><span style="font-size: 14px">Hello</span></p>',
       );
       expect(block.visibility).toBeUndefined();
+      expect(report.entries[0]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      });
+    });
+
+    it("drops a blank paragraph translation and warns once per locale", () => {
+      const { content, report } = imported(
+        template([
+          column([
+            {
+              type: "mailup-bee-newsletter-modules-paragraph",
+              translations: { de: { html: "<p>Nochmals</p>" } },
+              descriptor: {
+                paragraph: {
+                  html: "",
+                  style: { "font-size": "14px", "line-height": "120%" },
+                  translations: {
+                    de: { html: "<p>Hallo</p>" },
+                    fr: { html: "<p>Bonjour</p>" },
+                  },
+                },
+                style: PADDING_10,
+              },
+            },
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(block.l10n).toBeUndefined();
+      expect(content.settings.locales).toBeUndefined();
+      expect(content.blocks.some((item) => item.type !== "spacer")).toBe(false);
+      expect(report.warnings).toEqual([
+        'Dropped language "de" on module "mailup-bee-newsletter-modules-paragraph": the default paragraph is blank and imported as a spacer.',
+        'Dropped language "fr" on module "mailup-bee-newsletter-modules-paragraph": the default paragraph is blank and imported as a spacer.',
+      ]);
+      expect(report.entries[0].status).toBe("approximated");
+      expect(report.entries[0].note).toBe(
+        "Blank paragraph imported as a 37px spacer. Translations de, fr dropped: the default paragraph is blank and imported as a spacer.",
+      );
+    });
+
+    it("reports a plain blank paragraph as converted", () => {
+      const { block, entry } = blank({
+        html: "<p></p>",
+        fontSize: "14px",
+        lineHeight: "120%",
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBe("Blank paragraph imported as a 37px spacer.");
+    });
+
+    it("approximates a blank paragraph whose box styling is not carried", () => {
+      const { block, entry } = blank({
+        html: '<p style="height:100px"></p>',
+        fontSize: "14px",
+        lineHeight: "120%",
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 37px spacer; its box styling is not carried.",
+      );
+    });
+
+    it("keeps a blank translation on a paragraph that has text", () => {
+      const { content, report } = imported(
+        template([
+          column([
+            {
+              type: "mailup-bee-newsletter-modules-paragraph",
+              translations: { de: { html: "<p></p>" } },
+              descriptor: {
+                paragraph: { html: "<p>Hello</p>" },
+              },
+            },
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+
+      expect(block.type).toBe("paragraph");
+      if (block.type !== "paragraph") return;
+      expect(block.content).toBe("<p>Hello</p>");
+      expect(block.l10n?.de.text?.content).toEqual({
+        value: "<p></p>",
+        sourceHash: sourceHash("<p>Hello</p>"),
+      });
+      expect(content.blocks.some((item) => item.type === "spacer")).toBe(false);
+      expect(content.settings.locales).toEqual(["de"]);
+      expect(report.warnings).toEqual([]);
       expect(report.entries[0]).toEqual({
         beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
         templaticalBlockType: "paragraph",
@@ -616,6 +950,14 @@ describe("BeeFree module gaps", () => {
           '<p>A<code data-bee-type="mergetag">&nbsp; &nbsp;</code>B</p>',
         ),
       ).toBe("<p>A&nbsp; &nbsp;B</p>");
+    });
+
+    it("drops a merge-tag chip that has no text between two tokens", () => {
+      expect(
+        paragraphContent(
+          '<p>{{left}}<code data-bee-type="mergetag"></code>{{right}}</p>',
+        ),
+      ).toBe("<p>{{left}}{{right}}</p>");
     });
 
     it("turns a plain-space chip into one plain space", () => {
