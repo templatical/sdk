@@ -32,7 +32,7 @@
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
     "vanilla-colorful": "^0.7.2",
-    "vite": "^8.3.6",
+    "vite": "^8.3.7",
     "vitest": "^5.1.0",
     "vue": "^3.5.45",
     "vue-draggable-plus": "^0.6.1",
