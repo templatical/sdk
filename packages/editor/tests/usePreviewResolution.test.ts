@@ -544,6 +544,89 @@ describe("usePreviewResolution failure degrades", () => {
   });
 });
 
+/**
+ * `isShowingResolved` tells a surface whether `content` is the resolver's answer.
+ * Rich text reads it to render tags the host resolved as plain text, so it must
+ * be false on every path that shows the unresolved template.
+ */
+describe("usePreviewResolution isShowingResolved", () => {
+  it("is false without a hook", () => {
+    const { api } = setup({});
+
+    expect(api.isShowingResolved.value).toBe(false);
+  });
+
+  it("turns true only once a resolved template is showing", async () => {
+    let settle: ((value: TemplateContent) => void) | undefined;
+    const hook = vi.fn(
+      () => new Promise<TemplateContent>((resolve) => { settle = resolve; }),
+    );
+    const { api } = setup({ resolvePreview: hook });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.isResolving.value).toBe(true);
+    expect(api.isShowingResolved.value).toBe(false);
+
+    settle!(resolvedWith("Cruz"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(firstText(api.content.value)).toBe("<p>Cruz</p>");
+    expect(api.isShowingResolved.value).toBe(true);
+  });
+
+  it("stays true during a re-resolve, while the last result is still on screen", async () => {
+    const hook = vi.fn()
+      .mockResolvedValueOnce(resolvedWith("first"))
+      .mockImplementationOnce(() => new Promise<TemplateContent>(() => {}));
+    const { api, recipient } = setup({ resolvePreview: hook });
+    await vi.advanceTimersByTimeAsync(0);
+
+    recipient.value = "b@example.com";
+    await vi.advanceTimersByTimeAsync(DEBOUNCE);
+
+    expect(api.isResolving.value).toBe(true);
+    expect(firstText(api.content.value)).toBe("<p>first</p>");
+    expect(api.isShowingResolved.value).toBe(true);
+  });
+
+  it("is false after a failure, when the unresolved template is the fallback", async () => {
+    const hook = vi.fn()
+      .mockResolvedValueOnce(resolvedWith("first"))
+      .mockRejectedValueOnce(new Error("backend down"));
+    const { api, recipient } = setup({ resolvePreview: hook });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.isShowingResolved.value).toBe(true);
+
+    recipient.value = "b@example.com";
+    await vi.advanceTimersByTimeAsync(DEBOUNCE);
+
+    expect(api.hasFailed.value).toBe(true);
+    expect(firstText(api.content.value)).toBe("<p>raw</p>");
+    expect(api.isShowingResolved.value).toBe(false);
+  });
+
+  it("is false for an unrenderable result", async () => {
+    const hook = vi.fn().mockResolvedValue({ nope: true });
+    const { api } = setup({ resolvePreview: hook as never });
+
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(api.hasFailed.value).toBe(true);
+    expect(api.isShowingResolved.value).toBe(false);
+  });
+
+  it("is false once the preview closes", async () => {
+    const hook = vi.fn().mockResolvedValue(resolvedWith("Cruz"));
+    const { api, active } = setup({ resolvePreview: hook });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.isShowingResolved.value).toBe(true);
+
+    active.value = false;
+    await nextTick();
+
+    expect(api.isShowingResolved.value).toBe(false);
+  });
+});
+
 describe("usePreviewResolution only runs while a preview is showing", () => {
   it("never calls the hook when no preview is active", async () => {
     const hook = vi.fn().mockResolvedValue(resolvedWith("x"));

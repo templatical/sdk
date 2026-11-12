@@ -425,6 +425,7 @@ function handleKeydown(event: KeyboardEvent): void {
           :settings="previewSettings"
           :viewport="previewViewport"
           :apply-condition-filter="!previewResolution.isConfigured"
+          :shows-resolved="previewResolution.isShowingResolved.value"
         />
       </div>
 

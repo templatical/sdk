@@ -425,7 +425,7 @@ Output is unaffected: `toMjml()` / `toHtml()` replace a tag node with its token,
 :::
 
 ::: tip Writing a `resolvePreview` hook
-Your [`resolvePreview`](/guide/preview-rendering) callback receives tag nodes, including for content that arrived as bare tokens. Match on the tag markup, not the raw token — a naive <code v-pre>replaceAll('{{first_name}}', 'Grace')</code> also hits the token inside <code v-pre>data-merge-tag="{{first_name}}"</code> and silently produces a tag that renders its label.
+Your [`resolvePreview`](/guide/preview-rendering) callback receives tag nodes, including for content that arrived as bare tokens. A tag previews as plain text once its <code v-pre>data-merge-tag</code> attribute holds your value: replace the whole span, or render the string so the token in the attribute is resolved too. Replacing only the span's visible text leaves <code v-pre>data-merge-tag="{{first_name}}"</code> in place, and the tag keeps rendering its label.
 :::
 
 ## Merge tags in other inputs

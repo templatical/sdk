@@ -13,7 +13,7 @@ There are three layers, each one more realistic than the last. All of them apply
 | --- | --- | --- |
 | **Labels** | nothing — always on | `First Name`, highlighted |
 | **Sample values** | `MergeTag.sample` | `Ada`, as ordinary text |
-| **Resolved data** | `resolvePreview` | whatever your backend returns, logic evaluated |
+| **Resolved data** | `resolvePreview` | the values your backend resolved, as ordinary text, and the branches it evaluated |
 
 Later layers win. Set a `sample` and previews use it instead of the label; configure `resolvePreview` and it supersedes samples entirely.
 
@@ -106,6 +106,8 @@ type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 
 Return a `TemplateContent`. Anything else is treated as a failure (see below).
 
+Resolved values read as ordinary text, with no highlight. Replace a tag's whole `<span>`, or resolve it in place: when its `data-merge-tag` (or `data-logic-merge-tag`) attribute holds your value instead of the token, as it does when your engine renders the whole string, the preview shows that value as plain text and an evaluated logic tag shows no badge. A tag whose attribute still holds a token keeps its label and highlight.
+
 ### When it runs
 
 - **`open`**, immediately when preview mode or the test-email dialog opens. The dialog passes its seeded recipient in this one call, or none when its field starts empty.
@@ -134,7 +136,7 @@ That is the guarantee that makes the hook safe to be creative with: nothing you 
 
 ### Check it
 
-Open the preview: the resolver is called once with `surface: "preview"` and `trigger: "open"`. Click **Refresh preview**: it is called again with `surface: "preview"` and `trigger: "refresh"`, and the preview shows what that call returns. Open the test-email dialog: it is called once with `surface: "test-email"` and `trigger: "open"`, with `recipient` only when the field starts filled.
+Open the preview: the resolver is called once with `surface: "preview"` and `trigger: "open"`. Click **Refresh preview**: it is called again with `surface: "preview"` and `trigger: "refresh"`, and the preview shows what that call returns. Open the test-email dialog: it is called once with `surface: "test-email"` and `trigger: "open"`, with `recipient` only when the field starts filled. A tag your resolver resolved shows as its value with no highlight.
 
 ## Use cases
 

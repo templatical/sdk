@@ -6,9 +6,11 @@ import { SELECTORS } from "../helpers/selectors";
  * primarily by **evaluating logic tags**, which `MergeTag.sample` cannot do.
  *
  * Driven by the playground's demo resolver (`resolvePreviewDemo` in
- * `apps/playground/src/App.vue`): it waits ~400ms, strips falsy `{% if %}`
- * blocks, and substitutes value tags from a per-recipient fake record. The delay
- * is what makes the skeleton and the debounce observable without a backend.
+ * `apps/playground/src/scenes/author/shared.ts`): it waits ~400ms, strips falsy
+ * `{% if %}` blocks, and resolves value tags in place from a per-recipient fake
+ * record, so each span keeps its markup with the value in `data-merge-tag`, as
+ * a backend rendering every string through its engine returns it. The delay is
+ * what makes the skeleton and the debounce observable without a backend.
  *
  * What only a browser can prove here:
  *
@@ -173,7 +175,8 @@ test.describe("Preview resolution", () => {
     await editorPage.togglePreview();
     await expect(canvas).toContainText(RESOLVED);
 
-    // The resolver replaced the spans outright, so nothing reads as a token.
+    // The resolver left each span in place with the value in its attribute;
+    // the preview must render that value as text, not as a chip.
     await expect(canvas.locator(SELECTORS.mergeTagSpan)).toHaveCount(0);
     await expect(canvas).not.toContainText(LABEL);
   });
@@ -237,6 +240,8 @@ test.describe("Preview resolution", () => {
 
     // Distinct per recipient, so switching visibly re-resolves.
     await expect(preview).toContainText(RESOLVED);
+    // Resolved in place, and still shown as text rather than chips.
+    await expect(preview.locator(SELECTORS.mergeTagSpan)).toHaveCount(0);
 
     await page
       .locator(SELECTORS.testEmailRecipient)

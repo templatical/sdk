@@ -282,6 +282,19 @@ export const MERGE_TAG_SAMPLE_MODE_KEY: InjectionKey<Ref<boolean>> =
 export const USE_MERGE_TAG_SAMPLES_KEY: InjectionKey<ComputedRef<boolean>> =
   Symbol("useMergeTagSamples");
 
+/**
+ * Whether **the current render surface** is showing content a `resolvePreview`
+ * hook returned, rather than the template itself.
+ *
+ * Provided per surface, like `USE_MERGE_TAG_SAMPLES_KEY`: `Canvas.vue` folds in
+ * its `previewMode`, and `BlockPreviewCanvas` takes it as a prop because the
+ * test-email dialog owns a separate resolution instance. Rich text reads it to
+ * render the tags a host resolved in place as plain text
+ * (`unwrapHtmlResolvedMergeTags`). Absent means `false`.
+ */
+export const SHOWS_RESOLVED_PREVIEW_KEY: InjectionKey<ComputedRef<boolean>> =
+  Symbol("showsResolvedPreview");
+
 /** Whether this block-rendering surface permits edits to the live template. */
 export const READ_ONLY_SURFACE_KEY: InjectionKey<ComputedRef<boolean>> =
   Symbol("readOnlySurface");

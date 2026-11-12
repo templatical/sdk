@@ -22,6 +22,7 @@ import {
   MERGE_TAG_SAMPLE_MODE_KEY,
   MERGE_TAG_SYNTAX_KEY,
   READ_ONLY_SURFACE_KEY,
+  SHOWS_RESOLVED_PREVIEW_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
   requireInject,
 } from "../keys";
@@ -69,13 +70,25 @@ const props = withDefaults(
      */
     applyConditionFilter?: boolean;
     /**
+     * Whether `blocks` is what a resolver returned. Tags the host resolved in
+     * place then render as plain text and evaluated logic leaves no badge. A
+     * prop for the same reason as `applyConditionFilter`: the test-email
+     * dialog's resolution instance is not the canvas's.
+     */
+    showsResolved?: boolean;
+    /**
      * Document settings for this surface. Test-email passes the composed
      * document so the mat is layout `backgroundColor` (`mj-body`). Saved-block
      * previews omit it and read the live editor template.
      */
     settings?: TemplateSettings;
   }>(),
-  { viewport: "desktop", applyConditionFilter: true, settings: undefined },
+  {
+    viewport: "desktop",
+    applyConditionFilter: true,
+    showsResolved: false,
+    settings: undefined,
+  },
 );
 
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
@@ -99,6 +112,10 @@ provide(
 provide(
   USE_MERGE_TAG_SAMPLES_KEY,
   computed(() => mergeTagSampleMode?.value ?? false),
+);
+provide(
+  SHOWS_RESOLVED_PREVIEW_KEY,
+  computed(() => props.showsResolved),
 );
 
 /**

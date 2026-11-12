@@ -434,6 +434,7 @@ export {
   substituteHtmlMergeTagSamples,
   substituteTextMergeTagSamples,
   SYNTAX_PRESETS,
+  unwrapHtmlResolvedMergeTags,
 } from "./merge-tags";
 
 // Preview resolution

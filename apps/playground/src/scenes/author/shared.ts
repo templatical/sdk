@@ -336,7 +336,16 @@ function evaluateLiquidLogic(
   });
 }
 
-/** Demo resolver: delay + substitute values + evaluate `{% if %}` branches. */
+/** A value is written into attributes and text alike, so it is escaped for both. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Demo resolver: delay + resolve values in place + evaluate `{% if %}` branches. */
 export async function resolvePreviewDemo({
   content,
   recipient,
@@ -345,14 +354,14 @@ export async function resolvePreviewDemo({
 
   const data = (recipient && FAKE_RECIPIENTS[recipient]) || FAKE_DEFAULT;
 
+  // Value tags resolve in place, the way a backend that renders each string
+  // through its template engine answers: the token inside `data-merge-tag`
+  // becomes the value and the span stays. The editor must still show it as
+  // plain text, which is what the preview-resolution e2e asserts.
   const resolveHtml = (html: string): string => {
     let out = evaluateLiquidLogic(html, data);
-    out = out.replace(
-      /<span data-merge-tag="\{\{(\w+)\}\}"[^>]*>.*?<\/span>/g,
-      (m, name: string) => data[name] ?? m,
-    );
     for (const [key, value] of Object.entries(data)) {
-      out = out.split(`{{${key}}}`).join(value);
+      out = out.split(`{{${key}}}`).join(escapeHtml(value));
     }
     return out;
   };
