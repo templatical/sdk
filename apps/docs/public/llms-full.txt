@@ -15399,7 +15399,7 @@ There are three layers, each one more realistic than the last. All of them apply
 | --- | --- | --- |
 | **Labels** | nothing — always on | `First Name`, highlighted |
 | **Sample values** | `MergeTag.sample` | `Ada`, as ordinary text |
-| **Resolved data** | `resolvePreview` | whatever your backend returns, as ordinary text, logic evaluated |
+| **Resolved data** | `resolvePreview` | the values your backend resolved, as ordinary text, and the branches it evaluated |
 
 Later layers win. Set a `sample` and previews use it instead of the label; configure `resolvePreview` and it supersedes samples entirely.
 

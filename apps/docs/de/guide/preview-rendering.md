@@ -13,7 +13,7 @@ Es gibt drei Ebenen, jede realistischer als die vorige. Alle gelten **nur für V
 | --- | --- | --- |
 | **Bezeichnungen** | keine — immer aktiv | `First Name`, hervorgehoben |
 | **Beispielwerte** | `MergeTag.sample` | `Ada`, als gewöhnlicher Text |
-| **Aufgelöste Daten** | `resolvePreview` | was Ihr Backend zurückgibt, als gewöhnlicher Text, Logik ausgewertet |
+| **Aufgelöste Daten** | `resolvePreview` | die von Ihrem Backend aufgelösten Werte als gewöhnlicher Text, und die Zweige, die es ausgewertet hat |
 
 Spätere Ebenen gewinnen. Setzen Sie ein `sample`, verwenden Vorschauen es anstelle der Bezeichnung; konfigurieren Sie `resolvePreview`, hat es vollständig Vorrang vor Beispielwerten.
 
