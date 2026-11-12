@@ -285,6 +285,11 @@ function convertColumnModules(
       continue;
     }
     const { block, entry, extras } = convertModule(module, warnings, context);
+    const visibility = visibilityFromHideFlags(module.descriptor.computedStyle);
+    if (visibility) {
+      block.visibility = visibility;
+      for (const extra of extras ?? []) extra.visibility = visibility;
+    }
     blocks.push(block);
     if (extras?.length) blocks.push(...extras);
     entries.push(entry);
@@ -464,12 +469,33 @@ function isFlag(value: string | boolean | undefined): boolean {
   return value === true || value === "true";
 }
 
-function rowVisibility(row: BeeFreeeRow): BlockVisibility | undefined {
-  const computed = row.content?.computedStyle;
-  const hideMobile = isFlag(computed?.hideContentOnMobile);
-  const hideDesktop = isFlag(computed?.hideContentOnDesktop);
+function asFlag(value: unknown): string | boolean | undefined {
+  return typeof value === "string" || typeof value === "boolean"
+    ? value
+    : undefined;
+}
+
+/**
+ * `visibility` from `hideContentOnMobile` / `hideContentOnDesktop`.
+ * `true` or `"true"` hides that side. Both unset or false leaves it unset.
+ * `hideContentOnAmp` and `hideContentOnHtml` are ignored.
+ */
+function visibilityFromHideFlags(
+  computed:
+    | {
+        hideContentOnMobile?: unknown;
+        hideContentOnDesktop?: unknown;
+      }
+    | undefined,
+): BlockVisibility | undefined {
+  const hideMobile = isFlag(asFlag(computed?.hideContentOnMobile));
+  const hideDesktop = isFlag(asFlag(computed?.hideContentOnDesktop));
   if (!hideMobile && !hideDesktop) return undefined;
   return { desktop: !hideDesktop, mobile: !hideMobile };
+}
+
+function rowVisibility(row: BeeFreeeRow): BlockVisibility | undefined {
+  return visibilityFromHideFlags(row.content?.computedStyle);
 }
 
 function rowOptsOutOfStack(row: BeeFreeeRow): boolean {

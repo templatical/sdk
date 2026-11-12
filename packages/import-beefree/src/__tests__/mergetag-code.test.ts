@@ -80,10 +80,18 @@ describe("BeeFree merge-tag code wrappers", () => {
     );
   });
 
-  it("keeps a mergetag chip that holds only a non-breaking space as a plain space", () => {
+  it("keeps a mergetag chip that holds only a non-breaking space", () => {
     expect(
       paragraph(
         '<p>Dear <code data-bee-type="mergetag" data-bee-code="">{{contact.first_name}}</code><code data-bee-type="mergetag" data-bee-code="">&nbsp;</code><code data-bee-type="mergetag" data-bee-code="">{{contact.last_name}}</code>,</p>',
+      ),
+    ).toBe("<p>Dear {{contact.first_name}}&nbsp;{{contact.last_name}},</p>");
+  });
+
+  it("turns a mergetag chip that holds only plain spaces into one plain space", () => {
+    expect(
+      paragraph(
+        '<p>Dear <code data-bee-type="mergetag" data-bee-code="">{{contact.first_name}}</code><code data-bee-type="mergetag" data-bee-code=""> </code><code data-bee-type="mergetag" data-bee-code="">{{contact.last_name}}</code>,</p>',
       ),
     ).toBe("<p>Dear {{contact.first_name}} {{contact.last_name}},</p>");
   });
@@ -218,7 +226,9 @@ describe("BeeFree merge-tag code wrappers", () => {
       [],
     ).block;
     if (html.type !== "html") throw new Error("expected html");
-    expect(html.content).toBe("<p>Hi {{ guest.name }}</p>");
+    expect(html.content).toBe(
+      '<div style="text-align:center" align="center"><p>Hi {{ guest.name }}</p></div>',
+    );
   });
 
   // The two linear-growth tests run the scan at the adversarial size and then

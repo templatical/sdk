@@ -4102,7 +4102,9 @@ describe("convertModule", () => {
 
       expect(block.type).toBe("html");
       if (block.type === "html") {
-        expect(block.content).toBe('<div class="custom">Custom HTML</div>');
+        expect(block.content).toBe(
+          '<div style="text-align:center" align="center"><div class="custom">Custom HTML</div></div>',
+        );
       }
       expect(entry.status).toBe("converted");
     });
@@ -4694,9 +4696,9 @@ describe("convertModule", () => {
         );
       });
 
-      it("keeps a blank paragraph empty so it stays one line tall", () => {
-        // BeeFree paints `<p></p>` as one line. A span inside it is content,
-        // so the paragraph collapses and the following line moves up.
+      it("drops an empty paragraph between text and keeps a module that is only blank", () => {
+        // An empty `<p>` has no line box. A module whose only paragraph is
+        // blank stays that empty paragraph.
         const style = {
           color: "#555555",
           "font-family": "Georgia, serif",
@@ -4710,7 +4712,6 @@ describe("convertModule", () => {
           ),
         ).toBe(
           '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia">We look forward to seeing you.</span></p>' +
-            '<p style="line-height: 1.5"></p>' +
             '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia">Sincerely,<br/>Your Event Team</span></p>',
         );
         expect(textHtml("text", "<p> </p>", style)).toBe(

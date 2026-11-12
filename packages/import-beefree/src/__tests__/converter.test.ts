@@ -3022,7 +3022,9 @@ describe("convertBeeFreeTemplate", () => {
 
         expect(block.type).toBe("html");
         if (block.type !== "html") throw new Error("expected an html block");
-        expect(block.content).toBe("<p>Hi</p>");
+        expect(block.content).toBe(
+          '<div style="text-align:center" align="center"><p>Hi</p></div>',
+        );
         expect(block.styles.padding).toEqual(returned);
       });
     });

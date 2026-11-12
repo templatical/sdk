@@ -6,6 +6,7 @@ import {
   findOpenTagEnd,
   isSafeHtmlUrl,
   HEADING_LEVEL_FONT_SIZE,
+  isBlankRichText,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
@@ -120,6 +121,8 @@ const MODULE_TYPE_MAP: Record<string, string> = {
 
 const ADDON_MODULE = "mailup-bee-newsletter-modules-addon";
 const EMPTY_MODULE = "mailup-bee-newsletter-modules-empty";
+const PARAGRAPH_MODULE = "mailup-bee-newsletter-modules-paragraph";
+const HTML_MODULE = "mailup-bee-newsletter-modules-html";
 
 /**
  * An addon keeps the payload of the module it stands in for, so the payload it
@@ -225,6 +228,210 @@ function importedHtml(html: string): string {
   return restoreDoubledNbsp(
     decodeEntitiesInHtml(trimHighlightedTokenPadding(unwrapMergeTagCode(html))),
   );
+}
+
+/**
+ * Text, paragraph and list HTML after merge-tag chips are unwrapped and
+ * before character references inside tokens are decoded. An empty chip is
+ * already gone, and an `&nbsp;` is still a non-breaking space.
+ */
+function finishTextHtml(html: string): string {
+  const unwrapped = trimHighlightedTokenPadding(unwrapMergeTagCode(html));
+  return restoreDoubledNbsp(
+    decodeEntitiesInHtml(withoutEmptyParagraphs(unwrapped)),
+  );
+}
+
+/**
+ * A `<p>` with no line box: no text other than ASCII whitespace, no
+ * non-breaking space, and no replaced or void element. Removing it keeps
+ * `fillEmptyParagraphs` from painting a line BeeFree does not draw.
+ * `<p>&nbsp;</p>` and `<p><br></p>` stay. A `<p>` that opens while another
+ * `<p>` is open stays as written. When dropping leaves no visible content,
+ * the HTML stays, so a blank text module is unchanged.
+ */
+const LINE_BOX_TAGS = new Set([
+  "area",
+  "audio",
+  "base",
+  "br",
+  "canvas",
+  "col",
+  "embed",
+  "hr",
+  "iframe",
+  "img",
+  "input",
+  "link",
+  "math",
+  "meta",
+  "object",
+  "param",
+  "picture",
+  "select",
+  "source",
+  "svg",
+  "textarea",
+  "track",
+  "video",
+  "wbr",
+]);
+
+function isAsciiLetter(char: string | undefined): boolean {
+  if (char === undefined) return false;
+  const code = char.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function isTagNameChar(char: string | undefined): boolean {
+  if (char === undefined) return false;
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122)
+  );
+}
+
+function isAsciiSpace(char: string): boolean {
+  return (
+    char === " " ||
+    char === "\t" ||
+    char === "\n" ||
+    char === "\r" ||
+    char === "\f"
+  );
+}
+
+function rangeHasInk(html: string, from: number, to: number): boolean {
+  for (let i = from; i < to; i++) {
+    if (!isAsciiSpace(html[i])) return true;
+  }
+  return false;
+}
+
+function tagSelfCloses(html: string, end: number): boolean {
+  let i = end - 1;
+  while (i >= 0 && isAsciiSpace(html[i])) i--;
+  return html[i] === "/";
+}
+
+/** Paragraphs with no line box, as source ranges. One forward pass. */
+function emptyParagraphRanges(html: string): Array<[number, number]> {
+  const skip: Array<[number, number]> = [];
+  let open: {
+    start: number;
+    ink: boolean;
+    depth: number;
+    malformed: boolean;
+  } | null = null;
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) {
+      if (open && rangeHasInk(html, i, html.length)) open.ink = true;
+      break;
+    }
+    if (lt > i && open && rangeHasInk(html, i, lt)) open.ink = true;
+    if (html.startsWith("<!--", lt)) {
+      const end = html.indexOf("-->", lt + 4);
+      i = end === -1 ? html.length : end + 3;
+      continue;
+    }
+    const slash = html[lt + 1] === "/";
+    const nameStart = lt + (slash ? 2 : 1);
+    if (!isAsciiLetter(html[nameStart])) {
+      if (open) open.ink = true;
+      i = lt + 1;
+      continue;
+    }
+    let nameEnd = nameStart + 1;
+    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
+    const name = html.slice(nameStart, nameEnd).toLowerCase();
+    if (slash) {
+      const gt = html.indexOf(">", nameEnd);
+      if (gt === -1) break;
+      i = gt + 1;
+      if (name === "p" && open) {
+        open.depth -= 1;
+        if (open.depth === 0) {
+          if (!open.ink && !open.malformed) skip.push([open.start, i]);
+          open = null;
+        }
+      }
+      continue;
+    }
+    const end = findOpenTagEnd(html, nameEnd);
+    if (end === -1) break;
+    if (name === "p") {
+      if (open) {
+        // A paragraph opened inside another is malformed. Leave it, and the
+        // paragraph around it, exactly as written.
+        open.malformed = true;
+        if (!tagSelfCloses(html, end)) open.depth += 1;
+      } else if (tagSelfCloses(html, end)) {
+        skip.push([lt, end + 1]);
+      } else {
+        open = { start: lt, ink: false, depth: 1, malformed: false };
+      }
+    } else if (open && LINE_BOX_TAGS.has(name)) {
+      open.ink = true;
+    }
+    i = end + 1;
+  }
+  return skip;
+}
+
+/**
+ * Text other than ASCII whitespace, a character reference, or a line-box
+ * element. Comments are not content. One forward pass; an open tag ends at
+ * `findOpenTagEnd`, so a quoted `>` does not end it.
+ */
+function hasVisibleContent(html: string): boolean {
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) return rangeHasInk(html, i, html.length);
+    if (rangeHasInk(html, i, lt)) return true;
+    if (html.startsWith("<!--", lt)) {
+      const end = html.indexOf("-->", lt + 4);
+      i = end === -1 ? html.length : end + 3;
+      continue;
+    }
+    const slash = html[lt + 1] === "/";
+    const nameStart = lt + (slash ? 2 : 1);
+    if (!isAsciiLetter(html[nameStart])) return true;
+    let nameEnd = nameStart + 1;
+    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
+    const name = html.slice(nameStart, nameEnd).toLowerCase();
+    if (!slash && LINE_BOX_TAGS.has(name)) return true;
+    if (slash) {
+      const gt = html.indexOf(">", nameEnd);
+      if (gt === -1) return rangeHasInk(html, nameEnd, html.length);
+      i = gt + 1;
+      continue;
+    }
+    const end = findOpenTagEnd(html, nameEnd);
+    if (end === -1) return rangeHasInk(html, lt, html.length);
+    i = end + 1;
+  }
+  return false;
+}
+
+function withoutEmptyParagraphs(html: string): string {
+  if (html.indexOf("<") === -1) return html;
+  const skip = emptyParagraphRanges(html);
+  if (skip.length === 0) return html;
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const [start, end] of skip) {
+    if (start > cursor) parts.push(html.slice(cursor, start));
+    if (end > cursor) cursor = end;
+  }
+  if (cursor < html.length) parts.push(html.slice(cursor));
+  const dropped = parts.join("");
+  if (!hasVisibleContent(dropped)) return html;
+  return dropped;
 }
 
 /**
@@ -1118,7 +1325,7 @@ function convertText(
       : undefined;
 
   return createParagraphBlock({
-    content: importedHtml(
+    content: finishTextHtml(
       inlineStylesToHtml(
         html,
         style,
@@ -1130,6 +1337,82 @@ function convertText(
     ),
     paragraphSpacing: paragraphModuleSpacing(textContent, html),
     styles: makeStyles(descriptor),
+  });
+}
+
+/**
+ * A non-negative px length, including 0. `undefined` when the value is
+ * missing or unreadable. A negative length does not match.
+ */
+function nonNegativeCssPx(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const match = /^(\d+(?:\.\d+)?)\s*px$/i.exec(value.trim());
+  if (!match) return undefined;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+/**
+ * The line box of a blank paragraph, in px. A percentage or a unitless
+ * `line-height` is a ratio of the font size, including 0. A px `line-height`
+ * is the line box itself. The font size is 14px, and the ratio is 1.2, when
+ * the value is missing or unreadable. A negative value is unreadable.
+ */
+function blankParagraphLineBox(
+  style: Record<string, string> | undefined,
+): number {
+  const fontSize = nonNegativeCssPx(style?.["font-size"]) ?? 14;
+  const raw = style?.["line-height"]?.trim() ?? "";
+  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
+  if (px) {
+    const length = Number(px[1]);
+    if (Number.isFinite(length) && length >= 0) return length;
+  }
+  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  const unitless = /^(\d+(?:\.\d+)?)$/.exec(raw);
+  if (percent) {
+    const ratio = Number(percent[1]) / 100;
+    if (Number.isFinite(ratio) && ratio >= 0) return fontSize * ratio;
+  } else if (unitless) {
+    const ratio = Number(unitless[1]);
+    if (Number.isFinite(ratio) && ratio >= 0) return fontSize * ratio;
+  }
+  return fontSize * 1.2;
+}
+
+function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): number {
+  const padding = extractPadding(descriptor.style);
+  return Math.round(
+    padding.top +
+      blankParagraphLineBox(descriptor.paragraph?.style) +
+      padding.bottom,
+  );
+}
+
+/**
+ * Whether a paragraph module's source is empty or whitespace, or its
+ * converted markup is blank. Only `mailup-bee-newsletter-modules-paragraph`
+ * is passed here, so an absent `paragraph.html` is a blank module.
+ */
+function blankParagraphModule(
+  html: string | undefined,
+  converted: string,
+): boolean {
+  if ((html ?? "").trim() === "") return true;
+  return isBlankRichText(converted);
+}
+
+/** A blank paragraph module, as a spacer of one line plus its vertical padding. */
+function blankParagraphSpacer(
+  descriptor: BeeFreeeModuleDescriptor,
+  height: number,
+): Block {
+  return createSpacerBlock({
+    height,
+    styles: {
+      ...makeStyles(descriptor),
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    },
   });
 }
 
@@ -1929,11 +2212,21 @@ function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
   });
 }
 
-function convertHtml(descriptor: BeeFreeeModuleDescriptor): Block {
-  const html = descriptor.html?.html ?? "";
+function convertHtml(
+  descriptor: BeeFreeeModuleDescriptor,
+  moduleType: string,
+): Block {
+  const html = importedHtml(descriptor.html?.html ?? "");
+  // BeeFree centres an HTML module. The template font already comes from
+  // `mj-all`, so the wrapper carries no font-family. Blank content, and an
+  // addon that carries HTML, stay unwrapped.
+  const content =
+    moduleType === HTML_MODULE && html.trim() !== ""
+      ? `<div style="text-align:center" align="center">${html}</div>`
+      : html;
 
   return createHtmlBlock({
-    content: importedHtml(html),
+    content,
     styles: makeStyles(descriptor),
   });
 }
@@ -2938,7 +3231,22 @@ function convertModuleBase(
   let notes: string[] = [];
 
   switch (mappedType) {
-    case "paragraph":
+    case "paragraph": {
+      block = convertText(descriptor, textColor, notes);
+      if (
+        module.type === PARAGRAPH_MODULE &&
+        block.type === "paragraph" &&
+        blankParagraphModule(descriptor.paragraph?.html, block.content)
+      ) {
+        const height = blankParagraphHeight(descriptor);
+        block = blankParagraphSpacer(descriptor, height);
+        notes = [`Blank paragraph imported as a ${height}px spacer.`];
+        isApproximation = false;
+      } else {
+        isApproximation = notes.length > 0;
+      }
+      break;
+    }
     case "list":
       block = convertText(descriptor, textColor, notes);
       isApproximation = notes.length > 0;
@@ -3014,7 +3322,7 @@ function convertModuleBase(
       break;
     }
     case "html":
-      block = convertHtml(descriptor);
+      block = convertHtml(descriptor, module.type);
       break;
     case "social": {
       const result = convertSocial(descriptor, warnings);
