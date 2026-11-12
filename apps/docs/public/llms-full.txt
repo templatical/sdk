@@ -3054,6 +3054,8 @@ interface SectionBlock extends BaseBlock {
   border?: BorderValue;
   backgroundImage?: BackgroundImage;
   hero?: SectionHero;
+  /** Each column's share of the section as a percentage, one number per column of `columns`. Values are scaled so they total 100, so `[1, 1, 2]` means 25 / 25 / 50. It overrides the preset's split, and `columns` still sets the column count. Ignored when its length differs from that count, or when a value is not a finite number above 0: the preset's split renders, and `structure.column-widths-ignored` names the reason. Absent keeps the preset's split. */
+  columnWidths?: number[];
   wrapper?: SectionWrapper;
 }
 
@@ -3099,6 +3101,19 @@ function parsePercentWidth(value: unknown): number | null;
 
 /** Two decimal places. `0.145` is `0.15` and `1.005` is `1.01`. */
 function roundHundredths(value: number): number;
+
+/** Preset column shares, in percent. `"3"` is `[33.33, 33.33, 33.34]`, `"1-2"` is `[33.33, 66.67]`, `"2-1"` is `[66.67, 33.33]`. */
+const COLUMN_LAYOUT_PERCENTS: Readonly<Record<ColumnLayout, readonly number[]>>;
+
+/** `"count"` when `columnWidths.length` differs from the layout's column count, `"value"` when a share is not a finite number above 0, `null` when `columnWidths` is absent or usable. */
+function columnWidthsIssue(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): 'count' | 'value' | null;
+
+/** The preset row when there is no usable override. Otherwise the shares scaled to 100 in hundredths: each column is at least 0.01, leftover hundredths go to the largest fractional remainders, and a tie goes to the earlier column. An unknown layout is `[100]`. */
+function sectionColumnPercents(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): number[];
 
 interface DividerBlock extends BaseBlock {
   type: 'divider';
@@ -13534,7 +13549,7 @@ The button's place in the column is the module's `text-align` (`left`, `center` 
 | no `computedStyle.width`                                       | `image.width`, by the same rule                      | Converted    |
 | no width at all                                                | `"full"`                                             | Converted    |
 
-`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at, for both of BeeFree's sizing classes: a `fixedwidth` image at the width set in the editor, and an `autowidth` image at its file's width, capped at the column. Older exports write `computedStyle.width` as a number of pixels (`187.5`) and class an image that fills its column `fullwidth`. Their computed width leaves out the column's padding, so the class decides. The image's room is its column's content width less the image's left and right padding. On a snapped row that room is the snapped column: padding given back from the inner edge is part of it, and column padding the module keeps on either side is not, including when none of that padding comes back. `ImageBlock` stores px, which keeps its size on a phone where a percentage would shrink with the column, so a percentage width is reported `approximated`. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
+`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at, for both of BeeFree's sizing classes: a `fixedwidth` image at the width set in the editor, and an `autowidth` image at its file's width, capped at the column. Older exports write `computedStyle.width` as a number of pixels (`187.5`) and class an image that fills its column `fullwidth`. Their computed width leaves out the column's padding, so the class decides. The image's room is its column's width in px less the image's left and right padding. That width is the column's share of `settings.width`: the preset's px, or `columnWidths` when the row sets them. Column padding is added to the module after the width is chosen. `ImageBlock` stores px, which keeps its size on a phone where a percentage would shrink with the column, so a percentage width is reported `approximated`. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
 
 BeeFree keeps an image at its desktop width on a phone when that image sits in a column narrower than the email. The import sets `fluidOnMobile` to `false` on such an image when it fills that column, so it does not grow to the stacked column. An image in a full-width row, and one that does not fill its column, leaves `fluidOnMobile` unset. See [Width on phones](/guide/images#width-on-phones).
 
@@ -13550,7 +13565,7 @@ BeeFree keeps an image at its desktop width on a phone when that image sits in a
 | a negative px width                                | `0`                                          | Approximated |
 | any other value                                    | `"full"`                                     | Approximated |
 
-A column's content width is its share of `settings.width`, by the section's column layout, less the divider's left and right padding. A row of five or more columns is flattened, and its modules span the whole `settings.width`. A four-column row keeps four columns. The warning names the source ratio.
+A column's content width is its share of `settings.width`, by the section's column layout or by `columnWidths` when the row sets them, less the divider's left and right padding. A row of five or more columns is flattened, and its modules span the whole `settings.width`. A four-column row keeps four columns. The warning names a row of five or more columns.
 
 Templatical centres every divider. A partial-width divider that BeeFree aligns left or right (`computedStyle.align`) is approximated, and its `note` names the alignment.
 
@@ -13648,11 +13663,11 @@ BeeFree organizes content into rows with columns. These map to Templatical's `Se
 | 3 columns (25/50/25) | `'1-2-1'`        |
 | 4 equal columns    | `'4'`              |
 
-Column widths that don't match a standard ratio are mapped to the closest layout of the same column count, measured in the same thousandths as an exact match. A 7/12 row and a 5/12 row map to the even split `2` (7/12 is 583 thousandths: 83 from even, 84 from 2/3). A 6-4-2 row maps to `3` and a 2-8-2 row maps to `1-2-1`. That snap is one `report.warnings` line naming the source ratio, for example `Column ratio 6-4-2 was mapped to the nearest layout "3"`. `8-4`, `4-8`, `6-6`, an even `4-4-4`, `3-9`, `9-3`, `3-6-3` and an even `3-3-3-3` match `2-1`, `1-2`, `2`, `3`, `1-3`, `3-1`, `1-2-1` and `4` and do not warn. A row of five or more columns is flattened to one column; the warning names that ratio too (`3-3-3-3-3`).
+A ratio that matches a preset keeps that layout and sets no `columnWidths`. `6-6` is `2`, an even `4-4-4` is `3`, an even `3-3-3-3` is `4`, `8-4` is `2-1`, `4-8` is `1-2`, `9-3` is `3-1`, `3-9` is `1-3` and `3-6-3` is `1-2-1`. Any other ratio of two, three or four columns keeps the even layout of that count (`2`, `3` or `4`) and sets `columnWidths` to the shares scaled to 100. `6-4-2` is `[50, 33.33, 16.67]`, `3-3-6` is `[25, 25, 50]`, `6-2-2-2` is `[50, 16.67, 16.67, 16.66]`, `5-7` is `[41.67, 58.33]`, `7-5` is `[58.33, 41.67]`, `4-3-5` is `[33.33, 25, 41.67]` and `2-8-2` is `[16.67, 66.67, 16.66]`. The import adds no warning for that ratio. A share that is not above 0 leaves the even layout with no `columnWidths`. A row of five or more columns is flattened to one column; the warning names that ratio (`3-3-3-3-3`).
 
 A column's padding, background and border live on the column. A single-column row folds that padding into the section padding (added to the row's own padding, which is not imported, so it starts at 0), uses the column `background-color` when it is set and otherwise the row's content background, and maps `border-top` / `border-right` / `border-bottom` / `border-left` onto the section border. The row is wrapped in a one-column section when any of those is set. A non-px or negative padding is ignored. A border style other than `solid`, `dashed` or `dotted` is imported as `solid`.
 
-A multi-column row, including one flattened from five or more columns, adds each column's padding to its modules: left and right on every module, top on the first, bottom on the last. When the snapped layout makes a column narrower than its BeeFree grid share of the row, that shortfall comes back out of the padding facing the next column: the right side of a left column, the left side of a right column, and the right side then the left side of a middle column. The outer edge stays, and the padding does not go below 0. A column the snap makes wider, and a ratio that already matches, keep the summed padding.
+A multi-column row, including one flattened from five or more columns, adds each column's padding to its modules: left and right on every module, top on the first, bottom on the last.
 
 In a row with two to four columns, the first column's drawn left border and the last column's drawn right border become the section's left and right border. A drawn top or bottom border becomes the section border when every column draws that side with the same width, style and color. Promotion requires at least one drawn column side, no painted column background, no drawn inner border, no top or bottom border that differs between columns, and no overlap with a drawn row-border side. When one of these fails, every column side is dropped, the outer left and right edges included. Promoted borders add no column-box warning. Otherwise column backgrounds and borders are dropped with one `report.warnings` entry per row: `Column background/border was dropped; a multi-column row has no per-column box.` A row flattened from five or more columns keeps this drop behavior. A transparent background or a border that paints nothing does not warn. When columns stack on a phone, BeeFree draws the left edge only beside the first column and the right edge only beside the last, and a top or bottom border drawn on every column appears between the stacked columns too. The section border frames the whole stack, with no lines between its columns, and the import adds no warning for this.
 
@@ -14593,7 +14608,7 @@ for (const entry of report.entries) {
     console.warn(`<${entry.sourceTag}> approximated:`, entry.note);
   }
 }
-// <mj-section> approximated: Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2".
+// <mj-section> approximated: Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.
 ```
 
 A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed.
@@ -14637,7 +14652,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 
 | MJML tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). `background-url` with its size, position and repeat becomes `backgroundImage` (see [Background images](#background-images)). |
+| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | A width within 2 percentage points of a preset keeps that preset. Any other ratio of two to four columns sets `columnWidths` on the even layout of that count. Five or more columns fold into `"4"`. Widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). `background-url` with its size, position and repeat becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
@@ -14671,7 +14686,7 @@ A px `width` becomes `"full"` once it reaches the image's room: its column less 
 | px, below `0` | clamped to `0` | `approximated` |
 | any other value | `"full"` | `approximated` |
 
-The line can span its column less the column's side padding and the divider's own, which is how `mj-divider` draws `100%`. A column's width is its share of `mj-body`'s `width`, by the section's column layout.
+The line can span its column less the column's side padding and the divider's own, which is how `mj-divider` draws `100%`. A column's width is its share of `mj-body`'s `width`: the preset, or `columnWidths` when the section sets them.
 
 Templatical centres every divider. A partial-width divider that MJML aligns left or right (`align`) is `approximated`, and its `note` names the alignment.
 
@@ -14724,7 +14739,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the entry
 
 MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
 
-- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). MJML allows any number of columns at any width, so a ratio outside those layouts resolves to the nearest layout of the same column count, and a fifth or later column's content folds into the fourth column. The note names the four-column limit only on that overflow.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). A width list within 2 percentage points of a preset keeps that preset. Two, three or four columns that fit none keep the even layout of that count and `columnWidths` scaled to 100, and the match is exact, with no note. `25%` / `25%` / `50%` is `columns: "3"` and `columnWidths: [25, 25, 50]`. `33.33%` / `66.67%` stays `"1-2"`. `49%` / `51%` stays `"2"`. A fifth or later column's content folds into the fourth column. The note names the four-column limit only on that overflow: `Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.`
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
@@ -15972,6 +15987,24 @@ The `columns` property accepts one of these layout presets:
 ```ts
 type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
+
+## Custom column widths
+
+`columnWidths` overrides the preset's split. It is one number per column of `columns`. The shares are scaled to 100 in hundredths. Each column is floored, then raised to at least 0.01, and each leftover hundredth goes to the largest fractional remainder. A tie goes to the earlier column. `[1, 1, 2]` is 25% / 25% / 50%. `[1, 1, 1]` is 33.34% / 33.33% / 33.33%. `[6, 2, 2, 2]` is 50% / 16.67% / 16.67% / 16.66%. The row totals 100. `columns` still sets the column count. Preset rows stay the literals in `COLUMN_LAYOUT_PERCENTS`.
+
+```ts
+const row = createSectionBlock({
+  columns: '3',
+  columnWidths: [1, 1, 2],
+  children: [[], [], []],
+});
+```
+
+Absent `columnWidths` keeps the preset. The renderer writes each share on `mj-column` as `width`, for example `width="25%"`, `width="25%"` and `width="50%"`. `stackOnMobile: false` wraps those columns in `<mj-group>`, the same as a preset.
+
+`columnWidths` is ignored when its length differs from the layout's column count, or when a value is not a finite number above 0. The preset's split renders, and `structure.column-widths-ignored` names the reason, `count` or `value`.
+
+`COLUMN_LAYOUT_PERCENTS` is the preset table the renderer emits: `"1"` is `[100]`, `"2"` is `[50, 50]`, `"3"` is `[33.33, 33.33, 33.34]`, `"4"` is `[25, 25, 25, 25]`, `"1-2"` is `[33.33, 66.67]`, `"2-1"` is `[66.67, 33.33]`, `"1-3"` is `[25, 75]`, `"3-1"` is `[75, 25]`, `"1-2-1"` is `[25, 50, 25]`. `sectionColumnPercents` returns that row, or the scaled override. `columnWidthsIssue` returns `"count"`, `"value"` or `null`.
 
 ## Creating sections
 
@@ -18518,7 +18551,7 @@ Auto-fixes are added conservatively — only when the right answer is unambiguou
 
 Source: https://docs.templatical.com/quality/structure/
 
-`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, and background images Outlook on Windows can't layer.
+`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, column widths the renderer ignores, and background images Outlook on Windows can't layer.
 
 ## Purpose
 
@@ -18532,6 +18565,7 @@ The structure linter catches these before save / before send:
 - **Empty section.** A section with no blocks renders as a blank table row — wasted whitespace, sometimes a visible padding gap.
 - **Empty column.** A multi-column section with one empty column renders awkwardly in most clients and almost always means the author intended fewer columns.
 - **Hero not applied.** A section with `hero` set that renders as a regular section: more than one column, no background image, or `height: "image"` without the image's size. The message says which.
+- **Ignored column widths.** A section's `columnWidths` is ignored and the layout's split renders: the list length differs from the column count, or a share is not a finite number above 0. The message says which.
 - **Background images Outlook can't layer.** Outlook on Windows paints a wrapper's background color over its section's background image, and can't layer a wrapper image and a section image. These two rules are compatibility warnings rather than corruption checks: every other client renders these combinations correctly.
 
 These rules are deterministic and locale-agnostic — they fire on JSON shapes, not phrases. Only the message text needs translating.
@@ -18570,7 +18604,7 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 
 Source: https://docs.templatical.com/quality/structure/rule-catalog
 
-The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
+The 9 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
 
 ## Tree integrity
 
@@ -18592,6 +18626,7 @@ The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 | `structure.empty-section` | warning | yes | A section has no columns, or every column is empty. Renders as a blank table row in most clients — wasted whitespace and an occasional visible padding gap. Auto-fix removes the section. |
 | `structure.empty-column` | warning | — | A multi-column section has at least one column with no blocks. Renders awkwardly (uneven gaps, collapsed columns on mobile) and almost always means the author intended fewer columns. No auto-fix because the right answer (merge into a sibling vs. drop the section vs. change the `columns` layout) depends on intent. |
 | `structure.hero-not-applied` | warning | — | A section has `hero` set but renders as a regular section: it has more than one column, no background image, or `height: "image"` without the image's size (a merge-tag URL, or an image added outside the editor). The message names which. Switch to one column, add the image, set a fixed height, or give the image its `naturalWidth` and `naturalHeight`. |
+| `structure.column-widths-ignored` | warning | — | A section's `columnWidths` is ignored and the layout's split renders. `count`: the list length differs from the column count. `value`: a share is not a finite number above 0. The message names which. Give one positive number per column, or remove the widths. |
 
 ## Email client compatibility
 

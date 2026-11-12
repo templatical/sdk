@@ -88,17 +88,6 @@ export interface ModuleContext {
    */
   textColor?: string;
   /**
-   * Padding a snapped column gives back, and the column padding folded onto
-   * the module. Set on every column of a snapped row. Image, lone-icon and
-   * divider rooms include padding that comes back and exclude column padding
-   * the module keeps.
-   */
-  paddingReturn?: {
-    deficit: number;
-    sides: Array<"left" | "right">;
-    columnPadding: Pick<SpacingValue, "left" | "right">;
-  };
-  /**
    * A blank paragraph module becomes a spacer. A translation sets this to
    * false so its content stays a paragraph and can be stored in `l10n`.
    */
@@ -716,50 +705,16 @@ function makeStyles(descriptor: BeeFreeeModuleDescriptor): Block["styles"] {
 }
 
 /**
- * Pixels taken from `padding` on `sides`, at most `deficit`, in that order.
- * Nothing is taken past 0.
- */
-function paddingReturned(
-  padding: Pick<SpacingValue, "left" | "right">,
-  deficit: number,
-  sides: Array<"left" | "right">,
-): number {
-  let returned = 0;
-  let remaining = deficit;
-  for (const side of sides) {
-    if (remaining <= 0) break;
-    const have = padding[side];
-    if (have <= 0) continue;
-    const give = Math.min(remaining, have);
-    returned += give;
-    remaining -= give;
-  }
-  return returned;
-}
-
-/**
  * The room an image, a lone icon or a divider is measured in: the column
- * less the side padding the block keeps. A snapped column gives inner
- * padding back after the width is chosen. Those pixels are part of the room.
- * Column padding the block keeps, on either side, is not, whether or not any
- * padding comes back.
+ * less the block's own left and right padding. Column padding is folded onto
+ * the block after this measurement, so it is not subtracted here.
  */
 function measuredRoom(
   columnWidth: number | undefined,
   padding: SpacingValue,
-  giveBack: ModuleContext["paddingReturn"],
 ): number | undefined {
   if (columnWidth === undefined) return undefined;
-  const room = columnWidth - padding.left - padding.right;
-  if (!giveBack) return room;
-  const folded = {
-    left: padding.left + giveBack.columnPadding.left,
-    right: padding.right + giveBack.columnPadding.right,
-  };
-  const returned = paddingReturned(folded, giveBack.deficit, giveBack.sides);
-  return (
-    room - giveBack.columnPadding.left - giveBack.columnPadding.right + returned
-  );
+  return columnWidth - padding.left - padding.right;
 }
 
 interface StyleDecl {
@@ -1988,7 +1943,6 @@ function shownWidth(
 function convertImage(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
 ): { block: Block; notes: string[] } {
   const image = descriptor.image;
   const styles = makeStyles(descriptor);
@@ -1996,7 +1950,7 @@ function convertImage(
     return { block: createImageBlock({ styles }), notes: [] };
   }
 
-  const room = measuredRoom(columnWidth, styles.padding, paddingReturn);
+  const room = measuredRoom(columnWidth, styles.padding);
   const { width, note } = resolveImageWidth(descriptor, room);
 
   // `image.width` × `image.height` is the file, so the height is never carried
@@ -2445,7 +2399,6 @@ function resolveDividerWidth(
 function convertDivider(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
 ): { block: Block; notes: string[] } {
   const style = descriptor.divider?.style ?? {};
   const border = parseBorderTop(style["border-top"]);
@@ -2455,7 +2408,7 @@ function convertDivider(
   // MJML draws a full divider across its column less the divider's own
   // padding, so a px width that reaches that renders the same as "full", and
   // "full" keeps narrowing with the column on a phone.
-  const contentWidth = measuredRoom(columnWidth, styles.padding, paddingReturn);
+  const contentWidth = measuredRoom(columnWidth, styles.padding);
   const width = resolveDividerWidth(style.width, contentWidth, notes);
 
   const align = dividerAlign(descriptor);
@@ -3004,7 +2957,6 @@ function iconSize(
 function convertSingleIcon(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
 ): Block | undefined {
   const items = iconItems(descriptor);
   if (items.length !== 1) return undefined;
@@ -3022,7 +2974,7 @@ function convertSingleIcon(
     bottom: styles.padding.bottom + spacing.bottom,
     left: styles.padding.left + spacing.left,
   };
-  const room = measuredRoom(columnWidth, padding, paddingReturn);
+  const room = measuredRoom(columnWidth, padding);
 
   return createImageBlock({
     src,
@@ -3170,14 +3122,13 @@ function safeIconItems(
 function convertIcons(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
   warnings: string[],
 ): { block: Block; rebuilt: boolean } {
   const safe = {
     ...descriptor,
     iconsList: { icons: safeIconItems(descriptor, warnings) },
   };
-  const single = convertSingleIcon(safe, columnWidth, paddingReturn);
+  const single = convertSingleIcon(safe, columnWidth);
   if (single) return { block: single, rebuilt: false };
   return {
     block: createHtmlBlock({
@@ -3216,7 +3167,6 @@ function resolveVideoWidth(
 function convertVideo(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
   warnings: string[],
 ): { block: Block; notes: string[] } {
   const video = descriptor.video;
@@ -3232,7 +3182,7 @@ function convertVideo(
   const thumbnailUrl = playsInPlace
     ? ""
     : decodeEntitiesInTokens(video.thumbSrc || "");
-  const room = measuredRoom(columnWidth, styles.padding, paddingReturn);
+  const room = measuredRoom(columnWidth, styles.padding);
   const { width, note } = resolveVideoWidth(descriptor, room);
   const notes = note ? [note] : [];
   if (playsInPlace) {
@@ -3606,11 +3556,7 @@ function convertModuleBase(
       break;
     }
     case "image": {
-      const result = convertImage(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-      );
+      const result = convertImage(descriptor, context.columnWidth);
       block = result.block;
       notes = result.notes;
       isApproximation = notes.length > 0;
@@ -3632,11 +3578,7 @@ function convertModuleBase(
         ];
         break;
       }
-      const result = convertDivider(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-      );
+      const result = convertDivider(descriptor, context.columnWidth);
       block = result.block;
       notes = result.notes;
       isApproximation = notes.length > 0;
@@ -3646,12 +3588,7 @@ function convertModuleBase(
       block = convertSpacer(descriptor);
       break;
     case "icons": {
-      const result = convertIcons(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-        warnings,
-      );
+      const result = convertIcons(descriptor, context.columnWidth, warnings);
       if (result.rebuilt) {
         return {
           block: result.block,
@@ -3678,12 +3615,7 @@ function convertModuleBase(
       break;
     }
     case "video": {
-      const result = convertVideo(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-        warnings,
-      );
+      const result = convertVideo(descriptor, context.columnWidth, warnings);
       block = result.block;
       notes = result.notes;
       isApproximation = notes.length > 0;

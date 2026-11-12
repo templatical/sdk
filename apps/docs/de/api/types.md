@@ -314,6 +314,8 @@ interface SectionBlock extends BaseBlock {
   border?: BorderValue;
   backgroundImage?: BackgroundImage;
   hero?: SectionHero;
+  /** Anteil jeder Spalte an der Sektion in Prozent, eine Zahl pro Spalte von `columns`. Die Werte werden so skaliert, dass sie 100 ergeben, also bedeutet `[1, 1, 2]` 25 / 25 / 50. Überschreibt die Aufteilung des Presets; `columns` setzt weiter die Spaltenzahl. Wird ignoriert, wenn die Länge von dieser Zahl abweicht oder ein Wert keine endliche Zahl über 0 ist: die Aufteilung des Presets wird dargestellt, und `structure.column-widths-ignored` nennt den Grund. Fehlt das Feld, gilt die Aufteilung des Presets. */
+  columnWidths?: number[];
   wrapper?: SectionWrapper;
 }
 
@@ -359,6 +361,19 @@ function parsePercentWidth(value: unknown): number | null;
 
 /** Zwei Dezimalstellen. `0.145` ist `0.15` und `1.005` ist `1.01`. */
 function roundHundredths(value: number): number;
+
+/** Preset-Anteile der Spalten in Prozent. `"3"` ist `[33.33, 33.33, 33.34]`, `"1-2"` ist `[33.33, 66.67]`, `"2-1"` ist `[66.67, 33.33]`. */
+const COLUMN_LAYOUT_PERCENTS: Readonly<Record<ColumnLayout, readonly number[]>>;
+
+/** `"count"`, wenn `columnWidths.length` von der Spaltenzahl des Layouts abweicht, `"value"`, wenn ein Anteil keine endliche Zahl über 0 ist, `null`, wenn `columnWidths` fehlt oder verwendbar ist. */
+function columnWidthsIssue(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): 'count' | 'value' | null;
+
+/** Die Preset-Zeile, wenn es keine verwendbare Überschreibung gibt. Sonst die Anteile auf 100 in Hundertsteln skaliert: jede Spalte ist mindestens 0.01, übrige Hundertstel gehen an die größten Nachkommareste, und bei Gleichstand erhält die frühere Spalte das Hundertstel. Ein unbekanntes Layout ist `[100]`. */
+function sectionColumnPercents(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): number[];
 
 interface DividerBlock extends BaseBlock {
   type: 'divider';

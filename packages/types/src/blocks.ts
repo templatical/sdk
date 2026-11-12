@@ -259,6 +259,16 @@ export interface SectionBlock extends BaseBlock {
    * image size.
    */
   hero?: SectionHero;
+  /**
+   * Each column's share of the section as a percentage, one number per
+   * column of `columns`. Values are scaled so they total 100, so `[1, 1, 2]`
+   * means 25 / 25 / 50. It overrides the preset's split, and `columns` still
+   * sets the column count. It is ignored (the preset's split renders, and
+   * the `structure` linter reports `structure.column-widths-ignored`) when
+   * its length differs from the layout's column count, or when a value is
+   * not a finite number above 0. Absent keeps the preset's split.
+   */
+  columnWidths?: number[];
   /** Optional outer frame (rendered as an `mj-wrapper` around the section). */
   wrapper?: SectionWrapper;
 }

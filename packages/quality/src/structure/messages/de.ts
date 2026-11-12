@@ -53,6 +53,17 @@ const de: typeof en = {
     suggestion:
       "Gib ihr eine feste Höhe oder trage die Größe der Bilddatei ein.",
   },
+  "structure.column-widths-ignored.count": {
+    message:
+      "Diese Spaltenbreiten passen nicht zur Spaltenzahl der Sektion, deshalb gilt die Aufteilung des Layouts.",
+    suggestion: "Gib eine Breite pro Spalte an oder entferne die Breiten.",
+  },
+  "structure.column-widths-ignored.value": {
+    message:
+      "Diese Spaltenbreiten enthalten einen Wert, der keine endliche Zahl über 0 ist, deshalb gilt die Aufteilung des Layouts.",
+    suggestion:
+      "Verwende für jede Spalte eine positive Zahl oder entferne die Breiten.",
+  },
 };
 
 export default de;

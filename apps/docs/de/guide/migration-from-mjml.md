@@ -100,7 +100,7 @@ for (const entry of report.entries) {
     console.warn(`<${entry.sourceTag}> approximiert:`, entry.note);
   }
 }
-// <mj-section> approximiert: Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2".
+// <mj-section> approximiert: Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.
 ```
 
 Ein `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — ein Diff von `report.entries` zwischen zwei Durchläufen zeigt so genau, was eine Migration verändert hat.
@@ -144,7 +144,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 
 | MJML-Tag | Templatical-Block | Hinweise |
 |---|---|---|
-| `mj-section` (mit `mj-column`s) | `SectionBlock` mit `columns` | Mehrspaltige Layouts funktionieren gleich; Spaltenbreiten kommen aus MJMLs `width`-Attribut oder werden gleichmäßig verteilt. Ebenso `border-radius` und `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). `background-url` mit Größe, Position und Wiederholung wird zu `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
+| `mj-section` (mit `mj-column`s) | `SectionBlock` mit `columns` | Eine Breite innerhalb von 2 Prozentpunkten eines Presets behält dieses Preset. Jedes andere Verhältnis von zwei bis vier Spalten setzt `columnWidths` auf dem gleichmäßigen Layout dieser Anzahl. Fünf oder mehr Spalten falten sich in `"4"`. Breiten kommen aus MJMLs `width`-Attribut oder werden gleichmäßig verteilt. Ebenso `border-radius` und `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). `background-url` mit Größe, Position und Wiederholung wird zu `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
 | `mj-column` | Section-Spalte | Eine Spalte hält eine Liste verschachtelter Blöcke. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. `align`, `color` und `font-size` eines Absatzes landen in seinem Markup: `text-align` auf jedem `<p>`, Farbe und Größe auf einem `<span>` darin (`ParagraphBlock` hat dafür keine Felder). Eine Ausrichtung an der Startkante (`left`, in einem RTL-Template `right`) und eine Größe von 14px entfallen. |
@@ -178,7 +178,7 @@ Eine px-`width` wird `"full"`, sobald sie den Platz des Bildes erreicht: seine S
 | px, unter `0` | begrenzt auf `0` | `approximated` |
 | jeder andere Wert | `"full"` | `approximated` |
 
-Die Linie reicht über ihre Spalte abzüglich des seitlichen Paddings der Spalte und ihres eigenen; so zeichnet `mj-divider` `100%`. Die Breite einer Spalte ist ihr Anteil an der `width` von `mj-body`, gemäß dem Spaltenlayout der Section.
+Die Linie reicht über ihre Spalte abzüglich des seitlichen Paddings der Spalte und ihres eigenen; so zeichnet `mj-divider` `100%`. Die Breite einer Spalte ist ihr Anteil an der `width` von `mj-body`: das Preset oder `columnWidths`, wenn die Sektion sie setzt.
 
 Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den MJML links oder rechts ausrichtet (`align`), ist `approximated`; seine `note` nennt die Ausrichtung.
 
@@ -231,7 +231,7 @@ Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende ab
 
 MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer ohne Näherungen bei Layout, Styling oder Anzeigebedingungen. Die einzige Lücke betrifft den Blocktyp: Ein `VideoBlock` und ein `HtmlBlock` rendern beide als reines MJML ohne Kennzeichnung ihrer Herkunft, sodass beim erneuten Import jeweils ein anderer Blocktyp entsteht (siehe unten). Handgeschriebenes MJML konvertiert für jedes Tag in der Mapping-Tabelle oben sauber; alles, was die Tabelle nicht abdeckt, landet als `HtmlBlock` mit dem ursprünglichen Markup. Innerhalb dessen, was die Tabelle abdeckt, sind einige Konvertierungen Näherungen statt exakter Treffer:
 
-- **Spalten-Geometrie** — Templatical unterstützt diese Spalten-Layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). MJML erlaubt beliebig viele Spalten in beliebigem Verhältnis, daher wird ein Verhältnis außerhalb dieser Layouts auf das nächstliegende Layout derselben Spaltenzahl aufgelöst, und der Inhalt einer fünften oder weiteren Spalte fließt in die vierte Spalte. Die `note` nennt die Obergrenze von vier Spalten nur bei diesem Überlauf.
+- **Spalten-Geometrie** — Templatical unterstützt diese Spalten-Layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Eine Breitenliste innerhalb von 2 Prozentpunkten eines Presets behält dieses Preset. Zwei, drei oder vier Spalten, die auf keines passen, behalten das gleichmäßige Layout dieser Anzahl und `columnWidths`, auf 100 skaliert, und die Zuordnung ist exakt, ohne Notiz. `25%` / `25%` / `50%` ist `columns: "3"` und `columnWidths: [25, 25, 50]`. `33.33%` / `66.67%` bleibt `"1-2"`. `49%` / `51%` bleibt `"2"`. Der Inhalt einer fünften oder weiteren Spalte fließt in die vierte Spalte. Die `note` nennt die Obergrenze von vier Spalten nur bei diesem Überlauf: `Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.`
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` an einem `mj-social-element` außerhalb dieser drei wird auf die nächstliegende aufgelöst.
 - **Überschriften-Ebenen** — ein `<h5>` oder `<h6>` innerhalb von `mj-text` wird auf Überschriften-Ebene 4 begrenzt, die höchste, die ein `TitleBlock` unterstützt.
 - **Divider-Breite und -Ausrichtung** — eine `width` an einem `mj-divider` außerhalb von 0–100 % oder unter 0px wird in den gültigen Bereich begrenzt, eine nicht lesbare wird zu `"full"`, und ein links oder rechts ausgerichteter Divider mit Teilbreite wird zentriert. Siehe [Divider-Breite](#divider-breite).

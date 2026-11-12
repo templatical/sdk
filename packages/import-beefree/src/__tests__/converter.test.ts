@@ -2506,7 +2506,7 @@ describe("convertBeeFreeTemplate", () => {
       expect(same.report.warnings).toEqual([]);
     });
 
-    it("maps an exact grid silently and names a snapped ratio once", () => {
+    it("keeps an exact grid as its preset and stores any other ratio as column widths", () => {
       const exact = sectionOf({
         columns: [
           { "grid-columns": 8, modules: [text()] },
@@ -2543,6 +2543,13 @@ describe("convertBeeFreeTemplate", () => {
           { "grid-columns": 3, modules: [text("<p>L</p>")] },
           { "grid-columns": 6, modules: [text("<p>M</p>")] },
           { "grid-columns": 3, modules: [text("<p>R</p>")] },
+        ],
+      });
+      const threeThreeSix = sectionOf({
+        columns: [
+          { "grid-columns": 3, modules: [text()] },
+          { "grid-columns": 3, modules: [text()] },
+          { "grid-columns": 6, modules: [text()] },
         ],
       });
       const sixFourTwo = sectionOf({
@@ -2589,52 +2596,57 @@ describe("convertBeeFreeTemplate", () => {
       });
 
       expect(exact.section.columns).toBe("2-1");
+      expect(exact.section.columnWidths).toBeUndefined();
       expect(ratioNotes(exact.report.warnings)).toEqual([]);
       expect(equal.section.columns).toBe("2");
+      expect(equal.section.columnWidths).toBeUndefined();
       expect(ratioNotes(equal.report.warnings)).toEqual([]);
       expect(thirds.section.columns).toBe("3");
+      expect(thirds.section.columnWidths).toBeUndefined();
       expect(ratioNotes(thirds.report.warnings)).toEqual([]);
       expect(threeNine.section.columns).toBe("1-3");
+      expect(threeNine.section.columnWidths).toBeUndefined();
       expect(threeNine.section.children).toHaveLength(2);
       expect(ratioNotes(threeNine.report.warnings)).toEqual([]);
       expect(nineThree.section.columns).toBe("3-1");
+      expect(nineThree.section.columnWidths).toBeUndefined();
       expect(nineThree.section.children).toHaveLength(2);
       expect(ratioNotes(nineThree.report.warnings)).toEqual([]);
       expect(threeSixThree.section.columns).toBe("1-2-1");
+      expect(threeSixThree.section.columnWidths).toBeUndefined();
       expect(threeSixThree.section.children).toHaveLength(3);
       expect(ratioNotes(threeSixThree.report.warnings)).toEqual([]);
       expect(fourEqual.section.columns).toBe("4");
+      expect(fourEqual.section.columnWidths).toBeUndefined();
       expect(fourEqual.section.children).toHaveLength(4);
       expect(
         fourEqual.section.children.map((column) => column[0].type),
       ).toEqual(["paragraph", "paragraph", "paragraph", "paragraph"]);
       expect(ratioNotes(fourEqual.report.warnings)).toEqual([]);
+      expect(threeThreeSix.section.columns).toBe("3");
+      expect(threeThreeSix.section.columnWidths).toEqual([25, 25, 50]);
+      expect(ratioNotes(threeThreeSix.report.warnings)).toEqual([]);
       expect(sixFourTwo.section.columns).toBe("3");
       expect(sixFourTwo.section.children).toHaveLength(3);
-      expect(ratioNotes(sixFourTwo.report.warnings)).toEqual([
-        'Column ratio 6-4-2 was mapped to the nearest layout "3".',
-      ]);
+      expect(sixFourTwo.section.columnWidths).toEqual([50, 33.33, 16.67]);
+      expect(ratioNotes(sixFourTwo.report.warnings)).toEqual([]);
       expect(fourThreeFive.section.columns).toBe("3");
-      expect(ratioNotes(fourThreeFive.report.warnings)).toEqual([
-        'Column ratio 4-3-5 was mapped to the nearest layout "3".',
-      ]);
+      expect(fourThreeFive.section.columnWidths).toEqual([33.33, 25, 41.67]);
+      expect(ratioNotes(fourThreeFive.report.warnings)).toEqual([]);
       expect(sevenFive.section.columns).toBe("2");
-      expect(ratioNotes(sevenFive.report.warnings)).toEqual([
-        'Column ratio 7-5 was mapped to the nearest layout "2".',
-      ]);
+      expect(sevenFive.section.columnWidths).toEqual([58.33, 41.67]);
+      expect(ratioNotes(sevenFive.report.warnings)).toEqual([]);
       expect(fiveSeven.section.columns).toBe("2");
       expect(fiveSeven.section.children).toHaveLength(2);
-      expect(ratioNotes(fiveSeven.report.warnings)).toEqual([
-        'Column ratio 5-7 was mapped to the nearest layout "2".',
-      ]);
-      expect(unevenThree.section.columns).toBe("1-2-1");
+      expect(fiveSeven.section.columnWidths).toEqual([41.67, 58.33]);
+      expect(ratioNotes(fiveSeven.report.warnings)).toEqual([]);
+      expect(unevenThree.section.columns).toBe("3");
       expect(unevenThree.section.children).toHaveLength(3);
-      expect(ratioNotes(unevenThree.report.warnings)).toEqual([
-        'Column ratio 2-8-2 was mapped to the nearest layout "1-2-1".',
-      ]);
+      expect(unevenThree.section.columnWidths).toEqual([16.67, 66.67, 16.66]);
+      expect(ratioNotes(unevenThree.report.warnings)).toEqual([]);
     });
 
-    it("returns inner padding when a snap narrows a column", () => {
+    it("adds column padding to the module and leaves that sum in place", () => {
       const padding = (left: string, right: string) => ({
         "padding-top": "10px",
         "padding-right": right,
@@ -2663,14 +2675,12 @@ describe("convertBeeFreeTemplate", () => {
         ],
       });
 
-      // 7/12 of 600 is 350 and the even column is 300, so the left side is
-      // 50px short. Its inner padding is the right side (15px) and that
-      // goes to 0; the outer 50px stays. The right column is wider than
-      // its 250px source, so its padding is unchanged.
+      // 7/5 is 58.33% / 41.67%. Column padding and module padding add.
       expect(section.columns).toBe("2");
+      expect(section.columnWidths).toEqual([58.33, 41.67]);
       expect(section.children[0][0].styles.padding).toEqual({
         top: 20,
-        right: 0,
+        right: 15,
         bottom: 20,
         left: 50,
       });
@@ -2682,17 +2692,16 @@ describe("convertBeeFreeTemplate", () => {
       });
     });
 
-    // 7/12 of 600 is 350 and the even column is 300, so 50px comes back from
-    // the left column's right padding. 60px there becomes 10px. The room
-    // before that return is 240px, and after it is 290px.
-    describe("widths after inner padding comes back", () => {
+    // 58.33% of 600 floors to 349. The module's 60px right padding stays,
+    // so the room is 289px.
+    describe("widths in a custom column", () => {
       const padding = {
         "padding-top": "0px",
         "padding-right": "60px",
         "padding-bottom": "0px",
         "padding-left": "0px",
       };
-      const returned = { top: 0, right: 10, bottom: 0, left: 0 };
+      const kept = { top: 0, right: 60, bottom: 0, left: 0 };
 
       function snapped(
         module: BeeFreeeRow["columns"][number]["modules"][number],
@@ -2730,10 +2739,10 @@ describe("convertBeeFreeTemplate", () => {
         if (block.type !== "image") throw new Error("expected an image");
         expect(block.width).toBe(240);
         expect(block.naturalWidth).toBe(999);
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      it("keeps a source width that only overflowed the column before padding came back", () => {
+      it("keeps a 260px image inside the 289px room", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-image",
           descriptor: {
@@ -2751,10 +2760,10 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("image");
         if (block.type !== "image") throw new Error("expected an image");
         expect(block.width).toBe(260);
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      it("still returns padding on an image that does not fill the column", () => {
+      it("keeps a narrower image at its px width and keeps its padding", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-image",
           descriptor: {
@@ -2767,10 +2776,10 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("image");
         if (block.type !== "image") throw new Error("expected an image");
         expect(block.width).toBe(200);
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      it("stays full when the shown width fills the column after padding comes back", () => {
+      it("is full when the shown width fills the 289px room", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-image",
           descriptor: {
@@ -2783,11 +2792,11 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("image");
         if (block.type !== "image") throw new Error("expected an image");
         expect(block.width).toBe("full");
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
         expect(block.fluidOnMobile).toBe(false);
       });
 
-      it("converts an image percentage against the room after padding comes back", () => {
+      it("converts an image percentage against the 289px room", () => {
         const { section, report } = snapped({
           type: "mailup-bee-newsletter-modules-image",
           descriptor: {
@@ -2801,7 +2810,7 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("image");
         if (block.type !== "image") throw new Error("expected an image");
         expect(block.width).toBe(145);
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
         expect(report.entries[0]).toMatchObject({
           status: "approximated",
           note: "Image width 50% was converted to 145px.",
@@ -2831,7 +2840,7 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("image");
         if (block.type !== "image") throw new Error("expected an image");
         expect(block.width).toBe(240);
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
       it("keeps a px divider at the width the source shows", () => {
@@ -2848,10 +2857,10 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("divider");
         if (block.type !== "divider") throw new Error("expected a divider");
         expect(block.width).toBe(240);
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      it("keeps a percentage divider as that share and still returns padding", () => {
+      it("keeps a percentage divider as that share and keeps its padding", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-divider",
           descriptor: {
@@ -2865,10 +2874,10 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("divider");
         if (block.type !== "divider") throw new Error("expected a divider");
         expect(block.width).toBe("50%");
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      it("keeps a full button as full and still returns padding", () => {
+      it("keeps a full button as full and keeps its padding", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-button",
           descriptor: {
@@ -2884,10 +2893,10 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("button");
         if (block.type !== "button") throw new Error("expected a button");
         expect(block.width).toBe("full");
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      it("measures a video's px width in the returned room and still returns padding", () => {
+      it("measures a video's px width in the 289px room and keeps its padding", () => {
         const narrow = leftBlock({
           type: "mailup-bee-newsletter-modules-video",
           descriptor: {
@@ -2916,14 +2925,14 @@ describe("convertBeeFreeTemplate", () => {
         if (narrow.type !== "video" || wide.type !== "video") {
           throw new Error("expected video blocks");
         }
-        // The room after the return is 290px: 240px stays, 500px fills it.
+        // 349px column less 60px of padding is 289px: 240px stays, 500px fills it.
         expect(narrow.width).toBe(240);
         expect(wide.width).toBe("full");
-        expect(narrow.styles.padding).toEqual(returned);
-        expect(wide.styles.padding).toEqual(returned);
+        expect(narrow.styles.padding).toEqual(kept);
+        expect(wide.styles.padding).toEqual(kept);
       });
 
-      it("keeps a social row's icon size and still returns padding", () => {
+      it("keeps a social row's icon size and keeps its padding", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-social",
           descriptor: {
@@ -2943,10 +2952,10 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("social");
         if (block.type !== "social") throw new Error("expected a social block");
         expect(block.iconSize).toBe("medium");
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      it("returns padding on a menu", () => {
+      it("keeps a menu's padding", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-menu",
           descriptor: {
@@ -2959,13 +2968,12 @@ describe("convertBeeFreeTemplate", () => {
 
         expect(block.type).toBe("menu");
         if (block.type !== "menu") throw new Error("expected a menu");
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
 
-      // 7/12 of 600 is 350 and the even column is 300. The facing edge has no
-      // padding, so none of the 50px shortfall comes back. 20px on the outer
-      // edge stays, and the image is measured in the 280px that remain.
-      describe("outer column padding that is not given back", () => {
+      // Column padding is folded onto the module after the image is measured,
+      // so the room is the column width. 58.33% of 600 floors to 349.
+      describe("column padding folded after the image is measured", () => {
         function photo(shown: string) {
           return {
             type: "mailup-bee-newsletter-modules-image",
@@ -2987,7 +2995,7 @@ describe("convertBeeFreeTemplate", () => {
           return block;
         }
 
-        it("measures a first column against the outer padding it keeps", () => {
+        it("measures a first column at 349px and folds its outer padding on", () => {
           const row = (shown: string) =>
             sectionOf({
               columns: [
@@ -3000,20 +3008,20 @@ describe("convertBeeFreeTemplate", () => {
               ],
             }).section.children[0][0];
 
-          const fills = imageBlock(row("280px"));
-          const wider = imageBlock(row("290px"));
-          const short = imageBlock(row("279px"));
+          const fills = imageBlock(row("349px"));
+          const wider = imageBlock(row("350px"));
+          const short = imageBlock(row("348px"));
           const kept = { top: 0, right: 0, bottom: 0, left: 20 };
 
           expect(fills.width).toBe("full");
           expect(fills.styles.padding).toEqual(kept);
           expect(wider.width).toBe("full");
           expect(wider.styles.padding).toEqual(kept);
-          expect(short.width).toBe(279);
+          expect(short.width).toBe(348);
           expect(short.styles.padding).toEqual(kept);
         });
 
-        it("measures a second column against the outer padding it keeps", () => {
+        it("measures a second column at 349px and folds its outer padding on", () => {
           const row = (shown: string) =>
             sectionOf({
               columns: [
@@ -3026,19 +3034,18 @@ describe("convertBeeFreeTemplate", () => {
               ],
             }).section.children[1][0];
 
-          const fills = imageBlock(row("280px"));
-          const short = imageBlock(row("279px"));
+          const fills = imageBlock(row("349px"));
+          const short = imageBlock(row("348px"));
           const kept = { top: 0, right: 20, bottom: 0, left: 0 };
 
           expect(fills.width).toBe("full");
           expect(fills.styles.padding).toEqual(kept);
-          expect(short.width).toBe(279);
+          expect(short.width).toBe(348);
           expect(short.styles.padding).toEqual(kept);
         });
 
-        it("measures padding kept on both sides when none of it comes back", () => {
-          // The right column of a 7-5 row is wider than its 250px share, so
-          // none of its padding comes back. 10px on each side leaves 280px.
+        it("measures the 250px column and folds padding on both sides", () => {
+          // 41.67% of 600 floors to 250. Column padding is not part of that room.
           const row = (shown: string) =>
             sectionOf({
               columns: [
@@ -3051,18 +3058,18 @@ describe("convertBeeFreeTemplate", () => {
               ],
             }).section.children[1][0];
 
-          const fills = imageBlock(row("280px"));
-          const short = imageBlock(row("279px"));
+          const fills = imageBlock(row("250px"));
+          const short = imageBlock(row("249px"));
           const kept = { top: 0, right: 10, bottom: 0, left: 10 };
 
           expect(fills.width).toBe("full");
           expect(fills.styles.padding).toEqual(kept);
-          expect(short.width).toBe(279);
+          expect(short.width).toBe(249);
           expect(short.styles.padding).toEqual(kept);
         });
       });
 
-      it("returns padding on an HTML block and leaves its markup", () => {
+      it("keeps an HTML block's padding and leaves its markup", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-html",
           descriptor: {
@@ -3076,7 +3083,7 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.content).toBe(
           '<div style="text-align:center" align="center"><p>Hi</p></div>',
         );
-        expect(block.styles.padding).toEqual(returned);
+        expect(block.styles.padding).toEqual(kept);
       });
     });
 
@@ -3089,10 +3096,9 @@ describe("convertBeeFreeTemplate", () => {
       });
 
       expect(section.columns).toBe("2");
+      expect(section.columnWidths).toBeUndefined();
       expect(section.children).toHaveLength(2);
-      expect(ratioNotes(report.warnings)).toEqual([
-        'Column ratio 0-0 was mapped to the nearest layout "2".',
-      ]);
+      expect(ratioNotes(report.warnings)).toEqual([]);
     });
 
     it("keeps a zero-sum three-column row on the even layout", () => {
@@ -3107,15 +3113,14 @@ describe("convertBeeFreeTemplate", () => {
       });
 
       expect(section.columns).toBe("3");
+      expect(section.columnWidths).toBeUndefined();
       expect(section.children).toHaveLength(3);
       expect(
         section.children.map((column) =>
           column[0].type === "paragraph" ? column[0].content : column[0].type,
         ),
       ).toEqual(["<p>L</p>", "<p>M</p>", "<p>R</p>"]);
-      expect(ratioNotes(report.warnings)).toEqual([
-        'Column ratio 0-1--1 was mapped to the nearest layout "3".',
-      ]);
+      expect(ratioNotes(report.warnings)).toEqual([]);
     });
 
     it("flattens five columns and names the four-column limit", () => {
@@ -3138,7 +3143,7 @@ describe("convertBeeFreeTemplate", () => {
       ]);
     });
 
-    it("names an unequal four-column row snapped onto 4", () => {
+    it("stores an unequal four-column row as column widths", () => {
       const { section, report } = sectionOf({
         columns: [6, 2, 2, 2].map((grid) => ({
           "grid-columns": grid,
@@ -3148,9 +3153,58 @@ describe("convertBeeFreeTemplate", () => {
 
       expect(section.columns).toBe("4");
       expect(section.children).toHaveLength(4);
-      expect(ratioNotes(report.warnings)).toEqual([
-        'Column ratio 6-2-2-2 was mapped to the nearest layout "4".',
-      ]);
+      expect(section.columnWidths).toEqual([50, 16.67, 16.67, 16.66]);
+      expect(ratioNotes(report.warnings)).toEqual([]);
+    });
+
+    it("sizes an image in the 2-unit column from 16.67% of the row", () => {
+      const image = (shown: string) => ({
+        type: "mailup-bee-newsletter-modules-image",
+        descriptor: {
+          image: { src: "https://example.com/photo.png", alt: "Photo" },
+          computedStyle: { class: "center fixedwidth", width: shown },
+        },
+      });
+      const row = (shown: string) =>
+        sectionOf({
+          columns: [
+            { "grid-columns": 6, modules: [text()] },
+            { "grid-columns": 4, modules: [text()] },
+            { "grid-columns": 2, modules: [image(shown)] },
+          ],
+        });
+      const fills = row("100px");
+      const short = row("99px");
+      const full = fills.section.children[2][0];
+      const narrow = short.section.children[2][0];
+
+      expect(fills.section.columns).toBe("3");
+      expect(fills.section.columnWidths).toEqual([50, 33.33, 16.67]);
+      expect(full.type).toBe("image");
+      expect(narrow.type).toBe("image");
+      if (full.type !== "image" || narrow.type !== "image") {
+        throw new Error("expected images");
+      }
+      expect(full.width).toBe("full");
+      expect(full.fluidOnMobile).toBe(false);
+      expect(narrow.width).toBe(99);
+      expect(narrow.fluidOnMobile).toBeUndefined();
+    });
+
+    it("keeps stackOnMobile false on a row with custom column widths", () => {
+      const { section, report } = sectionOf({
+        content: { computedStyle: { rowColStackOnMobile: false } },
+        columns: [
+          { "grid-columns": 3, modules: [text()] },
+          { "grid-columns": 3, modules: [text()] },
+          { "grid-columns": 6, modules: [text()] },
+        ],
+      });
+
+      expect(section.columns).toBe("3");
+      expect(section.columnWidths).toEqual([25, 25, 50]);
+      expect(section.stackOnMobile).toBe(false);
+      expect(report.warnings).toEqual([]);
     });
 
     it("maps a row border onto the section and keeps a column border when both paint", () => {

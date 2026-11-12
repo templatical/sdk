@@ -47,6 +47,16 @@ const en = {
       "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one.",
     suggestion: "Give it a fixed height, or set the image file's size.",
   },
+  "structure.column-widths-ignored.count": {
+    message:
+      "These column widths don't match the section's column count, so the layout's split is used.",
+    suggestion: "Give one width per column, or remove the widths.",
+  },
+  "structure.column-widths-ignored.value": {
+    message:
+      "These column widths include a value that isn't a finite number above 0, so the layout's split is used.",
+    suggestion: "Use a positive number for each column, or remove the widths.",
+  },
 };
 
 export default en;

@@ -8,6 +8,7 @@ import {
 import { duplicateBlockId } from "./rules/duplicate-block-id";
 import { emptyColumn } from "./rules/empty-column";
 import { emptySection } from "./rules/empty-section";
+import { columnWidthsIgnored } from "./rules/column-widths-ignored";
 import { heroNotApplied } from "./rules/hero-not-applied";
 import { nestedBackgroundImage } from "./rules/nested-background-image";
 import { nestedSection } from "./rules/nested-section";
@@ -23,6 +24,7 @@ export const STRUCTURE_RULES: Rule[] = [
   wrapperColorOverBackgroundImage,
   nestedBackgroundImage,
   heroNotApplied,
+  columnWidthsIgnored,
 ];
 
 export function lintStructure(

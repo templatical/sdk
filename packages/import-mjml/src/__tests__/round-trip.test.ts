@@ -403,6 +403,42 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(JSON.stringify(report)).not.toContain("tpl-button-full");
   });
 
+  it("round-trips a 50 / 33.33 / 16.67 section, stacking and grouped", async () => {
+    const settings = { ...buildFixtureTemplate().settings, width: 600 };
+    const section = (stackOnMobile: false | undefined) =>
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [50, 33.33, 16.67],
+        children: [[], [], []],
+        ...(stackOnMobile === false ? { stackOnMobile } : {}),
+      });
+
+    for (const stackOnMobile of [undefined, false] as const) {
+      const original: TemplateContent = {
+        blocks: [section(stackOnMobile)],
+        settings,
+      };
+      const mjml = await renderToMjml(original);
+      expect(mjml).toContain('width="50%"');
+      expect(mjml).toContain('width="33.33%"');
+      expect(mjml).toContain('width="16.67%"');
+      if (stackOnMobile === false) expect(mjml).toContain("<mj-group>");
+
+      const { content, report } = convertMjmlTemplate(mjml);
+      expect(content.blocks[0]).toMatchObject({
+        type: "section",
+        columns: "3",
+        columnWidths: [50, 33.33, 16.67],
+        ...(stackOnMobile === false ? { stackOnMobile: false } : {}),
+      });
+      const entry = report.entries.find(
+        (item) => item.sourceTag === "mj-section",
+      );
+      expect(entry).toMatchObject({ status: "converted" });
+      expect(entry?.note).toBeUndefined();
+    }
+  });
+
   it("converts every element with no approximations at all", async () => {
     const mjml = await renderToMjml(buildFixtureTemplate());
     const { report } = convertMjmlTemplate(mjml);

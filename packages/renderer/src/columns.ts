@@ -1,67 +1,33 @@
-import type { ColumnLayout } from "@templatical/types";
+import { COLUMN_LAYOUT_PERCENTS, type ColumnLayout } from "@templatical/types";
 
 /**
  * Get width percentages for each column in a layout.
  */
 export function getWidthPercentages(layout: ColumnLayout): string[] {
-  switch (layout) {
-    case "2":
-      return ["50%", "50%"];
-    case "3":
-      // 33.33 × 3 = 99.99% — let the last column absorb the rounding gap
-      // so widths sum to exactly 100% in the compiled HTML.
-      return ["33.33%", "33.33%", "33.34%"];
-    case "4":
-      return ["25%", "25%", "25%", "25%"];
-    case "1-2":
-      return ["33.33%", "66.67%"];
-    case "2-1":
-      return ["66.67%", "33.33%"];
-    case "1-3":
-      return ["25%", "75%"];
-    case "3-1":
-      return ["75%", "25%"];
-    case "1-2-1":
-      return ["25%", "50%", "25%"];
-    default:
-      return ["100%"];
-  }
+  const percents = COLUMN_LAYOUT_PERCENTS[layout] ?? [100];
+  return percents.map((percent) => `${percent}%`);
 }
 
 /**
  * Get width in pixels for each column in a layout.
+ *
+ * `"3"`, `"1-2"` and `"2-1"` divide by 3. `33.33%` of the container is a
+ * different number, and a full-width image in those columns uses this width.
  */
 export function getWidthPixels(
   layout: ColumnLayout,
   containerWidth: number,
 ): number[] {
   switch (layout) {
-    case "2":
-      return [containerWidth * 0.5, containerWidth * 0.5];
     case "3":
       return [containerWidth / 3, containerWidth / 3, containerWidth / 3];
-    case "4":
-      return [
-        containerWidth * 0.25,
-        containerWidth * 0.25,
-        containerWidth * 0.25,
-        containerWidth * 0.25,
-      ];
     case "1-2":
       return [containerWidth / 3, (containerWidth * 2) / 3];
     case "2-1":
       return [(containerWidth * 2) / 3, containerWidth / 3];
-    case "1-3":
-      return [containerWidth * 0.25, containerWidth * 0.75];
-    case "3-1":
-      return [containerWidth * 0.75, containerWidth * 0.25];
-    case "1-2-1":
-      return [
-        containerWidth * 0.25,
-        containerWidth * 0.5,
-        containerWidth * 0.25,
-      ];
-    default:
-      return [containerWidth];
+    default: {
+      const percents = COLUMN_LAYOUT_PERCENTS[layout] ?? [100];
+      return percents.map((percent) => (containerWidth * percent) / 100);
+    }
   }
 }

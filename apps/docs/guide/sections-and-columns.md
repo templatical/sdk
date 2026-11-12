@@ -31,6 +31,24 @@ The `columns` property accepts one of these layout presets:
 type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
 
+## Custom column widths
+
+`columnWidths` overrides the preset's split. It is one number per column of `columns`. The shares are scaled to 100 in hundredths. Each column is floored, then raised to at least 0.01, and each leftover hundredth goes to the largest fractional remainder. A tie goes to the earlier column. `[1, 1, 2]` is 25% / 25% / 50%. `[1, 1, 1]` is 33.34% / 33.33% / 33.33%. `[6, 2, 2, 2]` is 50% / 16.67% / 16.67% / 16.66%. The row totals 100. `columns` still sets the column count. Preset rows stay the literals in `COLUMN_LAYOUT_PERCENTS`.
+
+```ts
+const row = createSectionBlock({
+  columns: '3',
+  columnWidths: [1, 1, 2],
+  children: [[], [], []],
+});
+```
+
+Absent `columnWidths` keeps the preset. The renderer writes each share on `mj-column` as `width`, for example `width="25%"`, `width="25%"` and `width="50%"`. `stackOnMobile: false` wraps those columns in `<mj-group>`, the same as a preset.
+
+`columnWidths` is ignored when its length differs from the layout's column count, or when a value is not a finite number above 0. The preset's split renders, and `structure.column-widths-ignored` names the reason, `count` or `value`.
+
+`COLUMN_LAYOUT_PERCENTS` is the preset table the renderer emits: `"1"` is `[100]`, `"2"` is `[50, 50]`, `"3"` is `[33.33, 33.33, 33.34]`, `"4"` is `[25, 25, 25, 25]`, `"1-2"` is `[33.33, 66.67]`, `"2-1"` is `[66.67, 33.33]`, `"1-3"` is `[25, 75]`, `"3-1"` is `[75, 25]`, `"1-2-1"` is `[25, 50, 25]`. `sectionColumnPercents` returns that row, or the scaled override. `columnWidthsIssue` returns `"count"`, `"value"` or `null`.
+
 ## Creating sections
 
 Use `createSectionBlock` from `@templatical/types`:

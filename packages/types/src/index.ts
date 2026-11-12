@@ -57,6 +57,11 @@ export {
   uniformBorder,
 } from "./blocks";
 export { parsePercentWidth, roundHundredths } from "./percent-width";
+export {
+  COLUMN_LAYOUT_PERCENTS,
+  columnWidthsIssue,
+  sectionColumnPercents,
+} from "./columns";
 
 // Background images (sections and wrapper bands)
 export type {

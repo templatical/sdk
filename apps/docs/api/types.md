@@ -314,6 +314,8 @@ interface SectionBlock extends BaseBlock {
   border?: BorderValue;
   backgroundImage?: BackgroundImage;
   hero?: SectionHero;
+  /** Each column's share of the section as a percentage, one number per column of `columns`. Values are scaled so they total 100, so `[1, 1, 2]` means 25 / 25 / 50. It overrides the preset's split, and `columns` still sets the column count. Ignored when its length differs from that count, or when a value is not a finite number above 0: the preset's split renders, and `structure.column-widths-ignored` names the reason. Absent keeps the preset's split. */
+  columnWidths?: number[];
   wrapper?: SectionWrapper;
 }
 
@@ -359,6 +361,19 @@ function parsePercentWidth(value: unknown): number | null;
 
 /** Two decimal places. `0.145` is `0.15` and `1.005` is `1.01`. */
 function roundHundredths(value: number): number;
+
+/** Preset column shares, in percent. `"3"` is `[33.33, 33.33, 33.34]`, `"1-2"` is `[33.33, 66.67]`, `"2-1"` is `[66.67, 33.33]`. */
+const COLUMN_LAYOUT_PERCENTS: Readonly<Record<ColumnLayout, readonly number[]>>;
+
+/** `"count"` when `columnWidths.length` differs from the layout's column count, `"value"` when a share is not a finite number above 0, `null` when `columnWidths` is absent or usable. */
+function columnWidthsIssue(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): 'count' | 'value' | null;
+
+/** The preset row when there is no usable override. Otherwise the shares scaled to 100 in hundredths: each column is at least 0.01, leftover hundredths go to the largest fractional remainders, and a tie goes to the earlier column. An unknown layout is `[100]`. */
+function sectionColumnPercents(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): number[];
 
 interface DividerBlock extends BaseBlock {
   type: 'divider';

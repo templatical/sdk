@@ -1,6 +1,13 @@
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
-import { createSectionBlock, resolveHero } from "@templatical/types";
+import {
+  COLUMN_LAYOUT_PERCENTS,
+  columnWidthsIssue,
+  createSectionBlock,
+  getColumnCount,
+  resolveHero,
+  sectionColumnPercents,
+} from "@templatical/types";
 import type {
   Block,
   ColumnLayout,
@@ -35,32 +42,54 @@ import {
 import { planSiblings } from "./display-condition";
 import type { ImportReportEntry } from "./types";
 
-/** Reverse of `packages/renderer/src/columns.ts`, keyed by column count. */
-const LAYOUT_SHAPES: Array<{ layout: ColumnLayout; percents: number[] }> = [
-  { layout: "1", percents: [100] },
-  { layout: "2", percents: [50, 50] },
-  { layout: "1-2", percents: [33.33, 66.67] },
-  { layout: "2-1", percents: [66.67, 33.33] },
-  { layout: "1-3", percents: [25, 75] },
-  { layout: "3-1", percents: [75, 25] },
-  { layout: "3", percents: [33.33, 33.33, 33.34] },
-  { layout: "1-2-1", percents: [25, 50, 25] },
-  { layout: "4", percents: [25, 25, 25, 25] },
+/**
+ * Preset match order. The first shape within `WIDTH_TOLERANCE` wins, so this
+ * stays the order the importer has always tried.
+ */
+const LAYOUT_MATCH_ORDER: ColumnLayout[] = [
+  "1",
+  "2",
+  "1-2",
+  "2-1",
+  "1-3",
+  "3-1",
+  "3",
+  "1-2-1",
+  "4",
 ];
+
+const LAYOUT_SHAPES: Array<{
+  layout: ColumnLayout;
+  percents: readonly number[];
+}> = LAYOUT_MATCH_ORDER.map((layout) => ({
+  layout,
+  percents: COLUMN_LAYOUT_PERCENTS[layout],
+}));
 
 /** Percentage points of drift tolerated per column before a match is inexact. */
 const WIDTH_TOLERANCE = 2;
 
+function evenLayout(count: number): ColumnLayout {
+  if (count === 3) return "3";
+  if (count === 4) return "4";
+  return "2";
+}
+
 /**
- * Resolve MJML column widths to one of the layouts this importer emits.
+ * Resolve MJML column widths to a layout.
  *
- * `exact: false` means the caller must report `approximated` — MJML permits any
- * number of columns at any width and this importer emits nine layouts, so this is
- * the importer's main irreducible loss (§8.1).
+ * A width list that fits a preset within `WIDTH_TOLERANCE` keeps that preset.
+ * One column is always `"1"`: exact at 100%, and approximated otherwise.
+ * Two, three or four columns that fit none keep the even preset of that count
+ * plus `columnWidths` scaled to 100, and the match is exact. Shares that
+ * cannot be stored (a non-positive width) keep that even preset and are
+ * approximated. Five or more columns collapse to `"4"`; `exact: false` tells
+ * the caller to report it.
  */
 export function matchColumnLayout(percents: Array<number | null>): {
   layout: ColumnLayout;
   exact: boolean;
+  columnWidths?: number[];
 } {
   const count = percents.length;
   if (count === 0) return { layout: "1", exact: true };
@@ -74,6 +103,8 @@ export function matchColumnLayout(percents: Array<number | null>): {
     if (count === 4) return { layout: "4", exact: true };
     return { layout: "4", exact: false };
   }
+
+  if (count > 4) return { layout: "4", exact: false };
 
   // A partial mix of known and absent widths fills each absent column with
   // its share of what the known widths leave over, not an equal split of the
@@ -91,94 +122,25 @@ export function matchColumnLayout(percents: Array<number | null>): {
 
   for (const shape of sameCount) {
     const fits = shape.percents.every(
-      (want, i) => Math.abs(want - resolved[i]) <= WIDTH_TOLERANCE,
+      (want, i) => Math.abs(want - resolved[i]!) <= WIDTH_TOLERANCE,
     );
     if (fits) return { layout: shape.layout, exact: true };
   }
 
-  // Nearest same-count shape by total absolute error; if the count itself has
-  // no shape (5+), collapse to "4" and let the caller fold the overflow.
-  const candidates =
-    sameCount.length > 0
-      ? sameCount
-      : LAYOUT_SHAPES.filter((shape) => shape.layout === "4");
+  if (count === 1) return { layout: "1", exact: false };
 
-  let best = candidates[0];
-  let bestError = Infinity;
-  for (const shape of candidates) {
-    const error = shape.percents.reduce(
-      (sum, want, i) => sum + Math.abs(want - (resolved[i] ?? 0)),
-      0,
-    );
-    if (error < bestError) {
-      bestError = error;
-      best = shape;
-    }
+  const layout = evenLayout(count);
+  if (columnWidthsIssue({ columns: layout, columnWidths: resolved }) !== null) {
+    return { layout, exact: false };
   }
-
-  return { layout: best.layout, exact: false };
-}
-
-const COLUMN_COUNT: Record<ColumnLayout, number> = {
-  "1": 1,
-  "2": 2,
-  "3": 3,
-  "4": 4,
-  "2-1": 2,
-  "1-2": 2,
-  "3-1": 2,
-  "1-3": 2,
-  "1-2-1": 3,
-};
-
-/**
- * Column percentages per layout, exactly as `getWidthPercentages` in
- * `renderer/src/columns.ts` emits them. MJML sizes a column from the emitted
- * string, so 33.33% of 600 is 199, not a third.
- */
-const COLUMN_PERCENTS: Record<ColumnLayout, number[]> = {
-  "1": [100],
-  "2": [50, 50],
-  "3": [33.33, 33.33, 33.34],
-  "4": [25, 25, 25, 25],
-  "1-2": [33.33, 66.67],
-  "2-1": [66.67, 33.33],
-  "1-3": [25, 75],
-  "3-1": [75, 25],
-  "1-2-1": [25, 50, 25],
-};
-
-/** Column pixel widths per layout, mirroring `renderer/src/columns.ts`. */
-function columnPixels(layout: ColumnLayout, containerWidth: number): number[] {
-  switch (layout) {
-    case "2":
-      return [containerWidth * 0.5, containerWidth * 0.5];
-    case "3":
-      return [containerWidth / 3, containerWidth / 3, containerWidth / 3];
-    case "1-2":
-      return [containerWidth / 3, (containerWidth * 2) / 3];
-    case "2-1":
-      return [(containerWidth * 2) / 3, containerWidth / 3];
-    case "1-3":
-      return [containerWidth * 0.25, containerWidth * 0.75];
-    case "3-1":
-      return [containerWidth * 0.75, containerWidth * 0.25];
-    case "1-2-1":
-      return [
-        containerWidth * 0.25,
-        containerWidth * 0.5,
-        containerWidth * 0.25,
-      ];
-    case "4":
-      return [
-        containerWidth * 0.25,
-        containerWidth * 0.25,
-        containerWidth * 0.25,
-        containerWidth * 0.25,
-      ];
-    default:
-      return [containerWidth];
-  }
+  return {
+    layout,
+    exact: true,
+    columnWidths: sectionColumnPercents({
+      columns: layout,
+      columnWidths: resolved,
+    }),
+  };
 }
 
 /**
@@ -348,9 +310,13 @@ export function buildSection(
   const percents = rawWidths.map((width) =>
     columnWidthPercent(width, ctx.containerWidth),
   );
-  const { layout, exact } = matchColumnLayout(percents);
-  const slots = COLUMN_COUNT[layout];
-  const pixels = columnPixels(layout, ctx.containerWidth);
+  const matched = matchColumnLayout(percents);
+  const { layout, exact } = matched;
+  const slots = getColumnCount(layout);
+  const widthPercents = sectionColumnPercents({
+    columns: layout,
+    columnWidths: matched.columnWidths,
+  });
 
   // `entries` is the document-wide report the whole walk shares, not a
   // per-section array, so the section's own entry is pushed here — before its
@@ -397,9 +363,11 @@ export function buildSection(
     const { left, right } = parsePaddingShorthand(columnAttrs[index].padding);
     const columnCtx: ConvertContext = {
       ...ctx,
-      containerWidth: Math.round(pixels[slot] ?? ctx.containerWidth),
+      containerWidth: Math.round(
+        (ctx.containerWidth * (widthPercents[slot] ?? 100)) / 100,
+      ),
       contentWidth: Math.floor(
-        (sectionBox * COLUMN_PERCENTS[layout][slot]) / 100,
+        (sectionBox * (widthPercents[slot] ?? 100)) / 100,
       ),
       columnPadding: left + right,
     };
@@ -408,6 +376,7 @@ export function buildSection(
 
   const section = createSectionBlock({
     columns: layout,
+    ...(matched.columnWidths ? { columnWidths: matched.columnWidths } : {}),
     children,
     ...(grouped ? { stackOnMobile: false } : {}),
     ...(borderRadius ? { borderRadius } : {}),

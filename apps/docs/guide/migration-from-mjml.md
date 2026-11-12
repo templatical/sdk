@@ -100,7 +100,7 @@ for (const entry of report.entries) {
     console.warn(`<${entry.sourceTag}> approximated:`, entry.note);
   }
 }
-// <mj-section> approximated: Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2".
+// <mj-section> approximated: Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.
 ```
 
 A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed.
@@ -144,7 +144,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 
 | MJML tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). `background-url` with its size, position and repeat becomes `backgroundImage` (see [Background images](#background-images)). |
+| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | A width within 2 percentage points of a preset keeps that preset. Any other ratio of two to four columns sets `columnWidths` on the even layout of that count. Five or more columns fold into `"4"`. Widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). `background-url` with its size, position and repeat becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
@@ -178,7 +178,7 @@ A px `width` becomes `"full"` once it reaches the image's room: its column less 
 | px, below `0` | clamped to `0` | `approximated` |
 | any other value | `"full"` | `approximated` |
 
-The line can span its column less the column's side padding and the divider's own, which is how `mj-divider` draws `100%`. A column's width is its share of `mj-body`'s `width`, by the section's column layout.
+The line can span its column less the column's side padding and the divider's own, which is how `mj-divider` draws `100%`. A column's width is its share of `mj-body`'s `width`: the preset, or `columnWidths` when the section sets them.
 
 Templatical centres every divider. A partial-width divider that MJML aligns left or right (`align`) is `approximated`, and its `note` names the alignment.
 
@@ -231,7 +231,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the entry
 
 MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
 
-- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). MJML allows any number of columns at any width, so a ratio outside those layouts resolves to the nearest layout of the same column count, and a fifth or later column's content folds into the fourth column. The note names the four-column limit only on that overflow.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). A width list within 2 percentage points of a preset keeps that preset. Two, three or four columns that fit none keep the even layout of that count and `columnWidths` scaled to 100, and the match is exact, with no note. `25%` / `25%` / `50%` is `columns: "3"` and `columnWidths: [25, 25, 50]`. `33.33%` / `66.67%` stays `"1-2"`. `49%` / `51%` stays `"2"`. A fifth or later column's content folds into the fourth column. The note names the four-column limit only on that overflow: `Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.`
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).

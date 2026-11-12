@@ -132,6 +132,13 @@
           "$ref": "#/definitions/SectionHero",
           "description": "Draws a one-column section with a background image as an `mj-hero`: the image fills the box and the content sits on top. Ignored (the section renders as a regular one, and the `structure` linter says why) with more than one column, without an image, or with `height: \"image\"` and no image size."
         },
+        "columnWidths": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Each column's share of the section as a percentage, one number per column of `columns`. Values are scaled so they total 100, so `[1, 1, 2]` means 25 / 25 / 50. It overrides the preset's split, and `columns` still sets the column count. It is ignored (the preset's split renders, and the `structure` linter reports `structure.column-widths-ignored`) when its length differs from the layout's column count, or when a value is not a finite number above 0. Absent keeps the preset's split."
+        },
         "wrapper": {
           "$ref": "#/definitions/SectionWrapper",
           "description": "Optional outer frame (rendered as an `mj-wrapper` around the section)."
