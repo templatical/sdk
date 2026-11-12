@@ -21,6 +21,7 @@ import {
   MERGE_TAG_SAMPLE_MODE_KEY,
   PREVIEW_RESOLUTION_KEY,
   READ_ONLY_SURFACE_KEY,
+  SHOWS_RESOLVED_PREVIEW_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
   requireInject,
 } from "../keys";
@@ -129,6 +130,16 @@ provide(
       // failure path would contradict the note saying the *unresolved* template
       // is showing.
       !previewResolution?.isConfigured,
+  ),
+);
+// The `previewMode &&` guard again: the editing canvas never renders a
+// resolver's answer, so its tags always show as tags.
+provide(
+  SHOWS_RESOLVED_PREVIEW_KEY,
+  computed(
+    () =>
+      props.previewMode &&
+      (previewResolution?.isShowingResolved.value ?? false),
   ),
 );
 

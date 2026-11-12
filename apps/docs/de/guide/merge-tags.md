@@ -425,7 +425,7 @@ Die Ausgabe ist nicht betroffen: `toMjml()` / `toHtml()` ersetzen einen Tag-Knot
 :::
 
 ::: tip Einen `resolvePreview`-Hook schreiben
-Ihr [`resolvePreview`](/de/guide/preview-rendering)-Callback erhält Tag-Knoten, auch für Inhalt, der als reines Token eintraf. Gleichen Sie gegen das Tag-Markup ab, nicht gegen das rohe Token — ein naives <code v-pre>replaceAll('{{first_name}}', 'Grace')</code> trifft auch das Token innerhalb von <code v-pre>data-merge-tag="{{first_name}}"</code> und erzeugt stillschweigend ein Tag, das sein Label rendert.
+Ihr [`resolvePreview`](/de/guide/preview-rendering)-Callback erhält Tag-Knoten, auch für Inhalt, der als reines Token eintraf. Ein Tag erscheint in der Vorschau als reiner Text, sobald sein <code v-pre>data-merge-tag</code>-Attribut Ihren Wert enthält: Ersetzen Sie das ganze Span, oder rendern Sie den String so, dass auch das Token im Attribut aufgelöst wird. Ersetzen Sie nur den sichtbaren Text des Spans, bleibt <code v-pre>data-merge-tag="{{first_name}}"</code> stehen, und das Tag zeigt weiter sein Label.
 :::
 
 ## Merge-Tags in anderen Eingaben

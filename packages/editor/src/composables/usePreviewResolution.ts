@@ -77,6 +77,13 @@ export interface UsePreviewResolutionReturn {
   /** True when the last attempt failed or returned something unrenderable. */
   hasFailed: Ref<boolean>;
   /**
+   * True while `content` is the resolver's answer rather than the unresolved
+   * template: after a success, and through a re-resolve that keeps it on
+   * screen. False before the first answer, after a failure and once the
+   * preview closes, which are the paths that show the template itself.
+   */
+  isShowingResolved: ComputedRef<boolean>;
+  /**
    * True whenever a resolver is **configured** — deliberately not "…and has
    * produced content".
    *
@@ -253,6 +260,7 @@ export function usePreviewResolution(
     isResolving,
     isInitialResolve: computed(() => isResolving.value && !hasSettled.value),
     hasFailed,
+    isShowingResolved: computed(() => resolved.value !== null),
     supersedesSamples: computed(() => isConfigured),
     refresh,
   };

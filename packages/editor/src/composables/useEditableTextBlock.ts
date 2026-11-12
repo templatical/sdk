@@ -3,6 +3,7 @@ import {
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
   substituteHtmlMergeTagSamples,
+  unwrapHtmlResolvedMergeTags,
 } from "@templatical/types";
 import { useElementBounding } from "@vueuse/core";
 import { computed, inject, ref, watch, type ComputedRef, type Ref } from "vue";
@@ -10,6 +11,7 @@ import {
   MERGE_TAGS_KEY,
   NO_MERGE_TAGS,
   READ_ONLY_SURFACE_KEY,
+  SHOWS_RESOLVED_PREVIEW_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
 } from "../keys";
 import { useMergeTag } from "./useMergeTag";
@@ -32,6 +34,8 @@ export function useEditableTextBlock(
   // Defaults to `false`, so any surface that doesn't opt in — the editing
   // canvas above all — keeps showing labels.
   const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
+  // Defaults to `false` too: only a preview showing a resolver's answer opts in.
+  const showsResolved = inject(SHOWS_RESOLVED_PREVIEW_KEY, null);
   const readOnly = inject(READ_ONLY_SURFACE_KEY, null);
   const { syntax } = useMergeTag();
 
@@ -49,6 +53,18 @@ export function useEditableTextBlock(
       : resolveHtmlMergeTagLabels(blockContent(), mergeTags.value),
   );
 
+  /**
+   * Content a resolver returned: a tag the host resolved in place carries its
+   * value in the attribute, and renders as that value in plain text, the way
+   * Sample view renders a sample. A logic tag it evaluated leaves no badge. A
+   * tag still holding a token keeps its label or badge.
+   */
+  const withTagsShown = computed(() =>
+    showsResolved?.value
+      ? unwrapHtmlResolvedMergeTags(blockContent(), mergeTags.value, syntax)
+      : resolveHtmlLogicMergeTagLabels(withResolvedDataTags.value, syntax),
+  );
+
   // Sanitize before binding to `v-html`. TipTap-authored content is
   // already safe, but template JSON loaded from a consumer can carry
   // arbitrary HTML — including `<script>`, `<img onerror>`, or
@@ -59,11 +75,7 @@ export function useEditableTextBlock(
   // so a blank line is one line tall here, in the edit surface and in the
   // email. The stored content keeps TipTap's `<p></p>`.
   const resolvedContent = computed(() =>
-    fillEmptyParagraphs(
-      sanitizeHtml(
-        resolveHtmlLogicMergeTagLabels(withResolvedDataTags.value, syntax),
-      ),
-    ),
+    fillEmptyParagraphs(sanitizeHtml(withTagsShown.value)),
   );
 
   const isEditing = ref(false);

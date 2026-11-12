@@ -425,6 +425,55 @@ export function substituteHtmlMergeTagSamples(
 }
 
 /**
+ * Rewrite rich-text HTML that a `resolvePreview` hook returned, for the preview
+ * surface showing it.
+ *
+ * A host usually resolves a tag in place: rendering the whole string through its
+ * own engine evaluates the token inside `data-merge-tag` / `data-logic-merge-tag`
+ * as well, so the span survives with a value where its token was. Such a span is
+ * replaced by that value as bare text, which is what `convertMergeTagsToValues`
+ * sends for it. Dropping the span removes the highlight, so a resolved value
+ * reads as ordinary content and an evaluated logic tag leaves no badge.
+ *
+ * A span whose attribute still holds a token (a configured tag's `value`, or a
+ * match for `syntax`) was not resolved and renders as in Label view: label or
+ * keyword, span kept.
+ *
+ * Like `substituteHtmlMergeTagSamples`, the output is inert and must only ever
+ * reach a preview surface.
+ */
+export function unwrapHtmlResolvedMergeTags(
+  html: string,
+  mergeTags: MergeTag[],
+  syntax: SyntaxPreset,
+): string {
+  const isUnresolvedTag = (value: string): boolean =>
+    mergeTags.some((tag) => tag.value === value) ||
+    isMergeTagValue(value, syntax);
+  const isUnresolvedLogic = (value: string): boolean =>
+    isLogicMergeTagValue(value, syntax);
+
+  const withDataTags = rewriteSpanByAttr(
+    html,
+    "data-merge-tag",
+    (value) =>
+      isUnresolvedTag(value)
+        ? getMergeTagLabel(value, mergeTags)
+        : escapeTagText(value),
+    { unwrap: (value) => !isUnresolvedTag(value) },
+  );
+  return rewriteSpanByAttr(
+    withDataTags,
+    "data-logic-merge-tag",
+    (value) =>
+      isUnresolvedLogic(value)
+        ? getLogicMergeTagKeyword(value, syntax)
+        : escapeTagText(value),
+    { unwrap: (value) => !isUnresolvedLogic(value) },
+  );
+}
+
+/**
  * Whether any configured tag declares a `sample`.
  *
  * Gates the whole feature: with no samples anywhere the previews' Sample view

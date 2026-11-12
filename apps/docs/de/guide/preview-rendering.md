@@ -13,7 +13,7 @@ Es gibt drei Ebenen, jede realistischer als die vorige. Alle gelten **nur für V
 | --- | --- | --- |
 | **Bezeichnungen** | keine — immer aktiv | `First Name`, hervorgehoben |
 | **Beispielwerte** | `MergeTag.sample` | `Ada`, als gewöhnlicher Text |
-| **Aufgelöste Daten** | `resolvePreview` | was Ihr Backend zurückgibt, Logik ausgewertet |
+| **Aufgelöste Daten** | `resolvePreview` | was Ihr Backend zurückgibt, als gewöhnlicher Text, Logik ausgewertet |
 
 Spätere Ebenen gewinnen. Setzen Sie ein `sample`, verwenden Vorschauen es anstelle der Bezeichnung; konfigurieren Sie `resolvePreview`, hat es vollständig Vorrang vor Beispielwerten.
 
@@ -106,6 +106,8 @@ type PreviewResolveTrigger = 'open' | 'refresh' | 'recipient' | 'locale';
 
 Geben Sie ein `TemplateContent` zurück. Alles andere wird als Fehler behandelt (siehe unten).
 
+Aufgelöste Werte erscheinen als gewöhnlicher Text, ohne Hervorhebung. Ersetzen Sie das ganze `<span>` eines Tags, oder lösen Sie es an Ort und Stelle auf: Enthält sein `data-merge-tag`- (oder `data-logic-merge-tag`-)Attribut statt des Tokens Ihren Wert, wie wenn Ihre Engine den ganzen String rendert, zeigt die Vorschau diesen Wert als reinen Text, und ein ausgewertetes Logik-Tag zeigt kein Badge. Ein Tag, dessen Attribut noch ein Token enthält, behält Label und Hervorhebung.
+
 ### Wann sie ausgeführt wird
 
 - **`open`**, sofort beim Öffnen des Vorschaumodus oder des Test-E-Mail-Dialogs. Der Dialog übergibt den vorausgewählten Empfänger in diesem einen Aufruf, oder keinen, wenn sein Feld leer startet.
@@ -134,7 +136,7 @@ Das ist die Garantie, die es erlaubt, mit dem Hook kreativ zu sein: nichts, was 
 
 ### Prüfen {#check-it}
 
-Öffnen Sie die Vorschau: Der Resolver wird einmal mit `surface: "preview"` und `trigger: "open"` aufgerufen. Klicken Sie auf **Vorschau aktualisieren**: Er wird erneut mit `surface: "preview"` und `trigger: "refresh"` aufgerufen, und die Vorschau zeigt, was dieser Aufruf zurückgibt. Öffnen Sie den Test-E-Mail-Dialog: Er wird einmal mit `surface: "test-email"` und `trigger: "open"` aufgerufen, mit `recipient` nur, wenn das Feld vorausgefüllt startet.
+Öffnen Sie die Vorschau: Der Resolver wird einmal mit `surface: "preview"` und `trigger: "open"` aufgerufen. Klicken Sie auf **Vorschau aktualisieren**: Er wird erneut mit `surface: "preview"` und `trigger: "refresh"` aufgerufen, und die Vorschau zeigt, was dieser Aufruf zurückgibt. Öffnen Sie den Test-E-Mail-Dialog: Er wird einmal mit `surface: "test-email"` und `trigger: "open"` aufgerufen, mit `recipient` nur, wenn das Feld vorausgefüllt startet. Ein Tag, das Ihr Resolver aufgelöst hat, erscheint als sein Wert ohne Hervorhebung.
 
 ## Anwendungsfälle
 

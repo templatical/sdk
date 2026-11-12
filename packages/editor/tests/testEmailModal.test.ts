@@ -543,6 +543,77 @@ describe("TestEmailModal preview", () => {
   });
 });
 
+/**
+ * The dialog's preview showing what `resolvePreview` returned. A host that
+ * renders each string through its own engine resolves a tag in place: the span
+ * survives with the value in its attribute. That value must read as plain text,
+ * and evaluated logic must leave no badge; the fallback after a failure keeps
+ * labels and badges.
+ */
+describe("TestEmailModal resolved preview", () => {
+  const STORED =
+    '<p><span data-logic-merge-tag="{% if vip %}" data-keyword="IF">IF</span>Hi<span data-logic-merge-tag="{% endif %}" data-keyword="ENDIF">ENDIF</span> ' +
+    '<span data-merge-tag="{{first_name}}" data-label="First Name">First Name</span></p>';
+  const RESOLVED =
+    '<p><span data-logic-merge-tag="" data-keyword="IF">IF</span>Hi<span data-logic-merge-tag="" data-keyword="ENDIF">ENDIF</span> ' +
+    '<span data-merge-tag="Cruz" data-label="First Name">First Name</span></p>';
+
+  function withParagraph(html: string): TemplateContent {
+    const content = createDefaultTemplateContent();
+    content.blocks = [createParagraphBlock({ id: "greeting", content: html })];
+    return content;
+  }
+
+  function previewText(): HTMLElement {
+    return get('[data-testid="block-preview-canvas"] .tpl-text-content');
+  }
+
+  it("renders values the host resolved in place as plain text, with no chip or badge", async () => {
+    const resolver = vi.fn(async () => withParagraph(RESOLVED));
+    mountModal({
+      editorContent: withParagraph(STORED),
+      mergeTags: SAMPLED_TAGS,
+      resolver,
+      defaultRecipient: "cruz@example.com",
+    });
+    await flushPromises();
+
+    expect(resolver).toHaveBeenCalledTimes(1);
+    expect(previewText().textContent).toBe("Hi Cruz");
+    expect(previewText().querySelectorAll("[data-merge-tag]")).toHaveLength(0);
+    expect(previewText().querySelectorAll("[data-logic-merge-tag]")).toHaveLength(0);
+  });
+
+  it("keeps labels and badges on the fallback after a failure", async () => {
+    mountModal({
+      editorContent: withParagraph(STORED),
+      mergeTags: SAMPLED_TAGS,
+      resolver: async () => {
+        throw new Error("backend down");
+      },
+    });
+    await flushPromises();
+
+    expect(has('[data-testid="preview-resolution-failed"]')).toBe(true);
+    expect(previewText().textContent).toBe("IFHiENDIF First Name");
+    expect(previewText().querySelectorAll("[data-merge-tag]")).toHaveLength(1);
+    expect(previewText().querySelectorAll("[data-logic-merge-tag]")).toHaveLength(2);
+  });
+
+  it("keeps Sample view when no resolver is set", async () => {
+    mountModal({
+      editorContent: withParagraph(STORED),
+      mergeTags: SAMPLED_TAGS,
+      sampleMode: true,
+    });
+    await flushPromises();
+
+    expect(previewText().textContent).toBe("IFHiENDIF Ada");
+    expect(previewText().querySelectorAll("[data-merge-tag]")).toHaveLength(0);
+    expect(previewText().querySelectorAll("[data-logic-merge-tag]")).toHaveLength(2);
+  });
+});
+
 describe("TestEmailModal dismissal", () => {
   it("Cancel closes it", async () => {
     const wrapper = mountModal();

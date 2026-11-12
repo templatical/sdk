@@ -6,6 +6,7 @@ import {
     hasMergeTagSamples,
     substituteHtmlMergeTagSamples,
     substituteTextMergeTagSamples,
+    unwrapHtmlResolvedMergeTags,
     containsMergeTag,
     isLogicMergeTagValue,
     getLogicMergeTagKeyword,
@@ -646,6 +647,116 @@ describe('substituteHtmlMergeTagSamples', () => {
         substituteHtmlMergeTagSamples(html, sampleTags);
 
         expect(html).toBe(before);
+    });
+});
+
+describe('unwrapHtmlResolvedMergeTags', () => {
+    // What a host's resolver typically returns: it rendered the whole string
+    // through its own engine, so the token in the attribute became the value
+    // while the span (and the label inside it) survived.
+    it('renders a tag the host resolved in place as its value, with no span', () => {
+        const html =
+            '<p>Hi <span data-merge-tag="Cruz" data-label="First Name">First Name</span>!</p>';
+
+        const result = unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax);
+
+        expect(result).toBe('<p>Hi Cruz!</p>');
+        // The span is what carries the highlight; it must be gone.
+        expect(result).not.toContain('data-merge-tag');
+    });
+
+    it('shows the attribute value, not the label left inside the span', () => {
+        // The renderer sends the attribute value for a tag span, so that is
+        // what the preview shows. The inner text is the stored label.
+        const html = '<span data-merge-tag="Rau">Last Name</span>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax)).toBe('Rau');
+    });
+
+    it('keeps the label and span for a tag whose attribute still holds a token', () => {
+        // Per tag: the host left this one unresolved, so it stays visibly dynamic,
+        // exactly as in Label view.
+        const html =
+            '<p><span data-merge-tag="Cruz">x</span> <span data-merge-tag="{{email}}">Email</span></p>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax)).toBe(
+            '<p>Cruz <span data-merge-tag="{{email}}">Email</span></p>',
+        );
+    });
+
+    it('keeps an unconfigured token as a tag too', () => {
+        const html = '<span data-merge-tag="{{ guest.code }}">Code</span>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax)).toBe(
+            '<span data-merge-tag="{{ guest.code }}">{{ guest.code }}</span>',
+        );
+    });
+
+    it('keeps a configured tag value the syntax regex does not match', () => {
+        const custom: MergeTag[] = [{ label: 'Code', value: 'GUEST_CODE' }];
+        const html = '<span data-merge-tag="GUEST_CODE">Code</span>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, custom, liquidSyntax)).toBe(
+            '<span data-merge-tag="GUEST_CODE">Code</span>',
+        );
+    });
+
+    it('renders an empty resolved value as nothing', () => {
+        const html = '<p>Hi <span data-merge-tag="">First Name</span>!</p>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax)).toBe('<p>Hi !</p>');
+    });
+
+    it('drops logic badges the host evaluated, keeping the branch it rendered', () => {
+        // A string rendered through the host's engine evaluates the logic token
+        // inside the attribute too, leaving empty logic spans around the branch.
+        const html =
+            '<p><span data-logic-merge-tag="" data-keyword="IF">IF</span>Welcome back<span data-logic-merge-tag="" data-keyword="ENDIF">ENDIF</span></p>';
+
+        const result = unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax);
+
+        expect(result).toBe('<p>Welcome back</p>');
+        expect(result).not.toContain('data-logic-merge-tag');
+    });
+
+    it('keeps the keyword badge for a logic tag the host left unevaluated', () => {
+        const html =
+            '<p><span data-logic-merge-tag="{% if vip %}">stale</span>VIP<span data-logic-merge-tag="{% endif %}">stale</span></p>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax)).toBe(
+            '<p><span data-logic-merge-tag="{% if vip %}">IF</span>VIP<span data-logic-merge-tag="{% endif %}">ENDIF</span></p>',
+        );
+    });
+
+    it('escapes a resolved value so it renders as text, not markup', () => {
+        const html =
+            '<p><span data-merge-tag="&lt;img src=x onerror=&quot;alert(1)&quot;&gt;">Bio</span></p>';
+
+        const result = unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax);
+
+        expect(result).toBe('<p>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</p>');
+        expect(result).not.toContain('<img');
+    });
+
+    it('decodes an entity-encoded value once, so it is not double-escaped', () => {
+        const html = '<span data-merge-tag="Cruz &amp; Rau">Name</span>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax)).toBe('Cruz &amp; Rau');
+    });
+
+    it('reads tokens by the configured syntax', () => {
+        const mailchimp = SYNTAX_PRESETS.mailchimp;
+        const html =
+            '<p><span data-merge-tag="*|FNAME|*">First</span> <span data-merge-tag="Ada">First</span></p>';
+
+        expect(unwrapHtmlResolvedMergeTags(html, [], mailchimp)).toBe(
+            '<p><span data-merge-tag="*|FNAME|*">*|FNAME|*</span> Ada</p>',
+        );
+    });
+
+    it('leaves html with no tag spans byte-identical', () => {
+        const html = '<p>Nothing dynamic <span style="color:red">here</span></p>';
+        expect(unwrapHtmlResolvedMergeTags(html, tags, liquidSyntax)).toBe(html);
     });
 });
 
