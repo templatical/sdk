@@ -1,5 +1,12 @@
 # @templatical/renderer
 
+## 0.59.2
+
+### Patch Changes
+
+- Updated dependencies [0a6f8eb]
+  - @templatical/types@0.59.2
+
 ## 0.59.1
 
 ### Patch Changes
