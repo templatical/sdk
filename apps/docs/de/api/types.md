@@ -293,7 +293,9 @@ interface ButtonBlock extends BaseBlock {
   /** Schriftstärke der Beschriftung. `'regular'` ist 400, `'medium'` ist 500 und `'bold'` ist 700. Weggelassen wird fett gerendert, so wie eine Schaltfläche ohne Stärke. */
   fontWeight?: 'regular' | 'medium' | 'bold';
   openInNewTab?: boolean;
-  width?: number | 'full';
+  /** Weggelassen passt sich die Schaltfläche der Beschriftung an. Eine Zahl ist px. `'full'` füllt die Spalte. Ein Prozentwert ist ein Anteil der Inhaltsbox der Spalte (die Spalte abzüglich des seitlichen Paddings der Schaltfläche). MJML rendert ihn nativ, daher schrumpft die Schaltfläche auf dem Smartphone mit ihrer Spalte. */
+  width?: number | 'full' | PercentWidth;
+  /** Platzierung in der Spalte. Ohne sichtbare Wirkung, wenn `width` auf `'full'` steht. Eine Prozentbreite nutzt weiterhin `align`. */
   align: 'left' | 'center' | 'right';
 }
 ```
@@ -347,7 +349,16 @@ interface SectionHero {
 
 ```ts
 /** "0%" bis "100%" */
-type DividerPercentWidth = `${number}%`;
+type PercentWidth = `${number}%`;
+
+/** Derselbe Typ wie PercentWidth. */
+type DividerPercentWidth = PercentWidth;
+
+/** Die Zahl, wenn `value` ein PercentWidth-String über 0 und höchstens 100 ist. Sonst null. */
+function parsePercentWidth(value: unknown): number | null;
+
+/** Zwei Dezimalstellen. `0.145` ist `0.15` und `1.005` ist `1.01`. */
+function roundHundredths(value: number): number;
 
 interface DividerBlock extends BaseBlock {
   type: 'divider';

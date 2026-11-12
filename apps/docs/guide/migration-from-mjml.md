@@ -189,12 +189,13 @@ Templatical centres every divider. A partial-width divider that MJML aligns left
 | missing | none, so the button fits its label | `converted` |
 | `100%` | `"full"` | `converted` |
 | px, above `0` | the px number | `converted` |
-| a percentage under `100%`, such as `50%` | the px it comes to | `approximated` |
+| a percentage above 0 and below `100%`, such as `40%` | that percentage, rounded to two decimals with trailing zeros dropped | `converted` |
 | above `100%` | `"full"` | `approximated` |
-| px or a percentage that comes to `0px` or less | none, so the button fits its label | `approximated` |
+| a percentage of `0%` or below | none, so the button fits its label | `approximated` |
+| px of `0` or below | none, so the button fits its label | `approximated` |
 | any other value | none, so the button fits its label | `approximated` |
 
-A percentage is measured against the width the button can fill: its column less the column's side padding and the button's own, which is the box `mj-button` sizes it against. `ButtonBlock.width` holds no percentage, so the px it comes to no longer scales with the column, and the entry's `note` says so. A px width stays px however wide it is, because Templatical's renderer writes `"full"` as `100%`.
+A percentage above 0 and below 100 is stored as that percentage. MJML renders it against the column's content box, the column less the button's side padding, so the button shrinks with its column on a phone. A percentage of `100%` or more is `"full"`; one above `100%` carries a note that it was clamped. A percentage of `0%` or below, and a px width of `0` or below, leaves the button fitting its label, with a note. A px width above `0` stays px, because the renderer writes `"full"` as `100%`.
 
 ### Borders and corners
 
@@ -234,7 +235,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
-- **Button width** — an `mj-button` `width` given as a percentage other than `100%` becomes the px it comes to, one above `100%` becomes `"full"`, and one that is unreadable or comes to `0px` or less leaves the button fitting its label. See [Button width](#button-width).
+- **Button width** — an `mj-button` `width` above `100%` becomes `"full"`, and one that is unreadable or `0` or below leaves the button fitting its label. See [Button width](#button-width).
 - **Borders and corners** — a `border-radius` that isn't in px imports as square corners, a border style other than solid, dashed or dotted is drawn solid, a border side with no px width is left undrawn, and a border on `mj-wrapper` is dropped. See [Borders and corners](#borders-and-corners).
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact Templatical keyword maps to the nearest one. See [Background images](#background-images).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.

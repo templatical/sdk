@@ -406,6 +406,7 @@ export default {
     widthAuto: "Fit to content",
     fullWidth: "Full Width",
     widthCustom: "Custom",
+    widthUnit: "Width unit",
   },
 
   // Toolbar - Divider

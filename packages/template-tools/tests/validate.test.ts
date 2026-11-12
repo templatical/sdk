@@ -143,6 +143,23 @@ describe("validateTemplate — image fluid on mobile", () => {
   });
 });
 
+describe("validateTemplate — button width", () => {
+  const button = (width: unknown) =>
+    validateTemplate(template([{ ...createButtonBlock(), width }]));
+
+  it('accepts a percentage share of the column', () => {
+    expect(button("40%")).toEqual({ valid: true, errors: [] });
+  });
+
+  it("rejects a percentage above 100 and a bare number string", () => {
+    for (const width of ["150%", "40"]) {
+      const result = button(width);
+      expect(result.valid, String(width)).toBe(false);
+      expect(result.errors.join("\n"), String(width)).toContain("width");
+    }
+  });
+});
+
 describe("validateTemplate — button font weight", () => {
   const button = (fontWeight: unknown) =>
     validateTemplate(template([{ ...createButtonBlock(), fontWeight }]));

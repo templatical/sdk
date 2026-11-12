@@ -293,7 +293,9 @@ interface ButtonBlock extends BaseBlock {
   /** Label weight. `'regular'` is 400, `'medium'` is 500 and `'bold'` is 700. Omitted renders bold, which is what a button with no weight renders. */
   fontWeight?: 'regular' | 'medium' | 'bold';
   openInNewTab?: boolean;
-  width?: number | 'full';
+  /** Omitted fits the label. A number is px. `'full'` spans the column. A percentage is a share of the column's content box (the column less the button's side padding), rendered natively by MJML, so the button shrinks with its column on a phone. */
+  width?: number | 'full' | PercentWidth;
+  /** Placement within the column. No visible effect when `width` is `'full'`. A percentage width still uses `align`. */
   align: 'left' | 'center' | 'right';
 }
 ```
@@ -347,7 +349,16 @@ interface SectionHero {
 
 ```ts
 /** "0%" to "100%" */
-type DividerPercentWidth = `${number}%`;
+type PercentWidth = `${number}%`;
+
+/** The same type as PercentWidth. */
+type DividerPercentWidth = PercentWidth;
+
+/** The number when `value` is a PercentWidth string above 0 and at most 100. Otherwise null. */
+function parsePercentWidth(value: unknown): number | null;
+
+/** Two decimal places. `0.145` is `0.15` and `1.005` is `1.01`. */
+function roundHundredths(value: number): number;
 
 interface DividerBlock extends BaseBlock {
   type: 'divider';

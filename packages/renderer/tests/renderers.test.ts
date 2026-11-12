@@ -176,6 +176,41 @@ describe('renderBlock', () => {
     expect(renderBlock(block, ctx)).not.toContain('tpl-button-full');
   });
 
+  it.each([
+    ['40%', 'width="40%"'],
+    ['33.33%', 'width="33.33%"'],
+    ['100%', 'width="100%"'],
+  ] as const)('writes a %s button width as that percentage and fills the link', (width, attr) => {
+    const result = renderBlock(createButtonBlock({ text: 'Click Me', width }), ctx);
+    expect(result).toContain(attr);
+    expect(result).not.toContain(`${width}px`);
+    expect(result).toContain('css-class="tpl-button-full"');
+  });
+
+  it.each(['0%', '150%', 'abc'] as const)(
+    'emits no width and no tpl-button-full class for %s',
+    (width) => {
+      const result = renderBlock(createButtonBlock({ text: 'Click Me', width }), ctx);
+      expect(result).not.toContain('width=');
+      expect(result).not.toContain('tpl-button-full');
+    },
+  );
+
+  it('keeps full, px and omitted button widths', () => {
+    const full = renderBlock(createButtonBlock({ text: 'Click Me', width: 'full' }), ctx);
+    expect(full).toContain('width="100%"');
+    expect(full).toContain('css-class="tpl-button-full"');
+    expect(full).not.toContain('width="full"');
+
+    const px = renderBlock(createButtonBlock({ text: 'Click Me', width: 240 }), ctx);
+    expect(px).toContain('width="240px"');
+    expect(px).not.toContain('tpl-button-full');
+
+    const fit = renderBlock(createButtonBlock({ text: 'Click Me' }), ctx);
+    expect(fit).not.toContain('width=');
+    expect(fit).not.toContain('tpl-button-full');
+  });
+
   it('renders button alignment', () => {
     for (const align of ['left', 'center', 'right'] as const) {
       const block = createButtonBlock({ text: 'Click Me', align });

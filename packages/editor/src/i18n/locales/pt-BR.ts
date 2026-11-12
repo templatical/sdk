@@ -411,6 +411,7 @@ const ptBR: typeof en = {
     widthAuto: "Ajustar ao conteúdo",
     fullWidth: "Largura Total",
     widthCustom: "Personalizada",
+    widthUnit: "Unidade de largura",
   },
 
   // Toolbar - Divider

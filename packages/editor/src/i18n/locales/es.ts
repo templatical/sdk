@@ -412,6 +412,7 @@ const es: typeof en = {
     widthAuto: "Ajustar al contenido",
     fullWidth: "Ancho completo",
     widthCustom: "Personalizado",
+    widthUnit: "Unidad de ancho",
   },
 
   // Toolbar - Divider

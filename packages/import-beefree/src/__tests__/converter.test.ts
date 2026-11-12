@@ -493,6 +493,57 @@ describe("convertBeeFreeTemplate", () => {
   });
 
   it.each([
+    ["40%", "40%", "converted", undefined],
+    ["33.333%", "33.33%", "converted", undefined],
+    ["0.145%", "0.15%", "converted", undefined],
+    ["33.335%", "33.34%", "converted", undefined],
+    ["99.995%", "full", "converted", undefined],
+    ["0.004%", undefined, "approximated", "width 0.004% has no usable size"],
+    ["100%", "full", "converted", undefined],
+    ["120%", "full", "approximated", "width 120% was clamped to 100%"],
+    ["0%", undefined, "approximated", "width 0% has no usable size"],
+  ] as const)(
+    "imports a button style.width of %s",
+    (source, width, status, note) => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-button",
+                      descriptor: {
+                        button: {
+                          label: "Register now",
+                          href: "https://example.com/register",
+                          style: { width: source },
+                          ...{ percWidth: 58 },
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const block = content.blocks[0];
+      expect(block.type).toBe("button");
+      if (block.type !== "button") return;
+      expect(block.width).toBe(width);
+      const entry = report.entries.find(
+        (item) => item.templaticalBlockType === "button",
+      );
+      expect(entry?.status).toBe(status);
+      expect(entry?.note).toBe(note);
+    },
+  );
+
+  it.each([
     [
       {
         "padding-top": "0px",

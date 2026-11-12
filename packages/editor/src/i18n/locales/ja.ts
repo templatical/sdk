@@ -359,6 +359,7 @@ const translations: typeof en = {
     widthAuto: "内容に合わせる",
     fullWidth: "全幅",
     widthCustom: "カスタム",
+    widthUnit: "幅の単位",
   },
   divider: {
     style: "線の種類",

@@ -89,8 +89,8 @@ Eine Call-to-Action-Schaltfläche mit anpassbarem Erscheinungsbild.
 | `fontFamily` | `string` | Überschreibung der Schriftfamilie |
 | `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Schriftstärke der Beschriftung: 400, 500 oder 700. Weglassen für fett, so wie eine Schaltfläche ohne Stärke rendert. |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |
-| `width` | `number \| 'full'` | Feste Breite in px oder `'full'` für 100%. Weglassen, um an den Inhalt anzupassen. |
-| `align` | `'left' \| 'center' \| 'right'` | Ausrichtung innerhalb der Spalte. Ohne sichtbare Wirkung, wenn `width` auf `'full'` steht. |
+| `width` | `number \| 'full' \| PercentWidth` | Weglassen, dann passt sich die Schaltfläche der Beschriftung an. Eine Zahl ist px. `'full'` füllt die Spalte. Ein Prozentwert wie `'40%'` ist ein Anteil der Inhaltsbox der Spalte (die Spalte abzüglich des seitlichen Paddings der Schaltfläche). MJML rendert ihn nativ, daher schrumpft die Schaltfläche auf dem Smartphone mit ihrer Spalte. |
+| `align` | `'left' \| 'center' \| 'right'` | Ausrichtung innerhalb der Spalte. Ohne sichtbare Wirkung, wenn `width` auf `'full'` steht. Eine Prozentbreite nutzt weiterhin `align`. |
 
 ## Divider
 

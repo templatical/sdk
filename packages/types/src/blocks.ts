@@ -423,10 +423,17 @@ export interface ButtonBlock extends BaseBlock {
    * Omitted renders bold, which is what a button with no weight renders.
    */
   fontWeight?: "regular" | "medium" | "bold";
-  width?: number | "full";
+  /**
+   * Omitted fits the label. A number is px. `"full"` spans the column. A
+   * percentage is a share of the column's content box (the column less the
+   * button's side padding), rendered natively by MJML, so the button shrinks
+   * with its column on a phone.
+   */
+  width?: number | "full" | PercentWidth;
   /**
    * Placement of the button within its column. No visible effect when `width`
-   * is `"full"`, since the button then spans the column.
+   * is `"full"`, since the button then spans the column. A percentage width
+   * still uses `align`.
    */
   align: "left" | "center" | "right";
 }
@@ -435,7 +442,10 @@ export interface ButtonBlock extends BaseBlock {
  * A share of the column, from `"0%"` to `"100%"`.
  * @pattern ^(?:100(?:\.0+)?|\d{1,2}(?:\.\d+)?)%$
  */
-export type DividerPercentWidth = `${number}%`;
+export type PercentWidth = `${number}%`;
+
+/** The same type as `PercentWidth`. */
+export type DividerPercentWidth = PercentWidth;
 
 export interface DividerBlock extends BaseBlock {
   type: "divider";

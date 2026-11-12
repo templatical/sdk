@@ -93,13 +93,14 @@ describe("block-guide.md's generated field lists", () => {
   });
 
   it("renders a literal union member as its literal, not its base type", () => {
-    // `width?: number | "full"` reaches `renderType` as an `anyOf` whose second
-    // member carries `const`. Handling `const` after `enum` — or not reaching
-    // it through `anyOf` — renders `int | string`, which tells the agent a
-    // button may be any width string. The freshness case above would also fail,
-    // but as an unexplained diff; this one names the cause.
+    // `width?: number | "full" | PercentWidth` reaches `renderType` as an
+    // `anyOf` whose second member carries `const`. Handling `const` after
+    // `enum` — or not reaching it through `anyOf` — renders `int | string |
+    // PercentWidth`, which tells the agent a button may be any width string.
+    // The freshness case above would also fail, but as an unexplained diff;
+    // this one names the cause.
     expect(buildGuideRegions(schema).get("button")).toContain(
-      '`width` (int | "full")',
+      '`width` (int | "full" | PercentWidth)',
     );
   });
 });

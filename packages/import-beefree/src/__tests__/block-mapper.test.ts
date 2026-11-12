@@ -1457,15 +1457,34 @@ describe("convertModule", () => {
       expect(entry.note).toBeUndefined();
     });
 
-    it("notes a percentage width other than 100% and sizes the button to its label", () => {
+    it("imports a percentage width other than 100% and keeps the alignment", () => {
       const { block, entry } = buttonWith(
         { width: "50%" },
         { "text-align": "right" },
       );
-      expect(block.width).toBeUndefined();
+      expect(block.width).toBe("50%");
       expect(block.align).toBe("right");
-      expect(entry.status).toBe("approximated");
-      expect(entry.note).toBe("width 50% is not carried");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("ignores button.percWidth and reads style.width", () => {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-button", {
+          button: {
+            label: "Register now",
+            href: "https://example.com/register",
+            style: { width: "40%" },
+            ...{ percWidth: 58 },
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("button");
+      if (block.type !== "button") return;
+      expect(block.width).toBe("40%");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
     });
 
     it("keeps a px width and leaves auto width unset", () => {
@@ -1543,7 +1562,7 @@ describe("convertModule", () => {
       }
     });
 
-    it("names letter-spacing and a percentage width, and still maps the weight", () => {
+    it("keeps a percentage width and still names letter-spacing", () => {
       const { block, entry } = buttonWith({
         "font-weight": "400",
         "letter-spacing": "1px",
@@ -1551,9 +1570,9 @@ describe("convertModule", () => {
       });
       expect(block.fontWeight).toBe("regular");
       expect(block).not.toHaveProperty("letterSpacing");
-      expect(block.width).toBeUndefined();
+      expect(block.width).toBe("50%");
       expect(entry.status).toBe("approximated");
-      expect(entry.note).toBe("letter spacing 1px, width 50% are not carried");
+      expect(entry.note).toBe("letter spacing 1px is not carried");
     });
 
     it("maps a non-bold weight and drops a zero letter-spacing without a note", () => {

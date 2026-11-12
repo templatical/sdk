@@ -377,6 +377,7 @@ const nl: typeof en = {
     widthAuto: "Aanpassen aan inhoud",
     fullWidth: "Volledige breedte",
     widthCustom: "Aangepast",
+    widthUnit: "Breedte-eenheid",
   },
   divider: {
     style: "Stijl",

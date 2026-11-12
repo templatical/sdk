@@ -3,7 +3,11 @@ import type {
   ButtonBlock as ButtonBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { BUTTON_LINE_HEIGHT, toBorderRadiusCss } from "@templatical/types";
+import {
+  BUTTON_LINE_HEIGHT,
+  parsePercentWidth,
+  toBorderRadiusCss,
+} from "@templatical/types";
 import { computed } from "vue";
 import { getBorderStyle } from "../../utils/blockComponentResolver";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
@@ -55,6 +59,13 @@ const buttonStyle = computed(() => {
     style.boxSizing = "border-box";
   } else if (typeof props.block.width === "number") {
     style.width = `${props.block.width}px`;
+    style.boxSizing = "border-box";
+  } else if (
+    typeof props.block.width === "string" &&
+    parsePercentWidth(props.block.width) !== null
+  ) {
+    // Stay inline-block so `align` still places a percentage button.
+    style.width = props.block.width;
     style.boxSizing = "border-box";
   }
   return style;

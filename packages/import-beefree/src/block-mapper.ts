@@ -3,6 +3,7 @@ import {
   BORDER_SIDES,
   BUTTON_LINE_HEIGHT,
   canonicalFontStack,
+  roundHundredths,
   findOpenTagEnd,
   isSafeHtmlUrl,
   HEADING_LEVEL_FONT_SIZE,
@@ -2254,22 +2255,40 @@ function uncarriedLetterSpacing(value: string | undefined): string | undefined {
 }
 
 /**
- * `100%` fills the column. Any other percentage has no field to land in, so
- * the button sizes to its label and the caller names that width. A px width
- * is that many pixels. `auto` and anything unreadable leave the width unset.
+ * Two decimals, trailing zeros dropped: `40` is `"40%"`, `33.333` is `"33.33%"`.
+ */
+function formatButtonPercent(value: number): `${number}%` {
+  const share = roundHundredths(value);
+  const text = share.toFixed(2).replace(/\.?0+$/, "");
+  return `${Number(text)}%`;
+}
+
+/**
+ * The 0 and 100 boundaries are the share rounded to two decimals. Above
+ * 100 is `"full"` with a clamp note. 100, including a value that rounds to
+ * 100, is `"full"` with no note. Above 0 and below 100 is that share.
+ * 0 or below leaves the width unset. `button.percWidth` is not this value.
+ * A px width is that many pixels. `auto` and anything unreadable leave the
+ * width unset.
  */
 function buttonWidth(value: string | undefined): {
   width?: ButtonBlock["width"];
-  uncarried?: string;
+  note?: string;
 } {
   if (!value) return {};
   const raw = value.trim();
   if (!raw || /^auto$/i.test(raw)) return {};
 
-  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  const percent = /^(-?\d+(?:\.\d+)?)\s*%$/.exec(raw);
   if (percent) {
-    if (Number(percent[1]) === 100) return { width: "full" };
-    return { uncarried: `width ${raw}` };
+    const n = Number(percent[1]);
+    const share = roundHundredths(n);
+    if (share > 100) {
+      return { width: "full", note: `width ${raw} was clamped to 100%` };
+    }
+    if (share >= 100) return { width: "full" };
+    if (share <= 0) return { note: `width ${raw} has no usable size` };
+    return { width: formatButtonPercent(n) };
   }
 
   const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
@@ -2279,21 +2298,17 @@ function buttonWidth(value: string | undefined): {
 }
 
 /**
- * One note naming what this button does not carry: letter spacing, a partial
- * bold label, and a percentage width other than 100%. Empty when nothing was
- * left out.
+ * One note naming what this button does not carry: letter spacing and a
+ * partial bold label. Empty when nothing was left out.
  */
 function buttonApproximationNote(
   style: Record<string, string>,
-  widthUncarried: string | undefined,
   partialBold: boolean,
   fontWeight: ButtonBlock["fontWeight"],
 ): string | undefined {
   const parts: string[] = [];
   const spacing = uncarriedLetterSpacing(style["letter-spacing"]);
   if (spacing) parts.push(`letter spacing ${spacing}`);
-
-  if (widthUncarried) parts.push(widthUncarried);
 
   if (partialBold) parts.push("partial bold in the label");
 
@@ -2348,18 +2363,13 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
   const lineHeightPx = buttonLineHeightPx(style["line-height"], fontSize);
   const linePad =
     lineHeightPx === undefined ? 0 : lineHeightPadding(lineHeightPx, fontSize);
-  const { width, uncarried: widthUncarried } = buttonWidth(style.width);
+  const { width, note: widthNote } = buttonWidth(style.width);
   const border = buttonBorder(style);
   const { fontWeight, partialBold } = buttonFontWeight(
     style["font-weight"],
     button.label ?? "Button",
   );
-  const note = buttonApproximationNote(
-    style,
-    widthUncarried,
-    partialBold,
-    fontWeight,
-  );
+  const note = buttonApproximationNote(style, partialBold, fontWeight);
 
   return {
     block: createButtonBlock({
@@ -2387,7 +2397,9 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
       },
       styles: makeStyles(descriptor),
     }),
-    notes: note ? [note] : [],
+    notes: [note, widthNote].filter(
+      (item): item is string => item !== undefined,
+    ),
   };
 }
 

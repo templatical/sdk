@@ -410,6 +410,7 @@ const da: typeof en = {
     widthAuto: "Tilpas til indhold",
     fullWidth: "Fuld bredde",
     widthCustom: "Tilpasset",
+    widthUnit: "Breddeenhed",
   },
 
   // Toolbar - Divider

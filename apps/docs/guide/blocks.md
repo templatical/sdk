@@ -89,8 +89,8 @@ A call-to-action button with customizable appearance.
 | `fontFamily` | `string` | Font family override |
 | `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Label weight: 400, 500 or 700. Omit for bold, which is how a button with no weight renders. |
 | `openInNewTab` | `boolean` | Link target behavior |
-| `width` | `number \| 'full'` | Fixed width in px, or `'full'` for 100%. Omit to size to content. |
-| `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. |
+| `width` | `number \| 'full' \| PercentWidth` | Omit to fit the label. A number is px. `'full'` spans the column. A percentage such as `'40%'` is a share of the column's content box (the column less the button's side padding). MJML renders it natively, so the button shrinks with its column on a phone. |
+| `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. A percentage width still uses `align`. |
 
 ## Divider
 

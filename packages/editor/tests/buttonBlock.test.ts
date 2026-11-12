@@ -57,6 +57,17 @@ describe("ButtonBlock alignment", () => {
     expect(wrapperEl.style.textAlign).toBe("center");
   });
 
+  it("sizes a percentage button to that share and keeps it inline", () => {
+    const wrapper = mountButton(
+      createButtonBlock({ text: "Go", align: "right", width: "40%" }),
+    );
+    const anchor = wrapper.find("a").element as HTMLElement;
+    expect(anchor.style.width).toBe("40%");
+    expect(anchor.style.boxSizing).toBe("border-box");
+    expect(anchor.style.display).toBe("inline-block");
+    expect((wrapper.element as HTMLElement).style.textAlign).toBe("right");
+  });
+
   it("keeps the alignment on a full-width button", () => {
     // The anchor spans the column so there is nothing to move, but the wrapper
     // must still carry the stored value rather than silently normalizing it.

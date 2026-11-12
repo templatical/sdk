@@ -189,12 +189,13 @@ Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den MJML links 
 | fehlt | keine, der Button passt sich seiner Beschriftung an | `converted` |
 | `100%` | `"full"` | `converted` |
 | px, über `0` | die px-Zahl | `converted` |
-| ein Prozentwert unter `100%`, etwa `50%` | der px-Wert, den er ergibt | `approximated` |
+| ein Prozentwert über 0 und unter `100%`, etwa `40%` | dieser Prozentwert, auf zwei Nachkommastellen gerundet, nachgestellte Nullen entfallen | `converted` |
 | über `100%` | `"full"` | `approximated` |
-| px oder ein Prozentwert, der `0px` oder weniger ergibt | keine, der Button passt sich seiner Beschriftung an | `approximated` |
+| ein Prozentwert von `0%` oder darunter | keine, der Button passt sich seiner Beschriftung an | `approximated` |
+| px von `0` oder darunter | keine, der Button passt sich seiner Beschriftung an | `approximated` |
 | jeder andere Wert | keine, der Button passt sich seiner Beschriftung an | `approximated` |
 
-Ein Prozentwert bemisst sich an der Breite, die der Button füllen kann: seiner Spalte abzüglich des seitlichen Paddings der Spalte und seines eigenen; an dieser Box bemisst `mj-button` ihn. `ButtonBlock.width` kennt keine Prozentwerte, daher skaliert der resultierende px-Wert nicht mehr mit der Spalte, und die `note` des Eintrags weist darauf hin. Eine px-Breite bleibt px, gleich wie breit sie ist, weil Templaticals Renderer `"full"` als `100%` schreibt.
+Ein Prozentwert über 0 und unter 100 wird als dieser Prozentwert gespeichert. MJML rendert ihn an der Inhaltsbox der Spalte, der Spalte abzüglich des seitlichen Paddings des Buttons, daher schrumpft der Button auf dem Smartphone mit seiner Spalte. Ein Prozentwert von `100%` oder mehr ist `"full"`; einer über `100%` trägt eine Notiz, dass er geklemmt wurde. Ein Prozentwert von `0%` oder darunter und eine px-Breite von `0` oder darunter lassen den Button sich seiner Beschriftung anpassen, mit einer Notiz. Eine px-Breite über `0` bleibt px, weil der Renderer `"full"` als `100%` schreibt.
 
 ### Rahmen und Ecken
 
@@ -234,7 +235,7 @@ MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer oh
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` an einem `mj-social-element` außerhalb dieser drei wird auf die nächstliegende aufgelöst.
 - **Überschriften-Ebenen** — ein `<h5>` oder `<h6>` innerhalb von `mj-text` wird auf Überschriften-Ebene 4 begrenzt, die höchste, die ein `TitleBlock` unterstützt.
 - **Divider-Breite und -Ausrichtung** — eine `width` an einem `mj-divider` außerhalb von 0–100 % oder unter 0px wird in den gültigen Bereich begrenzt, eine nicht lesbare wird zu `"full"`, und ein links oder rechts ausgerichteter Divider mit Teilbreite wird zentriert. Siehe [Divider-Breite](#divider-breite).
-- **Button-Breite** — eine `width` an einem `mj-button` als Prozentwert außer `100%` wird zum px-Wert, den sie ergibt, eine über `100%` wird zu `"full"`, und eine nicht lesbare oder eine, die `0px` oder weniger ergibt, lässt den Button sich seiner Beschriftung anpassen. Siehe [Button-Breite](#button-breite).
+- **Button-Breite** — eine `width` an einem `mj-button` über `100%` wird zu `"full"`, und eine nicht lesbare oder eine von `0` oder darunter lässt den Button sich seiner Beschriftung anpassen. Siehe [Button-Breite](#button-breite).
 - **Rahmen und Ecken** — ein `border-radius`, der nicht in px angegeben ist, wird als eckig importiert, ein Rahmenstil außer solid, dashed oder dotted wird solid gezeichnet, eine Rahmenseite ohne px-Breite bleibt ungezeichnet, und ein Rahmen an einem `mj-wrapper` wird verworfen. Siehe [Rahmen und Ecken](#rahmen-und-ecken).
 - **Hintergrundbilder** — ein `background-size`, `background-position` oder `background-repeat` ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende abgebildet. Siehe [Hintergrundbilder](#hintergrundbilder).
 - **Video-Blöcke** — ein `VideoBlock` wird genauso gerendert wie ein verlinkter `ImageBlock`, sodass nichts im MJML ihn als Video kennzeichnet. Beim Import daraus entsteht ein `ImageBlock` mit demselben Vorschaubild und Link; der Inhalt bleibt erhalten, der Blocktyp nicht.

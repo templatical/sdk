@@ -221,7 +221,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: button -->
 **Required** — `text` (string), `url` (string), `backgroundColor` (string), `textColor` (string), `borderRadius` (BorderRadiusValue), `fontSize` (int), `buttonPadding` (SpacingValue), `align` ("left" | "center" | "right").
-**Optional** — `l10n` (object), `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `fontWeight` ("regular" | "medium" | "bold"), `width` (int | "full").
+**Optional** — `l10n` (object), `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `fontWeight` ("regular" | "medium" | "bold"), `width` (int | "full" | PercentWidth).
 <!-- END GENERATED FIELDS: button -->
 
 - `fontWeight` is `"regular"` (400), `"medium"` (500) or `"bold"` (700). Omit

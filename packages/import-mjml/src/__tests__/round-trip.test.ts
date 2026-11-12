@@ -368,6 +368,41 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(normalize(content)).toEqual(normalize(expected));
   });
 
+  it("reads a 40% button back as 40% without a foreign tpl-button-full class", async () => {
+    const original: TemplateContent = {
+      blocks: [
+        createSectionBlock({
+          columns: "1",
+          children: [
+            [
+              createButtonBlock({
+                text: "Share",
+                url: "https://pct.test",
+                width: "40%",
+              }),
+            ],
+          ],
+        }),
+      ],
+      settings: { ...buildFixtureTemplate().settings, width: 600 },
+    };
+    const mjml = await renderToMjml(original);
+    expect(mjml).toContain('width="40%"');
+    expect(mjml).toContain('css-class="tpl-button-full"');
+
+    const { content, report } = convertMjmlTemplate(mjml);
+    const button = content.blocks
+      .flatMap((block) =>
+        block.type === "section" ? block.children.flat() : [block],
+      )
+      .find((block) => block.type === "button");
+    expect(button).toMatchObject({ type: "button", width: "40%" });
+    const entry = report.entries.find((item) => item.sourceTag === "mj-button");
+    expect(entry).toMatchObject({ status: "converted" });
+    expect(entry?.note).toBeUndefined();
+    expect(JSON.stringify(report)).not.toContain("tpl-button-full");
+  });
+
   it("converts every element with no approximations at all", async () => {
     const mjml = await renderToMjml(buildFixtureTemplate());
     const { report } = convertMjmlTemplate(mjml);

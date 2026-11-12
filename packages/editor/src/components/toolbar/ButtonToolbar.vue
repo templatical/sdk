@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import FieldRow from "./FieldRow.vue";
-import { computed } from "vue";
+import { computed, inject } from "vue";
 import ColorPicker from "../ColorPicker.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import BorderControl from "./BorderControl.vue";
 import RadiusControl from "./RadiusControl.vue";
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
   inputGroupInputClass,
   inputSuffixClass,
 } from "../../constants/styleConstants";
+import { parsePercentWidth } from "@templatical/types";
 import type { ButtonBlock } from "@templatical/types";
+import { EDITOR_KEY, LAYOUT_KEY } from "../../keys";
+import { imageRoom } from "../../utils/imageRoom";
 import { fontSelectValue } from "../../utils/withCurrentFont";
 
 const props = defineProps<{
@@ -26,14 +30,40 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const editor = inject(EDITOR_KEY, null);
+const localized = editor ? useLocalizedDisplay(editor) : null;
+const layout = inject(LAYOUT_KEY, undefined);
 
 const DEFAULT_CUSTOM_WIDTH = 200;
 
 const widthMode = computed<"auto" | "full" | "custom">(() => {
   if (props.block.width === "full") return "full";
   if (typeof props.block.width === "number") return "custom";
+  if (parsePercentWidth(props.block.width) !== null) return "custom";
+  // A stored string that is not a usable percentage renders at label width
+  // in the canvas and the email, so the select says Auto too.
   return "auto";
 });
+
+const widthUnit = computed(() =>
+  parsePercentWidth(props.block.width) !== null ? "%" : "px",
+);
+
+const customWidthValue = computed(() => {
+  if (typeof props.block.width === "number") return props.block.width;
+  if (
+    parsePercentWidth(props.block.width) !== null &&
+    typeof props.block.width === "string"
+  ) {
+    return props.block.width.slice(0, -1);
+  }
+  return DEFAULT_CUSTOM_WIDTH;
+});
+
+/** The px the button can span, the same room an image measures. */
+const room = computed(() =>
+  localized ? imageRoom(localized.content.value, props.block.id, layout) : null,
+);
 
 function updateField(field: string, value: unknown): void {
   emit("update", { [field]: value } as Partial<ButtonBlock>);
@@ -69,8 +99,39 @@ function updateCustomWidth(raw: string): void {
   // button (#260). Ignore invalid values and keep the last valid width;
   // the canvas still updates live on each valid keystroke.
   const n = Number(raw);
+  if (widthUnit.value === "%") {
+    // Integers from the field. A stored decimal such as "33.33%" is shown
+    // as is and is not rewritten until the field holds a whole number.
+    if (!Number.isInteger(n) || n < 1 || n > 100) return;
+    updateField("width", `${n}%`);
+    return;
+  }
   if (!Number.isFinite(n) || n <= 0) return;
   updateField("width", n);
+}
+
+function updateWidthUnit(unit: string): void {
+  if (unit !== "px" && unit !== "%") return;
+  if (unit === widthUnit.value) return;
+  const width = props.block.width;
+  const roomPx = room.value;
+  if (unit === "%") {
+    const px = typeof width === "number" ? width : DEFAULT_CUSTOM_WIDTH;
+    if (roomPx === null) {
+      updateField("width", "50%");
+      return;
+    }
+    const pct = Math.min(100, Math.max(1, Math.round((px / roomPx) * 100)));
+    updateField("width", `${pct}%`);
+    return;
+  }
+  const parsed = parsePercentWidth(width);
+  const pct = parsed ?? 50;
+  if (roomPx === null) {
+    updateField("width", DEFAULT_CUSTOM_WIDTH);
+    return;
+  }
+  updateField("width", Math.max(1, Math.round((roomPx * pct) / 100)));
 }
 </script>
 
@@ -196,18 +257,26 @@ function updateCustomWidth(raw: string): void {
     </select>
     <div
       v-if="widthMode === 'custom'"
-      class="tpl:mt-2 tpl:flex tpl:items-stretch"
+      class="tpl:mt-2 tpl:flex tpl:items-stretch tpl:gap-2"
     >
       <input
         type="number"
-        :class="inputGroupInputClass"
-        :value="
-          typeof block.width === 'number' ? block.width : DEFAULT_CUSTOM_WIDTH
-        "
-        min="20"
+        :class="[inputClass, 'tpl:min-w-0 tpl:flex-1']"
+        :value="customWidthValue"
+        :min="widthUnit === '%' ? 1 : 20"
+        :max="widthUnit === '%' ? 100 : undefined"
         @input="updateCustomWidth(($event.target as HTMLInputElement).value)"
       />
-      <span :class="inputSuffixClass">px</span>
+      <SlidingPillSelect
+        class="tpl:w-24 tpl:shrink-0"
+        :aria-label="t.button.widthUnit"
+        :options="[
+          { value: 'px', label: 'px' },
+          { value: '%', label: '%' },
+        ]"
+        :model-value="widthUnit"
+        @update:model-value="updateWidthUnit"
+      />
     </div>
   </FieldRow>
   <FieldRow :label="t.title.align" class="tpl:mb-3.5" path="align">

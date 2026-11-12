@@ -378,6 +378,7 @@ const fr: typeof en = {
     widthAuto: "Ajuster au contenu",
     fullWidth: "Pleine largeur",
     widthCustom: "Personnalisée",
+    widthUnit: "Unité de largeur",
   },
   divider: {
     style: "Style",

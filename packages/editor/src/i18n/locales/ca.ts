@@ -413,6 +413,7 @@ const ca: typeof en = {
     widthAuto: "Ajusta al contingut",
     fullWidth: "Amplada completa",
     widthCustom: "Personalitzada",
+    widthUnit: "Unitat d'amplada",
   },
 
   // Toolbar - Divider

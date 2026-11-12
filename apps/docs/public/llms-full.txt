@@ -3033,7 +3033,9 @@ interface ButtonBlock extends BaseBlock {
   /** Label weight. `'regular'` is 400, `'medium'` is 500 and `'bold'` is 700. Omitted renders bold, which is what a button with no weight renders. */
   fontWeight?: 'regular' | 'medium' | 'bold';
   openInNewTab?: boolean;
-  width?: number | 'full';
+  /** Omitted fits the label. A number is px. `'full'` spans the column. A percentage is a share of the column's content box (the column less the button's side padding), rendered natively by MJML, so the button shrinks with its column on a phone. */
+  width?: number | 'full' | PercentWidth;
+  /** Placement within the column. No visible effect when `width` is `'full'`. A percentage width still uses `align`. */
   align: 'left' | 'center' | 'right';
 }
 ```
@@ -3087,7 +3089,16 @@ interface SectionHero {
 
 ```ts
 /** "0%" to "100%" */
-type DividerPercentWidth = `${number}%`;
+type PercentWidth = `${number}%`;
+
+/** The same type as PercentWidth. */
+type DividerPercentWidth = PercentWidth;
+
+/** The number when `value` is a PercentWidth string above 0 and at most 100. Otherwise null. */
+function parsePercentWidth(value: unknown): number | null;
+
+/** Two decimal places. `0.145` is `0.15` and `1.005` is `1.01`. */
+function roundHundredths(value: number): number;
 
 interface DividerBlock extends BaseBlock {
   type: 'divider';
@@ -9661,8 +9672,8 @@ A call-to-action button with customizable appearance.
 | `fontFamily` | `string` | Font family override |
 | `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Label weight: 400, 500 or 700. Omit for bold, which is how a button with no weight renders. |
 | `openInNewTab` | `boolean` | Link target behavior |
-| `width` | `number \| 'full'` | Fixed width in px, or `'full'` for 100%. Omit to size to content. |
-| `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. |
+| `width` | `number \| 'full' \| PercentWidth` | Omit to fit the label. A number is px. `'full'` spans the column. A percentage such as `'40%'` is a share of the column's content box (the column less the button's side padding). MJML renders it natively, so the button shrinks with its column on a phone. |
+| `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. A percentage width still uses `align`. |
 
 ## Divider
 
@@ -13433,7 +13444,7 @@ The function returns an `ImportResult` with:
 | Status          | Meaning                                                                                                                                                                                                                                                                                                                                  |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `converted`     | Mapped to a Templatical block with no loss of fidelity.                                                                                                                                                                                                                                                                                  |
-| `approximated`  | A lossy mapping. The `note`, when set, names the exact change, such as a clamp, a button letter-spacing or percentage width that is not carried, or an image percentage width stored as px. Table-cell HTML reduced to plain text is reported here and named in `report.warnings`.                                                       |
+| `approximated`  | A lossy mapping. The `note`, when set, names the exact change, such as a clamp, a button letter-spacing that is not carried, or an image percentage width stored as px. Table-cell HTML reduced to plain text is reported here and named in `report.warnings`.                                                       |
 | `html-fallback` | No block equivalent — an unknown module type (forms included), an [Icons](#icons) module with icons other than one icon with no text, a non-empty image and positive px file width and height, or an [addon](#addons) with no payload the importer reads. Output is an `HtmlBlock`; see [Block Mapping](#block-mapping) for its content. |
 | `skipped`       | No output, and `templaticalBlockType` is `null`: an empty module, an Icons module with no icons, a spacer that is 0px tall, or a [divider that draws no line](#undrawn-dividers) and takes no space.                                                                                                                                     |
 
@@ -13470,7 +13481,7 @@ BeeFree block types map to Templatical equivalents:
 | Heading        | `title`                                                               | Converted                                                                                                                        |
 | List           | `paragraph`                                                           | Converted                                                                                                                        |
 | Image          | `image`                                                               | Converted                                                                                                                        |
-| Button         | `button`                                                              | Converted (approximated when letter-spacing, partial bold in the label or a percentage width other than 100% is not carried)     |
+| Button         | `button`                                                              | Converted (approximated when letter-spacing or partial bold in the label is not carried, or a percentage width is clamped or has no usable size)     |
 | Divider        | `divider`, or `spacer` when it [draws no line](#undrawn-dividers)     | Converted (approximated when a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Spacer         | `spacer`, as tall as `spacer.style.height` (BeeFree's 60px default when it is missing or unreadable)                           | Converted (skipped when 0px tall)                                                                                                |
 | Social         | `social`                                                              | Converted                                                                                                                        |
@@ -13494,16 +13505,20 @@ A list module also writes BeeFree's list box inline on each `<ul>`, `<ol>` and `
 
 A button keeps its colours, radius, padding, font size, font family, width and border. Each side uses a readable, non-negative px `padding-<side>` longhand first, then that side of a readable `padding` shorthand with one to four values. An explicit `0px` stays 0. A shorthand with any negative side is discarded as a whole; a negative longhand leaves the shorthand value available. A missing or unreadable side uses 12px on top and bottom or 24px on left and right.
 
-`font-weight` maps to `fontWeight`: a number at or under 450, or `normal`, is `"regular"` (400); from 451 through 600, including `600`, is `"medium"` (500); above 600, or `bold` / `bolder`, is omitted and the label renders bold (700). A tie between two steps takes the lighter one. When every non-whitespace text run in the label is bold through `<strong>`, `<b>` or an inline `font-weight` of at least 600, `fontWeight` is omitted regardless of the style weight. A missing or unreadable weight otherwise imports as `"regular"`. The label is flattened to plain text. When only part of it is bold and the mapped weight is `"regular"` or `"medium"`, that partial bold is lost and one `note` records the imported button weight. A `letter-spacing` other than `0` or `normal` is not carried, and neither is a percentage width other than `100%`. One short `note` names what was left out, and the module is reported `approximated`.
+`font-weight` maps to `fontWeight`: a number at or under 450, or `normal`, is `"regular"` (400); from 451 through 600, including `600`, is `"medium"` (500); above 600, or `bold` / `bolder`, is omitted and the label renders bold (700). A tie between two steps takes the lighter one. When every non-whitespace text run in the label is bold through `<strong>`, `<b>` or an inline `font-weight` of at least 600, `fontWeight` is omitted regardless of the style weight. A missing or unreadable weight otherwise imports as `"regular"`. The label is flattened to plain text. When only part of it is bold and the mapped weight is `"regular"` or `"medium"`, that partial bold is lost and one `note` records the imported button weight. A `letter-spacing` other than `0` or `normal` is not carried. One short `note` names what was left out, and the module is reported `approximated`.
 
 The label renders at 1.2× its font size. A taller line-height — a percentage of the font size, a unitless ratio, or a px length — is split across the top and bottom padding, rounded to whole pixels after the padding values above are read. The added padding is never negative, so `120%` or less leaves the padding as written. BeeFree's usual `200%` is what makes the button taller.
 
-| BeeFree `width`                               | `ButtonBlock.width`                         | Status       |
-| --------------------------------------------- | ------------------------------------------- | ------------ |
-| missing, or `auto`                            | omitted (sizes to the label)                | Converted    |
-| `100%`                                        | `"full"`                                    | Converted    |
-| a percentage other than `100%`, such as `50%` | omitted (sizes to the label), with a `note` | Approximated |
-| a positive px width                           | that many pixels, rounded                   | Converted    |
+| BeeFree `width`                                              | `ButtonBlock.width`                                                                 | Status       |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------------ |
+| missing, or `auto`                                           | omitted (sizes to the label)                                                        | Converted    |
+| `100%`                                                       | `"full"`                                                                            | Converted    |
+| a percentage above 0 and below 100, such as `40%` or `33.333%` | that percentage, rounded to two decimals with trailing zeros dropped (`"40%"`, `"33.33%"`) | Converted    |
+| above `100%`                                                 | `"full"`, with the note `width N% was clamped to 100%`                              | Approximated |
+| `0%` or below                                                | omitted, with the note `width N% has no usable size`                                | Approximated |
+| a positive px width                                          | that many pixels, rounded                                                           | Converted    |
+
+`style.width` is the width. `button.percWidth` is not read. A percentage is a share of the column's content box, and MJML renders it natively, so the button shrinks with the column on a phone.
 
 The button's place in the column is the module's `text-align` (`left`, `center` or `right`), or the button style's `text-align` when the module sets none. `border-top`, `border-right`, `border-bottom` and `border-left` become `border`. A side that paints nothing — width 0, `none`, `hidden` or transparent — is stored with width 0. When no side paints, `border` is omitted. A style other than `solid`, `dashed` or `dotted` is imported as `solid`.
 
@@ -14667,12 +14682,13 @@ Templatical centres every divider. A partial-width divider that MJML aligns left
 | missing | none, so the button fits its label | `converted` |
 | `100%` | `"full"` | `converted` |
 | px, above `0` | the px number | `converted` |
-| a percentage under `100%`, such as `50%` | the px it comes to | `approximated` |
+| a percentage above 0 and below `100%`, such as `40%` | that percentage, rounded to two decimals with trailing zeros dropped | `converted` |
 | above `100%` | `"full"` | `approximated` |
-| px or a percentage that comes to `0px` or less | none, so the button fits its label | `approximated` |
+| a percentage of `0%` or below | none, so the button fits its label | `approximated` |
+| px of `0` or below | none, so the button fits its label | `approximated` |
 | any other value | none, so the button fits its label | `approximated` |
 
-A percentage is measured against the width the button can fill: its column less the column's side padding and the button's own, which is the box `mj-button` sizes it against. `ButtonBlock.width` holds no percentage, so the px it comes to no longer scales with the column, and the entry's `note` says so. A px width stays px however wide it is, because Templatical's renderer writes `"full"` as `100%`.
+A percentage above 0 and below 100 is stored as that percentage. MJML renders it against the column's content box, the column less the button's side padding, so the button shrinks with its column on a phone. A percentage of `100%` or more is `"full"`; one above `100%` carries a note that it was clamped. A percentage of `0%` or below, and a px width of `0` or below, leaves the button fitting its label, with a note. A px width above `0` stays px, because the renderer writes `"full"` as `100%`.
 
 ### Borders and corners
 
@@ -14712,7 +14728,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
-- **Button width** — an `mj-button` `width` given as a percentage other than `100%` becomes the px it comes to, one above `100%` becomes `"full"`, and one that is unreadable or comes to `0px` or less leaves the button fitting its label. See [Button width](#button-width).
+- **Button width** — an `mj-button` `width` above `100%` becomes `"full"`, and one that is unreadable or `0` or below leaves the button fitting its label. See [Button width](#button-width).
 - **Borders and corners** — a `border-radius` that isn't in px imports as square corners, a border style other than solid, dashed or dotted is drawn solid, a border side with no px width is left undrawn, and a border on `mj-wrapper` is dropped. See [Borders and corners](#borders-and-corners).
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact Templatical keyword maps to the nearest one. See [Background images](#background-images).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.

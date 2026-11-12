@@ -18,6 +18,7 @@ export type {
   CustomBlock,
   DividerBlock,
   DividerPercentWidth,
+  PercentWidth,
   HtmlBlock,
   ImageBlock,
   MenuBlock,
@@ -55,6 +56,7 @@ export {
   toBorderRadiusCss,
   uniformBorder,
 } from "./blocks";
+export { parsePercentWidth, roundHundredths } from "./percent-width";
 
 // Background images (sections and wrapper bands)
 export type {

@@ -2,6 +2,7 @@ import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
 import {
   canonicalFontStack,
+  roundHundredths,
   createButtonBlock,
   createDividerBlock,
   createHtmlBlock,
@@ -125,16 +126,26 @@ function convertImage(
 }
 
 /**
+ * Two decimals, trailing zeros dropped: `40` is `"40%"`, `33.333` is `"33.33%"`.
+ */
+function formatButtonPercent(value: number): `${number}%` {
+  const share = roundHundredths(value);
+  const text = share.toFixed(2).replace(/\.?0+$/, "");
+  return `${Number(text)}%`;
+}
+
+/**
  * `mj-button`'s `width` as `ButtonBlock.width`, where no width is a button
  * that fits its label. `100%` is `"full"` and a px width stays px, as the
- * renderer writes them. Any other percentage becomes px of `fillWidth`, the
- * box MJML sizes it against, since the block holds no percentage. A width
- * with no size fits the label, which is what MJML draws for it. Anything but
- * `100%` or a positive px width pushes a note.
+ * renderer writes them. A percentage above 0 and below 100 is that share of
+ * the column, which MJML renders natively. The 0 and 100 boundaries are
+ * that share rounded to two decimals: above 100 is `"full"` with a clamp
+ * note, and 100 is `"full"` with no note. A rounded share of 0 or below
+ * fits the label, which is what MJML draws for it. Anything but `100%`, a
+ * smaller percentage, or a positive px width pushes a note.
  */
 function readButtonWidth(
   value: string | undefined,
-  fillWidth: number,
   notes: string[],
 ): ButtonBlock["width"] {
   const raw = (value ?? "").trim();
@@ -148,34 +159,35 @@ function readButtonWidth(
     return undefined;
   }
   const parsed = parseFloat(match[1]);
-  const isPercent = match[2] === "%";
+  const isPercent = match[2]?.toLowerCase() === "%";
 
-  if (isPercent && parsed >= 100) {
-    if (parsed > 100) {
+  if (isPercent) {
+    const share = roundHundredths(parsed);
+    if (share > 100) {
       notes.push(`Button width ${raw} was clamped to 100%.`);
+      return "full";
     }
-    return "full";
+    if (share >= 100) return "full";
+    if (share <= 0) {
+      notes.push(
+        `Button width ${raw} has no usable size; imported as fit to content.`,
+      );
+      return undefined;
+    }
+    return formatButtonPercent(parsed);
   }
 
-  const px = Math.round(isPercent ? (parsed / 100) * fillWidth : parsed);
+  const px = Math.round(parsed);
   if (px <= 0) {
     notes.push(
       `Button width ${raw} has no usable size; imported as fit to content.`,
     );
     return undefined;
   }
-  if (isPercent) {
-    notes.push(
-      `Button width ${raw} was imported as ${px}px, which does not scale with its column.`,
-    );
-  }
   return px;
 }
 
 /**
- * A percentage `width` sizes the button against its column less the column's
- * side padding and its own, the same box an `mj-divider` line spans.
- *
  * `font-family` is read only when the button sets its own: the renderer
  * writes the document font onto `mj-all`, which reaches every button.
  */
@@ -194,14 +206,9 @@ function convertButton(
     ownAttr(attrs, "font-family", "mj-button", ctx.cascade),
   );
   const base = baseFields(attrs);
-  const { left, right } = base.styles.padding;
 
   const notes: string[] = [];
-  const width = readButtonWidth(
-    attrs.width,
-    ctx.containerWidth - ctx.columnPadding - left - right,
-    notes,
-  );
+  const width = readButtonWidth(attrs.width, notes);
   const borderRadius = readBorderRadius(attrs, "Button", notes);
   const border = readBorder(attrs, "Button", notes);
 
