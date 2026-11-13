@@ -36,6 +36,8 @@ type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2
 `columnWidths` overrides the preset's split. It is one number per column of `columns`. The shares are scaled to 100 in hundredths. Each column is floored, then raised to at least 0.01, and each leftover hundredth goes to the largest fractional remainder. A tie goes to the earlier column. `[1, 1, 2]` is 25% / 25% / 50%. `[1, 1, 1]` is 33.34% / 33.33% / 33.33%. `[6, 2, 2, 2]` is 50% / 16.67% / 16.67% / 16.66%. The row totals 100. `columns` still sets the column count. Preset rows stay the literals in `COLUMN_LAYOUT_PERCENTS`.
 
 ```ts
+import { createSectionBlock } from '@templatical/types';
+
 const row = createSectionBlock({
   columns: '3',
   columnWidths: [1, 1, 2],

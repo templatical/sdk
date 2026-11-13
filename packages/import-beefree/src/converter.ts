@@ -172,7 +172,9 @@ function exactPreset(columns: BeeFreeeColumn[]): ColumnLayout | null {
  * this function. Five or more columns flatten, with the ratio in the
  * warning. Two, three or four columns keep an exact preset, or the even
  * preset of that count plus `columnWidths` from the grid shares. A share
- * that is not above 0 leaves the even preset without `columnWidths`.
+ * that is not above 0 leaves the even preset without `columnWidths`. When
+ * those shares total more than 0, one warning names the ratio. A total of
+ * 0 or less stays silent.
  */
 function resolveColumns(
   columns: BeeFreeeColumn[],
@@ -193,6 +195,12 @@ function resolveColumns(
   const layout = evenLayout(columns.length);
   const shares = columns.map(columnUnits);
   if (columnWidthsIssue({ columns: layout, columnWidths: shares }) !== null) {
+    const total = shares.reduce((sum, share) => sum + share, 0);
+    if (total > 0) {
+      warnings.push(
+        `Row with ${columns.length} columns (${gridLabel(columns)}) was kept as an even split. A share that is not above 0 cannot be stored as column widths.`,
+      );
+    }
     return { layout };
   }
   return {

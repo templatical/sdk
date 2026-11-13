@@ -502,6 +502,9 @@ describe("convertBeeFreeTemplate", () => {
     ["100%", "full", "converted", undefined],
     ["120%", "full", "approximated", "width 120% was clamped to 100%"],
     ["0%", undefined, "approximated", "width 0% has no usable size"],
+    [".5%", "0.5%", "converted", undefined],
+    [".5px", 1, "converted", undefined],
+    ["1e19%", "full", "approximated", "width 1e19% was clamped to 100%"],
   ] as const)(
     "imports a button style.width of %s",
     (source, width, status, note) => {
@@ -3099,6 +3102,25 @@ describe("convertBeeFreeTemplate", () => {
       expect(section.columnWidths).toBeUndefined();
       expect(section.children).toHaveLength(2);
       expect(ratioNotes(report.warnings)).toEqual([]);
+      expect(
+        report.warnings.some((warning) => warning.includes("even split")),
+      ).toBe(false);
+    });
+
+    it("warns when a row's grid shares are unusable and total more than 0", () => {
+      const { section, report } = sectionOf({
+        columns: [
+          { "grid-columns": 6, modules: [text("<p>L</p>")] },
+          { "grid-columns": 0, modules: [text("<p>M</p>")] },
+          { "grid-columns": 6, modules: [text("<p>R</p>")] },
+        ],
+      });
+
+      expect(section.columns).toBe("3");
+      expect(section.columnWidths).toBeUndefined();
+      expect(report.warnings).toContain(
+        "Row with 3 columns (6-0-6) was kept as an even split. A share that is not above 0 cannot be stored as column widths.",
+      );
     });
 
     it("keeps a zero-sum three-column row on the even layout", () => {
@@ -3121,6 +3143,9 @@ describe("convertBeeFreeTemplate", () => {
         ),
       ).toEqual(["<p>L</p>", "<p>M</p>", "<p>R</p>"]);
       expect(ratioNotes(report.warnings)).toEqual([]);
+      expect(
+        report.warnings.some((warning) => warning.includes("even split")),
+      ).toBe(false);
     });
 
     it("flattens five columns and names the four-column limit", () => {

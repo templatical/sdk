@@ -2222,8 +2222,9 @@ function formatButtonPercent(value: number): `${number}%` {
  * 100 is `"full"` with a clamp note. 100, including a value that rounds to
  * 100, is `"full"` with no note. Above 0 and below 100 is that share.
  * 0 or below leaves the width unset. `button.percWidth` is not this value.
- * A px width is that many pixels. `auto` and anything unreadable leave the
- * width unset.
+ * A leading decimal (`.5%`, `.5px`) and an exponent percentage (`1e19%`)
+ * are read. A px width is that many pixels, rounded. `auto` and anything
+ * unreadable leave the width unset.
  */
 function buttonWidth(value: string | undefined): {
   width?: ButtonBlock["width"];
@@ -2233,7 +2234,7 @@ function buttonWidth(value: string | undefined): {
   const raw = value.trim();
   if (!raw || /^auto$/i.test(raw)) return {};
 
-  const percent = /^(-?\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  const percent = /^(-?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?)\s*%$/i.exec(raw);
   if (percent) {
     const n = Number(percent[1]);
     const share = roundHundredths(n);
@@ -2245,7 +2246,7 @@ function buttonWidth(value: string | undefined): {
     return { width: formatButtonPercent(n) };
   }
 
-  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(raw);
   if (!px) return {};
   const width = Math.round(Number(px[1]));
   return width > 0 ? { width } : {};

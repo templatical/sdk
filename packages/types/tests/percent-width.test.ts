@@ -51,4 +51,11 @@ describe("roundHundredths", () => {
   it("rounds a value whose string is already an exponent", () => {
     expect(roundHundredths(1e-7)).toBe(0);
   });
+
+  it("returns a huge finite value unchanged when the shifted exponent cannot be formed", () => {
+    expect(roundHundredths(1e19)).toBe(1e19);
+    expect(roundHundredths(1e300)).toBe(1e300);
+    expect(roundHundredths(Number.MAX_VALUE)).toBe(Number.MAX_VALUE);
+    expect(roundHundredths(-1e19)).toBe(-1e19);
+  });
 });

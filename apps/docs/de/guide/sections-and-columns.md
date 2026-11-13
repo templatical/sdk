@@ -36,6 +36,8 @@ type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2
 `columnWidths` überschreibt die Aufteilung des Presets. Es ist eine Zahl pro Spalte von `columns`. Die Anteile werden auf 100 in Hundertsteln skaliert. Jede Spalte wird abgerundet und dann auf mindestens 0.01 angehoben, und jedes übrige Hundertstel geht an den größten Nachkommarest. Bei Gleichstand erhält die frühere Spalte das Hundertstel. `[1, 1, 2]` ist 25% / 25% / 50%. `[1, 1, 1]` ist 33.34% / 33.33% / 33.33%. `[6, 2, 2, 2]` ist 50% / 16.67% / 16.67% / 16.66%. Die Zeile ergibt 100. `columns` setzt weiter die Spaltenzahl. Preset-Zeilen bleiben die Literale in `COLUMN_LAYOUT_PERCENTS`.
 
 ```ts
+import { createSectionBlock } from '@templatical/types';
+
 const row = createSectionBlock({
   columns: '3',
   columnWidths: [1, 1, 2],

@@ -80,11 +80,14 @@ function evenLayout(count: number): ColumnLayout {
  *
  * A width list that fits a preset within `WIDTH_TOLERANCE` keeps that preset.
  * One column is always `"1"`: exact at 100%, and approximated otherwise.
- * Two, three or four columns that fit none keep the even preset of that count
- * plus `columnWidths` scaled to 100, and the match is exact. Shares that
- * cannot be stored (a non-positive width) keep that even preset and are
- * approximated. Five or more columns collapse to `"4"`; `exact: false` tells
- * the caller to report it.
+ * An absent width is MJML's default, the parent divided by the column count,
+ * not the space the stated widths leave. Two, three or four columns that fit
+ * none keep the even preset of that count plus `columnWidths` scaled to 100.
+ * That match is exact when the resolved shares already total 100 within half
+ * a point; otherwise scaling changes the source layout and the match is not
+ * exact. Shares that cannot be stored (a non-positive width) keep that even
+ * preset and are approximated. Five or more columns collapse to `"4"`;
+ * `exact: false` tells the caller to report it.
  */
 export function matchColumnLayout(percents: Array<number | null>): {
   layout: ColumnLayout;
@@ -106,15 +109,11 @@ export function matchColumnLayout(percents: Array<number | null>): {
 
   if (count > 4) return { layout: "4", exact: false };
 
-  // A partial mix of known and absent widths fills each absent column with
-  // its share of what the known widths leave over, not an equal split of the
-  // whole row — an equal split is only correct when every column is absent,
-  // which the branch above already handles. Clamped at 0 so a document whose
-  // explicit widths already exceed 100% cannot produce a negative fill.
-  const nullCount = percents.filter((p) => p === null).length;
-  const knownSum = percents.reduce((sum: number, p) => sum + (p ?? 0), 0);
-  const remainder = nullCount > 0 ? Math.max(0, 100 - knownSum) / nullCount : 0;
-  const resolved = percents.map((p) => p ?? remainder);
+  // An absent width is MJML's default: the parent width divided by the
+  // column count, whatever its siblings state. The equal preset above is
+  // only for a row whose every width is absent.
+  const fallback = 100 / count;
+  const resolved = percents.map((percent) => percent ?? fallback);
 
   const sameCount = LAYOUT_SHAPES.filter(
     (shape) => shape.percents.length === count,
@@ -133,9 +132,12 @@ export function matchColumnLayout(percents: Array<number | null>): {
   if (columnWidthsIssue({ columns: layout, columnWidths: resolved }) !== null) {
     return { layout, exact: false };
   }
+  // Scaling to 100 changes a row MJML would leave short or long. Half a
+  // point treats a binary-sum of shares that already are 100 as exact.
+  const total = resolved.reduce((sum, share) => sum + share, 0);
   return {
     layout,
-    exact: true,
+    exact: Math.abs(total - 100) <= 0.5,
     columnWidths: sectionColumnPercents({
       columns: layout,
       columnWidths: resolved,
@@ -236,23 +238,23 @@ function convertColumnChildren(
 }
 
 /**
- * A column's width as a percentage of the section's container, or `null`
+ * A column's width as a percentage of the section's inner box, or `null`
  * when the column carries no definite width of its own.
  *
- * `mj-column` accepts either a percentage or a px length, and a px width is
- * real geometry — converting it here lets it participate in
- * `matchColumnLayout` as a known value instead of falling through to "auto"
- * and losing the author's intended ratio.
+ * `mj-column` accepts either a percentage or a px length. A px width is
+ * real geometry against that inner box — the width the section was given,
+ * less its horizontal padding and drawn side borders — so it participates
+ * in `matchColumnLayout` as a known share.
  */
 function columnWidthPercent(
   value: string | undefined,
-  containerWidth: number,
+  innerWidth: number,
 ): number | null {
   const percent = parsePercent(value);
   if (percent !== null) return percent;
 
   const px = parseDefinitePx(value);
-  return px !== null && containerWidth > 0 ? (px / containerWidth) * 100 : null;
+  return px !== null && innerWidth > 0 ? (px / innerWidth) * 100 : null;
 }
 
 function isFullWidthAttr(value: string | undefined): boolean {
@@ -307,8 +309,12 @@ export function buildSection(
 
   const columnAttrs = columns.map(($c) => resolveAttributes($c, ctx.cascade));
   const rawWidths = columnAttrs.map((column) => column.width);
+  // The box MJML hands the columns: the section's container, less its own
+  // horizontal padding and drawn side borders. A wrapper has already taken
+  // its inset off `contentWidth`.
+  const innerWidth = Math.floor(ctx.contentWidth) - mjmlHorizontalInset(attrs);
   const percents = rawWidths.map((width) =>
-    columnWidthPercent(width, ctx.containerWidth),
+    columnWidthPercent(width, innerWidth),
   );
   const matched = matchColumnLayout(percents);
   const { layout, exact } = matched;
@@ -344,9 +350,8 @@ export function buildSection(
   );
   if (background) notes.push(...background.notes);
   const sectionFields = baseFields(attrs, "native");
-  // The room the renderer will give each converted column, so an image can
-  // tell whether it fills its column on phones (`fluidOnMobileAttr`).
-  const sectionBox = Math.floor(ctx.contentWidth) - mjmlHorizontalInset(attrs);
+  // `innerWidth` is the room the renderer will give the section's columns,
+  // so an image can tell whether it fills its column on phones.
   entries.push({
     sourceTag: "mj-section",
     templaticalBlockType: "section",
@@ -367,7 +372,7 @@ export function buildSection(
         (ctx.containerWidth * (widthPercents[slot] ?? 100)) / 100,
       ),
       contentWidth: Math.floor(
-        (sectionBox * (widthPercents[slot] ?? 100)) / 100,
+        (innerWidth * (widthPercents[slot] ?? 100)) / 100,
       ),
       columnPadding: left + right,
     };
