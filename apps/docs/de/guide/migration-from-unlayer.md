@@ -134,7 +134,7 @@ Unbekannte Inhaltstypen werden als Fallback in HTML-Blöcke konvertiert.
 | `autoWidth: false`, `maxWidth` unter `100%`, etwa `75%` | dieser Anteil des Platzes in px | Angenähert |
 | `autoWidth: false`, nicht lesbares `maxWidth` | `"full"` | Angenähert |
 
-`src.width` und `src.height` sind die Größe der hochgeladenen Datei. Der Platz des Bildes ist die Breite seiner Spalte abzüglich des linken und rechten `containerPadding`. `src.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält.
+`src.width` und `src.height` sind die Größe der hochgeladenen Datei. Der Platz des Bildes ist die Breite seiner Spalte (siehe [Divider-Breite](#divider-width)) abzüglich des linken und rechten `containerPadding`. `src.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält.
 
 ::: tip
 Eine px-Breite behält auf dem Smartphone ihre Größe, während ein Prozentwert mit der Spalte schrumpft. Deshalb ist ein `maxWidth` unter `100%` angenähert.
@@ -155,9 +155,9 @@ Unlayer wendet `width` nur an, wenn `autoWidth` `false` ist. Ein Prozentwert ist
 
 ### Zeilenhöhe von Buttons {#button-line-height}
 
-`lineHeight` wird zu `ButtonBlock.lineHeight`, ein Vielfaches der Schriftgröße der Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`150%` ist `1.5`), eine Zahl ohne Einheit ist sie selbst, eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße des Buttons, und eine `em`-Länge ist die Zahl. Sie wird auf zwei Nachkommastellen gerundet. `120%` (Unlayers Standard), `normal` und ein fehlender Wert lassen es ungesetzt, was 1.2 rendert. Jeder andere Wert wird mit 1.2 importiert, und der Eintrag ist angenähert, mit einer Notiz, die ihn nennt: `Button line-height "auto" could not be read; imported at 1.2.`
+`lineHeight` wird zu `ButtonBlock.lineHeight`, ein Vielfaches der Schriftgröße der Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`150%` ist `1.5`), eine Zahl ohne Einheit ist sie selbst, eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße des Buttons, und eine `em`-Länge ist die Zahl. Sie wird auf zwei Nachkommastellen gerundet. `120%` (Unlayers Standard), `normal` und ein fehlender Wert lassen es ungesetzt, was 1.2 rendert. Ein nicht lesbarer Wert wird mit 1.2 importiert, und der Eintrag ist angenähert, mit einer Notiz, die ihn nennt: `Button line-height "auto" could not be read; imported at 1.2.`
 
-### Divider-Breite
+### Divider-Breite {#divider-width}
 
 | Unlayer-`width` | `DividerBlock.width` | Status |
 |---|---|---|
@@ -168,7 +168,7 @@ Unlayer wendet `width` nur an, wenn `autoWidth` `false` ist. Ein Prozentwert ist
 | px, so breit wie diese Spannweite oder breiter | `"full"` | Konvertiert |
 | jeder andere Wert | `"full"` | Angenähert |
 
-Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Spalte abzüglich des linken und rechten `containerPadding` des Dividers. Die Breite einer Spalte ist ihr Anteil an `settings.width` gemäß dem Spaltenlayout der Section oder gemäß `columnWidths`, wenn die Reihe sie setzt, und `settings.width` ist eine px-Angabe in `contentWidth`, sonst `600`.
+Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Spalte abzüglich des linken und rechten `containerPadding` des Dividers. Die Breite einer Spalte ist ihr Anteil, gemäß dem Spaltenlayout der Section oder ihren `columnWidths`, an `settings.width` abzüglich des linken und rechten `padding` der Reihe, und `settings.width` ist eine px-Angabe in `contentWidth`, sonst `600`.
 
 ::: tip
 `mj-divider` zeichnet `100%` über diese Spannweite, eine px-Breite, die sie erreicht, sieht deshalb aus wie `"full"`. `"full"` wird außerdem auf dem Smartphone mit der Spalte schmaler.

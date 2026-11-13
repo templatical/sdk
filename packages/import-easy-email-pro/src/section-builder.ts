@@ -63,9 +63,18 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
     readAttr(column, "width", map.resolve),
   );
   const sectionWidth = insideWidth(map.contentWidth, node, map);
-  const { layout, exact, columnWidths } = matchColumnLayout(
+  const matched = matchColumnLayout(
     rawWidths.map((width) => columnPercent(width, sectionWidth)),
   );
+  const { layout, columnWidths } = matched;
+  // With no inner box a px width has nothing to be a share of, so it is
+  // dropped and the row's ratio is lost.
+  const pxDropped =
+    !sectionWidth &&
+    rawWidths.some(
+      (width) => parsePercent(width) === null && parsePx(width) !== undefined,
+    );
+  const exact = matched.exact && !pxDropped;
   const slots = COLUMN_COUNT[layout];
   const slotWidths =
     sectionWidth === undefined

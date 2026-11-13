@@ -138,21 +138,21 @@ const COLUMN_SHARES: Record<ColumnLayout, number[]> = {
 };
 
 /**
- * A column's px width as the renderer draws it, rounded down: the body width
- * times the preset's share (a third for `"3"`, `"1-2"` and `"2-1"`), or
- * times the `columnWidths` percentage when the row has one. A column past
- * the layout's last slot takes the whole body width, the renderer's
- * fallback.
+ * A column's px width as the renderer draws it, rounded down: `rowWidth`
+ * (the content width less the row's side padding) times the preset's share
+ * (a third for `"3"`, `"1-2"` and `"2-1"`), or times the `columnWidths`
+ * percentage when the row has one. A column past the layout's last slot
+ * takes the whole row width, the renderer's fallback.
  */
 function columnWidthAt(
   columns: ResolvedColumns,
-  bodyWidth: number,
+  rowWidth: number,
   index: number,
 ): number {
   if (columns.columnWidths) {
-    return Math.floor((bodyWidth * (columns.columnWidths[index] ?? 100)) / 100);
+    return Math.floor((rowWidth * (columns.columnWidths[index] ?? 100)) / 100);
   }
-  return Math.floor(bodyWidth * (COLUMN_SHARES[columns.layout][index] ?? 1));
+  return Math.floor(rowWidth * (COLUMN_SHARES[columns.layout][index] ?? 1));
 }
 
 /**
@@ -256,8 +256,12 @@ function processRow(
   const cells = row.cells ?? columns.map(() => 1);
   const resolved = resolveColumns(cells, warnings);
   const layout = resolved.layout;
+  // The row's padding insets its columns, so each column's room is its
+  // share of the content width less that padding.
+  const padding = parsePaddingShorthand(row.values?.padding);
+  const innerWidth = Math.max(0, settings.width - padding.left - padding.right);
   const contextAt = (index: number): ContentContext => ({
-    columnWidth: columnWidthAt(resolved, settings.width, index),
+    columnWidth: columnWidthAt(resolved, innerWidth, index),
     textColor: settings.textColor,
   });
 
@@ -276,7 +280,6 @@ function processRow(
     );
   }
 
-  const padding = parsePaddingShorthand(row.values?.padding);
   const paint = resolveRowPaint(row, settings.width, warnings);
 
   const section = createSectionBlock({

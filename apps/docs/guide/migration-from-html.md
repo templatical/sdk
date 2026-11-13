@@ -130,7 +130,7 @@ A `height` style overrides the `height` attribute, as it does in a browser, so `
 
 ### Button line height
 
-A button's `line-height` style becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. The font size is the button's `font-size`, else 16px. A button cell reads both from the cell and the `<a>`, the `<a>` winning. A bulletproof anchor with `font-size:16px; line-height:44px` is `2.75`. `normal`, a value that rounds to 1.2, and a missing value leave it unset, which renders 1.2. Any other value imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "calc(1em + 4px)" could not be read; imported at 1.2.`
+A button's `line-height` style becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. The font size is the button's `font-size`, else 16px. A button cell reads both from the cell and the `<a>`, the `<a>` winning. A bulletproof anchor with `font-size:16px; line-height:44px` is `2.75`. `normal`, a value that rounds to 1.2, and a missing value leave it unset, which renders 1.2. A value it can't read imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "calc(1em + 4px)" could not be read; imported at 1.2.`
 
 ### Divider width
 

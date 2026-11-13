@@ -218,10 +218,19 @@ export function buildSection(
   const innerWidth = ctx.style.settings.width - padding.left - padding.right;
   const rawWidths = columns.map((c) => attr(c, "width"));
   const percents = rawWidths.map((w) => columnPercent(w, innerWidth));
-  const { layout, exact, columnWidths } = matchColumnLayout(percents);
+  const matched = matchColumnLayout(percents);
+  const { layout, columnWidths } = matched;
+  // With no inner box a px width has nothing to be a share of, so it is
+  // dropped and the row's ratio is lost.
+  const pxDropped =
+    innerWidth <= 0 &&
+    rawWidths.some((w) => w !== undefined && PX_WIDTH.test(w.trim()));
+  const exact = matched.exact && !pxDropped;
 
   const slots = COLUMN_COUNT[layout];
-  const pixels = columnPixels(layout, ctx.style.settings.width, columnWidths);
+  // MJML lays the columns out in the inner box, so each column's room is
+  // its share of that box, not of the email width.
+  const pixels = columnPixels(layout, Math.max(0, innerWidth), columnWidths);
   const children: Block[][] = Array.from({ length: slots }, () => []);
 
   const background = readMjmlBackgroundImage(

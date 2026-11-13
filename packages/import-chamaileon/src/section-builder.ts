@@ -89,13 +89,17 @@ export function buildFullwidth(
   const reasons: string[] = [];
 
   const section = createSectionBlock();
+  // The content padding insets the columns, so each column's room is its
+  // share of the body less that padding.
+  const padding = contentPadding(style);
+  const innerWidth = Math.max(0, ctx.bodyWidth - padding.left - padding.right);
 
   if (mcIndex === -1) {
     section.columns = "1";
     section.children = [
       convertColumnChildren(
         flattened,
-        withColumnWidth(ctx, ctx.bodyWidth),
+        withColumnWidth(ctx, innerWidth),
         entries,
       ),
     ];
@@ -132,10 +136,10 @@ export function buildFullwidth(
     }
 
     const slots = COLUMN_COUNT[layout];
-    const pixels = columnPixels(layout, ctx.bodyWidth, columnWidths);
+    const pixels = columnPixels(layout, innerWidth, columnWidths);
     const children: Block[][] = Array.from({ length: slots }, () => []);
     const slotCtx = (slot: number): MapContext =>
-      withColumnWidth(ctx, Math.round(pixels[slot] ?? ctx.bodyWidth));
+      withColumnWidth(ctx, Math.round(pixels[slot]!));
 
     children[0].push(...convertColumnChildren(before, slotCtx(0), entries));
     columns.forEach((column, index) => {
@@ -161,7 +165,7 @@ export function buildFullwidth(
     : undefined;
   const fill = contentFill ?? soleFill;
 
-  section.styles.padding = contentPadding(style);
+  section.styles.padding = padding;
   if (fill) section.styles.backgroundColor = fill;
 
   const own = content ?? soleImage;

@@ -136,7 +136,7 @@ Unknown content types are converted to HTML blocks as a fallback.
 | `autoWidth: false`, `maxWidth` under `100%`, such as `75%` | that share of the room in px | Approximated |
 | `autoWidth: false`, unreadable `maxWidth` | `"full"` | Approximated |
 
-`src.width` and `src.height` are the uploaded file's size. The image's room is its column's width less its left and right `containerPadding`. `src.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at.
+`src.width` and `src.height` are the uploaded file's size. The image's room is its column's width (see [Divider width](#divider-width)) less its left and right `containerPadding`. `src.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at.
 
 ::: tip
 A px width keeps its size on a phone, where a percentage shrinks with the column, so a `maxWidth` under `100%` is approximated.
@@ -157,7 +157,7 @@ Unlayer applies `width` only when `autoWidth` is `false`. A percentage is a shar
 
 ### Button line height
 
-`lineHeight` becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. `120%` (Unlayer's default), `normal`, and a missing value leave it unset, which renders 1.2. Any other value imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "auto" could not be read; imported at 1.2.`
+`lineHeight` becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. `120%` (Unlayer's default), `normal`, and a missing value leave it unset, which renders 1.2. A value it can't read imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "auto" could not be read; imported at 1.2.`
 
 ### Divider width
 
@@ -170,7 +170,7 @@ Unlayer applies `width` only when `autoWidth` is `false`. A percentage is a shar
 | px, as wide as that span or wider | `"full"` | Converted |
 | any other value | `"full"` | Approximated |
 
-A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share of `settings.width` under the section's column layout, or under `columnWidths` when the row sets them, and `settings.width` is a px `contentWidth`, else `600`.
+A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share, under the section's column layout or its `columnWidths`, of `settings.width` less the row's left and right `padding`, and `settings.width` is a px `contentWidth`, else `600`.
 
 ::: tip
 `mj-divider` draws `100%` across that span, so a px width that reaches it renders the same as `"full"`. `"full"` also narrows with the column on a phone.

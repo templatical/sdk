@@ -426,7 +426,43 @@ describe("buildSection", () => {
     );
     expect((blocks[0] as SectionBlock).columns).toBe("2");
     expect((blocks[0] as SectionBlock).columnWidths).toBeUndefined();
-    expect(entries[0].status).toBe("converted");
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-section",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: 'Column widths 100px, 500px have no exact Templatical layout; resolved to "2".',
+    });
+  });
+
+  // 50px either side leaves a 500px inner box: 300px / 200px are 60 / 40 of
+  // it, and those are the columns' rooms.
+  it("measures a padded section's columns against its inner box", () => {
+    const { blocks } = build(
+      section(
+        { "padding-left": "50px", "padding-right": "50px" },
+        column("300px", image(300), image(299)),
+        column("200px", image(200), image(199)),
+      ),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect([s.columns, s.columnWidths]).toEqual(["2", [60, 40]]);
+    expect(
+      s.children.map((col) => col.map((b) => (b as ImageBlock).width)),
+    ).toEqual([
+      ["full", 299],
+      ["full", 199],
+    ]);
+  });
+
+  it("measures a padded single column against its inner box", () => {
+    const { blocks } = build(
+      section({ padding: "0 50px" }, column("100%", image(500), image(499))),
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.children[0]!.map((b) => (b as ImageBlock).width)).toEqual([
+      "full",
+      499,
+    ]);
   });
 
   // 40% / 60% of 600px are 240px and 360px columns.

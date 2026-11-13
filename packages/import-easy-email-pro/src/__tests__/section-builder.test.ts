@@ -764,7 +764,10 @@ describe("buildTopLevel", () => {
     );
     expect((blocks[0] as SectionBlock).columns).toBe("2");
     expect((blocks[0] as SectionBlock).columnWidths).toBeUndefined();
-    expect(entries[0].status).toBe("converted");
+    expect(entries[0]).toMatchObject({
+      status: "approximated",
+      note: 'Column widths 100px, 500px have no exact Templatical layout; resolved to "2".',
+    });
   });
 
   it("measures a px divider against a custom-width column", () => {

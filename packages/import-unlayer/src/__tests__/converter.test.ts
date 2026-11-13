@@ -290,6 +290,75 @@ describe("convertUnlayerTemplate", () => {
       expect(dividerWidthIn([7, 3], 1, { width: "179px" }, "600px")).toBe(179);
     });
 
+    // 50px either side leaves a 500px row: a 500px single column, or 350px
+    // and 150px for [7, 3].
+    it("measures a padded row's column against the row less its padding", () => {
+      const { content } = convertUnlayerTemplate({
+        body: {
+          values: { contentWidth: "600px" },
+          rows: [
+            {
+              cells: [1],
+              columns: [
+                {
+                  contents: ["500px", "499px"].map((width) => ({
+                    type: "divider",
+                    values: { width },
+                  })),
+                  values: {},
+                },
+              ],
+              values: { padding: "0px 50px" },
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(
+        section.children[0]!.map((block) =>
+          block.type === "divider" ? block.width : null,
+        ),
+      ).toEqual(["full", 499]);
+    });
+
+    it("measures a padded custom-width row's columns by their share", () => {
+      const { content } = convertUnlayerTemplate({
+        body: {
+          values: { contentWidth: "600px" },
+          rows: [
+            {
+              cells: [7, 3],
+              columns: [
+                ["350px", "349px"],
+                ["150px", "149px"],
+              ].map((widths) => ({
+                contents: widths.map((width) => ({
+                  type: "divider",
+                  values: { width },
+                })),
+                values: {},
+              })),
+              values: { padding: "0px 50px" },
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.columnWidths).toEqual([70, 30]);
+      expect(
+        section.children.map((column) =>
+          column.map((block) =>
+            block.type === "divider" ? block.width : null,
+          ),
+        ),
+      ).toEqual([
+        ["full", 349],
+        ["full", 149],
+      ]);
+    });
+
     // A column past the cells' count has no share, so it takes the body.
     it("measures a column past a custom row's cells against the body", () => {
       const { content } = convertUnlayerTemplate({
