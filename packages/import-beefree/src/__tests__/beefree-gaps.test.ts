@@ -1102,6 +1102,42 @@ describe("BeeFree module gaps", () => {
       );
     });
 
+    it("reads vertical padding whose sum is not finite as unreadable", () => {
+      const padding = `1${"0".repeat(308)}px`;
+      const { block, entry } = blank({
+        fontSize: "14px",
+        lineHeight: "120%",
+        paddingTop: padding,
+        paddingBottom: padding,
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(17);
+      expect(Number.isInteger(block.height)).toBe(true);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 17px spacer; its padding is not read.",
+      );
+    });
+
+    it("uses the fallback line box alone when the height sum is not finite", () => {
+      const huge = `1${"0".repeat(308)}px`;
+      const { block, entry } = blank({
+        fontSize: huge,
+        lineHeight: "1",
+        paddingTop: huge,
+        paddingBottom: "0px",
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(17);
+      expect(Number.isInteger(block.height)).toBe(true);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBe("Blank paragraph imported as a 17px spacer.");
+    });
+
     it("approximates a blank paragraph whose line box overflows", () => {
       const { block, entry } = blank({
         fontSize: `1${"0".repeat(308)}px`,

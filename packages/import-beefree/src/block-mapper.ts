@@ -1679,6 +1679,8 @@ function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
   const line = blankParagraphLineBox(descriptor.paragraph?.style);
   // A longhand of hundreds of digits is Infinity. That side is not a length,
   // so the spacer reads it as 0. Left and right never enter this height.
+  // Two finite sides can still sum past Number.MAX_VALUE. That sum is not a
+  // length either, so both sides are unread.
   let top = padding.top;
   let bottom = padding.bottom;
   let paddingUnread = false;
@@ -1690,24 +1692,26 @@ function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
     bottom = 0;
     paddingUnread = true;
   }
-  const height = Math.round(top + line.px + bottom);
-  // 14px at 1.2 is the documented line box when a value is not read.
-  // A non-finite line box (finite factors whose product overflows) makes
-  // this rounded height non-finite too, so one check covers both. Padding
-  // was already replaced, so the fallback is a finite, non-negative integer.
-  const fallback = Math.round(top + 14 * 1.2 + bottom);
+  if (!Number.isFinite(top + bottom)) {
+    top = 0;
+    bottom = 0;
+    paddingUnread = true;
+  }
+  // The line-box clause is only for a line box that itself overflowed.
+  // 14px at 1.2 is the documented fallback line box.
+  const lineBoxOverflows = !Number.isFinite(line.px);
+  const linePx = lineBoxOverflows ? 14 * 1.2 : line.px;
+  let height = Math.round(top + linePx + bottom);
+  // Each addend is finite, but a finite line box plus finite padding can
+  // still pass Number.MAX_VALUE. The height is then the fallback line box
+  // alone; putting the padding back would overflow the same way.
   if (!Number.isFinite(height)) {
-    return {
-      height: fallback,
-      unread: line.unread,
-      lineBoxOverflows: true,
-      paddingUnread,
-    };
+    height = Math.round(14 * 1.2);
   }
   return {
     height,
     unread: line.unread,
-    lineBoxOverflows: false,
+    lineBoxOverflows,
     paddingUnread,
   };
 }
