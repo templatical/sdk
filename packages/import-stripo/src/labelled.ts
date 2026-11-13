@@ -109,12 +109,12 @@ function fontSizePx(value: string | undefined): number {
 
 /**
  * The size a button label renders at: a px or unitless font size rounded to
- * whole pixels. Undefined when the value is missing, not a px length, or
- * rounds to 0, and the block then keeps the factory size.
+ * whole pixels. Undefined when the value is missing, not a px length, not
+ * finite, or rounds to 0, and the block then keeps the factory size.
  */
 function labelFontSize(value: string | undefined): number | undefined {
   const size = Math.round(fontSizePx(value));
-  return size > 0 ? size : undefined;
+  return Number.isFinite(size) && size > 0 ? size : undefined;
 }
 
 /** A `%` or `em` line height as the px it computes to at `fontSize`. */

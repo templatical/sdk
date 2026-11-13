@@ -270,12 +270,21 @@ function readButtonLineHeight(
 }
 
 /**
+ * A decimal px length or bare number. `Number` alone would also read `0x20`
+ * or `1e1`, which no stylesheet treats as a font size.
+ */
+const DECIMAL_SIZE = /^(?:\d+(?:\.\d+)?|\.\d+)\s*(?:px)?$/i;
+
+/**
  * The size a button label renders at: a px or unitless `font-size` rounded to
- * whole pixels. Undefined when the attribute is unset, not a px length, not
- * finite, or rounds to 0, and the block then keeps the factory size.
+ * whole pixels. Undefined when the attribute is unset, not a decimal px
+ * length, not finite, or rounds to 0, and the block then keeps the factory
+ * size.
  */
 function labelFontSize(value: unknown): number | undefined {
-  const size = Math.round(parsePx(value) ?? Number.NaN);
+  const text = String(value ?? "").trim();
+  if (!DECIMAL_SIZE.test(text)) return undefined;
+  const size = Math.round(Number.parseFloat(text));
   return Number.isFinite(size) && size > 0 ? size : undefined;
 }
 

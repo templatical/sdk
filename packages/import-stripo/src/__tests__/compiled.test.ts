@@ -288,7 +288,16 @@ describe("compiled pipeline", () => {
 
     // A stated size it can't use is dropped, so the label is 15px and 30px is 2.
     it("notes a font size it cannot use and imports the label at 15px", () => {
-      for (const value of ["2em", "120%", "large", "0px", "0.4px", "-4px"]) {
+      // 400 digits parse to Infinity, which is no size either.
+      for (const value of [
+        "2em",
+        "120%",
+        "large",
+        "0px",
+        "0.4px",
+        "-4px",
+        `${"9".repeat(400)}px`,
+      ]) {
         expect(styledButtonOf(`font-size:${value};line-height:30px`)).toEqual({
           fontSize: 15,
           lineHeight: 2,

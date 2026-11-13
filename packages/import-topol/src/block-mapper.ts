@@ -174,13 +174,16 @@ function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
   const fontFamily = canonicalFontStack(
     resolved(node, "font-family", ctx, "button"),
   );
-  // A stated font size that is not px, or not above 0, leaves the factory
-  // size with a note, and a px line height is measured against the size the
-  // label renders at.
+  // A stated font size that is not px, not finite, or not above 0, leaves the
+  // factory size with a note, and a px line height is measured against the
+  // size the label renders at.
   const factorySize = Number(BUTTON_BLOCK_DEFAULTS.fontSize);
   const statedFontSize = String(resolved(node, "font-size", ctx) ?? "").trim();
   const parsedFontSize = parsePxValue(statedFontSize);
-  const fontSize = parsedFontSize > 0 ? parsedFontSize : undefined;
+  const fontSize =
+    Number.isFinite(parsedFontSize) && parsedFontSize > 0
+      ? parsedFontSize
+      : undefined;
   const radiusRaw = resolved(node, "border-radius", ctx);
   const notes: string[] = [];
   if (statedFontSize !== "" && fontSize === undefined) {

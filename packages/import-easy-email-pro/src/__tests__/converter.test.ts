@@ -984,6 +984,9 @@ describe("button font size", () => {
       "0.4px",
       "-4px",
       "Infinity",
+      // Number() reads these as 32 and 10; a font size is decimal px.
+      "0x20px",
+      "1e1px",
     ]) {
       expect(
         buttonOf({ "font-size": fontSize, "line-height": "30px" }),

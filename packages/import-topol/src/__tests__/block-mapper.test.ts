@@ -188,6 +188,8 @@ describe("mj-button", () => {
       "0px",
       "0.4px",
       "-4px",
+      // 400 digits parse to Infinity, which is no size either.
+      `${"9".repeat(400)}px`,
     ]) {
       const r = convertLeaf(
         node(
