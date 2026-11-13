@@ -864,6 +864,139 @@ describe("custom column widths and percentage buttons", () => {
   });
 });
 
+describe("button font size", () => {
+  function buttonOf(
+    attributes: Record<string, unknown>,
+    data: EasyEmailProPage["data"] = {},
+  ) {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data,
+      attributes: {},
+      children: [
+        {
+          type: "standard-section",
+          data: {},
+          attributes: {},
+          children: [
+            {
+              type: "standard-column",
+              data: {},
+              attributes: {},
+              children: [
+                {
+                  type: "standard-button",
+                  data: {},
+                  attributes: { "background-color": "#C5900C", ...attributes },
+                  children: [{ text: "Go" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const button = (content.blocks[0] as SectionBlock)
+      .children[0][0] as ButtonBlock;
+    const entry = report.entries.find((e) => e.sourceTag === "standard-button");
+    return {
+      fontSize: button.fontSize,
+      lineHeight: button.lineHeight,
+      status: entry?.status,
+      note: entry?.note,
+    };
+  }
+
+  // 27px over the 18px label is 1.5.
+  it("imports a px font size and measures a px line height against it", () => {
+    expect(buttonOf({ "font-size": "18px", "line-height": "27px" })).toEqual({
+      fontSize: 18,
+      lineHeight: 1.5,
+      status: "converted",
+      note: undefined,
+    });
+  });
+
+  // 17.6px renders at 18px, and 27px over 18px is 1.5.
+  it("rounds the font size and measures a px line height against the rounded size", () => {
+    expect(
+      buttonOf({ "font-size": "17.6px", "line-height": "27px" }),
+    ).toMatchObject({ fontSize: 18, lineHeight: 1.5 });
+  });
+
+  it("reads a unitless or numeric font size as px", () => {
+    expect(buttonOf({ "font-size": "18" }).fontSize).toBe(18);
+    expect(buttonOf({ "font-size": 18 }).fontSize).toBe(18);
+  });
+
+  it("reads the font size through the attribute cascade", () => {
+    expect(
+      buttonOf(
+        {},
+        { blockAttributes: { "standard-button": { "font-size": "20px" } } },
+      ).fontSize,
+    ).toBe(20);
+    expect(
+      buttonOf({}, { categoryAttributes: { BUTTON: { "font-size": "22px" } } })
+        .fontSize,
+    ).toBe(22);
+    expect(
+      buttonOf({}, { globalAttributes: { "font-size": "16px" } }).fontSize,
+    ).toBe(16);
+    expect(
+      buttonOf(
+        { "font-size": "18px" },
+        { blockAttributes: { "standard-button": { "font-size": "20px" } } },
+      ).fontSize,
+    ).toBe(18);
+  });
+
+  it("resolves a $var font size", () => {
+    expect(
+      buttonOf(
+        { "font-size": "$var(buttonSize)" },
+        { variables: [{ name: "buttonSize", value: "21px" }] },
+      ).fontSize,
+    ).toBe(21);
+  });
+
+  // With no font size the label keeps the factory 15px, so 30px is 2. An
+  // unresolved $var is unset, as every other attribute's is.
+  it("keeps the factory 15px for a missing font size, without a note", () => {
+    for (const attributes of [{}, { "font-size": "$var(missing)" }]) {
+      expect(buttonOf({ ...attributes, "line-height": "30px" })).toEqual({
+        fontSize: 15,
+        lineHeight: 2,
+        status: "converted",
+        note: undefined,
+      });
+    }
+  });
+
+  // A stated size it can't use is dropped, so the label is 15px and 30px is 2.
+  it("notes a font size it cannot use and imports the label at 15px", () => {
+    for (const fontSize of [
+      "2em",
+      "120%",
+      "large",
+      "0",
+      0,
+      "0.4px",
+      "-4px",
+      "Infinity",
+    ]) {
+      expect(
+        buttonOf({ "font-size": fontSize, "line-height": "30px" }),
+      ).toEqual({
+        fontSize: 15,
+        lineHeight: 2,
+        status: "approximated",
+        note: `Button font-size "${String(fontSize)}" could not be read; imported at 15px.`,
+      });
+    }
+  });
+});
+
 describe("divider width against the page", () => {
   it("measures a column against the page width", () => {
     const { content } = convertEasyEmailProTemplate({

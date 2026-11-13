@@ -294,7 +294,7 @@ describe("convertLeaf", () => {
       expect(widthOf(undefined).width).toBeUndefined();
     });
 
-    it("reads a line height, px over the 15px label the block keeps", () => {
+    it("reads a line height, px over the factory 15px label when no font size is set", () => {
       const lineHeightOf = (value: unknown) => {
         const { blocks, entries } = map({
           type: "standard-button",
@@ -330,8 +330,8 @@ describe("convertLeaf", () => {
       });
     });
 
-    // The label renders at 15px, so 200% of a 30px font is a 60px line, 4x.
-    it("resolves a relative line height against the button's own px font size", () => {
+    // The label renders at the button's own 30px, so 200% stays 2.
+    it("keeps a relative line height as a multiple of the button's own px font size", () => {
       const lineHeightOf = (attributes: Record<string, unknown>) => {
         const { blocks, entries } = map({
           type: "standard-button",
@@ -340,6 +340,7 @@ describe("convertLeaf", () => {
           children: [{ text: "Go" }],
         });
         return {
+          fontSize: (blocks[0] as ButtonBlock).fontSize,
           lineHeight: (blocks[0] as ButtonBlock).lineHeight,
           status: entries[0].status,
           note: entries[0].note,
@@ -347,23 +348,30 @@ describe("convertLeaf", () => {
       };
       expect(
         lineHeightOf({ "font-size": "30px", "line-height": "200%" }),
-      ).toEqual({ lineHeight: 4, status: "converted", note: undefined });
+      ).toEqual({
+        fontSize: 30,
+        lineHeight: 2,
+        status: "converted",
+        note: undefined,
+      });
       expect(
         lineHeightOf({ "font-size": "30px", "line-height": "2em" }).lineHeight,
-      ).toBe(4);
+      ).toBe(2);
       expect(
         lineHeightOf({ "font-size": "30px", "line-height": "1.5" }).lineHeight,
       ).toBe(1.5);
-      expect(
-        lineHeightOf({ "font-size": "2em", "line-height": "150%" }),
-      ).toEqual({
-        lineHeight: 1.5,
-        status: "approximated",
-        note: 'Button line-height "150%" is relative to font-size "2em", which could not be read; imported as a multiple of the label.',
-      });
-      expect(
-        lineHeightOf({ "font-size": "2em", "line-height": "1.5" }),
-      ).toEqual({ lineHeight: 1.5, status: "converted", note: undefined });
+      // Beside a font size it can't read, the ratio stays on the 15px label;
+      // the font-size note is the only loss.
+      for (const lineHeight of ["150%", "1.5em", "1.5"]) {
+        expect(
+          lineHeightOf({ "font-size": "2em", "line-height": lineHeight }),
+        ).toEqual({
+          fontSize: 15,
+          lineHeight: 1.5,
+          status: "approximated",
+          note: 'Button font-size "2em" could not be read; imported at 15px.',
+        });
+      }
     });
 
     it("joins the outline note and the width note", () => {

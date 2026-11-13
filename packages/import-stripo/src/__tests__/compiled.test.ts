@@ -222,25 +222,107 @@ describe("compiled pipeline", () => {
     });
   });
 
+  function styledButtonOf(anchorStyle: string, borderStyle = "") {
+    const html = `<table class="es-wrapper"><tr><td><span class="es-button-border" style="${borderStyle}"><a class="es-button" href="https://example.com/x" style="background:#000;color:#fff;${anchorStyle}">Go</a></span></td></tr></table>`;
+    const { content, report } = convertStripoTemplate(html);
+    const button = content.blocks
+      .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+      .find((b) => b.type === "button");
+    if (button?.type !== "button") throw new Error("expected a button");
+    const entry = report.entries.find(
+      (e) => e.templaticalBlockType === "button",
+    );
+    return {
+      fontSize: button.fontSize,
+      lineHeight: button.lineHeight,
+      status: entry?.status,
+      note: entry?.note,
+    };
+  }
+
+  describe("button font size", () => {
+    // 27px over the 18px label is 1.5.
+    it("imports the anchor's px font size and measures a px line height against it", () => {
+      expect(styledButtonOf("font-size:18px;line-height:27px")).toEqual({
+        fontSize: 18,
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    it("falls back to the border wrapper's font size", () => {
+      expect(styledButtonOf("line-height:30px", "font-size:20px")).toEqual({
+        fontSize: 20,
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    it("prefers the anchor's font size to the wrapper's", () => {
+      expect(styledButtonOf("font-size:18px", "font-size:24px").fontSize).toBe(
+        18,
+      );
+    });
+
+    // 17.6px renders at 18px, and 27px over 18px is 1.5.
+    it("rounds the font size and measures a px line height against the rounded size", () => {
+      expect(styledButtonOf("font-size:17.6px;line-height:27px")).toEqual({
+        fontSize: 18,
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    // With no font size the label keeps the factory 15px, so 30px is 2.
+    it("keeps the factory 15px for a missing font size, without a note", () => {
+      expect(styledButtonOf("line-height:30px")).toEqual({
+        fontSize: 15,
+        lineHeight: 2,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    // A stated size it can't use is dropped, so the label is 15px and 30px is 2.
+    it("notes a font size it cannot use and imports the label at 15px", () => {
+      for (const value of ["2em", "120%", "large", "0px", "0.4px", "-4px"]) {
+        expect(styledButtonOf(`font-size:${value};line-height:30px`)).toEqual({
+          fontSize: 15,
+          lineHeight: 2,
+          status: "approximated",
+          note: `Button font-size "${value}" could not be read; imported at 15px.`,
+        });
+      }
+      expect(styledButtonOf("", "font-size:large")).toEqual({
+        fontSize: 15,
+        lineHeight: undefined,
+        status: "approximated",
+        note: 'Button font-size "large" could not be read; imported at 15px.',
+      });
+    });
+
+    // The anchor's own value is the one that applies, even when it can't be
+    // read, so the wrapper's size is not used in its place.
+    it("does not fall back to the wrapper when the anchor's font size can't be read", () => {
+      expect(styledButtonOf("font-size:2em", "font-size:20px").fontSize).toBe(
+        15,
+      );
+    });
+  });
+
   describe("button line height", () => {
     function lineHeightOf(anchorStyle: string, borderStyle = "") {
-      const html = `<table class="es-wrapper"><tr><td><span class="es-button-border" style="${borderStyle}"><a class="es-button" href="https://example.com/x" style="background:#000;color:#fff;${anchorStyle}">Go</a></span></td></tr></table>`;
-      const { content, report } = convertStripoTemplate(html);
-      const button = content.blocks
-        .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
-        .find((b) => b.type === "button");
-      if (button?.type !== "button") throw new Error("expected a button");
-      const entry = report.entries.find(
-        (e) => e.templaticalBlockType === "button",
+      const { lineHeight, status, note } = styledButtonOf(
+        anchorStyle,
+        borderStyle,
       );
-      return {
-        lineHeight: button.lineHeight,
-        status: entry?.status,
-        note: entry?.note,
-      };
+      return { lineHeight, status, note };
     }
 
-    // The block keeps the factory 15px label, so 30px is twice its size.
+    // With no font size the label keeps the factory 15px, so 30px is twice it.
     it("reads the anchor's inline line height", () => {
       expect(lineHeightOf("line-height:150%")).toEqual({
         lineHeight: 1.5,
@@ -256,47 +338,59 @@ describe("compiled pipeline", () => {
     });
 
     // A percentage or em line height inherits as the length it computes to on
-    // the wrapper: 150% of 20px is 30px, twice the 15px label.
+    // the wrapper: 150% of 20px is 30px, 1.25 of the anchor's 24px label.
     it("resolves the wrapper's relative line height against its font size", () => {
       expect(
-        lineHeightOf("", "font-size:20px;line-height:150%").lineHeight,
-      ).toBe(2);
+        styledButtonOf("font-size:24px", "font-size:20px;line-height:150%"),
+      ).toEqual({
+        fontSize: 24,
+        lineHeight: 1.25,
+        status: "converted",
+        note: undefined,
+      });
+      // The label takes the wrapper's 20px, so the 30px line is 1.5 of it.
+      expect(
+        styledButtonOf("", "font-size:20px;line-height:150%"),
+      ).toMatchObject({ fontSize: 20, lineHeight: 1.5 });
       expect(lineHeightOf("", "line-height:2em").lineHeight).toBe(2);
+      // 200% of 16.5px is 33px; the label rounds to 17px, and 33 / 17 is 1.94.
+      expect(
+        styledButtonOf("", "font-size:16.5px;line-height:200%"),
+      ).toMatchObject({ fontSize: 17, lineHeight: 1.94 });
     });
 
-    // The label renders at 15px, so 2em of a 30px anchor is a 60px line, 4x.
-    it("resolves the anchor's relative line height against its own px font size", () => {
-      expect(lineHeightOf("font-size:30px;line-height:2em")).toEqual({
-        lineHeight: 4,
+    // The label renders at the anchor's own font size, so a percentage, em or
+    // number beside it keeps its ratio.
+    it("keeps the anchor's relative line height as a multiple of its own px font size", () => {
+      expect(styledButtonOf("font-size:30px;line-height:2em")).toEqual({
+        fontSize: 30,
+        lineHeight: 2,
         status: "converted",
         note: undefined,
       });
       expect(lineHeightOf("font-size:30px;line-height:200%").lineHeight).toBe(
-        4,
+        2,
       );
       expect(lineHeightOf("font-size:30px;line-height:1.5").lineHeight).toBe(
         1.5,
       );
-      // 2em of 16.5px is 33px, 2.2 of the 15px label, with no rounding of the size.
-      expect(lineHeightOf("font-size:16.5px;line-height:2em").lineHeight).toBe(
-        2.2,
-      );
-      expect(
-        lineHeightOf("", "font-size:16.5px;line-height:200%").lineHeight,
-      ).toBe(2.2);
+      expect(styledButtonOf("font-size:16.5px;line-height:2em")).toMatchObject({
+        fontSize: 17,
+        lineHeight: 2,
+      });
     });
 
-    it("notes an anchor font size it cannot read beside a relative line height", () => {
-      expect(lineHeightOf("font-size:2em;line-height:150%")).toEqual({
-        lineHeight: 1.5,
-        status: "approximated",
-        note: 'Button line-height "150%" is relative to font-size "2em", which could not be read; imported as a multiple of the label.',
-      });
-      expect(lineHeightOf("font-size:2em;line-height:1.5")).toEqual({
-        lineHeight: 1.5,
-        status: "converted",
-        note: undefined,
-      });
+    // The ratio is kept on the 15px label; the font-size note is the only loss.
+    it("keeps a relative line height beside an anchor font size it cannot read", () => {
+      for (const lineHeight of ["150%", "1.5em", "1.5"]) {
+        expect(lineHeightOf(`font-size:2em;line-height:${lineHeight}`)).toEqual(
+          {
+            lineHeight: 1.5,
+            status: "approximated",
+            note: 'Button font-size "2em" could not be read; imported at 15px.',
+          },
+        );
+      }
     });
 
     it("takes an explicit inherit from the wrapper", () => {
@@ -305,9 +399,11 @@ describe("compiled pipeline", () => {
       ).toBe(1.6);
     });
 
+    // 150% of the 15px stand-in is 22.5px, 1.25 of the anchor's 18px label.
     it("notes a wrapper with no font size when the anchor sets its own", () => {
-      expect(lineHeightOf("font-size:18px", "line-height:150%")).toEqual({
-        lineHeight: 1.5,
+      expect(styledButtonOf("font-size:18px", "line-height:150%")).toEqual({
+        fontSize: 18,
+        lineHeight: 1.25,
         status: "approximated",
         note: 'Button line-height "150%" inherits from a font-size that is not stated; resolved against 15px.',
       });
@@ -318,7 +414,7 @@ describe("compiled pipeline", () => {
       expect(lineHeightOf("", "font-size:2em;line-height:150%")).toEqual({
         lineHeight: 1.5,
         status: "approximated",
-        note: 'Button line-height "150%" inherits from font-size "2em", which could not be read; resolved against 15px.',
+        note: 'Button font-size "2em" could not be read; imported at 15px. Button line-height "150%" inherits from font-size "2em", which could not be read; resolved against 15px.',
       });
     });
 

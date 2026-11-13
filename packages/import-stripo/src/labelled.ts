@@ -107,6 +107,16 @@ function fontSizePx(value: string | undefined): number {
   return match ? Number(match[1]) : 0;
 }
 
+/**
+ * The size a button label renders at: a px or unitless font size rounded to
+ * whole pixels. Undefined when the value is missing, not a px length, or
+ * rounds to 0, and the block then keeps the factory size.
+ */
+function labelFontSize(value: string | undefined): number | undefined {
+  const size = Math.round(fontSizePx(value));
+  return size > 0 ? size : undefined;
+}
+
 /** A `%` or `em` line height as the px it computes to at `fontSize`. */
 function relativeAsPx(value: string, fontSize: number): string | undefined {
   const relative = RELATIVE_LINE_HEIGHT.exec(value);
@@ -118,15 +128,15 @@ function relativeAsPx(value: string, fontSize: number): string | undefined {
 
 /**
  * The line height a button takes: its own, else the one it inherits from
- * the element around it. The label renders at `fallbackSize`, not at the
- * anchor's own font size, so an own `%` or `em` line height beside an own px
- * `font-size` becomes the length it computes to. `inherit` defers to the
- * element around it, where a `%` or `em` line height inherits as the length
- * it computes to, resolved against `outerFontSize`. With no outer font size,
- * a label that states none of its own shares the size the outer element
+ * the element around it. An own line height is kept as written: the label
+ * renders at the anchor's font size, or at the factory size when that can't
+ * be read, so a `%` or `em` keeps its ratio. `inherit` defers to the element
+ * around it, where a `%` or `em` line height inherits as the length it
+ * computes to, resolved against `outerFontSize`. With no outer font size, a
+ * label that states none of its own shares the size the outer element
  * inherits, so the value keeps its ratio as written. Otherwise, when the
- * outer font size is missing or not a px length, `fallbackSize` stands in
- * and a note says so. A number, a length or a keyword is kept as written.
+ * outer font size is missing or not a px length, `fallbackSize` stands in and
+ * a note says so. A number, a length or a keyword is kept as written.
  */
 function lineHeightSource(
   own: string | undefined,
@@ -137,17 +147,7 @@ function lineHeightSource(
   notes: string[],
 ): string | undefined {
   const ownValue = own?.trim();
-  if (ownValue && !/^inherit$/i.test(ownValue)) {
-    const statedOwn = ownFontSize?.trim();
-    const ownSize = fontSizePx(statedOwn);
-    if (ownSize > 0) return relativeAsPx(ownValue, ownSize) ?? own;
-    if (statedOwn && RELATIVE_LINE_HEIGHT.test(ownValue)) {
-      notes.push(
-        `Button line-height "${ownValue}" is relative to font-size "${statedOwn}", which could not be read; imported as a multiple of the label.`,
-      );
-    }
-    return own;
-  }
+  if (ownValue && !/^inherit$/i.test(ownValue)) return own;
   const outerValue = outer?.trim() ?? "";
   if (!RELATIVE_LINE_HEIGHT.test(outerValue)) return outer;
   const statedOuter = outerFontSize?.trim();
@@ -182,20 +182,29 @@ export function buttonFrom(
   const textColor = parseColor(own.color) || parseColor(parent.color);
   const borderRadius =
     parsePxValue(own["border-radius"]) || parsePxValue(parent["border-radius"]);
-  // The block keeps the factory font size, so a px line height is measured
-  // against the size the label renders at.
+  // The anchor's own font size applies, else the one it inherits from the
+  // element around it. One that can't be read leaves the factory size with a
+  // note, and a px line height is measured against the size the label
+  // renders at.
+  const factorySize = Number(BUTTON_BLOCK_DEFAULTS.fontSize);
+  const statedFontSize = own["font-size"] ?? parent["font-size"];
+  const fontSize = labelFontSize(statedFontSize);
   const notes: string[] = [];
-  const labelSize = Number(BUTTON_BLOCK_DEFAULTS.fontSize);
+  if (statedFontSize !== undefined && fontSize === undefined) {
+    notes.push(
+      `Button font-size "${statedFontSize}" could not be read; imported at ${factorySize}px.`,
+    );
+  }
   const lineHeight = readButtonLineHeight(
     lineHeightSource(
       own["line-height"],
       parent["line-height"],
       parent["font-size"],
       own["font-size"],
-      labelSize,
+      factorySize,
       notes,
     ),
-    labelSize,
+    fontSize ?? factorySize,
     notes,
   );
   pushEntry(
@@ -212,6 +221,7 @@ export function buttonFrom(
     ...(backgroundColor ? { backgroundColor } : {}),
     ...(textColor ? { textColor } : {}),
     ...(borderRadius > 0 ? { borderRadius } : {}),
+    ...(fontSize !== undefined ? { fontSize } : {}),
     ...(lineHeight !== undefined ? { lineHeight } : {}),
   });
 }
