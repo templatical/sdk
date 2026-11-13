@@ -183,6 +183,126 @@ describe("convertHtmlTemplate — spacer and divider", () => {
   });
 });
 
+describe("convertHtmlTemplate — button line height", () => {
+  // A percentage or em line height inherits as the length it computes to on
+  // the cell; a number inherits as a number.
+  it("resolves a cell's relative line height against the cell's font size", () => {
+    const lineHeightOf = (cellStyle: string, anchorStyle = "") => {
+      const { content } = convertHtmlTemplate(
+        "<!doctype html><html><body>" +
+          `<table width="600"><tr><td style="background-color:#0f766e;${cellStyle}">` +
+          `<a href="https://x.test" style="color:#ffffff;${anchorStyle}">Go</a>` +
+          "</td></tr></table></body></html>",
+      );
+      const button = (content.blocks[0] as SectionBlock).children[0]![0];
+      if (button?.type !== "button") throw new Error("expected a button");
+      return button.lineHeight;
+    };
+    expect(
+      lineHeightOf("font-size:20px;line-height:150%", "font-size:10px"),
+    ).toBe(3);
+    expect(
+      lineHeightOf("font-size:20px;line-height:1.5em", "font-size:10px"),
+    ).toBe(3);
+    expect(lineHeightOf("line-height:150%", "font-size:12px")).toBe(2);
+    expect(lineHeightOf("font-size:20px;line-height:2", "font-size:10px")).toBe(
+      2,
+    );
+    expect(
+      lineHeightOf(
+        "font-size:20px;line-height:150%",
+        "font-size:10px;line-height:2",
+      ),
+    ).toBe(2);
+    expect(
+      lineHeightOf(
+        "font-size:20px;line-height:150%",
+        "font-size:10px;line-height:inherit",
+      ),
+    ).toBe(3);
+  });
+
+  it("notes a cell font size it cannot read and resolves against 16px", () => {
+    const { content, report } = convertHtmlTemplate(
+      "<!doctype html><html><body>" +
+        '<table width="600"><tr><td style="background-color:#0f766e;font-size:2em;line-height:150%">' +
+        '<a href="https://x.test" style="color:#ffffff">Go</a>' +
+        "</td></tr></table></body></html>",
+    );
+    const button = (content.blocks[0] as SectionBlock).children[0]![0];
+    expect(button?.type === "button" && button.lineHeight).toBe(1.5);
+    expect(
+      report.entries.find((entry) => entry.templaticalBlockType === "button"),
+    ).toEqual({
+      sourceTag: "td",
+      templaticalBlockType: "button",
+      status: "approximated",
+      note: 'Button line-height "150%" inherits from font-size "2em", which could not be read; resolved against 16px.',
+    });
+  });
+
+  it("keeps an inherited ratio when neither the cell nor the anchor sets a font size", () => {
+    const entryFor = (anchorStyle: string) => {
+      const { content, report } = convertHtmlTemplate(
+        "<!doctype html><html><body>" +
+          '<table width="600"><tr><td style="background-color:#0f766e;line-height:150%">' +
+          `<a href="https://x.test" style="color:#ffffff;${anchorStyle}">Go</a>` +
+          "</td></tr></table></body></html>",
+      );
+      const button = (content.blocks[0] as SectionBlock).children[0]![0];
+      const entry = report.entries.find(
+        (e) => e.templaticalBlockType === "button",
+      );
+      return {
+        lineHeight: button?.type === "button" ? button.lineHeight : null,
+        status: entry?.status,
+        note: entry?.note,
+      };
+    };
+    expect(entryFor("")).toEqual({
+      lineHeight: 1.5,
+      status: "converted",
+      note: undefined,
+    });
+    // The anchor's 12px is known, the cell's inherited size is not.
+    expect(entryFor("font-size:12px")).toEqual({
+      lineHeight: 2,
+      status: "approximated",
+      note: 'Button line-height "150%" inherits from a font-size that is not stated; resolved against 16px.',
+    });
+  });
+
+  it("reads a cell button's line height from the anchor or the cell", () => {
+    const { content, report } = convertHtmlTemplate(
+      "<!doctype html><html><body>" +
+        '<table width="600"><tr>' +
+        '<td style="background-color:#0f766e;font-size:20px;line-height:30px"><a href="https://x.test/a" style="color:#ffffff">Cell</a></td>' +
+        '<td style="background-color:#0f766e"><a href="https://x.test/b" style="color:#ffffff;line-height:auto">Odd</a></td>' +
+        "</tr></table></body></html>",
+    );
+    const section = content.blocks[0];
+    if (section?.type !== "section") throw new Error("expected a section");
+    expect(
+      section.children.map((column) =>
+        column.map((block) =>
+          block.type === "button" ? [block.text, block.lineHeight] : null,
+        ),
+      ),
+    ).toEqual([[["Cell", 1.5]], [["Odd", undefined]]]);
+    expect(
+      report.entries
+        .filter((entry) => entry.templaticalBlockType === "button")
+        .map(({ status, note }) => ({ status, note })),
+    ).toEqual([
+      { status: "converted", note: undefined },
+      {
+        status: "approximated",
+        note: 'Button line-height "auto" could not be read; imported at 1.2.',
+      },
+    ]);
+  });
+});
+
 describe("convertHtmlTemplate — a px divider that reaches its column spans it", () => {
   function dividerOf(body: string) {
     const { content, report } = convertHtmlTemplate(
@@ -214,6 +334,45 @@ describe("convertHtmlTemplate — a px divider that reaches its column spans it"
     // Half of 600, less 20px either side.
     expect(dividerOf(row('<hr width="260">')).width).toBe("full");
     expect(dividerOf(row('<hr width="259">')).width).toBe(259);
+  });
+
+  // 420 / 180 is 70 / 30, 3.3pp from 2-1, so the section keeps it as column
+  // widths, and each column's room is its share of 600.
+  it("measures a column of a custom-width row by its share", () => {
+    const convert = (first: string, second: string) =>
+      convertHtmlTemplate(
+        "<!doctype html><html><body>" +
+          '<table width="600"><tr>' +
+          `<td width="420">${first}</td>` +
+          `<td width="180">${second}</td>` +
+          "</tr></table></body></html>",
+      );
+    const widths = (result: ReturnType<typeof convert>) => {
+      const section = result.content.blocks[0];
+      if (section?.type !== "section") throw new Error("expected a section");
+      return {
+        columns: section.columns,
+        columnWidths: section.columnWidths,
+        dividers: section.children.map((column) =>
+          column.map((block) =>
+            block.type === "divider" ? block.width : null,
+          ),
+        ),
+        sections: result.report.entries
+          .filter((entry) => entry.templaticalBlockType === "section")
+          .map(({ status, note }) => ({ status, note })),
+      };
+    };
+
+    expect(widths(convert('<hr width="420">', '<hr width="180">'))).toEqual({
+      columns: "2",
+      columnWidths: [70, 30],
+      dividers: [["full"], ["full"]],
+      sections: [{ status: "converted", note: undefined }],
+    });
+    expect(
+      widths(convert('<hr width="419">', '<hr width="179">')).dividers,
+    ).toEqual([[419], [179]]);
   });
 
   it("counts cellpadding and the section's own padding", () => {

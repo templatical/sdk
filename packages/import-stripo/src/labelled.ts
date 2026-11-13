@@ -1,12 +1,15 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
 import {
+  BUTTON_BLOCK_DEFAULTS,
+  BUTTON_LINE_HEIGHT,
   createButtonBlock,
   createDividerBlock,
   createMenuBlock,
   createSocialIconsBlock,
   createSpacerBlock,
   generateId,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
@@ -54,6 +57,114 @@ function firstAnchor($el: Cheerio<Element>): Cheerio<Element> {
   return $self as Cheerio<Element>;
 }
 
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
+const RELATIVE_LINE_HEIGHT = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i;
+
+/**
+ * A px font size, unrounded, or 0 when it is not one. `parsePxValue` rounds
+ * to whole pixels, which would skew a line height resolved against it.
+ */
+function fontSizePx(value: string | undefined): number {
+  const match = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(?:px)?$/i.exec(
+    value?.trim() ?? "",
+  );
+  return match ? Number(match[1]) : 0;
+}
+
+/** A `%` or `em` line height as the px it computes to at `fontSize`. */
+function relativeAsPx(value: string, fontSize: number): string | undefined {
+  const relative = RELATIVE_LINE_HEIGHT.exec(value);
+  if (!relative) return undefined;
+  const factor =
+    relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
+  return `${factor * fontSize}px`;
+}
+
+/**
+ * The line height a button takes: its own, else the one it inherits from
+ * the element around it. The label renders at `fallbackSize`, not at the
+ * anchor's own font size, so an own `%` or `em` line height beside an own px
+ * `font-size` becomes the length it computes to. `inherit` defers to the
+ * element around it, where a `%` or `em` line height inherits as the length
+ * it computes to, resolved against `outerFontSize`. With no outer font size,
+ * a label that states none of its own shares the size the outer element
+ * inherits, so the value keeps its ratio as written. Otherwise, when the
+ * outer font size is missing or not a px length, `fallbackSize` stands in
+ * and a note says so. A number, a length or a keyword is kept as written.
+ */
+function lineHeightSource(
+  own: string | undefined,
+  outer: string | undefined,
+  outerFontSize: string | undefined,
+  ownFontSize: string | undefined,
+  fallbackSize: number,
+  notes: string[],
+): string | undefined {
+  const ownValue = own?.trim();
+  if (ownValue && !/^inherit$/i.test(ownValue)) {
+    const statedOwn = ownFontSize?.trim();
+    const ownSize = fontSizePx(statedOwn);
+    if (ownSize > 0) return relativeAsPx(ownValue, ownSize) ?? own;
+    if (statedOwn && RELATIVE_LINE_HEIGHT.test(ownValue)) {
+      notes.push(
+        `Button line-height "${ownValue}" is relative to font-size "${statedOwn}", which could not be read; imported as a multiple of the label.`,
+      );
+    }
+    return own;
+  }
+  const outerValue = outer?.trim() ?? "";
+  if (!RELATIVE_LINE_HEIGHT.test(outerValue)) return outer;
+  const statedOuter = outerFontSize?.trim();
+  if (!statedOuter && !ownFontSize?.trim()) return outer;
+  let size = fontSizePx(statedOuter);
+  if (!(size > 0)) {
+    const source = statedOuter
+      ? `font-size "${statedOuter}", which could not be read`
+      : "a font-size that is not stated";
+    notes.push(
+      `Button line-height "${outerValue}" inherits from ${source}; resolved against ${fallbackSize}px.`,
+    );
+    size = fallbackSize;
+  }
+  return relativeAsPx(outerValue, size);
+}
+
 export function buttonFrom(
   $el: Cheerio<Element>,
   sourceTag: string,
@@ -71,7 +182,29 @@ export function buttonFrom(
   const textColor = parseColor(own.color) || parseColor(parent.color);
   const borderRadius =
     parsePxValue(own["border-radius"]) || parsePxValue(parent["border-radius"]);
-  pushEntry(ctx, sourceTag, "button", "converted");
+  // The block keeps the factory font size, so a px line height is measured
+  // against the size the label renders at.
+  const notes: string[] = [];
+  const labelSize = Number(BUTTON_BLOCK_DEFAULTS.fontSize);
+  const lineHeight = readButtonLineHeight(
+    lineHeightSource(
+      own["line-height"],
+      parent["line-height"],
+      parent["font-size"],
+      own["font-size"],
+      labelSize,
+      notes,
+    ),
+    labelSize,
+    notes,
+  );
+  pushEntry(
+    ctx,
+    sourceTag,
+    "button",
+    notes.length > 0 ? "approximated" : "converted",
+    notes.length > 0 ? notes.join(" ") : undefined,
+  );
   return createButtonBlock({
     text,
     url,
@@ -79,6 +212,7 @@ export function buttonFrom(
     ...(backgroundColor ? { backgroundColor } : {}),
     ...(textColor ? { textColor } : {}),
     ...(borderRadius > 0 ? { borderRadius } : {}),
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
   });
 }
 

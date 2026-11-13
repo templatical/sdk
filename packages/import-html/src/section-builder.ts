@@ -5,6 +5,7 @@ import {
   createSectionBlock,
   createButtonBlock,
   createSpacerBlock,
+  sectionColumnPercents,
 } from "@templatical/types";
 import type {
   BackgroundImage,
@@ -21,15 +22,12 @@ import {
   isInlineContent,
   isSpacerCell,
   isTableContainer,
+  readButtonLineHeight,
   skippedElementEntry,
   walkContentNodes,
 } from "./block-mapper";
-import {
-  LAYOUT_SHARES,
-  readColumnWidth,
-  resolveColumnRatio,
-} from "./column-ratio";
-import type { ColumnWidth } from "./column-ratio";
+import { readColumnWidth, resolveColumnRatio } from "./column-ratio";
+import type { ColumnRatio, ColumnWidth } from "./column-ratio";
 import {
   backgroundShorthandColor,
   parseColor,
@@ -154,10 +152,51 @@ function insetBlock(block: Block, by: SpacingValue): void {
   };
 }
 
+/**
+ * The line height a button takes: its own, else the one it inherits from
+ * the element around it. `inherit` defers to that element. A percentage or
+ * `em` line height inherits as the length it computes to there, so it is
+ * resolved against `outerFontSize`. With no outer font size, a label that
+ * states none of its own shares the size the outer element inherits, so the
+ * value keeps its ratio as written. Otherwise, when the outer font size is
+ * missing or not a px length, `fallbackSize` stands in and a note says so.
+ * A number, a length or a keyword inherits as written.
+ */
+function lineHeightSource(
+  own: string | undefined,
+  outer: string | undefined,
+  outerFontSize: string | undefined,
+  ownFontSize: string | undefined,
+  fallbackSize: number,
+  notes: string[],
+): string | undefined {
+  const ownValue = own?.trim();
+  if (ownValue && !/^inherit$/i.test(ownValue)) return own;
+  const relative = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i.exec(
+    outer?.trim() ?? "",
+  );
+  if (!relative) return outer;
+  const statedOuter = outerFontSize?.trim();
+  if (!statedOuter && !ownFontSize?.trim()) return outer;
+  let size = parsePxValue(statedOuter);
+  if (!(size > 0)) {
+    const source = statedOuter
+      ? `font-size "${statedOuter}", which could not be read`
+      : "a font-size that is not stated";
+    notes.push(
+      `Button line-height "${relative[0]}" inherits from ${source}; resolved against ${fallbackSize}px.`,
+    );
+    size = fallbackSize;
+  }
+  const factor =
+    relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
+  return `${factor * size}px`;
+}
+
 function buildCellButton(
   $cell: Cheerio<Element>,
   $anchor: Cheerio<Element>,
-): Block {
+): { block: Block; notes: string[] } {
   const cellStyles = getStyles($cell);
   const aStyles = getStyles($anchor);
   // Anchor styles win when they overlap (typical: anchor sets text color, cell sets bg).
@@ -165,8 +204,22 @@ function buildCellButton(
   const text = ($anchor.text() ?? "Button").trim() || "Button";
   const url = $anchor.attr("href") ?? "#";
   const target = $anchor.attr("target");
+  const fontSize = parsePxValue(merged["font-size"]) || 16;
+  const notes: string[] = [];
+  const lineHeight = readButtonLineHeight(
+    lineHeightSource(
+      aStyles["line-height"],
+      cellStyles["line-height"],
+      cellStyles["font-size"],
+      aStyles["font-size"],
+      16,
+      notes,
+    ),
+    fontSize,
+    notes,
+  );
 
-  return createButtonBlock({
+  const block = createButtonBlock({
     text,
     url,
     openInNewTab: target === "_blank" || undefined,
@@ -179,12 +232,14 @@ function buildCellButton(
       "#4f46e5",
     textColor: parseColor(merged.color) || "#ffffff",
     borderRadius: parsePxValue(merged["border-radius"]),
-    fontSize: parsePxValue(merged["font-size"]) || 16,
+    fontSize,
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
     buttonPadding: readPaddingFromStyles(merged),
     styles: {
       padding: emptyPadding(),
     },
   });
+  return { block, notes };
 }
 
 function buildSpacerFromCell($cell: Cheerio<Element>): Block {
@@ -499,7 +554,6 @@ function packagingRowTables(
 function sectionEntry(
   columnCount: number,
   slotCount: number,
-  ratioNote: string | undefined,
   fillNote: string | undefined,
   imageNotes: string[] = [],
 ): ImportReportEntry {
@@ -508,8 +562,6 @@ function sectionEntry(
     notes.push(
       `Row of ${columnCount} columns was merged into a single column. Templatical supports up to four columns.`,
     );
-  } else if (ratioNote) {
-    notes.push(ratioNote);
   }
   if (fillNote) notes.push(fillNote);
   notes.push(...imageNotes);
@@ -806,12 +858,14 @@ function extractCellBlocks(
 
   const btn = isButtonCell($cell, $);
   if (btn.match && btn.anchor) {
+    const { block, notes } = buildCellButton($cell, btn.anchor);
     entries.push({
       sourceTag: "td",
       templaticalBlockType: "button",
-      status: "converted",
+      status: notes.length > 0 ? "approximated" : "converted",
+      ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
     });
-    return [buildCellButton($cell, btn.anchor)];
+    return [block];
   }
 
   // A cell whose only content is text has no element children, and the walk
@@ -904,23 +958,23 @@ function extractContentBlocks(
 /**
  * The room each of a row's hosts has, from the room across the row.
  *
- * `layout` is the one the hosts land in, `"1"` when they stack, and each
- * host takes its column's share of the row. A column set's cell pads the
- * row's edges, so its left side narrows the first column and its right the
- * last; stacked, every host sits between both.
+ * `shares` are the percentages of the section the hosts land in, the
+ * preset's or its `columnWidths`, or `null` when they stack. Each host takes
+ * its column's share of the row. A column set's cell pads the row's edges,
+ * so its left side narrows the first column and its right the last;
+ * stacked, every host sits between both.
  */
 function hostRooms(
   rowRoom: number | undefined,
-  layout: ColumnLayout,
+  shares: readonly number[] | null,
   hostCount: number,
   setPadding: SpacingValue | undefined,
 ): (number | undefined)[] {
-  const shares = LAYOUT_SHARES[layout];
   const edges = setPadding ?? emptyPadding();
   return Array.from({ length: hostCount }, (_, index) => {
     if (rowRoom === undefined) return undefined;
-    if (layout === "1") return rowRoom - edges.left - edges.right;
-    const share = (rowRoom * shares[index]) / 100;
+    if (shares === null) return rowRoom - edges.left - edges.right;
+    const share = (rowRoom * shares[index]!) / 100;
     const left = index === 0 ? edges.left : 0;
     const right = index === hostCount - 1 ? edges.right : 0;
     return share - left - right;
@@ -1140,9 +1194,9 @@ export function processTable(
     // and because that is also the layout a merged row lands on, whose own
     // note is the loss worth naming. A flattened row has no section to lay
     // out.
-    const ratio =
+    const ratio: ColumnRatio =
       countedLayout === "1" || flattenInline
-        ? { layout: countedLayout, note: undefined }
+        ? { layout: countedLayout }
         : resolveColumnRatio(
             hosts.map((host) => readDeclaredWidth(host.$el)),
             countedLayout,
@@ -1160,7 +1214,12 @@ export function processTable(
     const stacked = countedLayout === "1" || flattenInline;
     const rooms = hostRooms(
       flattenInline ? room : narrow(room, padding),
-      stacked ? "1" : ratio.layout,
+      stacked
+        ? null
+        : sectionColumnPercents({
+            columns: ratio.layout,
+            columnWidths: ratio.columnWidths,
+          }),
       hosts.length,
       setPadding,
     );
@@ -1199,7 +1258,6 @@ export function processTable(
     const entry = sectionEntry(
       hosts.length,
       columnsBlocks.length,
-      ratio.note,
       fill.note,
       image.notes,
     );
@@ -1208,6 +1266,7 @@ export function processTable(
     sections.push(
       createSectionBlock({
         columns: ratio.layout,
+        ...(ratio.columnWidths ? { columnWidths: ratio.columnWidths } : {}),
         children: columnsBlocks,
         styles: {
           padding,

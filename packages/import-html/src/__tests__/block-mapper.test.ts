@@ -431,6 +431,53 @@ describe("convertElement — anchors", () => {
     });
   });
 
+  describe("button line height", () => {
+    function lineHeightOf(style: string) {
+      const { $, $el } = firstEl(
+        `<a href="https://example.com" style="background-color:#ff0000;padding:0 20px;color:#ffffff;${style}">Click</a>`,
+        "a",
+      );
+      const r = convertElement($el, $)!;
+      if (r.block.type !== "button") throw new Error("expected button block");
+      return {
+        lineHeight: r.block.lineHeight,
+        status: r.entry.status,
+        note: r.entry.note,
+      };
+    }
+
+    // A bulletproof anchor sets its height with line-height.
+    it("reads px over the font size, a percentage, a number and em", () => {
+      expect(lineHeightOf("font-size:16px;line-height:44px")).toEqual({
+        lineHeight: 2.75,
+        status: "converted",
+        note: undefined,
+      });
+      expect(lineHeightOf("line-height:32px").lineHeight).toBe(2);
+      expect(lineHeightOf("line-height:150%").lineHeight).toBe(1.5);
+      expect(lineHeightOf("line-height:1.4").lineHeight).toBe(1.4);
+      expect(lineHeightOf("line-height:2em").lineHeight).toBe(2);
+    });
+
+    it("leaves normal, 1.2 and a missing value unset", () => {
+      for (const style of ["line-height:normal", "line-height:1.2", ""]) {
+        expect(lineHeightOf(style)).toEqual({
+          lineHeight: undefined,
+          status: "converted",
+          note: undefined,
+        });
+      }
+    });
+
+    it("notes a value it cannot keep and imports it at 1.2", () => {
+      expect(lineHeightOf("line-height:calc(1em + 4px)")).toEqual({
+        lineHeight: undefined,
+        status: "approximated",
+        note: 'Button line-height "calc(1em + 4px)" could not be read; imported at 1.2.',
+      });
+    });
+  });
+
   const BUTTON_STYLE =
     "background-color:#ff0000;padding:10px 20px;border-radius:6px;color:#ffffff";
 

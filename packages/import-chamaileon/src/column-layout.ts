@@ -1,18 +1,34 @@
+import {
+  COLUMN_LAYOUT_PERCENTS,
+  columnWidthsIssue,
+  sectionColumnPercents,
+} from "@templatical/types";
 import type { ColumnLayout } from "@templatical/types";
 
-const LAYOUT_SHAPES: Array<{ layout: ColumnLayout; percents: number[] }> = [
-  { layout: "1", percents: [100] },
-  { layout: "2", percents: [50, 50] },
-  { layout: "1-2", percents: [33.33, 66.67] },
-  { layout: "2-1", percents: [66.67, 33.33] },
-  { layout: "1-3", percents: [25, 75] },
-  { layout: "3-1", percents: [75, 25] },
-  { layout: "3", percents: [33.33, 33.33, 33.34] },
-  { layout: "1-2-1", percents: [25, 50, 25] },
-  { layout: "4", percents: [25, 25, 25, 25] },
+/** Preset match order. The first preset within the tolerance wins. */
+const LAYOUT_MATCH_ORDER: readonly ColumnLayout[] = [
+  "1",
+  "2",
+  "1-2",
+  "2-1",
+  "1-3",
+  "3-1",
+  "3",
+  "1-2-1",
+  "4",
 ];
 
+/** Percentage points of drift tolerated per column before a match is inexact. */
 const WIDTH_TOLERANCE = 2;
+
+/** The px width Chamaileon gives a column whose `width` is unset. */
+const DEFAULT_COLUMN_WIDTH = 300;
+
+function evenLayout(count: number): ColumnLayout {
+  if (count === 3) return "3";
+  if (count === 4) return "4";
+  return "2";
+}
 
 export const COLUMN_COUNT: Record<ColumnLayout, number> = {
   "1": 1,
@@ -26,10 +42,19 @@ export const COLUMN_COUNT: Record<ColumnLayout, number> = {
   "1-2-1": 3,
 };
 
+/**
+ * Each column's px width in `container`: the preset's shares, a third for
+ * `"3"`, `"1-2"` and `"2-1"`, or the `columnWidths` percentages when the
+ * section has them.
+ */
 export function columnPixels(
   layout: ColumnLayout,
   container: number,
+  columnWidths?: readonly number[],
 ): number[] {
+  if (columnWidths) {
+    return columnWidths.map((percent) => (container * percent) / 100);
+  }
   switch (layout) {
     case "2":
       return [container / 2, container / 2];
@@ -53,74 +78,44 @@ export function columnPixels(
 }
 
 /**
- * Resolve column widths to one of the layouts this importer emits.
+ * Resolve a multicolumn's px `width`s to a layout.
  *
- * `exact: false` means the caller reports `approximated` — Chamaileon permits
- * any column count at any width and this importer emits nine layouts, so this is
- * the importer's main irreducible loss.
+ * Chamaileon sizes columns in px, with the fullwidth's content padding and
+ * the multicolumn's spacers around and between them, so a column's share is
+ * its width over the sum of the row's widths. A width that is unset or not
+ * a px length counts as Chamaileon's default, 300px. Shares within
+ * `WIDTH_TOLERANCE` of a preset keep that preset; any others keep the even
+ * preset of that count plus `columnWidths`. Both are exact. A width that is
+ * not above 0 keeps the even preset, approximated. Five or more columns
+ * fold onto `"4"`, approximated.
  */
-export function matchColumnLayout(percents: Array<number | null>): {
+export function matchColumnLayout(widthsPx: Array<number | undefined>): {
   layout: ColumnLayout;
   exact: boolean;
+  columnWidths?: number[];
 } {
-  const count = percents.length;
-  if (count === 0) return { layout: "1", exact: true };
+  const count = widthsPx.length;
+  if (count <= 1) return { layout: "1", exact: true };
+  if (count > 4) return { layout: "4", exact: false };
 
-  // All-unset is "distribute equally", which is exactly what the n-column
-  // layout means — not a missing value to approximate around.
-  if (percents.every((p) => p === null)) {
-    if (count === 1) return { layout: "1", exact: true };
-    if (count === 2) return { layout: "2", exact: true };
-    if (count === 3) return { layout: "3", exact: true };
-    if (count === 4) return { layout: "4", exact: true };
-    return { layout: "4", exact: false };
+  const widths = widthsPx.map((width) => width ?? DEFAULT_COLUMN_WIDTH);
+  const layout = evenLayout(count);
+  if (columnWidthsIssue({ columns: layout, columnWidths: widths }) !== null) {
+    return { layout, exact: false };
   }
-
-  const known = percents.filter((p): p is number => p !== null);
-  const unsetCount = count - known.length;
-  const remainder =
-    unsetCount === 0
-      ? 0
-      : Math.max(0, 100 - known.reduce((a, b) => a + b, 0)) / unsetCount;
-  const resolved = percents.map((p) => p ?? remainder);
-
-  const sameCount = LAYOUT_SHAPES.filter((s) => s.percents.length === count);
-
-  for (const shape of sameCount) {
-    if (
-      shape.percents.every(
-        (want, i) => Math.abs(want - resolved[i]) <= WIDTH_TOLERANCE,
+  const shares = sectionColumnPercents({
+    columns: layout,
+    columnWidths: widths,
+  });
+  const preset = LAYOUT_MATCH_ORDER.find((candidate) => {
+    const target = COLUMN_LAYOUT_PERCENTS[candidate];
+    return (
+      target.length === count &&
+      target.every(
+        (share, index) => Math.abs(share - shares[index]!) <= WIDTH_TOLERANCE,
       )
-    ) {
-      return { layout: shape.layout, exact: true };
-    }
-  }
-
-  const candidates =
-    sameCount.length > 0
-      ? sameCount
-      : LAYOUT_SHAPES.filter((s) => s.layout === "4");
-
-  let best = candidates[0];
-  let bestError = Infinity;
-  for (const shape of candidates) {
-    const error = shape.percents.reduce(
-      (sum, want, i) => sum + Math.abs(want - (resolved[i] ?? 0)),
-      0,
     );
-    if (error < bestError) {
-      bestError = error;
-      best = shape;
-    }
-  }
-
-  return { layout: best.layout, exact: false };
-}
-
-/** Convert absolute px column widths to percents of `bodyWidth`. */
-export function widthsToPercents(
-  widthsPx: Array<number | undefined>,
-  bodyWidth: number,
-): Array<number | null> {
-  return widthsPx.map((w) => (w === undefined ? null : (w / bodyWidth) * 100));
+  });
+  if (preset) return { layout: preset, exact: true };
+  return { layout, exact: true, columnWidths: shares };
 }

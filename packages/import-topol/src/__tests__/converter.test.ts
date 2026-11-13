@@ -187,6 +187,103 @@ describe("convertTopolTemplate input guards", () => {
 });
 
 describe("convertTopolTemplate end to end", () => {
+  it("imports a button's line height and notes one it cannot read", () => {
+    const button = (attributes: Record<string, string>) => ({
+      tagName: "mj-button",
+      attributes: { href: "https://x.test", ...attributes },
+      content: "<p>Go</p>",
+    });
+    const { content, report } = convertTopolTemplate({
+      tagName: "mj-global-style",
+      attributes: {},
+      children: [
+        {
+          tagName: "mj-container",
+          attributes: {},
+          children: [
+            {
+              tagName: "mj-section",
+              attributes: {},
+              children: [
+                {
+                  tagName: "mj-column",
+                  attributes: { width: "100%" },
+                  children: [
+                    button({ "font-size": "16px", "line-height": "24px" }),
+                    button({ "line-height": "auto" }),
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const section = content.blocks[0] as SectionBlock;
+    expect(
+      section.children[0]!.map((block) =>
+        block.type === "button" ? block.lineHeight : null,
+      ),
+    ).toEqual([1.5, undefined]);
+    expect(
+      report.entries
+        .filter((entry) => entry.sourceTag === "mj-button")
+        .map(({ status, note }) => ({ status, note })),
+    ).toEqual([
+      { status: "converted", note: undefined },
+      {
+        status: "approximated",
+        note: 'Button line-height "auto" could not be read; imported at 1.2.',
+      },
+    ]);
+  });
+
+  it("imports a 20/60/20 row and a 30/40 row with column widths", () => {
+    const row = (widths: string[]) => ({
+      tagName: "mj-section",
+      attributes: {},
+      children: widths.map((width, index) => ({
+        tagName: "mj-column",
+        attributes: { width },
+        children: [
+          {
+            tagName: "mj-text",
+            attributes: {},
+            content: `<p>${index}</p>`,
+          },
+        ],
+      })),
+    });
+    const { content, report } = convertTopolTemplate({
+      tagName: "mj-global-style",
+      attributes: {},
+      children: [
+        {
+          tagName: "mj-container",
+          attributes: {},
+          children: [row(["20%", "60%", "20%"]), row(["30%", "40%"])],
+        },
+      ],
+    });
+    const [first, second] = content.blocks as SectionBlock[];
+    expect([first!.columns, first!.columnWidths]).toEqual(["3", [20, 60, 20]]);
+    expect([second!.columns, second!.columnWidths]).toEqual([
+      "2",
+      [42.86, 57.14],
+    ]);
+    expect(
+      report.entries
+        .filter((entry) => entry.sourceTag === "mj-section")
+        .map(({ status, note }) => ({ status, note })),
+    ).toEqual([
+      { status: "converted", note: undefined },
+      {
+        status: "approximated",
+        note: 'Column widths 30%, 40% have no exact Templatical layout; resolved to "2".',
+      },
+    ]);
+  });
+
   it("converts mj-body sections like mj-container sections", () => {
     const containerResult = convertTopolTemplate(make("mj-container"));
     const bodyResult = convertTopolTemplate(make("mj-body"));

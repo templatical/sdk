@@ -3,7 +3,8 @@ import type { AnyNode, Element } from "domhandler";
 import { createSectionBlock } from "@templatical/types";
 import type { Block, ColumnLayout, SpacingValue } from "@templatical/types";
 import { hasAnyToken, hasToken, isHidden } from "./classes";
-import { statedPx, unequalWidthNote } from "./column-width";
+import { statedLayout, statedPx, unequalWidthNote } from "./column-width";
+import type { StatedColumns } from "./column-width";
 import {
   colorFromPaint,
   columnRooms,
@@ -306,15 +307,25 @@ function columnChildren(
 ): {
   children: Block[][];
   layout: ColumnLayout;
+  columnWidths?: number[];
   flattenNote?: string;
   widthNote?: string;
 } | null {
   const count = cols.length;
-  const layout: "1" | "2" | "3" | "4" =
+  const counted: "1" | "2" | "3" | "4" =
     count >= 4 ? "4" : count === 3 ? "3" : count === 2 ? "2" : "1";
   const fold = count >= 5;
-  const used = fold ? 4 : layout === "1" ? 1 : count;
-  const rooms = columnRooms(bodyWidth, layout, padding, used);
+  const used = fold ? 4 : counted === "1" ? 1 : count;
+  // Folded columns share the fourth slot, so their widths set no ratio.
+  const widths = cols.map((el) => declaredColumnPx($(el) as Cheerio<Element>));
+  const stated: StatedColumns =
+    counted === "1"
+      ? { layout: "1" }
+      : fold
+        ? { layout: "4", note: unequalWidthNote(widths, "4") }
+        : statedLayout(widths, counted);
+  const { layout, columnWidths } = stated;
+  const rooms = columnRooms(bodyWidth, layout, padding, used, columnWidths);
   let children: Block[][];
   if (fold) {
     const rest: Block[] = [];
@@ -335,14 +346,8 @@ function columnChildren(
     );
   }
   if (!hasBlocks(children)) return null;
-  const widthNote =
-    layout === "1"
-      ? undefined
-      : unequalWidthNote(
-          cols.map((el) => declaredColumnPx($(el) as Cheerio<Element>)),
-          layout,
-        );
-  if (!fold) return { children, layout, widthNote };
+  const widthNote = stated.note;
+  if (!fold) return { children, layout, columnWidths, widthNote };
   const flattenNote = `Row with ${count} columns was flattened; extra columns merged into the fourth slot. Templatical supports up to four columns per section.`;
   ctx.warnings.push(flattenNote);
   return { children, layout, flattenNote, widthNote };
@@ -414,6 +419,7 @@ function sectionsFromRow(
   const rendered: Array<{
     children: Block[][];
     layout: ColumnLayout;
+    columnWidths?: number[];
     extra?: string;
     widthNote?: string;
     columnImages: Array<ReadBackgroundImage | null>;
@@ -428,6 +434,7 @@ function sectionsFromRow(
       rendered.push({
         children: built.children,
         layout: built.layout,
+        columnWidths: built.columnWidths,
         extra: built.flattenNote,
         widthNote: built.widthNote,
         columnImages: cols.map((el) =>
@@ -483,6 +490,7 @@ function sectionsFromRow(
     const wrapper = sectionWrapper(groupPaint, image.band);
     const section = createSectionBlock({
       columns: group.layout,
+      ...(group.columnWidths ? { columnWidths: group.columnWidths } : {}),
       children: group.children,
       styles: { padding: splitPadding(padding, rendered.length, index) },
       ...(wrapper ? { wrapper } : {}),

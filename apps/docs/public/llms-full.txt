@@ -13879,10 +13879,10 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 | `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty; a `backgroundImage` is dropped and named in `report.warnings`. |
 | `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor` with `wrapper.fullWidth: true`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; the band's `backgroundImage` and colour follow [Background images](#background-images). |
 | `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. A lone box's background image moves to the section when the fullwidth has no `contentBackgroundImage`; with one, or among siblings, the box image is dropped and noted, `approximated`. |
-| `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
+| `multicolumn` + `column` | Section `columns` / `children[i]` | A column's share is its px `style.width` over the sum of the row's widths; the fullwidth's content padding and the multicolumn's spacers sit outside the columns, so they are not shares. A column with no readable px width counts as Chamaileon's default, `300px`. Shares within 2 percentage points of a layout (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) keep that layout: `280px` / `280px` is `"2"` and `150px` / `300px` / `150px` is `"1-2-1"`. Any other ratio of two to four columns keeps the even layout of that count and sets [`columnWidths`](/guide/sections-and-columns#custom-column-widths) to the shares scaled to 100: `360px` / `240px` is `"2"` with `[60, 40]`. Both stay `converted`. A width that is not above 0 keeps the even layout with no `columnWidths`, `approximated`. A column's room, the width an image or video is measured against, is its share of the inner box, which is `bodyWidth` less the fullwidth's left and right content padding: a 50% column in a 600px body with 20px content padding either side has 280px. Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
 | `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
-| `button` | `ButtonBlock` | `href` → `url`; label stripped of tags. An unset fill is an outlined button — fill becomes `#ffffff` (not the factory `#333333`) and the entry is `approximated`. |
+| `button` | `ButtonBlock` | `href` → `url`; label stripped of tags. `style.lineHeight` becomes `lineHeight`, its px over the button's `fontSize` (15px when unset): Chamaileon's default `25px` on `18px` is `1.39`. A value that comes to 1.2, or none, stays unset; an unreadable one imports at 1.2, `approximated`. An unset fill is an outlined button — fill becomes `#ffffff` (not the factory `#333333`) and the entry is `approximated`. |
 | `image` | `ImageBlock` | `src` from `attrs` then `style`; `altText` → `alt`. A px `style.width` becomes `"full"` once it reaches the column less the image's side padding. |
 | `dynamic-image` | `ImageBlock` | `approximated`; the note names the source type. |
 | `divider` | `DividerBlock` | 2.0 `attrs.lineStyle` and 4.1 `style.width` / `type` / `color` (line thickness, not block width). |
@@ -14112,7 +14112,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 |---|---|---|
 | `page` | Template `settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` after `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` (the whole stack, so its fallbacks survive) / `textColor`; `link-color` → `linkColor` when set; `preheader` → `settings.preheaderText` when non-empty. `content-background-color` is the default section fill, not the page background. |
 | `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. `background-url` with its size, position and repeat → `backgroundImage` (see [Background images](#background-images)). |
-| `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`, `"25%"`) match Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). No report entry of its own. |
+| `standard-column` | Section `columns` / `children[i]` | Easy Email Pro renders through MJML, so MJML's column rules apply. A percent width (`"50%"`, `"33.33%"`) is that share; a px width is a share of the section's inner box (the section less its side padding); a column with no width takes the section divided by the column count. A width list within 2 percentage points of a layout (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) keeps that layout. Any other ratio of two to four columns keeps the even layout of that count and sets [`columnWidths`](/guide/sections-and-columns#custom-column-widths) to the shares scaled to 100: `20%` / `60%` / `20%` is `"3"` with `[20, 60, 20]`, converted. When the widths don't total 100 within 0.5 percentage points, the section entry is `approximated` and names the source widths: `30%` / `40%` is `"2"` with `[42.86, 57.14]`. Scaled shares that equal a layout keep it with no `columnWidths`, so `45%` / `45%` is `"2"`, `approximated`. A width that is not above 0 keeps the even layout, `approximated`. When the section's side padding leaves no inner box, px widths are dropped and the section is `approximated`. No report entry of its own. |
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
 | `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / `background-url` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
 | `standard-hero` | 1-col `SectionBlock` with `hero` | Children walk as h1 / paragraph / button. `background-color` onto the section, `background-url` onto its `backgroundImage`, behind the content. `mode`, `height`, `background-width` / `background-height` and `vertical-align` map onto `hero` as for an MJML `mj-hero`; a `fixed-height` hero without a `height` (Easy Email Pro's default) is a regular section with the background image. `inner-padding` and `inner-background-color` are dropped (see [Lossy conversions](#lossy-conversions)). |
@@ -14120,7 +14120,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `placeholder` | Skip | Editor chrome. No entry. |
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
-| `standard-button` | `ButtonBlock` | Label from children, not `data.content`. `href` → `url`. Unset fill plus `border-enabled` is outlined — fill becomes `#ffffff` (not the factory `#333333`), `approximated`. |
+| `standard-button` | `ButtonBlock` | Label from children, not `data.content`. `href` → `url`. `width`: missing → the button fits its label; `100%` → `"full"`; a percentage above 0 and below `100%` → that percentage to two decimals (`"40%"`), a share of the column less the button's padding, so the button shrinks with its column on a phone; above `100%` → `"full"`, `approximated`; `0%` or below → fits its label, `approximated`; px stays px. `line-height` becomes `lineHeight`, a multiple of the label size: `150%` is `1.5`, a number or `em` length is itself, and a px length is over the 15px label the block keeps, because the button's `font-size` is not imported (a percentage or `em` beside a px `font-size` is first resolved against it, so `font-size: 30px` with `line-height: 200%` is `4`); `120%`, `normal` and a missing value stay unset, and a value it can't read imports at 1.2, `approximated`. Unset fill plus `border-enabled` is outlined — fill becomes `#ffffff` (not the factory `#333333`), `approximated`. |
 | `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. `width`: missing or `100%` → `"full"`; px stays px, and becomes `"full"` once it fills the column's content width less the image's padding; a percentage under `100%` becomes px of that room, `approximated`. |
 | `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: missing or `100%` → `"full"`; another percentage stays a percentage, clamped to 0–100; px stays px, and becomes `"full"` once it fills the column's content width less the divider's padding. |
 | `standard-spacer` | `SpacerBlock` | Height from `height` px. |
@@ -14281,12 +14281,12 @@ HTML elements map to Templatical equivalents:
 | Text-only `<td>` in a layout table | `paragraph` | Converted |
 | Bare text at body level or directly inside a wrapper | `paragraph` | Converted |
 | `<img>` | `image` | Converted (approximated when a percentage width becomes px; see [Image width](#image-width)) |
-| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
+| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted (approximated when its `line-height` can't be read; see [Button line height](#button-line-height)) |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
 | `<hr>` | `divider`, or `spacer` when it [draws no line](#hr-lines) | Converted (approximated when the width is clamped or unreadable, or a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Empty `<td>` with explicit height | `spacer` | Converted |
-| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
+| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern; approximated when its `line-height` can't be read) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
 | `<table>` (data table — text-only cells) | `html` | HTML fallback |
 | Unknown / custom elements | `html` | HTML fallback |
@@ -14312,6 +14312,10 @@ The `width` attribute is read first, then the `width` style. The image's room is
 
 A `height` style overrides the `height` attribute, as it does in a browser, so `height: auto` leaves the height unset and the image keeps its aspect ratio.
 
+### Button line height
+
+A button's `line-height` style becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. The font size is the button's `font-size`, else 16px. A button cell reads both from the cell and the `<a>`, the `<a>` winning. A percentage or `em` line height that only the cell states is the length it computes to on the cell, as CSS inherits it: `font-size:20px; line-height:150%` on the cell around a 10px `<a>` is `3`. An `<a>` with `line-height: inherit` takes the cell's. When neither the cell nor the `<a>` sets a font size, both inherit the same one, so the ratio is kept as written (`150%` is `1.5`). When the `<a>` sets its own and the cell's is missing or not a px length, 16px stands in for the cell's and the entry is approximated with a note. A bulletproof anchor with `font-size:16px; line-height:44px` is `2.75`. `normal`, a value that rounds to 1.2, and a missing value leave it unset, which renders 1.2. A value it can't read imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "calc(1em + 4px)" could not be read; imported at 1.2.`
+
 ### Divider width
 
 The width comes from the `<hr>`'s `width` style, then its `width` attribute.
@@ -14326,7 +14330,7 @@ The width comes from the `<hr>`'s `width` style, then its `width` attribute.
 | a negative px width | `0` | Approximated |
 | any other value, such as `20em` | `"full"` | Approximated |
 
-The line's room is the column's share of `settings.width`, by the section's column layout, less the padding of the section, of every cell and wrapper around the `<hr>`, and of the `<hr>` itself.
+The line's room is the column's share of `settings.width`, by the section's column layout or its `columnWidths`, less the padding of the section, of every cell and wrapper around the `<hr>`, and of the `<hr>` itself.
 
 Templatical centres every divider. A partial-width `<hr>` that its `align` attribute or its margins place at the left or the right is approximated, and its `note` names the alignment.
 
@@ -14368,14 +14372,9 @@ Each `<tr>` in a layout table becomes a `SectionBlock`. The row's direct `<td>` 
 
 ### Column ratios
 
-A row picks among the layouts that hold its column count, from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. Two cells choose among `'2'`, `'2-1'`, `'1-2'`, `'3-1'` and `'1-3'`; three cells between `'3'` and `'1-2-1'`; four cells are `'4'`. The closest wins when it sits within 6 percentage points on the worst column, so `350` / `190` reads as `'2-1'`, `25%` / `75%` as `'1-3'` and `130` / `280` / `130` as `'1-2-1'`. Where two layouts are both that close, the smaller worst-column deviation wins.
+A row picks among the layouts that hold its column count, from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. Every cell must declare a width, all in px or all in percent. A `100%` width states no share, since a cell sharing its row with it fills what is left, so it counts as undeclared: `30%` beside `100%` keeps the equal layout with no `columnWidths`. A column's share is its width over the sum of the declared widths, so a gutter between cells is not a share. Two cells choose among `'2'`, `'2-1'`, `'1-2'`, `'3-1'` and `'1-3'`; three cells between `'3'` and `'1-2-1'`; four cells are `'4'`. The closest wins when it sits within 2 percentage points on the worst column, so `350` / `190` reads as `'2-1'`, `25%` / `75%` as `'1-3'` and `130` / `280` / `130` as `'1-2-1'`.
 
-A ratio no layout is that close to is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
-
-```txt
-Column widths 10% / 80% / 10% have no Templatical equivalent.
-The section was imported as 3 equal columns.
-```
+Any other ratio keeps the equal layout for that cell count and sets [`columnWidths`](/guide/sections-and-columns#custom-column-widths) to the shares scaled to 100. `70%` / `30%` is `'2'` with `[70, 30]`, `200` / `300` is `'2'` with `[40, 60]`, and `10%` / `80%` / `10%` is `'3'` with `[10, 80, 10]`. The section entry stays `converted`. A row that declares no widths, declares only some of them, or mixes px and percent keeps the equal layout with no `columnWidths`.
 
 ### Wrapper rows
 
@@ -14463,7 +14462,7 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
-- **Rows of more than four cells** — `ColumnLayout` holds at most four columns, so a wider row is merged into one and reported. Ratios no layout is within 6 percentage points of, such as `90%` / `10%`, have no equivalent either and import as the equal split.
+- **Rows of more than four cells** — `ColumnLayout` holds at most four columns, so a wider row is merged into one and reported.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
@@ -14472,7 +14471,7 @@ After conversion, review the output in the editor to check for:
 
 1. **Element classification** — review `report.entries` for entries with `status: 'approximated'` or `status: 'html-fallback'`.
 2. **Image URLs** — relative paths and CID references won't resolve in the preview; replace with absolute URLs.
-3. **Column proportions** — automatic mapping picks the closest standard layout; fine-tune in the section settings panel.
+3. **Column proportions** — a ratio within 2 percentage points of a preset snaps to it, and a row whose cells declare no widths is an equal split; fine-tune in the section settings panel.
 4. **Spacing and padding** — cell padding is carried onto the blocks it holds, as described in [Cell padding](#cell-padding). Margins are not imported and may need touch-up.
 5. **HTML-fallback blocks** — anything that landed in an HTML block can be edited inline or replaced with first-class blocks.
 
@@ -14902,11 +14901,11 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `esd-structure` with 1–4 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"` / `"4"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
+| `esd-structure` with 1–4 `esd-container-frame`s | `SectionBlock` (`columns` from the frame count and widths; see Column geometry under [Where the mapping is lossy](#lossy)) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
 | `esd-structure` with 5+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
 | `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`, including its [width rule](/guide/migration-from-html#image-width). |
-| `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
+| `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. Inline `line-height` (the anchor's, else the wrapping `es-button-border`'s, where a percentage or `em` is first resolved against that wrapper's `font-size`, and an anchor's `inherit` takes the wrapper's; when the anchor sets its own `font-size` and the wrapper's is missing or not px, 15px stands in for the wrapper's and the button is noted) becomes `lineHeight`, a multiple of the label size: `150%` is `1.5`, a number or `em` length is itself, and a px length is over the 15px label the block keeps, because the button's `font-size` is not imported. A percentage or `em` beside the anchor's own px `font-size` is first resolved against it, so `font-size:30px; line-height:2em` is `4`. `120%`, `normal` and a missing value stay unset (1.2). A value it can't read imports at 1.2, `approximated`. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
 | `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched network becomes a website icon and the block is reported `approximated`. |
@@ -14921,9 +14920,9 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 |---|---|---|
 | `es-header` / `es-content` / `es-footer` | one or more `SectionBlock`s | One section per direct row of the stripe's `es-*-body`. A stripe with no `es-*-body` uses its own rows. An empty row is skipped. |
 | Content beside the columns in the same cell | one-column `SectionBlock` | Leading content stays before the column section and trailing content after it. Content that sat between the columns is placed after the column section (`approximated`). Splitting one padded cell into more than one section is `approximated`; the top padding stays on the first section, the bottom on the last, and the sides on each. |
-| 1–4 `es-left` / `es-right` in one row | `columns` `"1"` / `"2"` / `"3"` / `"4"` | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
+| 1–4 `es-left` / `es-right` in one row | `columns` from the column count and widths; see Column geometry under [Where the mapping is lossy](#lossy) | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
 | 5+ floated tables in one row | `columns: "4"` | Extra columns merge into the fourth slot; `approximated`. |
-| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. Widgets stay in document order with the copy around them. |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius` / `line-height`, including from the wrapping `es-button-border`, read as for `esd-block-button`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
 | `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched network becomes a website icon and the block is reported `approximated`. |
@@ -14934,7 +14933,7 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 
 The structure cell's padding is the section's padding. The default is 0. On plugin HTML, `es-p20` sets every side and `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` override one side; an inline padding overrides the sides it states. Those classes are read on the structure element.
 
-A divider's width uses the column it sits in. No width, `auto` or `100%` spans that column. Another percentage stays a percentage, rounded to two decimals and clamped to 0–100. A px width stays px until it fills the column's room (the column's share of the body width, less the section padding on the edge that column owns, and the divider's own side padding). `double`, `groove`, `ridge`, `inset` and `outset` import as `solid`. A partial-width line aligned left or right is centred, and that entry is `approximated`. A partial line with no alignment is treated as left.
+A divider's width uses the column it sits in. No width, `auto` or `100%` spans that column. Another percentage stays a percentage, rounded to two decimals and clamped to 0–100. A px width stays px until it fills the column's room (the column's share, by its layout or its `columnWidths`, of the section's inner box, which is the body width less the section's left and right padding, then less the divider's own side padding). `double`, `groove`, `ridge`, `inset` and `outset` import as `solid`. A partial-width line aligned left or right is centred, and that entry is `approximated`. A partial line with no alignment is treated as left.
 
 Everything else in a row goes through `@templatical/import-html` (headings, paragraphs, images, `<hr>` dividers).
 
@@ -14951,9 +14950,9 @@ An image behind several sections, such as a body image or a stripe image across 
 
 `background-size`, `background-position` and `background-repeat` come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the body's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
 
-## Where the mapping is lossy
+## Where the mapping is lossy {#lossy}
 
-- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Stripo states columns by count, so a row maps to the equal layout `1`, `2`, `3` or `4`. Unequal px widths on a plugin frame or a compiled `es-left` / `es-right` column are reported `approximated`. A column with no readable width is named in that note when the readable widths differ; fewer than two readable widths, or readable widths within 1px, stay `converted`. Plugin HTML with 5 or more frames flattens to one column. Compiled HTML with 5 or more floated tables in one row keeps four slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). A row of two to four columns reads each column's px width from its plugin frame or its compiled `es-left` / `es-right` table. A column's share is its width over the sum of the row's widths, so the gutter between columns is not a share. Widths within 1px of each other are the equal layout `2`, `3` or `4`. Widths within 1px of `2-1`, `1-2`, `3-1`, `1-3` or `1-2-1` are that layout: `200px` / `400px` is `1-2`. Any other widths keep the equal layout and set [`columnWidths`](/guide/sections-and-columns#custom-column-widths) to their shares scaled to 100: `180px` / `420px` is `2` with `[30, 70]`. All of these stay `converted`. When a column has no readable width, the row has no ratio and keeps the equal layout. The section is `approximated` with a note naming every width when at least two readable widths differ by more than 1px; with fewer than two readable widths, or readable widths within 1px, it stays `converted`. Plugin HTML with 5 or more frames flattens to one column. Compiled HTML with 5 or more floated tables in one row keeps four slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
 - **Social icon `alt`** — platforms are inferred; the original `alt` string is not stored on `SocialIcon`.
 - **Block IDs** — every imported block gets a freshly generated ID.
 - **AMP / timers / modules** — no Templatical equivalent; inner markup lands as `html` or is skipped with a warning.
@@ -15130,10 +15129,10 @@ A visual comparison catches what the report can't. Several of the losses below a
 
 | Topol tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) resolves to the nearest one of the same column count. `background-url` becomes `backgroundImage` (see [Background images](#background-images)). |
+| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width`: a percentage, or a px width as a share of the section's inner box (the email width less the section's side padding). A column with no width is the email width divided by the column count, as `mj-column` draws it. A width list within 2 percentage points of a preset (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) keeps that preset; any other ratio of two to four columns sets `columnWidths` on the even layout of that count (see Column geometry under [Where the mapping is lossy](#where-the-mapping-is-lossy)). A column's room, the width an image is measured against, is its share of that inner box. `background-url` becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | Holds a list of nested blocks. |
 | `mj-text` | `TitleBlock` or `ParagraphBlock` | A single heading wrapping the whole content becomes a `TitleBlock`; anything else becomes a `ParagraphBlock`. |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. `line-height` (the node's, else the `mj-button` or `button:` default) becomes `lineHeight`, a multiple of the label size: `150%` is `1.5`, a number or `em` length is itself, and a px length is over the button's `font-size` (15px when unset). `120%` (MJML's default), `normal` and a missing value stay unset. A value it can't read imports at 1.2, `approximated`. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. `width` is `"full"` at `widthPercent` 100, when missing, or once it reaches the column less the image's side padding. |
 | `mj-gif` | `ImageBlock` | Same fields as `mj-image` — Templatical has no dedicated GIF block. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, padding. |
@@ -15152,7 +15151,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the secti
 
 Every leaf tag in the mapping table above converts — Topol's own editor doesn't emit anything this importer treats as `html-fallback` in practice. Within that, a few conversions are approximations rather than exact matches, each recorded as an `approximated` entry with a `note` in `report.entries`:
 
-- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Topol allows any column count at any width, so a shape outside those layouts resolves to the nearest layout of the same column count. Four equal columns stay `"4"`. Any column past the fourth folds its content into the last one, and the note names the four-column limit.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). A width list within 2 percentage points of a preset keeps that preset. Two, three or four columns that fit none keep the even layout of that count and [`columnWidths`](/guide/sections-and-columns#custom-column-widths) scaled to 100: `20%` / `60%` / `20%` is `"3"` with `[20, 60, 20]`, `converted`. When the widths don't total 100 within 0.5 percentage points, scaling changes the source layout, so the section is `approximated` and the note names the source widths: `30%` / `40%` is `"2"` with `[42.86, 57.14]`. Scaled shares that equal a preset keep that preset with no `columnWidths`, so `45%` / `45%` is `"2"`, `approximated`. A column with no `width` takes the email width divided by the column count, not the space the stated widths leave, so `70%` beside a missing width is 70 / 50, scaled. A width that is not above 0 keeps the even layout, `approximated`. When the section's side padding leaves no inner box, px widths are dropped and the section is `approximated`. Any column past the fourth folds its content into the last one, and the note names the four-column limit.
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact keyword maps to the nearest one. See [Background images](#background-images).
 - **GIFs** — `mj-gif` imports as an `ImageBlock`, the same block `mj-image` produces. Templatical has no dedicated GIF block.
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
@@ -15293,7 +15292,7 @@ Unlayer content types map to Templatical equivalents:
 | Text | `paragraph` | Converted |
 | Heading | `title` | Converted |
 | Image | `image` | Converted (approximated when a `maxWidth` under 100% becomes px; see [Image width](#image-width)) |
-| Button | `button` | Converted |
+| Button | `button` | Converted (approximated when its `size.width` is clamped or unusable, see [Button width](#button-width), or its `lineHeight` can't be read, see [Button line height](#button-line-height)) |
 | Divider | `divider`, or `spacer` when it [draws no line](#undrawn-dividers) | Converted (approximated when a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
@@ -15315,11 +15314,28 @@ Unknown content types are converted to HTML blocks as a fallback.
 | `autoWidth: false`, `maxWidth` under `100%`, such as `75%` | that share of the room in px | Approximated |
 | `autoWidth: false`, unreadable `maxWidth` | `"full"` | Approximated |
 
-`src.width` and `src.height` are the uploaded file's size. The image's room is its column's width less its left and right `containerPadding`. `src.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at.
+`src.width` and `src.height` are the uploaded file's size. The image's room is its column's width (see [Divider width](#divider-width)) less its left and right `containerPadding`. `src.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at.
 
 ::: tip
 A px width keeps its size on a phone, where a percentage shrinks with the column, so a `maxWidth` under `100%` is approximated.
 :::
+
+### Button width
+
+| Unlayer `size` | `ButtonBlock.width` | Status |
+|---|---|---|
+| missing, or `autoWidth` `true` (the default) | none, so the button fits its label | Converted |
+| `autoWidth: false`, `width` `100%` | `"full"` | Converted |
+| `autoWidth: false`, `width` above 0 and below `100%`, such as `40%` | that percentage, rounded to two decimals, `"40%"` | Converted |
+| `autoWidth: false`, `width` above `100%` | `"full"` | Approximated |
+| `autoWidth: false`, `width` that rounds to `0%` | none, so the button fits its label | Approximated |
+| `autoWidth: false`, `width` missing or not a percentage | none, so the button fits its label | Approximated |
+
+Unlayer applies `width` only when `autoWidth` is `false`. A percentage is a share of the column less the button's `containerPadding`, the box a percentage `ButtonBlock.width` is measured against, so the button shrinks with its column on a phone. `fullWidthOnMobile` is not imported.
+
+### Button line height
+
+`lineHeight` becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. `120%` (Unlayer's default), `normal`, and a missing value leave it unset, which renders 1.2. A value it can't read imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "auto" could not be read; imported at 1.2.`
 
 ### Divider width
 
@@ -15332,7 +15348,7 @@ A px width keeps its size on a phone, where a percentage shrinks with the column
 | px, as wide as that span or wider | `"full"` | Converted |
 | any other value | `"full"` | Approximated |
 
-A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share of `settings.width` under the section's column layout, and `settings.width` is a px `contentWidth`, else `600`.
+A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share, under the section's column layout or its `columnWidths`, of the row's inner width, which is `settings.width` less the row's left and right `padding`, and `settings.width` is a px `contentWidth`, else `600`.
 
 ::: tip
 `mj-divider` draws `100%` across that span, so a px width that reaches it renders the same as `"full"`. `"full"` also narrows with the column on a phone.
@@ -15369,7 +15385,7 @@ Unlayer organizes content into rows with columns whose widths come from a `cells
 | `[1, 1, 1, 1]` (equal quarters) | `'4'` |
 | 5+ cells | flattened to a single column with a warning |
 
-Cell ratios that don't match a layout above are mapped to the closest one with the same column count. Four cells stay four columns, and unequal four-cell ratios (for example `[6, 2, 2, 2]`) are named in `report.warnings` because layout `4` is four equal quarters. Unlayer does not otherwise warn when the ratio is only near that layout.
+Cells are relative weights: a column's share is its cell over the sum of the row's cells. Cells whose shares equal a preset's keep that layout and set no `columnWidths`, so `[2, 4]` is `'1-2'` and `[3, 3, 3]` is `'3'`. Any other ratio of two, three or four cells keeps the even layout of that count (`'2'`, `'3'` or `'4'`) and sets [`columnWidths`](/guide/sections-and-columns#custom-column-widths) to the shares scaled to 100. `[7, 3]` is `[70, 30]`, `[2, 5, 2]` is `[22.22, 55.56, 22.22]` and `[6, 2, 2, 2]` is `[50, 16.67, 16.67, 16.66]`. The import adds no warning for that ratio. A cell that is not a number above 0 leaves the even layout with no `columnWidths`. When the cells total more than 0, one warning names the ratio: `Row with 2 columns at ratio 1:0 was kept as an even split. A cell that is not above 0 cannot be stored as column widths.` Cells that total 0 or less add no warning.
 
 ### Section background
 

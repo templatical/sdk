@@ -8,7 +8,7 @@ import type {
   TitleBlock,
 } from "@templatical/types";
 import { convertChamaileonTemplate } from "../converter";
-import type { ChamaileonDocument } from "../types";
+import type { ChamaileonDocument, ChamaileonNode } from "../types";
 import { NEWSLETTER } from "./fixtures/newsletter";
 
 const EMPTY_DOC: ChamaileonDocument = {
@@ -25,6 +25,174 @@ const INVALID_MESSAGE =
   "Invalid Chamaileon template: expected the document JSON object from getDocument().";
 const WRONG_BODY_MESSAGE =
   'Invalid Chamaileon template: expected body.type to be "body".';
+
+describe("column rooms inside the content padding", () => {
+  const image = (width: string) => ({
+    type: "image",
+    attrs: { src: "https://cdn.test/a.png" },
+    style: { width },
+  });
+  const widthsOf = (section: SectionBlock) =>
+    section.children.map((column) =>
+      column.map((block) => (block.type === "image" ? block.width : null)),
+    );
+
+  // 50px either side leaves 500px of the 600px body.
+  it("measures a padded single column against the inner box", () => {
+    const { content } = convertChamaileonTemplate({
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600 },
+        children: [
+          {
+            type: "fullwidth",
+            style: { contentPaddingLeft: "50px", contentPaddingRight: "50px" },
+            children: [image("500px"), image("499px")],
+          },
+        ],
+      },
+    });
+    expect(widthsOf(content.blocks[0] as SectionBlock)).toEqual([
+      ["full", 499],
+    ]);
+  });
+
+  // 300px / 200px is 60 / 40 of the 500px inner box: rooms of 300 and 200.
+  it("measures padded columns against their share of the inner box", () => {
+    const column = (width: string, ...children: ChamaileonNode[]) => ({
+      type: "column",
+      style: { width },
+      children,
+    });
+    const { content } = convertChamaileonTemplate({
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600 },
+        children: [
+          {
+            type: "fullwidth",
+            style: { contentPaddingLeft: "50px", contentPaddingRight: "50px" },
+            children: [
+              {
+                type: "multicolumn",
+                children: [
+                  column("300px", image("300px"), image("299px")),
+                  column("200px", image("200px"), image("199px")),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0] as SectionBlock;
+    expect([section.columns, section.columnWidths]).toEqual(["2", [60, 40]]);
+    expect(widthsOf(section)).toEqual([
+      ["full", 299],
+      ["full", 199],
+    ]);
+  });
+});
+
+describe("button line height", () => {
+  it("imports a px line height as a multiple of the label size", () => {
+    const { content, report } = convertChamaileonTemplate({
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600 },
+        children: [
+          {
+            type: "fullwidth",
+            children: [
+              {
+                type: "button",
+                attrs: { text: "Go", href: "https://x.test" },
+                style: {
+                  backgroundColor: "#0094c5",
+                  fontSize: "20px",
+                  lineHeight: "50px",
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const button = (content.blocks[0] as SectionBlock).children[0]![0];
+    expect(button?.type === "button" && button.lineHeight).toBe(2.5);
+    expect(
+      report.entries.find((entry) => entry.sourceTag === "button"),
+    ).toEqual({
+      sourceTag: "button",
+      templaticalBlockType: "button",
+      status: "converted",
+    });
+  });
+});
+
+describe("custom column widths", () => {
+  // 280 + 20 spacer + 280 inside 10px padding each side: an even split.
+  // 360 / 240 has no preset, so it keeps 60 / 40 as column widths, and an
+  // image measures against its 360px or 240px share of the 600px body.
+  it("imports px columns by their share of the row", () => {
+    const column = (width: string, imageWidth: string) => ({
+      type: "column",
+      style: { width },
+      children: [
+        {
+          type: "image",
+          attrs: { src: "https://cdn.test/a.png" },
+          style: { width: imageWidth },
+        },
+      ],
+    });
+    const { content, report } = convertChamaileonTemplate({
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600 },
+        children: [
+          {
+            type: "fullwidth",
+            style: { contentPaddingLeft: "10px", contentPaddingRight: "10px" },
+            children: [
+              {
+                type: "multicolumn",
+                attrs: { spacerBetween: "20px" },
+                children: [column("280px", "50px"), column("280px", "50px")],
+              },
+            ],
+          },
+          {
+            type: "fullwidth",
+            children: [
+              {
+                type: "multicolumn",
+                children: [column("360px", "360px"), column("240px", "239px")],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const [even, custom] = content.blocks as SectionBlock[];
+    expect([even!.columns, even!.columnWidths]).toEqual(["2", undefined]);
+    expect([custom!.columns, custom!.columnWidths]).toEqual(["2", [60, 40]]);
+    expect(
+      custom!.children.map((col) =>
+        col.map((block) => (block.type === "image" ? block.width : null)),
+      ),
+    ).toEqual([["full"], [239]]);
+    expect(
+      report.entries
+        .filter((entry) => entry.sourceTag === "fullwidth")
+        .map((entry) => entry.status),
+    ).toEqual(["converted", "converted"]);
+  });
+});
 
 describe("convertChamaileonTemplate input guards", () => {
   it("throws a typed message for a non-object input", () => {

@@ -15,12 +15,7 @@ import {
   skippedLoopEntry,
   type MapContext,
 } from "./block-mapper";
-import {
-  COLUMN_COUNT,
-  columnPixels,
-  matchColumnLayout,
-  widthsToPercents,
-} from "./column-layout";
+import { COLUMN_COUNT, columnPixels, matchColumnLayout } from "./column-layout";
 import { readAttrs, readStyle, styleValue } from "./normalize";
 import type { ChamaileonNode, ImportReportEntry } from "./types";
 
@@ -94,13 +89,17 @@ export function buildFullwidth(
   const reasons: string[] = [];
 
   const section = createSectionBlock();
+  // The content padding insets the columns, so each column's room is its
+  // share of the body less that padding.
+  const padding = contentPadding(style);
+  const innerWidth = Math.max(0, ctx.bodyWidth - padding.left - padding.right);
 
   if (mcIndex === -1) {
     section.columns = "1";
     section.children = [
       convertColumnChildren(
         flattened,
-        withColumnWidth(ctx, ctx.bodyWidth),
+        withColumnWidth(ctx, innerWidth),
         entries,
       ),
     ];
@@ -120,9 +119,7 @@ export function buildFullwidth(
     const widthsPx = columns.map((column) =>
       parsePx(styleValue(readStyle(column, ctx.variables, ctx.stats), "width")),
     );
-    const { layout, exact } = matchColumnLayout(
-      widthsToPercents(widthsPx, ctx.bodyWidth),
-    );
+    const { layout, exact, columnWidths } = matchColumnLayout(widthsPx);
     if (!exact) {
       reasons.push(
         `Column widths ${formatWidths(widthsPx)} have no exact Templatical layout; resolved to "${layout}".${columns.length > 4 ? " Templatical supports up to four columns." : ""}`,
@@ -139,10 +136,10 @@ export function buildFullwidth(
     }
 
     const slots = COLUMN_COUNT[layout];
-    const pixels = columnPixels(layout, ctx.bodyWidth);
+    const pixels = columnPixels(layout, innerWidth, columnWidths);
     const children: Block[][] = Array.from({ length: slots }, () => []);
     const slotCtx = (slot: number): MapContext =>
-      withColumnWidth(ctx, Math.round(pixels[slot] ?? ctx.bodyWidth));
+      withColumnWidth(ctx, Math.round(pixels[slot]!));
 
     children[0].push(...convertColumnChildren(before, slotCtx(0), entries));
     columns.forEach((column, index) => {
@@ -154,6 +151,7 @@ export function buildFullwidth(
     children[0].push(...convertColumnChildren(after, slotCtx(0), entries));
 
     section.columns = layout;
+    if (columnWidths) section.columnWidths = columnWidths;
     section.children = children;
   }
 
@@ -167,7 +165,7 @@ export function buildFullwidth(
     : undefined;
   const fill = contentFill ?? soleFill;
 
-  section.styles.padding = contentPadding(style);
+  section.styles.padding = padding;
   if (fill) section.styles.backgroundColor = fill;
 
   const own = content ?? soleImage;

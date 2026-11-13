@@ -112,7 +112,7 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 | Text | `paragraph` | Konvertiert |
 | Heading | `title` | Konvertiert |
 | Image | `image` | Konvertiert (angenähert, wenn ein `maxWidth` unter 100% zu px wird; siehe [Bildbreite](#image-width)) |
-| Button | `button` | Konvertiert |
+| Button | `button` | Konvertiert (angenähert, wenn `size.width` begrenzt wird oder unbrauchbar ist, siehe [Button-Breite](#button-width), oder `lineHeight` nicht lesbar ist, siehe [Zeilenhöhe von Buttons](#button-line-height)) |
 | Divider | `divider`, oder `spacer`, wenn er [keine Linie zeichnet](#undrawn-dividers) | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn er keine Linie zeichnet und keinen Platz einnimmt) |
 | Spacer | `spacer` | Konvertiert |
 | Html | `html` | Konvertiert |
@@ -134,13 +134,30 @@ Unbekannte Inhaltstypen werden als Fallback in HTML-Blöcke konvertiert.
 | `autoWidth: false`, `maxWidth` unter `100%`, etwa `75%` | dieser Anteil des Platzes in px | Angenähert |
 | `autoWidth: false`, nicht lesbares `maxWidth` | `"full"` | Angenähert |
 
-`src.width` und `src.height` sind die Größe der hochgeladenen Datei. Der Platz des Bildes ist die Breite seiner Spalte abzüglich des linken und rechten `containerPadding`. `src.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält.
+`src.width` und `src.height` sind die Größe der hochgeladenen Datei. Der Platz des Bildes ist die Breite seiner Spalte (siehe [Divider-Breite](#divider-width)) abzüglich des linken und rechten `containerPadding`. `src.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält.
 
 ::: tip
 Eine px-Breite behält auf dem Smartphone ihre Größe, während ein Prozentwert mit der Spalte schrumpft. Deshalb ist ein `maxWidth` unter `100%` angenähert.
 :::
 
-### Divider-Breite
+### Button-Breite {#button-width}
+
+| Unlayer-`size` | `ButtonBlock.width` | Status |
+|---|---|---|
+| fehlt, oder `autoWidth` `true` (Standard) | keine, der Button passt sich seiner Beschriftung an | Konvertiert |
+| `autoWidth: false`, `width` `100%` | `"full"` | Konvertiert |
+| `autoWidth: false`, `width` über 0 und unter `100%`, etwa `40%` | dieser Prozentwert auf zwei Nachkommastellen, `"40%"` | Konvertiert |
+| `autoWidth: false`, `width` über `100%` | `"full"` | Angenähert |
+| `autoWidth: false`, `width`, das auf `0%` rundet | keine, der Button passt sich seiner Beschriftung an | Angenähert |
+| `autoWidth: false`, `width` fehlt oder ist kein Prozentwert | keine, der Button passt sich seiner Beschriftung an | Angenähert |
+
+Unlayer wendet `width` nur an, wenn `autoWidth` `false` ist. Ein Prozentwert ist ein Anteil der Spalte abzüglich des `containerPadding` des Buttons, der Box, an der ein prozentuales `ButtonBlock.width` gemessen wird; der Button schrumpft daher auf dem Smartphone mit seiner Spalte. `fullWidthOnMobile` wird nicht importiert.
+
+### Zeilenhöhe von Buttons {#button-line-height}
+
+`lineHeight` wird zu `ButtonBlock.lineHeight`, ein Vielfaches der Schriftgröße der Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`150%` ist `1.5`), eine Zahl ohne Einheit ist sie selbst, eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße des Buttons, und eine `em`-Länge ist die Zahl. Sie wird auf zwei Nachkommastellen gerundet. `120%` (Unlayers Standard), `normal` und ein fehlender Wert lassen es ungesetzt, was 1.2 rendert. Ein nicht lesbarer Wert wird mit 1.2 importiert, und der Eintrag ist angenähert, mit einer Notiz, die ihn nennt: `Button line-height "auto" could not be read; imported at 1.2.`
+
+### Divider-Breite {#divider-width}
 
 | Unlayer-`width` | `DividerBlock.width` | Status |
 |---|---|---|
@@ -151,7 +168,7 @@ Eine px-Breite behält auf dem Smartphone ihre Größe, während ein Prozentwert
 | px, so breit wie diese Spannweite oder breiter | `"full"` | Konvertiert |
 | jeder andere Wert | `"full"` | Angenähert |
 
-Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Spalte abzüglich des linken und rechten `containerPadding` des Dividers. Die Breite einer Spalte ist ihr Anteil an `settings.width` gemäß dem Spaltenlayout der Section, und `settings.width` ist eine px-Angabe in `contentWidth`, sonst `600`.
+Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Spalte abzüglich des linken und rechten `containerPadding` des Dividers. Die Breite einer Spalte ist ihr Anteil, gemäß dem Spaltenlayout der Section oder ihren `columnWidths`, an der inneren Breite der Reihe, also an `settings.width` abzüglich des linken und rechten `padding` der Reihe, und `settings.width` ist eine px-Angabe in `contentWidth`, sonst `600`.
 
 ::: tip
 `mj-divider` zeichnet `100%` über diese Spannweite, eine px-Breite, die sie erreicht, sieht deshalb aus wie `"full"`. `"full"` wird außerdem auf dem Smartphone mit der Spalte schmaler.
@@ -188,7 +205,7 @@ Unlayer organisiert Inhalte in Reihen mit Spalten, deren Breiten aus einem `cell
 | `[1, 1, 1, 1]` (gleiche Viertel) | `'4'` |
 | 5+ Zellen | auf eine einzelne Spalte reduziert, mit Warnung |
 
-Zellverhältnisse, die keinem Layout oben entsprechen, werden auf das nächstliegende mit derselben Spaltenzahl abgebildet. Vier Zellen bleiben vier Spalten; ungleiche Viererverhältnisse (zum Beispiel `[6, 2, 2, 2]`) werden in `report.warnings` genannt, da Layout `4` aus vier gleichen Vierteln besteht. Sonst warnt Unlayer nicht, wenn das Verhältnis diesem Layout nur nahekommt.
+Zellen sind relative Gewichte: Der Anteil einer Spalte ist ihre Zelle geteilt durch die Summe der Zellen der Reihe. Zellen, deren Anteile denen eines Presets entsprechen, behalten dieses Layout und setzen kein `columnWidths`; `[2, 4]` ist also `'1-2'` und `[3, 3, 3]` ist `'3'`. Jedes andere Verhältnis von zwei, drei oder vier Zellen behält das gleichmäßige Layout dieser Anzahl (`'2'`, `'3'` oder `'4'`) und setzt [`columnWidths`](/de/guide/sections-and-columns#custom-column-widths) auf die auf 100 skalierten Anteile. `[7, 3]` ist `[70, 30]`, `[2, 5, 2]` ist `[22.22, 55.56, 22.22]` und `[6, 2, 2, 2]` ist `[50, 16.67, 16.67, 16.66]`. Der Import gibt für dieses Verhältnis keine Warnung aus. Eine Zelle, die keine Zahl über 0 ist, lässt das gleichmäßige Layout ohne `columnWidths`. Wenn die Zellen zusammen mehr als 0 ergeben, nennt eine Warnung das Verhältnis: `Row with 2 columns at ratio 1:0 was kept as an even split. A cell that is not above 0 cannot be stored as column widths.` Zellen, die zusammen 0 oder weniger ergeben, erzeugen keine Warnung.
 
 ### Section-Hintergrund
 

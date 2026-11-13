@@ -87,6 +87,72 @@ describe("button", () => {
     expect(entry.status).toBe("approximated");
     expect(entry.note).toMatch(/outlined/i);
   });
+
+  describe("line height", () => {
+    function lineHeightOf(style: Record<string, unknown>) {
+      const { block, entry } = convertLeaf(
+        node({
+          type: "button",
+          attrs: { text: "Go", href: "https://x.test" },
+          style: { backgroundColor: "#0094c5", ...style },
+        }),
+        ctx(),
+      );
+      return {
+        lineHeight: (block as ButtonBlock).lineHeight,
+        status: entry.status,
+        note: entry.note,
+      };
+    }
+
+    // Chamaileon's own defaults: a 25px line on an 18px label.
+    it("reads a px line height over the label's font size", () => {
+      expect(lineHeightOf({ lineHeight: "25px", fontSize: "18px" })).toEqual({
+        lineHeight: 1.39,
+        status: "converted",
+        note: undefined,
+      });
+      expect(
+        lineHeightOf({ "line-height": "32px", "font-size": "16px" }).lineHeight,
+      ).toBe(2);
+    });
+
+    it("also reads a percentage, a number and em", () => {
+      expect(lineHeightOf({ lineHeight: "150%" }).lineHeight).toBe(1.5);
+      expect(lineHeightOf({ lineHeight: 1.75 }).lineHeight).toBe(1.75);
+      expect(lineHeightOf({ lineHeight: "2em" }).lineHeight).toBe(2);
+    });
+
+    it("measures against the 15px default label when no font size is set", () => {
+      expect(lineHeightOf({ lineHeight: "30px" }).lineHeight).toBe(2);
+    });
+
+    it("leaves a line height of 1.2 and a missing one unset", () => {
+      for (const style of [{ lineHeight: "18px" }, {}]) {
+        expect(lineHeightOf(style)).toEqual({
+          lineHeight: undefined,
+          status: "converted",
+          note: undefined,
+        });
+      }
+    });
+
+    it("notes a value it cannot keep and imports it at 1.2", () => {
+      expect(lineHeightOf({ lineHeight: "auto" })).toEqual({
+        lineHeight: undefined,
+        status: "approximated",
+        note: 'Button line-height "auto" could not be read; imported at 1.2.',
+      });
+    });
+
+    it("joins the outline note and the line-height note", () => {
+      expect(
+        lineHeightOf({ backgroundColor: null, lineHeight: "0px" }).note,
+      ).toBe(
+        'outlined button has no Templatical equivalent. Button line-height "0px" could not be read; imported at 1.2.',
+      );
+    });
+  });
 });
 
 describe("image", () => {
