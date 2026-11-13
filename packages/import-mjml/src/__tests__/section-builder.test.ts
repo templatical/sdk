@@ -218,6 +218,50 @@ describe("matchColumnLayout", () => {
     });
   });
 
+  it("keeps the preset that scaled widths land on, without columnWidths", () => {
+    // 45 / 45 and 30 / 60 total 90, so they are scaled to 100 and the
+    // match stays approximated, but 50 / 50 and 33.33 / 66.67 are presets.
+    expect(matchColumnLayout([45, 45])).toEqual({ layout: "2", exact: false });
+    expect(matchColumnLayout([30, 60])).toEqual({
+      layout: "1-2",
+      exact: false,
+    });
+    expect(matchColumnLayout([60, 20])).toEqual({
+      layout: "3-1",
+      exact: false,
+    });
+    expect(matchColumnLayout([20, 40, 20])).toEqual({
+      layout: "1-2-1",
+      exact: false,
+    });
+    expect(matchColumnLayout([20, 20, 20, 20])).toEqual({
+      layout: "4",
+      exact: false,
+    });
+  });
+
+  it("matches scaled thirds whose rounding puts the spare hundredth on another column", () => {
+    // Thirds of 100 round to 33.34 / 33.33 / 33.33; the preset keeps the
+    // spare hundredth on the last column instead.
+    expect(matchColumnLayout([30, 30, 30])).toEqual({
+      layout: "3",
+      exact: false,
+    });
+  });
+
+  it("allows one hundredth between scaled shares and a preset, and no more", () => {
+    // 45.01 / 44.99 scales to 50.01 / 49.99; 45.02 / 44.98 to 50.02 / 49.98.
+    expect(matchColumnLayout([45.01, 44.99])).toEqual({
+      layout: "2",
+      exact: false,
+    });
+    expect(matchColumnLayout([45.02, 44.98])).toEqual({
+      layout: "2",
+      exact: false,
+      columnWidths: [50.02, 49.98],
+    });
+  });
+
   it("folds five columns onto 4", () => {
     expect(matchColumnLayout([20, 20, 20, 20, 20])).toEqual({
       layout: "4",
@@ -263,6 +307,38 @@ describe("buildSection", () => {
       sourceTag: "mj-section",
       status: "approximated",
       note: 'Column widths 100%, 0% have no exact Templatical layout; resolved to "2".',
+    });
+  });
+
+  it("imports widths that scale onto a preset as that preset, approximated", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column width="45%"><mj-text>A</mj-text></mj-column><mj-column width="45%"><mj-text>B</mj-text></mj-column></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toBeUndefined();
+    expect(section.children).toHaveLength(2);
+    expect(entries[0]).toMatchObject({
+      sourceTag: "mj-section",
+      status: "approximated",
+      note: 'Column widths 45%, 45% have no exact Templatical layout; resolved to "2".',
+    });
+  });
+
+  it("names px widths that scale onto 1-2 as written", () => {
+    // 180px and 360px of the 600px inner box are 30 / 60, scaled to 1-2.
+    const { blocks, entries } = build(
+      '<mj-section><mj-column width="180px"><mj-text>A</mj-text></mj-column><mj-column width="360px"><mj-text>B</mj-text></mj-column></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.columns).toBe("1-2");
+    expect(section.columnWidths).toBeUndefined();
+    expect(entries[0]).toMatchObject({
+      sourceTag: "mj-section",
+      status: "approximated",
+      note: 'Column widths 180px, 360px have no exact Templatical layout; resolved to "1-2".',
     });
   });
 
@@ -577,18 +653,18 @@ describe("buildSection", () => {
     );
   });
 
-  it("stores a 100px column beside an absent column as the scaled 16.67/50 shares", () => {
+  it("imports a 100px column beside an absent column as 1-3, where its scaled 16.67/50 shares land", () => {
     const { blocks, entries } = build(
       '<mj-section><mj-column width="100px" /><mj-column /></mj-section>',
     );
     const section = blocks[0] as SectionBlock;
     const entry = entries.find((e) => e.sourceTag === "mj-section")!;
 
-    expect(section.columns).toBe("2");
-    expect(section.columnWidths).toEqual([25, 75]);
+    expect(section.columns).toBe("1-3");
+    expect(section.columnWidths).toBeUndefined();
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      'Column widths 100px, auto have no exact Templatical layout; resolved to "2".',
+      'Column widths 100px, auto have no exact Templatical layout; resolved to "1-3".',
     );
   });
 
