@@ -168,7 +168,7 @@ Unlayer wendet `width` nur an, wenn `autoWidth` `false` ist. Ein Prozentwert ist
 | px, so breit wie diese Spannweite oder breiter | `"full"` | Konvertiert |
 | jeder andere Wert | `"full"` | Angenähert |
 
-Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Spalte abzüglich des linken und rechten `containerPadding` des Dividers. Die Breite einer Spalte ist ihr Anteil, gemäß dem Spaltenlayout der Section oder ihren `columnWidths`, an `settings.width` abzüglich des linken und rechten `padding` der Reihe, und `settings.width` ist eine px-Angabe in `contentWidth`, sonst `600`.
+Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Spalte abzüglich des linken und rechten `containerPadding` des Dividers. Die Breite einer Spalte ist ihr Anteil, gemäß dem Spaltenlayout der Section oder ihren `columnWidths`, an der inneren Breite der Reihe, also an `settings.width` abzüglich des linken und rechten `padding` der Reihe, und `settings.width` ist eine px-Angabe in `contentWidth`, sonst `600`.
 
 ::: tip
 `mj-divider` zeichnet `100%` über diese Spannweite, eine px-Breite, die sie erreicht, sieht deshalb aus wie `"full"`. `"full"` wird außerdem auf dem Smartphone mit der Spalte schmaler.

@@ -170,7 +170,7 @@ Unlayer applies `width` only when `autoWidth` is `false`. A percentage is a shar
 | px, as wide as that span or wider | `"full"` | Converted |
 | any other value | `"full"` | Approximated |
 
-A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share, under the section's column layout or its `columnWidths`, of `settings.width` less the row's left and right `padding`, and `settings.width` is a px `contentWidth`, else `600`.
+A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share, under the section's column layout or its `columnWidths`, of the row's inner width, which is `settings.width` less the row's left and right `padding`, and `settings.width` is a px `contentWidth`, else `600`.
 
 ::: tip
 `mj-divider` draws `100%` across that span, so a px width that reaches it renders the same as `"full"`. `"full"` also narrows with the column on a phone.

@@ -281,11 +281,11 @@ describe("convertLeaf", () => {
       });
     });
 
-    it("fits the label for an unreadable percentage", () => {
+    it("fits the label and notes an unreadable percentage", () => {
       expect(widthOf("wide%")).toEqual({
         width: undefined,
-        status: "converted",
-        note: undefined,
+        status: "approximated",
+        note: "Button width wide% could not be read; imported as fit to content.",
       });
     });
 
@@ -328,6 +328,34 @@ describe("convertLeaf", () => {
         status: "approximated",
         note: 'Button line-height "tall" could not be read; imported at 1.2.',
       });
+    });
+
+    // The label renders at 15px, so 200% of a 30px font is a 60px line, 4x.
+    it("resolves a relative line height against the button's own px font size", () => {
+      const lineHeightOf = (attributes: Record<string, unknown>) => {
+        const { blocks, entries } = map({
+          type: "standard-button",
+          data: {},
+          attributes: { "background-color": "#C5900C", ...attributes },
+          children: [{ text: "Go" }],
+        });
+        return {
+          lineHeight: (blocks[0] as ButtonBlock).lineHeight,
+          status: entries[0].status,
+        };
+      };
+      expect(
+        lineHeightOf({ "font-size": "30px", "line-height": "200%" }),
+      ).toEqual({ lineHeight: 4, status: "converted" });
+      expect(
+        lineHeightOf({ "font-size": "30px", "line-height": "2em" }).lineHeight,
+      ).toBe(4);
+      expect(
+        lineHeightOf({ "font-size": "30px", "line-height": "1.5" }).lineHeight,
+      ).toBe(1.5);
+      expect(
+        lineHeightOf({ "font-size": "2em", "line-height": "150%" }).lineHeight,
+      ).toBe(1.5);
     });
 
     it("joins the outline note and the width note", () => {

@@ -269,6 +269,23 @@ function readButtonLineHeight(
   return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
 }
 
+/**
+ * A button's `line-height`, unset when the attribute is. The label renders at
+ * the factory font size, not the button's own, so a `%` or `em` line height
+ * beside a px `font-size` becomes the length it computes to.
+ */
+function ownLineHeight(value: unknown, fontSize: unknown): unknown {
+  if (isUnset(value)) return undefined;
+  const size = parsePx(fontSize) ?? 0;
+  const relative = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i.exec(
+    String(value).trim(),
+  );
+  if (!relative || !(size > 0)) return value;
+  const factor =
+    relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
+  return `${factor * size}px`;
+}
+
 function convertButton(node: EasyEmailProNode, map: MapContext): Converted {
   const fill = parseColor(readAttr(node, "background-color", map.resolve));
   const textColor = parseColor(readAttr(node, "color", map.resolve));
@@ -277,9 +294,11 @@ function convertButton(node: EasyEmailProNode, map: MapContext): Converted {
   const width = buttonWidth(readAttr(node, "width", map.resolve), notes);
   // The block keeps the factory font size, so a px line height is measured
   // against the size the label renders at.
-  const rawLineHeight = readAttr(node, "line-height", map.resolve);
   const lineHeight = readButtonLineHeight(
-    isUnset(rawLineHeight) ? undefined : rawLineHeight,
+    ownLineHeight(
+      readAttr(node, "line-height", map.resolve),
+      readAttr(node, "font-size", map.resolve),
+    ),
     Number(BUTTON_BLOCK_DEFAULTS.fontSize),
     notes,
   );
@@ -797,7 +816,12 @@ function buttonWidth(value: unknown, notes: string[]): ButtonBlock["width"] {
   const raw = String(value).trim();
   if (raw.endsWith("%")) {
     const parsed = parsePercent(raw);
-    if (parsed === null) return undefined;
+    if (parsed === null) {
+      notes.push(
+        `Button width ${noteValue(raw)} could not be read; imported as fit to content.`,
+      );
+      return undefined;
+    }
     const share = roundHundredths(parsed);
     if (share > 100) {
       notes.push(`Button width ${noteValue(raw)} was clamped to 100%.`);

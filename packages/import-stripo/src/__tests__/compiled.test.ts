@@ -264,6 +264,21 @@ describe("compiled pipeline", () => {
       expect(lineHeightOf("", "line-height:2em").lineHeight).toBe(2);
     });
 
+    // The label renders at 15px, so 2em of a 30px anchor is a 60px line, 4x.
+    it("resolves the anchor's relative line height against its own px font size", () => {
+      expect(lineHeightOf("font-size:30px;line-height:2em")).toEqual({
+        lineHeight: 4,
+        status: "converted",
+        note: undefined,
+      });
+      expect(lineHeightOf("font-size:30px;line-height:200%").lineHeight).toBe(
+        4,
+      );
+      expect(lineHeightOf("font-size:30px;line-height:1.5").lineHeight).toBe(
+        1.5,
+      );
+    });
+
     it("takes an explicit inherit from the wrapper", () => {
       expect(
         lineHeightOf("line-height:inherit", "line-height:1.6").lineHeight,

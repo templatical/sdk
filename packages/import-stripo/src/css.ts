@@ -324,10 +324,10 @@ export function emailBodyWidth(
 }
 
 /**
- * Room each column has for a line, before the line's own side padding.
- * The share is of the body width: the layout's, or `columnWidths` when the
- * section has them. The first column then loses the section's left padding
- * and the last loses the right. One column loses both. A room that is not
+ * Room each column has for a line, before the line's own side padding: its
+ * share of the section's inner box, the body width less the section's left
+ * and right padding, as the renderer lays the columns out. The share is the
+ * layout's, or `columnWidths` when the section has them. A room that is not
  * positive is unknown — the caller keeps the stated px.
  */
 export function columnRooms(
@@ -339,12 +339,10 @@ export function columnRooms(
 ): Array<number | undefined> {
   const shares = sectionColumnPercents({ columns: layout, columnWidths });
   const count = layout === "1" ? 1 : slotCount;
-  const width = bodyWidth > 0 ? bodyWidth : 600;
+  // `bodyWidth` comes from `emailBodyWidth`, which is always above 0.
+  const inner = bodyWidth - padding.left - padding.right;
   return Array.from({ length: count }, (_, index) => {
-    const span = layout === "1" ? width : (width * shares[index]) / 100;
-    const left = layout === "1" || index === 0 ? padding.left : 0;
-    const right = layout === "1" || index === count - 1 ? padding.right : 0;
-    const room = span - left - right;
+    const room = (inner * shares[index]!) / 100;
     return room > 0 ? room : undefined;
   });
 }

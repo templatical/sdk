@@ -474,20 +474,70 @@ describe("compiled lines and spacers", () => {
     expect(dividers(fills.content.blocks)[0].width).toBe("full");
   });
 
-  it("measures a column's room from its share and the edge it carries", () => {
-    const html = compiled(
-      contentBody(`
-        <tr><td style="padding:0 0 0 100px">
-          <table class="es-left" align="left"><tr><td style="padding:0">
-            ${line("220px", "1px solid #111111", "center")}
-          </td></tr></table>
-          <table class="es-right" align="right"><tr><td><p>Other</p></td></tr></table>
-        </td></tr>
-      `),
-    );
-    expect(dividers(convertStripoTemplate(html).content.blocks)[0].width).toBe(
-      "full",
-    );
+  // 100px of left padding leaves a 500px inner box; half of it is 250px.
+  it("measures a column's room as its share of the inner box", () => {
+    const row = (width: string) =>
+      compiled(
+        contentBody(`
+          <tr><td style="padding:0 0 0 100px">
+            <table class="es-left" align="left"><tr><td style="padding:0">
+              ${line(width, "1px solid #111111", "center")}
+            </td></tr></table>
+            <table class="es-right" align="right"><tr><td><p>Other</p></td></tr></table>
+          </td></tr>
+        `),
+      );
+    expect(
+      dividers(convertStripoTemplate(row("220px")).content.blocks)[0].width,
+    ).toBe(220);
+    expect(
+      dividers(convertStripoTemplate(row("250px")).content.blocks)[0].width,
+    ).toBe("full");
+  });
+
+  // 50px either side leaves 500px: 30 / 70 rooms of 150px and 350px, and
+  // three equal columns of about 166.7px.
+  it("measures padded custom and equal columns against the inner box", () => {
+    const twoColumns = (width: string) =>
+      compiled(
+        contentBody(`
+          <tr><td style="padding:0 50px">
+            <table class="es-left" align="left" width="180"><tr><td style="padding:0">
+              ${line(width, "1px solid #111111", "center")}
+            </td></tr></table>
+            <table class="es-right" align="right" width="420"><tr><td><p>Other</p></td></tr></table>
+          </td></tr>
+        `),
+      );
+    expect(
+      dividers(convertStripoTemplate(twoColumns("150px")).content.blocks)[0]
+        .width,
+    ).toBe("full");
+    expect(
+      dividers(convertStripoTemplate(twoColumns("140px")).content.blocks)[0]
+        .width,
+    ).toBe(140);
+
+    const threeColumns = (width: string) =>
+      compiled(
+        contentBody(`
+          <tr><td style="padding:0 50px">
+            <table class="es-left" align="left"><tr><td style="padding:0">
+              ${line(width, "1px solid #111111", "center")}
+            </td></tr></table>
+            <table class="es-left" align="left"><tr><td><p>B</p></td></tr></table>
+            <table class="es-right" align="right"><tr><td><p>C</p></td></tr></table>
+          </td></tr>
+        `),
+      );
+    expect(
+      dividers(convertStripoTemplate(threeColumns("167px")).content.blocks)[0]
+        .width,
+    ).toBe("full");
+    expect(
+      dividers(convertStripoTemplate(threeColumns("166px")).content.blocks)[0]
+        .width,
+    ).toBe(166);
   });
 
   // 180px / 420px is 30 / 70 of the row, so the left column's room is 30%

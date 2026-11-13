@@ -16,6 +16,6 @@ The value is a multiple of the label's font size: a percentage is that number ov
 - **Stripo:** the inline `line-height` on `a.es-button`, else on its `es-button-border`.
 - **Topol:** `mj-button` `line-height`, else the `mj-button` or `button:` default.
 - **Chamaileon:** `style.lineHeight` in px over `style.fontSize`; the `25px` / `18px` default is `1.39`.
-- **Easy Email Pro:** `standard-button` `line-height`.
+- **Easy Email Pro:** `standard-button` `line-height`. An unreadable percentage `width` is now noted.
 
-Stripo and Easy Email Pro don't import a button's font size, so a px line height there is measured against the 15px label the block keeps.
+Stripo and Easy Email Pro don't import a button's font size, so a px line height there is measured against the 15px label the block keeps, and a percentage or `em` beside the button's own px font size is first resolved against it.

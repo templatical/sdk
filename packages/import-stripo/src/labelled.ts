@@ -94,15 +94,28 @@ function readButtonLineHeight(
   return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
 }
 
+const RELATIVE_LINE_HEIGHT = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i;
+
+/** A `%` or `em` line height as the px it computes to at `fontSize`. */
+function relativeAsPx(value: string, fontSize: number): string | undefined {
+  const relative = RELATIVE_LINE_HEIGHT.exec(value);
+  if (!relative) return undefined;
+  const factor =
+    relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
+  return `${factor * fontSize}px`;
+}
+
 /**
  * The line height a button takes: its own, else the one it inherits from
- * the element around it. `inherit` defers to that element. A percentage or
- * `em` line height inherits as the length it computes to there, so it is
- * resolved against `outerFontSize`. With no outer font size, a label that
- * states none of its own shares the size the outer element inherits, so the
- * value keeps its ratio as written. Otherwise, when the outer font size is
- * missing or not a px length, `fallbackSize` stands in and a note says so.
- * A number, a length or a keyword inherits as written.
+ * the element around it. The label renders at `fallbackSize`, not at the
+ * anchor's own font size, so an own `%` or `em` line height beside an own px
+ * `font-size` becomes the length it computes to. `inherit` defers to the
+ * element around it, where a `%` or `em` line height inherits as the length
+ * it computes to, resolved against `outerFontSize`. With no outer font size,
+ * a label that states none of its own shares the size the outer element
+ * inherits, so the value keeps its ratio as written. Otherwise, when the
+ * outer font size is missing or not a px length, `fallbackSize` stands in
+ * and a note says so. A number, a length or a keyword is kept as written.
  */
 function lineHeightSource(
   own: string | undefined,
@@ -113,11 +126,12 @@ function lineHeightSource(
   notes: string[],
 ): string | undefined {
   const ownValue = own?.trim();
-  if (ownValue && !/^inherit$/i.test(ownValue)) return own;
-  const relative = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i.exec(
-    outer?.trim() ?? "",
-  );
-  if (!relative) return outer;
+  if (ownValue && !/^inherit$/i.test(ownValue)) {
+    const ownSize = parsePxValue(ownFontSize);
+    return (ownSize > 0 && relativeAsPx(ownValue, ownSize)) || own;
+  }
+  const outerValue = outer?.trim() ?? "";
+  if (!RELATIVE_LINE_HEIGHT.test(outerValue)) return outer;
   const statedOuter = outerFontSize?.trim();
   if (!statedOuter && !ownFontSize?.trim()) return outer;
   let size = parsePxValue(statedOuter);
@@ -126,13 +140,11 @@ function lineHeightSource(
       ? `font-size "${statedOuter}", which could not be read`
       : "a font-size that is not stated";
     notes.push(
-      `Button line-height "${relative[0]}" inherits from ${source}; resolved against ${fallbackSize}px.`,
+      `Button line-height "${outerValue}" inherits from ${source}; resolved against ${fallbackSize}px.`,
     );
     size = fallbackSize;
   }
-  const factor =
-    relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
-  return `${factor * size}px`;
+  return relativeAsPx(outerValue, size);
 }
 
 export function buttonFrom(
