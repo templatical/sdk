@@ -492,6 +492,53 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     }
   });
 
+  it("imports widths that scale onto a preset as that preset, and reads its render back converted", async () => {
+    const mjml = `<mjml><mj-body width="600px">
+      <mj-section><mj-column width="45%"><mj-text>A</mj-text></mj-column><mj-column width="45%"><mj-text>B</mj-text></mj-column></mj-section>
+      <mj-section><mj-column width="30%"><mj-text>C</mj-text></mj-column><mj-column width="60%"><mj-text>D</mj-text></mj-column></mj-section>
+    </mj-body></mjml>`;
+    const sectionsOf = (content: TemplateContent) =>
+      content.blocks.filter(
+        (block): block is SectionBlock => block.type === "section",
+      );
+    const sectionEntries = (result: ReturnType<typeof convertMjmlTemplate>) =>
+      result.report.entries.filter((entry) => entry.sourceTag === "mj-section");
+
+    const imported = convertMjmlTemplate(mjml);
+    const sections = sectionsOf(imported.content);
+    expect(sections.map((section) => section.columns)).toEqual(["2", "1-2"]);
+    expect(sections.map((section) => section.columnWidths)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    const entries = sectionEntries(imported);
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toMatchObject({
+      status: "approximated",
+      note: 'Column widths 45%, 45% have no exact Templatical layout; resolved to "2".',
+    });
+    expect(entries[1]).toMatchObject({
+      status: "approximated",
+      note: 'Column widths 30%, 60% have no exact Templatical layout; resolved to "1-2".',
+    });
+
+    const rendered = await renderToMjml(imported.content);
+    expect(rendered).toContain('width="33.33%"');
+    expect(rendered).toContain('width="66.67%"');
+    const reimported = convertMjmlTemplate(rendered);
+    const again = sectionsOf(reimported.content);
+    expect(again.map((section) => section.columns)).toEqual(["2", "1-2"]);
+    expect(again.map((section) => section.columnWidths)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    for (const entry of sectionEntries(reimported)) {
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    }
+    expect(sectionEntries(reimported)).toHaveLength(2);
+  });
+
   it("converts every element with no approximations at all", async () => {
     const mjml = await renderToMjml(buildFixtureTemplate());
     const { report } = convertMjmlTemplate(mjml);

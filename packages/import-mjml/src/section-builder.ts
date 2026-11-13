@@ -43,10 +43,10 @@ import { planSiblings } from "./display-condition";
 import type { ImportReportEntry } from "./types";
 
 /**
- * Preset match order. The first shape within `WIDTH_TOLERANCE` wins, so this
+ * Preset match order. The first preset within the tolerance wins, so this
  * stays the order the importer has always tried.
  */
-const LAYOUT_MATCH_ORDER: ColumnLayout[] = [
+const LAYOUT_MATCH_ORDER: readonly ColumnLayout[] = [
   "1",
   "2",
   "1-2",
@@ -58,21 +58,36 @@ const LAYOUT_MATCH_ORDER: ColumnLayout[] = [
   "4",
 ];
 
-const LAYOUT_SHAPES: Array<{
-  layout: ColumnLayout;
-  percents: readonly number[];
-}> = LAYOUT_MATCH_ORDER.map((layout) => ({
-  layout,
-  percents: COLUMN_LAYOUT_PERCENTS[layout],
-}));
-
 /** Percentage points of drift tolerated per column before a match is inexact. */
 const WIDTH_TOLERANCE = 2;
+
+/**
+ * One hundredth, the step `sectionColumnPercents` rounds to, plus the float
+ * error of subtracting two hundredths. Scaled shares this close to a preset
+ * are that preset.
+ */
+const SCALED_TOLERANCE = 0.01 + 1e-9;
 
 function evenLayout(count: number): ColumnLayout {
   if (count === 3) return "3";
   if (count === 4) return "4";
   return "2";
+}
+
+/** The first preset with one share per value, each within `tolerance`. */
+function presetWithin(
+  percents: readonly number[],
+  tolerance: number,
+): ColumnLayout | undefined {
+  return LAYOUT_MATCH_ORDER.find((layout) => {
+    const target = COLUMN_LAYOUT_PERCENTS[layout];
+    return (
+      target.length === percents.length &&
+      target.every(
+        (share, index) => Math.abs(share - percents[index]!) <= tolerance,
+      )
+    );
+  });
 }
 
 /**
@@ -82,11 +97,12 @@ function evenLayout(count: number): ColumnLayout {
  * One column is always `"1"`: exact at 100%, and approximated otherwise.
  * An absent width is MJML's default, the parent divided by the column count,
  * not the space the stated widths leave. Two, three or four columns that fit
- * none keep the even preset of that count plus `columnWidths` scaled to 100.
- * That match is exact when the resolved shares already total 100 within half
- * a point; otherwise scaling changes the source layout and the match is not
- * exact. Shares that cannot be stored (a non-positive width) keep that even
- * preset and are approximated. Five or more columns collapse to `"4"`;
+ * none are scaled to 100: scaled shares equal to a preset keep that preset,
+ * any others keep the even preset of that count plus `columnWidths`. Either
+ * is exact when the resolved shares already total 100 within half a point;
+ * otherwise scaling changes the source layout and the match is not exact.
+ * Shares that cannot be stored (a non-positive width) keep that even preset
+ * and are approximated. Five or more columns collapse to `"4"`;
  * `exact: false` tells the caller to report it.
  */
 export function matchColumnLayout(percents: Array<number | null>): {
@@ -115,16 +131,8 @@ export function matchColumnLayout(percents: Array<number | null>): {
   const fallback = 100 / count;
   const resolved = percents.map((percent) => percent ?? fallback);
 
-  const sameCount = LAYOUT_SHAPES.filter(
-    (shape) => shape.percents.length === count,
-  );
-
-  for (const shape of sameCount) {
-    const fits = shape.percents.every(
-      (want, i) => Math.abs(want - resolved[i]!) <= WIDTH_TOLERANCE,
-    );
-    if (fits) return { layout: shape.layout, exact: true };
-  }
+  const preset = presetWithin(resolved, WIDTH_TOLERANCE);
+  if (preset) return { layout: preset, exact: true };
 
   if (count === 1) return { layout: "1", exact: false };
 
@@ -135,14 +143,16 @@ export function matchColumnLayout(percents: Array<number | null>): {
   // Scaling to 100 changes a row MJML would leave short or long. Half a
   // point treats a binary-sum of shares that already are 100 as exact.
   const total = resolved.reduce((sum, share) => sum + share, 0);
-  return {
-    layout,
-    exact: Math.abs(total - 100) <= 0.5,
-    columnWidths: sectionColumnPercents({
-      columns: layout,
-      columnWidths: resolved,
-    }),
-  };
+  const exact = Math.abs(total - 100) <= 0.5;
+  const scaled = sectionColumnPercents({
+    columns: layout,
+    columnWidths: resolved,
+  });
+  // The editor stores no `columnWidths` equal to the preset, and shows any it
+  // finds as custom widths, so scaled shares on a preset are that preset.
+  const scaledPreset = presetWithin(scaled, SCALED_TOLERANCE);
+  if (scaledPreset) return { layout: scaledPreset, exact };
+  return { layout, exact, columnWidths: scaled };
 }
 
 /**
