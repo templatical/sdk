@@ -184,6 +184,94 @@ describe("convertHtmlTemplate — spacer and divider", () => {
 });
 
 describe("convertHtmlTemplate — button line height", () => {
+  // A percentage or em line height inherits as the length it computes to on
+  // the cell; a number inherits as a number.
+  it("resolves a cell's relative line height against the cell's font size", () => {
+    const lineHeightOf = (cellStyle: string, anchorStyle = "") => {
+      const { content } = convertHtmlTemplate(
+        "<!doctype html><html><body>" +
+          `<table width="600"><tr><td style="background-color:#0f766e;${cellStyle}">` +
+          `<a href="https://x.test" style="color:#ffffff;${anchorStyle}">Go</a>` +
+          "</td></tr></table></body></html>",
+      );
+      const button = (content.blocks[0] as SectionBlock).children[0]![0];
+      if (button?.type !== "button") throw new Error("expected a button");
+      return button.lineHeight;
+    };
+    expect(
+      lineHeightOf("font-size:20px;line-height:150%", "font-size:10px"),
+    ).toBe(3);
+    expect(
+      lineHeightOf("font-size:20px;line-height:1.5em", "font-size:10px"),
+    ).toBe(3);
+    expect(lineHeightOf("line-height:150%", "font-size:12px")).toBe(2);
+    expect(lineHeightOf("font-size:20px;line-height:2", "font-size:10px")).toBe(
+      2,
+    );
+    expect(
+      lineHeightOf(
+        "font-size:20px;line-height:150%",
+        "font-size:10px;line-height:2",
+      ),
+    ).toBe(2);
+    expect(
+      lineHeightOf(
+        "font-size:20px;line-height:150%",
+        "font-size:10px;line-height:inherit",
+      ),
+    ).toBe(3);
+  });
+
+  it("notes a cell font size it cannot read and resolves against 16px", () => {
+    const { content, report } = convertHtmlTemplate(
+      "<!doctype html><html><body>" +
+        '<table width="600"><tr><td style="background-color:#0f766e;font-size:2em;line-height:150%">' +
+        '<a href="https://x.test" style="color:#ffffff">Go</a>' +
+        "</td></tr></table></body></html>",
+    );
+    const button = (content.blocks[0] as SectionBlock).children[0]![0];
+    expect(button?.type === "button" && button.lineHeight).toBe(1.5);
+    expect(
+      report.entries.find((entry) => entry.templaticalBlockType === "button"),
+    ).toEqual({
+      sourceTag: "td",
+      templaticalBlockType: "button",
+      status: "approximated",
+      note: 'Button line-height "150%" inherits from font-size "2em", which could not be read; resolved against 16px.',
+    });
+  });
+
+  it("keeps an inherited ratio when neither the cell nor the anchor sets a font size", () => {
+    const entryFor = (anchorStyle: string) => {
+      const { content, report } = convertHtmlTemplate(
+        "<!doctype html><html><body>" +
+          '<table width="600"><tr><td style="background-color:#0f766e;line-height:150%">' +
+          `<a href="https://x.test" style="color:#ffffff;${anchorStyle}">Go</a>` +
+          "</td></tr></table></body></html>",
+      );
+      const button = (content.blocks[0] as SectionBlock).children[0]![0];
+      const entry = report.entries.find(
+        (e) => e.templaticalBlockType === "button",
+      );
+      return {
+        lineHeight: button?.type === "button" ? button.lineHeight : null,
+        status: entry?.status,
+        note: entry?.note,
+      };
+    };
+    expect(entryFor("")).toEqual({
+      lineHeight: 1.5,
+      status: "converted",
+      note: undefined,
+    });
+    // The anchor's 12px is known, the cell's inherited size is not.
+    expect(entryFor("font-size:12px")).toEqual({
+      lineHeight: 2,
+      status: "approximated",
+      note: 'Button line-height "150%" inherits from a font-size that is not stated; resolved against 16px.',
+    });
+  });
+
   it("reads a cell button's line height from the anchor or the cell", () => {
     const { content, report } = convertHtmlTemplate(
       "<!doctype html><html><body>" +

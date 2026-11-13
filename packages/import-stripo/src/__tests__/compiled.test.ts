@@ -255,6 +255,38 @@ describe("compiled pipeline", () => {
       expect(lineHeightOf("", "line-height:1.6").lineHeight).toBe(1.6);
     });
 
+    // A percentage or em line height inherits as the length it computes to on
+    // the wrapper: 150% of 20px is 30px, twice the 15px label.
+    it("resolves the wrapper's relative line height against its font size", () => {
+      expect(
+        lineHeightOf("", "font-size:20px;line-height:150%").lineHeight,
+      ).toBe(2);
+      expect(lineHeightOf("", "line-height:2em").lineHeight).toBe(2);
+    });
+
+    it("takes an explicit inherit from the wrapper", () => {
+      expect(
+        lineHeightOf("line-height:inherit", "line-height:1.6").lineHeight,
+      ).toBe(1.6);
+    });
+
+    it("notes a wrapper with no font size when the anchor sets its own", () => {
+      expect(lineHeightOf("font-size:18px", "line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "approximated",
+        note: 'Button line-height "150%" inherits from a font-size that is not stated; resolved against 15px.',
+      });
+    });
+
+    // 150% of an unreadable 2em stands in at 150% of the 15px label.
+    it("notes a wrapper font size it cannot read", () => {
+      expect(lineHeightOf("", "font-size:2em;line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "approximated",
+        note: 'Button line-height "150%" inherits from font-size "2em", which could not be read; resolved against 15px.',
+      });
+    });
+
     it("leaves 120%, normal and a missing value unset", () => {
       for (const style of ["line-height:120%", "line-height:normal", ""]) {
         expect(lineHeightOf(style)).toEqual({
@@ -266,10 +298,10 @@ describe("compiled pipeline", () => {
     });
 
     it("notes a value it cannot keep and imports it at 1.2", () => {
-      expect(lineHeightOf("line-height:inherit")).toEqual({
+      expect(lineHeightOf("line-height:auto")).toEqual({
         lineHeight: undefined,
         status: "approximated",
-        note: 'Button line-height "inherit" could not be read; imported at 1.2.',
+        note: 'Button line-height "auto" could not be read; imported at 1.2.',
       });
     });
   });

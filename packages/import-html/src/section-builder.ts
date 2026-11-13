@@ -152,6 +152,47 @@ function insetBlock(block: Block, by: SpacingValue): void {
   };
 }
 
+/**
+ * The line height a button takes: its own, else the one it inherits from
+ * the element around it. `inherit` defers to that element. A percentage or
+ * `em` line height inherits as the length it computes to there, so it is
+ * resolved against `outerFontSize`. With no outer font size, a label that
+ * states none of its own shares the size the outer element inherits, so the
+ * value keeps its ratio as written. Otherwise, when the outer font size is
+ * missing or not a px length, `fallbackSize` stands in and a note says so.
+ * A number, a length or a keyword inherits as written.
+ */
+function lineHeightSource(
+  own: string | undefined,
+  outer: string | undefined,
+  outerFontSize: string | undefined,
+  ownFontSize: string | undefined,
+  fallbackSize: number,
+  notes: string[],
+): string | undefined {
+  const ownValue = own?.trim();
+  if (ownValue && !/^inherit$/i.test(ownValue)) return own;
+  const relative = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i.exec(
+    outer?.trim() ?? "",
+  );
+  if (!relative) return outer;
+  const statedOuter = outerFontSize?.trim();
+  if (!statedOuter && !ownFontSize?.trim()) return outer;
+  let size = parsePxValue(statedOuter);
+  if (!(size > 0)) {
+    const source = statedOuter
+      ? `font-size "${statedOuter}", which could not be read`
+      : "a font-size that is not stated";
+    notes.push(
+      `Button line-height "${relative[0]}" inherits from ${source}; resolved against ${fallbackSize}px.`,
+    );
+    size = fallbackSize;
+  }
+  const factor =
+    relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
+  return `${factor * size}px`;
+}
+
 function buildCellButton(
   $cell: Cheerio<Element>,
   $anchor: Cheerio<Element>,
@@ -166,7 +207,14 @@ function buildCellButton(
   const fontSize = parsePxValue(merged["font-size"]) || 16;
   const notes: string[] = [];
   const lineHeight = readButtonLineHeight(
-    merged["line-height"],
+    lineHeightSource(
+      aStyles["line-height"],
+      cellStyles["line-height"],
+      cellStyles["font-size"],
+      aStyles["font-size"],
+      16,
+      notes,
+    ),
     fontSize,
     notes,
   );
