@@ -1,19 +1,28 @@
 <script setup lang="ts">
 import FieldRow from "./FieldRow.vue";
-import { computed } from "vue";
+import { computed, inject } from "vue";
 import ColorPicker from "../ColorPicker.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import BorderControl from "./BorderControl.vue";
 import RadiusControl from "./RadiusControl.vue";
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
   inputGroupInputClass,
   inputSuffixClass,
+  LINE_HEIGHT_OPTIONS,
 } from "../../constants/styleConstants";
+import {
+  BUTTON_LINE_HEIGHT,
+  buttonLineHeight,
+  parsePercentWidth,
+} from "@templatical/types";
 import type { ButtonBlock } from "@templatical/types";
+import { EDITOR_KEY, LAYOUT_KEY } from "../../keys";
+import { imageRoom } from "../../utils/imageRoom";
 import { fontSelectValue } from "../../utils/withCurrentFont";
 
 const props = defineProps<{
@@ -26,14 +35,37 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const editor = inject(EDITOR_KEY, null);
+const localized = editor ? useLocalizedDisplay(editor) : null;
+const layout = inject(LAYOUT_KEY, null);
 
 const DEFAULT_CUSTOM_WIDTH = 200;
 
 const widthMode = computed<"auto" | "full" | "custom">(() => {
   if (props.block.width === "full") return "full";
   if (typeof props.block.width === "number") return "custom";
+  if (parsePercentWidth(props.block.width) !== null) return "custom";
+  // A stored string that is not a usable percentage renders at label width
+  // in the canvas and the email, so the select says Auto too.
   return "auto";
 });
+
+const widthUnit = computed(() =>
+  parsePercentWidth(props.block.width) !== null ? "%" : "px",
+);
+
+const customWidthValue = computed(() => {
+  if (typeof props.block.width === "number") return props.block.width;
+  // Shown only for Custom, which is a number or a usable percentage.
+  return String(props.block.width).slice(0, -1);
+});
+
+/** The px the button can span, the same room an image measures. */
+const room = computed(() =>
+  localized
+    ? imageRoom(localized.content.value, props.block.id, layout ?? undefined)
+    : null,
+);
 
 function updateField(field: string, value: unknown): void {
   emit("update", { [field]: value } as Partial<ButtonBlock>);
@@ -56,6 +88,21 @@ function updateWidthMode(mode: string): void {
   updateField("width", undefined);
 }
 
+const lineHeightValue = computed(() => String(buttonLineHeight(props.block)));
+
+const lineHeightOptions = computed(() => {
+  const current = lineHeightValue.value;
+  if (LINE_HEIGHT_OPTIONS.includes(current)) return LINE_HEIGHT_OPTIONS;
+  return [...LINE_HEIGHT_OPTIONS, current];
+});
+
+function updateLineHeight(raw: string): void {
+  const value = Number(raw);
+  // 1.2 is what an omitted field renders. Storing it would write the default
+  // onto every button, so the control clears the field.
+  updateField("lineHeight", value === BUTTON_LINE_HEIGHT ? undefined : value);
+}
+
 function updateFontWeight(value: string): void {
   // Bold is the weight an omitted field renders. Storing it would write the
   // default onto every button, so the control clears the field, as Auto
@@ -69,8 +116,39 @@ function updateCustomWidth(raw: string): void {
   // button (#260). Ignore invalid values and keep the last valid width;
   // the canvas still updates live on each valid keystroke.
   const n = Number(raw);
+  if (widthUnit.value === "%") {
+    // Integers from the field. A stored decimal such as "33.33%" is shown
+    // as is and is not rewritten until the field holds a whole number.
+    if (!Number.isInteger(n) || n < 1 || n > 100) return;
+    updateField("width", `${n}%`);
+    return;
+  }
   if (!Number.isFinite(n) || n <= 0) return;
   updateField("width", n);
+}
+
+function updateWidthUnit(unit: string): void {
+  if (unit === widthUnit.value) return;
+  const width = props.block.width;
+  const roomPx = room.value;
+  if (unit === "%") {
+    // Custom + px is a number. A percentage is already on this unit.
+    const px = width as number;
+    if (roomPx === null) {
+      updateField("width", "50%");
+      return;
+    }
+    const pct = Math.min(100, Math.max(1, Math.round((px / roomPx) * 100)));
+    updateField("width", `${pct}%`);
+    return;
+  }
+  // The other unit is px, so the stored width is a usable percentage.
+  const pct = parsePercentWidth(width) as number;
+  if (roomPx === null) {
+    updateField("width", DEFAULT_CUSTOM_WIDTH);
+    return;
+  }
+  updateField("width", Math.max(1, Math.round((roomPx * pct) / 100)));
 }
 </script>
 
@@ -173,6 +251,17 @@ function updateCustomWidth(raw: string): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </FieldRow>
+  <FieldRow :label="t.button.lineHeight" class="tpl:mb-3.5" path="lineHeight">
+    <select
+      :class="inputClass"
+      :value="lineHeightValue"
+      @change="updateLineHeight(($event.target as HTMLSelectElement).value)"
+    >
+      <option v-for="option in lineHeightOptions" :key="option" :value="option">
+        {{ option }}
+      </option>
+    </select>
+  </FieldRow>
   <FieldRow :label="t.button.fontWeight" class="tpl:mb-3.5" path="fontWeight">
     <SlidingPillSelect
       :options="[
@@ -196,18 +285,26 @@ function updateCustomWidth(raw: string): void {
     </select>
     <div
       v-if="widthMode === 'custom'"
-      class="tpl:mt-2 tpl:flex tpl:items-stretch"
+      class="tpl:mt-2 tpl:flex tpl:items-stretch tpl:gap-2"
     >
       <input
         type="number"
-        :class="inputGroupInputClass"
-        :value="
-          typeof block.width === 'number' ? block.width : DEFAULT_CUSTOM_WIDTH
-        "
-        min="20"
+        :class="[inputClass, 'tpl:min-w-0 tpl:flex-1']"
+        :value="customWidthValue"
+        :min="widthUnit === '%' ? 1 : 20"
+        :max="widthUnit === '%' ? 100 : undefined"
         @input="updateCustomWidth(($event.target as HTMLInputElement).value)"
       />
-      <span :class="inputSuffixClass">px</span>
+      <SlidingPillSelect
+        class="tpl:w-24 tpl:shrink-0"
+        :aria-label="t.button.widthUnit"
+        :options="[
+          { value: 'px', label: 'px' },
+          { value: '%', label: '%' },
+        ]"
+        :model-value="widthUnit"
+        @update:model-value="updateWidthUnit"
+      />
     </div>
   </FieldRow>
   <FieldRow :label="t.title.align" class="tpl:mb-3.5" path="align">

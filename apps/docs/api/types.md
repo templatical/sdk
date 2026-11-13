@@ -288,14 +288,21 @@ interface ButtonBlock extends BaseBlock {
   /** Outline button: backgroundColor 'transparent' (the keyword), plus a textColor. An empty fill exports as that keyword. */
   border?: BorderValue;
   fontSize: number;
+  /** Label line height as a multiple of `fontSize`. Omitted is `BUTTON_LINE_HEIGHT` (1.2), so a stored button renders as today. It applies to every line of a wrapped label. A value that is not a finite number above 0 is ignored and renders as omitted. */
+  lineHeight?: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
   /** Label weight. `'regular'` is 400, `'medium'` is 500 and `'bold'` is 700. Omitted renders bold, which is what a button with no weight renders. */
   fontWeight?: 'regular' | 'medium' | 'bold';
   openInNewTab?: boolean;
-  width?: number | 'full';
+  /** Omitted fits the label. A number is px. `'full'` spans the column. A percentage is a share of the column's content box (the column less the button's side padding), rendered natively by MJML, so the button shrinks with its column on a phone. */
+  width?: number | 'full' | PercentWidth;
+  /** Placement within the column. No visible effect when `width` is `'full'`. A percentage width still uses `align`. */
   align: 'left' | 'center' | 'right';
 }
+
+/** The label line height to draw and render. A stored value that is not a finite number above 0 is `BUTTON_LINE_HEIGHT` (1.2). */
+function buttonLineHeight(block: Pick<ButtonBlock, 'lineHeight'>): number;
 ```
 
 ### SectionBlock
@@ -312,6 +319,8 @@ interface SectionBlock extends BaseBlock {
   border?: BorderValue;
   backgroundImage?: BackgroundImage;
   hero?: SectionHero;
+  /** Each column's share of the section as a percentage, one number per column of `columns`. Values are scaled so they total 100, so `[1, 1, 2]` means 25 / 25 / 50. It overrides the preset's split, and `columns` still sets the column count. Ignored when its length differs from that count, or when a value is not a finite number above 0: the preset's split renders, and `structure.column-widths-ignored` names the reason. Absent keeps the preset's split. */
+  columnWidths?: number[];
   wrapper?: SectionWrapper;
 }
 
@@ -347,7 +356,29 @@ interface SectionHero {
 
 ```ts
 /** "0%" to "100%" */
-type DividerPercentWidth = `${number}%`;
+type PercentWidth = `${number}%`;
+
+/** The same type as PercentWidth. */
+type DividerPercentWidth = PercentWidth;
+
+/** The number when `value` is a PercentWidth string above 0 and at most 100. Otherwise null. */
+function parsePercentWidth(value: unknown): number | null;
+
+/** Two decimal places. `0.145` is `0.15` and `1.005` is `1.01`. */
+function roundHundredths(value: number): number;
+
+/** Preset column shares, in percent. `"3"` is `[33.33, 33.33, 33.34]`, `"1-2"` is `[33.33, 66.67]`, `"2-1"` is `[66.67, 33.33]`. */
+const COLUMN_LAYOUT_PERCENTS: Readonly<Record<ColumnLayout, readonly number[]>>;
+
+/** `"count"` when `columnWidths.length` differs from the layout's column count, `"value"` when a share is not a finite number above 0, `null` when `columnWidths` is absent or usable. */
+function columnWidthsIssue(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): 'count' | 'value' | null;
+
+/** The preset row when there is no usable override. Otherwise the shares scaled to 100 in hundredths: each column is at least 0.01, leftover hundredths go to the largest fractional remainders, and a tie goes to the earlier column. An unknown layout is `[100]`. */
+function sectionColumnPercents(
+  section: Pick<SectionBlock, 'columns' | 'columnWidths'>,
+): number[];
 
 interface DividerBlock extends BaseBlock {
   type: 'divider';

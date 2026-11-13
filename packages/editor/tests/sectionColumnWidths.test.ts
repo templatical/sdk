@@ -16,10 +16,9 @@ import PreviewSectionBlock from "../src/components/blocks/PreviewSectionBlock.vu
 import SectionBlock from "../src/components/blocks/SectionBlock.vue";
 
 /**
- * The canvas and the saved-block preview size columns with the same
- * percentages the renderer writes on `mj-column`. A three-column section is
- * the exception already on the canvas: each column is 33.33%, while the
- * renderer gives the last column 33.34% so the widths sum to 100%.
+ * The canvas and the saved-block preview use exactly the renderer's
+ * percentages, from `sectionColumnPercents`: a preset row, or the scaled
+ * `columnWidths` when the section sets one.
  */
 
 const LAYOUTS: ColumnLayout[] = [
@@ -35,7 +34,7 @@ const LAYOUTS: ColumnLayout[] = [
 ];
 
 function canvasWidths(layout: ColumnLayout): string[] {
-  if (layout === "3") return ["33.33%", "33.33%", "33.33%"];
+  if (layout === "3") return ["33.33%", "33.33%", "33.34%"];
   return getWidthPercentages(layout);
 }
 
@@ -68,5 +67,28 @@ describe("section canvas column widths", () => {
 
     expect(readWidths(canvas.element)).toEqual(expected);
     expect(readWidths(preview.element)).toEqual(expected);
+  });
+
+  it("draws columnWidths [25, 25, 50] on the canvas and in the preview", () => {
+    const block = createSectionBlock({
+      columns: "3",
+      columnWidths: [25, 25, 50],
+      children: [[], [], []],
+    });
+    const content = createDefaultTemplateContent();
+    content.blocks = [block];
+    const canvas = mountEditor(SectionBlock, {
+      props: { block, viewport: "desktop" },
+      provides: {
+        [EDITOR_KEY]: useEditor({ content }),
+        [TRANSLATIONS_KEY]: enTranslations,
+      },
+    });
+    const preview = mountEditor(PreviewSectionBlock, {
+      props: { block, viewport: "desktop" },
+    });
+
+    expect(readWidths(canvas.element)).toEqual(["25%", "25%", "50%"]);
+    expect(readWidths(preview.element)).toEqual(["25%", "25%", "50%"]);
   });
 });

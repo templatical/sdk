@@ -287,6 +287,9 @@ const ptBR: typeof en = {
     ratio13: "Proporção 1:3",
     ratio31: "Proporção 3:1",
     ratio121: "Proporção 1:2:1",
+    columnsCustom: "Personalizado",
+    columnWidths: "Larguras das colunas",
+    columnWidthAria: "Largura da coluna {index}",
     borderRadius: "Arredondamento das Bordas",
     wrapperEnable: "Adicionar wrapper",
     wrapperLayoutConflict:
@@ -403,6 +406,7 @@ const ptBR: typeof en = {
     textColor: "Cor do Texto",
     borderRadius: "Arredondamento das Bordas",
     fontSize: "Tamanho da Fonte",
+    lineHeight: "Altura da Linha",
     fontWeight: "Peso",
     fontWeightRegular: "Comum",
     fontWeightMedium: "Médio",
@@ -411,6 +415,7 @@ const ptBR: typeof en = {
     widthAuto: "Ajustar ao conteúdo",
     fullWidth: "Largura Total",
     widthCustom: "Personalizada",
+    widthUnit: "Unidade de largura",
   },
 
   // Toolbar - Divider

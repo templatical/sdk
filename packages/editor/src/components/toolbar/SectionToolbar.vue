@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import FieldRow from "./FieldRow.vue";
 import { useI18n } from "../../composables/useI18n";
-import { inputClass, labelClass } from "../../constants/styleConstants";
+import {
+  inputClass,
+  inputGroupInputClass,
+  inputSuffixClass,
+  labelClass,
+} from "../../constants/styleConstants";
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
@@ -9,8 +14,12 @@ import BackgroundImageControl from "./BackgroundImageControl.vue";
 import BorderControl from "./BorderControl.vue";
 import RadiusControl from "./RadiusControl.vue";
 import {
+  COLUMN_LAYOUT_PERCENTS,
+  columnWidthsIssue,
   layoutWrapsSlot,
   resolveHero,
+  roundHundredths,
+  sectionColumnPercents,
   type BorderRadiusValue,
   type ColumnLayout,
   type SectionBlock,
@@ -33,7 +42,7 @@ const emit = defineEmits<{
   (e: "update", updates: Partial<SectionBlock>): void;
 }>();
 
-const { t } = useI18n();
+const { t, format } = useI18n();
 
 const layout = inject(LAYOUT_KEY, undefined);
 const sectionWrapper = inject(SECTION_WRAPPER_KEY, undefined);
@@ -61,10 +70,54 @@ const columnOptions = computed(() => [
   { value: "1-2-1" as ColumnLayout, label: t.section.ratio121 },
 ]);
 
+const shownPercents = computed(() => sectionColumnPercents(props.block));
+const hasCustomWidths = computed(
+  () =>
+    props.block.columnWidths !== undefined &&
+    columnWidthsIssue(props.block) === null,
+);
+const columnsValue = computed(() =>
+  hasCustomWidths.value ? "custom" : props.block.columns,
+);
+
 function handleColumnsChange(event: Event): void {
-  const columns = (event.target as HTMLSelectElement).value as ColumnLayout;
+  const value = (event.target as HTMLSelectElement).value;
+  if (value === "custom") return;
+  const columns = value as ColumnLayout;
   const children = rebalanceColumnChildren(props.block.children, columns);
-  emit("update", { columns, children });
+  emit("update", { columns, children, columnWidths: undefined });
+}
+
+/** Hundredths, towards zero. The argument is at most 5, so it is not an exponent. */
+function floorHundredths(value: number): number {
+  const shifted = Number(`${String(value)}e2`);
+  return Number(`${Math.floor(shifted)}e-2`);
+}
+
+function commitColumnWidth(index: number, event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const text = input.value.trim();
+  const parsed = Number(text);
+  const current = shownPercents.value;
+  if (text === "" || !Number.isFinite(parsed)) {
+    input.value = String(current[index]);
+    return;
+  }
+  const next = current.slice();
+  const neighbour = index === next.length - 1 ? index - 1 : index + 1;
+  const pair = next[index]! + next[neighbour]!;
+  // A pair under 10% cannot spare 5% on each side. Half the pair, in
+  // hundredths, is the floor, and it never drops under 0.01.
+  const floor = Math.max(0.01, floorHundredths(Math.min(5, pair / 2)));
+  const clamped = Math.min(Math.max(parsed, floor), pair - floor);
+  next[index] = roundHundredths(clamped);
+  next[neighbour] = roundHundredths(pair - next[index]!);
+  const preset = COLUMN_LAYOUT_PERCENTS[props.block.columns];
+  // A known layout's preset has one share per column. An unknown layout has none.
+  const matchesPreset =
+    preset !== undefined &&
+    preset.every((share, shareIndex) => share === next[shareIndex]);
+  emit("update", { columnWidths: matchesPreset ? undefined : next });
 }
 
 function handleStackOnMobileChange(checked: boolean): void {
@@ -107,7 +160,7 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
     <label :class="labelClass">{{ t.section.columns }}</label>
     <select
       :class="inputClass"
-      :value="block.columns"
+      :value="columnsValue"
       @change="handleColumnsChange"
     >
       <option
@@ -117,8 +170,34 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
       >
         {{ option.label }}
       </option>
+      <option v-if="hasCustomWidths" value="custom">
+        {{ t.section.columnsCustom }}
+      </option>
     </select>
   </div>
+  <FieldRow
+    v-if="shownPercents.length > 1"
+    path="columnWidths"
+    :label="t.section.columnWidths"
+  >
+    <div class="tpl:flex tpl:gap-2">
+      <div
+        v-for="(percent, index) in shownPercents"
+        :key="index"
+        class="tpl:flex tpl:min-w-0 tpl:flex-1 tpl:items-stretch"
+      >
+        <input
+          type="number"
+          step="any"
+          :class="inputGroupInputClass"
+          :value="percent"
+          :aria-label="format(t.section.columnWidthAria, { index: index + 1 })"
+          @change="commitColumnWidth(index, $event)"
+        />
+        <span :class="inputSuffixClass">%</span>
+      </div>
+    </div>
+  </FieldRow>
   <FieldRow
     v-if="block.columns !== '1'"
     class="tpl:mb-3.5"

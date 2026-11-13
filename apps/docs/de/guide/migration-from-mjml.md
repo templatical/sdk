@@ -100,7 +100,7 @@ for (const entry of report.entries) {
     console.warn(`<${entry.sourceTag}> approximiert:`, entry.note);
   }
 }
-// <mj-section> approximiert: Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2".
+// <mj-section> approximiert: Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.
 ```
 
 Ein `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — ein Diff von `report.entries` zwischen zwei Durchläufen zeigt so genau, was eine Migration verändert hat.
@@ -144,12 +144,12 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 
 | MJML-Tag | Templatical-Block | Hinweise |
 |---|---|---|
-| `mj-section` (mit `mj-column`s) | `SectionBlock` mit `columns` | Mehrspaltige Layouts funktionieren gleich; Spaltenbreiten kommen aus MJMLs `width`-Attribut oder werden gleichmäßig verteilt. Ebenso `border-radius` und `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). `background-url` mit Größe, Position und Wiederholung wird zu `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
+| `mj-section` (mit `mj-column`s) | `SectionBlock` mit `columns` | Eine Breite innerhalb von 2 Prozentpunkten eines Presets behält dieses Preset. Jedes andere Verhältnis von zwei bis vier Spalten setzt `columnWidths` auf dem gleichmäßigen Layout dieser Anzahl. Fünf oder mehr Spalten falten sich in `"4"`. Breiten kommen aus MJMLs `width`-Attribut. Eine Spalte ohne Breite erhält die Elternbreite geteilt durch die Spaltenzahl, und eine px-Breite ist ein Anteil der inneren Box der Section. Fehlt jede Breite, sind die Spalten gleich. Ebenso `border-radius` und `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). `background-url` mit Größe, Position und Wiederholung wird zu `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
 | `mj-column` | Section-Spalte | Eine Spalte hält eine Liste verschachtelter Blöcke. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. `align`, `color` und `font-size` eines Absatzes landen in seinem Markup: `text-align` auf jedem `<p>`, Farbe und Größe auf einem `<span>` darin (`ParagraphBlock` hat dafür keine Felder). Eine Ausrichtung an der Startkante (`left`, in einem RTL-Template `right`) und eine Größe von 14px entfallen. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width` (siehe [Bildbreite](#image-width)), Padding, `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). `fluid-on-mobile` bleibt bei einem Bild erhalten, das seine Spalte füllt; bei einem schmaleren ist es `approximated`, weil das Bild [auf dem Smartphone seine Breite behält](/de/guide/images#width-on-phones). |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, Padding, `width` (siehe [Button-Breite](#button-breite)), `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, Padding, `width` (siehe [Button-Breite](#button-breite)), `line-height` (siehe [Button-Zeilenhöhe](#button-zeilenhoehe)), `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (siehe [Divider-Breite](#divider-breite)), Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. Die Plattform kommt aus `name`, dem `src`-Dateinamen (Pack-Suffixe wie `-round-outlined` werden abgetrennt) oder `alt`. |
@@ -178,7 +178,7 @@ Eine px-`width` wird `"full"`, sobald sie den Platz des Bildes erreicht: seine S
 | px, unter `0` | begrenzt auf `0` | `approximated` |
 | jeder andere Wert | `"full"` | `approximated` |
 
-Die Linie reicht über ihre Spalte abzüglich des seitlichen Paddings der Spalte und ihres eigenen; so zeichnet `mj-divider` `100%`. Die Breite einer Spalte ist ihr Anteil an der `width` von `mj-body`, gemäß dem Spaltenlayout der Section.
+Die Linie reicht über ihre Spalte abzüglich des seitlichen Paddings der Spalte und ihres eigenen; so zeichnet `mj-divider` `100%`. Die Breite einer Spalte ist ihr Anteil an der `width` von `mj-body`: das Preset oder `columnWidths`, wenn die Sektion sie setzt.
 
 Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den MJML links oder rechts ausrichtet (`align`), ist `approximated`; seine `note` nennt die Ausrichtung.
 
@@ -189,12 +189,17 @@ Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den MJML links 
 | fehlt | keine, der Button passt sich seiner Beschriftung an | `converted` |
 | `100%` | `"full"` | `converted` |
 | px, über `0` | die px-Zahl | `converted` |
-| ein Prozentwert unter `100%`, etwa `50%` | der px-Wert, den er ergibt | `approximated` |
+| ein Prozentwert über 0 und unter `100%`, etwa `40%` | dieser Prozentwert, auf zwei Nachkommastellen gerundet, nachgestellte Nullen entfallen | `converted` |
 | über `100%` | `"full"` | `approximated` |
-| px oder ein Prozentwert, der `0px` oder weniger ergibt | keine, der Button passt sich seiner Beschriftung an | `approximated` |
+| ein Prozentwert von `0%` oder darunter | keine, der Button passt sich seiner Beschriftung an | `approximated` |
+| px von `0` oder darunter | keine, der Button passt sich seiner Beschriftung an | `approximated` |
 | jeder andere Wert | keine, der Button passt sich seiner Beschriftung an | `approximated` |
 
-Ein Prozentwert bemisst sich an der Breite, die der Button füllen kann: seiner Spalte abzüglich des seitlichen Paddings der Spalte und seines eigenen; an dieser Box bemisst `mj-button` ihn. `ButtonBlock.width` kennt keine Prozentwerte, daher skaliert der resultierende px-Wert nicht mehr mit der Spalte, und die `note` des Eintrags weist darauf hin. Eine px-Breite bleibt px, gleich wie breit sie ist, weil Templaticals Renderer `"full"` als `100%` schreibt.
+Ein Prozentwert über 0 und unter 100 wird als dieser Prozentwert gespeichert. MJML rendert ihn an der Inhaltsbox der Spalte, der Spalte abzüglich des seitlichen Paddings des Buttons, daher schrumpft der Button auf dem Smartphone mit seiner Spalte. Ein Prozentwert von `100%` oder mehr ist `"full"`; einer über `100%` trägt eine Notiz, dass er geklemmt wurde. Ein Prozentwert von `0%` oder darunter und eine px-Breite von `0` oder darunter lassen den Button sich seiner Beschriftung anpassen, mit einer Notiz. Eine px-Breite über `0` bleibt px, weil der Renderer `"full"` als `100%` schreibt.
+
+### Button-Zeilenhöhe {#button-zeilenhoehe}
+
+`line-height` wird zu `lineHeight`, einem Vielfachen der Schriftgröße, und gilt für jede Zeile einer umbrochenen Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`200%` ist `2`), eine einheitenlose Zahl ist sie selbst, eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße (`28px` bei 14px ist `2`; ohne `font-size` durch die 15px des Buttons), und eine `em`-Länge ist die Zahl selbst (`2em` ist `2`), gerundet auf zwei Dezimalstellen. Ein Wert, der 1,2 entspricht, einschließlich `120%` und `1.2em`, oder ein fehlender Wert lässt `lineHeight` ungesetzt, und der Button bleibt konvertiert, sodass ein Button, den der Renderer mit `120%` geschrieben hat, so importiert wird, wie er heute rendert. Jeder andere explizite Wert, der nicht gelesen werden kann (`2rem`, `normal`, `calc(...)`, eine nicht positive Zahl), lässt `lineHeight` ungesetzt und ergänzt die Notiz `Button line-height "<value>" could not be read; imported at 1.2.`, sodass der Eintrag angenähert ist.
 
 ### Rahmen und Ecken
 
@@ -230,11 +235,11 @@ Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende ab
 
 MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer ohne Näherungen bei Layout, Styling oder Anzeigebedingungen. Die einzige Lücke betrifft den Blocktyp: Ein `VideoBlock` und ein `HtmlBlock` rendern beide als reines MJML ohne Kennzeichnung ihrer Herkunft, sodass beim erneuten Import jeweils ein anderer Blocktyp entsteht (siehe unten). Handgeschriebenes MJML konvertiert für jedes Tag in der Mapping-Tabelle oben sauber; alles, was die Tabelle nicht abdeckt, landet als `HtmlBlock` mit dem ursprünglichen Markup. Innerhalb dessen, was die Tabelle abdeckt, sind einige Konvertierungen Näherungen statt exakter Treffer:
 
-- **Spalten-Geometrie** — Templatical unterstützt diese Spalten-Layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). MJML erlaubt beliebig viele Spalten in beliebigem Verhältnis, daher wird ein Verhältnis außerhalb dieser Layouts auf das nächstliegende Layout derselben Spaltenzahl aufgelöst, und der Inhalt einer fünften oder weiteren Spalte fließt in die vierte Spalte. Die `note` nennt die Obergrenze von vier Spalten nur bei diesem Überlauf.
+- **Spalten-Geometrie** — Templatical unterstützt diese Spalten-Layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Eine Breitenliste innerhalb von 2 Prozentpunkten eines Presets behält dieses Preset. Eine Spalte ohne `width` erhält die Elternbreite geteilt durch die Spaltenzahl, wie `mj-column`, nicht den Raum, den die angegebenen Breiten übrig lassen; fehlt jede Breite, bleibt das gleichmäßige Preset exakt. Eine px-Breite ist ein Anteil der inneren Box der Section, also des Containers abzüglich des horizontalen Paddings der Section und der gezeichneten Seitenrahmen. In einem 600px-Container mit 50px Seitenpadding sind `100px` neben `80%` 100px neben 400px, also die Anteile 20 / 80. Zwei, drei oder vier Spalten, die auf keines passen, behalten das gleichmäßige Layout dieser Anzahl und `columnWidths`, auf 100 skaliert. Die Zuordnung ist exakt, wenn diese Anteile bereits innerhalb von 0,5 Prozentpunkten 100 ergeben. Andernfalls verändert die Skalierung das Quelllayout, die Section ist `approximated` und die Notiz nennt die Quellbreiten. `30%` neben einer fehlenden Breite ist 30 / 50, skaliert und `approximated`. `30%` / `40%` ist `approximated`. `30%` / `70%` ist exakt. `25%` / `25%` / `50%` ist `columns: "3"` und `columnWidths: [25, 25, 50]`. `33.33%` / `66.67%` bleibt `"1-2"`. `49%` / `51%` bleibt `"2"`. Der Inhalt einer fünften oder weiteren Spalte fließt in die vierte Spalte. Die `note` nennt die Obergrenze von vier Spalten nur bei diesem Überlauf: `Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.`
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` an einem `mj-social-element` außerhalb dieser drei wird auf die nächstliegende aufgelöst.
 - **Überschriften-Ebenen** — ein `<h5>` oder `<h6>` innerhalb von `mj-text` wird auf Überschriften-Ebene 4 begrenzt, die höchste, die ein `TitleBlock` unterstützt.
 - **Divider-Breite und -Ausrichtung** — eine `width` an einem `mj-divider` außerhalb von 0–100 % oder unter 0px wird in den gültigen Bereich begrenzt, eine nicht lesbare wird zu `"full"`, und ein links oder rechts ausgerichteter Divider mit Teilbreite wird zentriert. Siehe [Divider-Breite](#divider-breite).
-- **Button-Breite** — eine `width` an einem `mj-button` als Prozentwert außer `100%` wird zum px-Wert, den sie ergibt, eine über `100%` wird zu `"full"`, und eine nicht lesbare oder eine, die `0px` oder weniger ergibt, lässt den Button sich seiner Beschriftung anpassen. Siehe [Button-Breite](#button-breite).
+- **Button-Breite** — eine `width` an einem `mj-button` über `100%` wird zu `"full"`, und eine nicht lesbare oder eine von `0` oder darunter lässt den Button sich seiner Beschriftung anpassen. Siehe [Button-Breite](#button-breite).
 - **Rahmen und Ecken** — ein `border-radius`, der nicht in px angegeben ist, wird als eckig importiert, ein Rahmenstil außer solid, dashed oder dotted wird solid gezeichnet, eine Rahmenseite ohne px-Breite bleibt ungezeichnet, und ein Rahmen an einem `mj-wrapper` wird verworfen. Siehe [Rahmen und Ecken](#rahmen-und-ecken).
 - **Hintergrundbilder** — ein `background-size`, `background-position` oder `background-repeat` ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende abgebildet. Siehe [Hintergrundbilder](#hintergrundbilder).
 - **Video-Blöcke** — ein `VideoBlock` wird genauso gerendert wie ein verlinkter `ImageBlock`, sodass nichts im MJML ihn als Video kennzeichnet. Beim Import daraus entsteht ein `ImageBlock` mit demselben Vorschaubild und Link; der Inhalt bleibt erhalten, der Blocktyp nicht.

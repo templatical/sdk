@@ -288,6 +288,9 @@ const es: typeof en = {
     ratio13: "Proporción 1:3",
     ratio31: "Proporción 3:1",
     ratio121: "Proporción 1:2:1",
+    columnsCustom: "Personalizado",
+    columnWidths: "Anchos de columna",
+    columnWidthAria: "Ancho de la columna {index}",
     borderRadius: "Radio del borde",
     wrapperEnable: "Añadir contenedor",
     wrapperLayoutConflict:
@@ -404,6 +407,7 @@ const es: typeof en = {
     textColor: "Color del texto",
     borderRadius: "Radio del borde",
     fontSize: "Tamaño de fuente",
+    lineHeight: "Interlineado",
     fontWeight: "Grosor",
     fontWeightRegular: "Regular",
     fontWeightMedium: "Medio",
@@ -412,6 +416,7 @@ const es: typeof en = {
     widthAuto: "Ajustar al contenido",
     fullWidth: "Ancho completo",
     widthCustom: "Personalizado",
+    widthUnit: "Unidad de ancho",
   },
 
   // Toolbar - Divider

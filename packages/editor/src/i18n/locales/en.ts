@@ -282,6 +282,9 @@ export default {
     ratio13: "1:3 Ratio",
     ratio31: "3:1 Ratio",
     ratio121: "1:2:1 Ratio",
+    columnsCustom: "Custom",
+    columnWidths: "Column widths",
+    columnWidthAria: "Column {index} width",
     borderRadius: "Border Radius",
     wrapperEnable: "Add wrapper",
     wrapperLayoutConflict:
@@ -398,6 +401,7 @@ export default {
     textColor: "Text Color",
     borderRadius: "Border Radius",
     fontSize: "Font Size",
+    lineHeight: "Line Height",
     fontWeight: "Font Weight",
     fontWeightRegular: "Regular",
     fontWeightMedium: "Medium",
@@ -406,6 +410,7 @@ export default {
     widthAuto: "Fit to content",
     fullWidth: "Full Width",
     widthCustom: "Custom",
+    widthUnit: "Width unit",
   },
 
   // Toolbar - Divider

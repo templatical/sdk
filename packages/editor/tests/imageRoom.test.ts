@@ -268,6 +268,23 @@ describe("imageRoom", () => {
     expect(imageRoom(doc([image(120)]), "probe", broken)).toBe(580);
   });
 
+  it("matches the renderer for a 50 / 33.33 / 16.67 section", async () => {
+    const widths = [50, 33.33, 16.67];
+    const rooms = [280, 179, 80];
+    for (const [index, room] of rooms.entries()) {
+      const build = (width: number) =>
+        doc([
+          section("3", index, image(width), {
+            styles: { padding: ZERO },
+            columnWidths: widths,
+          }),
+        ]);
+      expect(imageRoom(build(100), "probe")).toBe(room);
+      expect(await fluidAt(build, room)).toBe(true);
+      expect(await fluidAt(build, room - 1)).toBe(false);
+    }
+  });
+
   it("uses the renderer's column percentages", () => {
     for (const layout of [
       "1",

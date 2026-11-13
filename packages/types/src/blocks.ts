@@ -259,6 +259,16 @@ export interface SectionBlock extends BaseBlock {
    * image size.
    */
   hero?: SectionHero;
+  /**
+   * Each column's share of the section as a percentage, one number per
+   * column of `columns`. Values are scaled so they total 100, so `[1, 1, 2]`
+   * means 25 / 25 / 50. It overrides the preset's split, and `columns` still
+   * sets the column count. It is ignored (the preset's split renders, and
+   * the `structure` linter reports `structure.column-widths-ignored`) when
+   * its length differs from the layout's column count, or when a value is
+   * not a finite number above 0. Absent keeps the preset's split.
+   */
+  columnWidths?: number[];
   /** Optional outer frame (rendered as an `mj-wrapper` around the section). */
   wrapper?: SectionWrapper;
 }
@@ -288,6 +298,21 @@ export const TITLE_LINE_HEIGHT = 1.3;
  * HTML stays unchanged.
  */
 export const BUTTON_LINE_HEIGHT = 1.2;
+
+/**
+ * The label line height to draw and render. A stored value that is not a
+ * finite number above 0 is `BUTTON_LINE_HEIGHT`, so an omitted field and an
+ * unreadable one render the same.
+ */
+export function buttonLineHeight(
+  block: Pick<ButtonBlock, "lineHeight">,
+): number {
+  const value = block.lineHeight;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  return BUTTON_LINE_HEIGHT;
+}
 
 /**
  * A title block's font weight.
@@ -416,6 +441,16 @@ export interface ButtonBlock extends BaseBlock {
    */
   border?: BorderValue;
   fontSize: number;
+  /**
+   * The label's line height as a multiple of its font size, like
+   * `BUTTON_LINE_HEIGHT`. Omitted is `BUTTON_LINE_HEIGHT` (1.2), so a
+   * stored button renders as it does today. It applies to every line of a
+   * wrapped label. A value that is not a finite number above 0 is ignored
+   * and renders as omitted.
+   *
+   * @exclusiveMinimum 0
+   */
+  lineHeight?: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
   /**
@@ -423,10 +458,17 @@ export interface ButtonBlock extends BaseBlock {
    * Omitted renders bold, which is what a button with no weight renders.
    */
   fontWeight?: "regular" | "medium" | "bold";
-  width?: number | "full";
+  /**
+   * Omitted fits the label. A number is px. `"full"` spans the column. A
+   * percentage is a share of the column's content box (the column less the
+   * button's side padding), rendered natively by MJML, so the button shrinks
+   * with its column on a phone.
+   */
+  width?: number | "full" | PercentWidth;
   /**
    * Placement of the button within its column. No visible effect when `width`
-   * is `"full"`, since the button then spans the column.
+   * is `"full"`, since the button then spans the column. A percentage width
+   * still uses `align`.
    */
   align: "left" | "center" | "right";
 }
@@ -435,7 +477,10 @@ export interface ButtonBlock extends BaseBlock {
  * A share of the column, from `"0%"` to `"100%"`.
  * @pattern ^(?:100(?:\.0+)?|\d{1,2}(?:\.\d+)?)%$
  */
-export type DividerPercentWidth = `${number}%`;
+export type PercentWidth = `${number}%`;
+
+/** The same type as `PercentWidth`. */
+export type DividerPercentWidth = PercentWidth;
 
 export interface DividerBlock extends BaseBlock {
   type: "divider";

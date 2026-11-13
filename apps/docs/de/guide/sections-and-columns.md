@@ -31,6 +31,28 @@ Die Eigenschaft `columns` akzeptiert eines dieser Layout-Presets:
 type ColumnLayout = '1' | '2' | '3' | '4' | '2-1' | '1-2' | '3-1' | '1-3' | '1-2-1';
 ```
 
+## Benutzerdefinierte Spaltenbreiten {#custom-column-widths}
+
+`columnWidths` überschreibt die Aufteilung des Presets. Es ist eine Zahl pro Spalte von `columns`. Die Anteile werden auf 100 in Hundertsteln skaliert. Jede Spalte wird abgerundet und dann auf mindestens 0.01 angehoben, und jedes übrige Hundertstel geht an den größten Nachkommarest. Bei Gleichstand erhält die frühere Spalte das Hundertstel. `[1, 1, 2]` ist 25% / 25% / 50%. `[1, 1, 1]` ist 33.34% / 33.33% / 33.33%. `[6, 2, 2, 2]` ist 50% / 16.67% / 16.67% / 16.66%. Die Zeile ergibt 100. `columns` setzt weiter die Spaltenzahl. Preset-Zeilen bleiben die Literale in `COLUMN_LAYOUT_PERCENTS`.
+
+```ts
+import { createSectionBlock } from '@templatical/types';
+
+const row = createSectionBlock({
+  columns: '3',
+  columnWidths: [1, 1, 2],
+  children: [[], [], []],
+});
+```
+
+Fehlt `columnWidths`, gilt das Preset. Der Renderer schreibt jeden Anteil als `width` auf `mj-column`, zum Beispiel `width="25%"`, `width="25%"` und `width="50%"`. `stackOnMobile: false` packt diese Spalten in `<mj-group>`, wie bei einem Preset.
+
+`columnWidths` wird ignoriert, wenn seine Länge von der Spaltenzahl des Layouts abweicht oder ein Wert keine endliche Zahl über 0 ist. Die Aufteilung des Presets wird dargestellt, und `structure.column-widths-ignored` nennt den Grund, `count` oder `value`.
+
+Im Editor zeigt ein Abschnitt mit zwei oder mehr Spalten unter Spalten die Zeile Spaltenbreiten. Jedes Feld ist der Anteil dieser Spalte. Wenn Sie eine Spalte ändern, erhält die rechte Spalte die Differenz, und wenn Sie die letzte Spalte ändern, erhält die linke Spalte sie. Eine Änderung lässt beiden Spalten mindestens 5 %, oder die Hälfte ihres gemeinsamen Anteils, wenn das Paar schmaler als 10 % ist (ein importiertes `[1, 1, 98]` behält 1 % / 1 %). Spalten zeigt den Eintrag Benutzerdefiniert, solange eine verwendbare Überschreibung gespeichert ist, auch bei 50 % / 50 % in einem zweispaltigen Abschnitt. Wenn Sie ein Preset wählen, werden die eigenen Breiten entfernt.
+
+`COLUMN_LAYOUT_PERCENTS` ist die Preset-Tabelle, die der Renderer ausgibt: `"1"` ist `[100]`, `"2"` ist `[50, 50]`, `"3"` ist `[33.33, 33.33, 33.34]`, `"4"` ist `[25, 25, 25, 25]`, `"1-2"` ist `[33.33, 66.67]`, `"2-1"` ist `[66.67, 33.33]`, `"1-3"` ist `[25, 75]`, `"3-1"` ist `[75, 25]`, `"1-2-1"` ist `[25, 50, 25]`. `sectionColumnPercents` liefert diese Zeile oder die skalierte Überschreibung. `columnWidthsIssue` liefert `"count"`, `"value"` oder `null`.
+
 ## Sektionen erstellen
 
 Verwenden Sie `createSectionBlock` aus `@templatical/types`:

@@ -1,15 +1,40 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { createButtonBlock } from "@templatical/types";
-import type { ButtonBlock } from "@templatical/types";
+import { ref } from "vue";
+import {
+  createButtonBlock,
+  createDefaultTemplateContent,
+  createSectionBlock,
+} from "@templatical/types";
+import type { ButtonBlock, TemplateContent } from "@templatical/types";
 import ButtonToolbar from "../src/components/toolbar/ButtonToolbar.vue";
 import ColorPicker from "../src/components/ColorPicker.vue";
+import { EDITOR_KEY } from "../src/keys";
 import { mountEditor } from "./helpers/mount";
 
-function mountIt(block: ButtonBlock) {
+const ZERO = { top: 0, right: 0, bottom: 0, left: 0 };
+
+function mountIt(block: ButtonBlock, content?: TemplateContent) {
   return mountEditor(ButtonToolbar, {
     props: { block, fontFamilies: [{ value: "", label: "Default" }] },
+    ...(content
+      ? { provides: { [EDITOR_KEY]: { content: ref(content) } } }
+      : {}),
   });
+}
+
+/** A 600px column with no side padding, so the button's room is 600. */
+function roomOf(block: ButtonBlock): TemplateContent {
+  const content = createDefaultTemplateContent();
+  content.settings.width = 600;
+  content.blocks = [
+    createSectionBlock({
+      columns: "1",
+      styles: { padding: ZERO },
+      children: [[{ ...block, styles: { padding: ZERO } }]],
+    }),
+  ];
+  return content;
 }
 
 // The width <select> is the one offering the "auto" option (the other
@@ -75,6 +100,120 @@ describe("ButtonToolbar width control", () => {
 
     expect(wrapper.emitted("update")).toBeUndefined();
   });
+
+  function unitGroup(wrapper: ReturnType<typeof mountIt>) {
+    return wrapper
+      .findAll('[role="radiogroup"]')
+      .find((group) => group.find('[role="radio"][aria-label="px"]').exists());
+  }
+
+  it("shows the px | % control only for Custom", () => {
+    expect(unitGroup(mountIt(createButtonBlock()))).toBeUndefined();
+    expect(
+      unitGroup(mountIt(createButtonBlock({ width: "full" }))),
+    ).toBeUndefined();
+
+    const custom = unitGroup(mountIt(createButtonBlock({ width: 200 })));
+    expect(custom!.attributes("aria-label")).toBe("button.widthUnit");
+    const labels = custom!
+      .findAll('[role="radio"]')
+      .map((radio) => radio.attributes("aria-label"));
+    expect(labels).toEqual(["px", "%"]);
+    expect(custom!.find('[aria-label="px"]').attributes("aria-checked")).toBe(
+      "true",
+    );
+  });
+
+  it("shows a stored percentage in Custom and commits an integer as N%", async () => {
+    const shown = mountIt(createButtonBlock({ width: "33.33%" }));
+    expect((widthSelect(shown).element as HTMLSelectElement).value).toBe(
+      "custom",
+    );
+    const shownInput = shown.find('input[type="number"][min="1"]');
+    expect((shownInput.element as HTMLInputElement).value).toBe("33.33");
+
+    const wrapper = mountIt(createButtonBlock({ width: "50%" }));
+    const input = wrapper.find('input[type="number"][min="1"]');
+    await input.setValue("40");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ButtonBlock>];
+    expect(update).toEqual({ width: "40%" });
+  });
+
+  it("shows an invalid percentage as Auto, as the canvas and email render it", () => {
+    for (const width of ["150%", "abc%", "0%"] as const) {
+      const wrapper = mountIt(
+        createButtonBlock({ width: width as ButtonBlock["width"] }),
+      );
+      expect((widthSelect(wrapper).element as HTMLSelectElement).value).toBe(
+        "auto",
+      );
+      expect(unitGroup(wrapper)).toBe(undefined);
+      expect(widthInput(wrapper).exists()).toBe(false);
+      expect(wrapper.find('input[type="number"][min="1"]').exists()).toBe(
+        false,
+      );
+    }
+  });
+
+  it("drops 0 and 101 in percent mode", async () => {
+    const wrapper = mountIt(createButtonBlock({ width: "40%" }));
+    const input = wrapper.find('input[type="number"][min="1"]');
+
+    await input.setValue("0");
+    await input.setValue("101");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("drops a fractional percent instead of rewriting a stored decimal", async () => {
+    const wrapper = mountIt(createButtonBlock({ width: "40%" }));
+    const input = wrapper.find('input[type="number"][min="1"]');
+
+    await input.setValue("40.5");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("converts px and percent through the button room", async () => {
+    const pxBlock = createButtonBlock({ id: "btn", width: 240 });
+    const px = mountIt(pxBlock, roomOf(pxBlock));
+    await unitGroup(px)!.find('[aria-label="%"]').trigger("click");
+    expect((px.emitted("update") as [Partial<ButtonBlock>][])[0][0]).toEqual({
+      width: "40%",
+    });
+
+    const percentBlock = createButtonBlock({ id: "btn", width: "40%" });
+    const percent = mountIt(percentBlock, roomOf(percentBlock));
+    await unitGroup(percent)!.find('[aria-label="px"]').trigger("click");
+    expect(
+      (percent.emitted("update") as [Partial<ButtonBlock>][])[0][0],
+    ).toEqual({ width: 240 });
+  });
+
+  it("does nothing when the selected unit is chosen again", async () => {
+    const px = mountIt(createButtonBlock({ width: 200 }));
+    await unitGroup(px)!.find('[aria-label="px"]').trigger("click");
+    expect(px.emitted("update")).toBeUndefined();
+
+    const percent = mountIt(createButtonBlock({ width: "40%" }));
+    await unitGroup(percent)!.find('[aria-label="%"]').trigger("click");
+    expect(percent.emitted("update")).toBeUndefined();
+  });
+
+  it("uses 50% and the default px width when the room is unknown", async () => {
+    const px = mountIt(createButtonBlock({ width: 200 }));
+    await unitGroup(px)!.find('[aria-label="%"]').trigger("click");
+    expect((px.emitted("update") as [Partial<ButtonBlock>][])[0][0]).toEqual({
+      width: "50%",
+    });
+
+    const percent = mountIt(createButtonBlock({ width: "40%" }));
+    await unitGroup(percent)!.find('[aria-label="px"]').trigger("click");
+    expect(
+      (percent.emitted("update") as [Partial<ButtonBlock>][])[0][0],
+    ).toEqual({ width: 200 });
+  });
 });
 
 describe("ButtonToolbar align control", () => {
@@ -127,6 +266,47 @@ describe("ButtonToolbar align control", () => {
     // appear and disappear as the width mode changes. Mirrors ImageToolbar.
     const wrapper = mountIt(createButtonBlock({ width: "full" }));
     expect(alignRadios(wrapper)).toHaveLength(3);
+  });
+});
+
+describe("ButtonToolbar line height", () => {
+  function lineHeightSelect(wrapper: ReturnType<typeof mountIt>) {
+    return wrapper
+      .findAll("select")
+      .find((select) =>
+        select.findAll("option").some((option) => option.attributes("value") === "1.2"),
+      )!;
+  }
+
+  it("shows 1.2 when lineHeight is omitted", () => {
+    const wrapper = mountIt(createButtonBlock());
+    const select = lineHeightSelect(wrapper);
+    expect(wrapper.text()).toContain("button.lineHeight");
+    expect((select.element as HTMLSelectElement).value).toBe("1.2");
+    expect(
+      select.findAll("option").filter((option) => option.attributes("value") === "1.2"),
+    ).toHaveLength(1);
+  });
+
+  it("stores 2 and clears 1.2", async () => {
+    const wrapper = mountIt(createButtonBlock());
+    const select = lineHeightSelect(wrapper);
+
+    await select.setValue("2");
+    await select.setValue("1.2");
+
+    const emitted = wrapper.emitted("update") as [Partial<ButtonBlock>][];
+    expect(emitted[0][0]).toEqual({ lineHeight: 2 });
+    expect(emitted[1][0]).toEqual({ lineHeight: undefined });
+  });
+
+  it("shows a stored 1.75 as a selected extra option", () => {
+    const wrapper = mountIt(createButtonBlock({ lineHeight: 1.75 }));
+    const select = lineHeightSelect(wrapper);
+    const values = select.findAll("option").map((option) => option.attributes("value"));
+    expect(values).toContain("1.75");
+    expect(values.filter((value) => value === "1.2")).toEqual(["1.2"]);
+    expect((select.element as HTMLSelectElement).value).toBe("1.75");
   });
 });
 

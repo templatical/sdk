@@ -59,7 +59,7 @@ Container that arranges blocks into columns.
 
 <!-- BEGIN GENERATED FIELDS: section -->
 **Required** — `columns` (ColumnLayout), `children` (Block[][]).
-**Optional** — `l10n` (object), `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `hero` (SectionHero), `wrapper` (SectionWrapper).
+**Optional** — `l10n` (object), `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `hero` (SectionHero), `columnWidths` (int[]), `wrapper` (SectionWrapper).
 <!-- END GENERATED FIELDS: section -->
 
 - `columns` is one of `"1"`, `"2"`, `"3"`, `"4"`, `"2-1"`, `"1-2"`, `"3-1"`, `"1-3"`, `"1-2-1"`.
@@ -221,7 +221,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: button -->
 **Required** — `text` (string), `url` (string), `backgroundColor` (string), `textColor` (string), `borderRadius` (BorderRadiusValue), `fontSize` (int), `buttonPadding` (SpacingValue), `align` ("left" | "center" | "right").
-**Optional** — `l10n` (object), `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `fontWeight` ("regular" | "medium" | "bold"), `width` (int | "full").
+**Optional** — `l10n` (object), `openInNewTab` (bool), `border` (BorderValue), `lineHeight` (int), `fontFamily` (string), `fontWeight` ("regular" | "medium" | "bold"), `width` (int | "full" | PercentWidth).
 <!-- END GENERATED FIELDS: button -->
 
 - `fontWeight` is `"regular"` (400), `"medium"` (500) or `"bold"` (700). Omit

@@ -1095,17 +1095,18 @@ describe("convertModule", () => {
       });
     });
 
-    it("adds only line-height compensation to zero vertical padding", () => {
+    it("keeps zero vertical padding when the line-height is 200%", () => {
       const { block } = buttonWith({
         "font-size": "16px",
         "line-height": "200%",
         "padding-top": "0px",
         "padding-bottom": "0px",
       });
+      expect(block.lineHeight).toBe(2);
       expect(block.buttonPadding).toEqual({
-        top: 6,
+        top: 0,
         right: 24,
-        bottom: 6,
+        bottom: 0,
         left: 24,
       });
     });
@@ -1195,10 +1196,8 @@ describe("convertModule", () => {
       });
     });
 
-    // The renderer's button label line box is 1.2× the font size (MJML's
-    // `line-height: 120%`). Beefree's usual 200% is taller, and that extra
-    // half goes into the top and bottom padding.
-    it("folds a 200% line-height into the top and bottom padding", () => {
+    // The label's line height is stored. Padding stays the source padding.
+    it("stores a 200% line-height and keeps the source padding", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "200%",
@@ -1207,56 +1206,59 @@ describe("convertModule", () => {
         "padding-bottom": "10px",
         "padding-left": "20px",
       });
-      // (28 - 1.2×14) / 2 = 5.6, rounded to 6.
+      expect(block.lineHeight).toBe(2);
       expect(block.buttonPadding).toEqual({
-        top: 16,
+        top: 10,
         right: 20,
-        bottom: 16,
+        bottom: 10,
         left: 20,
       });
     });
 
-    it("folds a unitless line-height the same way as a percentage", () => {
+    it("stores a unitless line-height and keeps the source padding", () => {
       const { block } = buttonWith({
         "font-size": "16px",
         "line-height": "2",
         "padding-top": "5px",
         "padding-bottom": "5px",
       });
-      // (32 - 1.2×16) / 2 = 6.4, rounded to 6. Side padding stays the default.
-      expect(block.buttonPadding.top).toBe(11);
-      expect(block.buttonPadding.bottom).toBe(11);
+      expect(block.lineHeight).toBe(2);
+      expect(block.buttonPadding.top).toBe(5);
+      expect(block.buttonPadding.bottom).toBe(5);
     });
 
-    it("reads a px line-height as that many pixels", () => {
+    it("stores a px line-height divided by the font size", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "28px",
         "padding-top": "10px",
         "padding-bottom": "10px",
       });
-      expect(block.buttonPadding.top).toBe(16);
-      expect(block.buttonPadding.bottom).toBe(16);
+      expect(block.lineHeight).toBe(2);
+      expect(block.buttonPadding.top).toBe(10);
+      expect(block.buttonPadding.bottom).toBe(10);
     });
 
-    it("leaves padding alone when the line-height is already 120%", () => {
+    it("leaves lineHeight unset when the line-height is already 120%", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "120%",
         "padding-top": "10px",
         "padding-bottom": "10px",
       });
+      expect(block.lineHeight).toBeUndefined();
       expect(block.buttonPadding.top).toBe(10);
       expect(block.buttonPadding.bottom).toBe(10);
     });
 
-    it("does not shrink padding when the line-height is under 120%", () => {
+    it("stores a line-height under 120% and keeps the source padding", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "100%",
         "padding-top": "10px",
         "padding-bottom": "10px",
       });
+      expect(block.lineHeight).toBe(1);
       expect(block.buttonPadding.top).toBe(10);
       expect(block.buttonPadding.bottom).toBe(10);
     });
@@ -1457,15 +1459,34 @@ describe("convertModule", () => {
       expect(entry.note).toBeUndefined();
     });
 
-    it("notes a percentage width other than 100% and sizes the button to its label", () => {
+    it("imports a percentage width other than 100% and keeps the alignment", () => {
       const { block, entry } = buttonWith(
         { width: "50%" },
         { "text-align": "right" },
       );
-      expect(block.width).toBeUndefined();
+      expect(block.width).toBe("50%");
       expect(block.align).toBe("right");
-      expect(entry.status).toBe("approximated");
-      expect(entry.note).toBe("width 50% is not carried");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("ignores button.percWidth and reads style.width", () => {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-button", {
+          button: {
+            label: "Register now",
+            href: "https://example.com/register",
+            style: { width: "40%" },
+            ...{ percWidth: 58 },
+          },
+        }),
+        [],
+      );
+      expect(block.type).toBe("button");
+      if (block.type !== "button") return;
+      expect(block.width).toBe("40%");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
     });
 
     it("keeps a px width and leaves auto width unset", () => {
@@ -1543,7 +1564,7 @@ describe("convertModule", () => {
       }
     });
 
-    it("names letter-spacing and a percentage width, and still maps the weight", () => {
+    it("keeps a percentage width and still names letter-spacing", () => {
       const { block, entry } = buttonWith({
         "font-weight": "400",
         "letter-spacing": "1px",
@@ -1551,9 +1572,9 @@ describe("convertModule", () => {
       });
       expect(block.fontWeight).toBe("regular");
       expect(block).not.toHaveProperty("letterSpacing");
-      expect(block.width).toBeUndefined();
+      expect(block.width).toBe("50%");
       expect(entry.status).toBe("approximated");
-      expect(entry.note).toBe("letter spacing 1px, width 50% are not carried");
+      expect(entry.note).toBe("letter spacing 1px is not carried");
     });
 
     it("maps a non-bold weight and drops a zero letter-spacing without a note", () => {
@@ -2505,9 +2526,9 @@ describe("convertModule", () => {
       );
     });
 
-    it("keeps a custom Xing image when its link identifies a known network", () => {
+    it("keeps a custom icon whose link names a known network as website", () => {
       const warnings: string[] = [];
-      const { block } = convertModule(
+      const { block, extras, entry } = convertModule(
         makeModule("mailup-bee-newsletter-modules-social", {
           iconsList: {
             icons: [
@@ -2528,20 +2549,21 @@ describe("convertModule", () => {
         warnings,
       );
 
-      expect(block.type).toBe("image");
-      if (block.type !== "image") return;
-      expect(block.src).toBe(
-        "https://core-beefree.s3.amazonaws.com/images/1eeabd3c-0ab0-6baa-8973-5b41c5e4a053/xing.png",
-      );
-      expect(block.linkUrl).toBe(
-        "https://www.xing.com/pages/sonepardeutschland",
-      );
-      expect(warnings).toEqual([
-        'Custom social icon "Xing" imported as an image.',
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+        ["website", "https://www.xing.com/pages/sonepardeutschland"],
       ]);
+      expect(JSON.stringify(block)).not.toContain("xing.png");
+      expect(warnings).toEqual([
+        "Custom icon Xing imported as the generic website icon; its image is not carried.",
+      ]);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(warnings[0]);
     });
 
-    it("keeps a custom Xing image before a following YouTube icon", () => {
+    it("keeps a custom icon before a following YouTube icon in one row", () => {
       const warnings: string[] = [];
       const { block, extras } = convertModule(
         makeModule("mailup-bee-newsletter-modules-social", {
@@ -2566,25 +2588,19 @@ describe("convertModule", () => {
         warnings,
       );
 
-      expect([
-        block.type,
-        ...(extras ?? []).map((extra) => extra.type),
-      ]).toEqual(["image", "social"]);
-      if (block.type !== "image" || extras?.[0]?.type !== "social") return;
-      expect(block.src).toBe("https://cdn.example.com/xing.png");
-      expect(block.linkUrl).toBe("https://www.xing.com/pages/example");
-      expect(extras[0].icons.map(({ platform }) => platform)).toEqual([
-        "youtube",
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+        ["website", "https://www.xing.com/pages/example"],
+        ["youtube", "https://www.youtube.com/channel/example"],
       ]);
-      expect(extras[0].icons[0].url).toBe(
-        "https://www.youtube.com/channel/example",
-      );
       expect(warnings).toEqual([
-        'Custom social icon "Xing" imported as an image.',
+        "Custom icon Xing imported as the generic website icon; its image is not carried.",
       ]);
     });
 
-    it("splits recognized icons into runs around a custom Xing image", () => {
+    it("keeps a custom icon between recognised networks in one row", () => {
       const warnings: string[] = [];
       const { block, extras } = convertModule(
         makeModule("mailup-bee-newsletter-modules-social", {
@@ -2617,24 +2633,17 @@ describe("convertModule", () => {
         warnings,
       );
 
-      expect([
-        block.type,
-        ...(extras ?? []).map((extra) => extra.type),
-      ]).toEqual(["social", "image", "social"]);
-      if (
-        block.type !== "social" ||
-        extras?.[0]?.type !== "image" ||
-        extras[1]?.type !== "social"
-      )
-        return;
-      expect(block.icons.map(({ platform }) => platform)).toEqual(["facebook"]);
-      expect(extras[0].src).toBe("https://cdn.example.com/xing.png");
-      expect(extras[1].icons.map(({ platform }) => platform)).toEqual([
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons.map(({ platform }) => platform)).toEqual([
+        "facebook",
+        "website",
         "linkedin",
         "instagram",
       ]);
       expect(warnings).toEqual([
-        'Custom social icon "Xing" imported as an image.',
+        "Custom icon Xing imported as the generic website icon; its image is not carried.",
       ]);
     });
 
@@ -2662,21 +2671,19 @@ describe("convertModule", () => {
         warnings,
       );
 
-      expect([
-        block.type,
-        ...(extras ?? []).map((extra) => extra.type),
-      ]).toEqual(["image", "social"]);
-      if (block.type !== "image" || extras?.[0]?.type !== "social") return;
-      expect(block.src).toBe("https://cdn.example.com/myspace.png");
-      expect(extras[0].icons.map(({ platform }) => platform)).toEqual([
-        "facebook",
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+        ["website", "https://myspace.com/band"],
+        ["facebook", "https://facebook.com/page"],
       ]);
       expect(warnings).toEqual([
-        'Social network "Myspace" has no Templatical icon; imported as an image.',
+        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
       ]);
     });
 
-    it("drops an icon with nothing to keep without splitting the run", () => {
+    it("keeps an icon with no link in the row as a website icon", () => {
       const warnings: string[] = [];
       const { block, extras } = convertModule(
         makeModule("mailup-bee-newsletter-modules-social", {
@@ -2700,12 +2707,13 @@ describe("convertModule", () => {
       expect(extras ?? []).toEqual([]);
       expect(block.type).toBe("social");
       if (block.type !== "social") return;
-      expect(block.icons.map(({ platform }) => platform)).toEqual([
-        "facebook",
-        "linkedin",
+      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+        ["facebook", "https://facebook.com/page"],
+        ["website", "#"],
+        ["linkedin", "https://linkedin.com/company/x"],
       ]);
       expect(warnings).toEqual([
-        'Social network "Myspace" has no Templatical icon and no image or link to keep.',
+        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
       ]);
     });
 
@@ -2849,12 +2857,13 @@ describe("convertModule", () => {
 
       expect(block.type).toBe("social");
       if (block.type !== "social") return;
-      expect(block.icons).toEqual([]);
+      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+        ["website", "#"],
+      ]);
       expect(JSON.stringify(block)).not.toMatch(/javascript:/);
       expect(warnings).toEqual([
         'Dropped the unsafe link "javascript:alert(1)" on a social icon.',
-        'Dropped the unsafe image "javascript:alert(2)" on a social icon.',
-        'Social network "Myspace" has no Templatical icon and no image or link to keep.',
+        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
       ]);
     });
 
@@ -2968,7 +2977,7 @@ describe("convertModule", () => {
       }
     });
 
-    it("keeps an unknown network as an image and notes it", () => {
+    it("keeps an unknown network in the social row and notes it", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-social", {
         style: { "text-align": "center" },
@@ -2997,32 +3006,23 @@ describe("convertModule", () => {
 
       const { block, extras, entry } = convertModule(mod, warnings);
 
+      expect(extras ?? []).toEqual([]);
       expect(block.type).toBe("social");
-      if (block.type === "social") {
-        expect(block.icons).toHaveLength(1);
-        expect(block.icons[0].platform).toBe("facebook");
-      }
-      expect(extras).toHaveLength(1);
-      const image = extras?.[0];
-      expect(image?.type).toBe("image");
-      if (image?.type === "image") {
-        expect(image.src).toBe("https://cdn.example.com/vimeo.png");
-        expect(image.linkUrl).toBe("https://vimeo.com/example");
-        expect(image.alt).toBe("Vimeo");
-        expect(image.width).toBe(32);
-        expect(image.naturalWidth).toBe(64);
-        expect(image.naturalHeight).toBe(64);
-        expect(image.align).toBe("center");
-        expect(image.linkOpenInNewTab).toBe(true);
-      }
+      if (block.type !== "social") return;
+      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+        ["facebook", "https://facebook.com/page"],
+        ["website", "https://vimeo.com/example"],
+      ]);
+      expect(block.align).toBe("center");
+      expect(JSON.stringify(block)).not.toContain("vimeo.png");
       expect(warnings).toEqual([
-        'Social network "Vimeo" has no Templatical icon; imported as an image.',
+        "Custom icon Vimeo imported as the generic website icon; its image is not carried.",
       ]);
       expect(entry.note).toBe(warnings[0]);
       expect(entry.status).toBe("approximated");
     });
 
-    it("imports a social module of only unknown icons as images", () => {
+    it("imports a social module of only unknown icons as one row", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-social", {
         iconsList: {
@@ -3037,15 +3037,15 @@ describe("convertModule", () => {
 
       const { block, extras } = convertModule(mod, warnings);
 
-      expect(block.type).toBe("html");
-      if (block.type === "html") {
-        expect(block.content).toBe(
-          '<a href="https://myspace.com/band">Myspace</a>',
-        );
-      }
-      expect(extras ?? []).toHaveLength(0);
-      expect(warnings[0]).toContain("Myspace");
-      expect(warnings[0]).toContain("link");
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+        ["website", "https://myspace.com/band"],
+      ]);
+      expect(warnings).toEqual([
+        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
+      ]);
     });
 
     it("keeps an encoded quote in an unknown network's link and decodes the label", () => {
@@ -3065,15 +3065,15 @@ describe("convertModule", () => {
         }),
         [],
       );
-      expect(block.type).toBe("html");
-      if (block.type !== "html") throw new Error("expected html");
-      expect(block.content).toBe(
-        "<a href=\"https://example.com/{% if a == 'x' > 1 %}{{ id(&quot;a&quot;) }}\">{% if a == 'x' %}{{ n\" }}</a>",
-      );
-      expect(block.content).not.toContain('" onmouseover=');
-      const attrs = attributesOf(firstOpenTag(block.content, "a"));
-      expect(attrs.filter((attr) => attr.name === "href")).toHaveLength(1);
-      expect(attrs.some((attr) => attr.name === "onmouseover")).toBe(false);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") throw new Error("expected social");
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "website",
+          url: "https://example.com/{% if a == 'x' > 1 %}{{ id(\"a\") }}",
+        }),
+      ]);
+      expect(JSON.stringify(block)).not.toContain("onmouseover");
     });
 
     it("creates default block when no iconsList", () => {
@@ -3202,49 +3202,49 @@ describe("convertModule", () => {
       expect(block.iconTone).toBeUndefined();
     });
 
-    it("names an unknown icon from the title, a non-uuid name, the id, or the host", () => {
+    it("names a generic icon from the title, then the alt, then the name", () => {
       const uuid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
-      const uuid2 = "11111111-2222-3333-4444-555555555555";
       const { block, extras, entry } = convertModule(
         makeModule("mailup-bee-newsletter-modules-social", {
           iconsList: {
             icons: [
-              { image: { alt: "Custom", href: "not a url" } },
-              { image: { title: "Room", href: "https://example.com/x" } },
+              {
+                image: {
+                  title: "Artsy",
+                  alt: "Custom",
+                  href: "https://example.com/partner",
+                },
+              },
+              { image: { alt: "Custom", href: "https://example.com/alt" } },
               { name: "myspace", image: { href: "https://myspace.example/u" } },
-              {
-                name: uuid,
-                id: "lobby",
-                image: { href: "https://example.com/room" },
-              },
-              {
-                name: uuid,
-                id: uuid2,
-                image: { href: "https://www.cdn.example/icon.png" },
-              },
-              { name: uuid, id: uuid2, image: { href: "not-a-url" } },
-              { name: uuid, id: uuid2, image: { href: "tel:555" } },
+              { name: uuid, image: { href: "https://example.com/room" } },
+              { image: { href: "https://example.com/plain" } },
             ],
           },
         }),
         [],
       );
 
-      const html = [block, ...(extras ?? [])].map((item) => {
-        if (item.type !== "html") return item.type;
-        return item.content;
-      });
-      expect(html).toEqual([
-        '<a href="not a url">Custom</a>',
-        '<a href="https://example.com/x">Room</a>',
-        '<a href="https://myspace.example/u">myspace</a>',
-        '<a href="https://example.com/room">lobby</a>',
-        '<a href="https://www.cdn.example/icon.png">cdn.example</a>',
-        '<a href="not-a-url">custom</a>',
-        '<a href="tel:555">custom</a>',
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons.map((icon) => icon.platform)).toEqual([
+        "website",
+        "website",
+        "website",
+        "website",
+        "website",
       ]);
       expect(entry.status).toBe("approximated");
-      expect(entry.note).toContain("Custom");
+      expect(entry.note).toBe(
+        [
+          "Custom icon Artsy imported as the generic website icon; its image is not carried.",
+          "Custom icon Custom imported as the generic website icon; its image is not carried.",
+          "Custom icon myspace imported as the generic website icon; its image is not carried.",
+          `Custom icon ${uuid} imported as the generic website icon; its image is not carried.`,
+          "Custom icon custom imported as the generic website icon; its image is not carried.",
+        ].join(" "),
+      );
     });
   });
 
@@ -4103,7 +4103,7 @@ describe("convertModule", () => {
       expect(block.type).toBe("html");
       if (block.type === "html") {
         expect(block.content).toBe(
-          '<div style="font-size:16px;text-align:center" align="center"><div class="custom">Custom HTML</div></div>',
+          '<div style="font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center"><div class="custom">Custom HTML</div></div>',
         );
       }
       expect(entry.status).toBe("converted");

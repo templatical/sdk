@@ -57,6 +57,27 @@ describe("ButtonBlock alignment", () => {
     expect(wrapperEl.style.textAlign).toBe("center");
   });
 
+  it("leaves an unusable percentage at label width", () => {
+    const wrapper = mountButton(
+      createButtonBlock({ text: "Go", width: "150%" }),
+    );
+    const anchor = wrapper.find("a").element as HTMLElement;
+    expect(anchor.style.width).toBe("");
+    expect(anchor.style.display).toBe("inline-block");
+    expect(anchor.style.boxSizing).toBe("");
+  });
+
+  it("sizes a percentage button to that share and keeps it inline", () => {
+    const wrapper = mountButton(
+      createButtonBlock({ text: "Go", align: "right", width: "40%" }),
+    );
+    const anchor = wrapper.find("a").element as HTMLElement;
+    expect(anchor.style.width).toBe("40%");
+    expect(anchor.style.boxSizing).toBe("border-box");
+    expect(anchor.style.display).toBe("inline-block");
+    expect((wrapper.element as HTMLElement).style.textAlign).toBe("right");
+  });
+
   it("keeps the alignment on a full-width button", () => {
     // The anchor spans the column so there is nothing to move, but the wrapper
     // must still carry the stored value rather than silently normalizing it.
@@ -157,6 +178,15 @@ describe("ButtonBlock line height", () => {
     expect(BUTTON_LINE_HEIGHT).toBe(1.2);
     expect((wrapper.find("a").element as HTMLElement).style.lineHeight).toBe(
       "1.2",
+    );
+  });
+
+  it("draws a stored line height of 2 on every line of the label", () => {
+    const wrapper = mountButton(
+      createButtonBlock({ text: "Register now", fontSize: 16, lineHeight: 2 }),
+    );
+    expect((wrapper.find("a").element as HTMLElement).style.lineHeight).toBe(
+      "2",
     );
   });
 });

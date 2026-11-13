@@ -286,6 +286,9 @@ const da: typeof en = {
     ratio13: "Forhold 1:3",
     ratio31: "Forhold 3:1",
     ratio121: "Forhold 1:2:1",
+    columnsCustom: "Brugerdefineret",
+    columnWidths: "Kolonnebredder",
+    columnWidthAria: "Bredde på kolonne {index}",
     borderRadius: "Hjørneradius",
     wrapperEnable: "Tilføj ramme",
     wrapperLayoutConflict:
@@ -402,6 +405,7 @@ const da: typeof en = {
     textColor: "Tekstfarve",
     borderRadius: "Hjørneradius",
     fontSize: "Skriftstørrelse",
+    lineHeight: "Linjehøjde",
     fontWeight: "Skrifttykkelse",
     fontWeightRegular: "Normal",
     fontWeightMedium: "Mellem",
@@ -410,6 +414,7 @@ const da: typeof en = {
     widthAuto: "Tilpas til indhold",
     fullWidth: "Fuld bredde",
     widthCustom: "Tilpasset",
+    widthUnit: "Breddeenhed",
   },
 
   // Toolbar - Divider

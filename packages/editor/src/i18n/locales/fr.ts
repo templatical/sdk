@@ -266,6 +266,9 @@ const fr: typeof en = {
     ratio13: "Ratio 1:3",
     ratio31: "Ratio 3:1",
     ratio121: "Ratio 1:2:1",
+    columnsCustom: "Personnalisée",
+    columnWidths: "Largeurs de colonne",
+    columnWidthAria: "Largeur de la colonne {index}",
     borderRadius: "Rayon de bordure",
     wrapperEnable: "Ajouter un conteneur",
     wrapperLayoutConflict:
@@ -370,6 +373,7 @@ const fr: typeof en = {
     textColor: "Couleur du texte",
     borderRadius: "Rayon de bordure",
     fontSize: "Taille de police",
+    lineHeight: "Interligne",
     fontWeight: "Graisse",
     fontWeightRegular: "Régulier",
     fontWeightMedium: "Moyen",
@@ -378,6 +382,7 @@ const fr: typeof en = {
     widthAuto: "Ajuster au contenu",
     fullWidth: "Pleine largeur",
     widthCustom: "Personnalisée",
+    widthUnit: "Unité de largeur",
   },
   divider: {
     style: "Style",

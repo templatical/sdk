@@ -100,7 +100,7 @@ for (const entry of report.entries) {
     console.warn(`<${entry.sourceTag}> approximated:`, entry.note);
   }
 }
-// <mj-section> approximated: Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2".
+// <mj-section> approximated: Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.
 ```
 
 A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed.
@@ -144,12 +144,12 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 
 | MJML tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). `background-url` with its size, position and repeat becomes `backgroundImage` (see [Background images](#background-images)). |
+| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | A width within 2 percentage points of a preset keeps that preset. Any other ratio of two to four columns sets `columnWidths` on the even layout of that count. Five or more columns fold into `"4"`. Widths come from MJML's `width` attribute. A column with no width is the parent width divided by the column count, and a px width is a share of the section's inner box. When every width is absent the columns are equal. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). `background-url` with its size, position and repeat becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width` (see [Image width](#image-width)), padding, `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). `fluid-on-mobile` holds on an image that fills its column; on a narrower one it is `approximated`, since the image [keeps its width on phones](/guide/images#width-on-phones). |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `line-height` (see [Button line height](#button-line-height)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (see [Divider width](#divider-width)), padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. Platform comes from `name`, the `src` filename (pack suffixes such as `-round-outlined` stripped), or `alt`. |
@@ -178,7 +178,7 @@ A px `width` becomes `"full"` once it reaches the image's room: its column less 
 | px, below `0` | clamped to `0` | `approximated` |
 | any other value | `"full"` | `approximated` |
 
-The line can span its column less the column's side padding and the divider's own, which is how `mj-divider` draws `100%`. A column's width is its share of `mj-body`'s `width`, by the section's column layout.
+The line can span its column less the column's side padding and the divider's own, which is how `mj-divider` draws `100%`. A column's width is its share of `mj-body`'s `width`: the preset, or `columnWidths` when the section sets them.
 
 Templatical centres every divider. A partial-width divider that MJML aligns left or right (`align`) is `approximated`, and its `note` names the alignment.
 
@@ -189,12 +189,17 @@ Templatical centres every divider. A partial-width divider that MJML aligns left
 | missing | none, so the button fits its label | `converted` |
 | `100%` | `"full"` | `converted` |
 | px, above `0` | the px number | `converted` |
-| a percentage under `100%`, such as `50%` | the px it comes to | `approximated` |
+| a percentage above 0 and below `100%`, such as `40%` | that percentage, rounded to two decimals with trailing zeros dropped | `converted` |
 | above `100%` | `"full"` | `approximated` |
-| px or a percentage that comes to `0px` or less | none, so the button fits its label | `approximated` |
+| a percentage of `0%` or below | none, so the button fits its label | `approximated` |
+| px of `0` or below | none, so the button fits its label | `approximated` |
 | any other value | none, so the button fits its label | `approximated` |
 
-A percentage is measured against the width the button can fill: its column less the column's side padding and the button's own, which is the box `mj-button` sizes it against. `ButtonBlock.width` holds no percentage, so the px it comes to no longer scales with the column, and the entry's `note` says so. A px width stays px however wide it is, because Templatical's renderer writes `"full"` as `100%`.
+A percentage above 0 and below 100 is stored as that percentage. MJML renders it against the column's content box, the column less the button's side padding, so the button shrinks with its column on a phone. A percentage of `100%` or more is `"full"`; one above `100%` carries a note that it was clamped. A percentage of `0%` or below, and a px width of `0` or below, leaves the button fitting its label, with a note. A px width above `0` stays px, because the renderer writes `"full"` as `100%`.
+
+### Button line height
+
+`line-height` becomes `lineHeight`, a multiple of the font size, and it applies to every line of a wrapped label. A percentage is that number over 100 (`200%` is `2`), a unitless number is itself, a px length is that many pixels divided by the font size (`28px` at 14px is `2`; with no `font-size`, by the button's 15px), and an `em` length is the number itself (`2em` is `2`), rounded to two decimals. A value that equals 1.2, including `120%` and `1.2em`, or a missing value, leaves `lineHeight` unset and the button stays converted, so a button the renderer wrote at `120%` imports as it renders today. Any other explicit value that cannot be read (`2rem`, `normal`, `calc(...)`, a non-positive number) leaves `lineHeight` unset and adds the note `Button line-height "<value>" could not be read; imported at 1.2.`, so the entry is approximated.
 
 ### Borders and corners
 
@@ -230,11 +235,11 @@ A value with no exact Templatical keyword maps to the nearest one, and the entry
 
 MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
 
-- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). MJML allows any number of columns at any width, so a ratio outside those layouts resolves to the nearest layout of the same column count, and a fifth or later column's content folds into the fourth column. The note names the four-column limit only on that overflow.
+- **Column geometry** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). A width list within 2 percentage points of a preset keeps that preset. A column with no `width` takes the parent width divided by the column count, as `mj-column` does, not the space the stated widths leave; when every width is absent the even preset stays exact. A px width is a share of the section's inner box, the container less the section's horizontal padding and drawn side borders. In a 600px container with 50px of side padding, `100px` beside `80%` is 100px beside 400px, so the shares are 20 / 80. Two, three or four columns that fit none keep the even layout of that count and `columnWidths` scaled to 100. The match is exact when those shares already total 100 within 0.5 percentage points. When they do not, scaling changes the source layout, so the section is `approximated` and the note names the source widths. `30%` beside an absent width is 30 / 50, scaled, and `approximated`. `30%` / `40%` is `approximated`. `30%` / `70%` is exact. `25%` / `25%` / `50%` is `columns: "3"` and `columnWidths: [25, 25, 50]`. `33.33%` / `66.67%` stays `"1-2"`. `49%` / `51%` stays `"2"`. A fifth or later column's content folds into the fourth column. The note names the four-column limit only on that overflow: `Column widths 20%, 20%, 20%, 20%, 20% have no exact Templatical layout; resolved to "4". Templatical supports up to four columns.`
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
-- **Button width** — an `mj-button` `width` given as a percentage other than `100%` becomes the px it comes to, one above `100%` becomes `"full"`, and one that is unreadable or comes to `0px` or less leaves the button fitting its label. See [Button width](#button-width).
+- **Button width** — an `mj-button` `width` above `100%` becomes `"full"`, and one that is unreadable or `0` or below leaves the button fitting its label. See [Button width](#button-width).
 - **Borders and corners** — a `border-radius` that isn't in px imports as square corners, a border style other than solid, dashed or dotted is drawn solid, a border side with no px width is left undrawn, and a border on `mj-wrapper` is dropped. See [Borders and corners](#borders-and-corners).
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact Templatical keyword maps to the nearest one. See [Background images](#background-images).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.

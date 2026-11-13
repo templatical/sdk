@@ -42,6 +42,32 @@ describe("matchColumnLayout", () => {
     expect(matchColumnLayout([100])).toEqual({ layout: "1", exact: true });
   });
 
+  it("keeps one column on layout 1 when the width is not 100%", () => {
+    expect(matchColumnLayout([50])).toEqual({ layout: "1", exact: false });
+  });
+
+  it("approximates a two-column row whose shares cannot be stored", () => {
+    expect(matchColumnLayout([100, 0])).toEqual({ layout: "2", exact: false });
+  });
+
+  it("keeps a positive non-preset ratio exact, with columnWidths", () => {
+    expect(matchColumnLayout([30, 70])).toEqual({
+      layout: "2",
+      exact: true,
+      columnWidths: [30, 70],
+    });
+    expect(matchColumnLayout([25, 25, 50])).toEqual({
+      layout: "3",
+      exact: true,
+      columnWidths: [25, 25, 50],
+    });
+    expect(matchColumnLayout([20, 20, 20, 40])).toEqual({
+      layout: "4",
+      exact: true,
+      columnWidths: [20, 20, 20, 40],
+    });
+  });
+
   it("matches an even two-column split", () => {
     expect(matchColumnLayout([50, 50])).toEqual({ layout: "2", exact: true });
   });
@@ -78,27 +104,53 @@ describe("matchColumnLayout", () => {
     });
   });
 
-  it("fills a single absent column with what the known width leaves over", () => {
+  it("gives an absent column MJML's default share, then scales because 70 and 50 are not 100", () => {
+    // MJML's default is the parent divided by the column count: 50, not the
+    // 30 the stated 70 leaves over. 70 + 50 is 120, so the stored shares are
+    // scaled and the match is not exact.
     expect(matchColumnLayout([70, null])).toEqual({
-      layout: "2-1",
+      layout: "2",
       exact: false,
+      columnWidths: [58.33, 41.67],
     });
   });
 
-  it("fills a leading absent column the same way, mirrored", () => {
+  it("gives a leading absent column the same default share", () => {
     expect(matchColumnLayout([null, 70])).toEqual({
-      layout: "1-2",
+      layout: "2",
       exact: false,
+      columnWidths: [41.67, 58.33],
     });
   });
 
-  it("splits the remainder across more than one absent column", () => {
-    // 100 − 50 = 50, split two ways = 25 each: [50, 25, 25] is nowhere near
-    // any three-column shape's tolerance band, so this stays approximated —
-    // three columns has only the one shape to fall back to either way.
+  it("gives each absent column the default share, not a split of the remainder", () => {
+    // 100 / 3 beside the stated 50. The row is not a preset and does not
+    // total 100, so the even layout keeps the scaled shares and is not exact.
     expect(matchColumnLayout([50, null, null])).toEqual({
       layout: "3",
       exact: false,
+      columnWidths: [42.86, 28.57, 28.57],
+    });
+  });
+
+  it("scales 30 beside an absent column from the 30/50 MJML shares", () => {
+    expect(matchColumnLayout([30, null])).toEqual({
+      layout: "2",
+      exact: false,
+      columnWidths: [37.5, 62.5],
+    });
+  });
+
+  it("approximates stated shares that do not total 100 and keeps 30/70 exact", () => {
+    expect(matchColumnLayout([30, 40])).toEqual({
+      layout: "2",
+      exact: false,
+      columnWidths: [42.86, 57.14],
+    });
+    expect(matchColumnLayout([30, 70])).toEqual({
+      layout: "2",
+      exact: true,
+      columnWidths: [30, 70],
     });
   });
 
@@ -121,17 +173,48 @@ describe("matchColumnLayout", () => {
     });
   });
 
-  it("snaps 20/60/20 to the nearer three-column layout", () => {
+  it("keeps 20/60/20 as custom widths on the even layout", () => {
     expect(matchColumnLayout([20, 60, 20])).toEqual({
-      layout: "1-2-1",
-      exact: false,
+      layout: "3",
+      exact: true,
+      columnWidths: [20, 60, 20],
     });
   });
 
-  it("approximates a three-column ratio outside the tolerance", () => {
+  it("keeps a three-column ratio outside the tolerance as custom widths", () => {
     expect(matchColumnLayout([20, 20, 60])).toEqual({
       layout: "3",
-      exact: false,
+      exact: true,
+      columnWidths: [20, 20, 60],
+    });
+  });
+
+  it("imports 25/25/50, 50/33.33/16.67 and 30/70 as columnWidths", () => {
+    expect(matchColumnLayout([25, 25, 50])).toEqual({
+      layout: "3",
+      exact: true,
+      columnWidths: [25, 25, 50],
+    });
+    expect(matchColumnLayout([50, 33.33, 16.67])).toEqual({
+      layout: "3",
+      exact: true,
+      columnWidths: [50, 33.33, 16.67],
+    });
+    expect(matchColumnLayout([30, 70])).toEqual({
+      layout: "2",
+      exact: true,
+      columnWidths: [30, 70],
+    });
+  });
+
+  it("keeps 33.33/66.67 on 1-2 and 49/51 on the even split", () => {
+    expect(matchColumnLayout([33.33, 66.67])).toEqual({
+      layout: "1-2",
+      exact: true,
+    });
+    expect(matchColumnLayout([49, 51])).toEqual({
+      layout: "2",
+      exact: true,
     });
   });
 
@@ -151,6 +234,38 @@ describe("matchColumnLayout", () => {
 });
 
 describe("buildSection", () => {
+  it("approximates a one-column section whose width is not 100%", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column width="50%"><mj-text>Hi</mj-text></mj-column></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.columns).toBe("1");
+    expect(section.columnWidths).toBeUndefined();
+    expect(section.children).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      sourceTag: "mj-section",
+      status: "approximated",
+      note: 'Column widths 50% have no exact Templatical layout; resolved to "1".',
+    });
+  });
+
+  it("approximates a row whose shares cannot be stored as columnWidths", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column width="100%"><mj-text>A</mj-text></mj-column><mj-column width="0%"><mj-text>B</mj-text></mj-column></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toBeUndefined();
+    expect(section.children).toHaveLength(2);
+    expect(entries[0]).toMatchObject({
+      sourceTag: "mj-section",
+      status: "approximated",
+      note: 'Column widths 100%, 0% have no exact Templatical layout; resolved to "2".',
+    });
+  });
+
   it("builds a one-column section with its children", () => {
     const { blocks, entries } = build(
       '<mj-section background-color="#eeeeee" padding="20px"><mj-column><mj-spacer height="8px" /></mj-column></mj-section>',
@@ -240,17 +355,18 @@ describe("buildSection", () => {
     expect("border" in blocks[0]).toBe(false);
   });
 
-  it("joins a border note to the column-width note", () => {
-    const { entries } = build(
+  it("keeps a border note and stores 40/60 as column widths", () => {
+    const { blocks, entries } = build(
       '<mj-section border="2px inset #000000"><mj-column width="40%" /><mj-column width="60%" /></mj-section>',
     );
+    const section = blocks[0] as SectionBlock;
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toEqual([40, 60]);
     expect(entries[0]).toEqual({
       sourceTag: "mj-section",
       templaticalBlockType: "section",
       status: "approximated",
-      note:
-        'Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2". ' +
-        'Section border "2px inset #000000" uses style inset; imported as solid.',
+      note: 'Section border "2px inset #000000" uses style inset; imported as solid.',
     });
   });
 
@@ -399,41 +515,140 @@ describe("buildSection", () => {
     expect(entry.note).toBeUndefined();
   });
 
-  it("names a 20/60/20 snap to 1-2-1", () => {
+  it("stores 20/60/20 as column widths on the even layout", () => {
     const { blocks, entries } = build(
       '<mj-section><mj-column width="20%" /><mj-column width="60%" /><mj-column width="20%" /></mj-section>',
     );
     const entry = entries.find((e) => e.sourceTag === "mj-section")!;
     const section = blocks[0] as SectionBlock;
 
-    expect(section.columns).toBe("1-2-1");
-    expect(entry.status).toBe("approximated");
-    expect(entry.note).toBe(
-      'Column widths 20%, 60%, 20% have no exact Templatical layout; resolved to "1-2-1".',
-    );
+    expect(section.columns).toBe("3");
+    expect(section.columnWidths).toEqual([20, 60, 20]);
+    expect(entry.status).toBe("converted");
+    expect(entry.note).toBeUndefined();
   });
 
-  it("recovers a px column width as a known value in the match", () => {
+  it("stores 25/25/50 and 50/33.33/16.67 on the section", () => {
+    const quarters = build(
+      '<mj-section><mj-column width="25%" /><mj-column width="25%" /><mj-column width="50%" /></mj-section>',
+    );
+    const uneven = build(
+      '<mj-section><mj-column width="50%" /><mj-column width="33.33%" /><mj-column width="16.67%" /></mj-section>',
+    );
+    const split = build(
+      '<mj-section><mj-column width="30%" /><mj-column width="70%" /></mj-section>',
+    );
+
+    expect(quarters.blocks[0]).toMatchObject({
+      columns: "3",
+      columnWidths: [25, 25, 50],
+    });
+    expect(uneven.blocks[0]).toMatchObject({
+      columns: "3",
+      columnWidths: [50, 33.33, 16.67],
+    });
+    expect(split.blocks[0]).toMatchObject({
+      columns: "2",
+      columnWidths: [30, 70],
+    });
+    for (const result of [quarters, uneven, split]) {
+      const entry = result.entries.find(
+        (item) => item.sourceTag === "mj-section",
+      );
+      expect(entry?.status).toBe("converted");
+      expect(entry?.note).toBeUndefined();
+    }
+  });
+
+  it("resolves a 200px column beside an absent one from MJML's default share", () => {
     const { blocks, entries } = build(
       '<mj-section><mj-column width="200px" /><mj-column /></mj-section>',
     );
     const section = blocks[0] as SectionBlock;
     const entry = entries.find((e) => e.sourceTag === "mj-section")!;
 
-    expect(section.columns).toBe("1-2");
-    expect(entry.status).toBe("converted");
-  });
-
-  it("shows a px column's original width, not a computed percentage, in the note", () => {
-    const { entries } = build(
-      '<mj-section><mj-column width="100px" /><mj-column /></mj-section>',
-    );
-    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
-
+    // 200px is 33.33% of the 600px container. The absent column is 50, not
+    // the leftover 66.67, so the row is scaled and approximated.
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toEqual([40, 60]);
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      'Column widths 100px, auto have no exact Templatical layout; resolved to "1-3".',
+      'Column widths 200px, auto have no exact Templatical layout; resolved to "2".',
     );
+  });
+
+  it("stores a 100px column beside an absent column as the scaled 16.67/50 shares", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column width="100px" /><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toEqual([25, 75]);
+    expect(entry.status).toBe("approximated");
+    expect(entry.note).toBe(
+      'Column widths 100px, auto have no exact Templatical layout; resolved to "2".',
+    );
+  });
+
+  it("approximates 30% beside an absent column and 30/40, and keeps 30/70 exact", () => {
+    const absent = build(
+      '<mj-section><mj-column width="30%" /><mj-column><mj-text>B</mj-text></mj-column></mj-section>',
+    );
+    const short = build(
+      '<mj-section><mj-column width="30%" /><mj-column width="40%" /></mj-section>',
+    );
+    const full = build(
+      '<mj-section><mj-column width="30%" /><mj-column width="70%" /></mj-section>',
+    );
+
+    expect(absent.blocks[0]).toMatchObject({
+      columns: "2",
+      columnWidths: [37.5, 62.5],
+    });
+    expect(absent.entries[0]).toMatchObject({
+      sourceTag: "mj-section",
+      status: "approximated",
+      note: 'Column widths 30%, auto have no exact Templatical layout; resolved to "2".',
+    });
+    expect(short.blocks[0]).toMatchObject({
+      columns: "2",
+      columnWidths: [42.86, 57.14],
+    });
+    expect(short.entries[0]).toMatchObject({
+      status: "approximated",
+      note: 'Column widths 30%, 40% have no exact Templatical layout; resolved to "2".',
+    });
+    expect(full.blocks[0]).toMatchObject({
+      columns: "2",
+      columnWidths: [30, 70],
+    });
+    expect(full.entries[0]).toMatchObject({ status: "converted" });
+    expect(full.entries[0]?.note).toBeUndefined();
+  });
+
+  it("converts a px column against the section inner box, not the container", () => {
+    const padded = build(
+      '<mj-section padding="0 50px"><mj-column width="100px" /><mj-column width="80%" /></mj-section>',
+    );
+    const bordered = build(
+      '<mj-section border="10px solid #112233"><mj-column width="116px" /><mj-column width="80%" /></mj-section>',
+    );
+    const paddedSection = padded.blocks[0] as SectionBlock;
+    const borderedSection = bordered.blocks[0] as SectionBlock;
+
+    // 600 − 50 − 50 = 500. 100px beside 80% of 500 (400px) is 20 / 80.
+    expect(paddedSection.columns).toBe("2");
+    expect(paddedSection.columnWidths).toEqual([20, 80]);
+    expect(padded.entries[0]?.status).toBe("converted");
+    expect(padded.entries[0]?.note).toBeUndefined();
+
+    // A drawn 10px border on each side leaves 580. 116px is 20% of that.
+    expect(borderedSection.columns).toBe("2");
+    expect(borderedSection.columnWidths).toEqual([20, 80]);
+    expect(bordered.entries[0]?.status).toBe("converted");
+    expect(bordered.entries[0]?.note).toBeUndefined();
   });
 
   it("keeps four equal columns in four slots", () => {

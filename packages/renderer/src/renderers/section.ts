@@ -1,7 +1,12 @@
 import type { AppliedHero, Block, SectionBlock } from "@templatical/types";
-import { isSection, resolveHero } from "@templatical/types";
+import {
+  columnWidthsIssue,
+  isSection,
+  resolveHero,
+  sectionColumnPercents,
+} from "@templatical/types";
 import type { BlockRenderer, RenderContext } from "../render-context";
-import { getWidthPercentages, getWidthPixels } from "../columns";
+import { getWidthPixels } from "../columns";
 import { escapeAttr } from "../escape";
 import { heroGeometry } from "../hero-geometry";
 import { toPaddingString } from "../padding";
@@ -39,8 +44,15 @@ export function renderSection(
   }
 
   const columnsLayout = block.columns;
-  const columnWidths = getWidthPercentages(columnsLayout);
-  const columnWidthsPx = getWidthPixels(columnsLayout, context.containerWidth);
+  const percents = sectionColumnPercents(block);
+  const columnWidths = percents.map((percent) => `${percent}%`);
+  // A preset keeps `getWidthPixels`: 33.33% of 600 floors to 199, and a
+  // third is 200. A full-width image in that column uses the third.
+  const usableOverride =
+    block.columnWidths !== undefined && columnWidthsIssue(block) === null;
+  const columnWidthsPx = usableOverride
+    ? percents.map((percent) => (context.containerWidth * percent) / 100)
+    : getWidthPixels(columnsLayout, context.containerWidth);
   // What MJML gives each column's content: the emitted percentage of the room
   // inside the section's padding and border, floored as MJML floors it. From
   // the percentage strings, not `columnWidthsPx`: 33.33% of 600 is 199, a
@@ -105,7 +117,7 @@ ${content}
 
   // Opting out of mobile stacking wraps the columns in an `<mj-group>`, which
   // keeps them side-by-side below 480px instead of stacking (MJML's default).
-  // `mj-group` requires percentage column widths — `getWidthPercentages`
+  // `mj-group` requires percentage column widths. `sectionColumnPercents`
   // already guarantees that. Only meaningful with 2+ columns.
   const body =
     block.stackOnMobile === false && columnsContent.length > 1

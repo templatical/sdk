@@ -85,12 +85,13 @@ A call-to-action button with customizable appearance.
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the button (optional). For an outline button, set the background to the keyword `"transparent"` and set `textColor` too. A new button is `#333333` with white text. Clearing the fill exports `"transparent"`, because an omitted fill falls back to MJML's `#414141` |
 | `fontSize` | `number` | Font size in px |
+| `lineHeight` | `number` | Label line height as a multiple of `fontSize`. Omit for 1.2 (`BUTTON_LINE_HEIGHT`). It applies to every line of a wrapped label. A value that is not a finite number above 0 is ignored. `buttonLineHeight(block)` is the value the canvas and the email use. |
 | `buttonPadding` | `SpacingValue` | Inner padding |
 | `fontFamily` | `string` | Font family override |
 | `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Label weight: 400, 500 or 700. Omit for bold, which is how a button with no weight renders. |
 | `openInNewTab` | `boolean` | Link target behavior |
-| `width` | `number \| 'full'` | Fixed width in px, or `'full'` for 100%. Omit to size to content. |
-| `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. |
+| `width` | `number \| 'full' \| PercentWidth` | Omit to fit the label. A number is px. `'full'` spans the column. A percentage such as `'40%'` is a share of the column's content box (the column less the button's side padding). MJML renders it natively, so the button shrinks with its column on a phone. |
+| `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. A percentage width still uses `align`. |
 
 ## Divider
 

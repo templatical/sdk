@@ -265,6 +265,9 @@ const nl: typeof en = {
     ratio13: "Verhouding 1:3",
     ratio31: "Verhouding 3:1",
     ratio121: "Verhouding 1:2:1",
+    columnsCustom: "Aangepast",
+    columnWidths: "Kolombreedtes",
+    columnWidthAria: "Breedte van kolom {index}",
     borderRadius: "Hoekafronding",
     wrapperEnable: "Omhulsel toevoegen",
     wrapperLayoutConflict:
@@ -369,6 +372,7 @@ const nl: typeof en = {
     textColor: "Tekstkleur",
     borderRadius: "Hoekafronding",
     fontSize: "Tekengrootte",
+    lineHeight: "Regelafstand",
     fontWeight: "Lettergewicht",
     fontWeightRegular: "Normaal",
     fontWeightMedium: "Gemiddeld",
@@ -377,6 +381,7 @@ const nl: typeof en = {
     widthAuto: "Aanpassen aan inhoud",
     fullWidth: "Volledige breedte",
     widthCustom: "Aangepast",
+    widthUnit: "Breedte-eenheid",
   },
   divider: {
     style: "Stijl",

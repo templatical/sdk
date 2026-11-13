@@ -1,10 +1,10 @@
 ---
-description: All 8 lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, heroes that render as regular sections, and background images Outlook can't layer — with severities and fixes.
+description: lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, heroes that render as regular sections, ignored column widths, and background images Outlook can't layer — with severities and fixes.
 ---
 
 # Structure rule catalog
 
-The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
+The rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
 
 ## Tree integrity
 
@@ -26,6 +26,7 @@ The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 | `structure.empty-section` | warning | yes | A section has no columns, or every column is empty. Renders as a blank table row in most clients — wasted whitespace and an occasional visible padding gap. Auto-fix removes the section. |
 | `structure.empty-column` | warning | — | A multi-column section has at least one column with no blocks. Renders awkwardly (uneven gaps, collapsed columns on mobile) and almost always means the author intended fewer columns. No auto-fix because the right answer (merge into a sibling vs. drop the section vs. change the `columns` layout) depends on intent. |
 | `structure.hero-not-applied` | warning | — | A section has `hero` set but renders as a regular section: it has more than one column, no background image, or `height: "image"` without the image's size (a merge-tag URL, or an image added outside the editor). The message names which. Switch to one column, add the image, set a fixed height, or give the image its `naturalWidth` and `naturalHeight`. |
+| `structure.column-widths-ignored` | warning | — | A section's `columnWidths` is ignored and the layout's split renders. `count`: the list length differs from the column count. `value`: a share is not a finite number above 0. The message names which. Give one positive number per column, or remove the widths. |
 
 ## Email client compatibility
 

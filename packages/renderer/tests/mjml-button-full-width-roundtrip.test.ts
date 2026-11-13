@@ -103,6 +103,35 @@ describe("full-width button link fills the button", () => {
     expect(style).not.toMatch(DISPLAY_INLINE_BLOCK);
   });
 
+  it("gives a 40% button a 40% table and a block link in a 600px column", async () => {
+    const content = createDefaultTemplateContent();
+    expect(content.settings.width).toBe(600);
+    content.blocks = [
+      createSectionBlock({
+        columns: "1",
+        children: [
+          [
+            createButtonBlock({
+              text: "Go",
+              url: "https://pct.test",
+              width: "40%",
+            }),
+          ],
+        ],
+      }),
+    ];
+
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('width="40%"');
+    expect(mjml).toContain('css-class="tpl-button-full"');
+
+    const html = await compile(content);
+    expect(html).toMatch(/<table\b[^>]*style="[^"]*width:\s*40%/);
+    const style = anchorStyle(html, "https://pct.test");
+    expect(style).toMatch(DISPLAY_BLOCK);
+    expect(style).not.toMatch(DISPLAY_INLINE_BLOCK);
+  });
+
   it("leaves no trace of the rule in a template without a full-width button", async () => {
     // Every template carries the rule; juice drops it when nothing matches.
     const html = await compile(

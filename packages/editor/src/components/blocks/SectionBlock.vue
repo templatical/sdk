@@ -11,7 +11,7 @@ import ParagraphBlock from "./ParagraphBlock.vue";
 import { useI18n } from "../../composables";
 import { resolveBlockComponent } from "../../utils/blockComponentResolver";
 import { canDropInSectionColumn } from "../../utils/sectionColumnDrop";
-import { resolveHero } from "@templatical/types";
+import { resolveHero, sectionColumnPercents } from "@templatical/types";
 import type {
   Block,
   CustomBlock as CustomBlockType,
@@ -92,28 +92,9 @@ function handleChildSelect(childBlockId: string): void {
   editor.selectBlock(childBlockId);
 }
 
-const columnWidths = computed(() => {
-  switch (props.block.columns) {
-    case "2":
-      return ["50%", "50%"];
-    case "3":
-      return ["33.33%", "33.33%", "33.33%"];
-    case "4":
-      return ["25%", "25%", "25%", "25%"];
-    case "1-2":
-      return ["33.33%", "66.67%"];
-    case "2-1":
-      return ["66.67%", "33.33%"];
-    case "1-3":
-      return ["25%", "75%"];
-    case "3-1":
-      return ["75%", "25%"];
-    case "1-2-1":
-      return ["25%", "50%", "25%"];
-    default:
-      return ["100%"];
-  }
-});
+const columnWidths = computed(() =>
+  sectionColumnPercents(props.block).map((percent) => `${percent}%`),
+);
 
 const columns = computed(() => {
   const count = columnWidths.value.length;

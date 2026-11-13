@@ -247,6 +247,9 @@ const translations: typeof en = {
     ratio13: "比率 1:3",
     ratio31: "比率 3:1",
     ratio121: "比率 1:2:1",
+    columnsCustom: "カスタム",
+    columnWidths: "列の幅",
+    columnWidthAria: "列{index}の幅",
     borderRadius: "角の丸み",
     wrapperEnable: "外枠を追加",
     wrapperLayoutConflict:
@@ -351,6 +354,7 @@ const translations: typeof en = {
     textColor: "文字色",
     borderRadius: "角の丸み",
     fontSize: "文字サイズ",
+    lineHeight: "行間",
     fontWeight: "太さ",
     fontWeightRegular: "標準",
     fontWeightMedium: "中太",
@@ -359,6 +363,7 @@ const translations: typeof en = {
     widthAuto: "内容に合わせる",
     fullWidth: "全幅",
     widthCustom: "カスタム",
+    widthUnit: "幅の単位",
   },
   divider: {
     style: "線の種類",

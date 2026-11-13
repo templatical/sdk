@@ -3,16 +3,21 @@ import type { RenderContext } from "../render-context";
 import { escapeAttr, escapeFontFamily, escapeHtml } from "../escape";
 import { toPaddingString } from "../padding";
 import type { BorderRadiusValue } from "@templatical/types";
-import { BUTTON_LINE_HEIGHT, toBorderRadiusCss } from "@templatical/types";
+import {
+  buttonLineHeight,
+  parsePercentWidth,
+  roundHundredths,
+  toBorderRadiusCss,
+} from "@templatical/types";
 import { bgAttr, borderAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
- * Marks the `mj-button` of a full-width button. MJML gives the button's `<a>`
- * a width only for a px `width`; for `100%` it widens the `<table>` and leaves
- * the `<a>` at `display:inline-block`, so only the label is clickable.
- * `renderToMjml` scopes the head rule that makes the `<a>` fill the button to
- * this class.
+ * Marks the `mj-button` of a button whose `<a>` MJML leaves at
+ * `display:inline-block`: `width: "full"` and a percentage `width`. MJML
+ * gives the `<a>` a width only for a px `width`, so only the label would be
+ * clickable. `renderToMjml` scopes the head rule that makes the `<a>` fill
+ * the button to this class.
  */
 export const BUTTON_FULL_WIDTH_CSS_CLASS = "tpl-button-full";
 
@@ -48,7 +53,11 @@ export function renderButton(
   const widthAttr = renderWidthAttr(block.width);
   const cssClassAttr = getCssClassAttr(
     block,
-    block.width === "full" ? [BUTTON_FULL_WIDTH_CSS_CLASS] : [],
+    block.width === "full" ||
+      (typeof block.width === "string" &&
+        parsePercentWidth(block.width) !== null)
+      ? [BUTTON_FULL_WIDTH_CSS_CLASS]
+      : [],
   );
   const borderAttrStr = borderAttr(block.border);
   // Templates stored before `align` existed have no value for it. Fall back to
@@ -59,7 +68,7 @@ export function renderButton(
   background-color="${backgroundColor}"
   color="${textColor}"
   font-size="${escapeAttr(String(fontSize))}px"
-  line-height="${Math.round(BUTTON_LINE_HEIGHT * 100)}%"
+  line-height="${roundHundredths(buttonLineHeight(block) * 100)}%"
   font-weight="${fontWeight}"
   border-radius="${borderRadius}"${borderAttrStr}
   inner-padding="${buttonPadding}"
@@ -114,12 +123,15 @@ function renderButtonRadius(radius: BorderRadiusValue): string {
   return toBorderRadiusCss(radius) ?? "0px";
 }
 
-function renderWidthAttr(width: number | "full" | undefined): string {
+function renderWidthAttr(width: ButtonBlock["width"]): string {
   if (width === undefined) {
     return "";
   }
+  if (width === "full" || typeof width === "number") {
+    const value = width === "full" ? "100%" : `${width}px`;
+    return ` width="${escapeAttr(value)}"`;
+  }
 
-  const value = width === "full" ? "100%" : `${width}px`;
-
-  return ` width="${escapeAttr(value)}"`;
+  if (parsePercentWidth(width) === null) return "";
+  return ` width="${escapeAttr(width)}"`;
 }

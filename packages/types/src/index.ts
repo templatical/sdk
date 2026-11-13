@@ -18,6 +18,7 @@ export type {
   CustomBlock,
   DividerBlock,
   DividerPercentWidth,
+  PercentWidth,
   HtmlBlock,
   ImageBlock,
   MenuBlock,
@@ -45,6 +46,7 @@ export type {
 export {
   HEADING_LEVEL_FONT_SIZE,
   BUTTON_LINE_HEIGHT,
+  buttonLineHeight,
   TITLE_FONT_WEIGHT,
   TITLE_LINE_HEIGHT,
   RICH_TEXT_SPACING,
@@ -55,6 +57,12 @@ export {
   toBorderRadiusCss,
   uniformBorder,
 } from "./blocks";
+export { parsePercentWidth, roundHundredths } from "./percent-width";
+export {
+  COLUMN_LAYOUT_PERCENTS,
+  columnWidthsIssue,
+  sectionColumnPercents,
+} from "./columns";
 
 // Background images (sections and wrapper bands)
 export type {

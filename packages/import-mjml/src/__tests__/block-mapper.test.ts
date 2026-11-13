@@ -291,6 +291,120 @@ describe("mj-button", () => {
   });
 });
 
+describe("mj-button line-height", () => {
+  function button(attrs: string): ButtonBlock {
+    const { result } = convert(
+      `<mj-button href="https://x.test" ${attrs}>Go</mj-button>`,
+      "mj-button",
+    );
+    return result!.block as ButtonBlock;
+  }
+
+  it.each([
+    ['line-height="200%" font-size="14px"', 2],
+    ['line-height="150%" font-size="14px"', 1.5],
+    ['line-height="1.5" font-size="14px"', 1.5],
+    ['line-height="28px" font-size="14px"', 2],
+    ['line-height="100%" font-size="14px"', 1],
+    ['line-height="33.333%" font-size="14px"', 0.33],
+    ['line-height="1.005" font-size="14px"', 1.01],
+    ['line-height="120.6%" font-size="14px"', 1.21],
+    ['line-height=".5" font-size="14px"', 0.5],
+    ['line-height=".5%" font-size="14px"', 0.01],
+    ['line-height=".5px" font-size="14px"', 0.04],
+    ['line-height="2em" font-size="14px"', 2],
+    ['line-height=".5em" font-size="14px"', 0.5],
+  ] as const)("stores %s as lineHeight %s", (attrs, expected) => {
+    const block = button(attrs);
+    expect(block.lineHeight).toBe(expected);
+    expect(block.fontSize).toBe(14);
+  });
+
+  it.each([
+    'line-height="120%"',
+    'line-height="119.5%"',
+    'line-height="1.2em"',
+  ])("leaves lineHeight unset for %s and stays converted", (attrs) => {
+    const { result } = convert(
+      `<mj-button href="https://x.test" font-size="14px" ${attrs}>Go</mj-button>`,
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+    expect(block.lineHeight).toBeUndefined();
+    expect("lineHeight" in block).toBe(false);
+    expect(result!.entry.status).toBe("converted");
+    expect(result!.entry.note).toBeUndefined();
+  });
+
+  it.each([
+    [
+      'line-height="2rem"',
+      'Button line-height "2rem" could not be read; imported at 1.2.',
+    ],
+    [
+      'line-height="normal"',
+      'Button line-height "normal" could not be read; imported at 1.2.',
+    ],
+    [
+      'line-height="calc(1px + 2px)"',
+      'Button line-height "calc(1px + 2px)" could not be read; imported at 1.2.',
+    ],
+    [
+      'line-height="0%"',
+      'Button line-height "0%" could not be read; imported at 1.2.',
+    ],
+    [
+      'line-height="0px"',
+      'Button line-height "0px" could not be read; imported at 1.2.',
+    ],
+    [
+      'line-height="0.001"',
+      'Button line-height "0.001" could not be read; imported at 1.2.',
+    ],
+    [
+      'line-height="0em"',
+      'Button line-height "0em" could not be read; imported at 1.2.',
+    ],
+  ] as const)("approximates %s", (attrs, note) => {
+    const { result } = convert(
+      `<mj-button href="https://x.test" font-size="14px" ${attrs}>Go</mj-button>`,
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+    expect(block.lineHeight).toBeUndefined();
+    expect(result!.entry.status).toBe("approximated");
+    expect(result!.entry.note).toBe(note);
+  });
+
+  it("leaves lineHeight unset when the attribute is missing", () => {
+    const block = button('font-size="14px"');
+    expect(block.lineHeight).toBeUndefined();
+    expect("lineHeight" in block).toBe(false);
+    expect(block.fontSize).toBe(14);
+  });
+
+  it("leaves a non-finite percentage unset and names it", () => {
+    const raw = `${"9".repeat(400)}%`;
+    const { result } = convert(
+      `<mj-button href="https://x.test" font-size="14px" line-height="${raw}">Go</mj-button>`,
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+    expect(block.lineHeight).toBeUndefined();
+    expect(block.fontSize).toBe(14);
+    expect(result!.entry.status).toBe("approximated");
+    expect(result!.entry.note).toBe(
+      `Button line-height "${raw}" could not be read; imported at 1.2.`,
+    );
+  });
+
+  it("divides a px line-height by the factory font size when the source omits one", () => {
+    const block = button('line-height="30px"');
+    expect(block.fontSize).toBe(15);
+    expect(block.lineHeight).toBe(2);
+  });
+});
+
 describe("mj-button border-radius", () => {
   it("reads a per-corner border-radius", () => {
     const { result } = convert(
@@ -438,14 +552,13 @@ describe("mj-button border", () => {
     });
   });
 
-  it("joins notes from width, border-radius and border", () => {
-    expect(
-      borderOf('width="50%" border-radius="1em" border="3px ridge #000000"')
-        .entry,
-    ).toEqual(
+  it("joins notes from border-radius and border when the width is a percentage", () => {
+    const result = borderOf(
+      'width="50%" border-radius="1em" border="3px ridge #000000"',
+    );
+    expect(result.entry).toEqual(
       approximated(
-        "Button width 50% was imported as 300px, which does not scale with its column. " +
-          'Button border-radius "1em" could not be read; imported as square corners. ' +
+        'Button border-radius "1em" could not be read; imported as square corners. ' +
           'Button border "3px ridge #000000" uses style ridge; imported as solid.',
       ),
     );
@@ -548,22 +661,38 @@ describe("mj-button width", () => {
     expect(buttonWith("700px")).toEqual({ width: 700, entry: converted });
   });
 
-  it("converts any other percentage to px of the width the button can fill and reports it approximated", () => {
-    expect(buttonWith("50%")).toEqual({
-      width: 300,
-      entry: approximated(
-        "Button width 50% was imported as 300px, which does not scale with its column.",
-      ),
-    });
-    expect(buttonWith("33.3%").width).toBe(200);
+  it("imports a percentage above 0 and below 100 as that percentage", () => {
+    expect(buttonWith("50%")).toEqual({ width: "50%", entry: converted });
+    expect(buttonWith("40%").width).toBe("40%");
+    expect(buttonWith("33.333%").width).toBe("33.33%");
+    expect(buttonWith("33.3%").width).toBe("33.3%");
+    expect(buttonWith("0.05%")).toEqual({ width: "0.05%", entry: converted });
   });
 
-  it("measures a percentage against the column less the column's and the button's side padding", () => {
-    expect(buttonWith("50%", 'padding="10px 50px"').width).toBe(250);
-    expect(buttonWith("50%", "", { columnPadding: 40 }).width).toBe(280);
+  it("rounds a percentage at the midpoint and at the 0 and 100 boundaries", () => {
+    expect(buttonWith("0.145%")).toEqual({ width: "0.15%", entry: converted });
+    expect(buttonWith("33.335%")).toEqual({
+      width: "33.34%",
+      entry: converted,
+    });
+    expect(buttonWith("99.995%")).toEqual({ width: "full", entry: converted });
+    expect(buttonWith("0.004%")).toEqual({
+      width: "absent",
+      entry: approximated(
+        "Button width 0.004% has no usable size; imported as fit to content.",
+      ),
+    });
+  });
+
+  it("keeps a percentage when the column and the button have side padding", () => {
+    expect(buttonWith("50%", 'padding="10px 50px"')).toEqual({
+      width: "50%",
+      entry: converted,
+    });
+    expect(buttonWith("40%", "", { columnPadding: 40 }).width).toBe("40%");
     expect(
-      buttonWith("50%", 'padding="10px 50px"', { containerWidth: 300 }).width,
-    ).toBe(100);
+      buttonWith("40%", 'padding="10px 50px"', { containerWidth: 300 }).width,
+    ).toBe("40%");
   });
 
   it('clamps a percentage above 100 to "full" and reports it approximated', () => {
@@ -589,7 +718,7 @@ describe("mj-button width", () => {
   });
 
   it("reads a width with no usable size as fit to content and reports it approximated", () => {
-    for (const raw of ["0px", "0", "-10px", "0.4px", "0%", "-10%", "0.05%"]) {
+    for (const raw of ["0px", "0", "-10px", "0.4px", "0%", "-10%"]) {
       expect(buttonWith(raw)).toEqual({
         width: "absent",
         entry: approximated(

@@ -368,6 +368,130 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(normalize(content)).toEqual(normalize(expected));
   });
 
+  it("reads a 40% button back as 40% without a foreign tpl-button-full class", async () => {
+    const original: TemplateContent = {
+      blocks: [
+        createSectionBlock({
+          columns: "1",
+          children: [
+            [
+              createButtonBlock({
+                text: "Share",
+                url: "https://pct.test",
+                width: "40%",
+              }),
+            ],
+          ],
+        }),
+      ],
+      settings: { ...buildFixtureTemplate().settings, width: 600 },
+    };
+    const mjml = await renderToMjml(original);
+    expect(mjml).toContain('width="40%"');
+    expect(mjml).toContain('css-class="tpl-button-full"');
+
+    const { content, report } = convertMjmlTemplate(mjml);
+    const button = content.blocks
+      .flatMap((block) =>
+        block.type === "section" ? block.children.flat() : [block],
+      )
+      .find((block) => block.type === "button");
+    expect(button).toMatchObject({ type: "button", width: "40%" });
+    const entry = report.entries.find((item) => item.sourceTag === "mj-button");
+    expect(entry).toMatchObject({ status: "converted" });
+    expect(entry?.note).toBeUndefined();
+    expect(JSON.stringify(report)).not.toContain("tpl-button-full");
+  });
+
+  it("reads a 200% button line-height back and leaves 120% unset", async () => {
+    const settings = { ...buildFixtureTemplate().settings, width: 600 };
+    const wrapped = (button: ReturnType<typeof createButtonBlock>) =>
+      ({
+        blocks: [
+          createSectionBlock({
+            columns: "1",
+            children: [[button]],
+          }),
+        ],
+        settings,
+      }) satisfies TemplateContent;
+
+    const tall = createButtonBlock({
+      text: "Register for the annual conference and dinner",
+      url: "https://example.com/register",
+      width: "40%",
+      fontSize: 16,
+      lineHeight: 2,
+    });
+    const tallMjml = await renderToMjml(wrapped(tall));
+    expect(tallMjml).toContain('line-height="200%"');
+    expect(tallMjml).toContain('width="40%"');
+    const { content: tallContent } = convertMjmlTemplate(tallMjml);
+    const tallButton = tallContent.blocks
+      .flatMap((block) =>
+        block.type === "section" ? block.children.flat() : [block],
+      )
+      .find((block) => block.type === "button");
+    expect(tallButton).toMatchObject({
+      type: "button",
+      width: "40%",
+      lineHeight: 2,
+      fontSize: 16,
+    });
+
+    const plain = createButtonBlock({
+      text: "Go",
+      url: "https://example.com",
+      fontSize: 14,
+    });
+    const plainMjml = await renderToMjml(wrapped(plain));
+    expect(plainMjml).toContain('line-height="120%"');
+    const { content: plainContent } = convertMjmlTemplate(plainMjml);
+    const plainButton = plainContent.blocks
+      .flatMap((block) =>
+        block.type === "section" ? block.children.flat() : [block],
+      )
+      .find((block) => block.type === "button");
+    expect(plainButton).toMatchObject({ type: "button", fontSize: 14 });
+    expect(plainButton && "lineHeight" in plainButton).toBe(false);
+  });
+
+  it("round-trips a 50 / 33.33 / 16.67 section, stacking and grouped", async () => {
+    const settings = { ...buildFixtureTemplate().settings, width: 600 };
+    const section = (stackOnMobile: false | undefined) =>
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [50, 33.33, 16.67],
+        children: [[], [], []],
+        ...(stackOnMobile === false ? { stackOnMobile } : {}),
+      });
+
+    for (const stackOnMobile of [undefined, false] as const) {
+      const original: TemplateContent = {
+        blocks: [section(stackOnMobile)],
+        settings,
+      };
+      const mjml = await renderToMjml(original);
+      expect(mjml).toContain('width="50%"');
+      expect(mjml).toContain('width="33.33%"');
+      expect(mjml).toContain('width="16.67%"');
+      if (stackOnMobile === false) expect(mjml).toContain("<mj-group>");
+
+      const { content, report } = convertMjmlTemplate(mjml);
+      expect(content.blocks[0]).toMatchObject({
+        type: "section",
+        columns: "3",
+        columnWidths: [50, 33.33, 16.67],
+        ...(stackOnMobile === false ? { stackOnMobile: false } : {}),
+      });
+      const entry = report.entries.find(
+        (item) => item.sourceTag === "mj-section",
+      );
+      expect(entry).toMatchObject({ status: "converted" });
+      expect(entry?.note).toBeUndefined();
+    }
+  });
+
   it("converts every element with no approximations at all", async () => {
     const mjml = await renderToMjml(buildFixtureTemplate());
     const { report } = convertMjmlTemplate(mjml);

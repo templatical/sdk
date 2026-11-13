@@ -3,6 +3,7 @@ import {
   BORDER_SIDES,
   BUTTON_LINE_HEIGHT,
   canonicalFontStack,
+  roundHundredths,
   findOpenTagEnd,
   isSafeHtmlUrl,
   HEADING_LEVEL_FONT_SIZE,
@@ -87,17 +88,6 @@ export interface ModuleContext {
    * its own inherits. Defaults to `FALLBACK_TEXT_COLOR`.
    */
   textColor?: string;
-  /**
-   * Padding a snapped column gives back, and the column padding folded onto
-   * the module. Set on every column of a snapped row. Image, lone-icon and
-   * divider rooms include padding that comes back and exclude column padding
-   * the module keeps.
-   */
-  paddingReturn?: {
-    deficit: number;
-    sides: Array<"left" | "right">;
-    columnPadding: Pick<SpacingValue, "left" | "right">;
-  };
   /**
    * A blank paragraph module becomes a spacer. A translation sets this to
    * false so its content stays a paragraph and can be stored in `l10n`.
@@ -243,28 +233,33 @@ function importedHtml(html: string): string {
 }
 
 /**
- * Text, paragraph and list HTML after merge-tag chips are unwrapped and
- * before character references inside tokens are decoded. An empty chip is
- * already gone, and an `&nbsp;` is still a non-breaking space.
+ * Text, paragraph and list HTML after empty paragraphs are dropped on the
+ * source, once merge-tag chips are unwrapped and before character references
+ * inside tokens are decoded. A chip that remains is unwrapped here, and an
+ * `&nbsp;` is still a non-breaking space.
  */
 function finishTextHtml(html: string): string {
   const unwrapped = trimHighlightedTokenPadding(unwrapMergeTagCode(html));
-  return restoreDoubledNbsp(
-    decodeEntitiesInHtml(withoutEmptyParagraphs(unwrapped)),
-  );
+  return restoreDoubledNbsp(decodeEntitiesInHtml(unwrapped));
 }
 
 /**
- * A `<p>` BeeFree does not draw. It has no text other than ASCII whitespace,
- * no non-breaking space, and no replaced or void element, and it contains an
- * element other than `<span>` (`strong`, `em`, `code`, and the rest). An
- * empty `<p>`, or one that holds only nested empty `<span>` elements, is a
- * blank line and stays, so `fillEmptyParagraphs` paints it. `<p>&nbsp;</p>`
- * and `<p><br></p>` stay, and so does a `<p>` whose own `style` paints a box.
- * A `<p>` that opens while another `<p>` is open stays as written. When
- * dropping leaves no visible content, the HTML stays, so a blank text module
- * is unchanged. A `<p>` whose own style paints a box is visible content, so
- * a formatting sibling of one is dropped and an empty sibling stays.
+ * A `<p>` BeeFree does not draw. The decision reads the module's source
+ * HTML, before the style pass and before merge-tag chips are unwrapped. It
+ * has no text other than ASCII whitespace, no non-breaking space, and no
+ * replaced or void element, and its subtree at any depth holds an element
+ * other than `<span>` (`strong`, `em`, `code`, and the rest). An empty
+ * `<code data-bee-type="mergetag">` is that element, so its paragraph is
+ * dropped. An empty `<p>`, or one that holds only nested empty `<span>`
+ * elements, is a blank line and stays, so `fillEmptyParagraphs` paints it.
+ * `<p>&nbsp;</p>` and `<p><br></p>` stay. A `<p>` whose own `style` paints
+ * a box stays, and so does one whose subtree holds an element whose style
+ * paints a box or sets `display` to `inline-block` or `block` with a
+ * non-zero width and height. A `<p>` that opens while another `<p>` is open
+ * stays as written. When dropping leaves no visible content, the HTML stays,
+ * so a blank text module is unchanged. A box, on the `<p>` or on a
+ * descendant, is visible content, so a formatting sibling of one is dropped
+ * and an empty sibling stays.
  */
 const LINE_BOX_TAGS = new Set([
   "area",
@@ -527,6 +522,50 @@ function openTagPaintsBox(html: string, start: number, end: number): boolean {
 }
 
 /**
+ * A length above zero. `24px` and `.5px` count. `0`, `auto` and an unknown
+ * unit do not.
+ */
+function isNonZeroLength(token: string): boolean {
+  const match = /^(\d+(?:\.\d+)?|\.\d+)([a-z%]*)$/i.exec(token);
+  if (!match || !ZERO_LENGTH_UNITS.has(match[2].toLowerCase())) return false;
+  return Number(match[1]) > 0;
+}
+
+/**
+ * `display: inline-block` or `block` together with a non-zero width and
+ * height. An icon anchor draws this way. Height alone is already a painted
+ * box; this is the pair the display needs.
+ */
+function styleDrawsSizedBlock(css: string): boolean {
+  const winners = cascadeWinners(
+    css,
+    (name) => name === "display" || name === "width" || name === "height",
+  );
+  const display = boxValueTokens(
+    winners.get("display")?.value ?? "",
+  )[0]?.toLowerCase();
+  if (display !== "inline-block" && display !== "block") return false;
+  const width = boxValueTokens(winners.get("width")?.value ?? "")[0];
+  const height = boxValueTokens(winners.get("height")?.value ?? "")[0];
+  return (
+    width !== undefined &&
+    height !== undefined &&
+    isNonZeroLength(width) &&
+    isNonZeroLength(height)
+  );
+}
+
+/**
+ * A descendant draws. Its own style paints a box, or it sets
+ * `display:inline-block` or `block` with a non-zero width and height.
+ */
+function openTagDrawsBox(html: string, start: number, end: number): boolean {
+  const css = findStyleAttr(html.slice(start, end + 1))?.value;
+  if (css === undefined) return false;
+  return styleDrawsSizedBlock(css) || stylePaintsBox(css);
+}
+
+/**
  * Paragraphs BeeFree does not draw, as source ranges. One forward pass.
  * A no-ink paragraph is listed only when it contains an element other than
  * `<span>`. An empty `<p>` holds nothing, so it is not listed.
@@ -597,7 +636,9 @@ function emptyParagraphRanges(html: string): Array<[number, number]> {
       }
     } else if (open) {
       if (name !== "span") open.nonSpan = true;
-      if (LINE_BOX_TAGS.has(name)) open.ink = true;
+      if (LINE_BOX_TAGS.has(name) || openTagDrawsBox(html, lt, end)) {
+        open.ink = true;
+      }
     }
     i = end + 1;
   }
@@ -606,7 +647,8 @@ function emptyParagraphRanges(html: string): Array<[number, number]> {
 
 /**
  * Text other than ASCII whitespace, a character reference, a line-box
- * element, or a `<p>` whose own style paints a box. Comments are not
+ * element, a `<p>` whose own style paints a box, or a descendant whose
+ * style paints a box or draws a sized block. Comments are not
  * content. One forward pass; an open tag ends at `findOpenTagEnd`, so a
  * quoted `>` does not end it.
  */
@@ -637,6 +679,7 @@ function hasVisibleContent(html: string): boolean {
     const end = findOpenTagEnd(html, nameEnd);
     if (end === -1) return rangeHasInk(html, lt, html.length);
     if (name === "p" && openTagPaintsBox(html, lt, end)) return true;
+    if (name !== "p" && openTagDrawsBox(html, lt, end)) return true;
     i = end + 1;
   }
   return false;
@@ -731,50 +774,16 @@ function makeStyles(descriptor: BeeFreeeModuleDescriptor): Block["styles"] {
 }
 
 /**
- * Pixels taken from `padding` on `sides`, at most `deficit`, in that order.
- * Nothing is taken past 0.
- */
-function paddingReturned(
-  padding: Pick<SpacingValue, "left" | "right">,
-  deficit: number,
-  sides: Array<"left" | "right">,
-): number {
-  let returned = 0;
-  let remaining = deficit;
-  for (const side of sides) {
-    if (remaining <= 0) break;
-    const have = padding[side];
-    if (have <= 0) continue;
-    const give = Math.min(remaining, have);
-    returned += give;
-    remaining -= give;
-  }
-  return returned;
-}
-
-/**
  * The room an image, a lone icon or a divider is measured in: the column
- * less the side padding the block keeps. A snapped column gives inner
- * padding back after the width is chosen. Those pixels are part of the room.
- * Column padding the block keeps, on either side, is not, whether or not any
- * padding comes back.
+ * less the block's own left and right padding. Column padding is folded onto
+ * the block after this measurement, so it is not subtracted here.
  */
 function measuredRoom(
   columnWidth: number | undefined,
   padding: SpacingValue,
-  giveBack: ModuleContext["paddingReturn"],
 ): number | undefined {
   if (columnWidth === undefined) return undefined;
-  const room = columnWidth - padding.left - padding.right;
-  if (!giveBack) return room;
-  const folded = {
-    left: padding.left + giveBack.columnPadding.left,
-    right: padding.right + giveBack.columnPadding.right,
-  };
-  const returned = paddingReturned(folded, giveBack.deficit, giveBack.sides);
-  return (
-    room - giveBack.columnPadding.left - giveBack.columnPadding.right + returned
-  );
+  return columnWidth - padding.left - padding.right;
 }
 
 interface StyleDecl {
@@ -1040,6 +1049,8 @@ interface TextFrame {
   blockChild: boolean;
   /** `ul` / `ol` ancestors, counting this frame when it is one. */
   listDepth: number;
+  /** A descendant open tag draws a box, so an empty leaf keeps its parts. */
+  drawsBox: boolean;
 }
 
 function flattenChunks(chunks: Chunk[]): string {
@@ -1135,9 +1146,9 @@ function listBoxFor(content: {
  * element stands, and so does a padding or marker it already sets. An item
  * margin of `0` is the shorthand: that is the property the renderer sets.
  *
- * A block with no text, break, image, or non-breaking space stays empty.
- * The renderer fills `<p></p>` with one line; a span inside it is content
- * and that line collapses.
+ * A block with no text, break, image, or non-breaking space stays empty,
+ * unless a descendant open tag draws a box. The renderer fills `<p></p>`
+ * with one line; a span inside it is content and that line collapses.
  *
  * One forward scan. A regex over `[\s\S]*?</p>` is polynomial-ReDoS on
  * `<p>a<p>a<p>a…` with no closer; every cursor here only moves forward.
@@ -1368,7 +1379,10 @@ function inlineStylesToHtml(
         strip,
       );
     const chunk: Chunk[] = [];
-    if (leaf && !listRoot && !frameHasInk(chunkText(frame.parts))) {
+    const inner = chunkText(frame.parts);
+    // A descendant that draws a box is ink. The open-tag walk below sets
+    // `drawsBox` with `openTagDrawsBox`, so this leaf keeps its parts.
+    if (leaf && !listRoot && !frameHasInk(inner) && !frame.drawsBox) {
       chunk.push(open("block"));
       if (rawClose !== "") chunk.push(rawClose);
     } else if (wrap) {
@@ -1462,6 +1476,8 @@ function inlineStylesToHtml(
       parts().push(
         rewriteOpenTag(openTag, name === "a" ? anchorDecls : [], strip),
       );
+      const parent = stack[stack.length - 1];
+      if (parent && openTagDrawsBox(html, lt, end)) parent.drawsBox = true;
       i = end + 1;
       continue;
     }
@@ -1473,6 +1489,7 @@ function inlineStylesToHtml(
       parts: [],
       blockChild: false,
       listDepth: name === "ul" || name === "ol" ? parentDepth + 1 : parentDepth,
+      drawsBox: false,
     });
     i = end + 1;
   }
@@ -1599,10 +1616,14 @@ function convertText(
       ? listBoxFor(textContent)
       : undefined;
 
+  // The style pass strips an empty inline subtree, so the drop reads the
+  // source. Merge-tag chips are still `<code>` here.
+  const source = withoutEmptyParagraphs(html);
+
   return createParagraphBlock({
     content: finishTextHtml(
       inlineStylesToHtml(
-        html,
+        source,
         style,
         textColor,
         moduleLinkColor(textContent),
@@ -2008,7 +2029,6 @@ function shownWidth(
 function convertImage(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
 ): { block: Block; notes: string[] } {
   const image = descriptor.image;
   const styles = makeStyles(descriptor);
@@ -2016,7 +2036,7 @@ function convertImage(
     return { block: createImageBlock({ styles }), notes: [] };
   }
 
-  const room = measuredRoom(columnWidth, styles.padding, paddingReturn);
+  const room = measuredRoom(columnWidth, styles.padding);
   const { width, note } = resolveImageWidth(descriptor, room);
 
   // `image.width` × `image.height` is the file, so the height is never carried
@@ -2060,42 +2080,37 @@ function convertImage(
 }
 
 /**
- * A button label's line-height in px. BeeFree writes a percentage of the font
- * size (`200%`), a unitless ratio (`2`) or a px length. Anything else is
- * unread, and the padding stays as BeeFree wrote it.
+ * `style["line-height"]` as `ButtonBlock.lineHeight`. A percentage is that
+ * number over 100, a unitless number is itself, a px length is that many
+ * pixels over `fontSize`, and an `em` length is the number itself (`2em`
+ * is `2`). A leading dot (`.5`, `.5%`, `.5px`, `.5em`) is read. Rounded to
+ * two decimals. `1.2` and a missing value stay unset, so the label keeps
+ * `BUTTON_LINE_HEIGHT`, and the button stays converted. Any other explicit
+ * value that cannot be kept comes back as `unread` for the approximation note.
  */
-function buttonLineHeightPx(
+function readButtonLineHeight(
   value: string | undefined,
   fontSize: number,
-): number | undefined {
-  if (!value || fontSize <= 0) return undefined;
-  const trimmed = value.trim();
-  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(trimmed);
-  if (percent) {
-    const ratio = Number(percent[1]) / 100;
-    return Number.isFinite(ratio) && ratio > 0 ? fontSize * ratio : undefined;
-  }
-  if (/^\d+(?:\.\d+)?$/.test(trimmed)) {
-    const ratio = Number(trimmed);
-    return Number.isFinite(ratio) && ratio > 0 ? fontSize * ratio : undefined;
-  }
-  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(trimmed);
-  if (!px) return undefined;
-  const length = Number(px[1]);
-  return Number.isFinite(length) && length > 0 ? length : undefined;
-}
+): { lineHeight?: number; unread?: string } {
+  const trimmed = value?.trim() ?? "";
+  if (trimmed === "") return {};
 
-/**
- * How many px to add to the button's top and bottom padding so the label's
- * line box matches BeeFree. The rendered label uses BUTTON_LINE_HEIGHT times
- * the font size, so a taller line-height is split across the two sides. The
- * result is an integer and never negative: a line-height at or under that
- * ratio adds nothing.
- */
-function lineHeightPadding(lineHeightPx: number, fontSize: number): number {
-  const extra = (lineHeightPx - BUTTON_LINE_HEIGHT * fontSize) / 2;
-  if (!Number.isFinite(extra) || extra <= 0) return 0;
-  return Math.round(extra);
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio: number;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+  else return { unread: trimmed };
+
+  if (!Number.isFinite(ratio) || !(ratio > 0)) return { unread: trimmed };
+  const rounded = roundHundredths(ratio);
+  if (!(rounded > 0)) return { unread: trimmed };
+  if (rounded === BUTTON_LINE_HEIGHT) return {};
+  return { lineHeight: rounded };
 }
 
 /**
@@ -2275,46 +2290,70 @@ function uncarriedLetterSpacing(value: string | undefined): string | undefined {
 }
 
 /**
- * `100%` fills the column. Any other percentage has no field to land in, so
- * the button sizes to its label and the caller names that width. A px width
- * is that many pixels. `auto` and anything unreadable leave the width unset.
+ * Two decimals, trailing zeros dropped: `40` is `"40%"`, `33.333` is `"33.33%"`.
+ */
+function formatButtonPercent(value: number): `${number}%` {
+  const share = roundHundredths(value);
+  const text = share.toFixed(2).replace(/\.?0+$/, "");
+  return `${Number(text)}%`;
+}
+
+/**
+ * The 0 and 100 boundaries are the share rounded to two decimals. Above
+ * 100 is `"full"` with a clamp note. 100, including a value that rounds to
+ * 100, is `"full"` with no note. Above 0 and below 100 is that share.
+ * 0 or below leaves the width unset. `button.percWidth` is not this value.
+ * A leading decimal (`.5%`, `.5px`) and an exponent percentage (`1e19%`)
+ * are read. A px width is that many pixels, rounded. `auto` and a missing
+ * width leave the width unset with no note. A px width that rounds to 0,
+ * and any other non-empty value, leave the width unset and name `uncarried`
+ * so the button note says the width is not carried.
  */
 function buttonWidth(value: string | undefined): {
   width?: ButtonBlock["width"];
+  note?: string;
   uncarried?: string;
 } {
   if (!value) return {};
   const raw = value.trim();
   if (!raw || /^auto$/i.test(raw)) return {};
 
-  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  const percent = /^(-?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?)\s*%$/i.exec(raw);
   if (percent) {
-    if (Number(percent[1]) === 100) return { width: "full" };
-    return { uncarried: `width ${raw}` };
+    const n = Number(percent[1]);
+    const share = roundHundredths(n);
+    if (share > 100) {
+      return { width: "full", note: `width ${raw} was clamped to 100%` };
+    }
+    if (share >= 100) return { width: "full" };
+    if (share <= 0) return { note: `width ${raw} has no usable size` };
+    return { width: formatButtonPercent(n) };
   }
 
-  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
-  if (!px) return {};
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(raw);
+  if (!px) return { uncarried: raw };
   const width = Math.round(Number(px[1]));
-  return width > 0 ? { width } : {};
+  return width > 0 ? { width } : { uncarried: raw };
 }
 
 /**
- * One note naming what this button does not carry: letter spacing, a partial
- * bold label, and a percentage width other than 100%. Empty when nothing was
- * left out.
+ * One note naming what this button does not carry: letter spacing, an
+ * unreadable line-height, an unreadable width, and a partial bold label.
+ * Empty when nothing was left out. A percentage clamp, and a percentage
+ * with no usable size, stay separate notes.
  */
 function buttonApproximationNote(
   style: Record<string, string>,
-  widthUncarried: string | undefined,
   partialBold: boolean,
   fontWeight: ButtonBlock["fontWeight"],
+  unreadLineHeight: string | undefined,
+  uncarriedWidth: string | undefined,
 ): string | undefined {
   const parts: string[] = [];
   const spacing = uncarriedLetterSpacing(style["letter-spacing"]);
   if (spacing) parts.push(`letter spacing ${spacing}`);
-
-  if (widthUncarried) parts.push(widthUncarried);
+  if (unreadLineHeight) parts.push(`line-height ${unreadLineHeight}`);
+  if (uncarriedWidth) parts.push(`width ${uncarriedWidth}`);
 
   if (partialBold) parts.push("partial bold in the label");
 
@@ -2378,10 +2417,15 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
   const label = button.label ? importedPlainText(button.label) : "Button";
   const padding = readButtonPadding(style);
   const fontSize = parsePxValue(style["font-size"]) || 16;
-  const lineHeightPx = buttonLineHeightPx(style["line-height"], fontSize);
-  const linePad =
-    lineHeightPx === undefined ? 0 : lineHeightPadding(lineHeightPx, fontSize);
-  const { width, uncarried: widthUncarried } = buttonWidth(style.width);
+  const { lineHeight, unread: unreadLineHeight } = readButtonLineHeight(
+    style["line-height"],
+    fontSize,
+  );
+  const {
+    width,
+    note: widthNote,
+    uncarried: uncarriedWidth,
+  } = buttonWidth(style.width);
   const border = buttonBorder(style);
   const { fontWeight, partialBold } = buttonFontWeight(
     style["font-weight"],
@@ -2389,9 +2433,10 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
   );
   const note = buttonApproximationNote(
     style,
-    widthUncarried,
     partialBold,
     fontWeight,
+    unreadLineHeight,
+    uncarriedWidth,
   );
 
   return {
@@ -2402,6 +2447,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
       textColor: parseColor(style.color) || "#ffffff",
       borderRadius: parsePxValue(style["border-radius"]),
       fontSize,
+      ...(lineHeight !== undefined ? { lineHeight } : {}),
       fontFamily: canonicalFontStack(style["font-family"]) || undefined,
       ...(fontWeight ? { fontWeight } : {}),
       // The module style places the button in the column. The button style's
@@ -2412,15 +2458,12 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
       ),
       ...(width !== undefined ? { width } : {}),
       ...(border ? { border } : {}),
-      buttonPadding: {
-        top: padding.top + linePad,
-        right: padding.right,
-        bottom: padding.bottom + linePad,
-        left: padding.left,
-      },
+      buttonPadding: padding,
       styles: makeStyles(descriptor),
     }),
-    notes: note ? [note] : [],
+    notes: [note, widthNote].filter(
+      (item): item is string => item !== undefined,
+    ),
   };
 }
 
@@ -2466,7 +2509,6 @@ function resolveDividerWidth(
 function convertDivider(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
 ): { block: Block; notes: string[] } {
   const style = descriptor.divider?.style ?? {};
   const border = parseBorderTop(style["border-top"]);
@@ -2476,7 +2518,7 @@ function convertDivider(
   // MJML draws a full divider across its column less the divider's own
   // padding, so a px width that reaches that renders the same as "full", and
   // "full" keeps narrowing with the column on a phone.
-  const contentWidth = measuredRoom(columnWidth, styles.padding, paddingReturn);
+  const contentWidth = measuredRoom(columnWidth, styles.padding);
   const width = resolveDividerWidth(style.width, contentWidth, notes);
 
   const align = dividerAlign(descriptor);
@@ -2565,16 +2607,18 @@ function convertHtml(
   bodyFontFamily?: string,
 ): Block {
   const html = importedHtml(descriptor.html?.html ?? "");
-  // BeeFree centres an HTML module. The export sets no font-size, so the
-  // content renders at the browser default, 16px. The wrapper copies the
-  // page body font; with none, it sets no font-family. Blank content, and
-  // an addon that carries HTML, stay unwrapped.
+  // BeeFree centres an HTML module and applies no font-size, line-height
+  // or word-break, so the browser defaults apply: 16px, `line-height:
+  // normal` and `word-break: normal`. `mj-text` overrides all three. The
+  // wrapper restores them and copies the page body font; with none, it sets
+  // no font-family. Blank content, and an addon that carries HTML, stay
+  // unwrapped.
   const fontFamily = bodyFontFamily
     ? `font-family:${escapeHtml(bodyFontFamily)};`
     : "";
   const content =
     moduleType === HTML_MODULE && html.trim() !== ""
-      ? `<div style="${fontFamily}font-size:16px;text-align:center" align="center">${html}</div>`
+      ? `<div style="${fontFamily}font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center">${html}</div>`
       : html;
 
   return createHtmlBlock({
@@ -2657,51 +2701,21 @@ function socialPlatform(icon: BeeFreeeSocialIcon): SocialPlatform | undefined {
   );
 }
 
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    value.trim(),
-  );
-}
-
-function positivePx(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    return Math.round(value);
-  }
-  if (typeof value === "string") return parsePxValue(value);
-  return 0;
-}
-
-/** A name to put in the note: the alt text, or a name that is not a UUID. */
-function networkLabel(icon: BeeFreeeSocialIcon, href: string): string {
-  const alt = icon.image?.alt?.trim();
-  if (alt) return alt;
+/** Title, then alt, then name. `custom` when the icon names none of them. */
+function socialIconLabel(icon: BeeFreeeSocialIcon): string {
   const title = icon.image?.title?.trim();
   if (title) return title;
+  const alt = icon.image?.alt?.trim();
+  if (alt) return alt;
   const name = icon.name?.trim();
-  if (name && !isUuid(name)) return name;
-  const id = icon.id?.trim();
-  if (id && !isUuid(id)) return id;
-  try {
-    const host = new URL(href).hostname.replace(/^www\./, "");
-    if (host) return host;
-  } catch {
-    // The href is not a URL. The note still names the icon.
-  }
+  if (name) return name;
   return "custom";
 }
 
-function safeCopiedUrl(
-  value: string,
-  kind: "src" | "href",
-  warnings: string[],
-): string {
+function safeCopiedUrl(value: string, warnings: string[]): string {
   if (!value) return "";
-  if (isSafeHtmlUrl(value, kind)) return value;
-  warnings.push(
-    kind === "src"
-      ? `Dropped the unsafe image "${value}" on a social icon.`
-      : `Dropped the unsafe link "${value}" on a social icon.`,
-  );
+  if (isSafeHtmlUrl(value, "href")) return value;
+  warnings.push(`Dropped the unsafe link "${value}" on a social icon.`);
   return "";
 }
 
@@ -2716,68 +2730,6 @@ function socialHref(icon: BeeFreeeSocialIcon): string {
     return prefix + href;
   }
   return href;
-}
-
-/**
- * A network Templatical does not draw. The file and the link stay, as an
- * image when there is a file and as a link when there is not.
- */
-function unknownSocialBlock(
-  descriptor: BeeFreeeModuleDescriptor,
-  icon: BeeFreeeSocialIcon,
-  warnings: string[],
-): { block: Block; note: string } | undefined {
-  const href = safeCopiedUrl(socialHref(icon), "href", warnings);
-  const src = safeCopiedUrl(
-    decodeEntitiesInTokens(icon.image?.src ?? ""),
-    "src",
-    warnings,
-  );
-  const label = networkLabel(icon, href || icon.image?.href || "");
-  if (!src && !href) {
-    const note = `Social network "${label}" has no Templatical icon and no image or link to keep.`;
-    warnings.push(note);
-    return {
-      block: createHtmlBlock({ content: "", styles: makeStyles(descriptor) }),
-      note,
-    };
-  }
-  const asLink = !src;
-  const note =
-    icon.type === "custom" && !asLink
-      ? `Custom social icon "${label}" imported as an image.`
-      : `Social network "${label}" has no Templatical icon; imported as ${asLink ? "a link" : "an image"}.`;
-  warnings.push(note);
-  if (asLink) {
-    return {
-      block: createHtmlBlock({
-        content: decodeEntitiesInHtml(
-          `<a href="${escapeHtml(href)}">${escapeHtml(decodeEntitiesInTokens(label))}</a>`,
-        ),
-        styles: makeStyles(descriptor),
-      }),
-      note,
-    };
-  }
-  const fileWidth = positivePx(icon.image?.width);
-  const fileHeight = positivePx(icon.image?.height);
-  const shown =
-    positivePx(descriptor.computedStyle?.iconsDefaultWidth) || fileWidth || 32;
-  return {
-    block: createImageBlock({
-      src,
-      alt: decodeEntitiesInTokens(icon.image?.alt ?? ""),
-      width: shown,
-      ...(fileWidth > 0 && fileHeight > 0
-        ? { naturalWidth: fileWidth, naturalHeight: fileHeight }
-        : {}),
-      align: toAlign(descriptor.style?.["text-align"], "center"),
-      linkUrl: href || undefined,
-      ...(icon.image?.target === "_blank" ? { linkOpenInNewTab: true } : {}),
-      styles: makeStyles(descriptor),
-    }),
-    note,
-  };
 }
 
 /**
@@ -2909,6 +2861,12 @@ function socialAppearance(
   };
 }
 
+/**
+ * One social block for the whole module, in source order. An icon that is
+ * not a known `SocialIcon`, including `type: "custom"`, becomes platform
+ * `website` with the same link this mapping already computes. `SocialIcon`
+ * has no image field, so that file is not carried and the note names the icon.
+ */
 function convertSocial(
   descriptor: BeeFreeeModuleDescriptor,
   warnings: string[],
@@ -2924,54 +2882,30 @@ function convertSocial(
     };
   }
 
-  // Blocks come out in source order: each run of recognized icons is one
-  // social block, and a routed-out icon keeps its place between runs.
-  let icons: SocialIcon[] = [];
-  const blocks: Block[] = [];
+  const icons: SocialIcon[] = [];
   const notes: string[] = [];
-  const flushIcons = () => {
-    if (icons.length === 0) return;
-    blocks.push(createSocialIconsBlock({ icons, styles, ...appearance }));
-    icons = [];
-  };
-
   // The Icons module keeps items of another shape under the same key.
   for (const beeIcon of iconsList.icons as BeeFreeeSocialIcon[]) {
-    const platform = socialPlatform(beeIcon);
-    if (!platform || beeIcon.type === "custom") {
-      const kept = unknownSocialBlock(descriptor, beeIcon, warnings);
-      if (!kept) continue;
-      // An empty HTML block is the note for an icon with nothing to keep.
-      if (kept.block.type === "html" && kept.block.content === "") {
-        notes.push(kept.note);
-        continue;
-      }
-      flushIcons();
-      blocks.push(kept.block);
-      notes.push(kept.note);
-      continue;
+    const recognised =
+      beeIcon.type === "custom" ? undefined : socialPlatform(beeIcon);
+    const href = safeCopiedUrl(socialHref(beeIcon), warnings);
+    if (!recognised) {
+      const note = `Custom icon ${socialIconLabel(beeIcon)} imported as the generic website icon; its image is not carried.`;
+      warnings.push(note);
+      notes.push(note);
     }
-
-    const href = safeCopiedUrl(socialHref(beeIcon), "href", warnings);
     icons.push({
       id: generateId(),
-      platform,
+      platform: recognised ?? "website",
       url: href || "#",
     });
   }
-  flushIcons();
 
-  // An empty social block is the fallback when nothing else was kept.
-  if (blocks.length === 0) {
-    return {
-      block: createSocialIconsBlock({ icons, styles, ...appearance }),
-      extras: [],
-      notes,
-    };
-  }
-
-  const [block, ...extras] = blocks;
-  return { block, extras, notes };
+  return {
+    block: createSocialIconsBlock({ icons, styles, ...appearance }),
+    extras: [],
+    notes,
+  };
 }
 
 /** Escape `& < > "` for text content and attribute values. */
@@ -3030,7 +2964,6 @@ function iconSize(
 function convertSingleIcon(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
 ): Block | undefined {
   const items = iconItems(descriptor);
   if (items.length !== 1) return undefined;
@@ -3048,7 +2981,7 @@ function convertSingleIcon(
     bottom: styles.padding.bottom + spacing.bottom,
     left: styles.padding.left + spacing.left,
   };
-  const room = measuredRoom(columnWidth, padding, paddingReturn);
+  const room = measuredRoom(columnWidth, padding);
 
   return createImageBlock({
     src,
@@ -3196,14 +3129,13 @@ function safeIconItems(
 function convertIcons(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
   warnings: string[],
 ): { block: Block; rebuilt: boolean } {
   const safe = {
     ...descriptor,
     iconsList: { icons: safeIconItems(descriptor, warnings) },
   };
-  const single = convertSingleIcon(safe, columnWidth, paddingReturn);
+  const single = convertSingleIcon(safe, columnWidth);
   if (single) return { block: single, rebuilt: false };
   return {
     block: createHtmlBlock({
@@ -3242,7 +3174,6 @@ function resolveVideoWidth(
 function convertVideo(
   descriptor: BeeFreeeModuleDescriptor,
   columnWidth: number | undefined,
-  paddingReturn: ModuleContext["paddingReturn"],
   warnings: string[],
 ): { block: Block; notes: string[] } {
   const video = descriptor.video;
@@ -3258,7 +3189,7 @@ function convertVideo(
   const thumbnailUrl = playsInPlace
     ? ""
     : decodeEntitiesInTokens(video.thumbSrc || "");
-  const room = measuredRoom(columnWidth, styles.padding, paddingReturn);
+  const room = measuredRoom(columnWidth, styles.padding);
   const { width, note } = resolveVideoWidth(descriptor, room);
   const notes = note ? [note] : [];
   if (playsInPlace) {
@@ -3640,11 +3571,7 @@ function convertModuleBase(
       break;
     }
     case "image": {
-      const result = convertImage(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-      );
+      const result = convertImage(descriptor, context.columnWidth);
       block = result.block;
       notes = result.notes;
       isApproximation = notes.length > 0;
@@ -3666,11 +3593,7 @@ function convertModuleBase(
         ];
         break;
       }
-      const result = convertDivider(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-      );
+      const result = convertDivider(descriptor, context.columnWidth);
       block = result.block;
       notes = result.notes;
       isApproximation = notes.length > 0;
@@ -3680,12 +3603,7 @@ function convertModuleBase(
       block = convertSpacer(descriptor);
       break;
     case "icons": {
-      const result = convertIcons(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-        warnings,
-      );
+      const result = convertIcons(descriptor, context.columnWidth, warnings);
       if (result.rebuilt) {
         return {
           block: result.block,
@@ -3712,12 +3630,7 @@ function convertModuleBase(
       break;
     }
     case "video": {
-      const result = convertVideo(
-        descriptor,
-        context.columnWidth,
-        context.paddingReturn,
-        warnings,
-      );
+      const result = convertVideo(descriptor, context.columnWidth, warnings);
       block = result.block;
       notes = result.notes;
       isApproximation = notes.length > 0;

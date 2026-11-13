@@ -7,6 +7,7 @@ import {
   createSectionBlock,
   uniformBorder,
 } from "@templatical/types";
+import type { ColumnLayout } from "@templatical/types";
 import SectionToolbar from "../src/components/toolbar/SectionToolbar.vue";
 import { TRANSLATIONS_KEY } from "../src/keys";
 import en from "../src/i18n/locales/en";
@@ -170,6 +171,300 @@ describe("SectionToolbar columns change", () => {
     };
     expect(wide.columns).toBe("3-1");
     expect(wide.children).toHaveLength(2);
+  });
+});
+
+describe("SectionToolbar column widths", () => {
+  function widthInput(wrapper: ReturnType<typeof mountToolbar>, index: number) {
+    return wrapper.get(`[aria-label="Column ${index} width"]`);
+  }
+
+  function widthValues(wrapper: ReturnType<typeof mountToolbar>): string[] {
+    return wrapper
+      .findAll('input[aria-label^="Column "]')
+      .map((input) => (input.element as HTMLInputElement).value);
+  }
+
+  it("shows Custom only for a usable override, and selects it", () => {
+    const custom = createSectionBlock({
+      columns: "3",
+      columnWidths: [25, 25, 50],
+      children: [[], [], []],
+    });
+    const customToolbar = mountToolbar(custom);
+    const customOptions = customToolbar.findAll("option");
+    expect(customOptions.map((option) => option.attributes("value"))).toEqual([
+      "1",
+      "2",
+      "3",
+      "4",
+      "1-2",
+      "2-1",
+      "1-3",
+      "3-1",
+      "1-2-1",
+      "custom",
+    ]);
+    expect(customOptions.at(-1)!.text()).toBe(en.section.columnsCustom);
+    expect(
+      (customToolbar.find("select").element as HTMLSelectElement).value,
+    ).toBe("custom");
+
+    const preset = mountToolbar(
+      createSectionBlock({ columns: "3", children: [[], [], []] }),
+    );
+    expect(
+      preset.findAll("option").map((option) => option.attributes("value")),
+    ).not.toContain("custom");
+    expect((preset.find("select").element as HTMLSelectElement).value).toBe(
+      "3",
+    );
+
+    const unusable = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [50, 50],
+        children: [[], [], []],
+      }),
+    );
+    expect(
+      unusable.findAll("option").map((option) => option.attributes("value")),
+    ).not.toContain("custom");
+    expect((unusable.find("select").element as HTMLSelectElement).value).toBe(
+      "3",
+    );
+  });
+
+  it("does nothing when Custom is chosen", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [25, 25, 50],
+        children: [[], [], []],
+      }),
+    );
+    await wrapper.find("select").trigger("change");
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("emits columnWidths: undefined together with columns and rebalanced children", async () => {
+    const section = createSectionBlock({
+      columns: "3",
+      columnWidths: [25, 25, 50],
+    });
+    const a = createParagraphBlock();
+    const b = createParagraphBlock();
+    const c = createParagraphBlock();
+    section.children = [[a], [b], [c]];
+    const wrapper = mountToolbar(section);
+
+    await wrapper.find("select").setValue("2");
+    const shrunk = wrapper.emitted("update")![0]![0] as {
+      columns: string;
+      children: unknown[][];
+      columnWidths?: number[];
+    };
+    expect(shrunk.columns).toBe("2");
+    expect(shrunk.children).toEqual([[a], [b, c]]);
+    expect(Object.hasOwn(shrunk, "columnWidths")).toBe(true);
+    expect(shrunk.columnWidths).toBeUndefined();
+
+    await wrapper.find("select").setValue("3");
+    const sameCount = wrapper.emitted("update")![1]![0] as {
+      columns: string;
+      children: unknown[][];
+      columnWidths?: number[];
+    };
+    expect(sameCount.columns).toBe("3");
+    expect(sameCount.children).toEqual([[a], [b], [c]]);
+    expect(Object.hasOwn(sameCount, "columnWidths")).toBe(true);
+    expect(sameCount.columnWidths).toBeUndefined();
+  });
+
+  it("shows the preset split, including 33.33 / 33.33 / 33.34", () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({ columns: "3", children: [[], [], []] }),
+    );
+    expect(widthValues(wrapper)).toEqual(["33.33", "33.33", "33.34"]);
+    expect(wrapper.get('[data-locale-path="columnWidths"]').text()).toContain(
+      en.section.columnWidths,
+    );
+  });
+
+  it("names each column width for assistive tech", () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({ columns: "3", children: [[], [], []] }),
+    );
+    expect(widthInput(wrapper, 1).attributes("aria-label")).toBe(
+      "Column 1 width",
+    );
+    expect(widthInput(wrapper, 2).attributes("aria-label")).toBe(
+      "Column 2 width",
+    );
+    expect(widthInput(wrapper, 3).attributes("aria-label")).toBe(
+      "Column 3 width",
+    );
+  });
+
+  it("omits the width inputs on a one-column section", () => {
+    const wrapper = mountToolbar(createSectionBlock({ columns: "1" }));
+    expect(wrapper.find('[data-locale-path="columnWidths"]').exists()).toBe(
+      false,
+    );
+    expect(widthValues(wrapper)).toEqual([]);
+  });
+
+  it("commits on change, and a middle column moves the right neighbour", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [25, 25, 50],
+        children: [[], [], []],
+      }),
+    );
+    const middle = widthInput(wrapper, 2);
+    (middle.element as HTMLInputElement).value = "3";
+    await middle.trigger("input");
+    expect(wrapper.emitted("update")).toBeUndefined();
+
+    (middle.element as HTMLInputElement).value = "30";
+    await middle.trigger("change");
+    expect(wrapper.emitted("update")).toEqual([
+      [{ columnWidths: [25, 30, 45] }],
+    ]);
+  });
+
+  it("moves the left neighbour when the last column changes", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [25, 25, 50],
+        children: [[], [], []],
+      }),
+    );
+    const last = widthInput(wrapper, 3);
+    (last.element as HTMLInputElement).value = "40";
+    await last.trigger("change");
+    expect(wrapper.emitted("update")).toEqual([
+      [{ columnWidths: [25, 35, 40] }],
+    ]);
+  });
+
+  it("clamps a column at 5 and at the pair minus 5", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [25, 25, 50],
+        children: [[], [], []],
+      }),
+    );
+    const first = widthInput(wrapper, 1);
+    (first.element as HTMLInputElement).value = "1";
+    await first.trigger("change");
+    (first.element as HTMLInputElement).value = "90";
+    await first.trigger("change");
+    expect(wrapper.emitted("update")).toEqual([
+      [{ columnWidths: [5, 45, 50] }],
+      [{ columnWidths: [45, 5, 50] }],
+    ]);
+  });
+
+  it("clamps a pair under 10% to its own floor instead of a negative share", async () => {
+    const narrow = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [1, 1, 98],
+        children: [[], [], []],
+      }),
+    );
+    const narrowFirst = widthInput(narrow, 1);
+    (narrowFirst.element as HTMLInputElement).value = "5";
+    await narrowFirst.trigger("change");
+    const narrowWidths = (
+      narrow.emitted("update")![0]![0] as { columnWidths: number[] }
+    ).columnWidths;
+    expect(narrowWidths).toEqual([1, 1, 98]);
+    expect(narrowWidths.every((share) => share > 0)).toBe(true);
+    expect(narrowWidths.reduce((sum, share) => sum + share, 0)).toBe(100);
+
+    const tiny = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [0.02, 0.02, 99.96],
+        children: [[], [], []],
+      }),
+    );
+    const tinyFirst = widthInput(tiny, 1);
+    (tinyFirst.element as HTMLInputElement).value = "5";
+    await tinyFirst.trigger("change");
+    const tinyWidths = (
+      tiny.emitted("update")![0]![0] as { columnWidths: number[] }
+    ).columnWidths;
+    expect(tinyWidths).toEqual([0.02, 0.02, 99.96]);
+    expect(tinyWidths.every((share) => share > 0)).toBe(true);
+    expect(tinyWidths.reduce((sum, share) => sum + share, 0)).toBe(100);
+  });
+
+  it("emits nothing for a non-numeric commit and shows the stored value", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [25, 25, 50],
+        children: [[], [], []],
+      }),
+    );
+    const first = widthInput(wrapper, 1);
+    (first.element as HTMLInputElement).value = "";
+    await first.trigger("change");
+    (first.element as HTMLInputElement).value = "abc";
+    await first.trigger("change");
+    expect(wrapper.emitted("update")).toBeUndefined();
+    expect((first.element as HTMLInputElement).value).toBe("25");
+  });
+
+  it("keeps the row when an unknown layout has no preset to match", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "bogus" as ColumnLayout,
+        columnWidths: [30, 70],
+        children: [[], []],
+      }),
+    );
+    const first = widthInput(wrapper, 1);
+    (first.element as HTMLInputElement).value = "50";
+    await first.trigger("change");
+    expect(wrapper.emitted("update")).toEqual([[{ columnWidths: [50, 50] }]]);
+  });
+
+  it("unsets columnWidths when the commit lands on the preset row", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "2",
+        columnWidths: [30, 70],
+        children: [[], []],
+      }),
+    );
+    const first = widthInput(wrapper, 1);
+    (first.element as HTMLInputElement).value = "50";
+    await first.trigger("change");
+    expect(wrapper.emitted("update")).toEqual([[{ columnWidths: undefined }]]);
+  });
+
+  it("shows the preset numbers for an unusable override and commits a fresh array", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "3",
+        columnWidths: [50, 50],
+        children: [[], [], []],
+      }),
+    );
+    expect(widthValues(wrapper)).toEqual(["33.33", "33.33", "33.34"]);
+    const first = widthInput(wrapper, 1);
+    (first.element as HTMLInputElement).value = "40";
+    await first.trigger("change");
+    expect(wrapper.emitted("update")).toEqual([
+      [{ columnWidths: [40, 26.66, 33.34] }],
+    ]);
   });
 });
 

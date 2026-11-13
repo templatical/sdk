@@ -3,7 +3,11 @@ import type {
   ButtonBlock as ButtonBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { BUTTON_LINE_HEIGHT, toBorderRadiusCss } from "@templatical/types";
+import {
+  buttonLineHeight,
+  parsePercentWidth,
+  toBorderRadiusCss,
+} from "@templatical/types";
 import { computed } from "vue";
 import { getBorderStyle } from "../../utils/blockComponentResolver";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
@@ -34,7 +38,7 @@ const buttonStyle = computed(() => {
     backgroundColor: props.block.backgroundColor,
     color: props.block.textColor,
     fontSize: `${props.block.fontSize}px`,
-    lineHeight: String(BUTTON_LINE_HEIGHT),
+    lineHeight: String(buttonLineHeight(props.block)),
     fontWeight: buttonLabelWeight(props.block.fontWeight),
     textDecoration: "none",
     // A plain number renders as-is, like the export; per-corner radii go
@@ -55,6 +59,13 @@ const buttonStyle = computed(() => {
     style.boxSizing = "border-box";
   } else if (typeof props.block.width === "number") {
     style.width = `${props.block.width}px`;
+    style.boxSizing = "border-box";
+  } else if (
+    typeof props.block.width === "string" &&
+    parsePercentWidth(props.block.width) !== null
+  ) {
+    // Stay inline-block so `align` still places a percentage button.
+    style.width = props.block.width;
     style.boxSizing = "border-box";
   }
   return style;

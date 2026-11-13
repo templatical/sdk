@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ColumnLayout } from '@templatical/types';
 import { getWidthPercentages, getWidthPixels } from '../src';
 
 describe('getWidthPercentages', () => {
@@ -36,6 +37,10 @@ describe('getWidthPercentages', () => {
 
   it('returns 25/50/25 for 1-2-1 layout', () => {
     expect(getWidthPercentages('1-2-1')).toEqual(['25%', '50%', '25%']);
+  });
+
+  it('returns 100% for an unknown layout stored at runtime', () => {
+    expect(getWidthPercentages('bogus' as ColumnLayout)).toEqual(['100%']);
   });
 });
 
@@ -75,4 +80,19 @@ describe('getWidthPixels', () => {
   it('returns 25/50/25 pixels for 1-2-1 layout', () => {
     expect(getWidthPixels('1-2-1', 600)).toEqual([150, 300, 150]);
   });
+
+  it('returns the full container for an unknown layout stored at runtime', () => {
+    expect(getWidthPixels('bogus' as ColumnLayout, 600)).toEqual([600]);
+  });
+
+  it.each(['constructor', 'toString', '__proto__'] as const)(
+    'uses the unknown-layout fallback for %s',
+    (layout) => {
+      const containerWidth = 640;
+      expect(getWidthPercentages(layout as ColumnLayout)).toEqual(['100%']);
+      expect(getWidthPixels(layout as ColumnLayout, containerWidth)).toEqual([
+        containerWidth,
+      ]);
+    },
+  );
 });
