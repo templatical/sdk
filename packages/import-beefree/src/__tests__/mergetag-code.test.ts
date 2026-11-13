@@ -227,7 +227,7 @@ describe("BeeFree merge-tag code wrappers", () => {
     ).block;
     if (html.type !== "html") throw new Error("expected html");
     expect(html.content).toBe(
-      '<div style="text-align:center" align="center"><p>Hi {{ guest.name }}</p></div>',
+      '<div style="font-size:16px;text-align:center" align="center"><p>Hi {{ guest.name }}</p></div>',
     );
   });
 

@@ -686,9 +686,11 @@ function processRow(
   settings: TemplateContent["settings"],
   entries: ImportReportEntry[],
   warnings: string[],
+  bodyFontFamily?: string,
 ): Block[] {
   const columns = row.columns;
   if (!columns || columns.length === 0) return [];
+  const bodyFont = bodyFontFamily ? { bodyFontFamily } : {};
 
   // Track locked/synced metadata
   if (row.locked) {
@@ -717,6 +719,7 @@ function processRow(
     const context = {
       columnWidth: settings.width,
       textColor: settings.textColor,
+      ...bodyFont,
     };
     if (columns.length === 1) {
       const column = columns[0];
@@ -813,6 +816,7 @@ function processRow(
       {
         columnWidth: widths[index],
         textColor: settings.textColor,
+        ...bodyFont,
       },
       entries,
       warnings,
@@ -919,6 +923,11 @@ export function convertBeeFreeTemplate(
 
   // Rows are measured against the width the imported template renders at.
   const settings = extractSettings(template);
+  // The wrapper font is this stack, not `settings.fontFamily`: that falls
+  // back to Arial when the body sets no font.
+  const bodyFontFamily =
+    canonicalFontStack(template.page.body?.content?.style?.["font-family"]) ||
+    undefined;
   const declared =
     template.page.body?.language?.value ??
     template.page.language?.value ??
@@ -954,7 +963,9 @@ export function convertBeeFreeTemplate(
   // Process rows
   for (const row of template.page.rows) {
     if (row.empty) continue;
-    blocks.push(...processRow(row, settings, entries, warnings));
+    blocks.push(
+      ...processRow(row, settings, entries, warnings, bodyFontFamily),
+    );
   }
 
   // Build template content
