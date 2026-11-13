@@ -3319,7 +3319,7 @@ describe("convertBeeFreeTemplate", () => {
         expect(wide.styles.padding).toEqual(kept);
       });
 
-      it("keeps a social row's icon size and keeps its padding", () => {
+      it("keeps a social row's icon size and the 4px gap under its icons", () => {
         const block = leftBlock({
           type: "mailup-bee-newsletter-modules-social",
           descriptor: {
@@ -3339,7 +3339,8 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("social");
         if (block.type !== "social") throw new Error("expected a social block");
         expect(block.iconSize).toBe("medium");
-        expect(block.styles.padding).toEqual(kept);
+        // The icon table's line box leaves 4px under the icons.
+        expect(block.styles.padding).toEqual({ ...kept, bottom: 4 });
       });
 
       it("keeps a menu's padding", () => {
@@ -3692,7 +3693,8 @@ describe("convertBeeFreeTemplate", () => {
   });
 
   function socialTemplate(
-    icons: Array<Record<string, unknown>>,
+    icons: Array<Record<string, unknown>> | undefined,
+    style?: Record<string, string>,
   ): BeeFreeTemplate {
     return {
       page: {
@@ -3705,7 +3707,10 @@ describe("convertBeeFreeTemplate", () => {
                 modules: [
                   {
                     type: "mailup-bee-newsletter-modules-social",
-                    descriptor: { iconsList: { icons } },
+                    descriptor: {
+                      ...(style ? { style } : {}),
+                      ...(icons ? { iconsList: { icons } } : {}),
+                    },
                   },
                 ],
               },
@@ -3924,6 +3929,215 @@ describe("convertBeeFreeTemplate", () => {
     ]);
     expect(report.warnings).toEqual([]);
     expect(report.entries[0].status).toBe("converted");
+  });
+
+  function socialFrom(template: BeeFreeTemplate) {
+    const { content, report } = convertBeeFreeTemplate(template);
+    expect(content.blocks.map((block) => block.type)).toEqual(["social"]);
+    const block = content.blocks[0];
+    if (block.type !== "social") throw new Error("expected a social block");
+    return { block, report };
+  }
+
+  function iconFromSet(
+    set: string,
+    icon: Record<string, unknown> = facebook,
+  ): Record<string, unknown> {
+    const image =
+      typeof icon.image === "object" && icon.image !== null ? icon.image : {};
+    return {
+      ...icon,
+      image: {
+        ...image,
+        src: `https://cdn.example.com/social-networks-icon-sets/${set}/facebook.png`,
+      },
+    };
+  }
+
+  it.each([
+    ["circle-blue", "circle"],
+    ["rounded-purple", "rounded"],
+    ["squared-purple", "square"],
+    ["square-purple", "square"],
+  ] as const)(
+    "imports an unknown %s set as %s icons in brand colours",
+    (set, iconStyle) => {
+      const note = `Icon set ${set} imported as ${iconStyle} icons in brand colours.`;
+      const { block, report } = socialFrom(socialTemplate([iconFromSet(set)]));
+
+      expect(block.iconStyle).toBe(iconStyle);
+      expect(block.iconTone).toBeUndefined();
+      expect(report.entries[0].status).toBe("approximated");
+      expect(report.entries[0].note).toBe(note);
+      expect(report.warnings).toEqual([note]);
+    },
+  );
+
+  it("imports a circle set whose decoded name contains a line break", () => {
+    const note =
+      "Icon set circle-blue\ngreen imported as circle icons in brand colours.";
+    const { block, report } = socialFrom(
+      socialTemplate([iconFromSet("circle-blue%0Agreen")]),
+    );
+
+    expect(block.iconStyle).toBe("circle");
+    expect(block.iconTone).toBeUndefined();
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.entries[0].note).toBe(note);
+    expect(report.warnings).toEqual([note]);
+  });
+
+  it("reports a named set with no known shape as solid brand icons", () => {
+    const note =
+      "Icon set hexagon-blue has no matching shape; imported as solid brand icons.";
+    const { block, report } = socialFrom(
+      socialTemplate([iconFromSet("hexagon-blue")]),
+    );
+
+    expect(block.iconStyle).toBe("solid");
+    expect(block.iconTone).toBeUndefined();
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.entries[0].note).toBe(note);
+    expect(report.warnings).toEqual([note]);
+  });
+
+  it("reports a shape prefix with nothing after the hyphen as solid brand icons", () => {
+    const note =
+      "Icon set circle- has no matching shape; imported as solid brand icons.";
+    const { block, report } = socialFrom(
+      socialTemplate([iconFromSet("circle-")]),
+    );
+
+    expect(block.iconStyle).toBe("solid");
+    expect(block.iconTone).toBeUndefined();
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.entries[0].note).toBe(note);
+    expect(report.warnings).toEqual([note]);
+  });
+
+  it("leaves a social row whose icons name no set converted", () => {
+    const { block, report } = socialFrom(socialTemplate([facebook]));
+
+    expect(block.iconStyle).toBe("solid");
+    expect(block.iconTone).toBeUndefined();
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
+  });
+
+  it("maps a listed circle-dark-gray set without a note", () => {
+    const { block, report } = socialFrom(
+      socialTemplate([iconFromSet("circle-dark-gray")]),
+    );
+
+    expect(block.iconStyle).toBe("circle");
+    expect(block.iconTone).toBe("dark");
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
+  });
+
+  it("maps a listed circle-color set to circle icons in brand colours", () => {
+    const { block, report } = socialFrom(
+      socialTemplate([iconFromSet("circle-color")]),
+    );
+
+    expect(block.iconStyle).toBe("circle");
+    expect(block.iconTone).toBeUndefined();
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
+  });
+
+  it("names an unknown circle-blue set before a custom icon in the same row", () => {
+    const setNote =
+      "Icon set circle-blue imported as circle icons in brand colours.";
+    const { block, report } = socialFrom(
+      socialTemplate([
+        {
+          type: "custom",
+          image: {
+            title: "Artsy",
+            alt: "Custom",
+            href: "https://example.com/partner",
+            src: "https://cdn.example.com/social-networks-icon-sets/circle-blue/artsy.png",
+          },
+        },
+      ]),
+    );
+
+    expect(block.iconStyle).toBe("circle");
+    expect(block.iconTone).toBeUndefined();
+    expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
+      ["website", "https://example.com/partner"],
+    ]);
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.entries[0].note).toBe(`${setNote} ${artsyNote}`);
+    expect(report.warnings).toEqual([setNote, artsyNote]);
+  });
+
+  it("adds 4px under a social row whose bottom padding is 10px", () => {
+    const { block, report } = socialFrom(
+      socialTemplate([facebook], {
+        "padding-top": "10px",
+        "padding-right": "15px",
+        "padding-bottom": "10px",
+        "padding-left": "25px",
+      }),
+    );
+
+    expect(block.styles.padding).toEqual({
+      top: 10,
+      right: 15,
+      bottom: 14,
+      left: 25,
+    });
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
+  });
+
+  it("adds 4px under a social row that has no icons", () => {
+    const { block, report } = socialFrom(
+      socialTemplate(undefined, {
+        "padding-top": "10px",
+        "padding-right": "15px",
+        "padding-bottom": "10px",
+        "padding-left": "25px",
+      }),
+    );
+
+    expect(block.icons).toEqual([]);
+    expect(block.styles.padding).toEqual({
+      top: 10,
+      right: 15,
+      bottom: 14,
+      left: 25,
+    });
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
+  });
+
+  it("adds 4px under a social row whose bottom padding is 0px", () => {
+    const { block, report } = socialFrom(
+      socialTemplate([facebook], {
+        "padding-top": "0px",
+        "padding-right": "15px",
+        "padding-bottom": "0px",
+        "padding-left": "25px",
+      }),
+    );
+
+    expect(block.styles.padding).toEqual({
+      top: 0,
+      right: 15,
+      bottom: 4,
+      left: 25,
+    });
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
   });
 });
 
