@@ -456,26 +456,66 @@ export function restoreDoubledNbsp(html: string): string {
   return html.replace(/&amp;(nbsp;|#0*160;|#x0*a0;)/gi, "&$1");
 }
 
-/** Whitespace, or a reference that decodes to whitespace, up to the extra `&amp;` on `&amp;nbsp;`. */
-function isSpacePadding(text: string): boolean {
-  let current = text;
-  for (let pass = 0; pass < 2; pass++) {
-    CHAR_REF.lastIndex = 0;
-    const next = current.replace(CHAR_REF, decodeCharRef);
-    if (next === current) break;
-    current = next;
-  }
-  return /^[\s\u00A0]*$/.test(current);
+function decodeCharRefs(value: string): string {
+  CHAR_REF.lastIndex = 0;
+  return value.replace(CHAR_REF, decodeCharRef);
 }
 
 /**
- * A chip between two merge tags holds only a non-breaking space (kept as one
- * plain space), and a chip
- * around one token leads with plain spaces that are not part of the token.
- * A non-breaking space in front of that token stays: it is the space between
- * the previous word and the token. A chip
- * that also carries words, or more than one token, is left as written. A
- * space after the token stays: it is the space the author typed.
+ * A chip that holds only whitespace. Each non-breaking space (U+00A0, or a
+ * reference that decodes to it) is written `&nbsp;`, and each run of other
+ * whitespace is one plain space, in source order. A chip of plain whitespace
+ * only is one plain space. `undefined` when `text` holds a character that is
+ * not whitespace, so the caller leaves that chip as written. `text` is
+ * non-empty: an empty chip is returned before this runs. The chip is outside
+ * any token, so the `&nbsp;` is not decoded for Twig.
+ */
+type NonEmptyString = string & { readonly __nonEmpty: unique symbol };
+
+function whitespaceChip(text: NonEmptyString): string | undefined {
+  let decoded: string = text;
+  for (let pass = 0; pass < 2; pass++) {
+    const next = decodeCharRefs(decoded);
+    if (next === decoded) break;
+    decoded = next;
+  }
+  let out = "";
+  let run = false;
+  let nbsp = false;
+  for (let i = 0; i < decoded.length; i++) {
+    const char = decoded[i];
+    if (char === "\u00A0") {
+      if (run) {
+        out += " ";
+        run = false;
+      }
+      out += "&nbsp;";
+      nbsp = true;
+      continue;
+    }
+    if (/\s/.test(char)) {
+      run = true;
+      continue;
+    }
+    return undefined;
+  }
+  if (run) out += " ";
+  return nbsp ? out : " ";
+}
+
+/** Blank, non-empty chip text. {@link whitespaceChip} returns a chip for it. */
+function blankChip(text: NonEmptyString): string {
+  return whitespaceChip(text) as string;
+}
+
+/**
+ * A chip between two merge tags may hold only whitespace: each non-breaking
+ * space stays `&nbsp;`, and each run of other whitespace is one plain space.
+ * A chip around one token leads with plain spaces that are not part of the
+ * token. A non-breaking space in front of that token stays: it is the space
+ * between the previous word and the token. A chip that also carries words, or
+ * more than one token, is left as written. A space after the token stays: it
+ * is the space the author typed.
  */
 /** Plain spaces the editor pads in front of a token. A non-breaking space is not padding. */
 function isPlainSpacePadding(text: string): boolean {
@@ -493,14 +533,12 @@ function withoutLeadingTokenPadding(text: string): string {
 
 /**
  * What a mergetag chip keeps once nested chips are already unwrapped.
- * A chip that only holds a space between two tokens is that space. A plain
+ * A chip that only holds whitespace keeps each non-breaking space. A plain
  * leading space before the one token is padding and drops.
  */
 function keptMergetagText(text: string): string {
   const spans = tokenSpans(text);
-  if (spans.length !== 1) {
-    return text !== "" && isSpacePadding(text) ? " " : text;
-  }
+  if (spans.length !== 1) return whitespaceChip(text as NonEmptyString) ?? text;
   return withoutLeadingTokenPadding(text);
 }
 
@@ -772,7 +810,7 @@ function finishMergetag(parts: Array<string | Rope>): string | Rope {
   const flags = flagsOf(parts);
   if (!flags.brace && !flags.dirty) {
     if (flags.len === 0) return "";
-    if (flags.blank) return " ";
+    if (flags.blank) return blankChip(flattenRope(parts) as NonEmptyString);
     if (parts.length === 1) return parts[0];
     return { parts, ...flags };
   }

@@ -285,6 +285,11 @@ function convertColumnModules(
       continue;
     }
     const { block, entry, extras } = convertModule(module, warnings, context);
+    const visibility = visibilityFromHideFlags(module.descriptor.computedStyle);
+    if (visibility) {
+      block.visibility = { ...visibility };
+      for (const extra of extras ?? []) extra.visibility = { ...visibility };
+    }
     blocks.push(block);
     if (extras?.length) blocks.push(...extras);
     entries.push(entry);
@@ -464,12 +469,33 @@ function isFlag(value: string | boolean | undefined): boolean {
   return value === true || value === "true";
 }
 
-function rowVisibility(row: BeeFreeeRow): BlockVisibility | undefined {
-  const computed = row.content?.computedStyle;
-  const hideMobile = isFlag(computed?.hideContentOnMobile);
-  const hideDesktop = isFlag(computed?.hideContentOnDesktop);
+function asFlag(value: unknown): string | boolean | undefined {
+  return typeof value === "string" || typeof value === "boolean"
+    ? value
+    : undefined;
+}
+
+/**
+ * `visibility` from `hideContentOnMobile` / `hideContentOnDesktop`.
+ * `true` or `"true"` hides that side. Both unset or false leaves it unset.
+ * `hideContentOnAmp` and `hideContentOnHtml` are ignored.
+ */
+function visibilityFromHideFlags(
+  computed:
+    | {
+        hideContentOnMobile?: unknown;
+        hideContentOnDesktop?: unknown;
+      }
+    | undefined,
+): BlockVisibility | undefined {
+  const hideMobile = isFlag(asFlag(computed?.hideContentOnMobile));
+  const hideDesktop = isFlag(asFlag(computed?.hideContentOnDesktop));
   if (!hideMobile && !hideDesktop) return undefined;
   return { desktop: !hideDesktop, mobile: !hideMobile };
+}
+
+function rowVisibility(row: BeeFreeeRow): BlockVisibility | undefined {
+  return visibilityFromHideFlags(row.content?.computedStyle);
 }
 
 function rowOptsOutOfStack(row: BeeFreeeRow): boolean {
@@ -742,9 +768,11 @@ function processRow(
   settings: TemplateContent["settings"],
   entries: ImportReportEntry[],
   warnings: string[],
+  bodyFontFamily?: string,
 ): Block[] {
   const columns = row.columns;
   if (!columns || columns.length === 0) return [];
+  const bodyFont = bodyFontFamily ? { bodyFontFamily } : {};
 
   // Track locked/synced metadata
   if (row.locked) {
@@ -773,6 +801,7 @@ function processRow(
     const context = {
       columnWidth: settings.width,
       textColor: settings.textColor,
+      ...bodyFont,
     };
     if (columns.length === 1) {
       const column = columns[0];
@@ -885,6 +914,7 @@ function processRow(
       {
         columnWidth: widths[index],
         textColor: settings.textColor,
+        ...bodyFont,
         ...(sourceWidths
           ? {
               paddingReturn: {
@@ -1012,6 +1042,11 @@ export function convertBeeFreeTemplate(
 
   // Rows are measured against the width the imported template renders at.
   const settings = extractSettings(template);
+  // The wrapper font is this stack, not `settings.fontFamily`: that falls
+  // back to Arial when the body sets no font.
+  const bodyFontFamily =
+    canonicalFontStack(template.page.body?.content?.style?.["font-family"]) ||
+    undefined;
   const declared =
     template.page.body?.language?.value ??
     template.page.language?.value ??
@@ -1047,7 +1082,9 @@ export function convertBeeFreeTemplate(
   // Process rows
   for (const row of template.page.rows) {
     if (row.empty) continue;
-    blocks.push(...processRow(row, settings, entries, warnings));
+    blocks.push(
+      ...processRow(row, settings, entries, warnings, bodyFontFamily),
+    );
   }
 
   // Build template content

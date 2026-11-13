@@ -6,6 +6,7 @@ import {
   findOpenTagEnd,
   isSafeHtmlUrl,
   HEADING_LEVEL_FONT_SIZE,
+  isBlankRichText,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
@@ -59,6 +60,7 @@ import {
   parseImageBorderRadius,
   parsePxValue,
   parseColor,
+  isTransparentColor,
   parseBorderTop,
   extractPadding,
   readButtonPadding,
@@ -96,6 +98,17 @@ export interface ModuleContext {
     sides: Array<"left" | "right">;
     columnPadding: Pick<SpacingValue, "left" | "right">;
   };
+  /**
+   * A blank paragraph module becomes a spacer. A translation sets this to
+   * false so its content stays a paragraph and can be stored in `l10n`.
+   */
+  blankParagraphAsSpacer?: boolean;
+  /**
+   * The page body font: `canonicalFontStack` of
+   * `page.body.content.style["font-family"]`. Unset when the body sets no
+   * font. An HTML module writes it on its wrapper.
+   */
+  bodyFontFamily?: string;
 }
 
 /**
@@ -120,6 +133,8 @@ const MODULE_TYPE_MAP: Record<string, string> = {
 
 const ADDON_MODULE = "mailup-bee-newsletter-modules-addon";
 const EMPTY_MODULE = "mailup-bee-newsletter-modules-empty";
+const PARAGRAPH_MODULE = "mailup-bee-newsletter-modules-paragraph";
+const HTML_MODULE = "mailup-bee-newsletter-modules-html";
 
 /**
  * An addon keeps the payload of the module it stands in for, so the payload it
@@ -225,6 +240,473 @@ function importedHtml(html: string): string {
   return restoreDoubledNbsp(
     decodeEntitiesInHtml(trimHighlightedTokenPadding(unwrapMergeTagCode(html))),
   );
+}
+
+/**
+ * Text, paragraph and list HTML after merge-tag chips are unwrapped and
+ * before character references inside tokens are decoded. An empty chip is
+ * already gone, and an `&nbsp;` is still a non-breaking space.
+ */
+function finishTextHtml(html: string): string {
+  const unwrapped = trimHighlightedTokenPadding(unwrapMergeTagCode(html));
+  return restoreDoubledNbsp(
+    decodeEntitiesInHtml(withoutEmptyParagraphs(unwrapped)),
+  );
+}
+
+/**
+ * A `<p>` BeeFree does not draw. It has no text other than ASCII whitespace,
+ * no non-breaking space, and no replaced or void element, and it contains an
+ * element other than `<span>` (`strong`, `em`, `code`, and the rest). An
+ * empty `<p>`, or one that holds only nested empty `<span>` elements, is a
+ * blank line and stays, so `fillEmptyParagraphs` paints it. `<p>&nbsp;</p>`
+ * and `<p><br></p>` stay, and so does a `<p>` whose own `style` paints a box.
+ * A `<p>` that opens while another `<p>` is open stays as written. When
+ * dropping leaves no visible content, the HTML stays, so a blank text module
+ * is unchanged. A `<p>` whose own style paints a box is visible content, so
+ * a formatting sibling of one is dropped and an empty sibling stays.
+ */
+const LINE_BOX_TAGS = new Set([
+  "area",
+  "audio",
+  "base",
+  "br",
+  "canvas",
+  "col",
+  "embed",
+  "hr",
+  "iframe",
+  "img",
+  "input",
+  "link",
+  "math",
+  "meta",
+  "object",
+  "param",
+  "picture",
+  "select",
+  "source",
+  "svg",
+  "textarea",
+  "track",
+  "video",
+  "wbr",
+]);
+
+function isAsciiLetter(char: string | undefined): boolean {
+  if (char === undefined) return false;
+  const code = char.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function isTagNameChar(char: string): boolean {
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122)
+  );
+}
+
+function isAsciiSpace(char: string): boolean {
+  return (
+    char === " " ||
+    char === "\t" ||
+    char === "\n" ||
+    char === "\r" ||
+    char === "\f"
+  );
+}
+
+function rangeHasInk(html: string, from: number, to: number): boolean {
+  for (let i = from; i < to; i++) {
+    if (!isAsciiSpace(html[i])) return true;
+  }
+  return false;
+}
+
+function tagSelfCloses(html: string, end: number): boolean {
+  let i = end - 1;
+  while (i >= 0 && isAsciiSpace(html[i])) i--;
+  return html[i] === "/";
+}
+
+function isNoneOrHidden(token: string): boolean {
+  const value = token.toLowerCase();
+  return value === "none" || value === "hidden";
+}
+
+/**
+ * Units that are a length, so `0` in that unit is zero. A bare `0` has an
+ * empty unit. Membership is one lookup: each unit is not its own branch.
+ */
+const ZERO_LENGTH_UNITS = new Set([
+  "",
+  "px",
+  "em",
+  "rem",
+  "%",
+  "pt",
+  "pc",
+  "in",
+  "cm",
+  "mm",
+  "ex",
+  "ch",
+  "vw",
+  "vh",
+  "vmin",
+  "vmax",
+]);
+
+/**
+ * A zero length. `0px` is zero, the same way a module's letter-spacing
+ * treats it.
+ */
+function isZeroLength(token: string): boolean {
+  const value = token.toLowerCase();
+  let i = 0;
+  if (value[i] !== "0") return false;
+  while (value[i] === "0") i++;
+  if (value[i] === ".") {
+    i++;
+    if (value[i] !== "0") return false;
+    while (value[i] === "0") i++;
+  }
+  return ZERO_LENGTH_UNITS.has(value.slice(i));
+}
+
+/** A zero length, `none`, or `hidden`. */
+function isInertBoxToken(token: string): boolean {
+  return isNoneOrHidden(token) || isZeroLength(token);
+}
+
+const BORDER_SHORTHANDS = new Set([
+  "border",
+  "border-top",
+  "border-right",
+  "border-bottom",
+  "border-left",
+]);
+
+/** `border-style` and `border-*-style`. A style alone draws at medium width. */
+function isBorderStyleProperty(name: string): boolean {
+  return (
+    name === "border-style" ||
+    (name.startsWith("border-") && name.endsWith("-style"))
+  );
+}
+
+/**
+ * Whether one border declaration paints. Shorthands paint unless a token is
+ * a zero length or `none`/`hidden`. Style longhands paint unless every token
+ * is `none`/`hidden`. Width, color, radius and every other longhand do not.
+ */
+function borderDeclarationPaints(name: string, tokens: string[]): boolean {
+  if (BORDER_SHORTHANDS.has(name)) {
+    return !tokens.some(
+      (token) => isZeroLength(token) || isNoneOrHidden(token),
+    );
+  }
+  if (isBorderStyleProperty(name)) return !tokens.every(isNoneOrHidden);
+  return false;
+}
+
+function isBoxProperty(name: string): boolean {
+  return (
+    name === "height" ||
+    name === "min-height" ||
+    name.startsWith("padding") ||
+    name.startsWith("border") ||
+    name.startsWith("margin")
+  );
+}
+
+/**
+ * A trailing `!important`, including `! important`, and the value with that
+ * flag cut off. The flag is not part of the value.
+ */
+function splitImportant(value: string): { text: string; important: boolean } {
+  const text = value.trim();
+  const bang = text.lastIndexOf("!");
+  if (
+    bang !== -1 &&
+    text
+      .slice(bang + 1)
+      .trim()
+      .toLowerCase() === "important"
+  ) {
+    return { text: text.slice(0, bang), important: true };
+  }
+  return { text, important: false };
+}
+
+/**
+ * Tokens of one declaration value. A trailing `!important`, including
+ * `! important`, is cut off. ASCII whitespace splits tokens only at
+ * parenthesis depth 0, so `rgb(0 0 0)` stays one token.
+ */
+function boxValueTokens(value: string): string[] {
+  const text = splitImportant(value).text;
+
+  const tokens: string[] = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === "(") depth++;
+    else if (char === ")" && depth > 0) depth--;
+    if (depth === 0 && isAsciiSpace(char)) {
+      if (start !== -1) {
+        tokens.push(text.slice(start, i));
+        start = -1;
+      }
+      continue;
+    }
+    if (start === -1) start = i;
+  }
+  if (start !== -1) tokens.push(text.slice(start));
+  return tokens;
+}
+
+/**
+ * The winning declaration for each property `accept` keeps. The last one
+ * wins, and an `!important` declaration beats a later normal one for that
+ * name.
+ */
+function cascadeWinners(
+  css: string,
+  accept: (name: string) => boolean,
+): Map<string, { value: string; important: boolean }> {
+  const winners = new Map<string, { value: string; important: boolean }>();
+  for (const part of css.split(";")) {
+    const colon = part.indexOf(":");
+    if (colon === -1) continue;
+    const name = part.slice(0, colon).trim().toLowerCase();
+    if (!accept(name)) continue;
+    const value = part.slice(colon + 1);
+    const important = splitImportant(value).important;
+    const current = winners.get(name);
+    if (current !== undefined && current.important && !important) continue;
+    winners.set(name, { value, important });
+  }
+  return winners;
+}
+
+function isTypographyProperty(name: string): boolean {
+  return name === "font-size" || name === "line-height";
+}
+
+/**
+ * Whether a `<p>` `style` paints a box. Typography (`font-size`,
+ * `line-height`, `text-align`, `color`, `font-family`) does not. Padding,
+ * height, min-height and margin do, unless every token of the value is
+ * zero, `none` or `hidden`. Border declarations follow `borderDeclarationPaints`.
+ * Declarations are collected by lowercased property name. The last one wins,
+ * and an `!important` declaration beats a later normal one for that name.
+ * A shorthand and a longhand are different names, so both are evaluated.
+ */
+function stylePaintsBox(css: string): boolean {
+  const winners = cascadeWinners(css, isBoxProperty);
+  for (const [name, winner] of winners) {
+    const tokens = boxValueTokens(winner.value);
+    if (tokens.length === 0) continue;
+    if (name.startsWith("border")) {
+      if (borderDeclarationPaints(name, tokens)) return true;
+      continue;
+    }
+    if (!tokens.every(isInertBoxToken)) return true;
+  }
+  return false;
+}
+
+/** The open tag's own `style`, read inside the quote-aware tag bounds. */
+function openTagPaintsBox(html: string, start: number, end: number): boolean {
+  const css = findStyleAttr(html.slice(start, end + 1))?.value;
+  return css !== undefined && stylePaintsBox(css);
+}
+
+/**
+ * Paragraphs BeeFree does not draw, as source ranges. One forward pass.
+ * A no-ink paragraph is listed only when it contains an element other than
+ * `<span>`. An empty `<p>` holds nothing, so it is not listed.
+ */
+function emptyParagraphRanges(html: string): Array<[number, number]> {
+  const skip: Array<[number, number]> = [];
+  let open: {
+    start: number;
+    ink: boolean;
+    depth: number;
+    malformed: boolean;
+    nonSpan: boolean;
+  } | null = null;
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) {
+      if (open && rangeHasInk(html, i, html.length)) open.ink = true;
+      break;
+    }
+    if (lt > i && open && rangeHasInk(html, i, lt)) open.ink = true;
+    if (html.startsWith("<!--", lt)) {
+      const end = html.indexOf("-->", lt + 4);
+      i = end === -1 ? html.length : end + 3;
+      continue;
+    }
+    const slash = html[lt + 1] === "/";
+    const nameStart = lt + (slash ? 2 : 1);
+    if (!isAsciiLetter(html[nameStart])) {
+      if (open) open.ink = true;
+      i = lt + 1;
+      continue;
+    }
+    let nameEnd = nameStart + 1;
+    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
+    const name = html.slice(nameStart, nameEnd).toLowerCase();
+    if (slash) {
+      const gt = html.indexOf(">", nameEnd);
+      if (gt === -1) break;
+      i = gt + 1;
+      if (name === "p" && open) {
+        open.depth -= 1;
+        if (open.depth === 0) {
+          if (!open.ink && !open.malformed && open.nonSpan) {
+            skip.push([open.start, i]);
+          }
+          open = null;
+        }
+      }
+      continue;
+    }
+    const end = findOpenTagEnd(html, nameEnd);
+    if (end === -1) break;
+    if (name === "p") {
+      if (open) {
+        // A paragraph opened inside another is malformed. Leave it, and the
+        // paragraph around it, exactly as written.
+        open.malformed = true;
+        if (!tagSelfCloses(html, end)) open.depth += 1;
+      } else if (!tagSelfCloses(html, end)) {
+        open = {
+          start: lt,
+          ink: openTagPaintsBox(html, lt, end),
+          depth: 1,
+          malformed: false,
+          nonSpan: false,
+        };
+      }
+    } else if (open) {
+      if (name !== "span") open.nonSpan = true;
+      if (LINE_BOX_TAGS.has(name)) open.ink = true;
+    }
+    i = end + 1;
+  }
+  return skip;
+}
+
+/**
+ * Text other than ASCII whitespace, a character reference, a line-box
+ * element, or a `<p>` whose own style paints a box. Comments are not
+ * content. One forward pass; an open tag ends at `findOpenTagEnd`, so a
+ * quoted `>` does not end it.
+ */
+function hasVisibleContent(html: string): boolean {
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) return rangeHasInk(html, i, html.length);
+    if (rangeHasInk(html, i, lt)) return true;
+    if (html.startsWith("<!--", lt)) {
+      const end = html.indexOf("-->", lt + 4);
+      i = end === -1 ? html.length : end + 3;
+      continue;
+    }
+    const slash = html[lt + 1] === "/";
+    const nameStart = lt + (slash ? 2 : 1);
+    if (!isAsciiLetter(html[nameStart])) return true;
+    let nameEnd = nameStart + 1;
+    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
+    const name = html.slice(nameStart, nameEnd).toLowerCase();
+    if (!slash && LINE_BOX_TAGS.has(name)) return true;
+    if (slash) {
+      const gt = html.indexOf(">", nameEnd);
+      if (gt === -1) return rangeHasInk(html, nameEnd, html.length);
+      i = gt + 1;
+      continue;
+    }
+    const end = findOpenTagEnd(html, nameEnd);
+    if (end === -1) return rangeHasInk(html, lt, html.length);
+    if (name === "p" && openTagPaintsBox(html, lt, end)) return true;
+    i = end + 1;
+  }
+  return false;
+}
+
+/**
+ * One forward pass over open `p` tags (`<p`, any case, then a non-name
+ * character). Each tag is bounded with `findOpenTagEnd`; anything else is
+ * skipped to the next `<`. `matches` stops the scan.
+ */
+function paragraphOpenTagMatches(
+  html: string,
+  matches: (html: string, start: number, end: number) => boolean,
+): boolean {
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) return false;
+    const mark = html[lt + 1];
+    if (mark.toLowerCase() === "p" && !isTagNameChar(html.charAt(lt + 2))) {
+      const end = findOpenTagEnd(html, lt + 2);
+      if (end === -1) return false;
+      if (matches(html, lt, end)) return true;
+      i = end + 1;
+      continue;
+    }
+    i = lt + 1;
+  }
+  return false;
+}
+
+/**
+ * Whether blank rich text has a `<p>` whose own style paints a box. The
+ * caller passes HTML that `isBlankRichText` already accepted, so the only
+ * tags are paragraph tags and whitespace.
+ */
+function paragraphHtmlPaintsBox(html: string): boolean {
+  return paragraphOpenTagMatches(html, openTagPaintsBox);
+}
+
+/**
+ * Whether a paragraph's own tag declares `font-size` or `line-height`.
+ * The cascade winner is what counts; the value is not read. No precedence
+ * against `paragraph.style` is established, so the caller names it unread.
+ */
+function paragraphHasUnreadTypography(html: string | undefined): boolean {
+  if (!html) return false;
+  return paragraphOpenTagMatches(html, (source, start, end) => {
+    const css = findStyleAttr(source.slice(start, end + 1))?.value;
+    if (css === undefined) return false;
+    return cascadeWinners(css, isTypographyProperty).size > 0;
+  });
+}
+
+function withoutEmptyParagraphs(html: string): string {
+  if (html.indexOf("<") === -1) return html;
+  const skip = emptyParagraphRanges(html);
+  if (skip.length === 0) return html;
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const [start, end] of skip) {
+    if (start > cursor) parts.push(html.slice(cursor, start));
+    // Ranges are emitted in order and do not overlap, so each end is past
+    // the cursor.
+    cursor = end;
+  }
+  if (cursor < html.length) parts.push(html.slice(cursor));
+  const dropped = parts.join("");
+  if (!hasVisibleContent(dropped)) return html;
+  return dropped;
 }
 
 /**
@@ -1118,7 +1600,7 @@ function convertText(
       : undefined;
 
   return createParagraphBlock({
-    content: importedHtml(
+    content: finishTextHtml(
       inlineStylesToHtml(
         html,
         style,
@@ -1130,6 +1612,142 @@ function convertText(
     ),
     paragraphSpacing: paragraphModuleSpacing(textContent, html),
     styles: makeStyles(descriptor),
+  });
+}
+
+/**
+ * A non-negative px length, including 0. `undefined` when the value is
+ * missing or unreadable. A negative length does not match.
+ */
+function nonNegativeCssPx(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const match = /^(\d+(?:\.\d+)?)\s*px$/i.exec(value.trim());
+  if (!match) return undefined;
+  const parsed = Number(match[1]);
+  // The pattern is digits only, so a match is non-negative. A long digit
+  // string is Infinity, which is not a length.
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/**
+ * A non-negative `em`, percentage, or unitless `line-height` ratio, or
+ * `undefined` when `raw` is not one of those. `2em` is 2, `120%` is 1.2,
+ * and `1.5` is 1.5. Space before `em` is allowed, as it is before `px`.
+ */
+function lineHeightRatio(raw: string): number | undefined {
+  const em = /^(\d+(?:\.\d+)?)\s*em$/i.exec(raw);
+  if (em) return Number(em[1]);
+  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  if (percent) return Number(percent[1]) / 100;
+  const unitless = /^(\d+(?:\.\d+)?)$/.exec(raw);
+  if (unitless) return Number(unitless[1]);
+  return undefined;
+}
+
+/**
+ * The line box of a blank paragraph, in px, and every `font-size` or
+ * `line-height` that was present but not read. An `em` length, a percentage,
+ * or a unitless `line-height` is a ratio of the font size, including 0. A px
+ * `line-height` is the line box itself. The font size is 14px, and the ratio
+ * is 1.2, when the value is missing. A present value that is not one of those
+ * forms, or that is not finite, uses the same fallback and is named in `unread`.
+ */
+function blankParagraphLineBox(style: Record<string, string> | undefined): {
+  px: number;
+  unread: string[];
+} {
+  const unread: string[] = [];
+  const fontRaw = style?.["font-size"];
+  const fontTrimmed = fontRaw?.trim() ?? "";
+  const parsedFont = nonNegativeCssPx(fontRaw);
+  let fontSize = 14;
+  if (fontTrimmed !== "") {
+    if (parsedFont === undefined) {
+      unread.push(`font-size ${fontTrimmed} is not read, 14px is used`);
+    } else {
+      fontSize = parsedFont;
+    }
+  }
+
+  const raw = style?.["line-height"]?.trim() ?? "";
+  if (raw === "") return { px: fontSize * 1.2, unread };
+  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
+  if (px) {
+    const parsed = nonNegativeCssPx(raw);
+    if (parsed !== undefined) return { px: parsed, unread };
+  } else {
+    const ratio = lineHeightRatio(raw);
+    if (ratio !== undefined && Number.isFinite(ratio)) {
+      return { px: fontSize * ratio, unread };
+    }
+  }
+  unread.push(`line-height ${raw} is not read, 1.2 is used`);
+  return { px: fontSize * 1.2, unread };
+}
+
+function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
+  height: number;
+  unread: string[];
+  lineBoxOverflows: boolean;
+  paddingUnread: boolean;
+  heightOverflows: boolean;
+} {
+  const padding = extractPadding(descriptor.style);
+  const line = blankParagraphLineBox(descriptor.paragraph?.style);
+  // A longhand of hundreds of digits is Infinity. That side is not a length,
+  // so the spacer reads it as 0. Left and right never enter this height.
+  // Two finite sides can still sum past Number.MAX_VALUE. That sum is not a
+  // length either, so both sides are unread.
+  let top = padding.top;
+  let bottom = padding.bottom;
+  let paddingUnread = false;
+  if (!Number.isFinite(top)) {
+    top = 0;
+    paddingUnread = true;
+  }
+  if (!Number.isFinite(bottom)) {
+    bottom = 0;
+    paddingUnread = true;
+  }
+  if (!Number.isFinite(top + bottom)) {
+    top = 0;
+    bottom = 0;
+    paddingUnread = true;
+  }
+  // The line-box clause is only for a line box that itself overflowed.
+  // 14px at 1.2 is the documented fallback line box.
+  const lineBoxOverflows = !Number.isFinite(line.px);
+  const linePx = lineBoxOverflows ? 14 * 1.2 : line.px;
+  let height = Math.round(top + linePx + bottom);
+  // Each addend is finite, but a finite line box plus finite padding can
+  // still pass Number.MAX_VALUE. The height is then the fallback line box
+  // alone; putting the padding back would overflow the same way. That
+  // fallback is reported, or the spacer would say it was converted.
+  let heightOverflows = false;
+  if (!Number.isFinite(height)) {
+    height = Math.round(14 * 1.2);
+    heightOverflows = true;
+  }
+  return {
+    height,
+    unread: line.unread,
+    lineBoxOverflows,
+    paddingUnread,
+    heightOverflows,
+  };
+}
+
+/** A blank paragraph module, as a spacer of one line plus its vertical padding. */
+function blankParagraphSpacer(
+  descriptor: BeeFreeeModuleDescriptor,
+  height: number,
+): Block {
+  return createSpacerBlock({
+    height,
+    styles: {
+      ...makeStyles(descriptor),
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    },
   });
 }
 
@@ -1732,6 +2350,18 @@ function buttonBorder(style: Record<string, string>): BorderValue | undefined {
   return drawn ? border : undefined;
 }
 
+/**
+ * An outline button stores `"transparent"`. `parseColor` returns `""` for
+ * that keyword, and for `none` and the CSS-wide keywords, so other callers
+ * can apply their own fallback. Only an explicit transparent fill — the
+ * keyword, or an alpha of 0 — changes; a missing or unreadable fill stays
+ * the default.
+ */
+function buttonBackgroundColor(value: string | undefined): string {
+  if (isTransparentColor(value)) return "transparent";
+  return parseColor(value) || "#4f46e5";
+}
+
 function convertButton(descriptor: BeeFreeeModuleDescriptor): {
   block: Block;
   notes: string[];
@@ -1768,7 +2398,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
     block: createButtonBlock({
       text: label,
       url: button.href ? decodeEntitiesInTokens(button.href) : "#",
-      backgroundColor: parseColor(style["background-color"]) || "#4f46e5",
+      backgroundColor: buttonBackgroundColor(style["background-color"]),
       textColor: parseColor(style.color) || "#ffffff",
       borderRadius: parsePxValue(style["border-radius"]),
       fontSize,
@@ -1929,11 +2559,26 @@ function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
   });
 }
 
-function convertHtml(descriptor: BeeFreeeModuleDescriptor): Block {
-  const html = descriptor.html?.html ?? "";
+function convertHtml(
+  descriptor: BeeFreeeModuleDescriptor,
+  moduleType: string,
+  bodyFontFamily?: string,
+): Block {
+  const html = importedHtml(descriptor.html?.html ?? "");
+  // BeeFree centres an HTML module. The export sets no font-size, so the
+  // content renders at the browser default, 16px. The wrapper copies the
+  // page body font; with none, it sets no font-family. Blank content, and
+  // an addon that carries HTML, stay unwrapped.
+  const fontFamily = bodyFontFamily
+    ? `font-family:${escapeHtml(bodyFontFamily)};`
+    : "";
+  const content =
+    moduleType === HTML_MODULE && html.trim() !== ""
+      ? `<div style="${fontFamily}font-size:16px;text-align:center" align="center">${html}</div>`
+      : html;
 
   return createHtmlBlock({
-    content: importedHtml(html),
+    content,
     styles: makeStyles(descriptor),
   });
 }
@@ -2938,7 +3583,49 @@ function convertModuleBase(
   let notes: string[] = [];
 
   switch (mappedType) {
-    case "paragraph":
+    case "paragraph": {
+      block = convertText(descriptor, textColor, notes);
+      // Blankness is the converted content only. A missing `paragraph.html`
+      // is not blank when the text arrived on another payload.
+      if (
+        module.type === PARAGRAPH_MODULE &&
+        block.type === "paragraph" &&
+        context.blankParagraphAsSpacer !== false &&
+        isBlankRichText(block.content)
+      ) {
+        const {
+          height,
+          unread,
+          lineBoxOverflows,
+          paddingUnread,
+          heightOverflows,
+        } = blankParagraphHeight(descriptor);
+        const boxLost = paragraphHtmlPaintsBox(block.content);
+        const typographyLost = paragraphHasUnreadTypography(
+          descriptor.paragraph?.html,
+        );
+        block = blankParagraphSpacer(descriptor, height);
+        const clauses: string[] = [];
+        if (boxLost) clauses.push("its box styling is not carried");
+        if (typographyLost) {
+          clauses.push("its paragraph typography is not read");
+        }
+        if (paddingUnread) clauses.push("its padding is not read");
+        if (lineBoxOverflows) {
+          clauses.push("its line box overflows, 1.2 × 14px is used");
+        }
+        if (heightOverflows) {
+          clauses.push("its height overflows, 17px is used");
+        }
+        clauses.push(...unread);
+        const suffix = clauses.length > 0 ? `; ${clauses.join("; ")}` : "";
+        notes = [`Blank paragraph imported as a ${height}px spacer${suffix}.`];
+        isApproximation = clauses.length > 0;
+      } else {
+        isApproximation = notes.length > 0;
+      }
+      break;
+    }
     case "list":
       block = convertText(descriptor, textColor, notes);
       isApproximation = notes.length > 0;
@@ -3014,7 +3701,7 @@ function convertModuleBase(
       break;
     }
     case "html":
-      block = convertHtml(descriptor);
+      block = convertHtml(descriptor, module.type, context.bodyFontFamily);
       break;
     case "social": {
       const result = convertSocial(descriptor, warnings);
@@ -3137,6 +3824,7 @@ export function convertModule(
     module.translations,
     ...payloads.map(([, payload]) => payload?.translations),
   ];
+  const droppedSpacerLocales: string[] = [];
   for (const translations of sources) {
     for (const [code, values] of Object.entries(translations ?? {})) {
       const locale = localeTag(code, warnings);
@@ -3146,6 +3834,16 @@ export function convertModule(
           warnings,
           `Dropped language "${locale}" on module "${module.type}": target converted to HTML fallback.`,
         );
+        continue;
+      }
+      if (module.type === PARAGRAPH_MODULE && block.type === "spacer") {
+        warn(
+          warnings,
+          `Dropped language "${locale}" on module "${module.type}": the default paragraph is blank and imported as a spacer.`,
+        );
+        if (!droppedSpacerLocales.includes(locale)) {
+          droppedSpacerLocales.push(locale);
+        }
         continue;
       }
       const key = active?.[0];
@@ -3208,7 +3906,7 @@ export function convertModule(
             },
           },
           [],
-          context,
+          { ...context, blankParagraphAsSpacer: false },
         ).block;
         if (
           (block.type === "title" || block.type === "paragraph") &&
@@ -3224,6 +3922,12 @@ export function convertModule(
           text(block, locale, "alt", block.alt, translated.alt ?? "");
       }
     }
+  }
+  if (droppedSpacerLocales.length > 0) {
+    const dropped = `Translations ${droppedSpacerLocales.join(", ")} dropped: the default paragraph is blank and imported as a spacer.`;
+    result.entry.status = "approximated";
+    // A blank paragraph always records a note before translations are read.
+    result.entry.note = `${result.entry.note} ${dropped}`;
   }
   return result;
 }

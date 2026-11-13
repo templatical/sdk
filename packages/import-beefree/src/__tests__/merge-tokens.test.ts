@@ -258,7 +258,9 @@ describe("HTML entities inside Twig and Liquid tokens", () => {
       [],
     ).block;
     if (block.type !== "html") throw new Error("expected html");
-    expect(block.content).toBe("<p>{% if a == 'b' %}yes{% endif %}</p>");
+    expect(block.content).toBe(
+      '<div style="font-size:16px;text-align:center" align="center"><p>{% if a == \'b\' %}yes{% endif %}</p></div>',
+    );
   });
 
   it("decodes html copied from an unknown module", () => {
