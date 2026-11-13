@@ -1,5 +1,41 @@
 # @templatical/import-html
 
+## 0.60.0
+
+### Minor Changes
+
+- aa415e0: The Unlayer, HTML, Stripo, Topol, Chamaileon and Easy Email Pro importers carry a button's line height as `ButtonBlock.lineHeight`.
+
+  The value is a multiple of the label's font size: a percentage is that number over 100 (`150%` is `1.5`), a unitless number or an `em` length is itself, and a px length is that many pixels over the button's font size. It is rounded to two decimals. A value that comes to 1.2, `normal`, and a missing value stay unset, which renders 1.2. A value that can't be read imports at 1.2 and the button entry is `approximated` with a note naming it.
+
+  - **Unlayer:** `values.lineHeight`; Unlayer's `120%` default stays unset.
+  - **HTML:** the button's `line-height` style, from the `<a>` or, for a button cell, the cell and the `<a>`. A percentage or `em` line height on the cell is resolved against the cell's font size, as CSS inherits it, and `inherit` on the `<a>` takes the cell's. A bulletproof `font-size:16px; line-height:44px` anchor is `2.75`.
+  - **Stripo:** the inline `line-height` on `a.es-button`, else on its `es-button-border`.
+  - **Topol:** `mj-button` `line-height`, else the `mj-button` or `button:` default.
+  - **Chamaileon:** `style.lineHeight` in px over `style.fontSize`; the `25px` / `18px` default is `1.39`.
+  - **Easy Email Pro:** `standard-button` `line-height`. An unreadable percentage `width` is now noted.
+
+  Not a breaking change: no export, option or default is removed, renamed or changed. The importers map more of the source into fields that already exist, as #1201 did for the BeeFree and MJML importers.
+
+- aa415e0: The Unlayer, HTML, Stripo, Topol, Chamaileon and Easy Email Pro importers keep a row's column ratio, and the Unlayer and Easy Email Pro importers keep a percentage button width.
+
+  A two- to four-column ratio that matches no layout preset becomes the even layout of that count plus `SectionBlock.columnWidths`, instead of the nearest preset. A ratio that matches a preset stays that preset with no `columnWidths`.
+
+  - **Unlayer:** `cells` are relative weights. `[7, 3]` is `"2"` with `[70, 30]`, and `[6, 2, 2, 2]` keeps `[50, 16.67, 16.67, 16.66]` instead of becoming four equal columns with a warning. A button with `size.autoWidth: false` keeps `size.width`: `"40%"` stays `"40%"` and `"100%"` is `"full"`. Such a button used to fit its label.
+  - **HTML:** declared cell widths snap to a preset within 2 percentage points, down from 6. Any other ratio keeps its shares as `columnWidths`, and the section entry is `converted` instead of `approximated`.
+  - **Stripo:** unequal px column widths become a preset (`200px` / `400px` is `"1-2"`) or `columnWidths` (`180px` / `420px` is `"2"` with `[30, 70]`), `converted`. They used to become equal columns, `approximated`.
+  - **Topol and Easy Email Pro:** MJML's column rules apply. A column with no `width` takes the parent width divided by the column count, not the space the stated widths leave, and a px width is a share of the section's inner box. Widths within 2 percentage points of a preset keep it, `converted`. Widths that fit no preset are scaled to 100; when they differ from 100% by more than 0.5 percentage points the section is `approximated` (`30%` / `40%`), and otherwise it stays `converted` (`40%` / `60.25%`). Easy Email Pro's `standard-button` keeps a percentage `width` such as `"40%"`, which used to be dropped.
+  - **Chamaileon:** a column's share is its px width over the row's total, not over `bodyWidth`, so content padding and spacers no longer make an even row `approximated`. An unset column width counts as Chamaileon's default `300px`.
+
+  Not a breaking change: no export, option or default is removed, renamed or changed. The importers map more of the source into fields that already exist, as #1201 did for the BeeFree and MJML importers.
+
+### Patch Changes
+
+- Updated dependencies [6f5fbb7]
+- Updated dependencies [6f5fbb7]
+- Updated dependencies [6f5fbb7]
+  - @templatical/types@0.60.0
+
 ## 0.59.2
 
 ### Patch Changes
