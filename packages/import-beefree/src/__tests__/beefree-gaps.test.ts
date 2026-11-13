@@ -893,6 +893,54 @@ describe("BeeFree module gaps", () => {
       expect(paragraphHtml(`<p>Alpha</p>${emph}<p>Omega</p>`)).toBe(sides);
       expect(paragraphHtml(`<p>Alpha</p>${strong}<p>Omega</p>`)).toBe(sides);
     });
+
+    it("keeps a drawn box through the style pass and still empties a zero box and an empty span", () => {
+      const drawn =
+        '<p><a style="display:inline-block;width:24px;height:24px;background:red"></a></p><p>Text</p>';
+      const drawnKept =
+        '<p style="line-height: 1.2"><a style="display:inline-block; width:24px; height:24px; background:red"></a></p><p style="line-height: 1.2">Text</p>';
+      const zero =
+        '<p><a style="display:inline-block;width:0;height:0"></a></p><p>Text</p>';
+      const zeroEmptied = '<p style="line-height: 1.2">Text</p>';
+      const span = "<p><span></span></p>";
+      const spanEmptied = '<p style="line-height: 1.2"></p>';
+
+      expect(textContent(drawn)).toBe(drawnKept);
+      expect(paragraphHtml(drawn)).toBe(drawnKept);
+      expect(textContent(zero)).toBe(zeroEmptied);
+      expect(paragraphHtml(zero)).toBe(zeroEmptied);
+      expect(textContent(span)).toBe(spanEmptied);
+      // A paragraph module whose only markup is that span is blank after the
+      // style pass, so it imports as the same spacer it does today.
+      const spanParagraph = imported(
+        template([
+          column([
+            paragraphModule(span, textStyle, {
+              "padding-top": "10px",
+              "padding-right": "10px",
+              "padding-bottom": "10px",
+              "padding-left": "10px",
+            }),
+          ]),
+        ]),
+      );
+      const spanBlock = spanParagraph.content.blocks[0];
+      expect(spanBlock.type).toBe("spacer");
+      if (spanBlock.type !== "spacer") return;
+      expect(spanBlock.height).toBe(37);
+      expect(spanBlock.styles.padding).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
+      expect(spanParagraph.report.entries[0]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
+        templaticalBlockType: "spacer",
+        status: "converted",
+        note: "Blank paragraph imported as a 37px spacer.",
+      });
+    });
   });
 
   describe("blank paragraph modules", () => {

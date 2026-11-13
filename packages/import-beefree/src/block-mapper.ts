@@ -1049,6 +1049,8 @@ interface TextFrame {
   blockChild: boolean;
   /** `ul` / `ol` ancestors, counting this frame when it is one. */
   listDepth: number;
+  /** A descendant open tag draws a box, so an empty leaf keeps its parts. */
+  drawsBox: boolean;
 }
 
 function flattenChunks(chunks: Chunk[]): string {
@@ -1144,9 +1146,9 @@ function listBoxFor(content: {
  * element stands, and so does a padding or marker it already sets. An item
  * margin of `0` is the shorthand: that is the property the renderer sets.
  *
- * A block with no text, break, image, or non-breaking space stays empty.
- * The renderer fills `<p></p>` with one line; a span inside it is content
- * and that line collapses.
+ * A block with no text, break, image, or non-breaking space stays empty,
+ * unless a descendant open tag draws a box. The renderer fills `<p></p>`
+ * with one line; a span inside it is content and that line collapses.
  *
  * One forward scan. A regex over `[\s\S]*?</p>` is polynomial-ReDoS on
  * `<p>a<p>a<p>a…` with no closer; every cursor here only moves forward.
@@ -1377,7 +1379,10 @@ function inlineStylesToHtml(
         strip,
       );
     const chunk: Chunk[] = [];
-    if (leaf && !listRoot && !frameHasInk(chunkText(frame.parts))) {
+    const inner = chunkText(frame.parts);
+    // A descendant that draws a box is ink. The open-tag walk below sets
+    // `drawsBox` with `openTagDrawsBox`, so this leaf keeps its parts.
+    if (leaf && !listRoot && !frameHasInk(inner) && !frame.drawsBox) {
       chunk.push(open("block"));
       if (rawClose !== "") chunk.push(rawClose);
     } else if (wrap) {
@@ -1471,6 +1476,8 @@ function inlineStylesToHtml(
       parts().push(
         rewriteOpenTag(openTag, name === "a" ? anchorDecls : [], strip),
       );
+      const parent = stack[stack.length - 1];
+      if (parent && openTagDrawsBox(html, lt, end)) parent.drawsBox = true;
       i = end + 1;
       continue;
     }
@@ -1482,6 +1489,7 @@ function inlineStylesToHtml(
       parts: [],
       blockChild: false,
       listDepth: name === "ul" || name === "ol" ? parentDepth + 1 : parentDepth,
+      drawsBox: false,
     });
     i = end + 1;
   }
