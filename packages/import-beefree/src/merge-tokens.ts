@@ -646,11 +646,22 @@ function isSelfClosing(html: string, openEnd: number): boolean {
   return html[i] === "/";
 }
 
+/** A BeeFree `<code>` chip. Anything else is ordinary code and stays. */
+type BeeCodeChip = "mergetag" | "speciallink";
+
 /**
- * The open tag carries `data-bee-type="mergetag"`. The attribute may sit
- * anywhere, in double quotes, single quotes, or none.
+ * The chip named by `data-bee-type` on the open tag at `open`, or
+ * `undefined` when the tag is not one. The attribute may sit anywhere, in
+ * double quotes, single quotes, or none. `mergetag` wins when the tag
+ * carries both: the scan returns it as soon as it sees one, and returns a
+ * remembered `speciallink` only when the tag ends without a `mergetag`.
  */
-function isMergetagOpen(html: string, open: number, openEnd: number): boolean {
+function codeChipKind(
+  html: string,
+  open: number,
+  openEnd: number,
+): BeeCodeChip | undefined {
+  let speciallink = false;
   let i = open + 1 + CODE_TAG.length;
   const end = openEnd - 1;
   while (i < end) {
@@ -679,11 +690,11 @@ function isMergetagOpen(html: string, open: number, openEnd: number): boolean {
         value = html.slice(valueStart, i);
       }
     }
-    if (equalsIgnoreCase(name, "data-bee-type") && value === "mergetag") {
-      return true;
-    }
+    if (!equalsIgnoreCase(name, "data-bee-type")) continue;
+    if (value === "mergetag") return "mergetag";
+    if (value === "speciallink") speciallink = true;
   }
-  return false;
+  return speciallink ? "speciallink" : undefined;
 }
 
 interface CodeClose {
@@ -817,27 +828,44 @@ function finishMergetag(parts: Array<string | Rope>): string | Rope {
   return keptMergetagText(flattenRope(parts));
 }
 
-interface MergetagFrame {
+/**
+ * A speciallink chip's inner HTML. Nested chips are already unwrapped.
+ * The markup stays as written: a space is not padding and is not collapsed.
+ */
+function keepSpeciallinkHtml(parts: Array<string | Rope>): string | Rope {
+  if (parts.length <= 1) return parts[0] ?? "";
+  return { parts, ...flagsOf(parts) };
+}
+
+interface CodeFrame {
   parts: Array<string | Rope>;
   closeStart: number;
   closeEnd: number;
+  /** The chip that opened this frame. The close keeps that chip's content. */
+  kind: BeeCodeChip;
 }
 
 /**
- * Remove a `<code data-bee-type="mergetag">` wrapper and keep the text inside
- * it. The editor turns a bare `{{ … }}` or `{% … %}` token in rich text into
- * a merge-tag span when the template loads, which is the shape BeeFree's HTML
- * export already leaves. A `<code>` without that attribute stays, including an
- * inline code sample and a `data-bee-type="speciallink"` wrapper. Run this
- * before `decodeEntitiesInTokens`: a token inside `data-bee-code` would
- * otherwise be decoded in the attribute and break its quotes. An opener with
- * no closer is left as written.
+ * Remove a BeeFree `<code>` chip.
+ *
+ * A `<code data-bee-type="mergetag">` chip keeps the text inside it. A chip
+ * that holds only whitespace keeps each non-breaking space, and a plain
+ * leading space before its one token is dropped. A chip that also carries
+ * words, or more than one token, keeps that text as written.
+ *
+ * A `<code data-bee-type="speciallink">` chip is removed and its inner HTML
+ * is kept as written, link included, as BeeFree's own HTML export does.
+ *
+ * A `<code>` with no `data-bee-type`, or with any other value, stays. A
+ * self-closing chip is removed. An opener with no closer is left as written.
+ * Run this before `decodeEntitiesInTokens`: a token inside `data-bee-code`
+ * would otherwise be decoded in the attribute and break its quotes.
  */
 export function unwrapMergeTagCode(html: string): string {
   if (html.indexOf("<") === -1) return html;
   const closes = indexCodeCloses(html);
   const root: Array<string | Rope> = [];
-  const stack: MergetagFrame[] = [];
+  const stack: CodeFrame[] = [];
   const dest = (): Array<string | Rope> =>
     stack.length > 0 ? stack[stack.length - 1].parts : root;
 
@@ -852,7 +880,10 @@ export function unwrapMergeTagCode(html: string): string {
     if (frame && open === -1) {
       if (i < frame.closeStart)
         frame.parts.push(html.slice(i, frame.closeStart));
-      const inner = finishMergetag(frame.parts);
+      const inner =
+        frame.kind === "speciallink"
+          ? keepSpeciallinkHtml(frame.parts)
+          : finishMergetag(frame.parts);
       stack.pop();
       dest().push(inner);
       i = frame.closeEnd;
@@ -868,7 +899,8 @@ export function unwrapMergeTagCode(html: string): string {
       break;
     }
     dest().push(html.slice(i, open));
-    if (!isMergetagOpen(html, open, openEnd)) {
+    const kind = codeChipKind(html, open, openEnd);
+    if (kind === undefined) {
       dest().push(html.slice(open, openEnd));
       i = openEnd;
       continue;
@@ -883,7 +915,12 @@ export function unwrapMergeTagCode(html: string): string {
       i = openEnd;
       continue;
     }
-    stack.push({ parts: [], closeStart: close.start, closeEnd: close.end });
+    stack.push({
+      parts: [],
+      closeStart: close.start,
+      closeEnd: close.end,
+      kind,
+    });
     i = openEnd;
   }
   return flattenRope(root);
