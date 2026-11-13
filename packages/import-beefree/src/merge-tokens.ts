@@ -465,13 +465,15 @@ function decodeCharRefs(value: string): string {
  * A chip that holds only whitespace. Each non-breaking space (U+00A0, or a
  * reference that decodes to it) is written `&nbsp;`, and each run of other
  * whitespace is one plain space, in source order. A chip of plain whitespace
- * only is one plain space. `undefined` when `text` is empty or holds a
- * character that is not whitespace, so the caller leaves that chip as written.
- * The chip is outside any token, so the `&nbsp;` is not decoded for Twig.
+ * only is one plain space. `undefined` when `text` holds a character that is
+ * not whitespace, so the caller leaves that chip as written. `text` is
+ * non-empty: an empty chip is returned before this runs. The chip is outside
+ * any token, so the `&nbsp;` is not decoded for Twig.
  */
-function whitespaceChip(text: string): string | undefined {
-  if (text === "") return undefined;
-  let decoded = text;
+type NonEmptyString = string & { readonly __nonEmpty: unique symbol };
+
+function whitespaceChip(text: NonEmptyString): string | undefined {
+  let decoded: string = text;
   for (let pass = 0; pass < 2; pass++) {
     const next = decodeCharRefs(decoded);
     if (next === decoded) break;
@@ -499,6 +501,11 @@ function whitespaceChip(text: string): string | undefined {
   }
   if (run) out += " ";
   return nbsp ? out : " ";
+}
+
+/** Blank, non-empty chip text. {@link whitespaceChip} returns a chip for it. */
+function blankChip(text: NonEmptyString): string {
+  return whitespaceChip(text) as string;
 }
 
 /**
@@ -531,7 +538,7 @@ function withoutLeadingTokenPadding(text: string): string {
  */
 function keptMergetagText(text: string): string {
   const spans = tokenSpans(text);
-  if (spans.length !== 1) return whitespaceChip(text) ?? text;
+  if (spans.length !== 1) return whitespaceChip(text as NonEmptyString) ?? text;
   return withoutLeadingTokenPadding(text);
 }
 
@@ -803,7 +810,7 @@ function finishMergetag(parts: Array<string | Rope>): string | Rope {
   const flags = flagsOf(parts);
   if (!flags.brace && !flags.dirty) {
     if (flags.len === 0) return "";
-    if (flags.blank) return whitespaceChip(flattenRope(parts)) ?? " ";
+    if (flags.blank) return blankChip(flattenRope(parts) as NonEmptyString);
     if (parts.length === 1) return parts[0];
     return { parts, ...flags };
   }

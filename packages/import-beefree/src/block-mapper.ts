@@ -290,8 +290,7 @@ function isAsciiLetter(char: string | undefined): boolean {
   return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
 
-function isTagNameChar(char: string | undefined): boolean {
-  if (char === undefined) return false;
+function isTagNameChar(char: string): boolean {
   const code = char.charCodeAt(0);
   return (
     (code >= 48 && code <= 57) ||
@@ -329,6 +328,29 @@ function isNoneOrHidden(token: string): boolean {
 }
 
 /**
+ * Units that are a length, so `0` in that unit is zero. A bare `0` has an
+ * empty unit. Membership is one lookup: each unit is not its own branch.
+ */
+const ZERO_LENGTH_UNITS = new Set([
+  "",
+  "px",
+  "em",
+  "rem",
+  "%",
+  "pt",
+  "pc",
+  "in",
+  "cm",
+  "mm",
+  "ex",
+  "ch",
+  "vw",
+  "vh",
+  "vmin",
+  "vmax",
+]);
+
+/**
  * A zero length. `0px` is zero, the same way a module's letter-spacing
  * treats it.
  */
@@ -342,25 +364,7 @@ function isZeroLength(token: string): boolean {
     if (value[i] !== "0") return false;
     while (value[i] === "0") i++;
   }
-  const unit = value.slice(i);
-  return (
-    unit === "" ||
-    unit === "px" ||
-    unit === "em" ||
-    unit === "rem" ||
-    unit === "%" ||
-    unit === "pt" ||
-    unit === "pc" ||
-    unit === "in" ||
-    unit === "cm" ||
-    unit === "mm" ||
-    unit === "ex" ||
-    unit === "ch" ||
-    unit === "vw" ||
-    unit === "vh" ||
-    unit === "vmin" ||
-    unit === "vmax"
-  );
+  return ZERO_LENGTH_UNITS.has(value.slice(i));
 }
 
 /** A zero length, `none`, or `hidden`. */
@@ -390,7 +394,6 @@ function isBorderStyleProperty(name: string): boolean {
  * is `none`/`hidden`. Width, color, radius and every other longhand do not.
  */
 function borderDeclarationPaints(name: string, tokens: string[]): boolean {
-  if (tokens.length === 0) return false;
   if (BORDER_SHORTHANDS.has(name)) {
     return !tokens.some(
       (token) => isZeroLength(token) || isNoneOrHidden(token),
@@ -458,6 +461,34 @@ function boxValueTokens(value: string): string[] {
 }
 
 /**
+ * The winning declaration for each property `accept` keeps. The last one
+ * wins, and an `!important` declaration beats a later normal one for that
+ * name.
+ */
+function cascadeWinners(
+  css: string,
+  accept: (name: string) => boolean,
+): Map<string, { value: string; important: boolean }> {
+  const winners = new Map<string, { value: string; important: boolean }>();
+  for (const part of css.split(";")) {
+    const colon = part.indexOf(":");
+    if (colon === -1) continue;
+    const name = part.slice(0, colon).trim().toLowerCase();
+    if (!accept(name)) continue;
+    const value = part.slice(colon + 1);
+    const important = splitImportant(value).important;
+    const current = winners.get(name);
+    if (current !== undefined && current.important && !important) continue;
+    winners.set(name, { value, important });
+  }
+  return winners;
+}
+
+function isTypographyProperty(name: string): boolean {
+  return name === "font-size" || name === "line-height";
+}
+
+/**
  * Whether a `<p>` `style` paints a box. Typography (`font-size`,
  * `line-height`, `text-align`, `color`, `font-family`) does not. Padding,
  * height, min-height and margin do, unless every token of the value is
@@ -467,18 +498,7 @@ function boxValueTokens(value: string): string[] {
  * A shorthand and a longhand are different names, so both are evaluated.
  */
 function stylePaintsBox(css: string): boolean {
-  const winners = new Map<string, { value: string; important: boolean }>();
-  for (const part of css.split(";")) {
-    const colon = part.indexOf(":");
-    if (colon === -1) continue;
-    const name = part.slice(0, colon).trim().toLowerCase();
-    if (!isBoxProperty(name)) continue;
-    const value = part.slice(colon + 1);
-    const important = splitImportant(value).important;
-    const current = winners.get(name);
-    if (current !== undefined && current.important && !important) continue;
-    winners.set(name, { value, important });
-  }
+  const winners = cascadeWinners(css, isBoxProperty);
   for (const [name, winner] of winners) {
     const tokens = boxValueTokens(winner.value);
     if (tokens.length === 0) continue;
@@ -607,28 +627,52 @@ function hasVisibleContent(html: string): boolean {
 }
 
 /**
- * Whether blank rich text has a `<p>` whose own style paints a box. The
- * caller passes HTML that `isBlankRichText` already accepted, so the only
- * tags are paragraph tags and whitespace. One forward pass: an open `p`
- * tag (`<p`, any case, then a non-name character) is bounded with
- * `findOpenTagEnd`; anything else is skipped to the next `<`.
+ * One forward pass over open `p` tags (`<p`, any case, then a non-name
+ * character). Each tag is bounded with `findOpenTagEnd`; anything else is
+ * skipped to the next `<`. `matches` stops the scan.
  */
-function paragraphHtmlPaintsBox(html: string): boolean {
+function paragraphOpenTagMatches(
+  html: string,
+  matches: (html: string, start: number, end: number) => boolean,
+): boolean {
   let i = 0;
   while (i < html.length) {
     const lt = html.indexOf("<", i);
     if (lt === -1) return false;
     const mark = html[lt + 1];
-    if (mark.toLowerCase() === "p" && !isTagNameChar(html[lt + 2])) {
+    if (mark.toLowerCase() === "p" && !isTagNameChar(html.charAt(lt + 2))) {
       const end = findOpenTagEnd(html, lt + 2);
       if (end === -1) return false;
-      if (openTagPaintsBox(html, lt, end)) return true;
+      if (matches(html, lt, end)) return true;
       i = end + 1;
       continue;
     }
     i = lt + 1;
   }
   return false;
+}
+
+/**
+ * Whether blank rich text has a `<p>` whose own style paints a box. The
+ * caller passes HTML that `isBlankRichText` already accepted, so the only
+ * tags are paragraph tags and whitespace.
+ */
+function paragraphHtmlPaintsBox(html: string): boolean {
+  return paragraphOpenTagMatches(html, openTagPaintsBox);
+}
+
+/**
+ * Whether a paragraph's own tag declares `font-size` or `line-height`.
+ * The cascade winner is what counts; the value is not read. No precedence
+ * against `paragraph.style` is established, so the caller names it unread.
+ */
+function paragraphHasUnreadTypography(html: string | undefined): boolean {
+  if (!html) return false;
+  return paragraphOpenTagMatches(html, (source, start, end) => {
+    const css = findStyleAttr(source.slice(start, end + 1))?.value;
+    if (css === undefined) return false;
+    return cascadeWinners(css, isTypographyProperty).size > 0;
+  });
 }
 
 function withoutEmptyParagraphs(html: string): string {
@@ -639,7 +683,9 @@ function withoutEmptyParagraphs(html: string): string {
   let cursor = 0;
   for (const [start, end] of skip) {
     if (start > cursor) parts.push(html.slice(cursor, start));
-    if (end > cursor) cursor = end;
+    // Ranges are emitted in order and do not overlap, so each end is past
+    // the cursor.
+    cursor = end;
   }
   if (cursor < html.length) parts.push(html.slice(cursor));
   const dropped = parts.join("");
@@ -1562,7 +1608,9 @@ function nonNegativeCssPx(value: string | undefined): number | undefined {
   const match = /^(\d+(?:\.\d+)?)\s*px$/i.exec(value.trim());
   if (!match) return undefined;
   const parsed = Number(match[1]);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+  // The pattern is digits only, so a match is non-negative. A long digit
+  // string is Infinity, which is not a length.
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 /**
@@ -1586,7 +1634,7 @@ function lineHeightRatio(raw: string): number | undefined {
  * or a unitless `line-height` is a ratio of the font size, including 0. A px
  * `line-height` is the line box itself. The font size is 14px, and the ratio
  * is 1.2, when the value is missing. A present value that is not one of those
- * forms uses the same fallback and is named in `unread`.
+ * forms, or that is not finite, uses the same fallback and is named in `unread`.
  */
 function blankParagraphLineBox(style: Record<string, string> | undefined): {
   px: number;
@@ -1608,9 +1656,15 @@ function blankParagraphLineBox(style: Record<string, string> | undefined): {
   const raw = style?.["line-height"]?.trim() ?? "";
   if (raw === "") return { px: fontSize * 1.2, unread };
   const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
-  if (px) return { px: Number(px[1]), unread };
-  const ratio = lineHeightRatio(raw);
-  if (ratio !== undefined) return { px: fontSize * ratio, unread };
+  if (px) {
+    const parsed = nonNegativeCssPx(raw);
+    if (parsed !== undefined) return { px: parsed, unread };
+  } else {
+    const ratio = lineHeightRatio(raw);
+    if (ratio !== undefined && Number.isFinite(ratio)) {
+      return { px: fontSize * ratio, unread };
+    }
+  }
   unread.push(`line-height ${raw} is not read, 1.2 is used`);
   return { px: fontSize * 1.2, unread };
 }
@@ -1621,8 +1675,11 @@ function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
 } {
   const padding = extractPadding(descriptor.style);
   const line = blankParagraphLineBox(descriptor.paragraph?.style);
+  const height = Math.round(padding.top + line.px + padding.bottom);
+  // 14px at 1.2 is the documented line box when a value is not read.
+  const fallback = Math.round(padding.top + 14 * 1.2 + padding.bottom);
   return {
-    height: Math.round(padding.top + line.px + padding.bottom),
+    height: Number.isFinite(height) ? height : fallback,
     unread: line.unread,
   };
 }
@@ -3479,9 +3536,15 @@ function convertModuleBase(
       ) {
         const { height, unread } = blankParagraphHeight(descriptor);
         const boxLost = paragraphHtmlPaintsBox(block.content);
+        const typographyLost = paragraphHasUnreadTypography(
+          descriptor.paragraph?.html,
+        );
         block = blankParagraphSpacer(descriptor, height);
         const clauses: string[] = [];
         if (boxLost) clauses.push("its box styling is not carried");
+        if (typographyLost) {
+          clauses.push("its paragraph typography is not read");
+        }
         clauses.push(...unread);
         const suffix = clauses.length > 0 ? `; ${clauses.join("; ")}` : "";
         notes = [`Blank paragraph imported as a ${height}px spacer${suffix}.`];
@@ -3791,9 +3854,8 @@ export function convertModule(
   if (droppedSpacerLocales.length > 0) {
     const dropped = `Translations ${droppedSpacerLocales.join(", ")} dropped: the default paragraph is blank and imported as a spacer.`;
     result.entry.status = "approximated";
-    result.entry.note = result.entry.note
-      ? `${result.entry.note} ${dropped}`
-      : dropped;
+    // A blank paragraph always records a note before translations are read.
+    result.entry.note = `${result.entry.note} ${dropped}`;
   }
   return result;
 }

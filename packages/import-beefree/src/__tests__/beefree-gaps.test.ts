@@ -538,6 +538,41 @@ describe("BeeFree module gaps", () => {
       );
     });
 
+    it("drops a zero length in em, rem, percent and viewport units", () => {
+      for (const style of [
+        "padding:0em",
+        "margin:0rem",
+        "padding:0%",
+        "padding:0vw",
+      ]) {
+        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
+          "<p>Text</p>",
+        );
+      }
+      expect(paragraphContent('<p style="padding:0q"></p><p>Text</p>')).toBe(
+        '<p style="padding:0q"></p><p>Text</p>',
+      );
+    });
+
+    it("collapses repeated spaces between box tokens", () => {
+      expect(
+        paragraphContent('<p style="padding:4px  8px"></p><p>Text</p>'),
+      ).toBe('<p style="padding:4px  8px"></p><p>Text</p>');
+      expect(paragraphContent('<p style="margin:0  0"></p><p>Text</p>')).toBe(
+        "<p>Text</p>",
+      );
+    });
+
+    it("leaves a self-closing paragraph nested in another as written", () => {
+      expect(paragraphContent("<p>a<p/>b</p><p></p>c")).toBe("<p>a<p/>b</p>c");
+    });
+
+    it("keeps the markup when an unclosed comment is the only remainder", () => {
+      expect(paragraphContent("<p></p><!-- <p>hidden")).toBe(
+        "<p></p><!-- <p>hidden",
+      );
+    });
+
     it("drops a paragraph whose style declaration is empty", () => {
       expect(paragraphContent('<p style=";;padding:0;"></p><p>Text</p>')).toBe(
         "<p>Text</p>",
@@ -946,6 +981,116 @@ describe("BeeFree module gaps", () => {
       expect(entry.note).toBe("Blank paragraph imported as a 37px spacer.");
     });
 
+    it("approximates a non-finite em line-height", () => {
+      const lineHeight = `${"9".repeat(400)}em`;
+      const { block, entry } = blank({ fontSize: "14px", lineHeight });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        `Blank paragraph imported as a 37px spacer; line-height ${lineHeight} is not read, 1.2 is used.`,
+      );
+    });
+
+    it("approximates a non-finite px line-height", () => {
+      const lineHeight = `${"9".repeat(400)}px`;
+      const { block, entry } = blank({ fontSize: "14px", lineHeight });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        `Blank paragraph imported as a 37px spacer; line-height ${lineHeight} is not read, 1.2 is used.`,
+      );
+    });
+
+    it("uses the fallback height when the line box is not finite", () => {
+      const { block, entry } = blank({
+        fontSize: `1${"0".repeat(308)}px`,
+        lineHeight: "2",
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBe("Blank paragraph imported as a 37px spacer.");
+    });
+
+    it("approximates a blank paragraph whose empty tag sets typography", () => {
+      const sized = (
+        html: string,
+      ): { height: number; status: string; note: string | undefined } => {
+        const { block, entry } = blank({
+          html,
+          fontSize: "14px",
+          lineHeight: "120%",
+        });
+        expect(block.type).toBe("spacer");
+        if (block.type !== "spacer") {
+          throw new Error(`expected a spacer, got ${block.type}`);
+        }
+        return {
+          height: block.height,
+          status: entry.status,
+          note: entry.note,
+        };
+      };
+
+      expect(sized('<p style="font-size:24px;line-height:36px"></p>')).toEqual({
+        height: 37,
+        status: "approximated",
+        note: "Blank paragraph imported as a 37px spacer; its paragraph typography is not read.",
+      });
+      expect(sized('<p style="font-size:24px"></p>')).toEqual({
+        height: 37,
+        status: "approximated",
+        note: "Blank paragraph imported as a 37px spacer; its paragraph typography is not read.",
+      });
+      expect(sized('<p style="line-height:36px"></p>')).toEqual({
+        height: 37,
+        status: "approximated",
+        note: "Blank paragraph imported as a 37px spacer; its paragraph typography is not read.",
+      });
+      expect(sized('<p style="color:#ffffff"></p>')).toEqual({
+        height: 37,
+        status: "converted",
+        note: "Blank paragraph imported as a 37px spacer.",
+      });
+    });
+
+    it("treats a paragraph module that omits html as blank", () => {
+      const { content, report } = imported(
+        template([
+          column([
+            {
+              type: "mailup-bee-newsletter-modules-paragraph",
+              descriptor: {
+                paragraph: JSON.parse(
+                  '{"style":{"font-size":"14px","line-height":"120%"}}',
+                ),
+                style: PADDING_10,
+              },
+            },
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(report.entries[0]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
+        templaticalBlockType: "spacer",
+        status: "converted",
+        note: "Blank paragraph imported as a 37px spacer.",
+      });
+    });
+
     it("keeps a blank translation on a paragraph that has text", () => {
       const { content, report } = imported(
         template([
@@ -1028,6 +1173,52 @@ describe("BeeFree module gaps", () => {
     it("leaves blank HTML content unwrapped", () => {
       expect(htmlContent("").content).toBe("");
       expect(htmlContent(" \n\t ").content).toBe(" \n\t ");
+    });
+
+    it("leaves an html module with no html field blank and unwrapped", () => {
+      const { content, report } = imported(
+        template([
+          column([
+            {
+              type: "mailup-bee-newsletter-modules-html",
+              descriptor: {},
+            },
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+
+      expect(block.type).toBe("html");
+      if (block.type !== "html") return;
+      expect(block.content).toBe("");
+      expect(report.entries[0]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-html",
+        templaticalBlockType: "html",
+        status: "converted",
+      });
+    });
+
+    it("leaves an html module whose html string is missing blank and unwrapped", () => {
+      const { content, report } = imported(
+        template([
+          column([
+            {
+              type: "mailup-bee-newsletter-modules-html",
+              descriptor: { html: JSON.parse("{}") },
+            },
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+
+      expect(block.type).toBe("html");
+      if (block.type !== "html") return;
+      expect(block.content).toBe("");
+      expect(report.entries[0]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-html",
+        templaticalBlockType: "html",
+        status: "converted",
+      });
     });
 
     it("leaves an unknown module's fallback HTML unwrapped", () => {
