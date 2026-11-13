@@ -282,6 +282,9 @@ export default {
     ratio13: "1:3 Ratio",
     ratio31: "3:1 Ratio",
     ratio121: "1:2:1 Ratio",
+    columnsCustom: "Custom",
+    columnWidths: "Column widths",
+    columnWidthAria: "Column {index} width",
     borderRadius: "Border Radius",
     wrapperEnable: "Add wrapper",
     wrapperLayoutConflict:

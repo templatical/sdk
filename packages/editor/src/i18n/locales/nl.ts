@@ -265,6 +265,9 @@ const nl: typeof en = {
     ratio13: "Verhouding 1:3",
     ratio31: "Verhouding 3:1",
     ratio121: "Verhouding 1:2:1",
+    columnsCustom: "Aangepast",
+    columnWidths: "Kolombreedtes",
+    columnWidthAria: "Breedte van kolom {index}",
     borderRadius: "Hoekafronding",
     wrapperEnable: "Omhulsel toevoegen",
     wrapperLayoutConflict:

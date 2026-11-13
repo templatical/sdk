@@ -289,6 +289,9 @@ const ca: typeof en = {
     ratio13: "Proporció 1:3",
     ratio31: "Proporció 3:1",
     ratio121: "Proporció 1:2:1",
+    columnsCustom: "Personalitzada",
+    columnWidths: "Amplades de columna",
+    columnWidthAria: "Amplada de la columna {index}",
     borderRadius: "Radi de la vora",
     wrapperEnable: "Afegeix un contenidor",
     wrapperLayoutConflict:

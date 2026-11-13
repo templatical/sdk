@@ -247,6 +247,9 @@ const translations: typeof en = {
     ratio13: "比率 1:3",
     ratio31: "比率 3:1",
     ratio121: "比率 1:2:1",
+    columnsCustom: "カスタム",
+    columnWidths: "列の幅",
+    columnWidthAria: "列{index}の幅",
     borderRadius: "角の丸み",
     wrapperEnable: "外枠を追加",
     wrapperLayoutConflict:

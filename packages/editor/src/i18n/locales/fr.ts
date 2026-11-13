@@ -266,6 +266,9 @@ const fr: typeof en = {
     ratio13: "Ratio 1:3",
     ratio31: "Ratio 3:1",
     ratio121: "Ratio 1:2:1",
+    columnsCustom: "Personnalisée",
+    columnWidths: "Largeurs de colonne",
+    columnWidthAria: "Largeur de la colonne {index}",
     borderRadius: "Rayon de bordure",
     wrapperEnable: "Ajouter un conteneur",
     wrapperLayoutConflict:

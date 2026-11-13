@@ -287,6 +287,9 @@ const de: typeof en = {
     ratio13: "1:3 Verhältnis",
     ratio31: "3:1 Verhältnis",
     ratio121: "1:2:1 Verhältnis",
+    columnsCustom: "Benutzerdefiniert",
+    columnWidths: "Spaltenbreiten",
+    columnWidthAria: "Breite von Spalte {index}",
     borderRadius: "Eckenradius",
     wrapperEnable: "Wrapper hinzufügen",
     wrapperLayoutConflict:

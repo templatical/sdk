@@ -47,6 +47,8 @@ Absent `columnWidths` keeps the preset. The renderer writes each share on `mj-co
 
 `columnWidths` is ignored when its length differs from the layout's column count, or when a value is not a finite number above 0. The preset's split renders, and `structure.column-widths-ignored` names the reason, `count` or `value`.
 
+In the editor, a section with two or more columns shows a Column widths row under Columns. Each field is that column's share. Editing a column gives the difference to the column on its right, and editing the last column gives it to the column on its left. An edit leaves each of the two columns at least 5%, or half of their combined share when the pair is narrower than 10% (an imported `[1, 1, 98]` keeps 1% / 1%). Columns shows Custom while any usable override is stored, including 50% / 50% on a two-column section. Choosing a preset clears the custom widths.
+
 `COLUMN_LAYOUT_PERCENTS` is the preset table the renderer emits: `"1"` is `[100]`, `"2"` is `[50, 50]`, `"3"` is `[33.33, 33.33, 33.34]`, `"4"` is `[25, 25, 25, 25]`, `"1-2"` is `[33.33, 66.67]`, `"2-1"` is `[66.67, 33.33]`, `"1-3"` is `[25, 75]`, `"3-1"` is `[75, 25]`, `"1-2-1"` is `[25, 50, 25]`. `sectionColumnPercents` returns that row, or the scaled override. `columnWidthsIssue` returns `"count"`, `"value"` or `null`.
 
 ## Creating sections

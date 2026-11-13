@@ -1,7 +1,6 @@
 import type {
   Block,
   BorderValue,
-  ColumnLayout,
   SpacingValue,
   TemplateContent,
 } from "@templatical/types";
@@ -12,27 +11,10 @@ import {
   isWrapper,
   resolveHero,
   resolveLocale,
+  sectionColumnPercents,
   toBorderCss,
 } from "@templatical/types";
 import { getEmailFrameWidth } from "./emailFrameWidth";
-
-/**
- * Column percentages per layout, exactly as the renderer's
- * `getWidthPercentages` emits them. MJML sizes a column from the emitted
- * string, so 33.33% of 600 is 199, not a third. The parity test in
- * `tests/imageRoom.test.ts` holds this table to the renderer's.
- */
-const COLUMN_PERCENTS: Record<ColumnLayout, number[]> = {
-  "1": [100],
-  "2": [50, 50],
-  "3": [33.33, 33.33, 33.34],
-  "4": [25, 25, 25, 25],
-  "1-2": [33.33, 66.67],
-  "2-1": [66.67, 33.33],
-  "1-3": [25, 75],
-  "3-1": [75, 25],
-  "1-2-1": [25, 50, 25],
-};
 
 /**
  * Side padding plus drawn side borders: what MJML takes off a box's content,
@@ -134,7 +116,7 @@ export function imageRoom(
       const border = resolveHero(block)?.applied ? undefined : block.border;
       const sectionBox =
         Math.floor(bandWidth) - horizontalInset(block.styles.padding, border);
-      const percents = COLUMN_PERCENTS[block.columns] ?? [100];
+      const percents = sectionColumnPercents(block);
       for (let index = 0; index < block.children.length; index++) {
         const column = Math.floor(
           (sectionBox * (percents[index] ?? 100)) / 100,
