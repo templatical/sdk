@@ -1674,6 +1674,7 @@ function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
   unread: string[];
   lineBoxOverflows: boolean;
   paddingUnread: boolean;
+  heightOverflows: boolean;
 } {
   const padding = extractPadding(descriptor.style);
   const line = blankParagraphLineBox(descriptor.paragraph?.style);
@@ -1704,15 +1705,19 @@ function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
   let height = Math.round(top + linePx + bottom);
   // Each addend is finite, but a finite line box plus finite padding can
   // still pass Number.MAX_VALUE. The height is then the fallback line box
-  // alone; putting the padding back would overflow the same way.
+  // alone; putting the padding back would overflow the same way. That
+  // fallback is reported, or the spacer would say it was converted.
+  let heightOverflows = false;
   if (!Number.isFinite(height)) {
     height = Math.round(14 * 1.2);
+    heightOverflows = true;
   }
   return {
     height,
     unread: line.unread,
     lineBoxOverflows,
     paddingUnread,
+    heightOverflows,
   };
 }
 
@@ -3555,8 +3560,13 @@ function convertModuleBase(
         context.blankParagraphAsSpacer !== false &&
         isBlankRichText(block.content)
       ) {
-        const { height, unread, lineBoxOverflows, paddingUnread } =
-          blankParagraphHeight(descriptor);
+        const {
+          height,
+          unread,
+          lineBoxOverflows,
+          paddingUnread,
+          heightOverflows,
+        } = blankParagraphHeight(descriptor);
         const boxLost = paragraphHtmlPaintsBox(block.content);
         const typographyLost = paragraphHasUnreadTypography(
           descriptor.paragraph?.html,
@@ -3570,6 +3580,9 @@ function convertModuleBase(
         if (paddingUnread) clauses.push("its padding is not read");
         if (lineBoxOverflows) {
           clauses.push("its line box overflows, 1.2 × 14px is used");
+        }
+        if (heightOverflows) {
+          clauses.push("its height overflows, 17px is used");
         }
         clauses.push(...unread);
         const suffix = clauses.length > 0 ? `; ${clauses.join("; ")}` : "";

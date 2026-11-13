@@ -1134,8 +1134,10 @@ describe("BeeFree module gaps", () => {
       if (block.type !== "spacer") return;
       expect(block.height).toBe(17);
       expect(Number.isInteger(block.height)).toBe(true);
-      expect(entry.status).toBe("converted");
-      expect(entry.note).toBe("Blank paragraph imported as a 17px spacer.");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 17px spacer; its height overflows, 17px is used.",
+      );
     });
 
     it("approximates a blank paragraph whose line box overflows", () => {
