@@ -9,7 +9,7 @@
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
     "@microsoft/api-extractor": "^7.60.1",
-    "@playwright/mcp": "^0.0.84",
+    "@playwright/mcp": "^0.0.85",
     "@playwright/test": "^1.65.0",
     "@tailwindcss/vite": "^4.3.5",
     "@templatical/editor": "workspace:*",
@@ -29,19 +29,19 @@
     "@vitest/coverage-v8": "^5.1.0",
     "@vue/reactivity": "^3.5.45",
     "eslint": "^10.14.0",
-    "eslint-plugin-vue": "^10.12.0",
+    "eslint-plugin-vue": "^10.12.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "syncpack": "^15.3.3",
     "tsdown": "^0.23.7",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.72.1",
+    "typescript-eslint": "^8.72.2",
     "vite": "^8.3.7",
     "vue-eslint-parser": "^10.4.2"
   },
   "engines": {
-    "node": ">=26.13.0"
+    "node": ">=26.13.1"
   },
   "packageManager": "pnpm@12.18.0+sha512.9d7882d5dc82147ecfc4e062aa34834e0ad0296710a1837a1115ae012127d36b7109e321ac1598a1dd0a65597681b1e99917e12ed0d749eae91187943363beb3",
   "private": true,
