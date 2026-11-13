@@ -411,12 +411,11 @@ function isBoxProperty(name: string): boolean {
 }
 
 /**
- * Tokens of one declaration value. A trailing `!important`, including
- * `! important`, is cut off. ASCII whitespace splits tokens only at
- * parenthesis depth 0, so `rgb(0 0 0)` stays one token.
+ * A trailing `!important`, including `! important`, and the value with that
+ * flag cut off. The flag is not part of the value.
  */
-function boxValueTokens(value: string): string[] {
-  let text = value.trim();
+function splitImportant(value: string): { text: string; important: boolean } {
+  const text = value.trim();
   const bang = text.lastIndexOf("!");
   if (
     bang !== -1 &&
@@ -425,8 +424,18 @@ function boxValueTokens(value: string): string[] {
       .trim()
       .toLowerCase() === "important"
   ) {
-    text = text.slice(0, bang);
+    return { text: text.slice(0, bang), important: true };
   }
+  return { text, important: false };
+}
+
+/**
+ * Tokens of one declaration value. A trailing `!important`, including
+ * `! important`, is cut off. ASCII whitespace splits tokens only at
+ * parenthesis depth 0, so `rgb(0 0 0)` stays one token.
+ */
+function boxValueTokens(value: string): string[] {
+  const text = splitImportant(value).text;
 
   const tokens: string[] = [];
   let depth = 0;
@@ -453,14 +462,25 @@ function boxValueTokens(value: string): string[] {
  * `line-height`, `text-align`, `color`, `font-family`) does not. Padding,
  * height, min-height and margin do, unless every token of the value is
  * zero, `none` or `hidden`. Border declarations follow `borderDeclarationPaints`.
+ * Declarations are collected by lowercased property name. The last one wins,
+ * and an `!important` declaration beats a later normal one for that name.
+ * A shorthand and a longhand are different names, so both are evaluated.
  */
 function stylePaintsBox(css: string): boolean {
+  const winners = new Map<string, { value: string; important: boolean }>();
   for (const part of css.split(";")) {
     const colon = part.indexOf(":");
     if (colon === -1) continue;
     const name = part.slice(0, colon).trim().toLowerCase();
     if (!isBoxProperty(name)) continue;
-    const tokens = boxValueTokens(part.slice(colon + 1));
+    const value = part.slice(colon + 1);
+    const important = splitImportant(value).important;
+    const current = winners.get(name);
+    if (current !== undefined && current.important && !important) continue;
+    winners.set(name, { value, important });
+  }
+  for (const [name, winner] of winners) {
+    const tokens = boxValueTokens(winner.value);
     if (tokens.length === 0) continue;
     if (name.startsWith("border")) {
       if (borderDeclarationPaints(name, tokens)) return true;
@@ -587,38 +607,26 @@ function hasVisibleContent(html: string): boolean {
 }
 
 /**
- * Whether converted HTML has a `<p>` whose own style paints a box. One
- * forward pass, same tag bounds as `hasVisibleContent`.
+ * Whether blank rich text has a `<p>` whose own style paints a box. The
+ * caller passes HTML that `isBlankRichText` already accepted, so the only
+ * tags are paragraph tags and whitespace. One forward pass: an open `p`
+ * tag (`<p`, any case, then a non-name character) is bounded with
+ * `findOpenTagEnd`; anything else is skipped to the next `<`.
  */
 function paragraphHtmlPaintsBox(html: string): boolean {
   let i = 0;
   while (i < html.length) {
     const lt = html.indexOf("<", i);
     if (lt === -1) return false;
-    if (html.startsWith("<!--", lt)) {
-      const end = html.indexOf("-->", lt + 4);
-      i = end === -1 ? html.length : end + 3;
+    const mark = html[lt + 1];
+    if (mark.toLowerCase() === "p" && !isTagNameChar(html[lt + 2])) {
+      const end = findOpenTagEnd(html, lt + 2);
+      if (end === -1) return false;
+      if (openTagPaintsBox(html, lt, end)) return true;
+      i = end + 1;
       continue;
     }
-    const slash = html[lt + 1] === "/";
-    const nameStart = lt + (slash ? 2 : 1);
-    if (!isAsciiLetter(html[nameStart])) {
-      i = lt + 1;
-      continue;
-    }
-    let nameEnd = nameStart + 1;
-    while (nameEnd < html.length && isTagNameChar(html[nameEnd])) nameEnd++;
-    const name = html.slice(nameStart, nameEnd).toLowerCase();
-    if (slash) {
-      const gt = html.indexOf(">", nameEnd);
-      if (gt === -1) return false;
-      i = gt + 1;
-      continue;
-    }
-    const end = findOpenTagEnd(html, nameEnd);
-    if (end === -1) return false;
-    if (name === "p" && openTagPaintsBox(html, lt, end)) return true;
-    i = end + 1;
+    i = lt + 1;
   }
   return false;
 }
@@ -1558,40 +1566,65 @@ function nonNegativeCssPx(value: string | undefined): number | undefined {
 }
 
 /**
- * The line box of a blank paragraph, in px. A percentage or a unitless
- * `line-height` is a ratio of the font size, including 0. A px `line-height`
- * is the line box itself. The font size is 14px, and the ratio is 1.2, when
- * the value is missing or unreadable. A negative value is unreadable.
+ * A non-negative `em`, percentage, or unitless `line-height` ratio, or
+ * `undefined` when `raw` is not one of those. `2em` is 2, `120%` is 1.2,
+ * and `1.5` is 1.5. Space before `em` is allowed, as it is before `px`.
  */
-function blankParagraphLineBox(
-  style: Record<string, string> | undefined,
-): number {
-  const fontSize = nonNegativeCssPx(style?.["font-size"]) ?? 14;
-  const raw = style?.["line-height"]?.trim() ?? "";
-  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
-  if (px) {
-    const length = Number(px[1]);
-    if (Number.isFinite(length) && length >= 0) return length;
-  }
+function lineHeightRatio(raw: string): number | undefined {
+  const em = /^(\d+(?:\.\d+)?)\s*em$/i.exec(raw);
+  if (em) return Number(em[1]);
   const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  if (percent) return Number(percent[1]) / 100;
   const unitless = /^(\d+(?:\.\d+)?)$/.exec(raw);
-  if (percent) {
-    const ratio = Number(percent[1]) / 100;
-    if (Number.isFinite(ratio) && ratio >= 0) return fontSize * ratio;
-  } else if (unitless) {
-    const ratio = Number(unitless[1]);
-    if (Number.isFinite(ratio) && ratio >= 0) return fontSize * ratio;
-  }
-  return fontSize * 1.2;
+  if (unitless) return Number(unitless[1]);
+  return undefined;
 }
 
-function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): number {
+/**
+ * The line box of a blank paragraph, in px, and every `font-size` or
+ * `line-height` that was present but not read. An `em` length, a percentage,
+ * or a unitless `line-height` is a ratio of the font size, including 0. A px
+ * `line-height` is the line box itself. The font size is 14px, and the ratio
+ * is 1.2, when the value is missing. A present value that is not one of those
+ * forms uses the same fallback and is named in `unread`.
+ */
+function blankParagraphLineBox(style: Record<string, string> | undefined): {
+  px: number;
+  unread: string[];
+} {
+  const unread: string[] = [];
+  const fontRaw = style?.["font-size"];
+  const fontTrimmed = fontRaw?.trim() ?? "";
+  const parsedFont = nonNegativeCssPx(fontRaw);
+  let fontSize = 14;
+  if (fontTrimmed !== "") {
+    if (parsedFont === undefined) {
+      unread.push(`font-size ${fontTrimmed} is not read, 14px is used`);
+    } else {
+      fontSize = parsedFont;
+    }
+  }
+
+  const raw = style?.["line-height"]?.trim() ?? "";
+  if (raw === "") return { px: fontSize * 1.2, unread };
+  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(raw);
+  if (px) return { px: Number(px[1]), unread };
+  const ratio = lineHeightRatio(raw);
+  if (ratio !== undefined) return { px: fontSize * ratio, unread };
+  unread.push(`line-height ${raw} is not read, 1.2 is used`);
+  return { px: fontSize * 1.2, unread };
+}
+
+function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
+  height: number;
+  unread: string[];
+} {
   const padding = extractPadding(descriptor.style);
-  return Math.round(
-    padding.top +
-      blankParagraphLineBox(descriptor.paragraph?.style) +
-      padding.bottom,
-  );
+  const line = blankParagraphLineBox(descriptor.paragraph?.style);
+  return {
+    height: Math.round(padding.top + line.px + padding.bottom),
+    unread: line.unread,
+  };
 }
 
 /**
@@ -3444,15 +3477,15 @@ function convertModuleBase(
         context.blankParagraphAsSpacer !== false &&
         blankParagraphModule(descriptor.paragraph?.html, block.content)
       ) {
-        const height = blankParagraphHeight(descriptor);
+        const { height, unread } = blankParagraphHeight(descriptor);
         const boxLost = paragraphHtmlPaintsBox(block.content);
         block = blankParagraphSpacer(descriptor, height);
-        notes = [
-          boxLost
-            ? `Blank paragraph imported as a ${height}px spacer; its box styling is not carried.`
-            : `Blank paragraph imported as a ${height}px spacer.`,
-        ];
-        isApproximation = boxLost;
+        const clauses: string[] = [];
+        if (boxLost) clauses.push("its box styling is not carried");
+        clauses.push(...unread);
+        const suffix = clauses.length > 0 ? `; ${clauses.join("; ")}` : "";
+        notes = [`Blank paragraph imported as a ${height}px spacer${suffix}.`];
+        isApproximation = clauses.length > 0;
       } else {
         isApproximation = notes.length > 0;
       }

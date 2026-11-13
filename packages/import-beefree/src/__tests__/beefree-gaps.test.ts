@@ -414,6 +414,42 @@ describe("BeeFree module gaps", () => {
       );
     });
 
+    it("drops a paragraph when a later padding declaration is zero", () => {
+      expect(
+        paragraphContent('<p style="padding:12px;padding:0"></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
+    });
+
+    it("keeps a paragraph when a later padding declaration paints", () => {
+      expect(
+        paragraphContent('<p style="padding:0;padding:12px"></p><p>Text</p>'),
+      ).toBe('<p style="padding:0;padding:12px"></p><p>Text</p>');
+    });
+
+    it("drops a paragraph when an earlier !important padding is zero", () => {
+      expect(
+        paragraphContent(
+          '<p style="padding:0 !important;padding:12px"></p><p>Text</p>',
+        ),
+      ).toBe("<p>Text</p>");
+    });
+
+    it("drops a paragraph when a later border declaration is none", () => {
+      expect(
+        paragraphContent(
+          '<p style="border:1px solid red;border:none"></p><p>Text</p>',
+        ),
+      ).toBe("<p>Text</p>");
+    });
+
+    it("keeps a shorthand when a later longhand does not replace it", () => {
+      expect(
+        paragraphContent(
+          '<p style="padding:12px;padding-top:0"></p><p>Text</p>',
+        ),
+      ).toBe('<p style="padding:12px;padding-top:0"></p><p>Text</p>');
+    });
+
     it("drops a paragraph whose border is none", () => {
       expect(paragraphContent('<p style="border:none"></p><p>Text</p>')).toBe(
         "<p>Text</p>",
@@ -660,8 +696,43 @@ describe("BeeFree module gaps", () => {
       expect(negative.block.type).toBe("spacer");
       if (negative.block.type !== "spacer") return;
       expect(negative.block.height).toBe(37);
+      expect(negative.entry.status).toBe("approximated");
       expect(negative.entry.note).toBe(
-        "Blank paragraph imported as a 37px spacer.",
+        "Blank paragraph imported as a 37px spacer; line-height -1 is not read, 1.2 is used.",
+      );
+    });
+
+    it("reads an em line-height as a multiple of the font size", () => {
+      const { block, entry } = blank({ fontSize: "14px", lineHeight: "2em" });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(48);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBe("Blank paragraph imported as a 48px spacer.");
+    });
+
+    it("approximates a line-height it cannot read", () => {
+      const { block, entry } = blank({ fontSize: "14px", lineHeight: "2rem" });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 37px spacer; line-height 2rem is not read, 1.2 is used.",
+      );
+    });
+
+    it("approximates a font-size it cannot read and uses 14px", () => {
+      const { block, entry } = blank({ fontSize: "1.2em" });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 37px spacer; font-size 1.2em is not read, 14px is used.",
       );
     });
 
@@ -674,9 +745,19 @@ describe("BeeFree module gaps", () => {
       expect(entry).toEqual({
         beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
         templaticalBlockType: "spacer",
-        status: "converted",
-        note: "Blank paragraph imported as a 37px spacer.",
+        status: "approximated",
+        note: "Blank paragraph imported as a 37px spacer; font-size 1em is not read, 14px is used.",
       });
+    });
+
+    it("stays converted when font-size and line-height are missing", () => {
+      const { block, entry } = blank({});
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBe("Blank paragraph imported as a 37px spacer.");
     });
 
     it("uses 14px and 1.2 when font-size and line-height are missing", () => {
@@ -817,6 +898,52 @@ describe("BeeFree module gaps", () => {
       expect(entry.note).toBe(
         "Blank paragraph imported as a 37px spacer; its box styling is not carried.",
       );
+    });
+
+    it("names a lost box and an unread line-height in one sentence", () => {
+      const { block, entry } = blank({
+        html: '<p style="height:100px"></p>',
+        fontSize: "14px",
+        lineHeight: "2rem",
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 37px spacer; its box styling is not carried; line-height 2rem is not read, 1.2 is used.",
+      );
+    });
+
+    it("approximates a blank paragraph whose uppercase tag paints a box", () => {
+      const { block, entry } = blank({
+        html: '<P style="height:100px"></P>',
+        fontSize: "14px",
+        lineHeight: "120%",
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 37px spacer; its box styling is not carried.",
+      );
+    });
+
+    it("does not treat an unclosed style quote as a painted box", () => {
+      const { block, entry } = blank({
+        html: '<p style="height:100px>',
+        fontSize: "14px",
+        lineHeight: "120%",
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(37);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBe("Blank paragraph imported as a 37px spacer.");
     });
 
     it("keeps a blank translation on a paragraph that has text", () => {
