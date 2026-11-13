@@ -166,6 +166,15 @@ describe("ButtonToolbar width control", () => {
     expect(wrapper.emitted("update")).toBeUndefined();
   });
 
+  it("drops a fractional percent instead of rewriting a stored decimal", async () => {
+    const wrapper = mountIt(createButtonBlock({ width: "40%" }));
+    const input = wrapper.find('input[type="number"][min="1"]');
+
+    await input.setValue("40.5");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
   it("converts px and percent through the button room", async () => {
     const pxBlock = createButtonBlock({ id: "btn", width: 240 });
     const px = mountIt(pxBlock, roomOf(pxBlock));
@@ -180,6 +189,16 @@ describe("ButtonToolbar width control", () => {
     expect(
       (percent.emitted("update") as [Partial<ButtonBlock>][])[0][0],
     ).toEqual({ width: 240 });
+  });
+
+  it("does nothing when the selected unit is chosen again", async () => {
+    const px = mountIt(createButtonBlock({ width: 200 }));
+    await unitGroup(px)!.find('[aria-label="px"]').trigger("click");
+    expect(px.emitted("update")).toBeUndefined();
+
+    const percent = mountIt(createButtonBlock({ width: "40%" }));
+    await unitGroup(percent)!.find('[aria-label="%"]').trigger("click");
+    expect(percent.emitted("update")).toBeUndefined();
   });
 
   it("uses 50% and the default px width when the room is unknown", async () => {

@@ -58,4 +58,14 @@ describe("roundHundredths", () => {
     expect(roundHundredths(Number.MAX_VALUE)).toBe(Number.MAX_VALUE);
     expect(roundHundredths(-1e19)).toBe(-1e19);
   });
+
+  it("returns a non-finite value unchanged", () => {
+    expect(roundHundredths(Number.NaN)).toBeNaN();
+    expect(roundHundredths(Number.POSITIVE_INFINITY)).toBe(
+      Number.POSITIVE_INFINITY,
+    );
+    expect(roundHundredths(Number.NEGATIVE_INFINITY)).toBe(
+      Number.NEGATIVE_INFINITY,
+    );
+  });
 });

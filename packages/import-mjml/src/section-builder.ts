@@ -369,11 +369,9 @@ export function buildSection(
     const columnCtx: ConvertContext = {
       ...ctx,
       containerWidth: Math.round(
-        (ctx.containerWidth * (widthPercents[slot] ?? 100)) / 100,
+        (ctx.containerWidth * widthPercents[slot]) / 100,
       ),
-      contentWidth: Math.floor(
-        (innerWidth * (widthPercents[slot] ?? 100)) / 100,
-      ),
+      contentWidth: Math.floor((innerWidth * widthPercents[slot]) / 100),
       columnPadding: left + right,
     };
     children[slot].push(...convertColumnChildren($column, columnCtx, entries));

@@ -7,6 +7,7 @@ import {
   createSectionBlock,
   uniformBorder,
 } from "@templatical/types";
+import type { ColumnLayout } from "@templatical/types";
 import SectionToolbar from "../src/components/toolbar/SectionToolbar.vue";
 import { TRANSLATIONS_KEY } from "../src/keys";
 import en from "../src/i18n/locales/en";
@@ -419,6 +420,20 @@ describe("SectionToolbar column widths", () => {
     await first.trigger("change");
     expect(wrapper.emitted("update")).toBeUndefined();
     expect((first.element as HTMLInputElement).value).toBe("25");
+  });
+
+  it("keeps the row when an unknown layout has no preset to match", async () => {
+    const wrapper = mountToolbar(
+      createSectionBlock({
+        columns: "bogus" as ColumnLayout,
+        columnWidths: [30, 70],
+        children: [[], []],
+      }),
+    );
+    const first = widthInput(wrapper, 1);
+    (first.element as HTMLInputElement).value = "50";
+    await first.trigger("change");
+    expect(wrapper.emitted("update")).toEqual([[{ columnWidths: [50, 50] }]]);
   });
 
   it("unsets columnWidths when the commit lands on the preset row", async () => {

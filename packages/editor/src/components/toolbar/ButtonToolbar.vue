@@ -51,13 +51,8 @@ const widthUnit = computed(() =>
 
 const customWidthValue = computed(() => {
   if (typeof props.block.width === "number") return props.block.width;
-  if (
-    parsePercentWidth(props.block.width) !== null &&
-    typeof props.block.width === "string"
-  ) {
-    return props.block.width.slice(0, -1);
-  }
-  return DEFAULT_CUSTOM_WIDTH;
+  // Shown only for Custom, which is a number or a usable percentage.
+  return String(props.block.width).slice(0, -1);
 });
 
 /** The px the button can span, the same room an image measures. */
@@ -111,12 +106,12 @@ function updateCustomWidth(raw: string): void {
 }
 
 function updateWidthUnit(unit: string): void {
-  if (unit !== "px" && unit !== "%") return;
   if (unit === widthUnit.value) return;
   const width = props.block.width;
   const roomPx = room.value;
   if (unit === "%") {
-    const px = typeof width === "number" ? width : DEFAULT_CUSTOM_WIDTH;
+    // Custom + px is a number. A percentage is already on this unit.
+    const px = width as number;
     if (roomPx === null) {
       updateField("width", "50%");
       return;
@@ -125,8 +120,8 @@ function updateWidthUnit(unit: string): void {
     updateField("width", `${pct}%`);
     return;
   }
-  const parsed = parsePercentWidth(width);
-  const pct = parsed ?? 50;
+  // The other unit is px, so the stored width is a usable percentage.
+  const pct = parsePercentWidth(width) as number;
   if (roomPx === null) {
     updateField("width", DEFAULT_CUSTOM_WIDTH);
     return;

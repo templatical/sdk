@@ -187,7 +187,6 @@ function resolveColumns(
     );
     return null;
   }
-  if (columns.length < 2) return { layout: "2" };
 
   const preset = exactPreset(columns);
   if (preset) return { layout: preset };

@@ -136,6 +136,22 @@ describe("sectionColumnPercents", () => {
     ).toEqual([99.99, 0.01]);
   });
 
+  it("takes a tied debt from the later column, and leaves a column with nothing to spare", () => {
+    // Both large shares have remainder 0, so the later one gives the
+    // hundredth back. The tiny share was lifted to 0.01 and cannot pay.
+    expect(sectionColumnPercents(section("3", [1, 1, 1e-15]))).toEqual([
+      50, 49.99, 0.01,
+    ]);
+  });
+
+  it("stops once the debt is paid when remainders differ", () => {
+    // The two tiny shares tie and have nothing to spare. `1` has a smaller
+    // remainder than `100`, so it pays the hundredth and `100` is not touched.
+    expect(sectionColumnPercents(section("4", [100, 1e-8, 1e-8, 1]))).toEqual([
+      99, 0.01, 0.01, 0.98,
+    ]);
+  });
+
   it("keeps every share at least 0.01 and totals 100", () => {
     const row = sectionColumnPercents(
       section("4", [33.335, 33.335, 33.329, 0.001]),

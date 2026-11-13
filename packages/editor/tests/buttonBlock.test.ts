@@ -57,6 +57,16 @@ describe("ButtonBlock alignment", () => {
     expect(wrapperEl.style.textAlign).toBe("center");
   });
 
+  it("leaves an unusable percentage at label width", () => {
+    const wrapper = mountButton(
+      createButtonBlock({ text: "Go", width: "150%" }),
+    );
+    const anchor = wrapper.find("a").element as HTMLElement;
+    expect(anchor.style.width).toBe("");
+    expect(anchor.style.display).toBe("inline-block");
+    expect(anchor.style.boxSizing).toBe("");
+  });
+
   it("sizes a percentage button to that share and keeps it inline", () => {
     const wrapper = mountButton(
       createButtonBlock({ text: "Go", align: "right", width: "40%" }),

@@ -19,33 +19,28 @@ export function parsePercentWidth(value: unknown): number | null {
 /**
  * Two decimal places. A decimal-exponent shift rounds a midpoint such as
  * `0.145` to `0.15`. A value whose string is already an exponent (`1e-7`)
- * shifts that exponent instead of appending a second one. A shift or a
- * result that is not finite, or an exponent string that cannot be formed,
- * returns the input unchanged.
+ * shifts that exponent instead of appending a second one. A non-finite
+ * value, or a shift that is not finite, returns the input unchanged.
  */
 export function roundHundredths(value: number): number {
   if (!Number.isFinite(value)) return value;
   const shifted = shiftDecimal(value, 2);
   if (!Number.isFinite(shifted)) return value;
-  const rounded = Math.round(shifted);
-  if (!Number.isFinite(rounded)) return value;
-  const result = shiftDecimal(rounded, -2);
-  return Number.isFinite(result) ? result : value;
+  // `Math.round` of a finite number is finite, and shifting it back by two
+  // places stays finite: the +2 shift already returned when it overflowed.
+  return shiftDecimal(Math.round(shifted), -2);
 }
 
 /**
- * Move the decimal point by `places`. `NaN` when `value` is not finite or
- * its exponent string cannot be formed, so the caller can keep the input.
+ * Move the decimal point by `places`. Callers pass a finite value and a
+ * literal `places`. A finite number's string is a decimal or one exponent.
  */
 function shiftDecimal(value: number, places: number): number {
-  if (!Number.isFinite(value) || !Number.isFinite(places)) return Number.NaN;
   const text = String(value);
   const exponential = /^(-?\d+(?:\.\d+)?)e([+-]?\d+)$/i.exec(text);
   if (exponential) {
     const exponent = Number(exponential[2]) + places;
-    if (!Number.isFinite(exponent)) return Number.NaN;
     return Number(`${exponential[1]}e${exponent}`);
   }
-  if (!/^-?\d+(?:\.\d+)?$/.test(text)) return Number.NaN;
   return Number(`${text}e${places}`);
 }

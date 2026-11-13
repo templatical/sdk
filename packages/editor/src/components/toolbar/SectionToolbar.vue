@@ -88,13 +88,9 @@ function handleColumnsChange(event: Event): void {
   emit("update", { columns, children, columnWidths: undefined });
 }
 
-/** Hundredths, towards zero. A wide pair's 5% floor stays 5. */
+/** Hundredths, towards zero. The argument is at most 5, so it is not an exponent. */
 function floorHundredths(value: number): number {
-  const text = String(value);
-  const exponential = /^(-?\d+(?:\.\d+)?)e([+-]?\d+)$/i.exec(text);
-  const shifted = exponential
-    ? Number(`${exponential[1]}e${Number(exponential[2]) + 2}`)
-    : Number(`${text}e2`);
+  const shifted = Number(`${String(value)}e2`);
   return Number(`${Math.floor(shifted)}e-2`);
 }
 
@@ -104,7 +100,7 @@ function commitColumnWidth(index: number, event: Event): void {
   const parsed = Number(text);
   const current = shownPercents.value;
   if (text === "" || !Number.isFinite(parsed)) {
-    input.value = String(current[index] ?? "");
+    input.value = String(current[index]);
     return;
   }
   const next = current.slice();
@@ -117,9 +113,9 @@ function commitColumnWidth(index: number, event: Event): void {
   next[index] = roundHundredths(clamped);
   next[neighbour] = roundHundredths(pair - next[index]!);
   const preset = COLUMN_LAYOUT_PERCENTS[props.block.columns];
+  // A known layout's preset has one share per column. An unknown layout has none.
   const matchesPreset =
     preset !== undefined &&
-    preset.length === next.length &&
     preset.every((share, shareIndex) => share === next[shareIndex]);
   emit("update", { columnWidths: matchesPreset ? undefined : next });
 }
