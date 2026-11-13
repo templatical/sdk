@@ -320,6 +320,55 @@ describe("BeeFree module gaps", () => {
   });
 
   describe("empty paragraphs", () => {
+    const keptBlankLines = [
+      '<p style="font-size:16px;line-height:32px;word-break:break-word;text-align:center;"></p>',
+      '<p style="font-size:14px;line-height:28px;"><span style="font-size:14px;line-height:28px;color:#273960;"></span></p>',
+      "<p><span><span></span></span></p>",
+    ];
+
+    it("keeps an empty paragraph and a span-only paragraph as written", () => {
+      for (const html of keptBlankLines) {
+        expect(paragraphContent(`<p>Before</p>${html}<p>After</p>`)).toBe(
+          `<p>Before</p>${html}<p>After</p>`,
+        );
+      }
+    });
+
+    it("keeps a blank line as a paragraph block so the renderer can draw it", () => {
+      const html =
+        '<p>Before</p><p style="font-size:16px;line-height:32px;word-break:break-word;text-align:center;"></p><p>After</p>';
+      const { content } = imported(template([column([textModule(html)])]));
+      const block = content.blocks[0];
+
+      expect(block?.type).toBe("paragraph");
+      if (block?.type !== "paragraph") return;
+      expect(block.content).toBe(html);
+    });
+
+    it("drops a paragraph that holds only an empty formatting element", () => {
+      for (const html of [
+        "<p><span><span><strong></strong></span></span></p>",
+        "<p><span><strong></strong></span></p>",
+        "<p><em></em></p>",
+        "<p><strong></strong></p>",
+      ]) {
+        expect(paragraphContent(`<p>Before</p>${html}<p>After</p>`)).toBe(
+          "<p>Before</p><p>After</p>",
+        );
+      }
+    });
+
+    it("keeps a paragraph whose formatting element holds a non-breaking space", () => {
+      for (const html of [
+        "<p><strong>&nbsp;</strong></p>",
+        "<p><span>&nbsp;</span></p>",
+      ]) {
+        expect(paragraphContent(`<p>Before</p>${html}<p>After</p>`)).toBe(
+          `<p>Before</p>${html}<p>After</p>`,
+        );
+      }
+    });
+
     it("drops a paragraph of empty inline elements and keeps text and nbsp paragraphs", () => {
       expect(paragraphContent(CORPUS_TEXT)).toBe(CORPUS_TEXT_IMPORTED);
     });
@@ -330,12 +379,14 @@ describe("BeeFree module gaps", () => {
       );
     });
 
-    it("drops a paragraph whose only content is an empty merge-tag chip", () => {
+    it("keeps a paragraph whose only content was an empty merge-tag chip", () => {
+      // The chip is unwrapped first. What remains is an empty paragraph,
+      // which BeeFree draws as a blank line.
       expect(
         paragraphContent(
           '<p>Before</p><p><code data-bee-type="mergetag" data-bee-code="" data-bee-name="Empty"></code></p><p>After</p>',
         ),
-      ).toBe("<p>Before</p><p>After</p>");
+      ).toBe("<p>Before</p><p></p><p>After</p>");
     });
 
     it("leaves a text module that has no paragraph after the drop as blank text", () => {
@@ -346,8 +397,13 @@ describe("BeeFree module gaps", () => {
       ).toBe("<p></p>");
     });
 
-    it("drops an empty paragraph when other visible content remains", () => {
-      expect(paragraphContent("<p></p><div>Hi</div>")).toBe("<div>Hi</div>");
+    it("keeps an empty paragraph when other visible content remains", () => {
+      expect(paragraphContent("<p></p><div>Hi</div>")).toBe(
+        "<p></p><div>Hi</div>",
+      );
+      expect(paragraphContent("<p><em></em></p><div>Hi</div>")).toBe(
+        "<div>Hi</div>",
+      );
     });
 
     it("leaves a module whose only paragraph is empty inline elements", () => {
@@ -360,76 +416,84 @@ describe("BeeFree module gaps", () => {
       expect(paragraphContent("<p>one<p></p>two</p>")).toBe(
         "<p>one<p></p>two</p>",
       );
+      expect(paragraphContent("<p><p></p></p>")).toBe("<p><p></p></p>");
     });
 
-    it("drops an empty paragraph between well-formed siblings", () => {
+    it("keeps an empty paragraph between well-formed siblings", () => {
       expect(paragraphContent("<p>a</p><p></p><p>b</p>")).toBe(
-        "<p>a</p><p>b</p>",
+        "<p>a</p><p></p><p>b</p>",
       );
     });
 
     it("keeps a paragraph whose border paints a box", () => {
       expect(
         paragraphContent(
-          '<p style="border-top:2px solid red;padding-top:12px"></p><p>Text</p>',
+          '<p style="border-top:2px solid red;padding-top:12px"><em></em></p><p>Text</p>',
         ),
       ).toBe(
-        '<p style="border-top:2px solid red;padding-top:12px"></p><p>Text</p>',
+        '<p style="border-top:2px solid red;padding-top:12px"><em></em></p><p>Text</p>',
       );
     });
 
     it("keeps a paragraph whose padding paints a box", () => {
-      expect(paragraphContent('<p style="padding:12px"></p><p>Text</p>')).toBe(
-        '<p style="padding:12px"></p><p>Text</p>',
-      );
+      expect(
+        paragraphContent('<p style="padding:12px"><em></em></p><p>Text</p>'),
+      ).toBe('<p style="padding:12px"><em></em></p><p>Text</p>');
     });
 
     it("keeps a paragraph whose height paints a box", () => {
-      expect(paragraphContent('<p style="height:20px"></p><p>Text</p>')).toBe(
-        '<p style="height:20px"></p><p>Text</p>',
-      );
+      expect(
+        paragraphContent('<p style="height:20px"><em></em></p><p>Text</p>'),
+      ).toBe('<p style="height:20px"><em></em></p><p>Text</p>');
     });
 
-    it("drops an empty sibling of a box-styled paragraph", () => {
+    it("drops a formatting sibling of a box-styled paragraph and keeps an empty one", () => {
+      expect(
+        paragraphContent('<p style="height:20px"></p><p><em></em></p>'),
+      ).toBe('<p style="height:20px"></p>');
       expect(paragraphContent('<p style="height:20px"></p><p></p>')).toBe(
-        '<p style="height:20px"></p>',
+        '<p style="height:20px"></p><p></p>',
       );
     });
 
     it("keeps a paragraph whose min-height paints a box", () => {
       expect(
-        paragraphContent('<p style="min-height:8px"></p><p>Text</p>'),
-      ).toBe('<p style="min-height:8px"></p><p>Text</p>');
+        paragraphContent('<p style="min-height:8px"><em></em></p><p>Text</p>'),
+      ).toBe('<p style="min-height:8px"><em></em></p><p>Text</p>');
     });
 
     it("keeps a paragraph whose margin is not zero", () => {
-      expect(paragraphContent('<p style="margin:10px"></p><p>Text</p>')).toBe(
-        '<p style="margin:10px"></p><p>Text</p>',
-      );
+      expect(
+        paragraphContent('<p style="margin:10px"><em></em></p><p>Text</p>'),
+      ).toBe('<p style="margin:10px"><em></em></p><p>Text</p>');
     });
 
     it("drops a paragraph whose padding is zero", () => {
-      expect(paragraphContent('<p style="padding:0"></p><p>Text</p>')).toBe(
-        "<p>Text</p>",
-      );
+      expect(
+        paragraphContent('<p style="padding:0"><em></em></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
     });
 
     it("drops a paragraph when a later padding declaration is zero", () => {
       expect(
-        paragraphContent('<p style="padding:12px;padding:0"></p><p>Text</p>'),
+        paragraphContent(
+          '<p style="padding:12px;padding:0"><em></em></p><p>Text</p>',
+        ),
       ).toBe("<p>Text</p>");
     });
 
     it("keeps a paragraph when a later padding declaration paints", () => {
       expect(
-        paragraphContent('<p style="padding:0;padding:12px"></p><p>Text</p>'),
-      ).toBe('<p style="padding:0;padding:12px"></p><p>Text</p>');
+        paragraphContent(
+          '<p style="padding:0;padding:12px"><em></em></p><p>Text</p>',
+        ),
+      ).toBe('<p style="padding:0;padding:12px"><em></em></p><p>Text</p>');
     });
 
     it("drops a paragraph when an earlier !important padding is zero", () => {
       expect(
         paragraphContent(
-          '<p style="padding:0 !important;padding:12px"></p><p>Text</p>',
+          '<p style="padding:0 !important;padding:12px"><em></em></p><p>Text</p>',
         ),
       ).toBe("<p>Text</p>");
     });
@@ -437,7 +501,7 @@ describe("BeeFree module gaps", () => {
     it("drops a paragraph when a later border declaration is none", () => {
       expect(
         paragraphContent(
-          '<p style="border:1px solid red;border:none"></p><p>Text</p>',
+          '<p style="border:1px solid red;border:none"><em></em></p><p>Text</p>',
         ),
       ).toBe("<p>Text</p>");
     });
@@ -445,15 +509,15 @@ describe("BeeFree module gaps", () => {
     it("keeps a shorthand when a later longhand does not replace it", () => {
       expect(
         paragraphContent(
-          '<p style="padding:12px;padding-top:0"></p><p>Text</p>',
+          '<p style="padding:12px;padding-top:0"><em></em></p><p>Text</p>',
         ),
-      ).toBe('<p style="padding:12px;padding-top:0"></p><p>Text</p>');
+      ).toBe('<p style="padding:12px;padding-top:0"><em></em></p><p>Text</p>');
     });
 
     it("drops a paragraph whose border is none", () => {
-      expect(paragraphContent('<p style="border:none"></p><p>Text</p>')).toBe(
-        "<p>Text</p>",
-      );
+      expect(
+        paragraphContent('<p style="border:none"><em></em></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
     });
 
     it("drops a border that does not paint", () => {
@@ -464,9 +528,9 @@ describe("BeeFree module gaps", () => {
         "border-width:2px",
         "border-radius:4px",
       ]) {
-        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
-          "<p>Text</p>",
-        );
+        expect(
+          paragraphContent(`<p style="${style}"><em></em></p><p>Text</p>`),
+        ).toBe("<p>Text</p>");
       }
     });
 
@@ -477,9 +541,9 @@ describe("BeeFree module gaps", () => {
         "border-style:solid",
         "border:solid",
       ]) {
-        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
-          `<p style="${style}"></p><p>Text</p>`,
-        );
+        expect(
+          paragraphContent(`<p style="${style}"><em></em></p><p>Text</p>`),
+        ).toBe(`<p style="${style}"><em></em></p><p>Text</p>`);
       }
     });
 
@@ -491,9 +555,9 @@ describe("BeeFree module gaps", () => {
         "padding:0 ! important",
         "border:0 solid rgb(0 0 0)",
       ]) {
-        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
-          "<p>Text</p>",
-        );
+        expect(
+          paragraphContent(`<p style="${style}"><em></em></p><p>Text</p>`),
+        ).toBe("<p>Text</p>");
       }
     });
 
@@ -504,9 +568,9 @@ describe("BeeFree module gaps", () => {
         "border:2px dashed rgba(0, 0, 0, 0.5)",
         "border-top:1px solid hsl(0 0% 0%)",
       ]) {
-        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
-          `<p style="${style}"></p><p>Text</p>`,
-        );
+        expect(
+          paragraphContent(`<p style="${style}"><em></em></p><p>Text</p>`),
+        ).toBe(`<p style="${style}"><em></em></p><p>Text</p>`);
       }
     });
 
@@ -516,26 +580,28 @@ describe("BeeFree module gaps", () => {
     });
 
     it("reads a slash after whitespace as a self-closing paragraph", () => {
-      expect(paragraphContent('<p style="padding:4px" /><p>Text</p>')).toBe(
-        '<p style="padding:4px" /><p>Text</p>',
+      expect(
+        paragraphContent('<p style="padding:4px" /><p><em></em></p>'),
+      ).toBe('<p style="padding:4px" />');
+      expect(paragraphContent("<p /><p><em></em></p>After")).toBe("<p />After");
+      expect(
+        paragraphContent('<p style="padding:4px" / ><p><em></em></p>'),
+      ).toBe('<p style="padding:4px" / >');
+      expect(paragraphContent("<p / ><p><em></em></p>After")).toBe(
+        "<p / >After",
       );
-      expect(paragraphContent("<p /><p>Text</p>")).toBe("<p>Text</p>");
-      expect(paragraphContent('<p style="padding:4px" / ><p>Text</p>')).toBe(
-        '<p style="padding:4px" / ><p>Text</p>',
-      );
-      expect(paragraphContent("<p / ><p>Text</p>")).toBe("<p>Text</p>");
     });
 
     it("drops a zero length written with a decimal or leading zeros", () => {
-      expect(paragraphContent('<p style="padding:0.0px"></p><p>Text</p>')).toBe(
-        "<p>Text</p>",
-      );
-      expect(paragraphContent('<p style="margin:00"></p><p>Text</p>')).toBe(
-        "<p>Text</p>",
-      );
-      expect(paragraphContent('<p style="padding:0.1px"></p><p>Text</p>')).toBe(
-        '<p style="padding:0.1px"></p><p>Text</p>',
-      );
+      expect(
+        paragraphContent('<p style="padding:0.0px"><em></em></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
+      expect(
+        paragraphContent('<p style="margin:00"><em></em></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
+      expect(
+        paragraphContent('<p style="padding:0.1px"><em></em></p><p>Text</p>'),
+      ).toBe('<p style="padding:0.1px"><em></em></p><p>Text</p>');
     });
 
     it("drops a zero length in em, rem, percent and viewport units", () => {
@@ -545,41 +611,48 @@ describe("BeeFree module gaps", () => {
         "padding:0%",
         "padding:0vw",
       ]) {
-        expect(paragraphContent(`<p style="${style}"></p><p>Text</p>`)).toBe(
-          "<p>Text</p>",
-        );
+        expect(
+          paragraphContent(`<p style="${style}"><em></em></p><p>Text</p>`),
+        ).toBe("<p>Text</p>");
       }
-      expect(paragraphContent('<p style="padding:0q"></p><p>Text</p>')).toBe(
-        '<p style="padding:0q"></p><p>Text</p>',
-      );
+      expect(
+        paragraphContent('<p style="padding:0q"><em></em></p><p>Text</p>'),
+      ).toBe('<p style="padding:0q"><em></em></p><p>Text</p>');
     });
 
     it("collapses repeated spaces between box tokens", () => {
       expect(
-        paragraphContent('<p style="padding:4px  8px"></p><p>Text</p>'),
-      ).toBe('<p style="padding:4px  8px"></p><p>Text</p>');
-      expect(paragraphContent('<p style="margin:0  0"></p><p>Text</p>')).toBe(
-        "<p>Text</p>",
-      );
+        paragraphContent(
+          '<p style="padding:4px  8px"><em></em></p><p>Text</p>',
+        ),
+      ).toBe('<p style="padding:4px  8px"><em></em></p><p>Text</p>');
+      expect(
+        paragraphContent('<p style="margin:0  0"><em></em></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
     });
 
     it("leaves a self-closing paragraph nested in another as written", () => {
-      expect(paragraphContent("<p>a<p/>b</p><p></p>c")).toBe("<p>a<p/>b</p>c");
+      expect(paragraphContent("<p>a<p/>b</p><p><em></em></p>c")).toBe(
+        "<p>a<p/>b</p>c",
+      );
     });
 
     it("keeps the markup when an unclosed comment is the only remainder", () => {
       expect(paragraphContent("<p></p><!-- <p>hidden")).toBe(
         "<p></p><!-- <p>hidden",
       );
+      expect(paragraphContent("<p><em></em></p><!-- <p>hidden")).toBe(
+        "<p><em></em></p><!-- <p>hidden",
+      );
     });
 
     it("drops a paragraph whose style declaration is empty", () => {
-      expect(paragraphContent('<p style=";;padding:0;"></p><p>Text</p>')).toBe(
-        "<p>Text</p>",
-      );
-      expect(paragraphContent('<p style=";;padding:;"></p><p>Text</p>')).toBe(
-        "<p>Text</p>",
-      );
+      expect(
+        paragraphContent('<p style=";;padding:0;"><em></em></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
+      expect(
+        paragraphContent('<p style=";;padding:;"><em></em></p><p>Text</p>'),
+      ).toBe("<p>Text</p>");
     });
 
     it("leaves an unclosed paragraph at the end of the string", () => {
@@ -589,22 +662,39 @@ describe("BeeFree module gaps", () => {
 
     it("leaves a closing tag that never reaches >", () => {
       expect(paragraphContent("<p></p></p")).toBe("<p></p></p");
+      expect(paragraphContent("<p><em></em></p></p")).toBe(
+        "<p><em></em></p></p",
+      );
     });
 
-    it("keeps a self-closing paragraph that paints a box and drops one that does not", () => {
+    it("keeps a self-closing paragraph whether or not its style paints a box", () => {
       expect(paragraphContent('<p style="padding:4px"/><p>Text</p>')).toBe(
         '<p style="padding:4px"/><p>Text</p>',
       );
-      expect(paragraphContent("<p/><p>Text</p>")).toBe("<p>Text</p>");
+      expect(paragraphContent("<p/><p>Text</p>")).toBe("<p/><p>Text</p>");
     });
 
-    it("keeps whatever remains when every paragraph is empty", () => {
-      expect(paragraphContent("<p></p>tail")).toBe("tail");
-      expect(paragraphContent("<p></p> < 3")).toBe(" < 3");
-      expect(paragraphContent('<p></p><img src="x">')).toBe('<img src="x">');
+    it("keeps an empty paragraph and restores a formatting paragraph that leaves nothing visible", () => {
+      expect(paragraphContent("<p></p>tail")).toBe("<p></p>tail");
+      expect(paragraphContent("<p></p> < 3")).toBe("<p></p> < 3");
+      expect(paragraphContent('<p></p><img src="x">')).toBe(
+        '<p></p><img src="x">',
+      );
       expect(paragraphContent("<p></p></div>")).toBe("<p></p></div>");
       expect(paragraphContent("<p></p></div")).toBe("<p></p></div");
-      expect(paragraphContent("<p></p><div")).toBe("<div");
+      expect(paragraphContent("<p></p><div")).toBe("<p></p><div");
+      expect(paragraphContent("<p><em></em></p>tail")).toBe("tail");
+      expect(paragraphContent("<p><em></em></p> < 3")).toBe(" < 3");
+      expect(paragraphContent('<p><em></em></p><img src="x">')).toBe(
+        '<img src="x">',
+      );
+      expect(paragraphContent("<p><em></em></p></div>")).toBe(
+        "<p><em></em></p></div>",
+      );
+      expect(paragraphContent("<p><em></em></p></div")).toBe(
+        "<p><em></em></p></div",
+      );
+      expect(paragraphContent("<p><em></em></p><div")).toBe("<div");
     });
 
     it("drops the corpus paragraph that only sets typography", () => {
@@ -617,10 +707,16 @@ describe("BeeFree module gaps", () => {
 
     it("ignores a paragraph tag inside a comment", () => {
       expect(paragraphContent("<p></p><!-- <p> --><p>x</p>")).toBe(
+        "<p></p><!-- <p> --><p>x</p>",
+      );
+      expect(paragraphContent("<p><em></em></p><!-- <p> --><p>x</p>")).toBe(
         "<!-- <p> --><p>x</p>",
       );
       expect(paragraphContent("<p></p><!-- <p> -->")).toBe(
         "<p></p><!-- <p> -->",
+      );
+      expect(paragraphContent("<p><em></em></p><!-- <p> -->")).toBe(
+        "<p><em></em></p><!-- <p> -->",
       );
     });
 
@@ -1264,22 +1360,31 @@ describe("BeeFree module gaps", () => {
     function htmlContent(
       html: string,
       type = "mailup-bee-newsletter-modules-html",
+      fontFamily?: string,
     ) {
-      const { content, report } = imported(
-        template([
-          column([
-            {
-              type,
-              descriptor: { html: { html } },
-            },
-          ]),
+      const source = template([
+        column([
+          {
+            type,
+            descriptor: { html: { html } },
+          },
         ]),
-      );
+      ]);
+      if (fontFamily !== undefined) {
+        source.page.body = {
+          content: { style: { "font-family": fontFamily } },
+        };
+      }
+      const { content, report } = imported(source);
       const block = content.blocks[0];
       if (block?.type !== "html") {
         throw new Error(`expected html, got ${block?.type}`);
       }
-      return { content: block.content, entry: report.entries[0] };
+      return {
+        content: block.content,
+        entry: report.entries[0],
+        fontFamily: content.settings.fontFamily,
+      };
     }
 
     it("centres a Twig control tag the way BeeFree's export wraps it", () => {
@@ -1288,7 +1393,7 @@ describe("BeeFree module gaps", () => {
       );
 
       expect(content).toBe(
-        '<div style="text-align:center" align="center">{% for companion in guest.companions %}</div>',
+        '<div style="font-size:16px;text-align:center" align="center">{% for companion in guest.companions %}</div>',
       );
       expect(entry).toEqual({
         beeFreeModuleType: "mailup-bee-newsletter-modules-html",
@@ -1297,17 +1402,113 @@ describe("BeeFree module gaps", () => {
       });
     });
 
-    it("centres real HTML content", () => {
-      const { content } = htmlContent("<p>Hello</p>");
+    it("sets 16px and no font-family when the body sets no font", () => {
+      const { content, fontFamily } = htmlContent("<p>Hello</p>");
 
       expect(content).toBe(
-        '<div style="text-align:center" align="center"><p>Hello</p></div>',
+        '<div style="font-size:16px;text-align:center" align="center"><p>Hello</p></div>',
+      );
+      expect(fontFamily).toBe("Arial");
+    });
+
+    it("copies the page body font and the 16px browser default onto the wrapper", () => {
+      const font = "Arial, Helvetica Neue, Helvetica, sans-serif";
+      const { content, entry, fontFamily } = htmlContent(
+        "<p>Hello</p>",
+        "mailup-bee-newsletter-modules-html",
+        font,
+      );
+
+      expect(content).toBe(
+        '<div style="font-family:Arial, Helvetica Neue, Helvetica, sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>',
+      );
+      expect(fontFamily).toBe(font);
+      expect(entry).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-html",
+        templaticalBlockType: "html",
+        status: "converted",
+      });
+    });
+
+    it("escapes a quoted body font inside the wrapper attribute", () => {
+      const { content } = htmlContent(
+        "<p>Hello</p>",
+        "mailup-bee-newsletter-modules-html",
+        "'Helvetica Neue', Helvetica, Arial, sans-serif",
+      );
+
+      expect(content).toBe(
+        `<div style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>`,
+      );
+    });
+
+    it("escapes a double quote in a quoted body font", () => {
+      const { content } = htmlContent(
+        "<p>Hello</p>",
+        "mailup-bee-newsletter-modules-html",
+        `'Foo"Bar', sans-serif`,
+      );
+
+      expect(content).toBe(
+        `<div style="font-family:'Foo&quot;Bar', sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>`,
+      );
+    });
+
+    it("copies the body font onto an HTML module in a two-column row", () => {
+      const { content } = imported({
+        page: {
+          body: {
+            content: {
+              style: {
+                "font-family": "Arial, Helvetica Neue, Helvetica, sans-serif",
+              },
+            },
+          },
+          rows: [
+            {
+              columns: [
+                column(
+                  [
+                    {
+                      type: "mailup-bee-newsletter-modules-html",
+                      descriptor: { html: { html: "<p>Hello</p>" } },
+                    },
+                  ],
+                  6,
+                ),
+                column(
+                  [
+                    {
+                      type: "mailup-bee-newsletter-modules-text",
+                      descriptor: { text: { html: "<p>Side</p>" } },
+                    },
+                  ],
+                  6,
+                ),
+              ],
+            },
+          ],
+        },
+      });
+      const block = sectionBlock(content.blocks[0]).children[0][0];
+
+      expect(block.type).toBe("html");
+      if (block.type !== "html") return;
+      expect(block.content).toBe(
+        '<div style="font-family:Arial, Helvetica Neue, Helvetica, sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>',
       );
     });
 
     it("leaves blank HTML content unwrapped", () => {
       expect(htmlContent("").content).toBe("");
       expect(htmlContent(" \n\t ").content).toBe(" \n\t ");
+      expect(
+        htmlContent(
+          "",
+          "mailup-bee-newsletter-modules-html",
+          "Arial, Helvetica Neue, Helvetica, sans-serif",
+        ).content,
+      ).toBe("");
     });
 
     it("leaves an html module with no html field blank and unwrapped", () => {

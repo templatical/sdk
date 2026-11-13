@@ -559,6 +559,87 @@ describe("convertBeeFreeTemplate", () => {
     },
   );
 
+  describe("button fill", () => {
+    function importedButton(style: Record<string, string>) {
+      const { content } = convertBeeFreeTemplate({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-button",
+                      descriptor: {
+                        button: {
+                          label: "Outline",
+                          href: "https://example.com",
+                          style,
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const block = content.blocks.flatMap((item) =>
+        item.type === "section" ? item.children.flat() : [item],
+      )[0];
+      if (block?.type !== "button") throw new Error("expected a button block");
+      return block;
+    }
+
+    it.each([
+      "transparent",
+      "TRANSPARENT",
+      "rgba(0,0,0,0)",
+      "hsla(0, 0%, 100%, 0)",
+      "#0000",
+      "#00000000",
+    ])("imports a %s fill as transparent", (fill) => {
+      expect(importedButton({ "background-color": fill }).backgroundColor).toBe(
+        "transparent",
+      );
+    });
+
+    it("keeps a 1px black border on an outline button", () => {
+      const block = importedButton({
+        "background-color": "transparent",
+        "border-top": "1px solid #000000",
+        "border-right": "1px solid #000000",
+        "border-bottom": "1px solid #000000",
+        "border-left": "1px solid #000000",
+      });
+      expect(block.backgroundColor).toBe("transparent");
+      expect(block.border).toEqual({
+        top: { width: 1, style: "solid", color: "#000000" },
+        right: { width: 1, style: "solid", color: "#000000" },
+        bottom: { width: 1, style: "solid", color: "#000000" },
+        left: { width: 1, style: "solid", color: "#000000" },
+      });
+    });
+
+    it("keeps the indigo default when the fill is missing or unreadable", () => {
+      expect(importedButton({}).backgroundColor).toBe("#4f46e5");
+      expect(
+        importedButton({ "background-color": "none" }).backgroundColor,
+      ).toBe("#4f46e5");
+      expect(
+        importedButton({ "background-color": "inherit" }).backgroundColor,
+      ).toBe("#4f46e5");
+    });
+
+    it("leaves a solid fill unchanged", () => {
+      expect(
+        importedButton({ "background-color": "#ff0000" }).backgroundColor,
+      ).toBe("#ff0000");
+    });
+  });
+
   it("converts divider module", () => {
     const template: BeeFreeTemplate = {
       page: {
@@ -3023,7 +3104,7 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("html");
         if (block.type !== "html") throw new Error("expected an html block");
         expect(block.content).toBe(
-          '<div style="text-align:center" align="center"><p>Hi</p></div>',
+          '<div style="font-size:16px;text-align:center" align="center"><p>Hi</p></div>',
         );
         expect(block.styles.padding).toEqual(returned);
       });

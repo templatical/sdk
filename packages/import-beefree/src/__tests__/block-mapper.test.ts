@@ -4103,7 +4103,7 @@ describe("convertModule", () => {
       expect(block.type).toBe("html");
       if (block.type === "html") {
         expect(block.content).toBe(
-          '<div style="text-align:center" align="center"><div class="custom">Custom HTML</div></div>',
+          '<div style="font-size:16px;text-align:center" align="center"><div class="custom">Custom HTML</div></div>',
         );
       }
       expect(entry.status).toBe("converted");
@@ -4696,22 +4696,29 @@ describe("convertModule", () => {
         );
       });
 
-      it("drops an empty paragraph between text and keeps a module that is only blank", () => {
-        // An empty `<p>` has no line box. A module whose only paragraph is
-        // blank stays that empty paragraph.
+      it("keeps an empty paragraph between text and keeps a module that is only blank", () => {
+        // An empty `<p>` is a blank line BeeFree draws. It stays in the
+        // paragraph, so the renderer fills it; the block is not a spacer.
+        // A module whose only paragraph is blank stays that empty paragraph.
         const style = {
           color: "#555555",
           "font-family": "Georgia, serif",
           "line-height": "150%",
         };
-        expect(
-          textHtml(
-            "text",
-            "<p>We look forward to seeing you.</p><p></p><p>Sincerely,<br/>Your Event Team</p>",
-            style,
-          ),
-        ).toBe(
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: {
+              html: "<p>We look forward to seeing you.</p><p></p><p>Sincerely,<br/>Your Event Team</p>",
+              style,
+            },
+          }),
+          [],
+        );
+        expect(block.type).toBe("paragraph");
+        if (block.type !== "paragraph") return;
+        expect(block.content).toBe(
           '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia">We look forward to seeing you.</span></p>' +
+            '<p style="line-height: 1.5"></p>' +
             '<p style="line-height: 1.5"><span style="color: #555555; font-family: Georgia">Sincerely,<br/>Your Event Team</span></p>',
         );
         expect(textHtml("text", "<p> </p>", style)).toBe(

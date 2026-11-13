@@ -60,6 +60,7 @@ import {
   parseImageBorderRadius,
   parsePxValue,
   parseColor,
+  isTransparentColor,
   parseBorderTop,
   extractPadding,
   readButtonPadding,
@@ -102,6 +103,12 @@ export interface ModuleContext {
    * false so its content stays a paragraph and can be stored in `l10n`.
    */
   blankParagraphAsSpacer?: boolean;
+  /**
+   * The page body font: `canonicalFontStack` of
+   * `page.body.content.style["font-family"]`. Unset when the body sets no
+   * font. An HTML module writes it on its wrapper.
+   */
+  bodyFontFamily?: string;
 }
 
 /**
@@ -248,14 +255,16 @@ function finishTextHtml(html: string): string {
 }
 
 /**
- * A `<p>` with no line box: no text other than ASCII whitespace, no
- * non-breaking space, and no replaced or void element. Removing it keeps
- * `fillEmptyParagraphs` from painting a line BeeFree does not draw.
- * `<p>&nbsp;</p>` and `<p><br></p>` stay, and so does a `<p>` whose own
- * `style` paints a box. A `<p>` that opens while another `<p>` is open stays
- * as written. When dropping leaves no visible content, the HTML stays, so a
- * blank text module is unchanged. A `<p>` whose own style paints a box is
- * visible content, so an empty sibling of one is dropped.
+ * A `<p>` BeeFree does not draw. It has no text other than ASCII whitespace,
+ * no non-breaking space, and no replaced or void element, and it contains an
+ * element other than `<span>` (`strong`, `em`, `code`, and the rest). An
+ * empty `<p>`, or one that holds only nested empty `<span>` elements, is a
+ * blank line and stays, so `fillEmptyParagraphs` paints it. `<p>&nbsp;</p>`
+ * and `<p><br></p>` stay, and so does a `<p>` whose own `style` paints a box.
+ * A `<p>` that opens while another `<p>` is open stays as written. When
+ * dropping leaves no visible content, the HTML stays, so a blank text module
+ * is unchanged. A `<p>` whose own style paints a box is visible content, so
+ * a formatting sibling of one is dropped and an empty sibling stays.
  */
 const LINE_BOX_TAGS = new Set([
   "area",
@@ -517,7 +526,11 @@ function openTagPaintsBox(html: string, start: number, end: number): boolean {
   return css !== undefined && stylePaintsBox(css);
 }
 
-/** Paragraphs with no line box, as source ranges. One forward pass. */
+/**
+ * Paragraphs BeeFree does not draw, as source ranges. One forward pass.
+ * A no-ink paragraph is listed only when it contains an element other than
+ * `<span>`. An empty `<p>` holds nothing, so it is not listed.
+ */
 function emptyParagraphRanges(html: string): Array<[number, number]> {
   const skip: Array<[number, number]> = [];
   let open: {
@@ -525,6 +538,7 @@ function emptyParagraphRanges(html: string): Array<[number, number]> {
     ink: boolean;
     depth: number;
     malformed: boolean;
+    nonSpan: boolean;
   } | null = null;
   let i = 0;
   while (i < html.length) {
@@ -556,7 +570,9 @@ function emptyParagraphRanges(html: string): Array<[number, number]> {
       if (name === "p" && open) {
         open.depth -= 1;
         if (open.depth === 0) {
-          if (!open.ink && !open.malformed) skip.push([open.start, i]);
+          if (!open.ink && !open.malformed && open.nonSpan) {
+            skip.push([open.start, i]);
+          }
           open = null;
         }
       }
@@ -570,18 +586,18 @@ function emptyParagraphRanges(html: string): Array<[number, number]> {
         // paragraph around it, exactly as written.
         open.malformed = true;
         if (!tagSelfCloses(html, end)) open.depth += 1;
-      } else if (tagSelfCloses(html, end)) {
-        if (!openTagPaintsBox(html, lt, end)) skip.push([lt, end + 1]);
-      } else {
+      } else if (!tagSelfCloses(html, end)) {
         open = {
           start: lt,
           ink: openTagPaintsBox(html, lt, end),
           depth: 1,
           malformed: false,
+          nonSpan: false,
         };
       }
-    } else if (open && LINE_BOX_TAGS.has(name)) {
-      open.ink = true;
+    } else if (open) {
+      if (name !== "span") open.nonSpan = true;
+      if (LINE_BOX_TAGS.has(name)) open.ink = true;
     }
     i = end + 1;
   }
@@ -2334,6 +2350,18 @@ function buttonBorder(style: Record<string, string>): BorderValue | undefined {
   return drawn ? border : undefined;
 }
 
+/**
+ * An outline button stores `"transparent"`. `parseColor` returns `""` for
+ * that keyword, and for `none` and the CSS-wide keywords, so other callers
+ * can apply their own fallback. Only an explicit transparent fill — the
+ * keyword, or an alpha of 0 — changes; a missing or unreadable fill stays
+ * the default.
+ */
+function buttonBackgroundColor(value: string | undefined): string {
+  if (isTransparentColor(value)) return "transparent";
+  return parseColor(value) || "#4f46e5";
+}
+
 function convertButton(descriptor: BeeFreeeModuleDescriptor): {
   block: Block;
   notes: string[];
@@ -2370,7 +2398,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
     block: createButtonBlock({
       text: label,
       url: button.href ? decodeEntitiesInTokens(button.href) : "#",
-      backgroundColor: parseColor(style["background-color"]) || "#4f46e5",
+      backgroundColor: buttonBackgroundColor(style["background-color"]),
       textColor: parseColor(style.color) || "#ffffff",
       borderRadius: parsePxValue(style["border-radius"]),
       fontSize,
@@ -2534,14 +2562,19 @@ function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
 function convertHtml(
   descriptor: BeeFreeeModuleDescriptor,
   moduleType: string,
+  bodyFontFamily?: string,
 ): Block {
   const html = importedHtml(descriptor.html?.html ?? "");
-  // BeeFree centres an HTML module. The template font already comes from
-  // `mj-all`, so the wrapper carries no font-family. Blank content, and an
-  // addon that carries HTML, stay unwrapped.
+  // BeeFree centres an HTML module. The export sets no font-size, so the
+  // content renders at the browser default, 16px. The wrapper copies the
+  // page body font; with none, it sets no font-family. Blank content, and
+  // an addon that carries HTML, stay unwrapped.
+  const fontFamily = bodyFontFamily
+    ? `font-family:${escapeHtml(bodyFontFamily)};`
+    : "";
   const content =
     moduleType === HTML_MODULE && html.trim() !== ""
-      ? `<div style="text-align:center" align="center">${html}</div>`
+      ? `<div style="${fontFamily}font-size:16px;text-align:center" align="center">${html}</div>`
       : html;
 
   return createHtmlBlock({
@@ -3668,7 +3701,7 @@ function convertModuleBase(
       break;
     }
     case "html":
-      block = convertHtml(descriptor, module.type);
+      block = convertHtml(descriptor, module.type, context.bodyFontFamily);
       break;
     case "social": {
       const result = convertSocial(descriptor, warnings);
