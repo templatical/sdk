@@ -1,10 +1,10 @@
 ---
-description: All 9 lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, heroes that render as regular sections, ignored column widths, and background images Outlook can't layer — with severities and fixes.
+description: lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, heroes that render as regular sections, ignored column widths, and background images Outlook can't layer — with severities and fixes.
 ---
 
 # Structure rule catalog
 
-The 9 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
+The rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
 
 ## Tree integrity
 

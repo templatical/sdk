@@ -22,6 +22,14 @@ export const COLUMN_LAYOUT_PERCENTS: Readonly<
 
 type ColumnWidthsSection = Pick<SectionBlock, "columns" | "columnWidths">;
 
+/** A preset row, or `[100]` when `layout` is not one of the keys. */
+function layoutPercents(layout: string): readonly number[] {
+  if (Object.hasOwn(COLUMN_LAYOUT_PERCENTS, layout)) {
+    return COLUMN_LAYOUT_PERCENTS[layout as ColumnLayout];
+  }
+  return [100];
+}
+
 function isPositiveFinite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
@@ -132,6 +140,5 @@ export function sectionColumnPercents(section: ColumnWidthsSection): number[] {
   ) {
     return scaleToHundred(section.columnWidths);
   }
-  const preset = COLUMN_LAYOUT_PERCENTS[section.columns];
-  return preset ? [...preset] : [100];
+  return [...layoutPercents(section.columns)];
 }

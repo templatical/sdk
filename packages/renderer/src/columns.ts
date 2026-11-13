@@ -1,11 +1,18 @@
 import { COLUMN_LAYOUT_PERCENTS, type ColumnLayout } from "@templatical/types";
 
+/** A preset row, or `[100]` when `layout` is not one of the keys. */
+function layoutPercents(layout: string): readonly number[] {
+  if (Object.hasOwn(COLUMN_LAYOUT_PERCENTS, layout)) {
+    return COLUMN_LAYOUT_PERCENTS[layout as ColumnLayout];
+  }
+  return [100];
+}
+
 /**
  * Get width percentages for each column in a layout.
  */
 export function getWidthPercentages(layout: ColumnLayout): string[] {
-  const percents = COLUMN_LAYOUT_PERCENTS[layout] ?? [100];
-  return percents.map((percent) => `${percent}%`);
+  return layoutPercents(layout).map((percent) => `${percent}%`);
 }
 
 /**
@@ -26,8 +33,9 @@ export function getWidthPixels(
     case "2-1":
       return [(containerWidth * 2) / 3, containerWidth / 3];
     default: {
-      const percents = COLUMN_LAYOUT_PERCENTS[layout] ?? [100];
-      return percents.map((percent) => (containerWidth * percent) / 100);
+      return layoutPercents(layout).map(
+        (percent) => (containerWidth * percent) / 100,
+      );
     }
   }
 }

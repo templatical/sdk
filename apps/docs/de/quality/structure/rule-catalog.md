@@ -1,6 +1,6 @@
 # Regelkatalog Struktur
 
-Die 9 Regeln, die `lintStructure` mitliefert. Jede Regel liegt in `packages/quality/src/structure/rules/`; Schweregrad ist pro Regel über die [Optionen](../options) anpassbar.
+Die Regeln, die `lintStructure` mitliefert. Jede Regel liegt in `packages/quality/src/structure/rules/`; Schweregrad ist pro Regel über die [Optionen](../options) anpassbar.
 
 ## Baum-Integrität
 

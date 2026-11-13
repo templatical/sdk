@@ -199,7 +199,7 @@ A percentage above 0 and below 100 is stored as that percentage. MJML renders it
 
 ### Button line height
 
-`line-height` becomes `lineHeight`, a multiple of the font size, and it applies to every line of a wrapped label. A percentage is that number over 100 (`200%` is `2`), a unitless number is itself, and a px length is that many pixels divided by the font size (`28px` at 14px is `2`; with no `font-size`, by the button's 15px), rounded to two decimals. `120%`, and a missing, unreadable or non-positive value, leaves `lineHeight` unset, so a button the renderer wrote at `120%` imports as it renders today.
+`line-height` becomes `lineHeight`, a multiple of the font size, and it applies to every line of a wrapped label. A percentage is that number over 100 (`200%` is `2`), a unitless number is itself, a px length is that many pixels divided by the font size (`28px` at 14px is `2`; with no `font-size`, by the button's 15px), and an `em` length is the number itself (`2em` is `2`), rounded to two decimals. A value that equals 1.2, including `120%` and `1.2em`, or a missing value, leaves `lineHeight` unset and the button stays converted, so a button the renderer wrote at `120%` imports as it renders today. Any other explicit value that cannot be read (`2rem`, `normal`, `calc(...)`, a non-positive number) leaves `lineHeight` unset and adds the note `Button line-height "<value>" could not be read; imported at 1.2.`, so the entry is approximated.
 
 ### Borders and corners
 

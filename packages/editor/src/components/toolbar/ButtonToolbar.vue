@@ -37,7 +37,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const editor = inject(EDITOR_KEY, null);
 const localized = editor ? useLocalizedDisplay(editor) : null;
-const layout = inject(LAYOUT_KEY, undefined);
+const layout = inject(LAYOUT_KEY, null);
 
 const DEFAULT_CUSTOM_WIDTH = 200;
 
@@ -62,7 +62,9 @@ const customWidthValue = computed(() => {
 
 /** The px the button can span, the same room an image measures. */
 const room = computed(() =>
-  localized ? imageRoom(localized.content.value, props.block.id, layout) : null,
+  localized
+    ? imageRoom(localized.content.value, props.block.id, layout ?? undefined)
+    : null,
 );
 
 function updateField(field: string, value: unknown): void {

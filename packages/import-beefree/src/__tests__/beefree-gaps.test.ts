@@ -202,7 +202,7 @@ describe("BeeFree module gaps", () => {
       });
     });
 
-    it("copies module visibility onto every extra block", () => {
+    it("keeps module visibility on the one social block", () => {
       const social: BeeFreeeModule = {
         type: "mailup-bee-newsletter-modules-social",
         descriptor: {
@@ -230,16 +230,21 @@ describe("BeeFree module gaps", () => {
       );
       const section = sectionBlock(content.blocks[0]);
       const blocks = section.children[1];
+      const socialBlock = blocks[0];
 
-      expect(blocks.map((block) => block.type)).toEqual(["image", "social"]);
-      expect(blocks.map((block) => block.visibility)).toEqual([
-        { desktop: true, mobile: false },
-        { desktop: true, mobile: false },
+      expect(blocks.map((block) => block.type)).toEqual(["social"]);
+      expect(socialBlock.type).toBe("social");
+      if (socialBlock.type !== "social") return;
+      expect(socialBlock.icons.map((icon) => icon.platform)).toEqual([
+        "website",
+        "facebook",
       ]);
+      expect(socialBlock.visibility).toEqual({ desktop: true, mobile: false });
+      expect(JSON.stringify(socialBlock)).not.toContain("myspace.png");
       expect(section.visibility).toBeUndefined();
     });
 
-    it("gives each extra block its own visibility object", () => {
+    it("gives the social block its own visibility object", () => {
       const social: BeeFreeeModule = {
         type: "mailup-bee-newsletter-modules-social",
         descriptor: {
@@ -262,22 +267,25 @@ describe("BeeFree module gaps", () => {
           },
         },
       };
-      const { content } = imported(
-        template([column([textModule("<p>Copy</p>")], 6), column([social], 6)]),
-      );
-      const blocks = sectionBlock(content.blocks[0]).children[1];
-      const block = blocks[0];
-      const extra = blocks[1];
-      if (!block.visibility || !extra.visibility) {
-        throw new Error("expected visibility on the block and the extra");
+      const source = template([
+        column([textModule("<p>Copy</p>")], 6),
+        column([social], 6),
+      ]);
+      const first = sectionBlock(imported(source).content.blocks[0])
+        .children[1];
+      const second = sectionBlock(imported(source).content.blocks[0])
+        .children[1];
+      const block = first[0];
+      const again = second[0];
+      if (!block.visibility || !again.visibility) {
+        throw new Error("expected visibility on the social block");
       }
 
-      expect(blocks.map((item) => item.type)).toEqual(["image", "social"]);
+      expect(first.map((item) => item.type)).toEqual(["social"]);
       expect(block.visibility).toEqual({ desktop: true, mobile: false });
-      expect(extra.visibility).toEqual({ desktop: true, mobile: false });
-      extra.visibility.mobile = true;
-      expect(block.visibility).toEqual({ desktop: true, mobile: false });
-      expect(extra.visibility).toEqual({ desktop: true, mobile: true });
+      block.visibility.mobile = true;
+      expect(again.visibility).toEqual({ desktop: true, mobile: false });
+      expect(block.visibility).toEqual({ desktop: true, mobile: true });
     });
 
     it("keeps a module flag on a block left bare in a flattened row", () => {
@@ -379,14 +387,14 @@ describe("BeeFree module gaps", () => {
       );
     });
 
-    it("keeps a paragraph whose only content was an empty merge-tag chip", () => {
-      // The chip is unwrapped first. What remains is an empty paragraph,
-      // which BeeFree draws as a blank line.
+    it("drops a paragraph whose only content is an empty merge-tag chip", () => {
+      // The chip is still in the source when the drop is decided, so the
+      // empty `<code>` is a non-span element and the paragraph goes.
       expect(
         paragraphContent(
           '<p>Before</p><p><code data-bee-type="mergetag" data-bee-code="" data-bee-name="Empty"></code></p><p>After</p>',
         ),
-      ).toBe("<p>Before</p><p></p><p>After</p>");
+      ).toBe("<p>Before</p><p>After</p>");
     });
 
     it("leaves a text module that has no paragraph after the drop as blank text", () => {
@@ -720,6 +728,77 @@ describe("BeeFree module gaps", () => {
       );
     });
 
+    it("keeps a paragraph whose descendant draws a box and drops a zero box", () => {
+      const drawn =
+        '<p><a style="display:inline-block;width:24px;height:24px;background:red"></a></p>';
+      expect(paragraphContent(`<p>Alpha</p>${drawn}<p>Omega</p>`)).toBe(
+        `<p>Alpha</p>${drawn}<p>Omega</p>`,
+      );
+      expect(paragraphContent(`<p><em></em></p>${drawn}`)).toBe(drawn);
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:inline-block;width:0;height:0"></a></p><p>Omega</p>',
+        ),
+      ).toBe("<p>Alpha</p><p>Omega</p>");
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><em style="padding:4px"></em></p><p>Omega</p>',
+        ),
+      ).toBe('<p>Alpha</p><p><em style="padding:4px"></em></p><p>Omega</p>');
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:block;width:24px;height:24px"></a></p><p>Omega</p>',
+        ),
+      ).toBe(
+        '<p>Alpha</p><p><a style="display:block;width:24px;height:24px"></a></p><p>Omega</p>',
+      );
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:block;width:24px;height:0"></a></p><p>Omega</p>',
+        ),
+      ).toBe("<p>Alpha</p><p>Omega</p>");
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:block;height:24px"></a></p><p>Omega</p>',
+        ),
+      ).toBe(
+        '<p>Alpha</p><p><a style="display:block;height:24px"></a></p><p>Omega</p>',
+      );
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:block;width:24px"></a></p><p>Omega</p>',
+        ),
+      ).toBe("<p>Alpha</p><p>Omega</p>");
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:inline;width:24px;height:24px"></a></p><p>Omega</p>',
+        ),
+      ).toBe(
+        '<p>Alpha</p><p><a style="display:inline;width:24px;height:24px"></a></p><p>Omega</p>',
+      );
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:block;width:auto;height:24px"></a></p><p>Omega</p>',
+        ),
+      ).toBe(
+        '<p>Alpha</p><p><a style="display:block;width:auto;height:24px"></a></p><p>Omega</p>',
+      );
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:block;width:24q;height:24px"></a></p><p>Omega</p>',
+        ),
+      ).toBe(
+        '<p>Alpha</p><p><a style="display:block;width:24q;height:24px"></a></p><p>Omega</p>',
+      );
+      expect(
+        paragraphContent(
+          '<p>Alpha</p><p><a style="display:block;width:0;height:24px"></a></p><p>Omega</p>',
+        ),
+      ).toBe(
+        '<p>Alpha</p><p><a style="display:block;width:0;height:24px"></a></p><p>Omega</p>',
+      );
+    });
+
     it("drops empty paragraphs in linear time", () => {
       const adversarial = (n: number) => "<p<p".repeat(n);
       const block = convertModule(textModule(adversarial(32)), []).block;
@@ -730,6 +809,90 @@ describe("BeeFree module gaps", () => {
         return () => convertModule(textModule(html), []);
       }, 1_000);
     }, 30_000);
+  });
+
+  describe("empty paragraphs decided on the source HTML", () => {
+    // The module line-height is what runs the style pass. That pass strips
+    // an empty inline subtree, so the decision has to happen on this markup.
+    const textStyle = { "line-height": "120%" };
+    const strong =
+      '<p style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;" data-mce-style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;"><span style="font-size: 16px; line-height: 32px;" data-mce-style="font-size: 16px; line-height: 32px;"><span style="font-size: 18px; line-height: 36px;" data-mce-style="font-size: 18px; line-height: 36px;"><strong></strong></span></span></p>';
+    const blank =
+      '<p style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;" data-mce-style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;"></p>';
+    const spanOnly =
+      '<p style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;" data-mce-style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;"><span style="font-size: 16px; line-height: 32px; color: #273960;" data-mce-style="font-size: 16px; line-height: 32px; color: #273960;"></span></p>';
+    const emph =
+      '<p style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;" data-mce-style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;"><span style="font-size: 16px; line-height: 32px;" data-mce-style="font-size: 16px; line-height: 32px;"><span style="font-size: 18px; line-height: 36px;" data-mce-style="font-size: 18px; line-height: 36px;"><em></em></span></span></p>';
+    const keptBlank =
+      '<p style="font-size: 16px; word-break: break-word; text-align: center; line-height: 1.2" data-mce-style="font-size: 16px; line-height: 32px; word-break: break-word; text-align: center;"></p>';
+    const sides =
+      '<p style="line-height: 1.2">Alpha</p><p style="line-height: 1.2">Omega</p>';
+    const withBlank = `<p style="line-height: 1.2">Alpha</p>${keptBlank}<p style="line-height: 1.2">Omega</p>`;
+
+    function textContent(html: string): string {
+      const { content } = imported(
+        template([
+          column([
+            {
+              type: "mailup-bee-newsletter-modules-text",
+              descriptor: { text: { html, style: textStyle } },
+            },
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+      if (block?.type !== "paragraph") {
+        throw new Error(`expected a paragraph, got ${block?.type}`);
+      }
+      return block.content;
+    }
+
+    function paragraphHtml(html: string): string {
+      const { content } = imported(
+        template([
+          column([
+            paragraphModule(html, textStyle, {
+              "padding-top": "10px",
+              "padding-right": "10px",
+              "padding-bottom": "10px",
+              "padding-left": "10px",
+            }),
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+      if (block?.type !== "paragraph") {
+        throw new Error(`expected a paragraph, got ${block?.type}`);
+      }
+      return block.content;
+    }
+
+    it("drops a TinyMCE paragraph that holds only an empty strong", () => {
+      expect(textContent(`<p>Alpha</p>${strong}<p>Omega</p>`)).toBe(sides);
+    });
+
+    it("keeps an empty paragraph as a blank line", () => {
+      expect(textContent(`<p>Alpha</p>${blank}<p>Omega</p>`)).toBe(withBlank);
+    });
+
+    it("keeps a paragraph that holds only an empty span", () => {
+      expect(textContent(`<p>Alpha</p>${spanOnly}<p>Omega</p>`)).toBe(
+        withBlank,
+      );
+    });
+
+    it("drops a paragraph that holds only an empty em", () => {
+      expect(textContent(`<p>Alpha</p>${emph}<p>Omega</p>`)).toBe(sides);
+    });
+
+    it("drops and keeps the same shapes in a paragraph module", () => {
+      expect(paragraphHtml(`<p>Alpha</p>${blank}<p>Omega</p>`)).toBe(withBlank);
+      expect(paragraphHtml(`<p>Alpha</p>${spanOnly}<p>Omega</p>`)).toBe(
+        withBlank,
+      );
+      expect(paragraphHtml(`<p>Alpha</p>${emph}<p>Omega</p>`)).toBe(sides);
+      expect(paragraphHtml(`<p>Alpha</p>${strong}<p>Omega</p>`)).toBe(sides);
+    });
   });
 
   describe("blank paragraph modules", () => {
@@ -1393,7 +1556,7 @@ describe("BeeFree module gaps", () => {
       );
 
       expect(content).toBe(
-        '<div style="font-size:16px;text-align:center" align="center">{% for companion in guest.companions %}</div>',
+        '<div style="font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center">{% for companion in guest.companions %}</div>',
       );
       expect(entry).toEqual({
         beeFreeModuleType: "mailup-bee-newsletter-modules-html",
@@ -1406,9 +1569,19 @@ describe("BeeFree module gaps", () => {
       const { content, fontFamily } = htmlContent("<p>Hello</p>");
 
       expect(content).toBe(
-        '<div style="font-size:16px;text-align:center" align="center"><p>Hello</p></div>',
+        '<div style="font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center"><p>Hello</p></div>',
       );
       expect(fontFamily).toBe("Arial");
+    });
+
+    it("restores normal word breaking around a flex row of short links", () => {
+      const row =
+        '<div style="display:flex"><a href="https://example.com/impressum">Impressum</a><a href="https://example.com/datenschutz">Datenschutz</a><a href="https://example.com/kontakt">Kontakt</a></div>';
+      const { content } = htmlContent(row);
+
+      expect(content).toBe(
+        `<div style="font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center">${row}</div>`,
+      );
     });
 
     it("copies the page body font and the 16px browser default onto the wrapper", () => {
@@ -1420,7 +1593,7 @@ describe("BeeFree module gaps", () => {
       );
 
       expect(content).toBe(
-        '<div style="font-family:Arial, Helvetica Neue, Helvetica, sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>',
+        '<div style="font-family:Arial, Helvetica Neue, Helvetica, sans-serif;font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center"><p>Hello</p></div>',
       );
       expect(fontFamily).toBe(font);
       expect(entry).toEqual({
@@ -1438,7 +1611,7 @@ describe("BeeFree module gaps", () => {
       );
 
       expect(content).toBe(
-        `<div style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>`,
+        `<div style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center"><p>Hello</p></div>`,
       );
     });
 
@@ -1450,7 +1623,7 @@ describe("BeeFree module gaps", () => {
       );
 
       expect(content).toBe(
-        `<div style="font-family:'Foo&quot;Bar', sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>`,
+        `<div style="font-family:'Foo&quot;Bar', sans-serif;font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center"><p>Hello</p></div>`,
       );
     });
 
@@ -1495,7 +1668,7 @@ describe("BeeFree module gaps", () => {
       expect(block.type).toBe("html");
       if (block.type !== "html") return;
       expect(block.content).toBe(
-        '<div style="font-family:Arial, Helvetica Neue, Helvetica, sans-serif;font-size:16px;text-align:center" align="center"><p>Hello</p></div>',
+        '<div style="font-family:Arial, Helvetica Neue, Helvetica, sans-serif;font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center"><p>Hello</p></div>',
       );
     });
 

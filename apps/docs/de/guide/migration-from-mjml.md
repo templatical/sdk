@@ -199,7 +199,7 @@ Ein Prozentwert über 0 und unter 100 wird als dieser Prozentwert gespeichert. M
 
 ### Button-Zeilenhöhe {#button-zeilenhoehe}
 
-`line-height` wird zu `lineHeight`, einem Vielfachen der Schriftgröße, und gilt für jede Zeile einer umbrochenen Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`200%` ist `2`), eine einheitenlose Zahl ist sie selbst, und eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße (`28px` bei 14px ist `2`; ohne `font-size` durch die 15px des Buttons), gerundet auf zwei Dezimalstellen. `120%` sowie ein fehlender, nicht lesbarer oder nicht positiver Wert lässt `lineHeight` ungesetzt, sodass ein Button, den der Renderer mit `120%` geschrieben hat, so importiert wird, wie er heute rendert.
+`line-height` wird zu `lineHeight`, einem Vielfachen der Schriftgröße, und gilt für jede Zeile einer umbrochenen Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`200%` ist `2`), eine einheitenlose Zahl ist sie selbst, eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße (`28px` bei 14px ist `2`; ohne `font-size` durch die 15px des Buttons), und eine `em`-Länge ist die Zahl selbst (`2em` ist `2`), gerundet auf zwei Dezimalstellen. Ein Wert, der 1,2 entspricht, einschließlich `120%` und `1.2em`, oder ein fehlender Wert lässt `lineHeight` ungesetzt, und der Button bleibt konvertiert, sodass ein Button, den der Renderer mit `120%` geschrieben hat, so importiert wird, wie er heute rendert. Jeder andere explizite Wert, der nicht gelesen werden kann (`2rem`, `normal`, `calc(...)`, eine nicht positive Zahl), lässt `lineHeight` ungesetzt und ergänzt die Notiz `Button line-height "<value>" could not be read; imported at 1.2.`, sodass der Eintrag angenähert ist.
 
 ### Rahmen und Ecken
 

@@ -84,4 +84,15 @@ describe('getWidthPixels', () => {
   it('returns the full container for an unknown layout stored at runtime', () => {
     expect(getWidthPixels('bogus' as ColumnLayout, 600)).toEqual([600]);
   });
+
+  it.each(['constructor', 'toString', '__proto__'] as const)(
+    'uses the unknown-layout fallback for %s',
+    (layout) => {
+      const containerWidth = 640;
+      expect(getWidthPercentages(layout as ColumnLayout)).toEqual(['100%']);
+      expect(getWidthPixels(layout as ColumnLayout, containerWidth)).toEqual([
+        containerWidth,
+      ]);
+    },
+  );
 });

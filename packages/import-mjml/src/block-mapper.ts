@@ -191,29 +191,43 @@ function readButtonWidth(
 
 /**
  * `line-height` as `ButtonBlock.lineHeight`. A percentage is that number over
- * 100, a unitless number is itself, and a px length is that many pixels over
- * `fontSize`. Rounded to two decimals. `1.2`, and a missing, unreadable or
- * non-positive value, stays unset so the label keeps `BUTTON_LINE_HEIGHT`.
+ * 100, a unitless number is itself, a px length is that many pixels over
+ * `fontSize`, and an `em` length is the number itself (`2em` is `2`). A
+ * leading dot (`.5`, `.5%`, `.5px`, `.5em`) is read. Rounded to two decimals.
+ * `1.2` and a missing value stay unset, so the label keeps
+ * `BUTTON_LINE_HEIGHT` and the button stays converted. Any other explicit
+ * value that cannot be kept stays unset and pushes a note.
  */
 function readButtonLineHeight(
   value: string | undefined,
   fontSize: number,
+  notes: string[],
 ): number | undefined {
   const trimmed = value?.trim() ?? "";
   if (trimmed === "") return undefined;
 
-  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(trimmed);
-  const unitless = /^(\d+(?:\.\d+)?)$/.exec(trimmed);
-  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(trimmed);
+  const reject = (): undefined => {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  };
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
   let ratio: number;
   if (percent) ratio = Number(percent[1]) / 100;
   else if (unitless) ratio = Number(unitless[1]);
   else if (px) ratio = Number(px[1]) / fontSize;
-  else return undefined;
+  else if (em) ratio = Number(em[1]);
+  else return reject();
 
-  if (!Number.isFinite(ratio) || !(ratio > 0)) return undefined;
+  if (!Number.isFinite(ratio) || !(ratio > 0)) return reject();
   const rounded = roundHundredths(ratio);
-  if (!(rounded > 0) || rounded === BUTTON_LINE_HEIGHT) return undefined;
+  if (!(rounded > 0)) return reject();
+  if (rounded === BUTTON_LINE_HEIGHT) return undefined;
   return rounded;
 }
 
@@ -238,13 +252,16 @@ function convertButton(
     parsedFontSize > 0
       ? parsedFontSize
       : Number(BUTTON_BLOCK_DEFAULTS.fontSize);
-  const lineHeight = readButtonLineHeight(attrs["line-height"], fontSize);
+  const notes: string[] = [];
+  const lineHeight = readButtonLineHeight(
+    attrs["line-height"],
+    fontSize,
+    notes,
+  );
   const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-button", ctx.cascade),
   );
   const base = baseFields(attrs);
-
-  const notes: string[] = [];
   const width = readButtonWidth(attrs.width, notes);
   const borderRadius = readBorderRadius(attrs, "Button", notes);
   const border = readBorder(attrs, "Button", notes);

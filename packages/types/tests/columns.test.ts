@@ -80,6 +80,18 @@ describe("columnWidthsIssue", () => {
   });
 });
 
+describe("inherited layout names", () => {
+  it.each(["constructor", "toString", "__proto__"] as const)(
+    "uses the unknown-layout fallback for %s",
+    (layout) => {
+      expect(
+        sectionColumnPercents({ columns: layout as ColumnLayout }),
+      ).toEqual([100]);
+      expect(columnWidthsIssue({ columns: layout as ColumnLayout })).toBeNull();
+    },
+  );
+});
+
 describe("sectionColumnPercents", () => {
   it.each(Object.entries(PRESETS) as Array<[ColumnLayout, readonly number[]]>)(
     "returns the %s preset when columnWidths is absent",

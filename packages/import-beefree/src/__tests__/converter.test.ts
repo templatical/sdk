@@ -552,6 +552,126 @@ describe("convertBeeFreeTemplate", () => {
   );
 
   it.each([
+    ["2em", "width 2em is not carried"],
+    ["0px", "width 0px is not carried"],
+    ["calc(10px)", "width calc(10px) is not carried"],
+  ] as const)(
+    "approximates a button width of %s that cannot be kept",
+    (source, note) => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-button",
+                      descriptor: {
+                        button: {
+                          label: "Register now",
+                          href: "https://example.com/register",
+                          style: { width: source },
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const block = content.blocks[0];
+      expect(block.type).toBe("button");
+      if (block.type !== "button") return;
+      expect(block.width).toBeUndefined();
+      const entry = report.entries.find(
+        (item) => item.templaticalBlockType === "button",
+      );
+      expect(entry?.status).toBe("approximated");
+      expect(entry?.note).toBe(note);
+    },
+  );
+
+  it.each([undefined, "auto"] as const)(
+    "leaves a button width of %s converted",
+    (source) => {
+      const { content, report } = convertBeeFreeTemplate({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-button",
+                      descriptor: {
+                        button: {
+                          label: "Register now",
+                          href: "https://example.com/register",
+                          style: source === undefined ? {} : { width: source },
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const block = content.blocks[0];
+      expect(block.type).toBe("button");
+      if (block.type !== "button") return;
+      expect(block.width).toBeUndefined();
+      const entry = report.entries.find(
+        (item) => item.templaticalBlockType === "button",
+      );
+      expect(entry?.status).toBe("converted");
+      expect(entry?.note).toBeUndefined();
+    },
+  );
+
+  it("joins an unreadable width into the button note", () => {
+    const { content, report } = convertBeeFreeTemplate({
+      page: {
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-button",
+                    descriptor: {
+                      button: {
+                        label: "Register now",
+                        href: "https://example.com/register",
+                        style: { width: "2em", "letter-spacing": "1px" },
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const block = content.blocks[0];
+    expect(block.type).toBe("button");
+    if (block.type !== "button") return;
+    expect(block.width).toBeUndefined();
+    const entry = report.entries.find(
+      (item) => item.templaticalBlockType === "button",
+    );
+    expect(entry?.note).toBe("letter spacing 1px, width 2em are not carried");
+  });
+
+  it.each([
     [
       {
         "padding-top": "0px",
@@ -627,11 +747,11 @@ describe("convertBeeFreeTemplate", () => {
     };
     const padding = { top: 10, right: 20, bottom: 8, left: 18 };
 
-    function importedButton(
+    function importedButtonReport(
       style: Record<string, string>,
       label = "Register for the annual conference",
-    ): ButtonBlock {
-      const { content } = convertBeeFreeTemplate({
+    ) {
+      const { content, report } = convertBeeFreeTemplate({
         page: {
           rows: [
             {
@@ -660,7 +780,18 @@ describe("convertBeeFreeTemplate", () => {
         item.type === "section" ? item.children.flat() : [item],
       )[0];
       if (block?.type !== "button") throw new Error("expected a button block");
-      return block;
+      const entry = report.entries.find(
+        (item) => item.templaticalBlockType === "button",
+      );
+      if (!entry) throw new Error("expected a button entry");
+      return { block, entry };
+    }
+
+    function importedButton(
+      style: Record<string, string>,
+      label = "Register for the annual conference",
+    ): ButtonBlock {
+      return importedButtonReport(style, label).block;
     }
 
     it.each([
@@ -672,6 +803,12 @@ describe("convertBeeFreeTemplate", () => {
       ["33.333%", 0.33],
       ["1.005", 1.01],
       ["120.6%", 1.21],
+      [".5", 0.5],
+      [".5%", 0.01],
+      [".5px", 0.04],
+      ["2em", 2],
+      [".5em", 0.5],
+      ["2 em", 2],
     ] as const)(
       "stores %s as lineHeight %s and keeps the source padding",
       (lineHeight, expected) => {
@@ -686,10 +823,10 @@ describe("convertBeeFreeTemplate", () => {
       },
     );
 
-    it.each(["120%", "119.5%", "0%", "0px", "0.001", "2em", "normal"] as const)(
-      "leaves lineHeight unset for %s",
+    it.each(["120%", "119.5%", "1.2em"] as const)(
+      "leaves lineHeight unset for %s and stays converted",
       (lineHeight) => {
-        const block = importedButton({
+        const { block, entry } = importedButtonReport({
           ...sourcePadding,
           "font-size": "14px",
           "line-height": lineHeight,
@@ -697,8 +834,44 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.lineHeight).toBeUndefined();
         expect("lineHeight" in block).toBe(false);
         expect(block.buttonPadding).toEqual(padding);
+        expect(entry.status).toBe("converted");
+        expect(entry.note).toBeUndefined();
       },
     );
+
+    it.each([
+      ["2rem", "line-height 2rem is not carried"],
+      ["normal", "line-height normal is not carried"],
+      ["calc(1px + 2px)", "line-height calc(1px + 2px) is not carried"],
+      ["0%", "line-height 0% is not carried"],
+      ["0px", "line-height 0px is not carried"],
+      ["0.001", "line-height 0.001 is not carried"],
+      ["0em", "line-height 0em is not carried"],
+    ] as const)(
+      "approximates an explicit line-height %s that cannot be kept",
+      (lineHeight, note) => {
+        const { block, entry } = importedButtonReport({
+          ...sourcePadding,
+          "font-size": "14px",
+          "line-height": lineHeight,
+        });
+        expect(block.lineHeight).toBeUndefined();
+        expect(entry.status).toBe("approximated");
+        expect(entry.note).toBe(note);
+      },
+    );
+
+    it("joins an unreadable line-height into the button note", () => {
+      const { entry } = importedButtonReport({
+        "font-size": "14px",
+        "line-height": "2rem",
+        "letter-spacing": "1px",
+      });
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "letter spacing 1px, line-height 2rem are not carried",
+      );
+    });
 
     it("leaves lineHeight unset when the style omits it", () => {
       const block = importedButton({ ...sourcePadding, "font-size": "14px" });
@@ -707,14 +880,17 @@ describe("convertBeeFreeTemplate", () => {
       expect(block.buttonPadding).toEqual(padding);
     });
 
-    it("leaves a non-finite percentage unset", () => {
-      const block = importedButton({
+    it("leaves a non-finite percentage unset and names it", () => {
+      const raw = `${"9".repeat(400)}%`;
+      const { block, entry } = importedButtonReport({
         ...sourcePadding,
         "font-size": "14px",
-        "line-height": `${"9".repeat(400)}%`,
+        "line-height": raw,
       });
       expect(block.lineHeight).toBeUndefined();
       expect(block.buttonPadding).toEqual(padding);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(`line-height ${raw} is not carried`);
     });
 
     it("divides a px line-height by the 16px font size a missing size stores", () => {
@@ -3292,7 +3468,7 @@ describe("convertBeeFreeTemplate", () => {
         expect(block.type).toBe("html");
         if (block.type !== "html") throw new Error("expected an html block");
         expect(block.content).toBe(
-          '<div style="font-size:16px;text-align:center" align="center"><p>Hi</p></div>',
+          '<div style="font-size:16px;line-height:normal;word-break:normal;text-align:center" align="center"><p>Hi</p></div>',
         );
         expect(block.styles.padding).toEqual(kept);
       });
@@ -3515,8 +3691,10 @@ describe("convertBeeFreeTemplate", () => {
     });
   });
 
-  it("places an unknown social network in the column beside the social block", () => {
-    const { content, report } = convertBeeFreeTemplate({
+  function socialTemplate(
+    icons: Array<Record<string, unknown>>,
+  ): BeeFreeTemplate {
+    return {
       page: {
         body: { content: { style: { width: "600px" } } },
         rows: [
@@ -3527,25 +3705,7 @@ describe("convertBeeFreeTemplate", () => {
                 modules: [
                   {
                     type: "mailup-bee-newsletter-modules-social",
-                    descriptor: {
-                      iconsList: {
-                        icons: [
-                          {
-                            id: "facebook",
-                            name: "Facebook",
-                            image: { href: "https://facebook.com/page" },
-                          },
-                          {
-                            name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
-                            image: {
-                              alt: "Vimeo",
-                              href: "https://vimeo.com/example",
-                              src: "https://cdn.example.com/vimeo.png",
-                            },
-                          },
-                        ],
-                      },
-                    },
+                    descriptor: { iconsList: { icons } },
                   },
                 ],
               },
@@ -3553,24 +3713,165 @@ describe("convertBeeFreeTemplate", () => {
           },
         ],
       },
-    });
+    };
+  }
 
-    expect(content.blocks.map((block) => block.type)).toEqual([
-      "social",
-      "image",
+  const artsy = {
+    type: "custom",
+    image: {
+      title: "Artsy",
+      alt: "Custom",
+      href: "https://example.com/partner",
+      src: "https://cdn.example.com/artsy.png",
+      width: 96,
+      height: 97,
+    },
+  };
+  const instagram = {
+    id: "instagram",
+    image: { href: "https://instagram.com/example" },
+  };
+  const facebook = {
+    id: "facebook",
+    image: { href: "https://facebook.com/page" },
+  };
+  const emailIcon = {
+    type: "others",
+    name: "E-Mail",
+    image: { href: "partner@example.com", prefix: "mailto:" },
+  };
+  const artsyNote =
+    "Custom icon Artsy imported as the generic website icon; its image is not carried.";
+
+  function socialIcons(
+    content: ReturnType<typeof convertBeeFreeTemplate>["content"],
+  ) {
+    expect(content.blocks.map((block) => block.type)).toEqual(["social"]);
+    const social = content.blocks[0];
+    if (social.type !== "social") throw new Error("expected a social block");
+    return social.icons.map((icon) => [icon.platform, icon.url]);
+  }
+
+  it("keeps a custom icon in the social row as the generic website icon", () => {
+    const { content, report } = convertBeeFreeTemplate(
+      socialTemplate([instagram, facebook, artsy, emailIcon]),
+    );
+
+    expect(socialIcons(content)).toEqual([
+      ["instagram", "https://instagram.com/example"],
+      ["facebook", "https://facebook.com/page"],
+      ["website", "https://example.com/partner"],
+      ["email", "mailto:partner@example.com"],
     ]);
-    const image = content.blocks[1];
-    expect(image.type === "image" && image.src).toBe(
-      "https://cdn.example.com/vimeo.png",
-    );
-    expect(image.type === "image" && image.linkUrl).toBe(
-      "https://vimeo.com/example",
-    );
+    expect(JSON.stringify(content)).not.toContain("artsy.png");
     expect(report.entries).toHaveLength(1);
     expect(report.entries[0].status).toBe("approximated");
-    expect(report.warnings).toEqual([
-      'Social network "Vimeo" has no Templatical icon; imported as an image.',
+    expect(report.entries[0].note).toBe(artsyNote);
+    expect(report.warnings).toEqual([artsyNote]);
+  });
+
+  it("keeps a custom icon at the start and at the end of the row", () => {
+    const first = convertBeeFreeTemplate(socialTemplate([artsy, facebook]));
+    const last = convertBeeFreeTemplate(socialTemplate([facebook, artsy]));
+
+    expect(socialIcons(first.content)).toEqual([
+      ["website", "https://example.com/partner"],
+      ["facebook", "https://facebook.com/page"],
     ]);
+    expect(socialIcons(last.content)).toEqual([
+      ["facebook", "https://facebook.com/page"],
+      ["website", "https://example.com/partner"],
+    ]);
+    expect(first.report.entries[0].note).toBe(artsyNote);
+    expect(last.report.entries[0].note).toBe(artsyNote);
+  });
+
+  it("names each custom icon in one social row", () => {
+    const other = {
+      type: "custom",
+      image: {
+        alt: "Lobby",
+        href: "https://example.com/lobby",
+        src: "https://cdn.example.com/lobby.png",
+      },
+    };
+    const { content, report } = convertBeeFreeTemplate(
+      socialTemplate([artsy, other]),
+    );
+
+    expect(socialIcons(content)).toEqual([
+      ["website", "https://example.com/partner"],
+      ["website", "https://example.com/lobby"],
+    ]);
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.entries[0].note).toBe(
+      `${artsyNote} Custom icon Lobby imported as the generic website icon; its image is not carried.`,
+    );
+  });
+
+  it("drops an unsafe custom href and still keeps the website icon", () => {
+    const { content, report } = convertBeeFreeTemplate(
+      socialTemplate([
+        {
+          type: "custom",
+          image: {
+            title: "Artsy",
+            href: "javascript:alert(1)",
+            src: "https://cdn.example.com/artsy.png",
+          },
+        },
+      ]),
+    );
+
+    expect(socialIcons(content)).toEqual([["website", "#"]]);
+    expect(JSON.stringify(content)).not.toMatch(/javascript:/);
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.entries[0].note).toBe(artsyNote);
+    expect(report.warnings).toEqual([
+      'Dropped the unsafe link "javascript:alert(1)" on a social icon.',
+      artsyNote,
+    ]);
+  });
+
+  it("leaves a row of known networks as one converted social block", () => {
+    const { content, report } = convertBeeFreeTemplate(
+      socialTemplate([instagram, facebook, emailIcon]),
+    );
+
+    expect(socialIcons(content)).toEqual([
+      ["instagram", "https://instagram.com/example"],
+      ["facebook", "https://facebook.com/page"],
+      ["email", "mailto:partner@example.com"],
+    ]);
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
+  });
+
+  it("keeps an unrecognised network in the same social row", () => {
+    const { content, report } = convertBeeFreeTemplate(
+      socialTemplate([
+        facebook,
+        {
+          name: "adcce536-5143-4d1b-99fe-8a09dd82d583",
+          image: {
+            alt: "Vimeo",
+            href: "https://vimeo.com/example",
+            src: "https://cdn.example.com/vimeo.png",
+          },
+        },
+      ]),
+    );
+
+    expect(socialIcons(content)).toEqual([
+      ["facebook", "https://facebook.com/page"],
+      ["website", "https://vimeo.com/example"],
+    ]);
+    expect(JSON.stringify(content)).not.toContain("vimeo.png");
+    expect(report.entries[0].status).toBe("approximated");
+    expect(report.entries[0].note).toBe(
+      "Custom icon Vimeo imported as the generic website icon; its image is not carried.",
+    );
   });
 
   it("keeps a Xing icon on the social block", () => {

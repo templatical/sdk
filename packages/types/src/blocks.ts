@@ -443,7 +443,7 @@ export interface ButtonBlock extends BaseBlock {
   fontSize: number;
   /**
    * The label's line height as a multiple of its font size, like
-   * {@link BUTTON_LINE_HEIGHT}. Omitted is `BUTTON_LINE_HEIGHT` (1.2), so a
+   * `BUTTON_LINE_HEIGHT`. Omitted is `BUTTON_LINE_HEIGHT` (1.2), so a
    * stored button renders as it does today. It applies to every line of a
    * wrapped label. A value that is not a finite number above 0 is ignored
    * and renders as omitted.
