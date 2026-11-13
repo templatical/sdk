@@ -277,6 +277,13 @@ describe("compiled pipeline", () => {
       expect(lineHeightOf("font-size:30px;line-height:1.5").lineHeight).toBe(
         1.5,
       );
+      // 2em of 16.5px is 33px, 2.2 of the 15px label, with no rounding of the size.
+      expect(lineHeightOf("font-size:16.5px;line-height:2em").lineHeight).toBe(
+        2.2,
+      );
+      expect(
+        lineHeightOf("", "font-size:16.5px;line-height:200%").lineHeight,
+      ).toBe(2.2);
     });
 
     it("takes an explicit inherit from the wrapper", () => {

@@ -96,6 +96,17 @@ function readButtonLineHeight(
 
 const RELATIVE_LINE_HEIGHT = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i;
 
+/**
+ * A px font size, unrounded, or 0 when it is not one. `parsePxValue` rounds
+ * to whole pixels, which would skew a line height resolved against it.
+ */
+function fontSizePx(value: string | undefined): number {
+  const match = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(?:px)?$/i.exec(
+    value?.trim() ?? "",
+  );
+  return match ? Number(match[1]) : 0;
+}
+
 /** A `%` or `em` line height as the px it computes to at `fontSize`. */
 function relativeAsPx(value: string, fontSize: number): string | undefined {
   const relative = RELATIVE_LINE_HEIGHT.exec(value);
@@ -127,14 +138,14 @@ function lineHeightSource(
 ): string | undefined {
   const ownValue = own?.trim();
   if (ownValue && !/^inherit$/i.test(ownValue)) {
-    const ownSize = parsePxValue(ownFontSize);
+    const ownSize = fontSizePx(ownFontSize);
     return (ownSize > 0 && relativeAsPx(ownValue, ownSize)) || own;
   }
   const outerValue = outer?.trim() ?? "";
   if (!RELATIVE_LINE_HEIGHT.test(outerValue)) return outer;
   const statedOuter = outerFontSize?.trim();
   if (!statedOuter && !ownFontSize?.trim()) return outer;
-  let size = parsePxValue(statedOuter);
+  let size = fontSizePx(statedOuter);
   if (!(size > 0)) {
     const source = statedOuter
       ? `font-size "${statedOuter}", which could not be read`
