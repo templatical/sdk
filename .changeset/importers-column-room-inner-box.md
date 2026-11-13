@@ -10,4 +10,4 @@ The Unlayer, Topol, Chamaileon and Stripo importers measure a column's room agai
 
 In Topol and Easy Email Pro, a section whose side padding leaves no inner box drops its px column widths. That section is now `approximated` with a note naming the widths. It was reported `converted`.
 
-Not a breaking change: no export, option or default is removed, renamed or changed. The importers map more of the source into fields that already exist, as #1201 did for the BeeFree and MJML importers.
+Not a breaking change: no export, option or default is removed, renamed or changed. The importers measure the source's columns the way the renderer draws them, and report a lossy row as lossy.
