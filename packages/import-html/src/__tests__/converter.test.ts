@@ -183,6 +183,38 @@ describe("convertHtmlTemplate — spacer and divider", () => {
   });
 });
 
+describe("convertHtmlTemplate — button line height", () => {
+  it("reads a cell button's line height from the anchor or the cell", () => {
+    const { content, report } = convertHtmlTemplate(
+      "<!doctype html><html><body>" +
+        '<table width="600"><tr>' +
+        '<td style="background-color:#0f766e;font-size:20px;line-height:30px"><a href="https://x.test/a" style="color:#ffffff">Cell</a></td>' +
+        '<td style="background-color:#0f766e"><a href="https://x.test/b" style="color:#ffffff;line-height:auto">Odd</a></td>' +
+        "</tr></table></body></html>",
+    );
+    const section = content.blocks[0];
+    if (section?.type !== "section") throw new Error("expected a section");
+    expect(
+      section.children.map((column) =>
+        column.map((block) =>
+          block.type === "button" ? [block.text, block.lineHeight] : null,
+        ),
+      ),
+    ).toEqual([[["Cell", 1.5]], [["Odd", undefined]]]);
+    expect(
+      report.entries
+        .filter((entry) => entry.templaticalBlockType === "button")
+        .map(({ status, note }) => ({ status, note })),
+    ).toEqual([
+      { status: "converted", note: undefined },
+      {
+        status: "approximated",
+        note: 'Button line-height "auto" could not be read; imported at 1.2.',
+      },
+    ]);
+  });
+});
+
 describe("convertHtmlTemplate — a px divider that reaches its column spans it", () => {
   function dividerOf(body: string) {
     const { content, report } = convertHtmlTemplate(

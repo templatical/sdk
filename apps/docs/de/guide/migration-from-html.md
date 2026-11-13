@@ -97,12 +97,12 @@ HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:
 | `<td>` mit ausschließlich Text in einer Layout-Tabelle | `paragraph` | Konvertiert |
 | Reiner Text auf Body-Ebene oder direkt in einem Wrapper | `paragraph` | Konvertiert |
 | `<img>` | `image` | Konvertiert (angenähert, wenn eine Prozentbreite zu px wird; siehe [Bildbreite](#image-width)) |
-| `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button` | Konvertiert |
+| `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button` | Konvertiert (angenähert, wenn `line-height` nicht lesbar ist; siehe [Zeilenhöhe von Buttons](#button-line-height)) |
 | `<a>` (Text-Link) | geht im umgebenden `paragraph` auf | Konvertiert |
 | `<a>`, das ein `<img>` umschließt | `image` mit `linkUrl` | Konvertiert |
 | `<hr>` | `divider`, oder `spacer`, wenn es [keine Linie zeichnet](#hr-lines) | Konvertiert (angenähert, wenn die Breite begrenzt oder nicht lesbar ist oder ein Divider mit Teilbreite links oder rechts ausgerichtet ist; übersprungen, wenn es keine Linie zeichnet und keinen Platz einnimmt) |
 | Leeres `<td>` mit explizit gesetzter Höhe | `spacer` | Konvertiert |
-| `<td>`, dessen gesamter Inhalt ein gestyltes Text-`<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster) |
+| `<td>`, dessen gesamter Inhalt ein gestyltes Text-`<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster; angenähert, wenn `line-height` nicht lesbar ist) |
 | `<table>` (Layout, mehrere Zeilen/Spalten) | `section` (eine pro `<tr>`) | Konvertiert |
 | `<table>` (Datentabelle — nur Text in Zellen) | `html` | HTML-Fallback |
 | Unbekannte / Custom-Elemente | `html` | HTML-Fallback |
@@ -127,6 +127,10 @@ Das `text-align` eines Wrappers, der nur Text enthält, gilt für jedes `<p>` da
 Zuerst wird das Attribut `width` gelesen, dann der Style `width`. Der Platz des Bildes ist die Breite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. Wo der Platz unbekannt ist (ein Bild in einem Link, der auch Text enthält), bleibt eine px-Breite wie angegeben und ein Prozentwert wird `"full"`, angenähert.
 
 Ein `height`-Style hat wie im Browser Vorrang vor dem Attribut `height`. `height: auto` lässt die Höhe also offen, und das Bild behält sein Seitenverhältnis.
+
+### Zeilenhöhe von Buttons {#button-line-height}
+
+Der `line-height`-Stil eines Buttons wird zu `ButtonBlock.lineHeight`, ein Vielfaches der Schriftgröße der Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`150%` ist `1.5`), eine Zahl ohne Einheit ist sie selbst, eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße des Buttons, und eine `em`-Länge ist die Zahl. Sie wird auf zwei Nachkommastellen gerundet. Die Schriftgröße ist die `font-size` des Buttons, sonst 16px. Eine Button-Zelle liest beides aus der Zelle und dem `<a>`, wobei das `<a>` gewinnt. Ein Bulletproof-Anker mit `font-size:16px; line-height:44px` ergibt `2.75`. `normal`, ein Wert, der auf 1.2 rundet, und ein fehlender Wert lassen es ungesetzt, was 1.2 rendert. Jeder andere Wert wird mit 1.2 importiert, und der Eintrag ist angenähert, mit einer Notiz, die ihn nennt: `Button line-height "calc(1em + 4px)" could not be read; imported at 1.2.`
 
 ### Divider-Breite
 

@@ -1030,6 +1030,66 @@ describe("convertUnlayerTemplate", () => {
     expect(report.warnings).toEqual([]);
   });
 
+  it("imports a button's line height and notes one it cannot read", () => {
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1],
+            columns: [
+              {
+                contents: [
+                  {
+                    type: "button",
+                    values: {
+                      text: "Tall",
+                      fontSize: "20px",
+                      lineHeight: "40px",
+                    },
+                  },
+                  {
+                    type: "button",
+                    values: {
+                      text: "Odd",
+                      lineHeight: "auto",
+                      size: { autoWidth: false, width: "150%" },
+                    },
+                  },
+                ],
+                values: {},
+              },
+            ],
+            values: {},
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    if (section.type !== "section") throw new Error("expected a section");
+    expect(
+      section.children[0]!.map((block) =>
+        block.type === "button" ? [block.lineHeight, block.width] : null,
+      ),
+    ).toEqual([
+      [2, undefined],
+      [undefined, "full"],
+    ]);
+    expect(report.entries).toEqual([
+      {
+        unlayerContentType: "button",
+        templaticalBlockType: "button",
+        status: "converted",
+      },
+      {
+        unlayerContentType: "button",
+        templaticalBlockType: "button",
+        status: "approximated",
+        note: 'Button width 150% was clamped to 100%. Button line-height "auto" could not be read; imported at 1.2.',
+      },
+    ]);
+  });
+
   it("puts each of a custom-width row's columns in its own slot", () => {
     const { content } = convertUnlayerTemplate({
       body: {

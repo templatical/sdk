@@ -135,7 +135,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-structure` with 5+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
 | `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`, including its [width rule](/guide/migration-from-html#image-width). |
-| `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
+| `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. Inline `line-height` (the anchor's, else the wrapping `es-button-border`'s) becomes `lineHeight`, a multiple of the label size: `150%` is `1.5`, a number or `em` length is itself, and a px length is over the 15px label the block keeps, because the button's `font-size` is not imported. `120%`, `normal` and a missing value stay unset (1.2). Any other value imports at 1.2, `approximated`. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
 | `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched network becomes a website icon and the block is reported `approximated`. |
@@ -152,7 +152,7 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 | Content beside the columns in the same cell | one-column `SectionBlock` | Leading content stays before the column section and trailing content after it. Content that sat between the columns is placed after the column section (`approximated`). Splitting one padded cell into more than one section is `approximated`; the top padding stays on the first section, the bottom on the last, and the sides on each. |
 | 1–4 `es-left` / `es-right` in one row | `columns` from the column count and widths; see Column geometry under [Where the mapping is lossy](#lossy) | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
 | 5+ floated tables in one row | `columns: "4"` | Extra columns merge into the fourth slot; `approximated`. |
-| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. Widgets stay in document order with the copy around them. |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius` / `line-height`, including from the wrapping `es-button-border`, read as for `esd-block-button`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
 | `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched network becomes a website icon and the block is reported `approximated`. |

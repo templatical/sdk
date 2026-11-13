@@ -431,6 +431,55 @@ describe("convertContent", () => {
       expect(entry.status).toBe("converted");
     });
 
+    describe("line height", () => {
+      function lineHeightOf(lineHeight: string | undefined, fontSize = "16px") {
+        const { block, entry } = convertContent(
+          makeContent("button", { text: "Go", lineHeight, fontSize }),
+          [],
+        );
+        if (block.type !== "button") throw new Error("expected a button");
+        return {
+          lineHeight: block.lineHeight,
+          status: entry.status,
+          note: entry.note,
+        };
+      }
+
+      it("reads a percentage, a number, px over the font size and em", () => {
+        expect(lineHeightOf("150%").lineHeight).toBe(1.5);
+        expect(lineHeightOf("1.75").lineHeight).toBe(1.75);
+        expect(lineHeightOf("24px").lineHeight).toBe(1.5);
+        expect(lineHeightOf("44px", "18px").lineHeight).toBe(2.44);
+        expect(lineHeightOf("2em").lineHeight).toBe(2);
+        expect(lineHeightOf(".9").lineHeight).toBe(0.9);
+        expect(lineHeightOf("150%")).toEqual({
+          lineHeight: 1.5,
+          status: "converted",
+          note: undefined,
+        });
+      });
+
+      it("leaves Unlayer's 120% default, normal and a missing value unset", () => {
+        for (const value of ["120%", "1.2", "normal", undefined]) {
+          expect(lineHeightOf(value)).toEqual({
+            lineHeight: undefined,
+            status: "converted",
+            note: undefined,
+          });
+        }
+      });
+
+      it("notes a value it cannot keep and imports it at 1.2", () => {
+        for (const value of ["tall", "0", "0.001", "9".repeat(400)]) {
+          expect(lineHeightOf(value)).toEqual({
+            lineHeight: undefined,
+            status: "approximated",
+            note: `Button line-height "${value}" could not be read; imported at 1.2.`,
+          });
+        }
+      });
+    });
+
     describe("width from size", () => {
       function widthOf(size: UnlayerContentValues["size"]) {
         const { block, entry } = convertContent(

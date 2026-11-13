@@ -796,11 +796,19 @@ function dividerWidths(block: Block): Array<DividerBlock["width"]> {
 }
 
 describe("custom column widths and percentage buttons", () => {
-  function button(width: string, text: string): EasyEmailProNode {
+  function button(
+    width: string,
+    text: string,
+    lineHeight?: string,
+  ): EasyEmailProNode {
     return {
       type: "standard-button",
       data: {},
-      attributes: { "background-color": "#C5900C", width },
+      attributes: {
+        "background-color": "#C5900C",
+        width,
+        ...(lineHeight ? { "line-height": lineHeight } : {}),
+      },
       children: [{ text }],
     };
   }
@@ -816,9 +824,9 @@ describe("custom column widths and percentage buttons", () => {
           data: {},
           attributes: {},
           children: [
-            ["20%", button("50%", "A")],
+            ["20%", button("50%", "A", "36px")],
             ["60%", button("100%", "B")],
-            ["20%", button("150%", "C")],
+            ["20%", button("150%", "C", "tall")],
           ].map(([width, child]) => ({
             type: "standard-column",
             data: {},
@@ -835,6 +843,9 @@ describe("custom column widths and percentage buttons", () => {
       section.children.map((column) => (column[0] as ButtonBlock).width),
     ).toEqual(["50%", "full", "full"]);
     expect(
+      section.children.map((column) => (column[0] as ButtonBlock).lineHeight),
+    ).toEqual([2.4, undefined, undefined]);
+    expect(
       report.entries.map(({ sourceTag, status, note }) => ({
         sourceTag,
         status,
@@ -847,7 +858,7 @@ describe("custom column widths and percentage buttons", () => {
       {
         sourceTag: "standard-button",
         status: "approximated",
-        note: "Button width 150% was clamped to 100%.",
+        note: 'Button width 150% was clamped to 100%. Button line-height "tall" could not be read; imported at 1.2.',
       },
     ]);
   });

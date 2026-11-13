@@ -97,12 +97,12 @@ HTML elements map to Templatical equivalents:
 | Text-only `<td>` in a layout table | `paragraph` | Converted |
 | Bare text at body level or directly inside a wrapper | `paragraph` | Converted |
 | `<img>` | `image` | Converted (approximated when a percentage width becomes px; see [Image width](#image-width)) |
-| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
+| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted (approximated when its `line-height` can't be read; see [Button line height](#button-line-height)) |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
 | `<hr>` | `divider`, or `spacer` when it [draws no line](#hr-lines) | Converted (approximated when the width is clamped or unreadable, or a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Empty `<td>` with explicit height | `spacer` | Converted |
-| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
+| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern; approximated when its `line-height` can't be read) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
 | `<table>` (data table — text-only cells) | `html` | HTML fallback |
 | Unknown / custom elements | `html` | HTML fallback |
@@ -127,6 +127,10 @@ A text-only wrapper's `text-align` applies to each `<p>` inside it that states n
 The `width` attribute is read first, then the `width` style. The image's room is its column's width less the image's left and right padding. Where the room is unknown (an image inside a link that also holds text), a px width stays as written and a percentage is `"full"`, approximated.
 
 A `height` style overrides the `height` attribute, as it does in a browser, so `height: auto` leaves the height unset and the image keeps its aspect ratio.
+
+### Button line height
+
+A button's `line-height` style becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. The font size is the button's `font-size`, else 16px. A button cell reads both from the cell and the `<a>`, the `<a>` winning. A bulletproof anchor with `font-size:16px; line-height:44px` is `2.75`. `normal`, a value that rounds to 1.2, and a missing value leave it unset, which renders 1.2. Any other value imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "calc(1em + 4px)" could not be read; imported at 1.2.`
 
 ### Divider width
 

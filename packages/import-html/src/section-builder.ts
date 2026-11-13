@@ -22,6 +22,7 @@ import {
   isInlineContent,
   isSpacerCell,
   isTableContainer,
+  readButtonLineHeight,
   skippedElementEntry,
   walkContentNodes,
 } from "./block-mapper";
@@ -154,7 +155,7 @@ function insetBlock(block: Block, by: SpacingValue): void {
 function buildCellButton(
   $cell: Cheerio<Element>,
   $anchor: Cheerio<Element>,
-): Block {
+): { block: Block; notes: string[] } {
   const cellStyles = getStyles($cell);
   const aStyles = getStyles($anchor);
   // Anchor styles win when they overlap (typical: anchor sets text color, cell sets bg).
@@ -162,8 +163,15 @@ function buildCellButton(
   const text = ($anchor.text() ?? "Button").trim() || "Button";
   const url = $anchor.attr("href") ?? "#";
   const target = $anchor.attr("target");
+  const fontSize = parsePxValue(merged["font-size"]) || 16;
+  const notes: string[] = [];
+  const lineHeight = readButtonLineHeight(
+    merged["line-height"],
+    fontSize,
+    notes,
+  );
 
-  return createButtonBlock({
+  const block = createButtonBlock({
     text,
     url,
     openInNewTab: target === "_blank" || undefined,
@@ -176,12 +184,14 @@ function buildCellButton(
       "#4f46e5",
     textColor: parseColor(merged.color) || "#ffffff",
     borderRadius: parsePxValue(merged["border-radius"]),
-    fontSize: parsePxValue(merged["font-size"]) || 16,
+    fontSize,
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
     buttonPadding: readPaddingFromStyles(merged),
     styles: {
       padding: emptyPadding(),
     },
   });
+  return { block, notes };
 }
 
 function buildSpacerFromCell($cell: Cheerio<Element>): Block {
@@ -800,12 +810,14 @@ function extractCellBlocks(
 
   const btn = isButtonCell($cell, $);
   if (btn.match && btn.anchor) {
+    const { block, notes } = buildCellButton($cell, btn.anchor);
     entries.push({
       sourceTag: "td",
       templaticalBlockType: "button",
-      status: "converted",
+      status: notes.length > 0 ? "approximated" : "converted",
+      ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
     });
-    return [buildCellButton($cell, btn.anchor)];
+    return [block];
   }
 
   // A cell whose only content is text has no element children, and the walk

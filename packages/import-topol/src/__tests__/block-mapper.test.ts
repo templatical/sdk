@@ -197,6 +197,74 @@ describe("mj-button", () => {
     expect((r.block as ButtonBlock).backgroundColor).toBe("#e85034");
   });
 
+  describe("line height", () => {
+    function lineHeightOf(
+      attrs: Record<string, unknown>,
+      context: MapContext = ctx(),
+    ) {
+      const r = convertLeaf(
+        node("mj-button", { href: "https://x.test", ...attrs }, "<p>Go</p>"),
+        context,
+      )!;
+      return {
+        lineHeight: (r.block as ButtonBlock).lineHeight,
+        status: r.entry.status,
+        note: r.entry.note,
+      };
+    }
+
+    it("reads a percentage, a number, px over the font size and em", () => {
+      expect(lineHeightOf({ "line-height": "150%" })).toEqual({
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+      expect(lineHeightOf({ "line-height": 1.75 }).lineHeight).toBe(1.75);
+      expect(
+        lineHeightOf({ "line-height": "30px", "font-size": "20px" }).lineHeight,
+      ).toBe(1.5);
+      expect(lineHeightOf({ "line-height": "2em" }).lineHeight).toBe(2);
+    });
+
+    // With no font-size the label renders at the factory 15px.
+    it("measures a px line height against the 15px default label", () => {
+      expect(lineHeightOf({ "line-height": "30px" }).lineHeight).toBe(2);
+    });
+
+    it("takes the line height from the button selector default", () => {
+      expect(
+        lineHeightOf({}, ctx({ "button:line-height": "160%" })).lineHeight,
+      ).toBe(1.6);
+      expect(
+        lineHeightOf({}, ctx({ "mj-button": { "line-height": "2" } }))
+          .lineHeight,
+      ).toBe(2);
+    });
+
+    it("leaves MJML's 120% default, normal and a missing value unset", () => {
+      for (const attrs of [
+        { "line-height": "120%" },
+        { "line-height": "normal" },
+        {},
+      ]) {
+        expect(lineHeightOf(attrs)).toEqual({
+          lineHeight: undefined,
+          status: "converted",
+          note: undefined,
+        });
+      }
+    });
+
+    it("notes a value it cannot keep and imports it at 1.2", () => {
+      expect(lineHeightOf({ "line-height": "tall" })).toEqual({
+        lineHeight: undefined,
+        status: "approximated",
+        note: 'Button line-height "tall" could not be read; imported at 1.2.',
+      });
+      expect(lineHeightOf({ "line-height": "0" }).status).toBe("approximated");
+    });
+  });
+
   it("takes the background from the mj-button tag default when the node sets none", () => {
     const r = convertLeaf(
       node("mj-button", { href: "https://x.test" }, "<p>Go</p>"),

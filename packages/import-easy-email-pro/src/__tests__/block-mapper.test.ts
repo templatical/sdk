@@ -294,6 +294,42 @@ describe("convertLeaf", () => {
       expect(widthOf(undefined).width).toBeUndefined();
     });
 
+    it("reads a line height, px over the 15px label the block keeps", () => {
+      const lineHeightOf = (value: unknown) => {
+        const { blocks, entries } = map({
+          type: "standard-button",
+          data: {},
+          attributes: { "background-color": "#C5900C", "line-height": value },
+          children: [{ text: "Go" }],
+        });
+        return {
+          lineHeight: (blocks[0] as ButtonBlock).lineHeight,
+          status: entries[0].status,
+          note: entries[0].note,
+        };
+      };
+      expect(lineHeightOf("150%")).toEqual({
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+      expect(lineHeightOf(1.75).lineHeight).toBe(1.75);
+      expect(lineHeightOf("30px").lineHeight).toBe(2);
+      expect(lineHeightOf("2em").lineHeight).toBe(2);
+      for (const unset of ["120%", "normal", "", undefined]) {
+        expect(lineHeightOf(unset)).toEqual({
+          lineHeight: undefined,
+          status: "converted",
+          note: undefined,
+        });
+      }
+      expect(lineHeightOf("tall")).toEqual({
+        lineHeight: undefined,
+        status: "approximated",
+        note: 'Button line-height "tall" could not be read; imported at 1.2.',
+      });
+    });
+
     it("joins the outline note and the width note", () => {
       expect(
         widthOf("0%", {

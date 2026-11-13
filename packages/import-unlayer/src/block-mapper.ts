@@ -1,6 +1,7 @@
 import { localeTag, set, text, warn } from "./localization";
 import { lexicalToHtml } from "./lexical";
 import {
+  BUTTON_LINE_HEIGHT,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
@@ -407,6 +408,43 @@ function buttonWidth(
   return `${share}%`;
 }
 
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
 function convertButton(values: UnlayerContentValues): {
   block: Block;
   notes: string[];
@@ -419,6 +457,8 @@ function convertButton(values: UnlayerContentValues): {
   const linkValues = values.href?.values;
   const notes: string[] = [];
   const width = buttonWidth(values.size, notes);
+  const fontSize = parsePxValue(values.fontSize) || 16;
+  const lineHeight = readButtonLineHeight(values.lineHeight, fontSize, notes);
 
   const block = createButtonBlock({
     text: label,
@@ -427,7 +467,8 @@ function convertButton(values: UnlayerContentValues): {
     backgroundColor: parseColor(colors.backgroundColor) || "#4f46e5",
     textColor: parseColor(colors.color) || "#ffffff",
     borderRadius: parsePxValue(values.borderRadius),
-    fontSize: parsePxValue(values.fontSize) || 16,
+    fontSize,
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
     fontFamily: parseFontFamily(values.fontFamily) || undefined,
     align: toAlign(values.textAlign, "center"),
     buttonPadding: padding,

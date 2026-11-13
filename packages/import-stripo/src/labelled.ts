@@ -1,12 +1,15 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
 import {
+  BUTTON_BLOCK_DEFAULTS,
+  BUTTON_LINE_HEIGHT,
   createButtonBlock,
   createDividerBlock,
   createMenuBlock,
   createSocialIconsBlock,
   createSpacerBlock,
   generateId,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
@@ -54,6 +57,43 @@ function firstAnchor($el: Cheerio<Element>): Cheerio<Element> {
   return $self as Cheerio<Element>;
 }
 
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
 export function buttonFrom(
   $el: Cheerio<Element>,
   sourceTag: string,
@@ -71,7 +111,21 @@ export function buttonFrom(
   const textColor = parseColor(own.color) || parseColor(parent.color);
   const borderRadius =
     parsePxValue(own["border-radius"]) || parsePxValue(parent["border-radius"]);
-  pushEntry(ctx, sourceTag, "button", "converted");
+  // The block keeps the factory font size, so a px line height is measured
+  // against the size the label renders at.
+  const notes: string[] = [];
+  const lineHeight = readButtonLineHeight(
+    own["line-height"] ?? parent["line-height"],
+    Number(BUTTON_BLOCK_DEFAULTS.fontSize),
+    notes,
+  );
+  pushEntry(
+    ctx,
+    sourceTag,
+    "button",
+    notes.length > 0 ? "approximated" : "converted",
+    notes.length > 0 ? notes.join(" ") : undefined,
+  );
   return createButtonBlock({
     text,
     url,
@@ -79,6 +133,7 @@ export function buttonFrom(
     ...(backgroundColor ? { backgroundColor } : {}),
     ...(textColor ? { textColor } : {}),
     ...(borderRadius > 0 ? { borderRadius } : {}),
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
   });
 }
 

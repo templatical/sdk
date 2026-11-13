@@ -135,7 +135,7 @@ Plugin-Speicher ist ein Tabellenbaum mit `esd-*`-Klassen. Jedes `esd-structure` 
 | `esd-structure` mit 5+ Frames | `SectionBlock` `columns: "1"` | Auf eine Spalte reduziert; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generisches HTML-Mapping des inneren Markups. |
 | `esd-block-image` | `image` | Generisches HTML-Mapping des inneren `<img>`, einschließlich seiner [Breitenregel](/de/guide/migration-from-html#image-width). |
-| `esd-block-button` | `button` | `href`, Text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius`, sofern vorhanden. |
+| `esd-block-button` | `button` | `href`, Text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius`, sofern vorhanden. Inline-`line-height` (vom Anker, sonst vom umschließenden `es-button-border`) wird zu `lineHeight`, einem Vielfachen der Schriftgröße: `150%` ist `1.5`, eine Zahl oder `em`-Länge ist sie selbst, und eine px-Länge wird durch die 15px der Beschriftung geteilt, die der Block behält, weil die `font-size` des Buttons nicht importiert wird. `120%`, `normal` und ein fehlender Wert bleiben ungesetzt (1.2). Jeder andere Wert wird mit 1.2 importiert, `approximated`. |
 | `esd-block-menu` (2+ Item-Zellen) | `menu` | Ein `MenuItemData` je Item-Zelle. |
 | `esd-block-menu` (1 Item-Zelle) | `paragraph` (oder das innere Mapping) | Ein gestapelter Schritt, keine Navigation — Password-Reset-Zeilen bleiben Fließtext. |
 | `esd-block-social` | `social` | Plattform aus `title` / `src` / `alt`. Ein unbekanntes Netzwerk wird ein Website-Icon, und der Block wird als `approximated` gemeldet. |
@@ -152,7 +152,7 @@ Der kompilierte Export entfernt `esd-*` von den Elementen und behält `es-*`-Res
 | Inhalt neben den Spalten in derselben Zelle | einspaltiger `SectionBlock` | Führender Inhalt bleibt vor dem Spaltenabschnitt, nachfolgender Inhalt danach. Inhalt, der zwischen den Spalten stand, wird hinter den Spaltenabschnitt gesetzt (`approximated`). Eine Zelle mit Padding, die in mehr als einen Abschnitt zerfällt, ist `approximated`: das obere Padding bleibt am ersten Abschnitt, das untere am letzten, die Seiten an jedem. |
 | 1–4 `es-left` / `es-right` in einer Zeile | `columns` aus Anzahl und Breiten der Spalten; siehe Spaltengeometrie unter [Wo das Mapping verlustbehaftet ist](#lossy) | Gefloatete Tabellen in dieser Zeile, auch Tabellen in einem Wrapper. Spalten innerhalb eines weiteren `es-left` / `es-right` bleiben darin. |
 | 5+ gefloatete Tabellen in einer Zeile | `columns: "4"` | Weitere Spalten landen im vierten Slot; `approximated`. |
-| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, einschließlich vom umschließenden `es-button-border`. Widgets bleiben in Dokumentreihenfolge beim Text um sie herum. |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius` / `line-height`, einschließlich vom umschließenden `es-button-border`, gelesen wie bei `esd-block-button`. Widgets bleiben in Dokumentreihenfolge beim Text um sie herum. |
 | `table.es-menu` (2+ Item-Zellen) | `menu` | |
 | `table.es-menu` (1 Item-Zelle) | inneres Mapping | Eine Schrittzeile, dieselbe Regel wie beim Plugin-Pfad. |
 | `table.es-social` | `social` | Dasselbe Plattform-Mapping wie beim Plugin-Pfad. Ein unbekanntes Netzwerk wird ein Website-Icon, und der Block wird als `approximated` gemeldet. |

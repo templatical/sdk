@@ -222,6 +222,58 @@ describe("compiled pipeline", () => {
     });
   });
 
+  describe("button line height", () => {
+    function lineHeightOf(anchorStyle: string, borderStyle = "") {
+      const html = `<table class="es-wrapper"><tr><td><span class="es-button-border" style="${borderStyle}"><a class="es-button" href="https://example.com/x" style="background:#000;color:#fff;${anchorStyle}">Go</a></span></td></tr></table>`;
+      const { content, report } = convertStripoTemplate(html);
+      const button = content.blocks
+        .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+        .find((b) => b.type === "button");
+      if (button?.type !== "button") throw new Error("expected a button");
+      const entry = report.entries.find(
+        (e) => e.templaticalBlockType === "button",
+      );
+      return {
+        lineHeight: button.lineHeight,
+        status: entry?.status,
+        note: entry?.note,
+      };
+    }
+
+    // The block keeps the factory 15px label, so 30px is twice its size.
+    it("reads the anchor's inline line height", () => {
+      expect(lineHeightOf("line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+      expect(lineHeightOf("line-height:30px").lineHeight).toBe(2);
+      expect(lineHeightOf("line-height:1.75em").lineHeight).toBe(1.75);
+    });
+
+    it("falls back to the border wrapper's line height", () => {
+      expect(lineHeightOf("", "line-height:1.6").lineHeight).toBe(1.6);
+    });
+
+    it("leaves 120%, normal and a missing value unset", () => {
+      for (const style of ["line-height:120%", "line-height:normal", ""]) {
+        expect(lineHeightOf(style)).toEqual({
+          lineHeight: undefined,
+          status: "converted",
+          note: undefined,
+        });
+      }
+    });
+
+    it("notes a value it cannot keep and imports it at 1.2", () => {
+      expect(lineHeightOf("line-height:inherit")).toEqual({
+        lineHeight: undefined,
+        status: "approximated",
+        note: 'Button line-height "inherit" could not be read; imported at 1.2.',
+      });
+    });
+  });
+
   it("maps es-left/es-right siblings to three columns", () => {
     const { content, report } = convertStripoTemplate(threeCol);
     const secs = sections(content.blocks);

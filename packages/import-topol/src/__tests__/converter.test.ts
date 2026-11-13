@@ -187,6 +187,57 @@ describe("convertTopolTemplate input guards", () => {
 });
 
 describe("convertTopolTemplate end to end", () => {
+  it("imports a button's line height and notes one it cannot read", () => {
+    const button = (attributes: Record<string, string>) => ({
+      tagName: "mj-button",
+      attributes: { href: "https://x.test", ...attributes },
+      content: "<p>Go</p>",
+    });
+    const { content, report } = convertTopolTemplate({
+      tagName: "mj-global-style",
+      attributes: {},
+      children: [
+        {
+          tagName: "mj-container",
+          attributes: {},
+          children: [
+            {
+              tagName: "mj-section",
+              attributes: {},
+              children: [
+                {
+                  tagName: "mj-column",
+                  attributes: { width: "100%" },
+                  children: [
+                    button({ "font-size": "16px", "line-height": "24px" }),
+                    button({ "line-height": "auto" }),
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const section = content.blocks[0] as SectionBlock;
+    expect(
+      section.children[0]!.map((block) =>
+        block.type === "button" ? block.lineHeight : null,
+      ),
+    ).toEqual([1.5, undefined]);
+    expect(
+      report.entries
+        .filter((entry) => entry.sourceTag === "mj-button")
+        .map(({ status, note }) => ({ status, note })),
+    ).toEqual([
+      { status: "converted", note: undefined },
+      {
+        status: "approximated",
+        note: 'Button line-height "auto" could not be read; imported at 1.2.',
+      },
+    ]);
+  });
+
   it("imports a 20/60/20 row and a 30/40 row with column widths", () => {
     const row = (widths: string[]) => ({
       tagName: "mj-section",

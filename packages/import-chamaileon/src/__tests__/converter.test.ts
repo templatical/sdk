@@ -26,6 +26,43 @@ const INVALID_MESSAGE =
 const WRONG_BODY_MESSAGE =
   'Invalid Chamaileon template: expected body.type to be "body".';
 
+describe("button line height", () => {
+  it("imports a px line height as a multiple of the label size", () => {
+    const { content, report } = convertChamaileonTemplate({
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600 },
+        children: [
+          {
+            type: "fullwidth",
+            children: [
+              {
+                type: "button",
+                attrs: { text: "Go", href: "https://x.test" },
+                style: {
+                  backgroundColor: "#0094c5",
+                  fontSize: "20px",
+                  lineHeight: "50px",
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const button = (content.blocks[0] as SectionBlock).children[0]![0];
+    expect(button?.type === "button" && button.lineHeight).toBe(2.5);
+    expect(
+      report.entries.find((entry) => entry.sourceTag === "button"),
+    ).toEqual({
+      sourceTag: "button",
+      templaticalBlockType: "button",
+      status: "converted",
+    });
+  });
+});
+
 describe("custom column widths", () => {
   // 280 + 20 spacer + 280 inside 10px padding each side: an even split.
   // 360 / 240 has no preset, so it keeps 60 / 40 as column widths, and an

@@ -114,7 +114,7 @@ Unlayer content types map to Templatical equivalents:
 | Text | `paragraph` | Converted |
 | Heading | `title` | Converted |
 | Image | `image` | Converted (approximated when a `maxWidth` under 100% becomes px; see [Image width](#image-width)) |
-| Button | `button` | Converted (approximated when its `size.width` is clamped or unusable; see [Button width](#button-width)) |
+| Button | `button` | Converted (approximated when its `size.width` is clamped or unusable, see [Button width](#button-width), or its `lineHeight` can't be read, see [Button line height](#button-line-height)) |
 | Divider | `divider`, or `spacer` when it [draws no line](#undrawn-dividers) | Converted (approximated when a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
@@ -154,6 +154,10 @@ A px width keeps its size on a phone, where a percentage shrinks with the column
 | `autoWidth: false`, `width` missing or not a percentage | none, so the button fits its label | Approximated |
 
 Unlayer applies `width` only when `autoWidth` is `false`. A percentage is a share of the column less the button's `containerPadding`, the box a percentage `ButtonBlock.width` is measured against, so the button shrinks with its column on a phone. `fullWidthOnMobile` is not imported.
+
+### Button line height
+
+`lineHeight` becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. `120%` (Unlayer's default), `normal`, and a missing value leave it unset, which renders 1.2. Any other value imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "auto" could not be read; imported at 1.2.`
 
 ### Divider width
 

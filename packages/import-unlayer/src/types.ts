@@ -198,6 +198,8 @@ export interface UnlayerContentValues {
    * `width` is a percentage of the column, such as `"50%"`.
    */
   size?: { autoWidth?: boolean; width?: string };
+  /** The label's line height, such as `"120%"` (Unlayer's default). */
+  lineHeight?: string;
   href?: UnlayerLinkAction;
   // divider
   border?: UnlayerBorder;
