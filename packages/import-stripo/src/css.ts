@@ -4,25 +4,19 @@
  * "transparent" is unset. A present padding longhand of 0 beats the shorthand.
  */
 
+import { sectionColumnPercents } from "@templatical/types";
 import type {
   BackgroundImage,
   BackgroundPositionX,
   BackgroundPositionY,
   BackgroundSize,
+  ColumnLayout,
   DividerBlock,
   SectionWrapper,
   SpacingValue,
 } from "@templatical/types";
 
 const ZERO: SpacingValue = { top: 0, right: 0, bottom: 0, left: 0 };
-
-/** Column shares of the body width. The third column of `"3"` takes the rounding remainder. */
-const COLUMN_SHARES = {
-  "1": [100],
-  "2": [50, 50],
-  "3": [33.33, 33.33, 33.34],
-  "4": [25, 25, 25, 25],
-} as const;
 
 const DIVIDER_WIDTH = /^(-?\d+(?:\.\d+)?)\s*(%|px)?$/i;
 
@@ -331,17 +325,19 @@ export function emailBodyWidth(
 
 /**
  * Room each column has for a line, before the line's own side padding.
- * The share is of the body width; the first column then loses the section's
- * left padding and the last loses the right. One column loses both.
- * A room that is not positive is unknown — the caller keeps the stated px.
+ * The share is of the body width: the layout's, or `columnWidths` when the
+ * section has them. The first column then loses the section's left padding
+ * and the last loses the right. One column loses both. A room that is not
+ * positive is unknown — the caller keeps the stated px.
  */
 export function columnRooms(
   bodyWidth: number,
-  layout: "1" | "2" | "3" | "4",
+  layout: ColumnLayout,
   padding: SpacingValue,
   slotCount: number,
+  columnWidths?: number[],
 ): Array<number | undefined> {
-  const shares = COLUMN_SHARES[layout];
+  const shares = sectionColumnPercents({ columns: layout, columnWidths });
   const count = layout === "1" ? 1 : slotCount;
   const width = bodyWidth > 0 ? bodyWidth : 600;
   return Array.from({ length: count }, (_, index) => {

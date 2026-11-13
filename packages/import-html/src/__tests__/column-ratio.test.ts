@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getWidthPercentages } from "@templatical/renderer";
 import type { ColumnLayout } from "@templatical/types";
-import {
-  LAYOUT_SHARES,
-  readColumnWidth,
-  resolveColumnRatio,
-} from "../column-ratio";
+import { readColumnWidth, resolveColumnRatio } from "../column-ratio";
 import type { ColumnWidth } from "../column-ratio";
 
 const ALL_LAYOUTS: ColumnLayout[] = [
@@ -28,43 +24,7 @@ function percent(value: number): ColumnWidth {
   return { unit: "%", value };
 }
 
-describe("column-ratio — the snap targets agree with the renderer", () => {
-  /**
-   * `@templatical/renderer` is a devDependency here and must stay one — the
-   * importer has no runtime need of it — so `column-ratio.ts` carries its own
-   * copy of the layout percentages. This is the only thing keeping the two
-   * copies equal: without it the importer could choose `2-1` for a row the
-   * renderer then renders at some other split, and no surface between the two
-   * packages would notice.
-   */
-  it("carries the renderer's percentages for every layout, value for value", () => {
-    // Compared directly, not through `resolveColumnRatio`: a drift smaller
-    // than the snap tolerance still snaps to the same layout, so a target
-    // moved from 50/50 to 55/45 satisfies every behavioural case in this file
-    // while the importer and the renderer disagree.
-    for (const layout of Object.keys(LAYOUT_SHARES) as ColumnLayout[]) {
-      expect(LAYOUT_SHARES[layout]).toEqual(
-        getWidthPercentages(layout).map((width) => parseFloat(width)),
-      );
-    }
-  });
-
-  it("keys the table by the layouts this importer snaps to", () => {
-    // These keys are the candidate list. Every ColumnLayout is one of them.
-    expect((Object.keys(LAYOUT_SHARES) as ColumnLayout[]).sort()).toEqual([
-      "1",
-      "1-2",
-      "1-2-1",
-      "1-3",
-      "2",
-      "2-1",
-      "3",
-      "3-1",
-      "4",
-    ]);
-    expect(ALL_LAYOUTS.length).toBe(Object.keys(LAYOUT_SHARES).length);
-  });
-
+describe("column-ratio — the snap targets are the renderer's", () => {
   it("snaps a layout's own percentages back to that layout", () => {
     for (const layout of ALL_LAYOUTS) {
       const shares = getWidthPercentages(layout).map((width) => ({
@@ -228,24 +188,30 @@ describe("resolveColumnRatio — widths choose the layout, never the count", () 
     ).toEqual({ layout: "4" });
   });
 
-  it("snaps 80/20 onto 3-1, inside the same tolerance", () => {
-    expect(resolveColumnRatio([percent(80), percent(20)], "2")).toEqual({
+  it("snaps 76/24 onto 3-1, inside the tolerance", () => {
+    expect(resolveColumnRatio([percent(76), percent(24)], "2")).toEqual({
       layout: "3-1",
     });
   });
 
-  it("snaps 72/28 to 3-1, the nearer of the two wide splits", () => {
+  it("keeps 72/28 as column widths, three points from 3-1", () => {
     expect(resolveColumnRatio([percent(72), percent(28)], "2")).toEqual({
-      layout: "3-1",
+      layout: "2",
+      columnWidths: [72, 28],
     });
   });
 
-  it("names a 90/10 ratio it cannot express", () => {
+  it("keeps a 90/10 ratio as column widths on the counted layout", () => {
     expect(resolveColumnRatio([percent(90), percent(10)], "2")).toEqual({
       layout: "2",
-      note:
-        "Column widths 90% / 10% have no Templatical equivalent. " +
-        "The section was imported as 2 equal columns.",
+      columnWidths: [90, 10],
+    });
+  });
+
+  it("keeps px shares of the declared total, not of the row", () => {
+    expect(resolveColumnRatio([px(200), px(300)], "2")).toEqual({
+      layout: "2",
+      columnWidths: [40, 60],
     });
   });
 
@@ -255,14 +221,21 @@ describe("resolveColumnRatio — widths choose the layout, never the count", () 
     });
   });
 
-  it("names a 10/80/10 ratio, which no three-column layout is within tolerance of", () => {
+  it("keeps a 10/80/10 ratio, which no three-column layout is within tolerance of", () => {
     expect(
       resolveColumnRatio([percent(10), percent(80), percent(10)], "3"),
     ).toEqual({
       layout: "3",
-      note:
-        "Column widths 10% / 80% / 10% have no Templatical equivalent. " +
-        "The section was imported as 3 equal columns.",
+      columnWidths: [10, 80, 10],
+    });
+  });
+
+  it("keeps an unequal four-column ratio on layout 4", () => {
+    expect(
+      resolveColumnRatio([px(60), px(120), px(180), px(240)], "4"),
+    ).toEqual({
+      layout: "4",
+      columnWidths: [10, 20, 30, 40],
     });
   });
 
@@ -276,15 +249,15 @@ describe("resolveColumnRatio — widths choose the layout, never the count", () 
   });
 
   it("holds the tolerance either side of the widest real match", () => {
-    // 64.8 / 35.2 is 1.9pp from 2-1 and matches. 90/10 is 15pp from 3-1
-    // and does not. These two pin the band: a 4pp-off ratio still snaps, and
-    // a 10pp-off one does not.
-    expect(
-      resolveColumnRatio([percent(62.67), percent(37.33)], "2").layout,
-    ).toBe("2-1");
-    expect(
-      resolveColumnRatio([percent(56.67), percent(43.33)], "2").layout,
-    ).toBe("2");
+    // 64.8 / 35.2 is 1.9pp from 2-1 and matches. These two pin the band: a
+    // 1.67pp-off ratio still snaps, and a 2.67pp-off one keeps its shares.
+    expect(resolveColumnRatio([percent(65), percent(35)], "2")).toEqual({
+      layout: "2-1",
+    });
+    expect(resolveColumnRatio([percent(64), percent(36)], "2")).toEqual({
+      layout: "2",
+      columnWidths: [64, 36],
+    });
   });
 
   it("never returns a layout of a different column count", () => {

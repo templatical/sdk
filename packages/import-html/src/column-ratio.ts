@@ -1,55 +1,23 @@
+import {
+  COLUMN_LAYOUT_PERCENTS,
+  sectionColumnPercents,
+} from "@templatical/types";
 import type { ColumnLayout } from "@templatical/types";
 
 /**
- * The share of a section's width each column of a layout occupies.
- *
- * These are the percentages `@templatical/renderer` emits for the same layout
- * (`getWidthPercentages`), and they have to stay equal to them: this table is
- * what a declared ratio is snapped *to*, so a divergence would have the
- * importer choose `2-1` for a row the renderer then renders at some other
- * split — a silent disagreement with no failing surface between the two
- * packages. `@templatical/renderer` is a devDependency of this package and
- * must stay one (the importer has no runtime need of it), so the values are
- * copied rather than imported, and the agreement is asserted by the
- * renderer-agreement test in `column-ratio.test.ts`.
- *
- * The candidate list is this table's keys (`candidateLayouts` reads them).
- * Every `ColumnLayout` is a key. Key order is the tie-break: an equal
- * deviation keeps the earlier layout.
- *
- * Exported for that agreement test alone, which compares it against
- * `getWidthPercentages` value by value. Going through `resolveColumnRatio`
- * instead cannot do the job: a drift smaller than the snap tolerance still
- * snaps to the same layout, so a 50/50 target quietly moved to 55/45 passes
- * every behavioural case.
- */
-export const LAYOUT_SHARES: Record<ColumnLayout, readonly number[]> = {
-  "1": [100],
-  "2": [50, 50],
-  "3": [33.33, 33.33, 33.34],
-  "4": [25, 25, 25, 25],
-  "1-2": [33.33, 66.67],
-  "2-1": [66.67, 33.33],
-  "1-3": [25, 75],
-  "3-1": [75, 25],
-  "1-2-1": [25, 50, 25],
-};
-
-/**
  * How far, in percentage points on the worst column, a declared ratio may sit
- * from a layout and still be read as that layout.
+ * from a preset and still be read as that preset. The same tolerance the
+ * MJML-based importers use.
  *
- * Measured against the corpus rather than chosen for roundness. The widest
- * real match is mailchimp's `width="350"` / `width="190"` sidebar row at
- * 64.8 / 35.2, **1.9pp** from `2-1`. A 90 / 10 split is **15pp** from `3-1`
- * and stays the counted equal columns.
+ * Mailchimp's `width="350"` / `width="190"` sidebar row is 64.8 / 35.2,
+ * 1.9pp from `2-1`, and stays `2-1`. A 70 / 30 row is 3.3pp from it and
+ * keeps its own shares as `columnWidths`.
  *
- * The closest layouts are 8.33pp apart (`2-1` at 66.67 and `3-1` at 75,
- * `1-2` at 33.33 and `1-3` at 25). Six is wider than half that gap, so two
- * windows can cover one ratio; the smaller worst-column deviation wins, and
- * an equal deviation keeps the earlier key.
+ * The closest presets are 8.33pp apart (`2-1` at 66.67 and `3-1` at 75,
+ * `1-2` at 33.33 and `1-3` at 25), so no ratio is within two points of
+ * both. The candidates are `COLUMN_LAYOUT_PERCENTS`' keys, in its order.
  */
-const SNAP_TOLERANCE_PP = 6;
+const SNAP_TOLERANCE_PP = 2;
 
 /** A width a column declared, with the unit it declared it in. */
 export interface ColumnWidth {
@@ -57,10 +25,13 @@ export interface ColumnWidth {
   value: number;
 }
 
-/** The layout a row is imported with, and what the choice lost. */
+/**
+ * The layout a row is imported with, and the shares it keeps when no preset
+ * is within tolerance.
+ */
 export interface ColumnRatio {
   layout: ColumnLayout;
-  note?: string;
+  columnWidths?: number[];
 }
 
 /**
@@ -174,14 +145,14 @@ function normalizeShares(widths: (ColumnWidth | null)[]): number[] | null {
 
 /** The layouts that hold exactly this many columns. */
 function candidateLayouts(count: number): ColumnLayout[] {
-  return (Object.keys(LAYOUT_SHARES) as ColumnLayout[]).filter(
-    (layout) => LAYOUT_SHARES[layout].length === count,
+  return (Object.keys(COLUMN_LAYOUT_PERCENTS) as ColumnLayout[]).filter(
+    (layout) => COLUMN_LAYOUT_PERCENTS[layout].length === count,
   );
 }
 
 /** How far the worst column of `shares` sits from `layout`, in points. */
 function deviation(shares: number[], layout: ColumnLayout): number {
-  const target = LAYOUT_SHARES[layout];
+  const target = COLUMN_LAYOUT_PERCENTS[layout];
   return Math.max(...shares.map((share, i) => Math.abs(share - target[i])));
 }
 
@@ -199,26 +170,6 @@ function snapToLayout(shares: number[]): ColumnLayout | null {
   return best !== null && bestDeviation <= SNAP_TOLERANCE_PP ? best : null;
 }
 
-function formatShare(share: number): string {
-  return `${Math.round(share * 10) / 10}%`;
-}
-
-/**
- * What snapping could not express, named as the reader sees it.
- *
- * "equal columns" is true because the layouts a count alone produces — `2`,
- * `3` and `4` — are equal splits; `resolveColumnRatio` is the only caller and
- * never reaches here for any other. Naming the layout's own percentages
- * instead would leak the renderer's 33.34 rounding column into a report.
- */
-function describeRatioLoss(shares: number[]): string {
-  return (
-    `Column widths ${shares.map(formatShare).join(" / ")} have no ` +
-    `Templatical equivalent. The section was imported as ${shares.length} ` +
-    "equal columns."
-  );
-}
-
 /**
  * The layout a row's declared widths choose, given the layout its column count
  * already produced.
@@ -226,13 +177,14 @@ function describeRatioLoss(shares: number[]): string {
  * Widths decide the *ratio* and never the count: `counted` fixes how many
  * columns there are, and the only layouts considered are the ones holding
  * exactly that many. A row declaring nothing, declaring only some of its
- * columns, or mixing units keeps `counted` and reports nothing — there is no
- * observed ratio to have lost. A ratio outside tolerance keeps `counted` too,
- * and names itself in a note, which is the only outcome that is a downgrade.
+ * columns, or mixing units keeps `counted` — there is no observed ratio. A
+ * ratio within tolerance of a preset is that preset. Any other keeps
+ * `counted`, the even layout of that count, with the declared shares as
+ * `columnWidths`. The shares are of the declared widths' own total, so a
+ * gutter between columns is not a share.
  *
  * Call it only for a `counted` that has columns to choose between. A merged
- * row (`"1"`) has none, and describing the ratio of columns the section no
- * longer has would contradict the merge note that row already carries.
+ * row (`"1"`) has none: its columns are gone, so it has no ratio to keep.
  */
 export function resolveColumnRatio(
   widths: (ColumnWidth | null)[],
@@ -244,5 +196,11 @@ export function resolveColumnRatio(
   const snapped = snapToLayout(shares);
   if (snapped) return { layout: snapped };
 
-  return { layout: counted, note: describeRatioLoss(shares) };
+  return {
+    layout: counted,
+    columnWidths: sectionColumnPercents({
+      columns: counted,
+      columnWidths: shares,
+    }),
+  };
 }

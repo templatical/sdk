@@ -13,6 +13,7 @@ import {
   createVideoBlock,
   findOpenTagEnd,
   generateId,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
@@ -233,7 +234,8 @@ function convertButton(node: EasyEmailProNode, map: MapContext): Converted {
   const fill = parseColor(readAttr(node, "background-color", map.resolve));
   const textColor = parseColor(readAttr(node, "color", map.resolve));
   const href = readAttr(node, "href", map.resolve);
-  const width = buttonWidth(readAttr(node, "width", map.resolve));
+  const notes: string[] = [];
+  const width = buttonWidth(readAttr(node, "width", map.resolve), notes);
   const align = parseAlign(readAttr(node, "align", map.resolve));
   const outlined =
     isBorderEnabled(readAttr(node, "border-enabled", map.resolve)) &&
@@ -250,18 +252,17 @@ function convertButton(node: EasyEmailProNode, map: MapContext): Converted {
   });
   // createButtonBlock defaults fill to #333333; an unset Pro fill with
   // border-enabled is an outlined button, which has no Templatical equivalent.
-  if (outlined) block.backgroundColor = "#ffffff";
+  if (outlined) {
+    block.backgroundColor = "#ffffff";
+    notes.unshift("outlined button has no Templatical equivalent");
+  }
 
   return finish(
     block,
     node,
-    outlined
-      ? report(
-          "standard-button",
-          "button",
-          "approximated",
-          "outlined button has no Templatical equivalent",
-        )
+    // The outline note has no full stop of its own; a width note does.
+    notes.length > 0
+      ? report("standard-button", "button", "approximated", notes.join(". "))
       : report("standard-button", "button", "converted"),
   );
 }
@@ -726,9 +727,33 @@ function isBorderEnabled(value: unknown): boolean {
   return value === true || value === "true";
 }
 
-function buttonWidth(value: unknown): number | "full" | undefined {
+/**
+ * A button's `width` as `ButtonBlock.width`. A percentage is a share of the
+ * column less the button's side padding, the box MJML sizes it against. The
+ * 0 and 100 boundaries are that share rounded to two decimals: 100 is
+ * `"full"`, above 100 is `"full"` with a clamp note, and 0 or below fits
+ * the label with a note. A px width stays px. Anything else fits the label.
+ */
+function buttonWidth(value: unknown, notes: string[]): ButtonBlock["width"] {
   if (isUnset(value)) return undefined;
-  if (typeof value === "string" && value.trim() === "100%") return "full";
+  const raw = String(value).trim();
+  if (raw.endsWith("%")) {
+    const parsed = parsePercent(raw);
+    if (parsed === null) return undefined;
+    const share = roundHundredths(parsed);
+    if (share > 100) {
+      notes.push(`Button width ${noteValue(raw)} was clamped to 100%.`);
+      return "full";
+    }
+    if (share === 100) return "full";
+    if (share <= 0) {
+      notes.push(
+        `Button width ${noteValue(raw)} has no usable size; imported as fit to content.`,
+      );
+      return undefined;
+    }
+    return `${share}%`;
+  }
   return parsePx(value);
 }
 

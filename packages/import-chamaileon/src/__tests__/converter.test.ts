@@ -26,6 +26,67 @@ const INVALID_MESSAGE =
 const WRONG_BODY_MESSAGE =
   'Invalid Chamaileon template: expected body.type to be "body".';
 
+describe("custom column widths", () => {
+  // 280 + 20 spacer + 280 inside 10px padding each side: an even split.
+  // 360 / 240 has no preset, so it keeps 60 / 40 as column widths, and an
+  // image measures against its 360px or 240px share of the 600px body.
+  it("imports px columns by their share of the row", () => {
+    const column = (width: string, imageWidth: string) => ({
+      type: "column",
+      style: { width },
+      children: [
+        {
+          type: "image",
+          attrs: { src: "https://cdn.test/a.png" },
+          style: { width: imageWidth },
+        },
+      ],
+    });
+    const { content, report } = convertChamaileonTemplate({
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600 },
+        children: [
+          {
+            type: "fullwidth",
+            style: { contentPaddingLeft: "10px", contentPaddingRight: "10px" },
+            children: [
+              {
+                type: "multicolumn",
+                attrs: { spacerBetween: "20px" },
+                children: [column("280px", "50px"), column("280px", "50px")],
+              },
+            ],
+          },
+          {
+            type: "fullwidth",
+            children: [
+              {
+                type: "multicolumn",
+                children: [column("360px", "360px"), column("240px", "239px")],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const [even, custom] = content.blocks as SectionBlock[];
+    expect([even!.columns, even!.columnWidths]).toEqual(["2", undefined]);
+    expect([custom!.columns, custom!.columnWidths]).toEqual(["2", [60, 40]]);
+    expect(
+      custom!.children.map((col) =>
+        col.map((block) => (block.type === "image" ? block.width : null)),
+      ),
+    ).toEqual([["full"], [239]]);
+    expect(
+      report.entries
+        .filter((entry) => entry.sourceTag === "fullwidth")
+        .map((entry) => entry.status),
+    ).toEqual(["converted", "converted"]);
+  });
+});
+
 describe("convertChamaileonTemplate input guards", () => {
   it("throws a typed message for a non-object input", () => {
     expect(() => convertChamaileonTemplate(42 as never)).toThrow(

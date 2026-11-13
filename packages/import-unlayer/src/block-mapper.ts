@@ -12,9 +12,11 @@ import {
   createMenuBlock,
   createVideoBlock,
   generateId,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
+  ButtonBlock,
   DividerBlock,
   HeadingLevel,
   ImageBlock,
@@ -365,15 +367,60 @@ function convertImage(
   };
 }
 
-function convertButton(values: UnlayerContentValues): Block {
+/**
+ * A button's width from Unlayer's `size`. With `autoWidth` unset or `true`
+ * (Unlayer's default) the button fits its label, whatever `width` holds.
+ * With `autoWidth: false`, `width` is a share of the column less the
+ * button's `containerPadding`, the box `ButtonBlock.width` measures a
+ * percentage against. The 0 and 100 boundaries are that share rounded to
+ * two decimals: 100 is `"full"`, above 100 is `"full"` with a clamp note,
+ * and 0 fits the label with a note. A width that is not a percentage fits
+ * the label with a note.
+ */
+function buttonWidth(
+  size: UnlayerContentValues["size"],
+  notes: string[],
+): ButtonBlock["width"] {
+  if (size?.autoWidth !== false) return undefined;
+  const raw = String(size.width ?? "").trim();
+  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  if (!percent) {
+    notes.push(
+      raw
+        ? `Button width "${raw}" is not a percentage; imported as fit to content.`
+        : "Button width is not set; imported as fit to content.",
+    );
+    return undefined;
+  }
+  const share = roundHundredths(Number(percent[1]));
+  if (share > 100) {
+    notes.push(`Button width ${raw} was clamped to 100%.`);
+    return "full";
+  }
+  if (share === 100) return "full";
+  if (share === 0) {
+    notes.push(
+      `Button width ${raw} has no usable size; imported as fit to content.`,
+    );
+    return undefined;
+  }
+  return `${share}%`;
+}
+
+function convertButton(values: UnlayerContentValues): {
+  block: Block;
+  notes: string[];
+} {
   const colors = values.buttonColors ?? {};
   const padding = values.padding
     ? parsePaddingShorthand(values.padding)
     : { top: 12, right: 24, bottom: 12, left: 24 };
   const label = stripTagsPlain(values.text ?? "Button");
   const linkValues = values.href?.values;
+  const notes: string[] = [];
+  const width = buttonWidth(values.size, notes);
 
-  return createButtonBlock({
+  const block = createButtonBlock({
     text: label,
     url: linkValues?.href || "#",
     openInNewTab: linkValues?.target === "_blank" || undefined,
@@ -384,8 +431,10 @@ function convertButton(values: UnlayerContentValues): Block {
     fontFamily: parseFontFamily(values.fontFamily) || undefined,
     align: toAlign(values.textAlign, "center"),
     buttonPadding: padding,
+    ...(width !== undefined ? { width } : {}),
     styles: makeStyles(values),
   });
+  return { block, notes };
 }
 
 /**
@@ -627,15 +676,18 @@ function convertContentBase(
         },
       };
     }
-    case "button":
+    case "button": {
+      const { block, notes } = convertButton(values);
       return {
-        block: convertButton(values),
+        block,
         entry: {
           unlayerContentType: type,
           templaticalBlockType: "button",
-          status: "converted",
+          status: notes.length > 0 ? "approximated" : "converted",
+          ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
         },
       };
+    }
     case "divider": {
       const height = undrawnDividerHeight(values);
       if (height !== undefined) {

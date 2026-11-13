@@ -316,7 +316,7 @@ describe("compiled pipeline", () => {
     );
   });
 
-  it("reports two unequal column widths as two equal columns", () => {
+  it("reads 200px / 400px columns as 1-2", () => {
     const html = floatedRow(
       [
         floatedColumn("Left", { table: "200" }),
@@ -324,20 +324,44 @@ describe("compiled pipeline", () => {
       ].join(""),
     );
     const { content, report } = convertStripoTemplate(html);
-    expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columns).toBe("1-2");
+    expect(sections(content.blocks)[0].columnWidths).toBeUndefined();
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 200px and 400px became two equal columns.",
+        status: "converted",
       },
     ]);
   });
 
-  it("reports three unequal cell widths as three equal columns", () => {
+  it("reads widths within 1px of an unequal preset as that preset", () => {
+    const layoutOf = (widths: string[]) => {
+      const html = floatedRow(
+        widths
+          .map((table, index) =>
+            floatedColumn(`C${index}`, {
+              table,
+              ...(index === widths.length - 1
+                ? { side: "es-right" as const }
+                : {}),
+            }),
+          )
+          .join(""),
+      );
+      const section = sections(convertStripoTemplate(html).content.blocks)[0];
+      return [section.columns, section.columnWidths];
+    };
+    expect(layoutOf(["150", "300", "150"])).toEqual(["1-2-1", undefined]);
+    expect(layoutOf(["451", "150"])).toEqual(["3-1", undefined]);
+    expect(layoutOf(["150", "451"])).toEqual(["1-3", undefined]);
+    expect(layoutOf(["401", "200"])).toEqual(["2-1", undefined]);
+    expect(layoutOf(["455", "150"])).toEqual(["2", [75.21, 24.79]]);
+  });
+
+  it("keeps three unequal cell widths as column widths", () => {
     const html = floatedRow(
       [
         floatedColumn("A", { cellStyle: "padding:0;width:180px" }),
@@ -350,19 +374,19 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("3");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 40, 30]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px, 240px and 180px became three equal columns.",
+        status: "converted",
       },
     ]);
   });
 
-  it("reports four unequal declared widths as four equal columns", () => {
+  it("keeps four unequal declared widths as column widths", () => {
     const html = floatedRow(
       [
         floatedColumn("A", { table: "100" }),
@@ -373,14 +397,16 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("4");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([
+      16.67, 33.33, 25, 25,
+    ]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 100px, 200px, 150px and 150px became four equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -409,7 +435,7 @@ describe("compiled pipeline", () => {
     ]);
   });
 
-  it("reports unequal inline column widths over the width attributes", () => {
+  it("reads unequal inline column widths over the width attributes", () => {
     const html = floatedRow(
       [
         floatedColumn("Left", { table: "400", tableStyle: "width:180px" }),
@@ -422,14 +448,14 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 70]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px and 420px became two equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -447,14 +473,14 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 70]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px and 420px became two equal columns.",
+        status: "converted",
       },
     ]);
   });

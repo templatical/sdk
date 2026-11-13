@@ -795,6 +795,64 @@ function dividerWidths(block: Block): Array<DividerBlock["width"]> {
   );
 }
 
+describe("custom column widths and percentage buttons", () => {
+  function button(width: string, text: string): EasyEmailProNode {
+    return {
+      type: "standard-button",
+      data: {},
+      attributes: { "background-color": "#C5900C", width },
+      children: [{ text }],
+    };
+  }
+
+  it("imports a 20/60/20 row and its percentage buttons", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-section",
+          data: {},
+          attributes: {},
+          children: [
+            ["20%", button("50%", "A")],
+            ["60%", button("100%", "B")],
+            ["20%", button("150%", "C")],
+          ].map(([width, child]) => ({
+            type: "standard-column",
+            data: {},
+            attributes: { width },
+            children: [child],
+          })) as EasyEmailProNode[],
+        },
+      ],
+    });
+    const section = content.blocks[0] as SectionBlock;
+    expect(section.columns).toBe("3");
+    expect(section.columnWidths).toEqual([20, 60, 20]);
+    expect(
+      section.children.map((column) => (column[0] as ButtonBlock).width),
+    ).toEqual(["50%", "full", "full"]);
+    expect(
+      report.entries.map(({ sourceTag, status, note }) => ({
+        sourceTag,
+        status,
+        note,
+      })),
+    ).toEqual([
+      { sourceTag: "standard-section", status: "converted", note: undefined },
+      { sourceTag: "standard-button", status: "converted", note: undefined },
+      { sourceTag: "standard-button", status: "converted", note: undefined },
+      {
+        sourceTag: "standard-button",
+        status: "approximated",
+        note: "Button width 150% was clamped to 100%.",
+      },
+    ]);
+  });
+});
+
 describe("divider width against the page", () => {
   it("measures a column against the page width", () => {
     const { content } = convertEasyEmailProTemplate({

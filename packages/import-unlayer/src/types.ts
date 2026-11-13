@@ -193,6 +193,10 @@ export interface UnlayerContentValues {
   // button
   buttonColors?: UnlayerButtonColors;
   padding?: string;
+  /**
+   * `autoWidth` (default `true`) fits the label. With `autoWidth: false`,
+   * `width` is a percentage of the column, such as `"50%"`.
+   */
   size?: { autoWidth?: boolean; width?: string };
   href?: UnlayerLinkAction;
   // divider

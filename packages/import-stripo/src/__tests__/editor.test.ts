@@ -187,7 +187,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     expect(JSON.stringify(secs[0].children[2])).toContain("Col C");
   });
 
-  it("reports four unequal frame widths as four equal columns", () => {
+  it("keeps four unequal frame widths as column widths", () => {
     const html = structureDoc(
       [
         sizedFrame("A", { frame: "180" }),
@@ -199,6 +199,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     const { content, report } = convertStripoTemplate(html);
     const secs = sections(content.blocks);
     expect(secs[0].columns).toBe("4");
+    expect(secs[0].columnWidths).toEqual([30, 36.67, 16.67, 16.66]);
     expect(secs[0].children).toHaveLength(4);
     expect(
       report.entries.filter((e) => e.sourceTag === "esd-structure"),
@@ -206,8 +207,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
       {
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px, 220px, 100px and 100px became four equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -241,7 +241,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     ]);
   });
 
-  it("reports unequal inline column-table widths over the width attributes", () => {
+  it("reads unequal inline column-table widths over the width attributes", () => {
     const html = structureDoc(
       [
         sizedFrame("Left", {
@@ -259,14 +259,14 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 70]);
     expect(
       report.entries.filter((e) => e.sourceTag === "esd-structure"),
     ).toEqual([
       {
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px and 420px became two equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -288,15 +288,15 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
       ].join(""),
     );
     const { content, report } = convertStripoTemplate(html);
-    expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columns).toBe("1-2");
+    expect(sections(content.blocks)[0].columnWidths).toBeUndefined();
     expect(
       report.entries.filter((e) => e.sourceTag === "esd-structure"),
     ).toEqual([
       {
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 200px and 400px became two equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -314,14 +314,14 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 70]);
     expect(
       report.entries.filter((e) => e.sourceTag === "esd-structure"),
     ).toEqual([
       {
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px and 420px became two equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -347,7 +347,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     ]);
   });
 
-  it("reports a spread over 1px across three frames", () => {
+  it("keeps a spread over 1px across three frames as column widths", () => {
     const html = structureDoc(
       [
         sizedFrame("A", { frame: "201" }),
@@ -357,14 +357,16 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("3");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([
+      33.33, 33.17, 33.5,
+    ]);
     expect(
       report.entries.filter((e) => e.sourceTag === "esd-structure"),
     ).toEqual([
       {
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 201px, 200px and 202px became three equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -477,7 +479,8 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
     const html = structureDoc(
       [
         sizedFrame("Left", { table: "200" }),
-        sizedFrame("Right", { table: "400" }),
+        sizedFrame("Middle", { table: "400" }),
+        sizedFrame("Right", {}),
       ].join(""),
       ` style="background-color:#112233"`,
     ).replace(
@@ -492,7 +495,7 @@ ${frame("Col A")}${frame("Col B")}${frame("Col C")}
         sourceTag: "esd-structure",
         templaticalBlockType: "section",
         status: "approximated",
-        note: "Columns of 200px and 400px became two equal columns.",
+        note: "Columns of 200px, 400px and an unstated width became three equal columns.",
       },
     ]);
   });

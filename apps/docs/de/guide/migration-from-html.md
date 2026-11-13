@@ -142,7 +142,7 @@ Die Breite stammt aus dem `width`-Style des `<hr>`, danach aus seinem `width`-At
 | eine negative px-Breite | `0` | Angenähert |
 | jeder andere Wert, etwa `20em` | `"full"` | Angenähert |
 
-Der Platz der Linie ist der Anteil der Spalte an `settings.width` gemäß dem Spaltenlayout der Section, abzüglich des Paddings der Section, jeder Zelle und jedes Wrappers um das `<hr>` und des `<hr>` selbst.
+Der Platz der Linie ist der Anteil der Spalte an `settings.width` gemäß dem Spaltenlayout der Section oder ihren `columnWidths`, abzüglich des Paddings der Section, jeder Zelle und jedes Wrappers um das `<hr>` und des `<hr>` selbst.
 
 Templatical zentriert jeden Divider. Ein `<hr>` mit Teilbreite, das sein `align`-Attribut oder seine Margins links oder rechts platzieren, ist angenähert; seine `note` nennt die Ausrichtung.
 
@@ -184,14 +184,9 @@ Jeder `<tr>` einer Layout-Tabelle wird zu einem `SectionBlock`. Die direkten `<t
 
 ### Spaltenverhältnisse
 
-Eine Zeile wählt unter den Layouts, die ihre Spaltenzahl halten, anhand der Breiten, die ihre Zellen deklarieren — ein `width`-Attribut, ein `style="width:…"` oder der Anteil im Klassennamen `mj-column-per-*`. Zwei Zellen wählen unter `'2'`, `'2-1'`, `'1-2'`, `'3-1'` und `'1-3'`; drei Zellen zwischen `'3'` und `'1-2-1'`; vier Zellen sind `'4'`. Das nächstgelegene gewinnt, wenn es auf der am weitesten abweichenden Spalte innerhalb von 6 Prozentpunkten liegt: `350` / `190` wird zu `'2-1'`, `25 %` / `75 %` zu `'1-3'` und `130` / `280` / `130` zu `'1-2-1'`. Liegen zwei Layouts gleich nah, gewinnt die kleinere Abweichung der schlechtesten Spalte.
+Eine Zeile wählt unter den Layouts, die ihre Spaltenzahl halten, anhand der Breiten, die ihre Zellen deklarieren — ein `width`-Attribut, ein `style="width:…"` oder der Anteil im Klassennamen `mj-column-per-*`. Jede Zelle muss eine Breite deklarieren, alle in px oder alle in Prozent. Der Anteil einer Spalte ist ihre Breite geteilt durch die Summe der deklarierten Breiten; ein Abstand zwischen den Zellen ist also kein Anteil. Zwei Zellen wählen unter `'2'`, `'2-1'`, `'1-2'`, `'3-1'` und `'1-3'`; drei Zellen zwischen `'3'` und `'1-2-1'`; vier Zellen sind `'4'`. Das nächstgelegene gewinnt, wenn es auf der am weitesten abweichenden Spalte innerhalb von 2 Prozentpunkten liegt: `350` / `190` wird zu `'2-1'`, `25 %` / `75 %` zu `'1-3'` und `130` / `280` / `130` zu `'1-2-1'`.
 
-Ein Verhältnis, dem kein Layout so nah kommt, wird als gleichmäßige Teilung dieser Zellenzahl importiert und als `approximated` gemeldet, mit einer Notiz, die die gemessenen Breiten nennt:
-
-```txt
-Column widths 10% / 80% / 10% have no Templatical equivalent.
-The section was imported as 3 equal columns.
-```
+Jedes andere Verhältnis behält die gleichmäßige Teilung dieser Zellenzahl und setzt [`columnWidths`](/de/guide/sections-and-columns#custom-column-widths) auf die auf 100 skalierten Anteile. `70 %` / `30 %` ist `'2'` mit `[70, 30]`, `200` / `300` ist `'2'` mit `[40, 60]`, und `10 %` / `80 %` / `10 %` ist `'3'` mit `[10, 80, 10]`. Der Eintrag der Section bleibt `converted`. Eine Zeile, die keine Breiten, nur einige oder px und Prozent gemischt deklariert, behält die gleichmäßige Teilung ohne `columnWidths`.
 
 ### Wrapper-Zeilen
 
@@ -279,7 +274,7 @@ Globale Template-Einstellungen werden aus dem Dokument gelesen:
 - **Externe Ressourcen** — `<link>`, externe Stylesheets, Web Fonts und Remote-Bilder werden nicht geladen. Bild-`src`-URLs bleiben unverändert.
 - **Outlook-MSO-Conditionals** — bleiben innerhalb des umgebenden Blocks als HTML erhalten (in Nicht-Outlook-Clients ohnehin inert).
 - **Formularelemente (`<form>`/`<input>`/`<button>`)** — bleiben als HTML-Fallback. Die meisten Mail-Clients blockieren Formular-Submits ohnehin; bauen Sie den CTA als Button mit Link auf eine gehostete Seite.
-- **Zeilen mit mehr als vier Zellen** — `ColumnLayout` fasst höchstens vier Spalten, eine breitere Zeile wird also auf eine zusammengefasst und gemeldet. Auch Verhältnisse, denen kein Layout innerhalb von 6 Prozentpunkten nahekommt — etwa `90 %` / `10 %` — haben keine Entsprechung und werden als gleichmäßige Teilung importiert.
+- **Zeilen mit mehr als vier Zellen** — `ColumnLayout` fasst höchstens vier Spalten, eine breitere Zeile wird also auf eine zusammengefasst und gemeldet.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 
 ## Konvertierte Templates prüfen
@@ -288,7 +283,7 @@ Prüfen Sie das Ergebnis nach der Konvertierung im Editor auf:
 
 1. **Element-Klassifikation** — `report.entries` auf Einträge mit `status: 'approximated'` oder `status: 'html-fallback'` durchsehen.
 2. **Bild-URLs** — relative Pfade und CID-Referenzen funktionieren in der Vorschau nicht; durch absolute URLs ersetzen.
-3. **Spaltenverhältnisse** — das automatische Mapping wählt das nächstgelegene Standard-Layout; im Section-Settings-Panel verfeinern.
+3. **Spaltenverhältnisse** — ein Verhältnis innerhalb von 2 Prozentpunkten eines Presets rastet darauf ein, und eine Zeile ohne deklarierte Zellbreiten ist eine gleichmäßige Teilung; im Section-Settings-Panel verfeinern.
 4. **Abstände und Padding** — Zellen-Padding wird auf die enthaltenen Blöcke übertragen, wie unter [Zellen-Padding](#cell-padding) beschrieben. Margins werden nicht importiert und können Nachschärfung brauchen.
 5. **HTML-Fallback-Blöcke** — Inhalt im HTML-Block lässt sich inline editieren oder durch erstklassige Blöcke ersetzen.
 

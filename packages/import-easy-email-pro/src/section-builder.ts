@@ -40,18 +40,37 @@ export function buildTopLevel(
   }
 }
 
+/**
+ * A column's `width` as a percentage of the section's inner box, or `null`
+ * when it states none. A percentage (or a bare number) is read as written.
+ * A px width is that many pixels of `innerWidth`, the section less its side
+ * padding, which is the box MJML sizes columns against.
+ */
+function columnPercent(
+  value: unknown,
+  innerWidth: number | undefined,
+): number | null {
+  const percent = parsePercent(value);
+  if (percent !== null) return percent;
+  const px = parsePx(value);
+  if (px === undefined || !innerWidth) return null;
+  return (px / innerWidth) * 100;
+}
+
 function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
   const plan = collectSlots(node);
   const rawWidths = plan.columns.map((column) =>
     readAttr(column, "width", map.resolve),
   );
-  const { layout, exact } = matchColumnLayout(
-    rawWidths.map((width) => parsePercent(width)),
+  const sectionWidth = insideWidth(map.contentWidth, node, map);
+  const { layout, exact, columnWidths } = matchColumnLayout(
+    rawWidths.map((width) => columnPercent(width, sectionWidth)),
   );
   const slots = COLUMN_COUNT[layout];
-  const sectionWidth = insideWidth(map.contentWidth, node, map);
   const slotWidths =
-    sectionWidth === undefined ? undefined : columnPixels(layout, sectionWidth);
+    sectionWidth === undefined
+      ? undefined
+      : columnPixels(layout, sectionWidth, columnWidths);
   const leftover = convertFlow(
     plan.leftovers,
     withContentWidth(map, slotWidths?.[0]),
@@ -99,6 +118,7 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
 
   const section = createSectionBlock();
   section.columns = layout;
+  if (columnWidths) section.columnWidths = columnWidths;
   section.children = children;
   paintSection(section, node, map, {
     stackOnMobile: plan.grouped ? false : undefined,

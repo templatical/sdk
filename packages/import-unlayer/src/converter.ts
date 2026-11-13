@@ -6,8 +6,11 @@ import {
   warn,
 } from "./localization";
 import {
+  COLUMN_LAYOUT_PERCENTS,
+  columnWidthsIssue,
   createSectionBlock,
   createDefaultTemplateContent,
+  sectionColumnPercents,
 } from "@templatical/types";
 import type {
   BackgroundImage,
@@ -39,55 +42,81 @@ import {
   readUnlayerBackgroundImage,
 } from "./style-parser";
 
-function resolveColumnLayout(
-  cells: number[],
-  warnings: string[],
-): ColumnLayout {
-  if (cells.length <= 1) return "1";
-  if (cells.length === 4) {
-    // Layout "4" is four equal quarters, so unequal cells lose their ratio.
-    if (cells.some((cell) => cell !== cells[0])) {
-      warnings.push(
-        `Row with four columns at ratio ${cells.join(":")} was converted to four equal columns.`,
-      );
-    }
-    return "4";
-  }
+interface ResolvedColumns {
+  layout: ColumnLayout;
+  columnWidths?: number[];
+}
 
+/** The two-, three- and four-column presets, in the order a match is tried. */
+const PRESETS: readonly ColumnLayout[] = [
+  "2",
+  "2-1",
+  "1-2",
+  "3-1",
+  "1-3",
+  "3",
+  "1-2-1",
+  "4",
+];
+
+/**
+ * The widest gap between a scaled share and a preset's share that still
+ * matches: one hundredth, the step `sectionColumnPercents` rounds to, so
+ * `[1, 1, 1]` (33.34 / 33.33 / 33.33) is `"3"`. The extra 1e-9 absorbs the
+ * float error of subtracting two hundredths.
+ */
+const PRESET_MATCH = 0.01 + 1e-9;
+
+function evenLayout(count: number): ColumnLayout {
+  if (count === 3) return "3";
+  if (count === 4) return "4";
+  return "2";
+}
+
+/**
+ * The section layout for a row's `cells`, Unlayer's relative column weights.
+ *
+ * One cell is `"1"`. Five or more flatten to `"1"` with a warning. Two to
+ * four cells keep the preset their scaled shares equal, or the even preset
+ * of that count plus `columnWidths`: `[1, 2]` is `"1-2"`, `[6, 2, 2, 2]` is
+ * `"4"` with `[50, 16.67, 16.67, 16.66]`. A cell that is not a number above
+ * 0 keeps the even preset without `columnWidths`, and warns when the cells
+ * total more than 0.
+ */
+function resolveColumns(cells: number[], warnings: string[]): ResolvedColumns {
+  if (cells.length <= 1) return { layout: "1" };
   if (cells.length > 4) {
     warnings.push(
       `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to four columns.`,
     );
-    return "1";
+    return { layout: "1" };
   }
 
-  if (cells.length === 2) {
-    const left = cells[0] ?? 1;
-    const right = cells[1] ?? 1;
-    const total = left + right;
-    const ratio = left / total;
-
-    // 0.71 / 0.29 sit just past the midpoint of 2/3 and 3/4, so 7/10 stays 2-1.
-    if (ratio > 0.71) return "3-1";
-    if (ratio > 0.58) return "2-1";
-    if (ratio < 0.29) return "1-3";
-    if (ratio < 0.42) return "1-2";
-    return "2";
+  const layout = evenLayout(cells.length);
+  if (columnWidthsIssue({ columns: layout, columnWidths: cells }) !== null) {
+    const total = cells.reduce((sum, cell) => sum + cell, 0);
+    if (total > 0) {
+      warnings.push(
+        `Row with ${cells.length} columns at ratio ${cells.join(":")} was kept as an even split. A cell that is not above 0 cannot be stored as column widths.`,
+      );
+    }
+    return { layout };
   }
 
-  const total = cells.reduce((sum, cell) => sum + cell, 0);
-  if (total <= 0) return "3";
-  const shares = cells.map((cell) => cell / total);
-  const distance = (target: readonly number[]) =>
-    shares.reduce(
-      (sum, share, index) => sum + Math.abs(share - (target[index] ?? 0)),
-      0,
+  const percents = sectionColumnPercents({
+    columns: layout,
+    columnWidths: cells,
+  });
+  const preset = PRESETS.find((candidate) => {
+    const target = COLUMN_LAYOUT_PERCENTS[candidate];
+    return (
+      target.length === percents.length &&
+      target.every(
+        (share, index) => Math.abs(share - percents[index]!) <= PRESET_MATCH,
+      )
     );
-  // "3" wins a tie: an equal distance stays on the even split.
-  if (distance([0.25, 0.5, 0.25]) < distance([1 / 3, 1 / 3, 1 / 3])) {
-    return "1-2-1";
-  }
-  return "3";
+  });
+  return preset ? { layout: preset } : { layout, columnWidths: percents };
 }
 
 export interface ConvertUnlayerOptions {
@@ -109,16 +138,21 @@ const COLUMN_SHARES: Record<ColumnLayout, number[]> = {
 };
 
 /**
- * A column's px width as the renderer draws it: the body width times the
- * column's share, rounded down. A column past the layout's last slot takes
- * the whole body width, the renderer's fallback.
+ * A column's px width as the renderer draws it, rounded down: the body width
+ * times the preset's share (a third for `"3"`, `"1-2"` and `"2-1"`), or
+ * times the `columnWidths` percentage when the row has one. A column past
+ * the layout's last slot takes the whole body width, the renderer's
+ * fallback.
  */
 function columnWidthAt(
-  layout: ColumnLayout,
+  columns: ResolvedColumns,
   bodyWidth: number,
   index: number,
 ): number {
-  return Math.floor(bodyWidth * (COLUMN_SHARES[layout][index] ?? 1));
+  if (columns.columnWidths) {
+    return Math.floor((bodyWidth * (columns.columnWidths[index] ?? 100)) / 100);
+  }
+  return Math.floor(bodyWidth * (COLUMN_SHARES[columns.layout][index] ?? 1));
 }
 
 /**
@@ -220,9 +254,10 @@ function processRow(
   if (!columns || columns.length === 0) return [];
 
   const cells = row.cells ?? columns.map(() => 1);
-  const layout = resolveColumnLayout(cells, warnings);
+  const resolved = resolveColumns(cells, warnings);
+  const layout = resolved.layout;
   const contextAt = (index: number): ContentContext => ({
-    columnWidth: columnWidthAt(layout, settings.width, index),
+    columnWidth: columnWidthAt(resolved, settings.width, index),
     textColor: settings.textColor,
   });
 
@@ -246,6 +281,7 @@ function processRow(
 
   const section = createSectionBlock({
     columns: layout,
+    ...(resolved.columnWidths ? { columnWidths: resolved.columnWidths } : {}),
     children,
     styles: {
       padding,

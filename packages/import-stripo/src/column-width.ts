@@ -1,3 +1,8 @@
+import {
+  COLUMN_LAYOUT_PERCENTS,
+  sectionColumnPercents,
+} from "@templatical/types";
+import type { ColumnLayout } from "@templatical/types";
 import { parsePxValue, parseStyleAttribute } from "./css";
 
 /** Widths within 1px count as the same column width. */
@@ -38,4 +43,65 @@ export function unequalWidthNote(
   );
   const listed = `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
   return `Columns of ${listed} became ${EQUAL_COLUMN_WORD[layout]} equal columns.`;
+}
+
+/** The unequal presets a row of stated widths can match, in the order tried. */
+const UNEQUAL_PRESETS: readonly ColumnLayout[] = [
+  "2-1",
+  "1-2",
+  "3-1",
+  "1-3",
+  "1-2-1",
+];
+
+/** A row's layout, its custom shares, and what it could not carry. */
+export interface StatedColumns {
+  layout: ColumnLayout;
+  columnWidths?: number[];
+  note?: string;
+}
+
+/**
+ * The layout of a row of two to four columns, from their stated px widths.
+ *
+ * Stripo draws each column at its px width with a gutter between them, so a
+ * column's share is its width over the sum of the row's widths. Widths
+ * within 1px of each other are `even`. Widths within 1px of an unequal
+ * preset's shares (`2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`) are that preset. Any
+ * other widths keep `even` with their shares as `columnWidths`. A width that
+ * cannot be read leaves no ratio: the row is `even`, noted when its readable
+ * widths differ (`unequalWidthNote`).
+ */
+export function statedLayout(
+  widths: Array<number | undefined>,
+  even: "2" | "3" | "4",
+): StatedColumns {
+  const stated = widths.filter((width): width is number => width !== undefined);
+  if (stated.length < widths.length) {
+    const note = unequalWidthNote(widths, even);
+    return note ? { layout: even, note } : { layout: even };
+  }
+  if (Math.max(...stated) - Math.min(...stated) <= COLUMN_WIDTH_TOLERANCE) {
+    return { layout: even };
+  }
+  const total = stated.reduce((sum, width) => sum + width, 0);
+  const preset = UNEQUAL_PRESETS.find((layout) => {
+    const shares = COLUMN_LAYOUT_PERCENTS[layout];
+    return (
+      shares.length === stated.length &&
+      shares.every(
+        (share, index) =>
+          Math.abs((total * share) / 100 - stated[index]!) <=
+          COLUMN_WIDTH_TOLERANCE,
+      )
+    );
+  });
+  if (preset) return { layout: preset };
+  return {
+    layout: even,
+    columnWidths: sectionColumnPercents({
+      columns: even,
+      columnWidths: stated,
+    }),
+  };
 }

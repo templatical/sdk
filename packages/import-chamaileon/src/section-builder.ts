@@ -15,12 +15,7 @@ import {
   skippedLoopEntry,
   type MapContext,
 } from "./block-mapper";
-import {
-  COLUMN_COUNT,
-  columnPixels,
-  matchColumnLayout,
-  widthsToPercents,
-} from "./column-layout";
+import { COLUMN_COUNT, columnPixels, matchColumnLayout } from "./column-layout";
 import { readAttrs, readStyle, styleValue } from "./normalize";
 import type { ChamaileonNode, ImportReportEntry } from "./types";
 
@@ -120,9 +115,7 @@ export function buildFullwidth(
     const widthsPx = columns.map((column) =>
       parsePx(styleValue(readStyle(column, ctx.variables, ctx.stats), "width")),
     );
-    const { layout, exact } = matchColumnLayout(
-      widthsToPercents(widthsPx, ctx.bodyWidth),
-    );
+    const { layout, exact, columnWidths } = matchColumnLayout(widthsPx);
     if (!exact) {
       reasons.push(
         `Column widths ${formatWidths(widthsPx)} have no exact Templatical layout; resolved to "${layout}".${columns.length > 4 ? " Templatical supports up to four columns." : ""}`,
@@ -139,7 +132,7 @@ export function buildFullwidth(
     }
 
     const slots = COLUMN_COUNT[layout];
-    const pixels = columnPixels(layout, ctx.bodyWidth);
+    const pixels = columnPixels(layout, ctx.bodyWidth, columnWidths);
     const children: Block[][] = Array.from({ length: slots }, () => []);
     const slotCtx = (slot: number): MapContext =>
       withColumnWidth(ctx, Math.round(pixels[slot] ?? ctx.bodyWidth));
@@ -154,6 +147,7 @@ export function buildFullwidth(
     children[0].push(...convertColumnChildren(after, slotCtx(0), entries));
 
     section.columns = layout;
+    if (columnWidths) section.columnWidths = columnWidths;
     section.children = children;
   }
 

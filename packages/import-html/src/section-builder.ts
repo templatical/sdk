@@ -5,6 +5,7 @@ import {
   createSectionBlock,
   createButtonBlock,
   createSpacerBlock,
+  sectionColumnPercents,
 } from "@templatical/types";
 import type {
   BackgroundImage,
@@ -24,12 +25,8 @@ import {
   skippedElementEntry,
   walkContentNodes,
 } from "./block-mapper";
-import {
-  LAYOUT_SHARES,
-  readColumnWidth,
-  resolveColumnRatio,
-} from "./column-ratio";
-import type { ColumnWidth } from "./column-ratio";
+import { readColumnWidth, resolveColumnRatio } from "./column-ratio";
+import type { ColumnRatio, ColumnWidth } from "./column-ratio";
 import {
   backgroundShorthandColor,
   parseColor,
@@ -499,7 +496,6 @@ function packagingRowTables(
 function sectionEntry(
   columnCount: number,
   slotCount: number,
-  ratioNote: string | undefined,
   fillNote: string | undefined,
   imageNotes: string[] = [],
 ): ImportReportEntry {
@@ -508,8 +504,6 @@ function sectionEntry(
     notes.push(
       `Row of ${columnCount} columns was merged into a single column. Templatical supports up to four columns.`,
     );
-  } else if (ratioNote) {
-    notes.push(ratioNote);
   }
   if (fillNote) notes.push(fillNote);
   notes.push(...imageNotes);
@@ -904,23 +898,23 @@ function extractContentBlocks(
 /**
  * The room each of a row's hosts has, from the room across the row.
  *
- * `layout` is the one the hosts land in, `"1"` when they stack, and each
- * host takes its column's share of the row. A column set's cell pads the
- * row's edges, so its left side narrows the first column and its right the
- * last; stacked, every host sits between both.
+ * `shares` are the percentages of the section the hosts land in, the
+ * preset's or its `columnWidths`, or `null` when they stack. Each host takes
+ * its column's share of the row. A column set's cell pads the row's edges,
+ * so its left side narrows the first column and its right the last;
+ * stacked, every host sits between both.
  */
 function hostRooms(
   rowRoom: number | undefined,
-  layout: ColumnLayout,
+  shares: readonly number[] | null,
   hostCount: number,
   setPadding: SpacingValue | undefined,
 ): (number | undefined)[] {
-  const shares = LAYOUT_SHARES[layout];
   const edges = setPadding ?? emptyPadding();
   return Array.from({ length: hostCount }, (_, index) => {
     if (rowRoom === undefined) return undefined;
-    if (layout === "1") return rowRoom - edges.left - edges.right;
-    const share = (rowRoom * shares[index]) / 100;
+    if (shares === null) return rowRoom - edges.left - edges.right;
+    const share = (rowRoom * shares[index]!) / 100;
     const left = index === 0 ? edges.left : 0;
     const right = index === hostCount - 1 ? edges.right : 0;
     return share - left - right;
@@ -1140,9 +1134,9 @@ export function processTable(
     // and because that is also the layout a merged row lands on, whose own
     // note is the loss worth naming. A flattened row has no section to lay
     // out.
-    const ratio =
+    const ratio: ColumnRatio =
       countedLayout === "1" || flattenInline
-        ? { layout: countedLayout, note: undefined }
+        ? { layout: countedLayout }
         : resolveColumnRatio(
             hosts.map((host) => readDeclaredWidth(host.$el)),
             countedLayout,
@@ -1160,7 +1154,12 @@ export function processTable(
     const stacked = countedLayout === "1" || flattenInline;
     const rooms = hostRooms(
       flattenInline ? room : narrow(room, padding),
-      stacked ? "1" : ratio.layout,
+      stacked
+        ? null
+        : sectionColumnPercents({
+            columns: ratio.layout,
+            columnWidths: ratio.columnWidths,
+          }),
       hosts.length,
       setPadding,
     );
@@ -1199,7 +1198,6 @@ export function processTable(
     const entry = sectionEntry(
       hosts.length,
       columnsBlocks.length,
-      ratio.note,
       fill.note,
       image.notes,
     );
@@ -1208,6 +1206,7 @@ export function processTable(
     sections.push(
       createSectionBlock({
         columns: ratio.layout,
+        ...(ratio.columnWidths ? { columnWidths: ratio.columnWidths } : {}),
         children: columnsBlocks,
         styles: {
           padding,

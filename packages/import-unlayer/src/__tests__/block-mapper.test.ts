@@ -431,6 +431,90 @@ describe("convertContent", () => {
       expect(entry.status).toBe("converted");
     });
 
+    describe("width from size", () => {
+      function widthOf(size: UnlayerContentValues["size"]) {
+        const { block, entry } = convertContent(
+          makeContent("button", { text: "Go", size }),
+          [],
+        );
+        if (block.type !== "button") throw new Error("expected a button");
+        return { width: block.width, status: entry.status, note: entry.note };
+      }
+
+      it("fits the label while autoWidth is on or unset", () => {
+        expect(widthOf({ autoWidth: true, width: "40%" })).toEqual({
+          width: undefined,
+          status: "converted",
+          note: undefined,
+        });
+        expect(widthOf(undefined)).toEqual({
+          width: undefined,
+          status: "converted",
+          note: undefined,
+        });
+        expect(widthOf({ width: "40%" })).toEqual({
+          width: undefined,
+          status: "converted",
+          note: undefined,
+        });
+      });
+
+      it("keeps a share of the column as a percentage", () => {
+        expect(widthOf({ autoWidth: false, width: "40%" })).toEqual({
+          width: "40%",
+          status: "converted",
+          note: undefined,
+        });
+        expect(widthOf({ autoWidth: false, width: "33.333 %" })).toEqual({
+          width: "33.33%",
+          status: "converted",
+          note: undefined,
+        });
+      });
+
+      it("spans the column at 100%, including a share that rounds to it", () => {
+        expect(widthOf({ autoWidth: false, width: "100%" })).toEqual({
+          width: "full",
+          status: "converted",
+          note: undefined,
+        });
+        expect(widthOf({ autoWidth: false, width: "100.004%" })).toEqual({
+          width: "full",
+          status: "converted",
+          note: undefined,
+        });
+      });
+
+      it("clamps a share above 100% to the column and notes it", () => {
+        expect(widthOf({ autoWidth: false, width: "150%" })).toEqual({
+          width: "full",
+          status: "approximated",
+          note: "Button width 150% was clamped to 100%.",
+        });
+      });
+
+      it("fits the label and notes a share that rounds to 0", () => {
+        expect(widthOf({ autoWidth: false, width: "0.004%" })).toEqual({
+          width: undefined,
+          status: "approximated",
+          note: "Button width 0.004% has no usable size; imported as fit to content.",
+        });
+      });
+
+      it("fits the label and notes a width that is not a percentage", () => {
+        expect(widthOf({ autoWidth: false, width: "200px" })).toEqual({
+          width: undefined,
+          status: "approximated",
+          note: 'Button width "200px" is not a percentage; imported as fit to content.',
+        });
+        expect(widthOf({ autoWidth: false })).toEqual({
+          width: undefined,
+          status: "approximated",
+          note: "Button width is not set; imported as fit to content.",
+        });
+      });
+    });
+
     it("carries the button's alignment across", () => {
       const { block } = convertContent(
         makeContent("button", { text: "Hi", textAlign: "right" }),

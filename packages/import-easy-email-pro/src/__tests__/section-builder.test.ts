@@ -145,7 +145,7 @@ describe("buildTopLevel", () => {
     );
   });
 
-  it("snaps 20/60/20 to 1-2-1 and names the widths", () => {
+  it("keeps 20/60/20 as column widths on layout 3", () => {
     const { blocks, entries } = build({
       type: "standard-section",
       data: {},
@@ -156,10 +156,12 @@ describe("buildTopLevel", () => {
         col([para("c")], "20%"),
       ],
     });
-    expect((blocks[0] as SectionBlock).columns).toBe("1-2-1");
-    expect(entries[0].note).toBe(
-      'Column widths 20%, 60%, 20% have no exact Templatical layout; resolved to "1-2-1".',
-    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.columns).toBe("3");
+    expect(section.columnWidths).toEqual([20, 60, 20]);
+    expect(section.children.map((column) => column.length)).toEqual([1, 1, 1]);
+    expect(entries[0].status).toBe("converted");
+    expect(entries[0].note).toBeUndefined();
   });
 
   it("names a column without a width as auto", () => {
@@ -684,22 +686,105 @@ describe("buildTopLevel", () => {
     ).toBe(true);
   });
 
-  it("notes inexact same-count widths rather than a fold", () => {
+  it("scales widths that do not total 100% and names them", () => {
     const { blocks, entries } = build({
       type: "standard-section",
       data: {},
       attributes: {},
-      children: [col([para("A")], "40%"), col([para("B")], "60%")],
+      children: [col([para("A")], "30%"), col([para("B")], "40%")],
     });
-    expect((blocks[0] as SectionBlock).columns).toBe("1-2");
-    expect(
-      entries.some(
-        (e) =>
-          e.status === "approximated" &&
-          e.note?.includes("40%") &&
-          e.note?.includes("resolved to"),
-      ),
-    ).toBe(true);
+    const section = blocks[0] as SectionBlock;
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toEqual([42.86, 57.14]);
+    expect(entries[0]).toMatchObject({
+      status: "approximated",
+      note: 'Column widths 30%, 40% have no exact Templatical layout; resolved to "2".',
+    });
+  });
+
+  it("keeps the preset 45%/45% scales onto, with no column widths", () => {
+    const { blocks, entries } = build({
+      type: "standard-section",
+      data: {},
+      attributes: {},
+      children: [col([para("A")], "45%"), col([para("B")], "45%")],
+    });
+    const section = blocks[0] as SectionBlock;
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toBeUndefined();
+    expect(entries[0]).toMatchObject({
+      status: "approximated",
+      note: 'Column widths 45%, 45% have no exact Templatical layout; resolved to "2".',
+    });
+  });
+
+  it("reads px column widths against the section less its side padding", () => {
+    const exact = build(
+      {
+        type: "standard-section",
+        data: {},
+        attributes: {},
+        children: [col([para("A")], "200px"), col([para("B")], "400px")],
+      },
+      page,
+      600,
+    );
+    expect((exact.blocks[0] as SectionBlock).columns).toBe("1-2");
+    expect((exact.blocks[0] as SectionBlock).columnWidths).toBeUndefined();
+    expect(exact.entries[0].status).toBe("converted");
+
+    // 200px and 400px of a 560px inner box are 35.71% and 71.43%: past 100%.
+    const padded = build(
+      {
+        type: "standard-section",
+        data: {},
+        attributes: { "padding-left": "20px", "padding-right": "20px" },
+        children: [col([para("A")], "200px"), col([para("B")], "400px")],
+      },
+      page,
+      600,
+    );
+    expect((padded.blocks[0] as SectionBlock).columns).toBe("1-2");
+    expect(padded.entries[0]).toMatchObject({
+      status: "approximated",
+      note: 'Column widths 200px, 400px have no exact Templatical layout; resolved to "1-2".',
+    });
+  });
+
+  it("ignores px column widths when the section leaves no inner box", () => {
+    const { blocks, entries } = build(
+      {
+        type: "standard-section",
+        data: {},
+        attributes: { "padding-left": "300px", "padding-right": "300px" },
+        children: [col([para("A")], "100px"), col([para("B")], "500px")],
+      },
+      page,
+      600,
+    );
+    expect((blocks[0] as SectionBlock).columns).toBe("2");
+    expect((blocks[0] as SectionBlock).columnWidths).toBeUndefined();
+    expect(entries[0].status).toBe("converted");
+  });
+
+  it("measures a px divider against a custom-width column", () => {
+    const { blocks } = build(
+      {
+        type: "standard-section",
+        data: {},
+        attributes: {},
+        children: [
+          col([divider("240px"), divider("239px")], "40%"),
+          col([divider("360px"), divider("359px")], "60%"),
+        ],
+      },
+      page,
+      600,
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(s.columnWidths).toEqual([40, 60]);
+    expect(dividerWidths(s.children[0])).toEqual(["full", 239]);
+    expect(dividerWidths(s.children[1])).toEqual(["full", 359]);
   });
 
   it("judges a px divider against its column's content width", () => {

@@ -490,6 +490,32 @@ describe("compiled lines and spacers", () => {
     );
   });
 
+  // 180px / 420px is 30 / 70 of the row, so the left column's room is 30%
+  // of the 600px body: 180px.
+  it("measures a custom-width column's room from its own share", () => {
+    const row = (width: string) =>
+      compiled(
+        contentBody(`
+          <tr><td style="padding:0">
+            <table class="es-left" align="left" width="180"><tr><td style="padding:0">
+              ${line(width, "1px solid #111111", "center")}
+            </td></tr></table>
+            <table class="es-right" align="right" width="420"><tr><td><p>Other</p></td></tr></table>
+          </td></tr>
+        `),
+      );
+    const fills = convertStripoTemplate(row("180px"));
+    const section = fills.content.blocks.find(
+      (block) => block.type === "section",
+    );
+    if (section?.type !== "section") throw new Error("expected a section");
+    expect([section.columns, section.columnWidths]).toEqual(["2", [30, 70]]);
+    expect(dividers(fills.content.blocks)[0].width).toBe("full");
+    expect(
+      dividers(convertStripoTemplate(row("179px")).content.blocks)[0].width,
+    ).toBe(179);
+  });
+
   it("imports a double border as a solid line", () => {
     const { content, report } = convertStripoTemplate(
       compiled(

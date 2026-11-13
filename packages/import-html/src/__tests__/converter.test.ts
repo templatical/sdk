@@ -216,6 +216,45 @@ describe("convertHtmlTemplate — a px divider that reaches its column spans it"
     expect(dividerOf(row('<hr width="259">')).width).toBe(259);
   });
 
+  // 420 / 180 is 70 / 30, 3.3pp from 2-1, so the section keeps it as column
+  // widths, and each column's room is its share of 600.
+  it("measures a column of a custom-width row by its share", () => {
+    const convert = (first: string, second: string) =>
+      convertHtmlTemplate(
+        "<!doctype html><html><body>" +
+          '<table width="600"><tr>' +
+          `<td width="420">${first}</td>` +
+          `<td width="180">${second}</td>` +
+          "</tr></table></body></html>",
+      );
+    const widths = (result: ReturnType<typeof convert>) => {
+      const section = result.content.blocks[0];
+      if (section?.type !== "section") throw new Error("expected a section");
+      return {
+        columns: section.columns,
+        columnWidths: section.columnWidths,
+        dividers: section.children.map((column) =>
+          column.map((block) =>
+            block.type === "divider" ? block.width : null,
+          ),
+        ),
+        sections: result.report.entries
+          .filter((entry) => entry.templaticalBlockType === "section")
+          .map(({ status, note }) => ({ status, note })),
+      };
+    };
+
+    expect(widths(convert('<hr width="420">', '<hr width="180">'))).toEqual({
+      columns: "2",
+      columnWidths: [70, 30],
+      dividers: [["full"], ["full"]],
+      sections: [{ status: "converted", note: undefined }],
+    });
+    expect(
+      widths(convert('<hr width="419">', '<hr width="179">')).dividers,
+    ).toEqual([[419], [179]]);
+  });
+
   it("counts cellpadding and the section's own padding", () => {
     expect(
       dividerOf(

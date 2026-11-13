@@ -112,7 +112,7 @@ describe("buildFullwidth", () => {
     expect(entry?.templaticalBlockType).toBe("section");
   });
 
-  it("approximates 360/240 and notes the original px widths", () => {
+  it("keeps 360/240 as column widths, converted", () => {
     const { section, entries } = sectionOf({
       type: "fullwidth",
       children: [
@@ -123,7 +123,8 @@ describe("buildFullwidth", () => {
       ],
     });
 
-    expect(section.columns).toBe("2-1");
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toEqual([60, 40]);
     expect(section.children).toHaveLength(2);
     expect((section.children[0][0] as ParagraphBlock).content).toBe(
       "<p>Wide</p>",
@@ -134,9 +135,27 @@ describe("buildFullwidth", () => {
     expect("wrapper" in section).toBe(false);
 
     const entry = entries.find((e) => e.sourceTag === "fullwidth");
+    expect(entry?.status).toBe("converted");
+    expect(entry?.note).toBeUndefined();
+  });
+
+  it("notes a column width that is not above 0 and keeps the even split", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      children: [
+        multicolumn(
+          column("0px", text("<p>A</p>")),
+          column("300px", text("<p>B</p>")),
+        ),
+      ],
+    });
+
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toBeUndefined();
+    const entry = entries.find((e) => e.sourceTag === "fullwidth");
     expect(entry?.status).toBe("approximated");
     expect(entry?.note).toBe(
-      'Column widths 360px, 240px have no exact Templatical layout; resolved to "2-1".',
+      'Column widths 0px, 300px have no exact Templatical layout; resolved to "2".',
     );
   });
 

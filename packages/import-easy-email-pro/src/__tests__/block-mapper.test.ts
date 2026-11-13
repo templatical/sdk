@@ -224,6 +224,90 @@ describe("convertLeaf", () => {
     expect(b.width).toBe("full");
   });
 
+  describe("button width", () => {
+    function widthOf(width: unknown, extra: Record<string, unknown> = {}) {
+      const { blocks, entries } = map({
+        type: "standard-button",
+        data: {},
+        attributes: { "background-color": "#C5900C", width, ...extra },
+        children: [{ text: "Go" }],
+      });
+      return {
+        width: (blocks[0] as ButtonBlock).width,
+        status: entries[0].status,
+        note: entries[0].note,
+      };
+    }
+
+    it("keeps a share of the column as a percentage", () => {
+      expect(widthOf("40%")).toEqual({
+        width: "40%",
+        status: "converted",
+        note: undefined,
+      });
+      expect(widthOf(" 33.333% ")).toEqual({
+        width: "33.33%",
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    it("spans the column at 100%, including a share that rounds to it", () => {
+      expect(widthOf("100.004%")).toEqual({
+        width: "full",
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    it("clamps a share above 100% and notes it", () => {
+      expect(widthOf("140%")).toEqual({
+        width: "full",
+        status: "approximated",
+        note: "Button width 140% was clamped to 100%.",
+      });
+    });
+
+    it("fits the label and notes a share of 0 or below", () => {
+      expect(widthOf("0%")).toEqual({
+        width: undefined,
+        status: "approximated",
+        note: "Button width 0% has no usable size; imported as fit to content.",
+      });
+      expect(widthOf("-20%")).toEqual({
+        width: undefined,
+        status: "approximated",
+        note: "Button width -20% has no usable size; imported as fit to content.",
+      });
+    });
+
+    it("fits the label for an unreadable percentage", () => {
+      expect(widthOf("wide%")).toEqual({
+        width: undefined,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    it("keeps a px width and an unset width as before", () => {
+      expect(widthOf("180px").width).toBe(180);
+      expect(widthOf(undefined).width).toBeUndefined();
+    });
+
+    it("joins the outline note and the width note", () => {
+      expect(
+        widthOf("0%", {
+          "background-color": undefined,
+          "border-enabled": true,
+        }),
+      ).toEqual({
+        width: undefined,
+        status: "approximated",
+        note: "outlined button has no Templatical equivalent. Button width 0% has no usable size; imported as fit to content.",
+      });
+    });
+  });
+
   it("does not keep factory #333333 on an outlined button", () => {
     const { blocks, entries } = map({
       type: "standard-button",

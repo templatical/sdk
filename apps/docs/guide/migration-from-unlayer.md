@@ -114,7 +114,7 @@ Unlayer content types map to Templatical equivalents:
 | Text | `paragraph` | Converted |
 | Heading | `title` | Converted |
 | Image | `image` | Converted (approximated when a `maxWidth` under 100% becomes px; see [Image width](#image-width)) |
-| Button | `button` | Converted |
+| Button | `button` | Converted (approximated when its `size.width` is clamped or unusable; see [Button width](#button-width)) |
 | Divider | `divider`, or `spacer` when it [draws no line](#undrawn-dividers) | Converted (approximated when a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
@@ -142,6 +142,19 @@ Unknown content types are converted to HTML blocks as a fallback.
 A px width keeps its size on a phone, where a percentage shrinks with the column, so a `maxWidth` under `100%` is approximated.
 :::
 
+### Button width
+
+| Unlayer `size` | `ButtonBlock.width` | Status |
+|---|---|---|
+| missing, or `autoWidth` `true` (the default) | none, so the button fits its label | Converted |
+| `autoWidth: false`, `width` `100%` | `"full"` | Converted |
+| `autoWidth: false`, `width` above 0 and below `100%`, such as `40%` | that percentage, rounded to two decimals, `"40%"` | Converted |
+| `autoWidth: false`, `width` above `100%` | `"full"` | Approximated |
+| `autoWidth: false`, `width` that rounds to `0%` | none, so the button fits its label | Approximated |
+| `autoWidth: false`, `width` missing or not a percentage | none, so the button fits its label | Approximated |
+
+Unlayer applies `width` only when `autoWidth` is `false`. A percentage is a share of the column less the button's `containerPadding`, the box a percentage `ButtonBlock.width` is measured against, so the button shrinks with its column on a phone. `fullWidthOnMobile` is not imported.
+
 ### Divider width
 
 | Unlayer `width` | `DividerBlock.width` | Status |
@@ -153,7 +166,7 @@ A px width keeps its size on a phone, where a percentage shrinks with the column
 | px, as wide as that span or wider | `"full"` | Converted |
 | any other value | `"full"` | Approximated |
 
-A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share of `settings.width` under the section's column layout, and `settings.width` is a px `contentWidth`, else `600`.
+A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share of `settings.width` under the section's column layout, or under `columnWidths` when the row sets them, and `settings.width` is a px `contentWidth`, else `600`.
 
 ::: tip
 `mj-divider` draws `100%` across that span, so a px width that reaches it renders the same as `"full"`. `"full"` also narrows with the column on a phone.
@@ -190,7 +203,7 @@ Unlayer organizes content into rows with columns whose widths come from a `cells
 | `[1, 1, 1, 1]` (equal quarters) | `'4'` |
 | 5+ cells | flattened to a single column with a warning |
 
-Cell ratios that don't match a layout above are mapped to the closest one with the same column count. Four cells stay four columns, and unequal four-cell ratios (for example `[6, 2, 2, 2]`) are named in `report.warnings` because layout `4` is four equal quarters. Unlayer does not otherwise warn when the ratio is only near that layout.
+Cells are relative weights: a column's share is its cell over the sum of the row's cells. Cells whose shares equal a preset's keep that layout and set no `columnWidths`, so `[2, 4]` is `'1-2'` and `[3, 3, 3]` is `'3'`. Any other ratio of two, three or four cells keeps the even layout of that count (`'2'`, `'3'` or `'4'`) and sets [`columnWidths`](/guide/sections-and-columns#custom-column-widths) to the shares scaled to 100. `[7, 3]` is `[70, 30]`, `[2, 5, 2]` is `[22.22, 55.56, 22.22]` and `[6, 2, 2, 2]` is `[50, 16.67, 16.67, 16.66]`. The import adds no warning for that ratio. A cell that is not a number above 0 leaves the even layout with no `columnWidths`. When the cells total more than 0, one warning names the ratio: `Row with 2 columns at ratio 1:0 was kept as an even split. A cell that is not above 0 cannot be stored as column widths.` Cells that total 0 or less add no warning.
 
 ### Section background
 
