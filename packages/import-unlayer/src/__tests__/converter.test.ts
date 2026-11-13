@@ -278,6 +278,120 @@ describe("convertUnlayerTemplate", () => {
       expect(dividerWidthIn([1], 0, { width: "600px" }, "-600px")).toBe("full");
     });
 
+    // [7, 3] keeps 70% / 30% as column widths: 420px and 180px of 600px.
+    it("measures a divider against a custom-width column", () => {
+      expect(dividerWidthIn([7, 3], 0, { width: "420px" }, "600px")).toBe(
+        "full",
+      );
+      expect(dividerWidthIn([7, 3], 0, { width: "419px" }, "600px")).toBe(419);
+      expect(dividerWidthIn([7, 3], 1, { width: "180px" }, "600px")).toBe(
+        "full",
+      );
+      expect(dividerWidthIn([7, 3], 1, { width: "179px" }, "600px")).toBe(179);
+    });
+
+    // 50px either side leaves a 500px row: a 500px single column, or 350px
+    // and 150px for [7, 3].
+    it("measures a padded row's column against the row less its padding", () => {
+      const { content } = convertUnlayerTemplate({
+        body: {
+          values: { contentWidth: "600px" },
+          rows: [
+            {
+              cells: [1],
+              columns: [
+                {
+                  contents: ["500px", "499px"].map((width) => ({
+                    type: "divider",
+                    values: { width },
+                  })),
+                  values: {},
+                },
+              ],
+              values: { padding: "0px 50px" },
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(
+        section.children[0]!.map((block) =>
+          block.type === "divider" ? block.width : null,
+        ),
+      ).toEqual(["full", 499]);
+    });
+
+    it("measures a padded custom-width row's columns by their share", () => {
+      const { content } = convertUnlayerTemplate({
+        body: {
+          values: { contentWidth: "600px" },
+          rows: [
+            {
+              cells: [7, 3],
+              columns: [
+                ["350px", "349px"],
+                ["150px", "149px"],
+              ].map((widths) => ({
+                contents: widths.map((width) => ({
+                  type: "divider",
+                  values: { width },
+                })),
+                values: {},
+              })),
+              values: { padding: "0px 50px" },
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.columnWidths).toEqual([70, 30]);
+      expect(
+        section.children.map((column) =>
+          column.map((block) =>
+            block.type === "divider" ? block.width : null,
+          ),
+        ),
+      ).toEqual([
+        ["full", 349],
+        ["full", 149],
+      ]);
+    });
+
+    // A column past the cells' count has no share, so it takes the body.
+    it("measures a column past a custom row's cells against the body", () => {
+      const { content } = convertUnlayerTemplate({
+        body: {
+          values: { contentWidth: "600px" },
+          rows: [
+            {
+              cells: [7, 3],
+              columns: [0, 1, 2].map((index) => ({
+                contents:
+                  index === 2
+                    ? [
+                        { type: "divider", values: { width: "600px" } },
+                        { type: "divider", values: { width: "599px" } },
+                      ]
+                    : [],
+                values: {},
+              })),
+              values: {},
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.columnWidths).toEqual([70, 30]);
+      expect(
+        section.children[2]?.map((block) =>
+          block.type === "divider" ? block.width : null,
+        ),
+      ).toEqual(["full", 599]);
+    });
+
     // A quarter of 600 is 150, so a 150px line fills its column.
     it("measures a four-column divider against its quarter column", () => {
       expect(dividerWidthIn([1, 1, 1, 1], 0, { width: "150px" }, "600px")).toBe(
@@ -779,27 +893,98 @@ describe("convertUnlayerTemplate", () => {
     }
   });
 
-  it("warns when an unequal four-cell row becomes four equal columns", () => {
-    const row = (cells: number[]) => ({
-      cells,
-      columns: cells.map(() => ({ contents: [], values: {} })),
-      values: {},
-    });
-    const unequal = convertUnlayerTemplate({
-      body: { values: {}, rows: [row([6, 2, 2, 2])] },
-    });
-    const section = unequal.content.blocks[0];
-    expect(section.type === "section" && section.columns).toBe("4");
-    expect(unequal.report.warnings).toContain(
-      "Row with four columns at ratio 6:2:2:2 was converted to four equal columns.",
-    );
+  describe("cell ratios with no preset", () => {
+    function sectionFor(cells: number[], columnCount = cells.length) {
+      const { content, report } = convertUnlayerTemplate({
+        body: {
+          values: {},
+          rows: [
+            {
+              cells,
+              columns: Array.from({ length: columnCount }, () => ({
+                contents: [],
+                values: {},
+              })),
+              values: {},
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      return {
+        columns: section.columns,
+        columnWidths: section.columnWidths,
+        warnings: report.warnings,
+      };
+    }
 
-    const equal = convertUnlayerTemplate({
-      body: { values: {}, rows: [row([1, 1, 1, 1])] },
+    it("keeps an unequal four-cell ratio as column widths on layout 4", () => {
+      expect(sectionFor([6, 2, 2, 2])).toEqual({
+        columns: "4",
+        columnWidths: [50, 16.67, 16.67, 16.66],
+        warnings: [],
+      });
     });
-    expect(
-      equal.report.warnings.filter((w) => w.includes("four columns at ratio")),
-    ).toEqual([]);
+
+    it("keeps a 70/30 row as column widths instead of snapping to 2-1", () => {
+      expect(sectionFor([7, 3])).toEqual({
+        columns: "2",
+        columnWidths: [70, 30],
+        warnings: [],
+      });
+    });
+
+    it("keeps a near 25/50/25 row's own shares", () => {
+      expect(sectionFor([2, 5, 2])).toEqual({
+        columns: "3",
+        columnWidths: [22.22, 55.56, 22.22],
+        warnings: [],
+      });
+    });
+
+    it("reads proportional cells as the preset, with no column widths", () => {
+      expect(sectionFor([2, 4])).toEqual({
+        columns: "1-2",
+        columnWidths: undefined,
+        warnings: [],
+      });
+      expect(sectionFor([3, 3, 3])).toEqual({
+        columns: "3",
+        columnWidths: undefined,
+        warnings: [],
+      });
+      expect(sectionFor([2, 4, 2])).toEqual({
+        columns: "1-2-1",
+        columnWidths: undefined,
+        warnings: [],
+      });
+    });
+
+    it("keeps the even split and warns when a cell is not above 0", () => {
+      expect(sectionFor([1, 0])).toEqual({
+        columns: "2",
+        columnWidths: undefined,
+        warnings: [
+          "Row with 2 columns at ratio 1:0 was kept as an even split. A cell that is not above 0 cannot be stored as column widths.",
+        ],
+      });
+      expect(sectionFor([-1, 2, 1])).toEqual({
+        columns: "3",
+        columnWidths: undefined,
+        warnings: [
+          "Row with 3 columns at ratio -1:2:1 was kept as an even split. A cell that is not above 0 cannot be stored as column widths.",
+        ],
+      });
+    });
+
+    it("keeps the even split silently when the cells total 0", () => {
+      expect(sectionFor([0, 0])).toEqual({
+        columns: "2",
+        columnWidths: undefined,
+        warnings: [],
+      });
+    });
   });
 
   it("flattens a five-column row and names the four-column limit", () => {
@@ -855,17 +1040,29 @@ describe("convertUnlayerTemplate", () => {
     expect(layoutFor([1, 1, 1, 1])).toEqual({ columns: "4", warnings: [] });
   });
 
-  it("snaps a near 25/50/25 row to 1-2-1 without a ratio warning", () => {
+  it("imports a custom-width row with percentage and full-width buttons", () => {
+    const button = (size: UnlayerContentValues["size"]) => ({
+      type: "button",
+      values: { text: "Shop", size },
+    });
     const { content, report } = convertUnlayerTemplate({
       body: {
-        values: {},
+        values: { contentWidth: "600px" },
         rows: [
           {
-            cells: [2, 5, 2],
+            cells: [7, 3],
             columns: [
-              { contents: [], values: {} },
-              { contents: [], values: {} },
-              { contents: [], values: {} },
+              {
+                contents: [button({ autoWidth: false, width: "40%" })],
+                values: {},
+              },
+              {
+                contents: [
+                  button({ autoWidth: false, width: "100%" }),
+                  button({ autoWidth: false, width: "120%" }),
+                ],
+                values: {},
+              },
             ],
             values: {},
           },
@@ -873,12 +1070,122 @@ describe("convertUnlayerTemplate", () => {
       },
     });
     const section = content.blocks[0];
-    expect(section.type).toBe("section");
-    if (section.type === "section") {
-      expect(section.columns).toBe("1-2-1");
-      expect(section.children).toHaveLength(3);
-    }
+    if (section.type !== "section") throw new Error("expected a section");
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toEqual([70, 30]);
+    expect(
+      section.children.map((column) =>
+        column.map((block) => (block.type === "button" ? block.width : null)),
+      ),
+    ).toEqual([["40%"], ["full", "full"]]);
+    expect(report.entries).toEqual([
+      {
+        unlayerContentType: "button",
+        templaticalBlockType: "button",
+        status: "converted",
+      },
+      {
+        unlayerContentType: "button",
+        templaticalBlockType: "button",
+        status: "converted",
+      },
+      {
+        unlayerContentType: "button",
+        templaticalBlockType: "button",
+        status: "approximated",
+        note: "Button width 120% was clamped to 100%.",
+      },
+    ]);
     expect(report.warnings).toEqual([]);
+  });
+
+  it("imports a button's line height and notes one it cannot read", () => {
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1],
+            columns: [
+              {
+                contents: [
+                  {
+                    type: "button",
+                    values: {
+                      text: "Tall",
+                      fontSize: "20px",
+                      lineHeight: "40px",
+                    },
+                  },
+                  {
+                    type: "button",
+                    values: {
+                      text: "Odd",
+                      lineHeight: "auto",
+                      size: { autoWidth: false, width: "150%" },
+                    },
+                  },
+                ],
+                values: {},
+              },
+            ],
+            values: {},
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    if (section.type !== "section") throw new Error("expected a section");
+    expect(
+      section.children[0]!.map((block) =>
+        block.type === "button" ? [block.lineHeight, block.width] : null,
+      ),
+    ).toEqual([
+      [2, undefined],
+      [undefined, "full"],
+    ]);
+    expect(report.entries).toEqual([
+      {
+        unlayerContentType: "button",
+        templaticalBlockType: "button",
+        status: "converted",
+      },
+      {
+        unlayerContentType: "button",
+        templaticalBlockType: "button",
+        status: "approximated",
+        note: 'Button width 150% was clamped to 100%. Button line-height "auto" could not be read; imported at 1.2.',
+      },
+    ]);
+  });
+
+  it("puts each of a custom-width row's columns in its own slot", () => {
+    const { content } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [2, 5, 2],
+            columns: ["a", "b", "c"].map((label) => ({
+              contents: [{ type: "text", values: { text: `<p>${label}</p>` } }],
+              values: {},
+            })),
+            values: {},
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    if (section.type !== "section") throw new Error("expected a section");
+    expect(section.columns).toBe("3");
+    expect(section.columnWidths).toEqual([22.22, 55.56, 22.22]);
+    expect(
+      section.children.map((column) =>
+        column.map((block) =>
+          block.type === "paragraph" ? block.content : "",
+        ),
+      ),
+    ).toEqual([["<p>a</p>"], ["<p>b</p>"], ["<p>c</p>"]]);
   });
 
   it("emits a visible placeholder for unsupported block fallbacks", () => {

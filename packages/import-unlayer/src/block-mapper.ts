@@ -1,6 +1,7 @@
 import { localeTag, set, text, warn } from "./localization";
 import { lexicalToHtml } from "./lexical";
 import {
+  BUTTON_LINE_HEIGHT,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
@@ -12,9 +13,11 @@ import {
   createMenuBlock,
   createVideoBlock,
   generateId,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
+  ButtonBlock,
   DividerBlock,
   HeadingLevel,
   ImageBlock,
@@ -365,27 +368,114 @@ function convertImage(
   };
 }
 
-function convertButton(values: UnlayerContentValues): Block {
+/**
+ * A button's width from Unlayer's `size`. With `autoWidth` unset or `true`
+ * (Unlayer's default) the button fits its label, whatever `width` holds.
+ * With `autoWidth: false`, `width` is a share of the column less the
+ * button's `containerPadding`, the box `ButtonBlock.width` measures a
+ * percentage against. The 0 and 100 boundaries are that share rounded to
+ * two decimals: 100 is `"full"`, above 100 is `"full"` with a clamp note,
+ * and 0 fits the label with a note. A width that is not a percentage fits
+ * the label with a note.
+ */
+function buttonWidth(
+  size: UnlayerContentValues["size"],
+  notes: string[],
+): ButtonBlock["width"] {
+  if (size?.autoWidth !== false) return undefined;
+  const raw = String(size.width ?? "").trim();
+  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(raw);
+  if (!percent) {
+    notes.push(
+      raw
+        ? `Button width "${raw}" is not a percentage; imported as fit to content.`
+        : "Button width is not set; imported as fit to content.",
+    );
+    return undefined;
+  }
+  const share = roundHundredths(Number(percent[1]));
+  if (share > 100) {
+    notes.push(`Button width ${raw} was clamped to 100%.`);
+    return "full";
+  }
+  if (share === 100) return "full";
+  if (share === 0) {
+    notes.push(
+      `Button width ${raw} has no usable size; imported as fit to content.`,
+    );
+    return undefined;
+  }
+  return `${share}%`;
+}
+
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
+function convertButton(values: UnlayerContentValues): {
+  block: Block;
+  notes: string[];
+} {
   const colors = values.buttonColors ?? {};
   const padding = values.padding
     ? parsePaddingShorthand(values.padding)
     : { top: 12, right: 24, bottom: 12, left: 24 };
   const label = stripTagsPlain(values.text ?? "Button");
   const linkValues = values.href?.values;
+  const notes: string[] = [];
+  const width = buttonWidth(values.size, notes);
+  const fontSize = parsePxValue(values.fontSize) || 16;
+  const lineHeight = readButtonLineHeight(values.lineHeight, fontSize, notes);
 
-  return createButtonBlock({
+  const block = createButtonBlock({
     text: label,
     url: linkValues?.href || "#",
     openInNewTab: linkValues?.target === "_blank" || undefined,
     backgroundColor: parseColor(colors.backgroundColor) || "#4f46e5",
     textColor: parseColor(colors.color) || "#ffffff",
     borderRadius: parsePxValue(values.borderRadius),
-    fontSize: parsePxValue(values.fontSize) || 16,
+    fontSize,
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
     fontFamily: parseFontFamily(values.fontFamily) || undefined,
     align: toAlign(values.textAlign, "center"),
     buttonPadding: padding,
+    ...(width !== undefined ? { width } : {}),
     styles: makeStyles(values),
   });
+  return { block, notes };
 }
 
 /**
@@ -627,15 +717,18 @@ function convertContentBase(
         },
       };
     }
-    case "button":
+    case "button": {
+      const { block, notes } = convertButton(values);
       return {
-        block: convertButton(values),
+        block,
         entry: {
           unlayerContentType: type,
           templaticalBlockType: "button",
-          status: "converted",
+          status: notes.length > 0 ? "approximated" : "converted",
+          ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
         },
       };
+    }
     case "divider": {
       const height = undrawnDividerHeight(values);
       if (height !== undefined) {

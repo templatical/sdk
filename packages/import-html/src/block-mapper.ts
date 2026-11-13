@@ -2,6 +2,7 @@ import type { CheerioAPI, Cheerio } from "cheerio";
 import { isTag, isText } from "domhandler";
 import type { Element, AnyNode } from "domhandler";
 import {
+  BUTTON_LINE_HEIGHT,
   canonicalFontStack,
   createTitleBlock,
   createParagraphBlock,
@@ -10,6 +11,7 @@ import {
   createDividerBlock,
   createHtmlBlock,
   createSpacerBlock,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
@@ -860,13 +862,60 @@ function readButtonAlign($el: Cheerio<Element>): "left" | "center" | "right" {
   return parseAlignment(parent.attr("align"), "center");
 }
 
-function convertButton($el: Cheerio<Element>): Block {
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+export function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
+function convertButton($el: Cheerio<Element>): {
+  block: Block;
+  notes: string[];
+} {
   const styles = getStyles($el);
   const text = ($el.text() ?? "Button").trim() || "Button";
   const url = $el.attr("href") ?? "#";
   const target = $el.attr("target");
+  const fontSize = parsePxValue(styles["font-size"]) || 16;
+  const notes: string[] = [];
+  const lineHeight = readButtonLineHeight(
+    styles["line-height"],
+    fontSize,
+    notes,
+  );
 
-  return createButtonBlock({
+  const block = createButtonBlock({
     text,
     url,
     openInNewTab: target === "_blank" || undefined,
@@ -876,7 +925,8 @@ function convertButton($el: Cheerio<Element>): Block {
       "#4f46e5",
     textColor: parseColor(styles.color) || "#ffffff",
     borderRadius: parsePxValue(styles["border-radius"]),
-    fontSize: parsePxValue(styles["font-size"]) || 16,
+    fontSize,
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
     fontFamily: canonicalFontStack(styles["font-family"]) || undefined,
     align: readButtonAlign($el),
     buttonPadding: readPaddingFromStyles(styles),
@@ -884,6 +934,7 @@ function convertButton($el: Cheerio<Element>): Block {
       padding: emptyPadding(),
     },
   });
+  return { block, notes };
 }
 
 /** A width as a number and an optional unit; a unitless value is px. */
@@ -1298,12 +1349,14 @@ export function convertElement(
       );
     }
     if (looksLikeButton(styles)) {
+      const { block, notes } = convertButton($target);
       return {
-        block: convertButton($target),
+        block,
         entry: {
           sourceTag: tag,
           templaticalBlockType: "button",
-          status: "converted",
+          status: notes.length > 0 ? "approximated" : "converted",
+          ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
         },
       };
     }

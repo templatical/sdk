@@ -97,12 +97,12 @@ HTML elements map to Templatical equivalents:
 | Text-only `<td>` in a layout table | `paragraph` | Converted |
 | Bare text at body level or directly inside a wrapper | `paragraph` | Converted |
 | `<img>` | `image` | Converted (approximated when a percentage width becomes px; see [Image width](#image-width)) |
-| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
+| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted (approximated when its `line-height` can't be read; see [Button line height](#button-line-height)) |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
 | `<hr>` | `divider`, or `spacer` when it [draws no line](#hr-lines) | Converted (approximated when the width is clamped or unreadable, or a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Empty `<td>` with explicit height | `spacer` | Converted |
-| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
+| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern; approximated when its `line-height` can't be read) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
 | `<table>` (data table — text-only cells) | `html` | HTML fallback |
 | Unknown / custom elements | `html` | HTML fallback |
@@ -128,6 +128,10 @@ The `width` attribute is read first, then the `width` style. The image's room is
 
 A `height` style overrides the `height` attribute, as it does in a browser, so `height: auto` leaves the height unset and the image keeps its aspect ratio.
 
+### Button line height
+
+A button's `line-height` style becomes `ButtonBlock.lineHeight`, a multiple of the label's font size. A percentage is that number over 100 (`150%` is `1.5`), a unitless number is itself, a px length is that many pixels over the button's font size, and an `em` length is the number. It is rounded to two decimals. The font size is the button's `font-size`, else 16px. A button cell reads both from the cell and the `<a>`, the `<a>` winning. A percentage or `em` line height that only the cell states is the length it computes to on the cell, as CSS inherits it: `font-size:20px; line-height:150%` on the cell around a 10px `<a>` is `3`. An `<a>` with `line-height: inherit` takes the cell's. When neither the cell nor the `<a>` sets a font size, both inherit the same one, so the ratio is kept as written (`150%` is `1.5`). When the `<a>` sets its own and the cell's is missing or not a px length, 16px stands in for the cell's and the entry is approximated with a note. A bulletproof anchor with `font-size:16px; line-height:44px` is `2.75`. `normal`, a value that rounds to 1.2, and a missing value leave it unset, which renders 1.2. A value it can't read imports at 1.2, and the entry is approximated with a note naming it: `Button line-height "calc(1em + 4px)" could not be read; imported at 1.2.`
+
 ### Divider width
 
 The width comes from the `<hr>`'s `width` style, then its `width` attribute.
@@ -142,7 +146,7 @@ The width comes from the `<hr>`'s `width` style, then its `width` attribute.
 | a negative px width | `0` | Approximated |
 | any other value, such as `20em` | `"full"` | Approximated |
 
-The line's room is the column's share of `settings.width`, by the section's column layout, less the padding of the section, of every cell and wrapper around the `<hr>`, and of the `<hr>` itself.
+The line's room is the column's share of `settings.width`, by the section's column layout or its `columnWidths`, less the padding of the section, of every cell and wrapper around the `<hr>`, and of the `<hr>` itself.
 
 Templatical centres every divider. A partial-width `<hr>` that its `align` attribute or its margins place at the left or the right is approximated, and its `note` names the alignment.
 
@@ -184,14 +188,9 @@ Each `<tr>` in a layout table becomes a `SectionBlock`. The row's direct `<td>` 
 
 ### Column ratios
 
-A row picks among the layouts that hold its column count, from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. Two cells choose among `'2'`, `'2-1'`, `'1-2'`, `'3-1'` and `'1-3'`; three cells between `'3'` and `'1-2-1'`; four cells are `'4'`. The closest wins when it sits within 6 percentage points on the worst column, so `350` / `190` reads as `'2-1'`, `25%` / `75%` as `'1-3'` and `130` / `280` / `130` as `'1-2-1'`. Where two layouts are both that close, the smaller worst-column deviation wins.
+A row picks among the layouts that hold its column count, from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. Every cell must declare a width, all in px or all in percent. A `100%` width states no share, since a cell sharing its row with it fills what is left, so it counts as undeclared: `30%` beside `100%` keeps the equal layout with no `columnWidths`. A column's share is its width over the sum of the declared widths, so a gutter between cells is not a share. Two cells choose among `'2'`, `'2-1'`, `'1-2'`, `'3-1'` and `'1-3'`; three cells between `'3'` and `'1-2-1'`; four cells are `'4'`. The closest wins when it sits within 2 percentage points on the worst column, so `350` / `190` reads as `'2-1'`, `25%` / `75%` as `'1-3'` and `130` / `280` / `130` as `'1-2-1'`.
 
-A ratio no layout is that close to is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
-
-```txt
-Column widths 10% / 80% / 10% have no Templatical equivalent.
-The section was imported as 3 equal columns.
-```
+Any other ratio keeps the equal layout for that cell count and sets [`columnWidths`](/guide/sections-and-columns#custom-column-widths) to the shares scaled to 100. `70%` / `30%` is `'2'` with `[70, 30]`, `200` / `300` is `'2'` with `[40, 60]`, and `10%` / `80%` / `10%` is `'3'` with `[10, 80, 10]`. The section entry stays `converted`. A row that declares no widths, declares only some of them, or mixes px and percent keeps the equal layout with no `columnWidths`.
 
 ### Wrapper rows
 
@@ -279,7 +278,7 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
-- **Rows of more than four cells** — `ColumnLayout` holds at most four columns, so a wider row is merged into one and reported. Ratios no layout is within 6 percentage points of, such as `90%` / `10%`, have no equivalent either and import as the equal split.
+- **Rows of more than four cells** — `ColumnLayout` holds at most four columns, so a wider row is merged into one and reported.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
@@ -288,7 +287,7 @@ After conversion, review the output in the editor to check for:
 
 1. **Element classification** — review `report.entries` for entries with `status: 'approximated'` or `status: 'html-fallback'`.
 2. **Image URLs** — relative paths and CID references won't resolve in the preview; replace with absolute URLs.
-3. **Column proportions** — automatic mapping picks the closest standard layout; fine-tune in the section settings panel.
+3. **Column proportions** — a ratio within 2 percentage points of a preset snaps to it, and a row whose cells declare no widths is an equal split; fine-tune in the section settings panel.
 4. **Spacing and padding** — cell padding is carried onto the blocks it holds, as described in [Cell padding](#cell-padding). Margins are not imported and may need touch-up.
 5. **HTML-fallback blocks** — anything that landed in an HTML block can be edited inline or replaced with first-class blocks.
 

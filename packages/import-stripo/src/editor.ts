@@ -8,7 +8,8 @@ import {
   tokenStartingWith,
   topLevelWithToken,
 } from "./classes";
-import { statedPx, unequalWidthNote } from "./column-width";
+import { statedLayout, statedPx } from "./column-width";
+import type { StatedColumns } from "./column-width";
 import {
   colorFromPaint,
   columnRooms,
@@ -216,10 +217,18 @@ function sectionFromStructure(
     });
 
   const frameCount = frames.length;
-  const { layout, flattenNote } = columnLayout(
+  const { layout: counted, flattenNote } = columnLayout(
     frameCount === 0 ? 1 : frameCount,
     ctx,
   );
+  const stated: StatedColumns =
+    counted === "1"
+      ? { layout: counted }
+      : statedLayout(
+          frames.map(($frame) => frameWidth($frame, $structure)),
+          counted,
+        );
+  const { layout, columnWidths } = stated;
   const padding = readBoxPadding(
     $structure.attr("class"),
     $structure.attr("style"),
@@ -230,10 +239,11 @@ function sectionFromStructure(
     bodyWidth,
     layout,
     padding,
-    layout === "1" ? 1 : frameCount,
+    counted === "1" ? 1 : frameCount,
+    columnWidths,
   );
   let children: Block[][];
-  if (layout === "1") {
+  if (counted === "1") {
     const merged: Block[] = [];
     const room = rooms[0];
     if (frames.length === 0) {
@@ -263,13 +273,7 @@ function sectionFromStructure(
     paintFor($structure, ctx, $stripe !== null && $body !== null),
     image.image !== undefined,
   );
-  const widthNote =
-    layout === "1"
-      ? undefined
-      : unequalWidthNote(
-          frames.map(($frame) => frameWidth($frame, $structure)),
-          layout,
-        );
+  const widthNote = stated.note;
   const notes = [...paint.notes, flattenNote, widthNote, ...image.notes].filter(
     (note): note is string => Boolean(note),
   );
@@ -285,6 +289,7 @@ function sectionFromStructure(
   const wrapper = sectionWrapper(paint, image.band);
   const section = createSectionBlock({
     columns: layout,
+    ...(columnWidths ? { columnWidths } : {}),
     children,
     styles: { padding },
     ...(wrapper ? { wrapper } : {}),

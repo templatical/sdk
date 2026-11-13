@@ -1,4 +1,6 @@
 import {
+  BUTTON_BLOCK_DEFAULTS,
+  BUTTON_LINE_HEIGHT,
   canonicalFontStack,
   createButtonBlock,
   createDividerBlock,
@@ -7,6 +9,7 @@ import {
   createParagraphBlock,
   createSpacerBlock,
   createTitleBlock,
+  roundHundredths,
 } from "@templatical/types";
 import type { Block, BlockStyles } from "@templatical/types";
 import {
@@ -123,6 +126,43 @@ function convertText(node: TopolNode, ctx: MapContext): Converted {
   };
 }
 
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
 function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
   const text = stripTags(node.content);
   if (!text) return null;
@@ -136,6 +176,17 @@ function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
   );
   const fontSizeRaw = resolved(node, "font-size", ctx);
   const radiusRaw = resolved(node, "border-radius", ctx);
+  // A px line height is measured against the size the label renders at.
+  const fontSize =
+    fontSizeRaw === undefined
+      ? Number(BUTTON_BLOCK_DEFAULTS.fontSize)
+      : parsePxValue(fontSizeRaw);
+  const notes: string[] = [];
+  const lineHeight = readButtonLineHeight(
+    resolved(node, "line-height", ctx, "button"),
+    fontSize,
+    notes,
+  );
 
   return {
     block: createButtonBlock({
@@ -144,9 +195,8 @@ function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
       ...(backgroundColor ? { backgroundColor } : {}),
       ...(textColor ? { textColor } : {}),
       ...(fontFamily ? { fontFamily } : {}),
-      ...(fontSizeRaw === undefined
-        ? {}
-        : { fontSize: parsePxValue(fontSizeRaw) }),
+      ...(fontSizeRaw === undefined ? {} : { fontSize }),
+      ...(lineHeight !== undefined ? { lineHeight } : {}),
       ...(radiusRaw === undefined
         ? {}
         : { borderRadius: parsePxValue(radiusRaw) }),
@@ -156,7 +206,8 @@ function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
     entry: {
       sourceTag: node.tagName,
       templaticalBlockType: "button",
-      status: "converted",
+      status: notes.length > 0 ? "approximated" : "converted",
+      ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
     },
   };
 }

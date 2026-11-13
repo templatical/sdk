@@ -222,6 +222,125 @@ describe("compiled pipeline", () => {
     });
   });
 
+  describe("button line height", () => {
+    function lineHeightOf(anchorStyle: string, borderStyle = "") {
+      const html = `<table class="es-wrapper"><tr><td><span class="es-button-border" style="${borderStyle}"><a class="es-button" href="https://example.com/x" style="background:#000;color:#fff;${anchorStyle}">Go</a></span></td></tr></table>`;
+      const { content, report } = convertStripoTemplate(html);
+      const button = content.blocks
+        .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+        .find((b) => b.type === "button");
+      if (button?.type !== "button") throw new Error("expected a button");
+      const entry = report.entries.find(
+        (e) => e.templaticalBlockType === "button",
+      );
+      return {
+        lineHeight: button.lineHeight,
+        status: entry?.status,
+        note: entry?.note,
+      };
+    }
+
+    // The block keeps the factory 15px label, so 30px is twice its size.
+    it("reads the anchor's inline line height", () => {
+      expect(lineHeightOf("line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+      expect(lineHeightOf("line-height:30px").lineHeight).toBe(2);
+      expect(lineHeightOf("line-height:1.75em").lineHeight).toBe(1.75);
+    });
+
+    it("falls back to the border wrapper's line height", () => {
+      expect(lineHeightOf("", "line-height:1.6").lineHeight).toBe(1.6);
+    });
+
+    // A percentage or em line height inherits as the length it computes to on
+    // the wrapper: 150% of 20px is 30px, twice the 15px label.
+    it("resolves the wrapper's relative line height against its font size", () => {
+      expect(
+        lineHeightOf("", "font-size:20px;line-height:150%").lineHeight,
+      ).toBe(2);
+      expect(lineHeightOf("", "line-height:2em").lineHeight).toBe(2);
+    });
+
+    // The label renders at 15px, so 2em of a 30px anchor is a 60px line, 4x.
+    it("resolves the anchor's relative line height against its own px font size", () => {
+      expect(lineHeightOf("font-size:30px;line-height:2em")).toEqual({
+        lineHeight: 4,
+        status: "converted",
+        note: undefined,
+      });
+      expect(lineHeightOf("font-size:30px;line-height:200%").lineHeight).toBe(
+        4,
+      );
+      expect(lineHeightOf("font-size:30px;line-height:1.5").lineHeight).toBe(
+        1.5,
+      );
+      // 2em of 16.5px is 33px, 2.2 of the 15px label, with no rounding of the size.
+      expect(lineHeightOf("font-size:16.5px;line-height:2em").lineHeight).toBe(
+        2.2,
+      );
+      expect(
+        lineHeightOf("", "font-size:16.5px;line-height:200%").lineHeight,
+      ).toBe(2.2);
+    });
+
+    it("notes an anchor font size it cannot read beside a relative line height", () => {
+      expect(lineHeightOf("font-size:2em;line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "approximated",
+        note: 'Button line-height "150%" is relative to font-size "2em", which could not be read; imported as a multiple of the label.',
+      });
+      expect(lineHeightOf("font-size:2em;line-height:1.5")).toEqual({
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    it("takes an explicit inherit from the wrapper", () => {
+      expect(
+        lineHeightOf("line-height:inherit", "line-height:1.6").lineHeight,
+      ).toBe(1.6);
+    });
+
+    it("notes a wrapper with no font size when the anchor sets its own", () => {
+      expect(lineHeightOf("font-size:18px", "line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "approximated",
+        note: 'Button line-height "150%" inherits from a font-size that is not stated; resolved against 15px.',
+      });
+    });
+
+    // 150% of an unreadable 2em stands in at 150% of the 15px label.
+    it("notes a wrapper font size it cannot read", () => {
+      expect(lineHeightOf("", "font-size:2em;line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "approximated",
+        note: 'Button line-height "150%" inherits from font-size "2em", which could not be read; resolved against 15px.',
+      });
+    });
+
+    it("leaves 120%, normal and a missing value unset", () => {
+      for (const style of ["line-height:120%", "line-height:normal", ""]) {
+        expect(lineHeightOf(style)).toEqual({
+          lineHeight: undefined,
+          status: "converted",
+          note: undefined,
+        });
+      }
+    });
+
+    it("notes a value it cannot keep and imports it at 1.2", () => {
+      expect(lineHeightOf("line-height:auto")).toEqual({
+        lineHeight: undefined,
+        status: "approximated",
+        note: 'Button line-height "auto" could not be read; imported at 1.2.',
+      });
+    });
+  });
+
   it("maps es-left/es-right siblings to three columns", () => {
     const { content, report } = convertStripoTemplate(threeCol);
     const secs = sections(content.blocks);
@@ -316,7 +435,7 @@ describe("compiled pipeline", () => {
     );
   });
 
-  it("reports two unequal column widths as two equal columns", () => {
+  it("reads 200px / 400px columns as 1-2", () => {
     const html = floatedRow(
       [
         floatedColumn("Left", { table: "200" }),
@@ -324,20 +443,44 @@ describe("compiled pipeline", () => {
       ].join(""),
     );
     const { content, report } = convertStripoTemplate(html);
-    expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columns).toBe("1-2");
+    expect(sections(content.blocks)[0].columnWidths).toBeUndefined();
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 200px and 400px became two equal columns.",
+        status: "converted",
       },
     ]);
   });
 
-  it("reports three unequal cell widths as three equal columns", () => {
+  it("reads widths within 1px of an unequal preset as that preset", () => {
+    const layoutOf = (widths: string[]) => {
+      const html = floatedRow(
+        widths
+          .map((table, index) =>
+            floatedColumn(`C${index}`, {
+              table,
+              ...(index === widths.length - 1
+                ? { side: "es-right" as const }
+                : {}),
+            }),
+          )
+          .join(""),
+      );
+      const section = sections(convertStripoTemplate(html).content.blocks)[0];
+      return [section.columns, section.columnWidths];
+    };
+    expect(layoutOf(["150", "300", "150"])).toEqual(["1-2-1", undefined]);
+    expect(layoutOf(["451", "150"])).toEqual(["3-1", undefined]);
+    expect(layoutOf(["150", "451"])).toEqual(["1-3", undefined]);
+    expect(layoutOf(["401", "200"])).toEqual(["2-1", undefined]);
+    expect(layoutOf(["455", "150"])).toEqual(["2", [75.21, 24.79]]);
+  });
+
+  it("keeps three unequal cell widths as column widths", () => {
     const html = floatedRow(
       [
         floatedColumn("A", { cellStyle: "padding:0;width:180px" }),
@@ -350,19 +493,19 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("3");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 40, 30]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px, 240px and 180px became three equal columns.",
+        status: "converted",
       },
     ]);
   });
 
-  it("reports four unequal declared widths as four equal columns", () => {
+  it("keeps four unequal declared widths as column widths", () => {
     const html = floatedRow(
       [
         floatedColumn("A", { table: "100" }),
@@ -373,14 +516,16 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("4");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([
+      16.67, 33.33, 25, 25,
+    ]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 100px, 200px, 150px and 150px became four equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -409,7 +554,7 @@ describe("compiled pipeline", () => {
     ]);
   });
 
-  it("reports unequal inline column widths over the width attributes", () => {
+  it("reads unequal inline column widths over the width attributes", () => {
     const html = floatedRow(
       [
         floatedColumn("Left", { table: "400", tableStyle: "width:180px" }),
@@ -422,14 +567,14 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 70]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px and 420px became two equal columns.",
+        status: "converted",
       },
     ]);
   });
@@ -447,14 +592,14 @@ describe("compiled pipeline", () => {
     );
     const { content, report } = convertStripoTemplate(html);
     expect(sections(content.blocks)[0].columns).toBe("2");
+    expect(sections(content.blocks)[0].columnWidths).toEqual([30, 70]);
     expect(
       report.entries.filter((e) => e.templaticalBlockType === "section"),
     ).toEqual([
       {
         sourceTag: "es-content",
         templaticalBlockType: "section",
-        status: "approximated",
-        note: "Columns of 180px and 420px became two equal columns.",
+        status: "converted",
       },
     ]);
   });

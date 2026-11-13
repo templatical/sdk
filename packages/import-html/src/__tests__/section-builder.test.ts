@@ -2121,14 +2121,15 @@ describe("processTable — declared widths choose between same-count layouts", (
     expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
   });
 
-  it("reads an 80/20 split as 3-1 with nothing lost", () => {
+  it("keeps an 80/20 split as column widths with nothing lost", () => {
     const { blocks, entries } = runTable(
       twoCellRow('width="80%"', 'width="20%"'),
     );
     const section = onlySection(blocks);
 
-    // 5pp from 3-1, inside tolerance, so the snap is silent.
-    expect(section.columns).toBe("3-1");
+    // 5pp from 3-1, past the 2pp tolerance, so the row keeps its shares.
+    expect(section.columns).toBe("2");
+    expect(section.columnWidths).toEqual([80, 20]);
     expect(section.children.map((column) => column.length)).toEqual([1, 1]);
     const entry = sectionEntriesOf(entries)[0];
     expect(entry.status).toBe("converted");

@@ -1,5 +1,7 @@
 import { noteValue } from "./note-value";
 import {
+  BUTTON_BLOCK_DEFAULTS,
+  BUTTON_LINE_HEIGHT,
   createButtonBlock,
   createDividerBlock,
   createHtmlBlock,
@@ -13,6 +15,7 @@ import {
   createVideoBlock,
   findOpenTagEnd,
   generateId,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
@@ -229,11 +232,90 @@ function convertHeading(
   );
 }
 
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
+/**
+ * A button's `line-height`, unset when the attribute is. The label renders at
+ * the factory font size, not the button's own, so a `%` or `em` line height
+ * beside a px `font-size` becomes the length it computes to. Beside a stated
+ * `font-size` that is not px, it keeps its ratio and pushes a note.
+ */
+function ownLineHeight(
+  value: unknown,
+  fontSize: unknown,
+  notes: string[],
+): unknown {
+  if (isUnset(value)) return undefined;
+  const size = parsePx(fontSize) ?? 0;
+  const relative = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i.exec(
+    String(value).trim(),
+  );
+  if (!relative) return value;
+  if (!(size > 0)) {
+    if (!isUnset(fontSize)) {
+      notes.push(
+        `Button line-height "${relative[0]}" is relative to font-size "${noteValue(String(fontSize).trim())}", which could not be read; imported as a multiple of the label.`,
+      );
+    }
+    return value;
+  }
+  const factor =
+    relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
+  return `${factor * size}px`;
+}
+
 function convertButton(node: EasyEmailProNode, map: MapContext): Converted {
   const fill = parseColor(readAttr(node, "background-color", map.resolve));
   const textColor = parseColor(readAttr(node, "color", map.resolve));
   const href = readAttr(node, "href", map.resolve);
-  const width = buttonWidth(readAttr(node, "width", map.resolve));
+  const notes: string[] = [];
+  const width = buttonWidth(readAttr(node, "width", map.resolve), notes);
+  // The block keeps the factory font size, so a px line height is measured
+  // against the size the label renders at.
+  const lineHeight = readButtonLineHeight(
+    ownLineHeight(
+      readAttr(node, "line-height", map.resolve),
+      readAttr(node, "font-size", map.resolve),
+      notes,
+    ),
+    Number(BUTTON_BLOCK_DEFAULTS.fontSize),
+    notes,
+  );
   const align = parseAlign(readAttr(node, "align", map.resolve));
   const outlined =
     isBorderEnabled(readAttr(node, "border-enabled", map.resolve)) &&
@@ -245,25 +327,35 @@ function convertButton(node: EasyEmailProNode, map: MapContext): Converted {
     ...(fill ? { backgroundColor: fill } : {}),
     ...(textColor ? { textColor } : {}),
     ...(width !== undefined ? { width } : {}),
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
     ...(align ? { align } : {}),
     ...leafStyles(node, map),
   });
   // createButtonBlock defaults fill to #333333; an unset Pro fill with
   // border-enabled is an outlined button, which has no Templatical equivalent.
-  if (outlined) block.backgroundColor = "#ffffff";
+  if (outlined) {
+    block.backgroundColor = "#ffffff";
+    notes.unshift("outlined button has no Templatical equivalent");
+  }
 
   return finish(
     block,
     node,
-    outlined
-      ? report(
-          "standard-button",
-          "button",
-          "approximated",
-          "outlined button has no Templatical equivalent",
-        )
+    notes.length > 0
+      ? report("standard-button", "button", "approximated", joinNotes(notes))
       : report("standard-button", "button", "converted"),
   );
+}
+
+/**
+ * One note from several. A lone note is kept as written. Joined, each ends
+ * with a full stop: the outline note has none of its own.
+ */
+function joinNotes(notes: string[]): string {
+  if (notes.length === 1) return notes[0]!;
+  return notes
+    .map((note) => (note.endsWith(".") ? note : `${note}.`))
+    .join(" ");
 }
 
 function convertImage(node: EasyEmailProNode, map: MapContext): Converted {
@@ -726,9 +818,38 @@ function isBorderEnabled(value: unknown): boolean {
   return value === true || value === "true";
 }
 
-function buttonWidth(value: unknown): number | "full" | undefined {
+/**
+ * A button's `width` as `ButtonBlock.width`. A percentage is a share of the
+ * column less the button's side padding, the box MJML sizes it against. The
+ * 0 and 100 boundaries are that share rounded to two decimals: 100 is
+ * `"full"`, above 100 is `"full"` with a clamp note, and 0 or below fits
+ * the label with a note. A px width stays px. Anything else fits the label.
+ */
+function buttonWidth(value: unknown, notes: string[]): ButtonBlock["width"] {
   if (isUnset(value)) return undefined;
-  if (typeof value === "string" && value.trim() === "100%") return "full";
+  const raw = String(value).trim();
+  if (raw.endsWith("%")) {
+    const parsed = parsePercent(raw);
+    if (parsed === null) {
+      notes.push(
+        `Button width ${noteValue(raw)} could not be read; imported as fit to content.`,
+      );
+      return undefined;
+    }
+    const share = roundHundredths(parsed);
+    if (share > 100) {
+      notes.push(`Button width ${noteValue(raw)} was clamped to 100%.`);
+      return "full";
+    }
+    if (share === 100) return "full";
+    if (share <= 0) {
+      notes.push(
+        `Button width ${noteValue(raw)} has no usable size; imported as fit to content.`,
+      );
+      return undefined;
+    }
+    return `${share}%`;
+  }
   return parsePx(value);
 }
 

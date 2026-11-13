@@ -1,5 +1,7 @@
 import { noteValue } from "./note-value";
 import {
+  BUTTON_BLOCK_DEFAULTS,
+  BUTTON_LINE_HEIGHT,
   createButtonBlock,
   createDividerBlock,
   createHtmlBlock,
@@ -7,6 +9,7 @@ import {
   createParagraphBlock,
   createTitleBlock,
   createVideoBlock,
+  roundHundredths,
 } from "@templatical/types";
 import type {
   Block,
@@ -226,6 +229,43 @@ function convertTypedText(node: ChamaileonNode, ctx: MapContext): Converted {
   );
 }
 
+/**
+ * A button's line height as `ButtonBlock.lineHeight`, a multiple of
+ * `fontSize`. A percentage is that number over 100, a unitless number is
+ * itself, a px length is that many pixels over `fontSize`, and an `em`
+ * length is the number itself. A leading dot (`.5`) is read. Rounded to two
+ * decimals. A missing value, `normal`, and a value that rounds to 1.2 stay
+ * unset, so the label keeps `BUTTON_LINE_HEIGHT`. Any other value that
+ * cannot be kept stays unset and pushes a note.
+ */
+function readButtonLineHeight(
+  value: unknown,
+  fontSize: number,
+  notes: string[],
+): number | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (trimmed === "" || /^normal$/i.test(trimmed)) return undefined;
+
+  const percent = /^((?:\d+(?:\.\d+)?|\.\d+))\s*%$/.exec(trimmed);
+  const unitless = /^((?:\d+(?:\.\d+)?|\.\d+))$/.exec(trimmed);
+  const px = /^((?:\d+(?:\.\d+)?|\.\d+))\s*px$/i.exec(trimmed);
+  const em = /^((?:\d+(?:\.\d+)?|\.\d+))\s*em$/i.exec(trimmed);
+  let ratio = Number.NaN;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else if (em) ratio = Number(em[1]);
+
+  const rounded = roundHundredths(ratio);
+  if (!Number.isFinite(rounded) || !(rounded > 0)) {
+    notes.push(
+      `Button line-height "${trimmed}" could not be read; imported at 1.2.`,
+    );
+    return undefined;
+  }
+  return rounded === BUTTON_LINE_HEIGHT ? undefined : rounded;
+}
+
 function convertButton(node: ChamaileonNode, ctx: MapContext): Converted {
   const { style, attrs } = readNode(node, ctx);
   const fill = parseColor(styleValue(style, "backgroundColor"));
@@ -233,6 +273,14 @@ function convertButton(node: ChamaileonNode, ctx: MapContext): Converted {
   const borderRadius = parsePx(styleValue(style, "borderRadius"));
   const fontSize = parsePx(styleValue(style, "fontSize"));
   const fontFamily = fontStack(styleValue(style, "fontFamily"));
+  // Chamaileon states the line height in px; it is a multiple of the size
+  // the label renders at.
+  const notes: string[] = [];
+  const lineHeight = readButtonLineHeight(
+    styleValue(style, "lineHeight"),
+    fontSize ?? Number(BUTTON_BLOCK_DEFAULTS.fontSize),
+    notes,
+  );
 
   const block: ButtonBlock = createButtonBlock({
     text: stripTags(asString(attrs.text)),
@@ -241,6 +289,7 @@ function convertButton(node: ChamaileonNode, ctx: MapContext): Converted {
     ...(textColor ? { textColor } : {}),
     ...(borderRadius !== undefined ? { borderRadius } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
+    ...(lineHeight !== undefined ? { lineHeight } : {}),
     ...(fontFamily ? { fontFamily } : {}),
     align: parseAlignment(attrs.align ?? style.align, "center"),
     ...paddingStyles(style),
@@ -250,19 +299,16 @@ function convertButton(node: ChamaileonNode, ctx: MapContext): Converted {
   // background is an outlined button, which has no Templatical equivalent.
   if (!fill) {
     block.backgroundColor = "#ffffff";
+    notes.unshift("outlined button has no Templatical equivalent");
   }
 
+  // The outline note has no full stop of its own; a line-height note does.
   return finish(
     block,
     attrs,
-    fill
-      ? report("button", "button", "converted")
-      : report(
-          "button",
-          "button",
-          "approximated",
-          "outlined button has no Templatical equivalent",
-        ),
+    notes.length > 0
+      ? report("button", "button", "approximated", notes.join(". "))
+      : report("button", "button", "converted"),
   );
 }
 
