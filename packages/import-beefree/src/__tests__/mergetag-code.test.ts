@@ -23,7 +23,7 @@ function paragraph(html: string): string {
 }
 
 const FIXTURE_HTML =
-  '<div class="txtTinyMce-wrapper" style="font-size: 14px; line-height: 21px;"><p style="text-align: center;"><span style="color: #000000;">Lorem ipsum dolor{{ Lorem }}Lorem ipsum dolor</span></p><p style="text-align: center;"><span style="color: #000000;"><strong>Lorem ipsum dolor{{ Lorem }} </strong></span></p><p style="text-align: center;"><code spellcheck="false" data-bee-type="speciallink" data-bee-code=""><a href="{{ guest.link }}" target="_blank" style="text-decoration: underline;" rel="noopener">{{ Lorem }}</a></code></p></div>';
+  '<div class="txtTinyMce-wrapper" style="font-size: 14px; line-height: 21px;"><p style="text-align: center;"><span style="color: #000000;">Lorem ipsum dolor{{ Lorem }}Lorem ipsum dolor</span></p><p style="text-align: center;"><span style="color: #000000;"><strong>Lorem ipsum dolor{{ Lorem }} </strong></span></p><p style="text-align: center;"><a href="{{ guest.link }}" target="_blank" style="text-decoration: underline;" rel="noopener">{{ Lorem }}</a></p></div>';
 
 describe("BeeFree merge-tag code wrappers", () => {
   it("unwraps a plain mergetag code wrapper to the token", () => {
@@ -135,7 +135,7 @@ describe("BeeFree merge-tag code wrappers", () => {
     ).toBe('<p>{{ name|default("a") }}</p>');
   });
 
-  it("preserves a code element that is not a merge tag", () => {
+  it("keeps a plain code sample, unwraps a speciallink chip, and leaves an unclosed merge-tag opener", () => {
     expect(
       paragraph(
         '<p>Run <code>npm install</code> then <code data-bee-type="mergetag">{{ guest.name }}</code>.</p>',
@@ -146,13 +146,130 @@ describe("BeeFree merge-tag code wrappers", () => {
       paragraph(
         '<p><code data-bee-type="speciallink" data-bee-code=""><a href="{{ guest.link }}">{{ guest.link }}</a></code></p>',
       ),
-    ).toBe(
-      '<p><code data-bee-type="speciallink" data-bee-code=""><a href="{{ guest.link }}">{{ guest.link }}</a></code></p>',
+    ).toBe('<p><a href="{{ guest.link }}">{{ guest.link }}</a></p>');
+
+    expect(paragraph('<p><code data-bee-type="widget">keep</code></p>')).toBe(
+      '<p><code data-bee-type="widget">keep</code></p>',
     );
+
+    expect(
+      paragraph(
+        '<p><code data-bee-type="speciallink">run <code>npm install</code> now</code></p>',
+      ),
+    ).toBe("<p>run <code>npm install</code> now</p>");
 
     expect(
       paragraph('<p><code data-bee-type="mergetag">{{ guest.name }}</p>'),
     ).toBe('<p><code data-bee-type="mergetag">{{ guest.name }}</p>');
+  });
+
+  it("unwraps a TinyMCE speciallink chip and keeps the link", () => {
+    const html =
+      '<div class="txtTinyMce-wrapper" style="font-size: 14px; line-height: 21px;" data-mce-style="font-size: 14px; line-height: 21px;"><p style="font-size: 14px; line-height: 21px;" data-mce-style="font-size: 14px; line-height: 21px;"><code spellcheck="false" data-bee-type="speciallink" data-bee-code="">Sie finden die Angaben <a href="https://example.com/details" target="_blank" style="text-decoration: underline;" data-mce-style="text-decoration: underline;" rel="noopener">hier</a>.</code></p></div>';
+    const { content } = convertBeeFreeTemplate({
+      page: {
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-text",
+                    descriptor: {
+                      text: {
+                        html,
+                        computedStyle: { linkColor: "#0068A5" },
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    } as BeeFreeTemplate);
+    const block = content.blocks[0];
+    if (block.type !== "paragraph") throw new Error("expected a paragraph");
+    expect(block.content).toBe(
+      '<div class="txtTinyMce-wrapper" style="font-size: 14px; line-height: 21px;" data-mce-style="font-size: 14px; line-height: 21px;"><p style="font-size: 14px; line-height: 21px;" data-mce-style="font-size: 14px; line-height: 21px;">Sie finden die Angaben <a href="https://example.com/details" target="_blank" style="text-decoration: underline; color: #0068a5" data-mce-style="text-decoration: underline;" rel="noopener">hier</a>.</p></div>',
+    );
+    expect(block.content).not.toContain("<code");
+    expect(block.content).not.toContain("data-bee-type");
+  });
+
+  it("keeps the spaces inside a speciallink chip", () => {
+    expect(
+      paragraph(
+        '<p><code data-bee-type="speciallink"> {{ guest.name }} </code></p>',
+      ),
+    ).toBe("<p> {{ guest.name }} </p>");
+  });
+
+  it("unwraps a speciallink chip with a single-quoted or unquoted type", () => {
+    expect(
+      paragraph(
+        `<p><code data-bee-type='speciallink'><a href="https://example.com/a">hier</a></code></p>`,
+      ),
+    ).toBe('<p><a href="https://example.com/a">hier</a></p>');
+
+    expect(
+      paragraph(
+        '<p><code data-bee-type=speciallink><a href="https://example.com/b">hier</a></code></p>',
+      ),
+    ).toBe('<p><a href="https://example.com/b">hier</a></p>');
+  });
+
+  it("removes a self-closing speciallink chip and an empty one", () => {
+    expect(paragraph('<p>A<code data-bee-type="speciallink" />B</p>')).toBe(
+      "<p>AB</p>",
+    );
+    expect(
+      unwrapMergeTagCode('<code data-bee-type="speciallink"></code>'),
+    ).toBe("");
+  });
+
+  it("leaves an unclosed speciallink opener as written", () => {
+    expect(
+      paragraph(
+        '<p><code spellcheck="false" data-bee-type="speciallink" data-bee-code="">hier</p>',
+      ),
+    ).toBe(
+      '<p><code spellcheck="false" data-bee-type="speciallink" data-bee-code="">hier</p>',
+    );
+  });
+
+  it("unwraps a speciallink chip inside strong", () => {
+    expect(
+      paragraph(
+        '<p><strong><code data-bee-type="speciallink"><a href="https://example.com/docs" target="_blank" rel="noopener">hier</a></code></strong></p>',
+      ),
+    ).toBe(
+      '<p><strong><a href="https://example.com/docs" target="_blank" rel="noopener">hier</a></strong></p>',
+    );
+  });
+
+  it("lets a mergetag type win when the chip also names speciallink", () => {
+    expect(
+      paragraph(
+        "<p><code data-bee-type=speciallink data-bee-type=mergetag>  {{ x }}</code></p>",
+      ),
+    ).toBe("<p>{{ x }}</p>");
+
+    expect(
+      paragraph(
+        "<p><code data-bee-type=mergetag data-bee-type=speciallink>  {{ x }}</code></p>",
+      ),
+    ).toBe("<p>{{ x }}</p>");
+  });
+
+  it("applies each chip rule when a merge tag sits next to a speciallink", () => {
+    expect(
+      paragraph(
+        '<p>Hi <code data-bee-type="mergetag"> {{ guest.name }}</code><code data-bee-type="speciallink"> {{ guest.link }}</code></p>',
+      ),
+    ).toBe("<p>Hi {{ guest.name }} {{ guest.link }}</p>");
   });
 
   it("unwraps a heading, a list, a button label, a table cell and an html module", () => {
@@ -231,6 +348,24 @@ describe("BeeFree merge-tag code wrappers", () => {
     );
   });
 
+  it("unwraps a speciallink chip in a heading", () => {
+    const heading = convertModule(
+      moduleOf("mailup-bee-newsletter-modules-heading", {
+        heading: {
+          title: "h2",
+          text: '<h2><code spellcheck="false" data-bee-type="speciallink" data-bee-code="">Sie finden <a href="https://example.com/details" target="_blank" style="text-decoration: underline;" rel="noopener">hier</a>.</code></h2>',
+        },
+      }),
+      [],
+    ).block;
+    if (heading.type !== "title") throw new Error("expected a title");
+    expect(heading.content).toBe(
+      '<p>Sie finden <a href="https://example.com/details" target="_blank" style="text-decoration: underline;" rel="noopener">hier</a>.</p>',
+    );
+    expect(heading.content).not.toContain("<code");
+    expect(heading.content).not.toContain("data-bee-type");
+  });
+
   // The two linear-growth tests run the scan at the adversarial size and then
   // at two sizes, cheapest of five rounds each; CI's coverage run needs more
   // than the default 5 s for that.
@@ -257,12 +392,36 @@ describe("BeeFree merge-tag code wrappers", () => {
     }, 1_000);
   }, 30_000);
 
+  it("unwraps nested speciallink code in linear time", () => {
+    const nested = (tags: number) =>
+      '<code data-bee-type="speciallink">T'.repeat(tags) +
+      "</code>".repeat(tags);
+    expect(unwrapMergeTagCode(nested(20_000))).toBe("T".repeat(20_000));
+    expectLinear((n) => {
+      const html = nested(n);
+      return () => unwrapMergeTagCode(html);
+    }, 1_000);
+  }, 30_000);
+
+  it("unwraps unclosed speciallink code in linear time", () => {
+    const chunk = '<code data-bee-type="speciallink">a';
+    expect(
+      paragraph(chunk.repeat(20_000)).startsWith(
+        '<code data-bee-type="speciallink">',
+      ),
+    ).toBe(true);
+    expectLinear((n) => {
+      const html = chunk.repeat(n);
+      return () => paragraph(html);
+    }, 1_000);
+  }, 30_000);
+
   it("unwraps the trimmed MERGETAG_CODE fixture", () => {
     const { content } = convertBeeFreeTemplate(fixture as BeeFreeTemplate);
     const block = content.blocks[0];
     if (block.type !== "paragraph") throw new Error("expected a paragraph");
     expect(block.content).toBe(FIXTURE_HTML);
     expect(block.content).not.toContain('data-bee-type="mergetag"');
-    expect(block.content).toContain('data-bee-type="speciallink"');
+    expect(block.content).not.toContain('data-bee-type="speciallink"');
   });
 });
