@@ -2736,8 +2736,11 @@ function socialHref(icon: BeeFreeeSocialIcon): string {
  * BeeFree names an icon set in the file URL
  * (`…/social-networks-icon-sets/circle-dark-gray/facebook.png`).
  * A gray set uses the dark tone: the block's monochrome dark is `#1f1f1f`,
- * the nearest circle that is not a brand-coloured solid. A set whose shape
- * or tone has no match is absent, and the block keeps solid brand icons.
+ * the nearest circle that is not a brand-coloured solid. A listed name maps
+ * to that entry. An unlisted name keeps a `circle-`, `rounded-`, `square-`
+ * or `squared-` prefix, with at least one character after the hyphen, as
+ * that shape in brand colours. Any other named set stays the solid brand
+ * icons and is reported approximated.
  */
 const SOCIAL_ICON_SETS: Record<
   string,
@@ -2835,31 +2838,59 @@ function socialIconSizeFromWidth(width: number): SocialIconSize | undefined {
   return "large";
 }
 
-function socialAppearance(
-  descriptor: BeeFreeeModuleDescriptor,
-): Partial<
-  Pick<
-    SocialIconsBlock,
-    "align" | "spacing" | "iconSize" | "iconStyle" | "iconTone"
-  >
-> {
+/** A `circle-`, `rounded-`, `square-` or `squared-` prefix with at least one character after the hyphen. */
+function socialSetShape(set: string): SocialIconStyle | undefined {
+  // The suffix includes a line break, which a decoded set name can hold.
+  const match = /^(circle|rounded|squared|square)-[\s\S]+$/.exec(set);
+  if (!match) return undefined;
+  if (match[1] === "circle") return "circle";
+  if (match[1] === "rounded") return "rounded";
+  return "square";
+}
+
+function socialAppearance(descriptor: BeeFreeeModuleDescriptor): {
+  appearance: Partial<
+    Pick<
+      SocialIconsBlock,
+      "align" | "spacing" | "iconSize" | "iconStyle" | "iconTone"
+    >
+  >;
+  note?: string;
+} {
   const spacing = socialSpacing(descriptor);
   const size = socialIconSizeFromWidth(
     computedPx(descriptor.computedStyle?.iconsDefaultWidth),
   );
-  const theme = SOCIAL_ICON_SETS[socialIconSet(descriptor) ?? ""];
+  const set = socialIconSet(descriptor);
+  const theme = set !== undefined ? SOCIAL_ICON_SETS[set] : undefined;
+  let shape: SocialIconStyle | undefined;
+  let note: string | undefined;
+  if (set !== undefined && theme === undefined) {
+    shape = socialSetShape(set);
+    note = shape
+      ? `Icon set ${set} imported as ${shape} icons in brand colours.`
+      : `Icon set ${set} has no matching shape; imported as solid brand icons.`;
+  }
   return {
-    align: toAlign(descriptor.style?.["text-align"], "center"),
-    ...(spacing !== undefined ? { spacing } : {}),
-    ...(size ? { iconSize: size } : {}),
-    ...(theme
-      ? {
-          iconStyle: theme.iconStyle,
-          ...(theme.iconTone ? { iconTone: theme.iconTone } : {}),
-        }
-      : {}),
+    appearance: {
+      align: toAlign(descriptor.style?.["text-align"], "center"),
+      ...(spacing !== undefined ? { spacing } : {}),
+      ...(size ? { iconSize: size } : {}),
+      ...(theme
+        ? {
+            iconStyle: theme.iconStyle,
+            ...(theme.iconTone ? { iconTone: theme.iconTone } : {}),
+          }
+        : shape
+          ? { iconStyle: shape }
+          : {}),
+    },
+    ...(note ? { note } : {}),
   };
 }
+
+/** BeeFree's inline-block icon table leaves a 4px line-box strut under the icons; MJML's column cell sets `font-size:0px`, so the importer adds it to the bottom padding. */
+const SOCIAL_ROW_STRUT_PX = 4;
 
 /**
  * One social block for the whole module, in source order. An icon that is
@@ -2873,17 +2904,22 @@ function convertSocial(
 ): { block: Block; extras: Block[]; notes: string[] } {
   const iconsList = descriptor.iconsList;
   const styles = makeStyles(descriptor);
-  const appearance = socialAppearance(descriptor);
+  styles.padding.bottom += SOCIAL_ROW_STRUT_PX;
+  const { appearance, note: setNote } = socialAppearance(descriptor);
+  const notes: string[] = [];
+  if (setNote) {
+    notes.push(setNote);
+    warnings.push(setNote);
+  }
   if (!iconsList?.icons) {
     return {
       block: createSocialIconsBlock({ styles, ...appearance }),
       extras: [],
-      notes: [],
+      notes,
     };
   }
 
   const icons: SocialIcon[] = [];
-  const notes: string[] = [];
   // The Icons module keeps items of another shape under the same key.
   for (const beeIcon of iconsList.icons as BeeFreeeSocialIcon[]) {
     const recognised =
