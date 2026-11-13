@@ -18,8 +18,165 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.59.2",
+  "latest": "0.60.0",
   "versions": [
+    {
+      "version": "0.60.0",
+      "date": "2026-11-13",
+      "changes": [
+        {
+          "hash": "5fbcf4e",
+          "level": "minor",
+          "title": "The Stripo and Easy Email Pro importers carry a button's font size as `ButtonBlock.fontSize`, so an imported button no longer renders at the factory 15px.",
+          "body": "- **Stripo:** the inline `font-size` on `a.es-button`, else on its `es-button-border`.\n- **Easy Email Pro:** `standard-button` `font-size`, through the attribute cascade (the button, then `blockAttributes`, `categoryAttributes` and `globalAttributes`).\n\nA px length or a bare number is read and rounded to whole pixels. A missing value leaves the factory 15px. Any other value, or one that rounds to 0 or below, also imports at 15px, and the button entry is `approximated` with the note `Button font-size \"X\" could not be read; imported at 15px.`\n\nA px line height is now measured against the imported font size, as in the other importers, so `font-size: 18px` with `line-height: 27px` is `1.5`. A percentage, `em` or unitless line height beside the button's own font size keeps its ratio, so `font-size: 30px` with `line-height: 200%` is `2`.\n\nNot a breaking change: no export, option or default is removed, renamed or changed.",
+          "packages": [
+            "@templatical/import-easy-email-pro",
+            "@templatical/import-stripo"
+          ]
+        },
+        {
+          "hash": "6f5fbb7",
+          "level": "minor",
+          "title": "A button can take a percentage of its column.",
+          "body": "`ButtonBlock.width` accepts a percentage such as `\"40%\"`. The renderer writes that string on `mj-button` as `width=\"40%\"` and adds the `tpl-button-full` class, so the link fills the button. In the editor, Custom width has a px | % control. The BeeFree importer and the MJML importer store a percentage between 0 and 100 as that string; `100%` stays `\"full\"`. `parsePercentWidth` reads a stored percentage, and `roundHundredths` rounds a share to two decimals.",
+          "packages": [
+            "@templatical/ai-kit",
+            "@templatical/editor",
+            "@templatical/import-beefree",
+            "@templatical/import-mjml",
+            "@templatical/renderer",
+            "@templatical/template-tools",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "6f5fbb7",
+          "level": "minor",
+          "title": "A button label can set its line height, and a wrapped label keeps it on every line.",
+          "body": "`ButtonBlock.lineHeight` is the label's line height as a multiple of its font size. Omit it and the button renders at `BUTTON_LINE_HEIGHT` (1.2), as a stored button does today. `buttonLineHeight(block)` is that value, or 1.2 when the stored number is not finite and above 0. The renderer writes it on `mj-button` as a percentage (`2` is `line-height=\"200%\"`), and the canvas uses the same number, so each wrapped line gets it. The toolbar's Line height control offers the same stops as a paragraph; choosing 1.2 clears the field.\n\nThe BeeFree importer and the MJML importer read `line-height` into `lineHeight`: a percentage is that number over 100, a unitless number is itself, and a px length is that many pixels divided by the font size, rounded to two decimals. A value that rounds to 1.2, or that is missing, unreadable or not above 0, leaves the field unset. BeeFree no longer imitates a taller line box by adding padding; `buttonPadding` is the source padding as read.",
+          "packages": [
+            "@templatical/ai-kit",
+            "@templatical/editor",
+            "@templatical/import-beefree",
+            "@templatical/import-mjml",
+            "@templatical/renderer",
+            "@templatical/template-tools",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "6f5fbb7",
+          "level": "minor",
+          "title": "A section can set each column's share of the row. The section settings show one percentage field per column, and the canvas draws that split.",
+          "body": "`SectionBlock.columnWidths` is one number per column. The numbers are scaled to 100, so `[1, 1, 2]` is 25% / 25% / 50%, and the last column absorbs the rounding so the row totals 100. It overrides the layout preset. `columns` still sets how many columns there are. A length that doesn't match, or a value that isn't a finite number above 0, is ignored: the preset's split renders, and `structure.column-widths-ignored` names the reason. The BeeFree importer and the MJML importer store a 2–4 column ratio that isn't a preset as the even layout plus these widths. Five or more columns still flatten.",
+          "packages": [
+            "@templatical/ai-kit",
+            "@templatical/editor",
+            "@templatical/import-beefree",
+            "@templatical/import-mjml",
+            "@templatical/quality",
+            "@templatical/renderer",
+            "@templatical/template-tools",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "aa415e0",
+          "level": "minor",
+          "title": "The Unlayer, HTML, Stripo, Topol, Chamaileon and Easy Email Pro importers carry a button's line height as `ButtonBlock.lineHeight`.",
+          "body": "The value is a multiple of the label's font size: a percentage is that number over 100 (`150%` is `1.5`), a unitless number or an `em` length is itself, and a px length is that many pixels over the button's font size. It is rounded to two decimals. A value that comes to 1.2, `normal`, and a missing value stay unset, which renders 1.2. A value that can't be read imports at 1.2 and the button entry is `approximated` with a note naming it.\n\n- **Unlayer:** `values.lineHeight`; Unlayer's `120%` default stays unset.\n- **HTML:** the button's `line-height` style, from the `<a>` or, for a button cell, the cell and the `<a>`. A percentage or `em` line height on the cell is resolved against the cell's font size, as CSS inherits it, and `inherit` on the `<a>` takes the cell's. A bulletproof `font-size:16px; line-height:44px` anchor is `2.75`.\n- **Stripo:** the inline `line-height` on `a.es-button`, else on its `es-button-border`.\n- **Topol:** `mj-button` `line-height`, else the `mj-button` or `button:` default.\n- **Chamaileon:** `style.lineHeight` in px over `style.fontSize`; the `25px` / `18px` default is `1.39`.\n- **Easy Email Pro:** `standard-button` `line-height`. An unreadable percentage `width` is now noted.\n\nNot a breaking change: no export, option or default is removed, renamed or changed. The importers map more of the source into fields that already exist, as #1201 did for the BeeFree and MJML importers.",
+          "packages": [
+            "@templatical/import-chamaileon",
+            "@templatical/import-easy-email-pro",
+            "@templatical/import-html",
+            "@templatical/import-stripo",
+            "@templatical/import-topol",
+            "@templatical/import-unlayer"
+          ]
+        },
+        {
+          "hash": "aa415e0",
+          "level": "minor",
+          "title": "The Unlayer, HTML, Stripo, Topol, Chamaileon and Easy Email Pro importers keep a row's column ratio, and the Unlayer and Easy Email Pro importers keep a percentage button width.",
+          "body": "A two- to four-column ratio that matches no layout preset becomes the even layout of that count plus `SectionBlock.columnWidths`, instead of the nearest preset. A ratio that matches a preset stays that preset with no `columnWidths`.\n\n- **Unlayer:** `cells` are relative weights. `[7, 3]` is `\"2\"` with `[70, 30]`, and `[6, 2, 2, 2]` keeps `[50, 16.67, 16.67, 16.66]` instead of becoming four equal columns with a warning. A button with `size.autoWidth: false` keeps `size.width`: `\"40%\"` stays `\"40%\"` and `\"100%\"` is `\"full\"`. Such a button used to fit its label.\n- **HTML:** declared cell widths snap to a preset within 2 percentage points, down from 6. Any other ratio keeps its shares as `columnWidths`, and the section entry is `converted` instead of `approximated`.\n- **Stripo:** unequal px column widths become a preset (`200px` / `400px` is `\"1-2\"`) or `columnWidths` (`180px` / `420px` is `\"2\"` with `[30, 70]`), `converted`. They used to become equal columns, `approximated`.\n- **Topol and Easy Email Pro:** MJML's column rules apply. A column with no `width` takes the parent width divided by the column count, not the space the stated widths leave, and a px width is a share of the section's inner box. Widths within 2 percentage points of a preset keep it, `converted`. Widths that fit no preset are scaled to 100; when they differ from 100% by more than 0.5 percentage points the section is `approximated` (`30%` / `40%`), and otherwise it stays `converted` (`40%` / `60.25%`). Easy Email Pro's `standard-button` keeps a percentage `width` such as `\"40%\"`, which used to be dropped.\n- **Chamaileon:** a column's share is its px width over the row's total, not over `bodyWidth`, so content padding and spacers no longer make an even row `approximated`. An unset column width counts as Chamaileon's default `300px`.\n\nNot a breaking change: no export, option or default is removed, renamed or changed. The importers map more of the source into fields that already exist, as #1201 did for the BeeFree and MJML importers.",
+          "packages": [
+            "@templatical/import-chamaileon",
+            "@templatical/import-easy-email-pro",
+            "@templatical/import-html",
+            "@templatical/import-stripo",
+            "@templatical/import-topol",
+            "@templatical/import-unlayer"
+          ]
+        },
+        {
+          "hash": "299c709",
+          "level": "patch",
+          "title": "Re-importing a BeeFree template keeps module hide flags, drops a no-line-box paragraph only when it holds an element other than a span, preserves a blank paragraph's space, centres HTML modules, and keeps a non-breaking space between merge tags.",
+          "body": "`descriptor.computedStyle.hideContentOnMobile` or `hideContentOnDesktop` set to `true` or `\"true\"` sets `visibility` (`{ desktop, mobile }`) on that module's block and on every extra block the module produces.\n\nA `<p>` in a text, paragraph or list module that has no line box is dropped after merge-tag chips are unwrapped only when it contains an element other than `<span>`. An empty `<p>`, or one that holds only empty `<span>` elements, is kept.\n\nA blank `paragraph` module (`paragraph.html` empty, whitespace only, or blank by `isBlankRichText` after conversion) imports as a `spacer` whose `height` is the rounded sum of `padding-top`, the line box and `padding-bottom`, with `styles.padding` at 0 on every side.\n\nNon-blank HTML-module content is wrapped as `<div style=\"font-family:<body font>;font-size:16px;text-align:center\" align=\"center\">…</div>`. `font-family` is the page body font and is omitted when the body sets none; `font-size` is `16px`, the browser default BeeFree leaves in place.\n\nA merge-tag chip that holds only whitespace keeps each non-breaking space as `&nbsp;` outside the token, and collapses each other whitespace run to one plain space.\n\nA button whose fill is transparent imports with `backgroundColor` set to `\"transparent\"`.",
+          "packages": [
+            "@templatical/import-beefree"
+          ]
+        },
+        {
+          "hash": "5fbcf4e",
+          "level": "patch",
+          "title": "The Topol importer no longer stores a 0px button label when an `mj-button`'s `font-size` can't be read.",
+          "body": "A `font-size` is read as a px length or a bare number and rounded to whole pixels. One it can't read, or one that rounds to 0 or below (`1.2em`, `120%`, `large`, `0`, `0.4px`, `-4px`), now imports at the factory 15px, and the button entry is `approximated` with the note `Button font-size \"X\" could not be read; imported at 15px.` A px `line-height` beside it is measured against those 15px, so `font-size: 1.2em` with `line-height: 30px` is `2`; before, that line height was reported as unreadable and imported at 1.2.",
+          "packages": [
+            "@templatical/import-topol"
+          ]
+        },
+        {
+          "hash": "6f5fbb7",
+          "level": "patch",
+          "title": "BeeFree text imports drop an empty formatting paragraph before styles are applied, HTML modules keep the browser's line height and word breaking, and a button metric or custom social icon that cannot be kept is reported approximated.",
+          "body": "A `<p>` whose source holds an element other than a span, and no ink, is dropped before the style pass, so TinyMCE's empty `<strong>` no longer comes back as a blank line. A descendant that draws a box keeps its paragraph when that style pass runs. An HTML module's wrapper sets `line-height:normal` and `word-break:normal` next to the 16px size, because BeeFree sets none of them and `mj-text` would otherwise force `line-height:1` and `word-break:break-word`. An explicit button `line-height` of `Nem` is stored as that ratio, any other button line-height or width that cannot be kept is reported approximated, and a custom social icon stays in the same row as the generic website icon.",
+          "packages": [
+            "@templatical/import-beefree"
+          ]
+        },
+        {
+          "hash": "aa415e0",
+          "level": "patch",
+          "title": "The Unlayer, Topol, Chamaileon and Stripo importers measure a column's room against the section's inner box. Unlayer, Topol and Chamaileon used the whole email width; Stripo took the column's share of the body width and then removed the padding from the edge columns. The room is the width an image, divider or video is compared with before it becomes `\"full\"`. It is now the column's share of the inner box, which is the width less the section's side padding: Unlayer row `padding`, Topol `mj-section` padding, Chamaileon fullwidth content padding, Stripo structure padding. In a 600px Topol section with 50px side padding, a lone column's room is 500px, so a 500px image is `\"full\"` and a 499px one stays px.",
+          "body": "In Topol and Easy Email Pro, a section whose side padding leaves no inner box drops its px column widths. That section is now `approximated` with a note naming the widths. It was reported `converted`.\n\nNot a breaking change: no export, option or default is removed, renamed or changed. The importers measure the source's columns the way the renderer draws them, and report a lossy row as lossy.",
+          "packages": [
+            "@templatical/import-chamaileon",
+            "@templatical/import-easy-email-pro",
+            "@templatical/import-stripo",
+            "@templatical/import-topol",
+            "@templatical/import-unlayer"
+          ]
+        },
+        {
+          "hash": "c98f659",
+          "level": "patch",
+          "title": "The BeeFree importer removes a `<code data-bee-type=\"speciallink\">` link chip and keeps its inner HTML, including the link, as written.",
+          "body": "A merge-tag chip is still unwrapped to its token, and any other `<code>` stays.",
+          "packages": [
+            "@templatical/import-beefree"
+          ]
+        },
+        {
+          "hash": "e4a1ce5",
+          "level": "patch",
+          "title": "The MJML importer resolves column widths that scale onto a layout preset to that preset, with no `columnWidths`.",
+          "body": "Two to four widths that fit no preset are scaled to 100. When the scaled shares are within one hundredth of a preset of that column count, the section takes that preset instead of the even layout plus `columnWidths` equal to it, which the editor showed as custom widths. `45%` / `45%` is `\"2\"` and `30%` / `60%` is `\"1-2\"`. A row that doesn't total 100 stays `approximated`, with the same note.",
+          "packages": [
+            "@templatical/import-mjml"
+          ]
+        },
+        {
+          "hash": "f25f9ec",
+          "level": "patch",
+          "title": "BeeFree social rows keep a known icon shape when the colour variant is new, and they keep the 4px gap under the icons.",
+          "body": "An unlisted `circle-*`, `rounded-*`, `square-*` or `squared-*` set imports as that shape in brand colours and is reported approximated, a named set with no matching shape stays the solid brand icons and is reported approximated, and the social block's bottom padding includes the 4px line-box strut BeeFree leaves under its inline-block icon table, which MJML's `font-size:0px` column cell would otherwise drop.",
+          "packages": [
+            "@templatical/import-beefree"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.59.2",
       "date": "2026-11-12",

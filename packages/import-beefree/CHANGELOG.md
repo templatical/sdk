@@ -1,5 +1,56 @@
 # @templatical/import-beefree
 
+## 0.60.0
+
+### Minor Changes
+
+- 6f5fbb7: A button label can set its line height, and a wrapped label keeps it on every line.
+
+  `ButtonBlock.lineHeight` is the label's line height as a multiple of its font size. Omit it and the button renders at `BUTTON_LINE_HEIGHT` (1.2), as a stored button does today. `buttonLineHeight(block)` is that value, or 1.2 when the stored number is not finite and above 0. The renderer writes it on `mj-button` as a percentage (`2` is `line-height="200%"`), and the canvas uses the same number, so each wrapped line gets it. The toolbar's Line height control offers the same stops as a paragraph; choosing 1.2 clears the field.
+
+  The BeeFree importer and the MJML importer read `line-height` into `lineHeight`: a percentage is that number over 100, a unitless number is itself, and a px length is that many pixels divided by the font size, rounded to two decimals. A value that rounds to 1.2, or that is missing, unreadable or not above 0, leaves the field unset. BeeFree no longer imitates a taller line box by adding padding; `buttonPadding` is the source padding as read.
+
+- 6f5fbb7: A button can take a percentage of its column.
+
+  `ButtonBlock.width` accepts a percentage such as `"40%"`. The renderer writes that string on `mj-button` as `width="40%"` and adds the `tpl-button-full` class, so the link fills the button. In the editor, Custom width has a px | % control. The BeeFree importer and the MJML importer store a percentage between 0 and 100 as that string; `100%` stays `"full"`. `parsePercentWidth` reads a stored percentage, and `roundHundredths` rounds a share to two decimals.
+
+- 6f5fbb7: A section can set each column's share of the row. The section settings show one percentage field per column, and the canvas draws that split.
+
+  `SectionBlock.columnWidths` is one number per column. The numbers are scaled to 100, so `[1, 1, 2]` is 25% / 25% / 50%, and the last column absorbs the rounding so the row totals 100. It overrides the layout preset. `columns` still sets how many columns there are. A length that doesn't match, or a value that isn't a finite number above 0, is ignored: the preset's split renders, and `structure.column-widths-ignored` names the reason. The BeeFree importer and the MJML importer store a 2–4 column ratio that isn't a preset as the even layout plus these widths. Five or more columns still flatten.
+
+### Patch Changes
+
+- 6f5fbb7: BeeFree text imports drop an empty formatting paragraph before styles are applied, HTML modules keep the browser's line height and word breaking, and a button metric or custom social icon that cannot be kept is reported approximated.
+
+  A `<p>` whose source holds an element other than a span, and no ink, is dropped before the style pass, so TinyMCE's empty `<strong>` no longer comes back as a blank line. A descendant that draws a box keeps its paragraph when that style pass runs. An HTML module's wrapper sets `line-height:normal` and `word-break:normal` next to the 16px size, because BeeFree sets none of them and `mj-text` would otherwise force `line-height:1` and `word-break:break-word`. An explicit button `line-height` of `Nem` is stored as that ratio, any other button line-height or width that cannot be kept is reported approximated, and a custom social icon stays in the same row as the generic website icon.
+
+- 299c709: Re-importing a BeeFree template keeps module hide flags, drops a no-line-box paragraph only when it holds an element other than a span, preserves a blank paragraph's space, centres HTML modules, and keeps a non-breaking space between merge tags.
+
+  `descriptor.computedStyle.hideContentOnMobile` or `hideContentOnDesktop` set to `true` or `"true"` sets `visibility` (`{ desktop, mobile }`) on that module's block and on every extra block the module produces.
+
+  A `<p>` in a text, paragraph or list module that has no line box is dropped after merge-tag chips are unwrapped only when it contains an element other than `<span>`. An empty `<p>`, or one that holds only empty `<span>` elements, is kept.
+
+  A blank `paragraph` module (`paragraph.html` empty, whitespace only, or blank by `isBlankRichText` after conversion) imports as a `spacer` whose `height` is the rounded sum of `padding-top`, the line box and `padding-bottom`, with `styles.padding` at 0 on every side.
+
+  Non-blank HTML-module content is wrapped as `<div style="font-family:<body font>;font-size:16px;text-align:center" align="center">…</div>`. `font-family` is the page body font and is omitted when the body sets none; `font-size` is `16px`, the browser default BeeFree leaves in place.
+
+  A merge-tag chip that holds only whitespace keeps each non-breaking space as `&nbsp;` outside the token, and collapses each other whitespace run to one plain space.
+
+  A button whose fill is transparent imports with `backgroundColor` set to `"transparent"`.
+
+- f25f9ec: BeeFree social rows keep a known icon shape when the colour variant is new, and they keep the 4px gap under the icons.
+
+  An unlisted `circle-*`, `rounded-*`, `square-*` or `squared-*` set imports as that shape in brand colours and is reported approximated, a named set with no matching shape stays the solid brand icons and is reported approximated, and the social block's bottom padding includes the 4px line-box strut BeeFree leaves under its inline-block icon table, which MJML's `font-size:0px` column cell would otherwise drop.
+
+- c98f659: The BeeFree importer removes a `<code data-bee-type="speciallink">` link chip and keeps its inner HTML, including the link, as written.
+
+  A merge-tag chip is still unwrapped to its token, and any other `<code>` stays.
+
+- Updated dependencies [6f5fbb7]
+- Updated dependencies [6f5fbb7]
+- Updated dependencies [6f5fbb7]
+  - @templatical/types@0.60.0
+
 ## 0.59.2
 
 ### Patch Changes

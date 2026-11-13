@@ -47,7 +47,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 //
 // Kept in step automatically by scripts/sync-pins.mjs at release time.
 // tests/cdn-pin.test.ts is the safety net that fails CI if it ever drifts.
-export const EDITOR_VERSION = "0.59.2";
+export const EDITOR_VERSION = "0.60.0";
 
 export const DEFAULT_PORT = 4747;
 export const WORKING_DIR = ".templatical";
