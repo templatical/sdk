@@ -1672,29 +1672,44 @@ function blankParagraphLineBox(style: Record<string, string> | undefined): {
 function blankParagraphHeight(descriptor: BeeFreeeModuleDescriptor): {
   height: number;
   unread: string[];
+  lineBoxOverflows: boolean;
+  paddingUnread: boolean;
 } {
   const padding = extractPadding(descriptor.style);
   const line = blankParagraphLineBox(descriptor.paragraph?.style);
-  const height = Math.round(padding.top + line.px + padding.bottom);
+  // A longhand of hundreds of digits is Infinity. That side is not a length,
+  // so the spacer reads it as 0. Left and right never enter this height.
+  let top = padding.top;
+  let bottom = padding.bottom;
+  let paddingUnread = false;
+  if (!Number.isFinite(top)) {
+    top = 0;
+    paddingUnread = true;
+  }
+  if (!Number.isFinite(bottom)) {
+    bottom = 0;
+    paddingUnread = true;
+  }
+  const height = Math.round(top + line.px + bottom);
   // 14px at 1.2 is the documented line box when a value is not read.
-  const fallback = Math.round(padding.top + 14 * 1.2 + padding.bottom);
+  // A non-finite line box (finite factors whose product overflows) makes
+  // this rounded height non-finite too, so one check covers both. Padding
+  // was already replaced, so the fallback is a finite, non-negative integer.
+  const fallback = Math.round(top + 14 * 1.2 + bottom);
+  if (!Number.isFinite(height)) {
+    return {
+      height: fallback,
+      unread: line.unread,
+      lineBoxOverflows: true,
+      paddingUnread,
+    };
+  }
   return {
-    height: Number.isFinite(height) ? height : fallback,
+    height,
     unread: line.unread,
+    lineBoxOverflows: false,
+    paddingUnread,
   };
-}
-
-/**
- * Whether a paragraph module's source is empty or whitespace, or its
- * converted markup is blank. Only `mailup-bee-newsletter-modules-paragraph`
- * is passed here, so an absent `paragraph.html` is a blank module.
- */
-function blankParagraphModule(
-  html: string | undefined,
-  converted: string,
-): boolean {
-  if ((html ?? "").trim() === "") return true;
-  return isBlankRichText(converted);
 }
 
 /** A blank paragraph module, as a spacer of one line plus its vertical padding. */
@@ -3528,13 +3543,16 @@ function convertModuleBase(
   switch (mappedType) {
     case "paragraph": {
       block = convertText(descriptor, textColor, notes);
+      // Blankness is the converted content only. A missing `paragraph.html`
+      // is not blank when the text arrived on another payload.
       if (
         module.type === PARAGRAPH_MODULE &&
         block.type === "paragraph" &&
         context.blankParagraphAsSpacer !== false &&
-        blankParagraphModule(descriptor.paragraph?.html, block.content)
+        isBlankRichText(block.content)
       ) {
-        const { height, unread } = blankParagraphHeight(descriptor);
+        const { height, unread, lineBoxOverflows, paddingUnread } =
+          blankParagraphHeight(descriptor);
         const boxLost = paragraphHtmlPaintsBox(block.content);
         const typographyLost = paragraphHasUnreadTypography(
           descriptor.paragraph?.html,
@@ -3544,6 +3562,10 @@ function convertModuleBase(
         if (boxLost) clauses.push("its box styling is not carried");
         if (typographyLost) {
           clauses.push("its paragraph typography is not read");
+        }
+        if (paddingUnread) clauses.push("its padding is not read");
+        if (lineBoxOverflows) {
+          clauses.push("its line box overflows, 1.2 × 14px is used");
         }
         clauses.push(...unread);
         const suffix = clauses.length > 0 ? `; ${clauses.join("; ")}` : "";

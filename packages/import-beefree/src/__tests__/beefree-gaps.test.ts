@@ -838,6 +838,65 @@ describe("BeeFree module gaps", () => {
       });
     });
 
+    it("keeps text that arrives on the text payload of a paragraph module", () => {
+      const { content, report } = imported(
+        template([
+          column([
+            {
+              type: "mailup-bee-newsletter-modules-paragraph",
+              descriptor: {
+                text: { html: "Sale" },
+                style: PADDING_10,
+              },
+            },
+          ]),
+        ]),
+      );
+      const block = content.blocks[0];
+
+      expect(block.type).toBe("paragraph");
+      if (block.type !== "paragraph") return;
+      expect(block.content).toBe("Sale");
+      expect(content.blocks.some((item) => item.type === "spacer")).toBe(false);
+      expect(report.entries[0]).toEqual({
+        beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      });
+    });
+
+    it("imports empty, whitespace, and missing paragraph payloads as a 37px spacer", () => {
+      const payloads: Array<Record<string, unknown>> = [
+        { paragraph: { html: "" } },
+        { paragraph: { html: "   " } },
+        {},
+      ];
+
+      for (const payload of payloads) {
+        const { content, report } = imported(
+          template([
+            column([
+              {
+                type: "mailup-bee-newsletter-modules-paragraph",
+                descriptor: { ...payload, style: PADDING_10 },
+              },
+            ]),
+          ]),
+        );
+        const block = content.blocks[0];
+
+        expect(block.type).toBe("spacer");
+        if (block.type !== "spacer") return;
+        expect(block.height).toBe(37);
+        expect(report.entries[0]).toEqual({
+          beeFreeModuleType: "mailup-bee-newsletter-modules-paragraph",
+          templaticalBlockType: "spacer",
+          status: "converted",
+          note: "Blank paragraph imported as a 37px spacer.",
+        });
+      }
+    });
+
     it("leaves a non-blank paragraph module as a paragraph", () => {
       const { content, report } = imported(
         template([
@@ -1007,7 +1066,43 @@ describe("BeeFree module gaps", () => {
       );
     });
 
-    it("uses the fallback height when the line box is not finite", () => {
+    it("reads a non-finite padding-top as 0", () => {
+      const { block, entry } = blank({
+        fontSize: "14px",
+        lineHeight: "120%",
+        paddingTop: `${"9".repeat(400)}px`,
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(0 + 17 + 10);
+      expect(Number.isInteger(block.height)).toBe(true);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 27px spacer; its padding is not read.",
+      );
+    });
+
+    it("reads both non-finite vertical paddings as 0", () => {
+      const padding = `${"9".repeat(400)}px`;
+      const { block, entry } = blank({
+        fontSize: "14px",
+        lineHeight: "120%",
+        paddingTop: padding,
+        paddingBottom: padding,
+      });
+
+      expect(block.type).toBe("spacer");
+      if (block.type !== "spacer") return;
+      expect(block.height).toBe(17);
+      expect(Number.isInteger(block.height)).toBe(true);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 17px spacer; its padding is not read.",
+      );
+    });
+
+    it("approximates a blank paragraph whose line box overflows", () => {
       const { block, entry } = blank({
         fontSize: `1${"0".repeat(308)}px`,
         lineHeight: "2",
@@ -1016,8 +1111,10 @@ describe("BeeFree module gaps", () => {
       expect(block.type).toBe("spacer");
       if (block.type !== "spacer") return;
       expect(block.height).toBe(37);
-      expect(entry.status).toBe("converted");
-      expect(entry.note).toBe("Blank paragraph imported as a 37px spacer.");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Blank paragraph imported as a 37px spacer; its line box overflows, 1.2 × 14px is used.",
+      );
     });
 
     it("approximates a blank paragraph whose empty tag sets typography", () => {
