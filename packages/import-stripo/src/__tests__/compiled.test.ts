@@ -286,6 +286,19 @@ describe("compiled pipeline", () => {
       ).toBe(2.2);
     });
 
+    it("notes an anchor font size it cannot read beside a relative line height", () => {
+      expect(lineHeightOf("font-size:2em;line-height:150%")).toEqual({
+        lineHeight: 1.5,
+        status: "approximated",
+        note: 'Button line-height "150%" is relative to font-size "2em", which could not be read; imported as a multiple of the label.',
+      });
+      expect(lineHeightOf("font-size:2em;line-height:1.5")).toEqual({
+        lineHeight: 1.5,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
     it("takes an explicit inherit from the wrapper", () => {
       expect(
         lineHeightOf("line-height:inherit", "line-height:1.6").lineHeight,

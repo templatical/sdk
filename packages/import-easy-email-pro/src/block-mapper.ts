@@ -272,15 +272,28 @@ function readButtonLineHeight(
 /**
  * A button's `line-height`, unset when the attribute is. The label renders at
  * the factory font size, not the button's own, so a `%` or `em` line height
- * beside a px `font-size` becomes the length it computes to.
+ * beside a px `font-size` becomes the length it computes to. Beside a stated
+ * `font-size` that is not px, it keeps its ratio and pushes a note.
  */
-function ownLineHeight(value: unknown, fontSize: unknown): unknown {
+function ownLineHeight(
+  value: unknown,
+  fontSize: unknown,
+  notes: string[],
+): unknown {
   if (isUnset(value)) return undefined;
   const size = parsePx(fontSize) ?? 0;
   const relative = /^((?:\d+(?:\.\d+)?|\.\d+))\s*(%|em)$/i.exec(
     String(value).trim(),
   );
-  if (!relative || !(size > 0)) return value;
+  if (!relative) return value;
+  if (!(size > 0)) {
+    if (!isUnset(fontSize)) {
+      notes.push(
+        `Button line-height "${relative[0]}" is relative to font-size "${noteValue(String(fontSize).trim())}", which could not be read; imported as a multiple of the label.`,
+      );
+    }
+    return value;
+  }
   const factor =
     relative[2] === "%" ? Number(relative[1]) / 100 : Number(relative[1]);
   return `${factor * size}px`;
@@ -298,6 +311,7 @@ function convertButton(node: EasyEmailProNode, map: MapContext): Converted {
     ownLineHeight(
       readAttr(node, "line-height", map.resolve),
       readAttr(node, "font-size", map.resolve),
+      notes,
     ),
     Number(BUTTON_BLOCK_DEFAULTS.fontSize),
     notes,

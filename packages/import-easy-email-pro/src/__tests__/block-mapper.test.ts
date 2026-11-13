@@ -342,11 +342,12 @@ describe("convertLeaf", () => {
         return {
           lineHeight: (blocks[0] as ButtonBlock).lineHeight,
           status: entries[0].status,
+          note: entries[0].note,
         };
       };
       expect(
         lineHeightOf({ "font-size": "30px", "line-height": "200%" }),
-      ).toEqual({ lineHeight: 4, status: "converted" });
+      ).toEqual({ lineHeight: 4, status: "converted", note: undefined });
       expect(
         lineHeightOf({ "font-size": "30px", "line-height": "2em" }).lineHeight,
       ).toBe(4);
@@ -354,8 +355,15 @@ describe("convertLeaf", () => {
         lineHeightOf({ "font-size": "30px", "line-height": "1.5" }).lineHeight,
       ).toBe(1.5);
       expect(
-        lineHeightOf({ "font-size": "2em", "line-height": "150%" }).lineHeight,
-      ).toBe(1.5);
+        lineHeightOf({ "font-size": "2em", "line-height": "150%" }),
+      ).toEqual({
+        lineHeight: 1.5,
+        status: "approximated",
+        note: 'Button line-height "150%" is relative to font-size "2em", which could not be read; imported as a multiple of the label.',
+      });
+      expect(
+        lineHeightOf({ "font-size": "2em", "line-height": "1.5" }),
+      ).toEqual({ lineHeight: 1.5, status: "converted", note: undefined });
     });
 
     it("joins the outline note and the width note", () => {

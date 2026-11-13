@@ -138,8 +138,15 @@ function lineHeightSource(
 ): string | undefined {
   const ownValue = own?.trim();
   if (ownValue && !/^inherit$/i.test(ownValue)) {
-    const ownSize = fontSizePx(ownFontSize);
-    return (ownSize > 0 && relativeAsPx(ownValue, ownSize)) || own;
+    const statedOwn = ownFontSize?.trim();
+    const ownSize = fontSizePx(statedOwn);
+    if (ownSize > 0) return relativeAsPx(ownValue, ownSize) ?? own;
+    if (statedOwn && RELATIVE_LINE_HEIGHT.test(ownValue)) {
+      notes.push(
+        `Button line-height "${ownValue}" is relative to font-size "${statedOwn}", which could not be read; imported as a multiple of the label.`,
+      );
+    }
+    return own;
   }
   const outerValue = outer?.trim() ?? "";
   if (!RELATIVE_LINE_HEIGHT.test(outerValue)) return outer;
