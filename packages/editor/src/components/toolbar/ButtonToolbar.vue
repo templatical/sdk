@@ -13,8 +13,13 @@ import {
   inputClass,
   inputGroupInputClass,
   inputSuffixClass,
+  LINE_HEIGHT_OPTIONS,
 } from "../../constants/styleConstants";
-import { parsePercentWidth } from "@templatical/types";
+import {
+  BUTTON_LINE_HEIGHT,
+  buttonLineHeight,
+  parsePercentWidth,
+} from "@templatical/types";
 import type { ButtonBlock } from "@templatical/types";
 import { EDITOR_KEY, LAYOUT_KEY } from "../../keys";
 import { imageRoom } from "../../utils/imageRoom";
@@ -79,6 +84,21 @@ function updateWidthMode(mode: string): void {
     return;
   }
   updateField("width", undefined);
+}
+
+const lineHeightValue = computed(() => String(buttonLineHeight(props.block)));
+
+const lineHeightOptions = computed(() => {
+  const current = lineHeightValue.value;
+  if (LINE_HEIGHT_OPTIONS.includes(current)) return LINE_HEIGHT_OPTIONS;
+  return [...LINE_HEIGHT_OPTIONS, current];
+});
+
+function updateLineHeight(raw: string): void {
+  const value = Number(raw);
+  // 1.2 is what an omitted field renders. Storing it would write the default
+  // onto every button, so the control clears the field.
+  updateField("lineHeight", value === BUTTON_LINE_HEIGHT ? undefined : value);
 }
 
 function updateFontWeight(value: string): void {
@@ -228,6 +248,17 @@ function updateWidthUnit(unit: string): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
+  </FieldRow>
+  <FieldRow :label="t.button.lineHeight" class="tpl:mb-3.5" path="lineHeight">
+    <select
+      :class="inputClass"
+      :value="lineHeightValue"
+      @change="updateLineHeight(($event.target as HTMLSelectElement).value)"
+    >
+      <option v-for="option in lineHeightOptions" :key="option" :value="option">
+        {{ option }}
+      </option>
+    </select>
   </FieldRow>
   <FieldRow :label="t.button.fontWeight" class="tpl:mb-3.5" path="fontWeight">
     <SlidingPillSelect

@@ -1,6 +1,11 @@
 import { elementIdIssues } from "@templatical/types";
 import { describe, it, expect } from "vitest";
-import type { Block, DividerBlock, ImageBlock } from "@templatical/types";
+import type {
+  Block,
+  ButtonBlock,
+  DividerBlock,
+  ImageBlock,
+} from "@templatical/types";
 import { convertBeeFreeTemplate } from "../converter";
 import type { BeeFreeeRow, BeeFreeTemplate } from "../types";
 import fixture from "./fixtures/example-1.json";
@@ -569,7 +574,7 @@ describe("convertBeeFreeTemplate", () => {
     ],
     [
       { "padding-top": "0px", "padding-bottom": "0px", "line-height": "200%" },
-      { top: 6, right: 24, bottom: 6, left: 24 },
+      { top: 0, right: 24, bottom: 0, left: 24 },
       "regular",
     ],
     [
@@ -612,6 +617,128 @@ describe("convertBeeFreeTemplate", () => {
       expect(block.fontWeight).toBe(weight);
     },
   );
+
+  describe("button line height", () => {
+    const sourcePadding = {
+      "padding-top": "10px",
+      "padding-right": "20px",
+      "padding-bottom": "8px",
+      "padding-left": "18px",
+    };
+    const padding = { top: 10, right: 20, bottom: 8, left: 18 };
+
+    function importedButton(
+      style: Record<string, string>,
+      label = "Register for the annual conference",
+    ): ButtonBlock {
+      const { content } = convertBeeFreeTemplate({
+        page: {
+          rows: [
+            {
+              columns: [
+                {
+                  "grid-columns": 12,
+                  modules: [
+                    {
+                      type: "mailup-bee-newsletter-modules-button",
+                      descriptor: {
+                        button: {
+                          label,
+                          href: "https://example.com",
+                          style,
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const block = content.blocks.flatMap((item) =>
+        item.type === "section" ? item.children.flat() : [item],
+      )[0];
+      if (block?.type !== "button") throw new Error("expected a button block");
+      return block;
+    }
+
+    it.each([
+      ["200%", 2],
+      ["150%", 1.5],
+      ["1.5", 1.5],
+      ["28px", 2],
+      ["100%", 1],
+      ["33.333%", 0.33],
+      ["1.005", 1.01],
+      ["120.6%", 1.21],
+    ] as const)(
+      "stores %s as lineHeight %s and keeps the source padding",
+      (lineHeight, expected) => {
+        const block = importedButton({
+          ...sourcePadding,
+          "font-size": "14px",
+          "line-height": lineHeight,
+        });
+        expect(block.lineHeight).toBe(expected);
+        expect(block.buttonPadding).toEqual(padding);
+        expect(block.fontSize).toBe(14);
+      },
+    );
+
+    it.each(["120%", "119.5%", "0%", "0px", "0.001", "2em", "normal"] as const)(
+      "leaves lineHeight unset for %s",
+      (lineHeight) => {
+        const block = importedButton({
+          ...sourcePadding,
+          "font-size": "14px",
+          "line-height": lineHeight,
+        });
+        expect(block.lineHeight).toBeUndefined();
+        expect("lineHeight" in block).toBe(false);
+        expect(block.buttonPadding).toEqual(padding);
+      },
+    );
+
+    it("leaves lineHeight unset when the style omits it", () => {
+      const block = importedButton({ ...sourcePadding, "font-size": "14px" });
+      expect(block.lineHeight).toBeUndefined();
+      expect("lineHeight" in block).toBe(false);
+      expect(block.buttonPadding).toEqual(padding);
+    });
+
+    it("leaves a non-finite percentage unset", () => {
+      const block = importedButton({
+        ...sourcePadding,
+        "font-size": "14px",
+        "line-height": `${"9".repeat(400)}%`,
+      });
+      expect(block.lineHeight).toBeUndefined();
+      expect(block.buttonPadding).toEqual(padding);
+    });
+
+    it("divides a px line-height by the 16px font size a missing size stores", () => {
+      const block = importedButton({
+        ...sourcePadding,
+        "line-height": "28px",
+      });
+      expect(block.fontSize).toBe(16);
+      expect(block.lineHeight).toBe(1.75);
+      expect(block.buttonPadding).toEqual(padding);
+    });
+
+    it("keeps a 40% width together with a 200% line height", () => {
+      const block = importedButton({
+        ...sourcePadding,
+        "font-size": "14px",
+        width: "40%",
+        "line-height": "200%",
+      });
+      expect(block.width).toBe("40%");
+      expect(block.lineHeight).toBe(2);
+      expect(block.buttonPadding).toEqual(padding);
+    });
+  });
 
   describe("button fill", () => {
     function importedButton(style: Record<string, string>) {

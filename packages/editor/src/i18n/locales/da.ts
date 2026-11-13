@@ -405,6 +405,7 @@ const da: typeof en = {
     textColor: "Tekstfarve",
     borderRadius: "Hjørneradius",
     fontSize: "Skriftstørrelse",
+    lineHeight: "Linjehøjde",
     fontWeight: "Skrifttykkelse",
     fontWeightRegular: "Normal",
     fontWeightMedium: "Mellem",

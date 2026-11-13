@@ -269,6 +269,47 @@ describe("ButtonToolbar align control", () => {
   });
 });
 
+describe("ButtonToolbar line height", () => {
+  function lineHeightSelect(wrapper: ReturnType<typeof mountIt>) {
+    return wrapper
+      .findAll("select")
+      .find((select) =>
+        select.findAll("option").some((option) => option.attributes("value") === "1.2"),
+      )!;
+  }
+
+  it("shows 1.2 when lineHeight is omitted", () => {
+    const wrapper = mountIt(createButtonBlock());
+    const select = lineHeightSelect(wrapper);
+    expect(wrapper.text()).toContain("button.lineHeight");
+    expect((select.element as HTMLSelectElement).value).toBe("1.2");
+    expect(
+      select.findAll("option").filter((option) => option.attributes("value") === "1.2"),
+    ).toHaveLength(1);
+  });
+
+  it("stores 2 and clears 1.2", async () => {
+    const wrapper = mountIt(createButtonBlock());
+    const select = lineHeightSelect(wrapper);
+
+    await select.setValue("2");
+    await select.setValue("1.2");
+
+    const emitted = wrapper.emitted("update") as [Partial<ButtonBlock>][];
+    expect(emitted[0][0]).toEqual({ lineHeight: 2 });
+    expect(emitted[1][0]).toEqual({ lineHeight: undefined });
+  });
+
+  it("shows a stored 1.75 as a selected extra option", () => {
+    const wrapper = mountIt(createButtonBlock({ lineHeight: 1.75 }));
+    const select = lineHeightSelect(wrapper);
+    const values = select.findAll("option").map((option) => option.attributes("value"));
+    expect(values).toContain("1.75");
+    expect(values.filter((value) => value === "1.2")).toEqual(["1.2"]);
+    expect((select.element as HTMLSelectElement).value).toBe("1.75");
+  });
+});
+
 describe("ButtonToolbar font weight", () => {
   function weightRadios(wrapper: ReturnType<typeof mountIt>) {
     const group = wrapper

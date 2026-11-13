@@ -354,6 +354,7 @@ const translations: typeof en = {
     textColor: "文字色",
     borderRadius: "角の丸み",
     fontSize: "文字サイズ",
+    lineHeight: "行間",
     fontWeight: "太さ",
     fontWeightRegular: "標準",
     fontWeightMedium: "中太",

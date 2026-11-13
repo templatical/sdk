@@ -407,6 +407,7 @@ const es: typeof en = {
     textColor: "Color del texto",
     borderRadius: "Radio del borde",
     fontSize: "Tamaño de fuente",
+    lineHeight: "Interlineado",
     fontWeight: "Grosor",
     fontWeightRegular: "Regular",
     fontWeightMedium: "Medio",

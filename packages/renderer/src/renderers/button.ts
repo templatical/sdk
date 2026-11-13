@@ -4,8 +4,9 @@ import { escapeAttr, escapeFontFamily, escapeHtml } from "../escape";
 import { toPaddingString } from "../padding";
 import type { BorderRadiusValue } from "@templatical/types";
 import {
-  BUTTON_LINE_HEIGHT,
+  buttonLineHeight,
   parsePercentWidth,
+  roundHundredths,
   toBorderRadiusCss,
 } from "@templatical/types";
 import { bgAttr, borderAttr } from "../utils";
@@ -67,7 +68,7 @@ export function renderButton(
   background-color="${backgroundColor}"
   color="${textColor}"
   font-size="${escapeAttr(String(fontSize))}px"
-  line-height="${Math.round(BUTTON_LINE_HEIGHT * 100)}%"
+  line-height="${roundHundredths(buttonLineHeight(block) * 100)}%"
   font-weight="${fontWeight}"
   border-radius="${borderRadius}"${borderAttrStr}
   inner-padding="${buttonPadding}"

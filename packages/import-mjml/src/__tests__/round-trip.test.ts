@@ -403,6 +403,59 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(JSON.stringify(report)).not.toContain("tpl-button-full");
   });
 
+  it("reads a 200% button line-height back and leaves 120% unset", async () => {
+    const settings = { ...buildFixtureTemplate().settings, width: 600 };
+    const wrapped = (button: ReturnType<typeof createButtonBlock>) =>
+      ({
+        blocks: [
+          createSectionBlock({
+            columns: "1",
+            children: [[button]],
+          }),
+        ],
+        settings,
+      }) satisfies TemplateContent;
+
+    const tall = createButtonBlock({
+      text: "Register for the annual conference and dinner",
+      url: "https://example.com/register",
+      width: "40%",
+      fontSize: 16,
+      lineHeight: 2,
+    });
+    const tallMjml = await renderToMjml(wrapped(tall));
+    expect(tallMjml).toContain('line-height="200%"');
+    expect(tallMjml).toContain('width="40%"');
+    const { content: tallContent } = convertMjmlTemplate(tallMjml);
+    const tallButton = tallContent.blocks
+      .flatMap((block) =>
+        block.type === "section" ? block.children.flat() : [block],
+      )
+      .find((block) => block.type === "button");
+    expect(tallButton).toMatchObject({
+      type: "button",
+      width: "40%",
+      lineHeight: 2,
+      fontSize: 16,
+    });
+
+    const plain = createButtonBlock({
+      text: "Go",
+      url: "https://example.com",
+      fontSize: 14,
+    });
+    const plainMjml = await renderToMjml(wrapped(plain));
+    expect(plainMjml).toContain('line-height="120%"');
+    const { content: plainContent } = convertMjmlTemplate(plainMjml);
+    const plainButton = plainContent.blocks
+      .flatMap((block) =>
+        block.type === "section" ? block.children.flat() : [block],
+      )
+      .find((block) => block.type === "button");
+    expect(plainButton).toMatchObject({ type: "button", fontSize: 14 });
+    expect(plainButton && "lineHeight" in plainButton).toBe(false);
+  });
+
   it("round-trips a 50 / 33.33 / 16.67 section, stacking and grouped", async () => {
     const settings = { ...buildFixtureTemplate().settings, width: 600 };
     const section = (stackOnMobile: false | undefined) =>

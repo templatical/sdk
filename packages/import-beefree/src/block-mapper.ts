@@ -2015,42 +2015,32 @@ function convertImage(
 }
 
 /**
- * A button label's line-height in px. BeeFree writes a percentage of the font
- * size (`200%`), a unitless ratio (`2`) or a px length. Anything else is
- * unread, and the padding stays as BeeFree wrote it.
+ * `style["line-height"]` as `ButtonBlock.lineHeight`. A percentage is that
+ * number over 100, a unitless number is itself, and a px length is that many
+ * pixels over `fontSize`. Rounded to two decimals. `1.2`, and a missing,
+ * unreadable or non-positive value, stays unset so the label keeps
+ * `BUTTON_LINE_HEIGHT`.
  */
-function buttonLineHeightPx(
+function readButtonLineHeight(
   value: string | undefined,
   fontSize: number,
 ): number | undefined {
-  if (!value || fontSize <= 0) return undefined;
-  const trimmed = value.trim();
-  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(trimmed);
-  if (percent) {
-    const ratio = Number(percent[1]) / 100;
-    return Number.isFinite(ratio) && ratio > 0 ? fontSize * ratio : undefined;
-  }
-  if (/^\d+(?:\.\d+)?$/.test(trimmed)) {
-    const ratio = Number(trimmed);
-    return Number.isFinite(ratio) && ratio > 0 ? fontSize * ratio : undefined;
-  }
-  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(trimmed);
-  if (!px) return undefined;
-  const length = Number(px[1]);
-  return Number.isFinite(length) && length > 0 ? length : undefined;
-}
+  const trimmed = value?.trim() ?? "";
+  if (trimmed === "") return undefined;
 
-/**
- * How many px to add to the button's top and bottom padding so the label's
- * line box matches BeeFree. The rendered label uses BUTTON_LINE_HEIGHT times
- * the font size, so a taller line-height is split across the two sides. The
- * result is an integer and never negative: a line-height at or under that
- * ratio adds nothing.
- */
-function lineHeightPadding(lineHeightPx: number, fontSize: number): number {
-  const extra = (lineHeightPx - BUTTON_LINE_HEIGHT * fontSize) / 2;
-  if (!Number.isFinite(extra) || extra <= 0) return 0;
-  return Math.round(extra);
+  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(trimmed);
+  const unitless = /^(\d+(?:\.\d+)?)$/.exec(trimmed);
+  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(trimmed);
+  let ratio: number;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else return undefined;
+
+  if (!Number.isFinite(ratio) || !(ratio > 0)) return undefined;
+  const rounded = roundHundredths(ratio);
+  if (!(rounded > 0) || rounded === BUTTON_LINE_HEIGHT) return undefined;
+  return rounded;
 }
 
 /**
@@ -2348,9 +2338,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
   const label = button.label ? importedPlainText(button.label) : "Button";
   const padding = readButtonPadding(style);
   const fontSize = parsePxValue(style["font-size"]) || 16;
-  const lineHeightPx = buttonLineHeightPx(style["line-height"], fontSize);
-  const linePad =
-    lineHeightPx === undefined ? 0 : lineHeightPadding(lineHeightPx, fontSize);
+  const lineHeight = readButtonLineHeight(style["line-height"], fontSize);
   const { width, note: widthNote } = buttonWidth(style.width);
   const border = buttonBorder(style);
   const { fontWeight, partialBold } = buttonFontWeight(
@@ -2367,6 +2355,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
       textColor: parseColor(style.color) || "#ffffff",
       borderRadius: parsePxValue(style["border-radius"]),
       fontSize,
+      ...(lineHeight !== undefined ? { lineHeight } : {}),
       fontFamily: canonicalFontStack(style["font-family"]) || undefined,
       ...(fontWeight ? { fontWeight } : {}),
       // The module style places the button in the column. The button style's
@@ -2377,12 +2366,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): {
       ),
       ...(width !== undefined ? { width } : {}),
       ...(border ? { border } : {}),
-      buttonPadding: {
-        top: padding.top + linePad,
-        right: padding.right,
-        bottom: padding.bottom + linePad,
-        left: padding.left,
-      },
+      buttonPadding: padding,
       styles: makeStyles(descriptor),
     }),
     notes: [note, widthNote].filter(

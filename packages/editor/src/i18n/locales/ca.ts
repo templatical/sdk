@@ -408,6 +408,7 @@ const ca: typeof en = {
     textColor: "Color del text",
     borderRadius: "Radi de la vora",
     fontSize: "Mida de la font",
+    lineHeight: "Interlínia",
     fontWeight: "Gruix",
     fontWeightRegular: "Normal",
     fontWeightMedium: "Mitjà",

@@ -406,6 +406,7 @@ const de: typeof en = {
     textColor: "Textfarbe",
     borderRadius: "Eckenradius",
     fontSize: "Schriftgröße",
+    lineHeight: "Zeilenhöhe",
     fontWeight: "Schriftstärke",
     fontWeightRegular: "Regulär",
     fontWeightMedium: "Mittel",

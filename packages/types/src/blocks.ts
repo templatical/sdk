@@ -300,6 +300,21 @@ export const TITLE_LINE_HEIGHT = 1.3;
 export const BUTTON_LINE_HEIGHT = 1.2;
 
 /**
+ * The label line height to draw and render. A stored value that is not a
+ * finite number above 0 is `BUTTON_LINE_HEIGHT`, so an omitted field and an
+ * unreadable one render the same.
+ */
+export function buttonLineHeight(
+  block: Pick<ButtonBlock, "lineHeight">,
+): number {
+  const value = block.lineHeight;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  return BUTTON_LINE_HEIGHT;
+}
+
+/**
  * A title block's font weight.
  *
  * The renderer writes it onto the exported heading, and the editor sets it on
@@ -426,6 +441,16 @@ export interface ButtonBlock extends BaseBlock {
    */
   border?: BorderValue;
   fontSize: number;
+  /**
+   * The label's line height as a multiple of its font size, like
+   * {@link BUTTON_LINE_HEIGHT}. Omitted is `BUTTON_LINE_HEIGHT` (1.2), so a
+   * stored button renders as it does today. It applies to every line of a
+   * wrapped label. A value that is not a finite number above 0 is ignored
+   * and renders as omitted.
+   *
+   * @exclusiveMinimum 0
+   */
+  lineHeight?: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
   /**

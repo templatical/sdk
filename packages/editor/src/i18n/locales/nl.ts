@@ -372,6 +372,7 @@ const nl: typeof en = {
     textColor: "Tekstkleur",
     borderRadius: "Hoekafronding",
     fontSize: "Tekengrootte",
+    lineHeight: "Regelafstand",
     fontWeight: "Lettergewicht",
     fontWeightRegular: "Normaal",
     fontWeightMedium: "Gemiddeld",

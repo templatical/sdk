@@ -139,6 +139,28 @@ describe('renderBlock', () => {
     expect(result).toContain('line-height="120%"');
   });
 
+  it('writes a stored line height as a percentage rounded to two decimals', () => {
+    const base = { text: 'Click Me', url: 'https://example.com', fontSize: 16 };
+    const omitted = renderBlock(createButtonBlock(base), ctx);
+    expect(omitted).toContain('line-height="120%"');
+    expect(renderBlock(createButtonBlock({ ...base, lineHeight: 1.2 }), ctx)).toBe(
+      omitted,
+    );
+    expect(renderBlock(createButtonBlock({ ...base, lineHeight: Number.NaN }), ctx)).toBe(
+      omitted,
+    );
+    expect(renderBlock(createButtonBlock({ ...base, lineHeight: 0 }), ctx)).toBe(omitted);
+    expect(renderBlock(createButtonBlock({ ...base, lineHeight: 2 }), ctx)).toContain(
+      'line-height="200%"',
+    );
+    expect(renderBlock(createButtonBlock({ ...base, lineHeight: 1.25 }), ctx)).toContain(
+      'line-height="125%"',
+    );
+    expect(renderBlock(createButtonBlock({ ...base, lineHeight: 1.255 }), ctx)).toContain(
+      'line-height="125.5%"',
+    );
+  });
+
   it('renders a full-width button as width="100%"', () => {
     const block = createButtonBlock({ text: 'Click Me', width: 'full' });
     const result = renderBlock(block, ctx);

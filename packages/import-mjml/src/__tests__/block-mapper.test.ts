@@ -291,6 +291,64 @@ describe("mj-button", () => {
   });
 });
 
+describe("mj-button line-height", () => {
+  function button(attrs: string): ButtonBlock {
+    const { result } = convert(
+      `<mj-button href="https://x.test" ${attrs}>Go</mj-button>`,
+      "mj-button",
+    );
+    return result!.block as ButtonBlock;
+  }
+
+  it.each([
+    ['line-height="200%" font-size="14px"', 2],
+    ['line-height="150%" font-size="14px"', 1.5],
+    ['line-height="1.5" font-size="14px"', 1.5],
+    ['line-height="28px" font-size="14px"', 2],
+    ['line-height="100%" font-size="14px"', 1],
+    ['line-height="33.333%" font-size="14px"', 0.33],
+    ['line-height="1.005" font-size="14px"', 1.01],
+    ['line-height="120.6%" font-size="14px"', 1.21],
+  ] as const)("stores %s as lineHeight %s", (attrs, expected) => {
+    const block = button(attrs);
+    expect(block.lineHeight).toBe(expected);
+    expect(block.fontSize).toBe(14);
+  });
+
+  it.each([
+    'line-height="120%"',
+    'line-height="119.5%"',
+    'line-height="0%"',
+    'line-height="0px"',
+    'line-height="0.001"',
+    'line-height="2em"',
+    'line-height="normal"',
+  ])("leaves lineHeight unset for %s", (attrs) => {
+    const block = button(attrs);
+    expect(block.lineHeight).toBeUndefined();
+    expect("lineHeight" in block).toBe(false);
+  });
+
+  it("leaves lineHeight unset when the attribute is missing", () => {
+    const block = button('font-size="14px"');
+    expect(block.lineHeight).toBeUndefined();
+    expect("lineHeight" in block).toBe(false);
+    expect(block.fontSize).toBe(14);
+  });
+
+  it("leaves a non-finite percentage unset", () => {
+    const block = button(`line-height="${"9".repeat(400)}%" font-size="14px"`);
+    expect(block.lineHeight).toBeUndefined();
+    expect(block.fontSize).toBe(14);
+  });
+
+  it("divides a px line-height by the factory font size when the source omits one", () => {
+    const block = button('line-height="30px"');
+    expect(block.fontSize).toBe(15);
+    expect(block.lineHeight).toBe(2);
+  });
+});
+
 describe("mj-button border-radius", () => {
   it("reads a per-corner border-radius", () => {
     const { result } = convert(

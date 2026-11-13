@@ -401,6 +401,7 @@ export default {
     textColor: "Text Color",
     borderRadius: "Border Radius",
     fontSize: "Font Size",
+    lineHeight: "Line Height",
     fontWeight: "Font Weight",
     fontWeightRegular: "Regular",
     fontWeightMedium: "Medium",

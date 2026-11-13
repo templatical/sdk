@@ -406,6 +406,7 @@ const ptBR: typeof en = {
     textColor: "Cor do Texto",
     borderRadius: "Arredondamento das Bordas",
     fontSize: "Tamanho da Fonte",
+    lineHeight: "Altura da Linha",
     fontWeight: "Peso",
     fontWeightRegular: "Comum",
     fontWeightMedium: "Médio",

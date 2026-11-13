@@ -288,6 +288,8 @@ interface ButtonBlock extends BaseBlock {
   /** Outline button: backgroundColor 'transparent' (the keyword), plus a textColor. An empty fill exports as that keyword. */
   border?: BorderValue;
   fontSize: number;
+  /** Label line height as a multiple of `fontSize`. Omitted is `BUTTON_LINE_HEIGHT` (1.2), so a stored button renders as today. It applies to every line of a wrapped label. A value that is not a finite number above 0 is ignored and renders as omitted. */
+  lineHeight?: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
   /** Label weight. `'regular'` is 400, `'medium'` is 500 and `'bold'` is 700. Omitted renders bold, which is what a button with no weight renders. */
@@ -298,6 +300,9 @@ interface ButtonBlock extends BaseBlock {
   /** Placement within the column. No visible effect when `width` is `'full'`. A percentage width still uses `align`. */
   align: 'left' | 'center' | 'right';
 }
+
+/** The label line height to draw and render. A stored value that is not a finite number above 0 is `BUTTON_LINE_HEIGHT` (1.2). */
+function buttonLineHeight(block: Pick<ButtonBlock, 'lineHeight'>): number;
 ```
 
 ### SectionBlock

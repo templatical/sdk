@@ -149,7 +149,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. `align`, `color` und `font-size` eines Absatzes landen in seinem Markup: `text-align` auf jedem `<p>`, Farbe und Größe auf einem `<span>` darin (`ParagraphBlock` hat dafür keine Felder). Eine Ausrichtung an der Startkante (`left`, in einem RTL-Template `right`) und eine Größe von 14px entfallen. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width` (siehe [Bildbreite](#image-width)), Padding, `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). `fluid-on-mobile` bleibt bei einem Bild erhalten, das seine Spalte füllt; bei einem schmaleren ist es `approximated`, weil das Bild [auf dem Smartphone seine Breite behält](/de/guide/images#width-on-phones). |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, Padding, `width` (siehe [Button-Breite](#button-breite)), `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, Padding, `width` (siehe [Button-Breite](#button-breite)), `line-height` (siehe [Button-Zeilenhöhe](#button-zeilenhoehe)), `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (siehe [Divider-Breite](#divider-breite)), Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. Die Plattform kommt aus `name`, dem `src`-Dateinamen (Pack-Suffixe wie `-round-outlined` werden abgetrennt) oder `alt`. |
@@ -196,6 +196,10 @@ Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den MJML links 
 | jeder andere Wert | keine, der Button passt sich seiner Beschriftung an | `approximated` |
 
 Ein Prozentwert über 0 und unter 100 wird als dieser Prozentwert gespeichert. MJML rendert ihn an der Inhaltsbox der Spalte, der Spalte abzüglich des seitlichen Paddings des Buttons, daher schrumpft der Button auf dem Smartphone mit seiner Spalte. Ein Prozentwert von `100%` oder mehr ist `"full"`; einer über `100%` trägt eine Notiz, dass er geklemmt wurde. Ein Prozentwert von `0%` oder darunter und eine px-Breite von `0` oder darunter lassen den Button sich seiner Beschriftung anpassen, mit einer Notiz. Eine px-Breite über `0` bleibt px, weil der Renderer `"full"` als `100%` schreibt.
+
+### Button-Zeilenhöhe {#button-zeilenhoehe}
+
+`line-height` wird zu `lineHeight`, einem Vielfachen der Schriftgröße, und gilt für jede Zeile einer umbrochenen Beschriftung. Ein Prozentwert ist diese Zahl geteilt durch 100 (`200%` ist `2`), eine einheitenlose Zahl ist sie selbst, und eine px-Länge ist diese Pixelzahl geteilt durch die Schriftgröße (`28px` bei 14px ist `2`; ohne `font-size` durch die 15px des Buttons), gerundet auf zwei Dezimalstellen. `120%` sowie ein fehlender, nicht lesbarer oder nicht positiver Wert lässt `lineHeight` ungesetzt, sodass ein Button, den der Renderer mit `120%` geschrieben hat, so importiert wird, wie er heute rendert.
 
 ### Rahmen und Ecken
 

@@ -180,4 +180,13 @@ describe("ButtonBlock line height", () => {
       "1.2",
     );
   });
+
+  it("draws a stored line height of 2 on every line of the label", () => {
+    const wrapper = mountButton(
+      createButtonBlock({ text: "Register now", fontSize: 16, lineHeight: 2 }),
+    );
+    expect((wrapper.find("a").element as HTMLElement).style.lineHeight).toBe(
+      "2",
+    );
+  });
 });

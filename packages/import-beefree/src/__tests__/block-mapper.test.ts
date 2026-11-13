@@ -1095,17 +1095,18 @@ describe("convertModule", () => {
       });
     });
 
-    it("adds only line-height compensation to zero vertical padding", () => {
+    it("keeps zero vertical padding when the line-height is 200%", () => {
       const { block } = buttonWith({
         "font-size": "16px",
         "line-height": "200%",
         "padding-top": "0px",
         "padding-bottom": "0px",
       });
+      expect(block.lineHeight).toBe(2);
       expect(block.buttonPadding).toEqual({
-        top: 6,
+        top: 0,
         right: 24,
-        bottom: 6,
+        bottom: 0,
         left: 24,
       });
     });
@@ -1195,10 +1196,8 @@ describe("convertModule", () => {
       });
     });
 
-    // The renderer's button label line box is 1.2× the font size (MJML's
-    // `line-height: 120%`). Beefree's usual 200% is taller, and that extra
-    // half goes into the top and bottom padding.
-    it("folds a 200% line-height into the top and bottom padding", () => {
+    // The label's line height is stored. Padding stays the source padding.
+    it("stores a 200% line-height and keeps the source padding", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "200%",
@@ -1207,56 +1206,59 @@ describe("convertModule", () => {
         "padding-bottom": "10px",
         "padding-left": "20px",
       });
-      // (28 - 1.2×14) / 2 = 5.6, rounded to 6.
+      expect(block.lineHeight).toBe(2);
       expect(block.buttonPadding).toEqual({
-        top: 16,
+        top: 10,
         right: 20,
-        bottom: 16,
+        bottom: 10,
         left: 20,
       });
     });
 
-    it("folds a unitless line-height the same way as a percentage", () => {
+    it("stores a unitless line-height and keeps the source padding", () => {
       const { block } = buttonWith({
         "font-size": "16px",
         "line-height": "2",
         "padding-top": "5px",
         "padding-bottom": "5px",
       });
-      // (32 - 1.2×16) / 2 = 6.4, rounded to 6. Side padding stays the default.
-      expect(block.buttonPadding.top).toBe(11);
-      expect(block.buttonPadding.bottom).toBe(11);
+      expect(block.lineHeight).toBe(2);
+      expect(block.buttonPadding.top).toBe(5);
+      expect(block.buttonPadding.bottom).toBe(5);
     });
 
-    it("reads a px line-height as that many pixels", () => {
+    it("stores a px line-height divided by the font size", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "28px",
         "padding-top": "10px",
         "padding-bottom": "10px",
       });
-      expect(block.buttonPadding.top).toBe(16);
-      expect(block.buttonPadding.bottom).toBe(16);
+      expect(block.lineHeight).toBe(2);
+      expect(block.buttonPadding.top).toBe(10);
+      expect(block.buttonPadding.bottom).toBe(10);
     });
 
-    it("leaves padding alone when the line-height is already 120%", () => {
+    it("leaves lineHeight unset when the line-height is already 120%", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "120%",
         "padding-top": "10px",
         "padding-bottom": "10px",
       });
+      expect(block.lineHeight).toBeUndefined();
       expect(block.buttonPadding.top).toBe(10);
       expect(block.buttonPadding.bottom).toBe(10);
     });
 
-    it("does not shrink padding when the line-height is under 120%", () => {
+    it("stores a line-height under 120% and keeps the source padding", () => {
       const { block } = buttonWith({
         "font-size": "14px",
         "line-height": "100%",
         "padding-top": "10px",
         "padding-bottom": "10px",
       });
+      expect(block.lineHeight).toBe(1);
       expect(block.buttonPadding.top).toBe(10);
       expect(block.buttonPadding.bottom).toBe(10);
     });

@@ -373,6 +373,7 @@ const fr: typeof en = {
     textColor: "Couleur du texte",
     borderRadius: "Rayon de bordure",
     fontSize: "Taille de police",
+    lineHeight: "Interligne",
     fontWeight: "Graisse",
     fontWeightRegular: "Régulier",
     fontWeightMedium: "Moyen",

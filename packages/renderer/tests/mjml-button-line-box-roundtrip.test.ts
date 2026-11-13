@@ -4,9 +4,8 @@ import { createButtonBlock } from "@templatical/types";
 import { renderBlock, RenderContext } from "../src";
 
 /**
- * `mj-button` paints the label at `line-height: 120%`. The renderer writes
- * that value explicitly, matching the line box the canvas and importer's
- * padding fold use while keeping the compiled anchor style unchanged.
+ * `mj-button` paints the label at `line-height`, and that percentage applies
+ * to every line of a wrapped label. An omitted `lineHeight` stays `120%`.
  */
 
 const ctx = new RenderContext(600, [], "Arial, sans-serif", true);
@@ -37,5 +36,21 @@ describe("button label line box through MJML", () => {
     const style = anchorStyle(await compile(wrapBlock(mjml)));
     expect(style).toContain("font-size:14px");
     expect(style).toContain("line-height:120%");
+  });
+
+  it("writes 200% on a 40% button so each wrapped line keeps it", async () => {
+    const block = createButtonBlock({
+      text: "Register for the annual conference and dinner",
+      url: "https://example.com/register",
+      fontSize: 16,
+      width: "40%",
+      lineHeight: 2,
+    });
+    const mjml = renderBlock(block, ctx);
+    expect(mjml).toContain('width="40%"');
+    expect(mjml).toContain('line-height="200%"');
+
+    const style = anchorStyle(await compile(wrapBlock(mjml)));
+    expect(style).toContain("line-height:200%");
   });
 });

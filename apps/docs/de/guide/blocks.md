@@ -85,6 +85,7 @@ Eine Call-to-Action-Schaltfläche mit anpassbarem Erscheinungsbild.
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um die Schaltfläche gezeichnet (optional). Für eine Outline-Schaltfläche den Hintergrund auf das Schlüsselwort `"transparent"` setzen und auch `textColor` setzen. Eine neue Schaltfläche ist `#333333` mit weißem Text. Ein geleerter Hintergrund wird als `"transparent"` exportiert, weil ein weggelassener Hintergrund auf MJMLs `#414141` zurückfällt |
 | `fontSize` | `number` | Schriftgröße in px |
+| `lineHeight` | `number` | Zeilenhöhe der Beschriftung als Vielfaches von `fontSize`. Weglassen für 1,2 (`BUTTON_LINE_HEIGHT`). Sie gilt für jede Zeile einer umbrochenen Beschriftung. Ein Wert, der keine endliche Zahl über 0 ist, wird ignoriert. `buttonLineHeight(block)` ist der Wert, den die Arbeitsfläche und die E-Mail verwenden. |
 | `buttonPadding` | `SpacingValue` | Innerer Abstand |
 | `fontFamily` | `string` | Überschreibung der Schriftfamilie |
 | `fontWeight` | `'regular' \| 'medium' \| 'bold'` | Schriftstärke der Beschriftung: 400, 500 oder 700. Weglassen für fett, so wie eine Schaltfläche ohne Stärke rendert. |

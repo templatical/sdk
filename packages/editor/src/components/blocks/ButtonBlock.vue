@@ -4,7 +4,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import {
-  BUTTON_LINE_HEIGHT,
+  buttonLineHeight,
   parsePercentWidth,
   toBorderRadiusCss,
 } from "@templatical/types";
@@ -38,7 +38,7 @@ const buttonStyle = computed(() => {
     backgroundColor: props.block.backgroundColor,
     color: props.block.textColor,
     fontSize: `${props.block.fontSize}px`,
-    lineHeight: String(BUTTON_LINE_HEIGHT),
+    lineHeight: String(buttonLineHeight(props.block)),
     fontWeight: buttonLabelWeight(props.block.fontWeight),
     textDecoration: "none",
     // A plain number renders as-is, like the export; per-corner radii go

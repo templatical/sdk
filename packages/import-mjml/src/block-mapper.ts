@@ -1,6 +1,8 @@
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
 import {
+  BUTTON_BLOCK_DEFAULTS,
+  BUTTON_LINE_HEIGHT,
   canonicalFontStack,
   roundHundredths,
   createButtonBlock,
@@ -188,6 +190,34 @@ function readButtonWidth(
 }
 
 /**
+ * `line-height` as `ButtonBlock.lineHeight`. A percentage is that number over
+ * 100, a unitless number is itself, and a px length is that many pixels over
+ * `fontSize`. Rounded to two decimals. `1.2`, and a missing, unreadable or
+ * non-positive value, stays unset so the label keeps `BUTTON_LINE_HEIGHT`.
+ */
+function readButtonLineHeight(
+  value: string | undefined,
+  fontSize: number,
+): number | undefined {
+  const trimmed = value?.trim() ?? "";
+  if (trimmed === "") return undefined;
+
+  const percent = /^(\d+(?:\.\d+)?)\s*%$/.exec(trimmed);
+  const unitless = /^(\d+(?:\.\d+)?)$/.exec(trimmed);
+  const px = /^(\d+(?:\.\d+)?)\s*px$/i.exec(trimmed);
+  let ratio: number;
+  if (percent) ratio = Number(percent[1]) / 100;
+  else if (unitless) ratio = Number(unitless[1]);
+  else if (px) ratio = Number(px[1]) / fontSize;
+  else return undefined;
+
+  if (!Number.isFinite(ratio) || !(ratio > 0)) return undefined;
+  const rounded = roundHundredths(ratio);
+  if (!(rounded > 0) || rounded === BUTTON_LINE_HEIGHT) return undefined;
+  return rounded;
+}
+
+/**
  * `font-family` is read only when the button sets its own: the renderer
  * writes the document font onto `mj-all`, which reaches every button.
  */
@@ -201,7 +231,14 @@ function convertButton(
 
   const backgroundColor = parseColor(attrs["background-color"]);
   const textColor = parseColor(attrs.color);
-  const fontSize = parsePxValue(attrs["font-size"]);
+  const parsedFontSize = parsePxValue(attrs["font-size"]);
+  // The defaults type marks every field optional. `fontSize` is 15, and
+  // `Number` keeps that value a number for the px line-height ratio.
+  const fontSize =
+    parsedFontSize > 0
+      ? parsedFontSize
+      : Number(BUTTON_BLOCK_DEFAULTS.fontSize);
+  const lineHeight = readButtonLineHeight(attrs["line-height"], fontSize);
   const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-button", ctx.cascade),
   );
@@ -218,7 +255,8 @@ function convertButton(
       url: (attrs.href ?? "").trim(),
       ...(backgroundColor ? { backgroundColor } : {}),
       ...(textColor ? { textColor } : {}),
-      ...(fontSize > 0 ? { fontSize } : {}),
+      ...(parsedFontSize > 0 ? { fontSize: parsedFontSize } : {}),
+      ...(lineHeight !== undefined ? { lineHeight } : {}),
       ...(fontFamily ? { fontFamily } : {}),
       ...(borderRadius !== undefined ? { borderRadius } : {}),
       ...(border ? { border } : {}),

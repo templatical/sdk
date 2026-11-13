@@ -149,7 +149,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width` (see [Image width](#image-width)), padding, `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). `fluid-on-mobile` holds on an image that fills its column; on a narrower one it is `approximated`, since the image [keeps its width on phones](/guide/images#width-on-phones). |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `line-height` (see [Button line height](#button-line-height)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (see [Divider width](#divider-width)), padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. Platform comes from `name`, the `src` filename (pack suffixes such as `-round-outlined` stripped), or `alt`. |
@@ -196,6 +196,10 @@ Templatical centres every divider. A partial-width divider that MJML aligns left
 | any other value | none, so the button fits its label | `approximated` |
 
 A percentage above 0 and below 100 is stored as that percentage. MJML renders it against the column's content box, the column less the button's side padding, so the button shrinks with its column on a phone. A percentage of `100%` or more is `"full"`; one above `100%` carries a note that it was clamped. A percentage of `0%` or below, and a px width of `0` or below, leaves the button fitting its label, with a note. A px width above `0` stays px, because the renderer writes `"full"` as `100%`.
+
+### Button line height
+
+`line-height` becomes `lineHeight`, a multiple of the font size, and it applies to every line of a wrapped label. A percentage is that number over 100 (`200%` is `2`), a unitless number is itself, and a px length is that many pixels divided by the font size (`28px` at 14px is `2`; with no `font-size`, by the button's 15px), rounded to two decimals. `120%`, and a missing, unreadable or non-positive value, leaves `lineHeight` unset, so a button the renderer wrote at `120%` imports as it renders today.
 
 ### Borders and corners
 

@@ -288,6 +288,8 @@ interface ButtonBlock extends BaseBlock {
   /** Outline-Schaltfläche: backgroundColor 'transparent' (das Schlüsselwort) plus eine textColor. Ein leerer Hintergrund wird als dieses Schlüsselwort exportiert. */
   border?: BorderValue;
   fontSize: number;
+  /** Zeilenhöhe der Beschriftung als Vielfaches von `fontSize`. Weggelassen gilt `BUTTON_LINE_HEIGHT` (1,2), sodass ein gespeicherter Button wie bisher rendert. Sie gilt für jede Zeile einer umbrochenen Beschriftung. Ein Wert, der keine endliche Zahl über 0 ist, wird ignoriert und rendert wie weggelassen. */
+  lineHeight?: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
   /** Schriftstärke der Beschriftung. `'regular'` ist 400, `'medium'` ist 500 und `'bold'` ist 700. Weggelassen wird fett gerendert, so wie eine Schaltfläche ohne Stärke. */
@@ -298,6 +300,9 @@ interface ButtonBlock extends BaseBlock {
   /** Platzierung in der Spalte. Ohne sichtbare Wirkung, wenn `width` auf `'full'` steht. Eine Prozentbreite nutzt weiterhin `align`. */
   align: 'left' | 'center' | 'right';
 }
+
+/** Die Zeilenhöhe der Beschriftung zum Zeichnen und Rendern. Ein gespeicherter Wert, der keine endliche Zahl über 0 ist, ist `BUTTON_LINE_HEIGHT` (1,2). */
+function buttonLineHeight(block: Pick<ButtonBlock, 'lineHeight'>): number;
 ```
 
 ### SectionBlock
