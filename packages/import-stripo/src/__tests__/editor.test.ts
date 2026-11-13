@@ -137,6 +137,33 @@ ${frame("Frame One")}${frame("Frame Two")}${frame("Frame Three")}${frame("Frame 
     );
   });
 
+  // Stripo's own export: a px font size and a px line height on the anchor
+  // inside its es-button-border. 22px over the 18px label is 1.22.
+  it("imports an esd-block-button's font size and line height", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table><tr><td class="esd-stripe"><table><tr><td class="esd-structure">
+<table class="es-left"><tr><td class="esd-container-frame">
+<table><tr><td class="esd-block-button"><span class="es-button-border" style="border-style:solid;border-color:#2CB543;background:#31CB4B;border-width:0px;display:inline-block;border-radius:5px;width:auto"><a href="https://example.com/cta" class="es-button" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;color:#FFFFFF;font-size:18px;display:inline-block;background:#31CB4B;border-radius:5px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:22px;width:auto;text-align:center">Shop Now</a></span></td></tr></table>
+</td></tr></table>
+</td></tr></table></td></tr></table>
+</body></html>`;
+    const { content, report } = convertStripoTemplate(html);
+    const button = content.blocks
+      .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+      .find((b) => b.type === "button");
+    expect(button).toMatchObject({
+      type: "button",
+      text: "Shop Now",
+      fontSize: 18,
+      lineHeight: 1.22,
+    });
+    expect(
+      report.entries
+        .filter((e) => e.sourceTag === "esd-block-button")
+        .map(({ status, note }) => ({ status, note })),
+    ).toEqual([{ status: "converted", note: undefined }]);
+  });
+
   it("preserves an esd-block-html as html-fallback", () => {
     const html = `<!DOCTYPE html><html><body>
 <table><tr><td class="esd-stripe"><table><tr><td class="esd-structure">

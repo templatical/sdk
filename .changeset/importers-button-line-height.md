@@ -18,6 +18,4 @@ The value is a multiple of the label's font size: a percentage is that number ov
 - **Chamaileon:** `style.lineHeight` in px over `style.fontSize`; the `25px` / `18px` default is `1.39`.
 - **Easy Email Pro:** `standard-button` `line-height`. An unreadable percentage `width` is now noted.
 
-Stripo and Easy Email Pro don't import a button's font size, so a px line height there is measured against the 15px label the block keeps, and a percentage or `em` beside the button's own px font size is first resolved against it.
-
 Not a breaking change: no export, option or default is removed, renamed or changed. The importers map more of the source into fields that already exist, as #1201 did for the BeeFree and MJML importers.

@@ -187,7 +187,7 @@ describe("convertTopolTemplate input guards", () => {
 });
 
 describe("convertTopolTemplate end to end", () => {
-  it("imports a button's line height and notes one it cannot read", () => {
+  it("imports a button's font size and line height, and notes values it cannot read", () => {
     const button = (attributes: Record<string, string>) => ({
       tagName: "mj-button",
       attributes: { href: "https://x.test", ...attributes },
@@ -211,6 +211,7 @@ describe("convertTopolTemplate end to end", () => {
                   children: [
                     button({ "font-size": "16px", "line-height": "24px" }),
                     button({ "line-height": "auto" }),
+                    button({ "font-size": "1.2em", "line-height": "30px" }),
                   ],
                 },
               ],
@@ -222,9 +223,16 @@ describe("convertTopolTemplate end to end", () => {
     const section = content.blocks[0] as SectionBlock;
     expect(
       section.children[0]!.map((block) =>
-        block.type === "button" ? block.lineHeight : null,
+        block.type === "button"
+          ? { fontSize: block.fontSize, lineHeight: block.lineHeight }
+          : null,
       ),
-    ).toEqual([1.5, undefined]);
+    ).toEqual([
+      { fontSize: 16, lineHeight: 1.5 },
+      { fontSize: 15, lineHeight: undefined },
+      // 1.2em can't be read, so the label keeps 15px and 30px is 2.
+      { fontSize: 15, lineHeight: 2 },
+    ]);
     expect(
       report.entries
         .filter((entry) => entry.sourceTag === "mj-button")
@@ -234,6 +242,10 @@ describe("convertTopolTemplate end to end", () => {
       {
         status: "approximated",
         note: 'Button line-height "auto" could not be read; imported at 1.2.',
+      },
+      {
+        status: "approximated",
+        note: 'Button font-size "1.2em" could not be read; imported at 15px.',
       },
     ]);
   });
