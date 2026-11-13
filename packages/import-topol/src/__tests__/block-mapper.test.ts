@@ -177,6 +177,44 @@ describe("mj-button", () => {
     expect((r.block as ButtonBlock).fontSize).toBe(15);
   });
 
+  // A size it can't read, or one not above 0, keeps the factory 15px with a
+  // note, and a px line height is measured against that: 30px over 15px is 2.
+  it("notes a font size it cannot read and keeps the factory fontSize", () => {
+    for (const fontSize of [
+      "1.2em",
+      "120%",
+      "large",
+      "0",
+      "0px",
+      "0.4px",
+      "-4px",
+    ]) {
+      const r = convertLeaf(
+        node(
+          "mj-button",
+          {
+            href: "https://x.test",
+            "font-size": fontSize,
+            "line-height": "30px",
+          },
+          "<p>Go</p>",
+        ),
+        ctx(),
+      )!;
+      expect({
+        fontSize: (r.block as ButtonBlock).fontSize,
+        lineHeight: (r.block as ButtonBlock).lineHeight,
+        status: r.entry.status,
+        note: r.entry.note,
+      }).toEqual({
+        fontSize: 15,
+        lineHeight: 2,
+        status: "approximated",
+        note: `Button font-size "${fontSize}" could not be read; imported at 15px.`,
+      });
+    }
+  });
+
   it("honours an explicit zero border radius", () => {
     const r = convertLeaf(
       node(

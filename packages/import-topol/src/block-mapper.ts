@@ -174,17 +174,23 @@ function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
   const fontFamily = canonicalFontStack(
     resolved(node, "font-family", ctx, "button"),
   );
-  const fontSizeRaw = resolved(node, "font-size", ctx);
+  // A stated font size that is not px, or not above 0, leaves the factory
+  // size with a note, and a px line height is measured against the size the
+  // label renders at.
+  const factorySize = Number(BUTTON_BLOCK_DEFAULTS.fontSize);
+  const statedFontSize = String(resolved(node, "font-size", ctx) ?? "").trim();
+  const parsedFontSize = parsePxValue(statedFontSize);
+  const fontSize = parsedFontSize > 0 ? parsedFontSize : undefined;
   const radiusRaw = resolved(node, "border-radius", ctx);
-  // A px line height is measured against the size the label renders at.
-  const fontSize =
-    fontSizeRaw === undefined
-      ? Number(BUTTON_BLOCK_DEFAULTS.fontSize)
-      : parsePxValue(fontSizeRaw);
   const notes: string[] = [];
+  if (statedFontSize !== "" && fontSize === undefined) {
+    notes.push(
+      `Button font-size "${statedFontSize}" could not be read; imported at ${factorySize}px.`,
+    );
+  }
   const lineHeight = readButtonLineHeight(
     resolved(node, "line-height", ctx, "button"),
-    fontSize,
+    fontSize ?? factorySize,
     notes,
   );
 
@@ -195,7 +201,7 @@ function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
       ...(backgroundColor ? { backgroundColor } : {}),
       ...(textColor ? { textColor } : {}),
       ...(fontFamily ? { fontFamily } : {}),
-      ...(fontSizeRaw === undefined ? {} : { fontSize }),
+      ...(fontSize !== undefined ? { fontSize } : {}),
       ...(lineHeight !== undefined ? { lineHeight } : {}),
       ...(radiusRaw === undefined
         ? {}
