@@ -46,12 +46,9 @@ describe(RULE, () => {
       custom("spaces", "   "),
     ];
     delete (icons[0] as { imageUrl?: string }).imageUrl;
-    (icons as { imageUrl?: unknown }[]).splice(3, 0, {
-      id: "number",
-      platform: "custom",
-      url: "https://example.com/number",
-      imageUrl: 5,
-    });
+    const numeric = custom("number", "https://cdn.example/placeholder.png");
+    (numeric as { imageUrl: unknown }).imageUrl = 5;
+    icons.splice(3, 0, numeric);
     const { block, issues } = hits(icons);
     expect(issues.map((issue) => issue.message)).toEqual([
       "Icon 1 is a custom icon with no image.",

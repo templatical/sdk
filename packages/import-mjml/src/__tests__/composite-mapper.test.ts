@@ -159,17 +159,39 @@ describe("mj-social", () => {
     expect("note" in result.entry).toBe(false);
   });
 
-  it("reads alt as a platform name when src is not a known slug", () => {
+  it("keeps an image whose file names no platform as a custom icon, even when alt names one", () => {
     const { result } = convert(
       `<mj-social>
          <mj-social-element src="https://cdn.test/pack/icon-17.png" alt="Instagram" href="https://ig.test/autumn" />
        </mj-social>`,
       "mj-social",
     );
+    const { id, ...icon } = (result.block as SocialIconsBlock).icons[0];
+
+    expect(id).toEqual(expect.any(String));
+    expect(icon).toEqual({
+      platform: "custom",
+      imageUrl: "https://cdn.test/pack/icon-17.png",
+      alt: "Instagram",
+      url: "https://ig.test/autumn",
+    });
+    expect(result.entry.status).toBe("converted");
+  });
+
+  it("reads alt as the platform name when there is no src", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element alt="Instagram" href="https://ig.test/autumn" />
+       </mj-social>`,
+      "mj-social",
+    );
     const block = result.block as SocialIconsBlock;
 
-    expect(block.icons[0].platform).toBe("instagram");
-    expect(block.icons[0].url).toBe("https://ig.test/autumn");
+    expect(block.icons[0]).toEqual({
+      id: expect.any(String),
+      platform: "instagram",
+      url: "https://ig.test/autumn",
+    });
     expect(result.entry.status).toBe("converted");
   });
 
@@ -178,7 +200,7 @@ describe("mj-social", () => {
       `<mj-social>
          <mj-social-element name="xing" href="https://www.xing.com/pages/a" />
          <mj-social-element src="https://cdn.test/icons/circle/xing.png" href="https://www.xing.com/pages/b" />
-         <mj-social-element src="https://cdn.test/pack/icon-9.png" alt="XING" href="https://www.xing.com/pages/c" />
+         <mj-social-element alt="XING" href="https://www.xing.com/pages/c" />
        </mj-social>`,
       "mj-social",
     );

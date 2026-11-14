@@ -172,6 +172,15 @@ function buildFixtureTemplate(): TemplateContent {
                   imageUrl: "https://cdn.test/icons/artsy.png",
                   alt: "Artsy",
                 },
+                // Custom artwork whose alt names a built-in network still
+                // comes back as custom: alt only names a platform without a src.
+                {
+                  id: generateId(),
+                  platform: "custom",
+                  url: "https://fb.test/gold",
+                  imageUrl: "https://cdn.test/icons/fb-gold.png",
+                  alt: "Facebook",
+                },
                 {
                   id: generateId(),
                   platform: "instagram",

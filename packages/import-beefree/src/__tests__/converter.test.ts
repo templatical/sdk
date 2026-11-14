@@ -3754,6 +3754,25 @@ describe("convertBeeFreeTemplate", () => {
     return social.icons.map((icon) => [icon.platform, icon.url]);
   }
 
+  it("never reads an inherited object key such as constructor as a platform", () => {
+    const { content, report } = convertBeeFreeTemplate(
+      socialTemplate([
+        { id: "constructor", image: { href: "https://example.com/a" } },
+        {
+          type: "custom",
+          name: "toString",
+          image: { href: "https://example.com/b" },
+        },
+      ]),
+    );
+
+    expect(socialIcons(content)).toEqual([
+      ["website", "https://example.com/a"],
+      ["website", "https://example.com/b"],
+    ]);
+    expect(report.entries[0].status).toBe("approximated");
+  });
+
   it("keeps a custom icon in the social row with its image", () => {
     const { content, report } = convertBeeFreeTemplate(
       socialTemplate([instagram, facebook, artsy, emailIcon]),

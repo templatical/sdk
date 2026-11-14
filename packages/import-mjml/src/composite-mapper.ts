@@ -177,10 +177,13 @@ export function convertSocial(
     const name = (childAttrs.name ?? "").trim();
     const alt = (childAttrs.alt ?? "").trim();
     const href = (childAttrs.href ?? "").trim();
+    // `alt` names a platform only without a `src`: with one, an unrecognised
+    // file is the icon's own artwork (a rendered custom icon carries its alt
+    // and no name), and it stays a custom icon below.
     const platform =
       normalizePlatform(name) ??
       normalizePlatform(fromSrc.platform) ??
-      normalizePlatform(alt);
+      (src ? undefined : normalizePlatform(alt));
     // An unrecognised icon with its own image stays a custom icon. Nothing
     // is lost, so it adds no note. Without an image it stays `website`.
     if (!platform && src) {

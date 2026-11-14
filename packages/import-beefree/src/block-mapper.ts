@@ -2636,7 +2636,10 @@ function platformFromKey(
   value: string | undefined,
 ): BuiltInSocialPlatform | undefined {
   const key = socialKey(value);
-  return key ? SOCIAL_PLATFORM_MAP[key] : undefined;
+  // Own keys only: `constructor` and friends are not networks.
+  return key && Object.hasOwn(SOCIAL_PLATFORM_MAP, key)
+    ? SOCIAL_PLATFORM_MAP[key]
+    : undefined;
 }
 
 const SOCIAL_HOSTS: readonly (readonly [string, BuiltInSocialPlatform])[] = [

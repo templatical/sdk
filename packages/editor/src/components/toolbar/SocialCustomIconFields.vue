@@ -4,11 +4,11 @@ import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import { useI18n } from "../../composables/useI18n";
 import { useMediaDropField } from "../../composables/useMediaDropField";
+import { useMergeTag } from "../../composables/useMergeTag";
 import type { CustomSocialIcon, MediaResult } from "@templatical/types";
-import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
+import { containsMergeTag } from "@templatical/types";
 import { Image } from "@lucide/vue";
-import { computed, inject, ref } from "vue";
-import { MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
   icon: CustomSocialIcon;
@@ -19,7 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+const { syntax: mergeTagSyntax } = useMergeTag();
 
 const dropZoneRef = ref<HTMLElement>();
 // Stored content can omit imageUrl or hold a non-string. Both are empty.
