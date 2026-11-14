@@ -139,17 +139,48 @@ Eine Reihe von Social-Media-Icons, die zu Plattformprofilen verlinken.
 
 E-Mail-Clients, die in den Dunkelmodus wechseln, etwa die Gmail-App und Outlook, ändern den Hintergrund, lassen Bilder aber unverändert. Ein dunkles `plain`- oder `outlined`-Icon trägt deshalb einen dezenten weißen Rand, der auf hellen Hintergründen kaum zu sehen ist und das Icon als Umriss sichtbar hält, sobald der Hintergrund dunkel wird. Helle Icons haben keinen Rand, damit sie auf farbigen Flächen sauber bleiben. Clients, die einen dunklen Hintergrund hell machen (die Gmail-App unter iOS, Outlook für Windows), können ein helles `plain`- oder `outlined`-Icon aber verschwinden lassen. Eine gefüllte Form vermeidet beides, da ihr Hintergrund für den Kontrast sorgt.
 
-Diese Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
+Diese Plattformen haben eingebaute Icons: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
 
-Jedes `SocialIcon` hat:
+Jedes `SocialIcon` ist ein eingebautes oder ein eigenes Icon:
 
 ```ts
-interface SocialIcon {
+type SocialIcon = BuiltInSocialIcon | CustomSocialIcon;
+
+interface BuiltInSocialIcon {
   id: string;
-  platform: SocialPlatform;
+  platform: BuiltInSocialPlatform; // jede SocialPlatform außer 'custom'
   url: string;
 }
+
+interface CustomSocialIcon {
+  id: string;
+  platform: 'custom';
+  url: string;
+  imageUrl: string; // das Icon-Bild
+  alt?: string;     // wird von Screenreadern statt des Icons vorgelesen
+}
 ```
+
+### Eigene Icons
+
+Ein eigenes Icon (`platform: 'custom'`) zeigt Ihr eigenes Bild in der Reihe, für ein Netzwerk ohne eingebautes Icon oder für Ihre eigene Grafik:
+
+```json
+{
+  "id": "0193a1b2-7c4d-7e5f-8a9b-0c1d2e3f4a5b",
+  "platform": "custom",
+  "url": "https://www.artsy.net/partner/example-gallery",
+  "imageUrl": "https://cdn.example.com/icons/artsy.png",
+  "alt": "Artsy"
+}
+```
+
+- Es steht in derselben Reihe wie die eingebauten Icons, an seiner Stelle in `icons`, und verlinkt auf `url`.
+- Es wird als Quadrat in der `iconSize` des Blocks gezeichnet (24, 32 oder 48px). Verwenden Sie deshalb ein quadratisches Bild.
+- `iconStyle` und `iconTone` gelten dafür nicht: Das Bild wird so gezeigt, wie es ist, ohne Fläche, Einfärbung oder abgerundete Ecken.
+- Im Editor wählen Sie in der Plattformliste eines Icons **Eigenes Icon**. Das Bildfeld hat dieselbe Schaltfläche zum Durchsuchen der Medien und denselben Upload per Drag-and-drop wie der Bildblock, über Ihren `onRequestMedia`-Handler.
+- Der Linter meldet ein eigenes Icon ohne Bild (`social-icon-missing-image`, ein Fehler) und eines ohne Alternativtext (`social-icon-missing-alt`, eine Warnung).
+- In einer [lokalisierten Vorlage](./localized-templates.md) wird `alt` pro Sprache übersetzt, wie der Alternativtext eines Bildes.
 
 ## Menu
 

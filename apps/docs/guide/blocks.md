@@ -139,17 +139,48 @@ A row of social media icons linking to platform profiles.
 
 Email clients that switch to dark mode, such as the Gmail app and Outlook, change the background but leave images as they are. A dark `plain` or `outlined` icon therefore carries a faint white halo that is barely visible on light backgrounds and keeps the icon visible as an outline once the background turns dark. Light icons have no halo, so they stay clean on colored bands, but clients that turn a dark background light (the Gmail app on iOS, Outlook for Windows) can hide a light `plain` or `outlined` icon. A filled shape avoids both, since its badge brings its own contrast.
 
-These platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
+These platforms have built-in icons: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
-Each `SocialIcon` has:
+Each `SocialIcon` is a built-in icon or a custom icon:
 
 ```ts
-interface SocialIcon {
+type SocialIcon = BuiltInSocialIcon | CustomSocialIcon;
+
+interface BuiltInSocialIcon {
   id: string;
-  platform: SocialPlatform;
+  platform: BuiltInSocialPlatform; // every SocialPlatform except 'custom'
   url: string;
 }
+
+interface CustomSocialIcon {
+  id: string;
+  platform: 'custom';
+  url: string;
+  imageUrl: string; // the icon image
+  alt?: string;     // read by screen readers in place of the icon
+}
 ```
+
+### Custom icons
+
+A custom icon (`platform: 'custom'`) draws your own image in the row, for a network without a built-in icon or for your own artwork:
+
+```json
+{
+  "id": "0193a1b2-7c4d-7e5f-8a9b-0c1d2e3f4a5b",
+  "platform": "custom",
+  "url": "https://www.artsy.net/partner/example-gallery",
+  "imageUrl": "https://cdn.example.com/icons/artsy.png",
+  "alt": "Artsy"
+}
+```
+
+- It sits in the same row as the built-in icons, in its place in `icons`, and links to `url`.
+- It is drawn as a square at the block's `iconSize` (24, 32 or 48px), so use a square image.
+- `iconStyle` and `iconTone` don't apply to it: the image is shown as it is, with no badge, tint or rounded corners.
+- In the editor, choose **Custom icon** in an icon's platform list. The image field has the same Browse button and drag-and-drop upload as the image block, through your `onRequestMedia` handler.
+- The linter reports a custom icon with no image (`social-icon-missing-image`, an error) and one with no alt text (`social-icon-missing-alt`, a warning).
+- In a [localized template](./localized-templates.md), `alt` is translated per language like an image's alt text.
 
 ## Menu
 
