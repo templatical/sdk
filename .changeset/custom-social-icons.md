@@ -1,13 +1,13 @@
 ---
-"@templatical/types": minor
-"@templatical/renderer": minor
-"@templatical/editor": minor
-"@templatical/quality": minor
-"@templatical/template-tools": minor
-"@templatical/ai-kit": minor
+"@templatical/types": patch
+"@templatical/renderer": patch
+"@templatical/editor": patch
+"@templatical/quality": patch
+"@templatical/template-tools": patch
+"@templatical/ai-kit": patch
 ---
 
-A social icon can be your own image: `platform: "custom"` with an `imageUrl`, in the same row as the built-in icons.
+Fix the custom social icon regression (#1214): a social icon can be your own image, `platform: "custom"` with an `imageUrl`, in the same row as the built-in icons, so an imported custom icon no longer has to lose either its image or its place in the row.
 
 `SocialIcon` is now `BuiltInSocialIcon | CustomSocialIcon`. A `CustomSocialIcon` is `{ id, platform: "custom", url, imageUrl, alt? }`: `imageUrl` is the icon image and `alt` the text a screen reader reads in its place. The renderer writes it as an `mj-social-element` with `src`, `alt` and `href`, at the block's icon size, with no network name, so none of MJML's network colors apply, and with square corners. The block's `iconStyle` and `iconTone` don't change a custom image: it is shown as it is, as a square at `iconSize`. A custom icon with an empty `imageUrl` is left out of the email. Stored templates without a custom icon render exactly as before.
 
