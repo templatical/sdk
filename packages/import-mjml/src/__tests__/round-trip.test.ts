@@ -163,6 +163,15 @@ function buildFixtureTemplate(): TemplateContent {
                   platform: "facebook",
                   url: "https://fb.test/a",
                 },
+                // A custom icon renders as its own `src` with no `name`, and
+                // must come back as a custom icon in its place in the row.
+                {
+                  id: generateId(),
+                  platform: "custom",
+                  url: "https://artsy.test/a",
+                  imageUrl: "https://cdn.test/icons/artsy.png",
+                  alt: "Artsy",
+                },
                 {
                   id: generateId(),
                   platform: "instagram",
