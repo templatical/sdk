@@ -64,7 +64,7 @@ export interface UseMediaDropFieldReturn {
  *
  * A drop upload is checked against `value` when it finishes, never a Browse
  * pick: the pick is the user's latest action, so it applies whatever the field
- * held while the picker was open.
+ * held while the picker was open, and it replaces any pending drop.
  */
 export function useMediaDropField(
   options: UseMediaDropFieldOptions,
@@ -74,16 +74,21 @@ export function useMediaDropField(
   const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
   const aliveFlag = useAliveFlag();
 
+  // The latest drop's upload and the value it was dropped onto. Once the value
+  // moves on, that upload is stale: the overlay clears and drop re-enables. A
+  // newer drop or a Browse pick in this field replaces the entry, so an older
+  // upload never lands over it, even when the newer one set the URL it was
+  // dropped on.
+  const pendingDrop = shallowRef<{ before: string } | null>(null);
+
   async function openMediaBrowser(): Promise<void> {
     const result = await onRequestMedia?.({ accept: ["images"] });
     if (!aliveFlag.alive) return;
-    if (result) apply(result);
+    if (!result) return;
+    pendingDrop.value = null;
+    apply(result);
   }
 
-  // The latest drop's upload and the value it was dropped onto. Once the value
-  // moves on, that upload is stale: the overlay clears and drop re-enables, and
-  // a new drop replaces this entry while the stale request is still running.
-  const pendingDrop = shallowRef<{ before: string } | null>(null);
   const isUploading = computed(
     () =>
       pendingDrop.value !== null && toValue(value) === pendingDrop.value.before,
@@ -102,7 +107,13 @@ export function useMediaDropField(
     try {
       const result = await onRequestMedia({ accept: ["images"], files });
       if (!aliveFlag.alive) return;
-      if (result && toValue(value) === drop.before) apply(result);
+      if (
+        result &&
+        pendingDrop.value === drop &&
+        toValue(value) === drop.before
+      ) {
+        apply(result);
+      }
     } finally {
       if (aliveFlag.alive && pendingDrop.value === drop) {
         pendingDrop.value = null;

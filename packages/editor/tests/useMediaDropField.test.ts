@@ -65,8 +65,7 @@ function deferredMedia() {
   );
   return {
     onRequestMedia,
-    settle: (call: number, result: MediaResult | null) =>
-      settles[call](result),
+    settle: (call: number, result: MediaResult | null) => settles[call](result),
   };
 }
 
@@ -288,6 +287,104 @@ describe("useMediaDropField", () => {
 
     expect(value.value).toBe("https://cdn/picked.png");
     expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a later drop that returns the original URL", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/a.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    value.value = "https://typed.example/b.png";
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+
+    media.settle(1, { url: "https://cdn/a.png" });
+    await flushPromises();
+    media.settle(0, { url: "https://cdn/stale.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://cdn/a.png");
+    expect(apply.mock.calls).toEqual([[{ url: "https://cdn/a.png" }]]);
+    expect(field().isUploading.value).toBe(false);
+  });
+
+  it("lets a Browse pick of the original URL replace a pending drop", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/a.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    const browse = field().openMediaBrowser();
+    media.settle(1, { url: "https://cdn/a.png" });
+    await browse;
+    expect(field().isUploading.value).toBe(false);
+    expect(field().dropEnabled.value).toBe(true);
+
+    media.settle(0, { url: "https://cdn/stale.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://cdn/a.png");
+    expect(apply.mock.calls).toEqual([[{ url: "https://cdn/a.png" }]]);
+  });
+
+  it("keeps a pending drop when a Browse pick is cancelled", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/a.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    const browse = field().openMediaBrowser();
+    media.settle(1, null);
+    await browse;
+    expect(field().isUploading.value).toBe(true);
+
+    media.settle(0, { url: "https://cdn/up.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://cdn/up.png");
+    expect(apply.mock.calls).toEqual([[{ url: "https://cdn/up.png" }]]);
+  });
+
+  // The owner chose the value snapshot over "any change discards": a URL
+  // changed and changed back, with no newer drop or pick in this field, is
+  // the URL the file was dropped on, so the upload lands.
+  it("lands a drop when the URL is changed and changed back", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/a.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    value.value = "https://typed.example/b.png";
+    expect(field().isUploading.value).toBe(false);
+    value.value = "https://cdn/a.png";
+    expect(field().isUploading.value).toBe(true);
+
+    media.settle(0, { url: "https://cdn/up.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://cdn/up.png");
+    expect(apply.mock.calls).toEqual([[{ url: "https://cdn/up.png" }]]);
   });
 
   it("clears the uploading state when the drop upload is cancelled", async () => {
