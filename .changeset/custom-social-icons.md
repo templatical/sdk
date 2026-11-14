@@ -15,8 +15,4 @@ In the editor, an icon's platform list ends with **Custom icon**, which shows an
 
 `@templatical/quality` adds two rules: `structure.social-icon-missing-image` (structure, error) for a custom icon with no image, and `a11y.social-icon-missing-alt` (accessibility, warning) for one with no alt text. The compatibility image checks also read a custom icon's `imageUrl`. In a localized template, a custom icon's `alt` is translatable (`TRANSLATABLE_FIELDS.social` is `["icons.*.alt"]`). The JSON schemas in `@templatical/template-tools` and `@templatical/ai-kit` describe the new icon.
 
-Breaking changes (TypeScript only; stored templates are unaffected):
-
-- `SocialPlatform` gains `"custom"`, which has no glyph. A map keyed by every platform with a glyph should use the new `BuiltInSocialPlatform` (`Exclude<SocialPlatform, "custom">`) instead of `SocialPlatform`.
-- `SOCIAL_ICON_GLYPHS` is keyed by `BuiltInSocialPlatform`, and `socialIconColors()` takes a `BuiltInSocialPlatform`. Check `icon.platform !== "custom"` before passing an icon's platform to either.
-- `SocialIcon` is a union, so code that builds an icon object needs the `BuiltInSocialIcon` or `CustomSocialIcon` shape.
+The TypeScript changes to `SocialIcon`, `SocialPlatform`, `SOCIAL_ICON_GLYPHS` and `socialIconColors()` are listed in their own entry.
