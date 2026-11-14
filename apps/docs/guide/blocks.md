@@ -176,10 +176,10 @@ A custom icon (`platform: 'custom'`) draws your own image in the row, for a netw
 ```
 
 - It sits in the same row as the built-in icons, in its place in `icons`, and links to `url`.
-- It is drawn as a square at the block's `iconSize` (24, 32 or 48px), so use a square image.
+- It is drawn as wide as the block's `iconSize` (24, 32 or 48px), and its height follows the image's proportions, so a square image lines up with the built-in icons.
 - `iconStyle` and `iconTone` don't apply to it: the image is shown as it is, with no badge, tint or rounded corners.
 - In the editor, choose **Custom icon** in an icon's platform list. The image field has the same Browse button and drag-and-drop upload as the image block, through your `onRequestMedia` handler.
-- The linter reports a custom icon with no image (`social-icon-missing-image`, an error) and one with no alt text (`social-icon-missing-alt`, a warning).
+- The linter reports a custom icon with no image (`structure.social-icon-missing-image`, an error) and one with no alt text (`a11y.social-icon-missing-alt`, a warning).
 - In a [localized template](./localized-templates.md), `alt` is translated per language like an image's alt text.
 
 ## Menu

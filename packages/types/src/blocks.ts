@@ -564,15 +564,16 @@ export interface BuiltInSocialIcon {
 }
 
 /**
- * An icon drawn from its own image, as a square at the block's `iconSize`.
- * The block's `iconStyle` and `iconTone` don't apply: the image is shown as
- * it is, with no badge, tint or rounded corners.
+ * An icon drawn from its own image. The block's `iconSize` sets its width and
+ * its height follows the image's proportions. The block's `iconStyle` and
+ * `iconTone` don't apply: the image is shown as it is, with no badge, tint or
+ * rounded corners.
  */
 export interface CustomSocialIcon {
   id: string;
   platform: "custom";
   url: string;
-  /** URL of the icon image. Use a square image: it is drawn at the icon size on both sides. */
+  /** URL of the icon image. A square image lines up with the built-in icons. */
   imageUrl: string;
   /** Text alternative for the image, read out in place of the icon. */
   alt?: string;

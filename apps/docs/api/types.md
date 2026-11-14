@@ -102,7 +102,7 @@ Language versions add optional `BaseBlock.l10n`, `TemplateSettings.locales` and 
 
 `readPath` resolves array elements by id and returns `undefined` for an unresolved path. `writePath` clones the value, treats `null` as property deletion and returns `false` when the parent cannot resolve. `isSafePath` rejects empty and prototype-key segments. `isLocaleTag` accepts a 2–3 letter language followed by optional 2–8 character alphanumeric subtags. `defaultLocaleOf` returns `settings.locale`, falling back to `en`.
 
-`TRANSLATABLE_FIELDS` lists each block type's text path patterns, where `*` is an element id or, for custom blocks, a field key: title, paragraph and HTML `content`, image and video `alt`, button `text`, countdown labels and `expiredMessage`, menu `items.*.text`, table `rows.*.cells.*.content` and custom `fieldValues.*`. `SETTINGS_TRANSLATABLE_FIELDS` is `["preheaderText"]`. `translatableFields(block, definitions)` expands one block's patterns into concrete paths and keeps only custom fields whose definition type is `text` or `textarea`. A locale `text` entry must name one of these paths; every other override goes in `set`.
+`TRANSLATABLE_FIELDS` lists each block type's text path patterns, where `*` is an element id or, for custom blocks, a field key: title, paragraph and HTML `content`, image and video `alt`, button `text`, countdown labels and `expiredMessage`, menu `items.*.text`, social `icons.*.alt` (a custom icon's alt text), table `rows.*.cells.*.content` and custom `fieldValues.*`. `SETTINGS_TRANSLATABLE_FIELDS` is `["preheaderText"]`. `translatableFields(block, definitions)` expands one block's patterns into concrete paths and keeps only custom fields whose definition type is `text` or `textarea`. A locale `text` entry must name one of these paths; every other override goes in `set`.
 
 `pruneLocaleOrphans(block: Block): Block` recursively removes text paths that no longer resolve and set paths whose parent no longer resolves. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` applies the same rule to settings. Both are pure and omit empty localization members. `isStructuralLocalePath(block: Block, path: string, value?: unknown): boolean` identifies section columns, whole built-in lists and element ids that locale overrides must not replace. Pass the proposed `set` value to check a whole-element replacement: its id must stay unchanged, and a table row must retain its cell ids in the same order. Custom `fieldValues.*` overrides are exempt.
 
@@ -438,8 +438,8 @@ interface BuiltInSocialIcon {
   url: string;
 }
 
-// Drawn from its own image, as a square at the icon size.
-// iconStyle and iconTone don't apply to it.
+// Drawn from its own image, as wide as the icon size, keeping its
+// proportions. iconStyle and iconTone don't apply to it.
 interface CustomSocialIcon {
   id: string;
   platform: 'custom';
