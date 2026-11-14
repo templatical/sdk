@@ -1,4 +1,8 @@
-import type { SocialIconTone, SocialIconStyle, SocialPlatform } from "./blocks";
+import type {
+  BuiltInSocialPlatform,
+  SocialIconTone,
+  SocialIconStyle,
+} from "./blocks";
 
 /**
  * SVG glyph (24×24 path) + brand color for each social platform.
@@ -7,9 +11,10 @@ import type { SocialIconTone, SocialIconStyle, SocialPlatform } from "./blocks";
  * different formats: the editor draws them as inline SVG (`SocialIconSvg.vue`)
  * and `@templatical/renderer` rasterizes them to PNGs
  * (`scripts/rasterize-social.mjs`) because Outlook's Word engine has no SVG
- * support. Typing as `Record<SocialPlatform, ...>` makes adding a platform to
- * the union a compile error until its glyph is supplied here, keeping both
- * consumers in lockstep.
+ * support. Typing as `Record<BuiltInSocialPlatform, ...>` makes adding a
+ * platform to the union a compile error until its glyph is supplied here,
+ * keeping both consumers in lockstep. `"custom"` has no glyph: a custom icon
+ * is drawn from its own `imageUrl`.
  */
 export interface SocialIconGlyph {
   /** SVG path data on a 24×24 viewBox. */
@@ -18,7 +23,10 @@ export interface SocialIconGlyph {
   color: string;
 }
 
-export const SOCIAL_ICON_GLYPHS: Record<SocialPlatform, SocialIconGlyph> = {
+export const SOCIAL_ICON_GLYPHS: Record<
+  BuiltInSocialPlatform,
+  SocialIconGlyph
+> = {
   facebook: {
     color: "#1877F2",
     path: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z",
@@ -140,7 +148,7 @@ function oneColorTone(
  * tone falls back to the brand color.
  */
 export function socialIconColors(
-  platform: SocialPlatform,
+  platform: BuiltInSocialPlatform,
   tone: SocialIconTone | undefined,
 ): { fill: string; onFill: string } {
   const known = oneColorTone(tone);

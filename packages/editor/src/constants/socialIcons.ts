@@ -1,4 +1,7 @@
-import { SOCIAL_ICON_GLYPHS, type SocialPlatform } from "@templatical/types";
+import {
+  SOCIAL_ICON_GLYPHS,
+  type BuiltInSocialPlatform,
+} from "@templatical/types";
 
 /**
  * Icon glyph (SVG path + brand color) per platform. Re-exported from the
@@ -14,7 +17,7 @@ export const socialIconSizeMap: Record<"small" | "medium" | "large", number> = {
   large: 48,
 };
 
-export const socialPlatformOptions: SocialPlatform[] = [
+export const socialPlatformOptions: BuiltInSocialPlatform[] = [
   "facebook",
   "twitter",
   "instagram",

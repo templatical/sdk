@@ -29,7 +29,7 @@ import type {
   DividerBlock,
   HeadingLevel,
   ImageBlock,
-  SocialPlatform,
+  BuiltInSocialPlatform,
   SocialIcon,
   SocialIconSize,
   SocialIconStyle,
@@ -151,7 +151,7 @@ function moduleKind(module: BeeFreeeModule): string | undefined {
   )?.[1];
 }
 
-const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
+const SOCIAL_PLATFORM_MAP: Record<string, BuiltInSocialPlatform> = {
   facebook: "facebook",
   twitter: "twitter",
   x: "twitter",
@@ -2634,12 +2634,12 @@ function socialKey(value: string | undefined): string {
 
 function platformFromKey(
   value: string | undefined,
-): SocialPlatform | undefined {
+): BuiltInSocialPlatform | undefined {
   const key = socialKey(value);
   return key ? SOCIAL_PLATFORM_MAP[key] : undefined;
 }
 
-const SOCIAL_HOSTS: readonly (readonly [string, SocialPlatform])[] = [
+const SOCIAL_HOSTS: readonly (readonly [string, BuiltInSocialPlatform])[] = [
   ["youtube.com", "youtube"],
   ["youtu.be", "youtube"],
   ["facebook.com", "facebook"],
@@ -2669,7 +2669,7 @@ const SOCIAL_HOSTS: readonly (readonly [string, SocialPlatform])[] = [
 /** The link's host when the icon's id and name are not a network. */
 function platformFromHref(
   href: string | undefined,
-): SocialPlatform | undefined {
+): BuiltInSocialPlatform | undefined {
   const raw = (href ?? "").trim();
   if (!raw) return undefined;
   if (/^mailto:/i.test(raw)) return "email";
@@ -2691,7 +2691,9 @@ function platformFromHref(
  * the other way around. A blank id is not a name. The link's host is the
  * last place the network is written.
  */
-function socialPlatform(icon: BeeFreeeSocialIcon): SocialPlatform | undefined {
+function socialPlatform(
+  icon: BeeFreeeSocialIcon,
+): BuiltInSocialPlatform | undefined {
   return (
     platformFromKey(icon.id) ??
     platformFromKey(icon.name) ??

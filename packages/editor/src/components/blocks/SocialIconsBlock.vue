@@ -41,6 +41,7 @@ const hasIcons = computed(() => props.block.icons.length > 0);
         @click.prevent
       >
         <SocialIconSvg
+          v-if="icon.platform !== 'custom'"
           :platform="icon.platform"
           :icon-style="block.iconStyle"
           :icon-tone="block.iconTone"

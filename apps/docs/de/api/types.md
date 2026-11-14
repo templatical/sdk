@@ -430,10 +430,22 @@ interface SocialIconsBlock extends BaseBlock {
   align: 'left' | 'center' | 'right';
 }
 
-interface SocialIcon {
+type SocialIcon = BuiltInSocialIcon | CustomSocialIcon;
+
+interface BuiltInSocialIcon {
   id: string;
-  platform: SocialPlatform;
+  platform: BuiltInSocialPlatform;
   url: string;
+}
+
+// Aus einem eigenen Bild, als Quadrat in der Icon-Größe.
+// iconStyle und iconTone gelten dafür nicht.
+interface CustomSocialIcon {
+  id: string;
+  platform: 'custom';
+  url: string;
+  imageUrl: string;
+  alt?: string;
 }
 
 type SocialPlatform =
@@ -441,7 +453,9 @@ type SocialPlatform =
   | 'youtube' | 'tiktok' | 'pinterest' | 'email'
   | 'whatsapp' | 'telegram' | 'discord' | 'snapchat'
   | 'reddit' | 'github' | 'dribbble' | 'behance'
-  | 'website';
+  | 'website' | 'custom';
+
+type BuiltInSocialPlatform = Exclude<SocialPlatform, 'custom'>;
 
 
 type SocialIconStyle =

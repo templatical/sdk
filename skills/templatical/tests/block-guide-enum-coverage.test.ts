@@ -134,7 +134,17 @@ function enumSites(): EnumSite[] {
     path: string,
     seen: Set<SchemaNode>,
   ) => {
-    if (!definition?.properties || seen.has(definition)) return;
+    if (!definition || seen.has(definition)) return;
+    // A union definition (`SocialIcon`) has no properties of its own: its
+    // members' fields sit at the same path.
+    if (Array.isArray(definition.anyOf)) {
+      seen.add(definition);
+      for (const member of definition.anyOf) {
+        walk(deref(member), heading, path, seen);
+      }
+      return;
+    }
+    if (!definition.properties) return;
     seen.add(definition);
     for (const [field, spec] of Object.entries(definition.properties)) {
       if (Array.isArray(spec.enum)) {

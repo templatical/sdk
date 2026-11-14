@@ -27,7 +27,7 @@ import type {
   HeadingLevel,
   MenuItemData,
   SocialIcon,
-  SocialPlatform,
+  BuiltInSocialPlatform,
   TableCellData,
   TableRowData,
 } from "@templatical/types";
@@ -93,7 +93,7 @@ const SOCIAL_PLATFORMS = [
   "whatsapp",
   "telegram",
   "github",
-] as const satisfies ReadonlyArray<SocialPlatform>;
+] as const satisfies ReadonlyArray<BuiltInSocialPlatform>;
 
 const ENTITIES: Record<string, string> = {
   "&amp;": "&",
@@ -713,7 +713,7 @@ function firstUrl(node: EasyEmailProNode, map: MapContext): string | undefined {
   return undefined;
 }
 
-function inferPlatform(href: unknown, src: unknown): SocialPlatform {
+function inferPlatform(href: unknown, src: unknown): BuiltInSocialPlatform {
   const host = hostname(typeof href === "string" ? href : "");
   for (const platform of SOCIAL_PLATFORMS) {
     if (host.includes(platform)) return platform;
