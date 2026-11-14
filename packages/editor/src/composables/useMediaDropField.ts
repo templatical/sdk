@@ -78,7 +78,10 @@ export function useMediaDropField(
   // moves on, that upload is stale: the overlay clears and drop re-enables. A
   // newer drop or a Browse pick in this field replaces the entry, so an older
   // upload never lands over it, even when the newer one set the URL it was
-  // dropped on.
+  // dropped on. Each instance sees only its own drops: when the other zone on
+  // the same URL (canvas image or sidebar field) sets the URL back to the one
+  // a pending drop started on, this instance reads it as unchanged and the
+  // upload lands, as it does for a URL changed and changed back.
   const pendingDrop = shallowRef<{ before: string } | null>(null);
 
   async function openMediaBrowser(): Promise<void> {

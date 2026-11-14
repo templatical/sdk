@@ -387,6 +387,37 @@ describe("useMediaDropField", () => {
     expect(apply.mock.calls).toEqual([[{ url: "https://cdn/up.png" }]]);
   });
 
+  // Two zones on one URL (the canvas image and its sidebar field) don't share
+  // pending drops: a pick in the other zone that returns the original URL
+  // reads, from this zone, as a URL changed back, so the upload lands.
+  it("lands a drop when the other zone on the same URL picks the original URL", async () => {
+    const value = ref("https://cdn/a.png");
+    const canvasMedia = deferredMedia();
+    const sidebarMedia = deferredMedia();
+    const canvas = mountHarness({
+      onRequestMedia: canvasMedia.onRequestMedia,
+      value,
+    });
+    const sidebar = mountHarness({
+      onRequestMedia: sidebarMedia.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(canvas.wrapper, "drop");
+    await nextTick();
+    const browse = sidebar.field().openMediaBrowser();
+    sidebarMedia.settle(0, { url: "https://cdn/a.png" });
+    await browse;
+    expect(canvas.field().isUploading.value).toBe(true);
+
+    canvasMedia.settle(0, { url: "https://cdn/up.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://cdn/up.png");
+    expect(canvas.apply.mock.calls).toEqual([[{ url: "https://cdn/up.png" }]]);
+  });
+
   it("clears the uploading state when the drop upload is cancelled", async () => {
     const media = deferredMedia();
     const value = ref("https://cdn/old.png");
