@@ -181,6 +181,15 @@ function buildFixtureTemplate(): TemplateContent {
                   imageUrl: "https://cdn.test/icons/fb-gold.png",
                   alt: "Facebook",
                 },
+                // Custom artwork whose file is named after a network: the
+                // renderer's marker keeps it custom on the way back.
+                {
+                  id: generateId(),
+                  platform: "custom",
+                  url: "https://xing.test/own",
+                  imageUrl: "https://cdn.test/uploads/xing.png",
+                  alt: "Xing",
+                },
                 {
                   id: generateId(),
                   platform: "instagram",

@@ -224,6 +224,13 @@ const RICH_TEXT_GAP_CLASS = /^tpl-rich-text-(\d+(?:\.\d+)?)$/;
  */
 const BUTTON_FULL_WIDTH_CSS_CLASS = "tpl-button-full";
 
+/**
+ * Marks a rendered custom social icon — mirrors `CUSTOM_ICON_CSS_CLASS` in
+ * `packages/renderer/src/renderers/social.ts`. Its `src` is the icon's own
+ * artwork even when the file is named after a network.
+ */
+const SOCIAL_CUSTOM_ICON_CSS_CLASS = "tpl-social-custom";
+
 function cssClasses(attrs: Attrs): string[] {
   return (attrs["css-class"] ?? "").trim().split(/\s+/).filter(Boolean);
 }
@@ -264,17 +271,22 @@ export function readParagraphGap(attrs: Attrs): number | null {
   return null;
 }
 
+/** True on an `mj-social-element` the renderer wrote for a custom icon. */
+export function isRenderedCustomSocialIcon(attrs: Attrs): boolean {
+  return cssClasses(attrs).includes(SOCIAL_CUSTOM_ICON_CSS_CLASS);
+}
+
 /**
  * Classes on `css-class` that carry no Templatical meaning. The caller warns
  * about these rather than dropping them silently: they are consumer CSS with no
  * home in the block model, and a template that relies on them will render
  * differently after import.
  *
- * Excludes the renderer's own rich-text and full-width button markers
- * alongside the two visibility classes, so importing a template the renderer
- * itself produced does not report one of its own classes as foreign. A
- * consumer's own `tpl-`-prefixed class is not one of these markers and is
- * still reported.
+ * Excludes the renderer's own rich-text, full-width button and custom social
+ * icon markers alongside the two visibility classes, so importing a template
+ * the renderer itself produced does not report one of its own classes as
+ * foreign. A consumer's own `tpl-`-prefixed class is not one of these markers
+ * and is still reported.
  */
 export function readForeignCssClasses(attrs: Attrs): string[] {
   return cssClasses(attrs).filter(
@@ -283,6 +295,7 @@ export function readForeignCssClasses(attrs: Attrs): string[] {
       name !== HIDE_MOBILE &&
       name !== RICH_TEXT_CSS_CLASS &&
       name !== BUTTON_FULL_WIDTH_CSS_CLASS &&
+      name !== SOCIAL_CUSTOM_ICON_CSS_CLASS &&
       !RICH_TEXT_GAP_CLASS.test(name),
   );
 }

@@ -5,6 +5,14 @@ import { escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
+/**
+ * Marks a custom icon's `mj-social-element`, so `@templatical/import-mjml`
+ * keeps it as a custom icon even when its file is named after a network
+ * (`…/uploads/xing.png`): built-in icons carry no class and are read from their
+ * file name.
+ */
+const CUSTOM_ICON_CSS_CLASS = "tpl-social-custom";
+
 /** The image URL `src` can carry: a non-blank string. Untrusted JSON may hold anything. */
 function hasUsableImage(icon: CustomSocialIcon): boolean {
   const imageUrl = icon.imageUrl as unknown;
@@ -107,7 +115,7 @@ export function renderSocialIcons(
     if (icon.platform === "custom") {
       // No `name`: MJML's network palette and href defaults must not apply.
       // The filter above kept only custom icons with a usable image URL.
-      return `<mj-social-element src="${escapeAttr(icon.imageUrl)}" alt="${escapeAttr(altText(icon))}" href="${url}" icon-size="${iconSizePx}px" padding="${padding}" border-radius="0" background-color="transparent"></mj-social-element>`;
+      return `<mj-social-element src="${escapeAttr(icon.imageUrl)}" alt="${escapeAttr(altText(icon))}" href="${url}" icon-size="${iconSizePx}px" padding="${padding}" border-radius="0" background-color="transparent" css-class="${CUSTOM_ICON_CSS_CLASS}"></mj-social-element>`;
     }
 
     const platform = escapeAttr(icon.platform);

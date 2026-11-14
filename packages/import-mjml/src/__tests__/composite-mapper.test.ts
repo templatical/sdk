@@ -220,7 +220,7 @@ describe("mj-social", () => {
   it("imports the renderer's custom icon as a custom icon", () => {
     const { result } = convert(
       `<mj-social>
-         <mj-social-element src="https://cdn.example.com/artsy.png" alt="Artsy" href="https://artsy.net" icon-size="32px" padding="0 10px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+         <mj-social-element src="https://cdn.example.com/artsy.png" alt="Artsy" href="https://artsy.net" icon-size="32px" padding="0 10px 0 0" border-radius="0" background-color="transparent" css-class="tpl-social-custom"></mj-social-element>
        </mj-social>`,
       "mj-social",
     );
@@ -236,6 +236,41 @@ describe("mj-social", () => {
     });
     expect(result.entry.status).toBe("converted");
     expect(result.entry.note).toBeUndefined();
+  });
+
+  it("keeps a rendered custom icon custom when its file is named after a network", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element src="https://cdn.example.com/uploads/facebook.png" alt="Facebook" href="https://fb.test/gold" css-class="tpl-social-custom" />
+       </mj-social>`,
+      "mj-social",
+    );
+    const { id, ...icon } = (result.block as SocialIconsBlock).icons[0];
+
+    expect(id).toEqual(expect.any(String));
+    expect(icon).toEqual({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/uploads/facebook.png",
+      alt: "Facebook",
+      url: "https://fb.test/gold",
+    });
+    expect(result.entry.status).toBe("converted");
+    expect(JSON.stringify(result)).not.toContain("tpl-social-custom");
+  });
+
+  it("reads the platform from a network-named file when the custom marker is absent", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element src="https://cdn.example.com/uploads/facebook.png" href="https://fb.test/a" />
+       </mj-social>`,
+      "mj-social",
+    );
+
+    expect((result.block as SocialIconsBlock).icons[0]).toEqual({
+      id: expect.any(String),
+      platform: "facebook",
+      url: "https://fb.test/a",
+    });
   });
 
   it("imports an unrecognised icon with a src as a custom icon and keeps a recognised neighbour", () => {

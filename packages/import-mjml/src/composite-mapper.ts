@@ -21,6 +21,7 @@ import type { Element } from "domhandler";
 import { parseAlignment, parseColor, parsePxValue } from "./attribute-parser";
 import {
   childElements,
+  isRenderedCustomSocialIcon,
   ownAttr,
   resolveAttributes,
   tagOf,
@@ -177,13 +178,15 @@ export function convertSocial(
     const name = (childAttrs.name ?? "").trim();
     const alt = (childAttrs.alt ?? "").trim();
     const href = (childAttrs.href ?? "").trim();
-    // `alt` names a platform only without a `src`: with one, an unrecognised
-    // file is the icon's own artwork (a rendered custom icon carries its alt
-    // and no name), and it stays a custom icon below.
-    const platform =
-      normalizePlatform(name) ??
-      normalizePlatform(fromSrc.platform) ??
-      (src ? undefined : normalizePlatform(alt));
+    // A rendered custom icon is marked, so its `src` stays its own artwork
+    // even when the file is named after a network. Otherwise `alt` names a
+    // platform only without a `src`: with one, an unrecognised file is the
+    // icon's own artwork, and it stays a custom icon below.
+    const platform = isRenderedCustomSocialIcon(childAttrs)
+      ? undefined
+      : (normalizePlatform(name) ??
+        normalizePlatform(fromSrc.platform) ??
+        (src ? undefined : normalizePlatform(alt)));
     // An unrecognised icon with its own image stays a custom icon. Nothing
     // is lost, so it adds no note. Without an image it stays `website`.
     if (!platform && src) {

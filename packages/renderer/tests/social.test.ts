@@ -366,7 +366,7 @@ describe("renderSocialIcons", () => {
   icon-padding="0"
   padding="10px 10px 10px 10px"
 >
-<mj-social-element src="https://cdn.example/gh.png" alt="" href="https://github.com" icon-size="48px" padding="0 0px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+<mj-social-element src="https://cdn.example/gh.png" alt="" href="https://github.com" icon-size="48px" padding="0 0px 0 0" border-radius="0" background-color="transparent" css-class="tpl-social-custom"></mj-social-element>
 </mj-social>`);
   });
 
@@ -394,7 +394,7 @@ describe("renderSocialIcons", () => {
   padding="10px 10px 10px 10px"
 >
 <mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/facebook.png" href="https://facebook.com" icon-size="32px" padding="0 12px 0 0" border-radius="50%" background-color="transparent"></mj-social-element>
-<mj-social-element src="https://cdn.example/gh.png?x=1&amp;y=2" alt="GitHub &quot;profile&quot; &amp; logo" href="https://github.com/org?a=1&amp;b=2" icon-size="32px" padding="0 12px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+<mj-social-element src="https://cdn.example/gh.png?x=1&amp;y=2" alt="GitHub &quot;profile&quot; &amp; logo" href="https://github.com/org?a=1&amp;b=2" icon-size="32px" padding="0 12px 0 0" border-radius="0" background-color="transparent" css-class="tpl-social-custom"></mj-social-element>
 <mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/twitter.png" href="https://twitter.com" icon-size="32px" padding="0 0px 0 0" border-radius="50%" background-color="transparent"></mj-social-element>
 </mj-social>`);
     expect(result).not.toMatch(/\bname="/);
@@ -434,7 +434,7 @@ describe("renderSocialIcons", () => {
   padding="10px 10px 10px 10px"
 >
 <mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/solid/facebook.png" href="https://facebook.com" icon-size="32px" padding="0 12px 0 0" border-radius="4px" background-color="transparent"></mj-social-element>
-<mj-social-element src="https://cdn.example/gh.png" alt="GitHub" href="https://github.com" icon-size="32px" padding="0 0px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+<mj-social-element src="https://cdn.example/gh.png" alt="GitHub" href="https://github.com" icon-size="32px" padding="0 0px 0 0" border-radius="0" background-color="transparent" css-class="tpl-social-custom"></mj-social-element>
 </mj-social>`);
     expect(result).not.toContain("example.com/blank");
     expect(result).not.toContain("example.com/last");
@@ -518,7 +518,7 @@ describe("renderSocialIcons", () => {
   icon-padding="0"
   padding="10px 10px 10px 10px"
 >
-<mj-social-element src="https://cdn.example/gh.png" alt="" href="https://github.com" icon-size="32px" padding="0 0px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+<mj-social-element src="https://cdn.example/gh.png" alt="" href="https://github.com" icon-size="32px" padding="0 0px 0 0" border-radius="0" background-color="transparent" css-class="tpl-social-custom"></mj-social-element>
 </mj-social>`);
   });
 });
