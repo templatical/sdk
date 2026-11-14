@@ -15,6 +15,50 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.60.1
+
+<time datetime="2026-11-14">2026-11-14</time>
+
+### Fixes and improvements
+
+**Breaking changes:**
+
+`@templatical/types`
+
+- `SocialPlatform` gains `"custom"`, which has no glyph. A map keyed by every platform with a glyph should use the new `BuiltInSocialPlatform` (`Exclude<SocialPlatform, "custom">`) instead of `SocialPlatform`.
+- `SOCIAL_ICON_GLYPHS` is keyed by `BuiltInSocialPlatform`, and `socialIconColors()` takes a `BuiltInSocialPlatform`. Check `icon.platform !== "custom"` before passing an icon's platform to either.
+- `SocialIcon` is now `BuiltInSocialIcon | CustomSocialIcon`, so code that builds an icon object needs one of those two shapes. A `CustomSocialIcon` is `{ id, platform: "custom", url, imageUrl, alt? }`.
+
+These are TypeScript-only: stored templates are unaffected, and every existing icon is a valid `BuiltInSocialIcon`.
+
+**Fix the custom social icon regression (#1214): a social icon can be your own image, `platform: "custom"` with an `imageUrl`, in the same row as the built-in icons, so an imported custom icon no longer has to lose either its image or its place in the row.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/quality` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+`SocialIcon` is now `BuiltInSocialIcon | CustomSocialIcon`. A `CustomSocialIcon` is `{ id, platform: "custom", url, imageUrl, alt? }`: `imageUrl` is the icon image and `alt` the text a screen reader reads in its place. The renderer writes it as an `mj-social-element` with `src`, `alt` and `href`, at the block's icon size, with no network name, so none of MJML's network colors apply, with square corners, and with the class `tpl-social-custom`, which marks it as a custom icon for the MJML importer. The block's `iconStyle` and `iconTone` don't change a custom image: it is shown as it is, as wide as `iconSize` and in its own proportions. A custom icon with an empty `imageUrl` is left out of the email. Stored templates without a custom icon render exactly as before.
+
+In the editor, an icon's platform list ends with **Custom icon**, which shows an image field, an alt text field and the link. The image field has the image block's Browse button and drag-and-drop upload, through the same `onRequestMedia` handler, so a host that handles images there needs no change. The canvas draws the image as the email does: as wide as the icon size, in its own proportions.
+
+`@templatical/quality` adds two rules: `structure.social-icon-missing-image` (structure, error) for a custom icon with no image, and `a11y.social-icon-missing-alt` (accessibility, warning) for one with no alt text. The compatibility image checks also read a custom icon's `imageUrl`. In a localized template, a custom icon's `alt` is translatable (`TRANSLATABLE_FIELDS.social` is `["icons.*.alt"]`). The JSON schemas in `@templatical/template-tools` and `@templatical/ai-kit` describe the new icon.
+
+The TypeScript changes to `SocialIcon`, `SocialPlatform`, `SOCIAL_ICON_GLYPHS` and `socialIconColors()` are listed in their own entry.
+
+**Fix the custom social icon regression from 0.60.0 (#1214): a BeeFree custom social icon keeps its own image and link inside the social row.**
+
+`@templatical/import-beefree`
+
+This replaces 0.60.0's website mapping, which turned such an icon into the generic `website` icon and dropped its image. It keeps what 0.58.0 kept, the file and the link, now inside the row instead of as a separate image block after it.
+
+A `type: "custom"` icon, or an icon-set icon whose network has no Templatical platform (Spotify, Vimeo, SoundCloud…), becomes a custom icon in the same social block, in source order: `imageUrl` is the original file, `url` its link (a `mailto:` or `tel:` prefix is kept), and `alt` the icon's alt, then title, then name. It is reported `converted`. A custom upload keeps its own artwork even when it is named after a platform Templatical has, so a custom "Xing" icon stays a custom icon with its image. Known networks from BeeFree's icon sets still import as Templatical's platform icons.
+
+Only an icon with no usable image file still becomes a platform icon: the recognised one, or `website`, reported `approximated` with a note naming the icon. Icon-set shapes and tones, spacing and the 4px gap under the row are unchanged.
+
+**Fix unrecognised social icons losing their image (#1214): the MJML, Stripo and Easy Email Pro importers keep such an icon's image as a custom icon.**
+
+`@templatical/import-easy-email-pro` · `@templatical/import-mjml` · `@templatical/import-stripo`
+
+A social icon whose network Templatical doesn't recognise, and that has an image, becomes a custom icon (`platform: "custom"`) with that image as `imageUrl`, its link as `url` and its alt text as `alt`, in its place in the row. Before, it became the generic `website` icon and lost its image. An unrecognised icon without an image still becomes `website`. In MJML this is an `mj-social-element` with a `src`; `alt` names a network only when there is no `src`. A custom icon Templatical rendered carries `css-class="tpl-social-custom"`, so it imports back as a custom icon even when its file is named after a network. In Stripo it is the icon's `<img>`, and in Easy Email Pro the element's `src`.
+
 ## 0.60.0
 
 <time datetime="2026-11-13">2026-11-13</time>
