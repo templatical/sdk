@@ -138,7 +138,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. Inline `font-size` (the anchor's, else the wrapping `es-button-border`'s) becomes `fontSize` when it is a px length or a bare number, rounded to whole pixels; any other value, or one that rounds to 0 or below, imports at the factory 15px, `approximated`. Inline `line-height` (the anchor's, else the wrapping `es-button-border`'s, where a percentage or `em` is first resolved against that wrapper's `font-size`, and an anchor's `inherit` takes the wrapper's; when the anchor sets its own `font-size` and the wrapper's is missing or not px, 15px stands in for the wrapper's and the button is noted) becomes `lineHeight`, a multiple of the label size: `150%` is `1.5`, a number or `em` length is itself, and a px length is over the button's font size, so `font-size:18px; line-height:27px` is `1.5`. A percentage or `em` beside an anchor `font-size` it can't read keeps its ratio to that 15px label. An anchor's `120%`, `normal` and a missing value stay unset (1.2); a wrapper's `120%` is resolved like any other wrapper percentage, so it stays unset only when it comes to 1.2 of the label. A value it can't read imports at 1.2, `approximated`. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
-| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched network becomes a website icon and the block is reported `approximated`. |
+| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched icon with an image becomes a custom icon (its own image, link and alt) in the same social block. Without an image it becomes a website icon and the block is reported `approximated`. |
 | `esd-block-spacer` | `spacer` or `divider` | A visible `border-bottom` or `border-top` on the spacer or its inner cell becomes a divider (style, colour, thickness, and the width rule below). Otherwise a spacer: height from `style`, the `height` attribute, or vertical padding. |
 | `esd-block-html` | `html` | Inner markup preserved. |
 
@@ -155,7 +155,7 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 | `a.es-button` | `button` | Inline `background` / `color` / `border-radius` / `font-size` / `line-height`, including from the wrapping `es-button-border`, read as for `esd-block-button`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
-| `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched network becomes a website icon and the block is reported `approximated`. |
+| `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched icon with an image becomes a custom icon (its own image, link and alt) in the same social block. Without an image it becomes a website icon and the block is reported `approximated`. |
 | `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
 | `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 

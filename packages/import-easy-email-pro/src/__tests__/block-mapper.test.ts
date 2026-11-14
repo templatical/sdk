@@ -729,7 +729,168 @@ describe("convertLeaf", () => {
     expect(entries[0].status).toBe("approximated");
     expect(entries[0].sourceTag).toBe("standard-social");
     expect(entries[0].templaticalBlockType).toBe("social");
-    expect(entries[0].note).toMatch(/src/i);
+    expect(entries[0].note).toBe(
+      "A recognised platform's own image was not used; it keeps the built-in icon.",
+    );
+  });
+
+  it("imports an unrecognised social element with a src as a custom icon", () => {
+    const { blocks, entries } = map({
+      type: "standard-social",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: {
+            src: "https://cdn.example.com/artsy.png",
+            href: "https://artsy.net",
+            alt: "Artsy",
+          },
+          children: [],
+        },
+      ],
+    });
+    const social = blocks[0] as SocialIconsBlock;
+    expect(social.icons[0]).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      url: "https://artsy.net",
+      alt: "Artsy",
+    });
+    expect(entries[0]).toEqual({
+      sourceTag: "standard-social",
+      templaticalBlockType: "social",
+      status: "converted",
+    });
+  });
+
+  it("omits a blank alt on a custom social icon", () => {
+    const { blocks } = map({
+      type: "standard-social",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: {
+            src: "https://cdn.example.com/artsy.png",
+            href: "https://artsy.net",
+            alt: "  ",
+          },
+          children: [],
+        },
+      ],
+    });
+    const icon = (blocks[0] as SocialIconsBlock).icons[0];
+    expect(icon).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      url: "https://artsy.net",
+    });
+    expect(icon).not.toHaveProperty("alt");
+  });
+
+  it("stays converted when a custom icon sits beside a recognised platform with no src", () => {
+    const { blocks, entries } = map({
+      type: "standard-social",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: { href: "https://facebook.com/acme" },
+          children: [],
+        },
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: {
+            src: "https://cdn.example.com/artsy.png",
+            href: "https://artsy.net",
+            alt: "Artsy",
+          },
+          children: [],
+        },
+      ],
+    });
+    expect(
+      (blocks[0] as SocialIconsBlock).icons.map((icon) => icon.platform),
+    ).toEqual(["facebook", "custom"]);
+    expect(entries[0].status).toBe("converted");
+    expect(entries[0].note).toBeUndefined();
+  });
+
+  it("keeps a recognised platform that has a custom src and approximates that row", () => {
+    const { blocks, entries } = map({
+      type: "standard-social",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: {
+            src: "https://cdn.example.com/facebook-gold.png",
+            href: "https://facebook.com/acme",
+          },
+          children: [],
+        },
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: {
+            src: "https://cdn.example.com/artsy.png",
+            href: "https://artsy.net",
+          },
+          children: [],
+        },
+      ],
+    });
+    const icons = (blocks[0] as SocialIconsBlock).icons;
+    expect(icons[0]).toMatchObject({
+      platform: "facebook",
+      url: "https://facebook.com/acme",
+    });
+    expect(icons[0]).not.toHaveProperty("imageUrl");
+    expect(icons[1]).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      url: "https://artsy.net",
+    });
+    expect(entries[0].status).toBe("approximated");
+    expect(entries[0].note).toBe(
+      "A recognised platform's own image was not used; it keeps the built-in icon.",
+    );
+  });
+
+  it("maps an unrecognised social element with no src to a website icon", () => {
+    const { blocks, entries } = map({
+      type: "standard-social",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: { href: "https://artsy.net/partner" },
+          children: [],
+        },
+      ],
+    });
+    const icon = (blocks[0] as SocialIconsBlock).icons[0];
+    expect(icon).toMatchObject({
+      platform: "website",
+      url: "https://artsy.net/partner",
+    });
+    expect(icon).not.toHaveProperty("imageUrl");
+    expect(entries[0].status).toBe("approximated");
+    expect(entries[0].note).toBe(
+      'Unrecognised social icon mapped to "website".',
+    );
   });
 
   it("maps table2 rows and cells from serialiseChildren", () => {

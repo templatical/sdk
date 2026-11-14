@@ -195,6 +195,68 @@ describe("mj-social", () => {
     expect(result.entry.status).toBe("converted");
   });
 
+  it("imports the renderer's custom icon as a custom icon", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element src="https://cdn.example.com/artsy.png" alt="Artsy" href="https://artsy.net" icon-size="32px" padding="0 10px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+       </mj-social>`,
+      "mj-social",
+    );
+    const block = result.block as SocialIconsBlock;
+    const { id, ...icon } = block.icons[0];
+
+    expect(id).toEqual(expect.any(String));
+    expect(icon).toEqual({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      alt: "Artsy",
+      url: "https://artsy.net",
+    });
+    expect(result.entry.status).toBe("converted");
+    expect(result.entry.note).toBeUndefined();
+  });
+
+  it("imports an unrecognised icon with a src as a custom icon and keeps a recognised neighbour", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element name="facebook" href="https://fb.test/a" />
+         <mj-social-element src="https://cdn.example.com/mastodon.png" alt="Mastodon" href="https://m.test/a" />
+       </mj-social>`,
+      "mj-social",
+    );
+    const block = result.block as SocialIconsBlock;
+
+    expect(block.icons.map((icon) => icon.platform)).toEqual([
+      "facebook",
+      "custom",
+    ]);
+    expect(block.icons[1]).toMatchObject({
+      imageUrl: "https://cdn.example.com/mastodon.png",
+      alt: "Mastodon",
+      url: "https://m.test/a",
+    });
+    expect(result.entry.status).toBe("converted");
+    expect(result.entry.note).toBeUndefined();
+  });
+
+  it("omits alt on a custom icon when the alt attribute is blank", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element src="https://cdn.example.com/artsy.png" alt="  " href="https://artsy.net" />
+       </mj-social>`,
+      "mj-social",
+    );
+    const icon = (result.block as SocialIconsBlock).icons[0];
+
+    expect(icon).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      url: "https://artsy.net",
+    });
+    expect(icon).not.toHaveProperty("alt");
+    expect(result.entry.status).toBe("converted");
+  });
+
   it("falls back to website for an unknown platform and reports it", () => {
     const { result } = convert(
       '<mj-social><mj-social-element name="mastodon" href="https://m.test/a" /></mj-social>',
