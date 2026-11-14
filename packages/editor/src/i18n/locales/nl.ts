@@ -414,6 +414,9 @@ const nl: typeof en = {
     sizeLarge: "L",
     spacing: "Afstand",
     align: "Uitlijning",
+    customIconHint:
+      "Stijl en kleur gelden niet voor aangepaste afbeeldingen. Een vierkante afbeelding werkt het best.",
+    customIconMissing: "Aangepast icoon zonder afbeelding",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -433,6 +436,7 @@ const nl: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Aangepast icoon",
     },
   },
   menu: {

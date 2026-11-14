@@ -452,6 +452,9 @@ const ptBR: typeof en = {
     sizeLarge: "G",
     spacing: "Espaçamento",
     align: "Alinhamento",
+    customIconHint:
+      "O estilo e a cor não se aplicam a imagens personalizadas. Uma imagem quadrada funciona melhor.",
+    customIconMissing: "Ícone personalizado sem imagem",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -471,6 +474,7 @@ const ptBR: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Ícone personalizado",
     },
   },
 
