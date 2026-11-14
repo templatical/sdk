@@ -447,6 +447,9 @@ export default {
     sizeLarge: "L",
     spacing: "Spacing",
     align: "Alignment",
+    customIconHint:
+      "Style and color don't apply to custom images. A square image works best.",
+    customIconMissing: "Custom icon without an image",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -466,6 +469,7 @@ export default {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Custom icon",
     },
   },
 

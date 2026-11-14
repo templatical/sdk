@@ -30,3 +30,9 @@ Die Regeln, die `lintStructure` mitliefert. Jede Regel liegt in `packages/qualit
 |---|---|---|---|
 | `structure.wrapper-color-over-background-image` | warning | — | Eine Sektion hat ein Hintergrundbild, und ihr Wrapper (ihr eigener `wrapper` oder, wenn der geprüfte Baum das Layout enthält, das Layout-Band, in dem sie liegt) hat eine Hintergrundfarbe. Outlook unter Windows malt die Wrapper-Farbe über das Bild der Sektion, dort verschwindet das Bild also. Alle anderen Clients legen beides korrekt übereinander. Entferne die Wrapper-Farbe oder lege das Bild auf den Wrapper. |
 | `structure.nested-background-image` | warning | — | Eine Sektion und ihr Wrapper haben beide ein Hintergrundbild. Outlook unter Windows kann die beiden VML-Füllungen, die MJML dafür erzeugt, nicht verschachteln, und das Layout bricht. Behalte das Bild nur auf einem von beiden. |
+
+## Social-Icons
+
+| Regel | Standardschweregrad | Auto-Fix | Was geprüft wird |
+|---|---|---|---|
+| `structure.social-icon-missing-image` | error | — | Ein eigenes Social-Icon hat keine Bild-URL oder nur Leerzeichen. Der Renderer lässt es aus, der Link verschwindet also. Eine Merge-Tag-URL zählt als vorhanden. Integrierte Plattform-Icons werden nicht geprüft. |

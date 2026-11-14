@@ -1056,13 +1056,24 @@
       "additionalProperties": false
     },
     "SocialIcon": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/BuiltInSocialIcon"
+        },
+        {
+          "$ref": "#/definitions/CustomSocialIcon"
+        }
+      ],
+      "description": "One icon in a social block: a built-in platform glyph, or a custom image when `platform` is `\"custom\"`."
+    },
+    "BuiltInSocialIcon": {
       "type": "object",
       "properties": {
         "id": {
           "type": "string"
         },
         "platform": {
-          "$ref": "#/definitions/SocialPlatform"
+          "$ref": "#/definitions/BuiltInSocialPlatform"
         },
         "url": {
           "type": "string"
@@ -1073,9 +1084,10 @@
         "platform",
         "url"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "An icon drawn with its platform's built-in glyph, in the block's `iconStyle` and `iconTone`."
     },
-    "SocialPlatform": {
+    "BuiltInSocialPlatform": {
       "type": "string",
       "enum": [
         "facebook",
@@ -1096,7 +1108,39 @@
         "dribbble",
         "behance",
         "website"
-      ]
+      ],
+      "description": "Every `SocialPlatform` that has a built-in glyph: all of them except `\"custom\"`, whose icon is its own image (`CustomSocialIcon`)."
+    },
+    "CustomSocialIcon": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string",
+          "const": "custom"
+        },
+        "url": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the icon image. A square image lines up with the built-in icons."
+        },
+        "alt": {
+          "type": "string",
+          "description": "Text alternative for the image, read out in place of the icon."
+        }
+      },
+      "required": [
+        "id",
+        "platform",
+        "url",
+        "imageUrl"
+      ],
+      "additionalProperties": false,
+      "description": "An icon drawn from its own image. The block's `iconSize` sets its width and its height follows the image's proportions. The block's `iconStyle` and `iconTone` don't apply: the image is shown as it is, with no badge, tint or rounded corners."
     },
     "SocialIconStyle": {
       "type": "string",

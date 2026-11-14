@@ -482,11 +482,27 @@ export function socialFrom(
     const $a = $(a) as Cheerio<Element>;
     const $img = $a.find("img").first();
     const url = $a.attr("href") ?? "#";
+    const src = ($img.attr("src") ?? "").trim();
+    const altText = ($img.attr("alt") ?? "").trim();
+    const title = ($img.attr("title") ?? "").trim();
     const platform = matchPlatform(
       $img.attr("title"),
       $img.attr("src"),
       $img.attr("alt"),
     );
+    // An unmatched icon with its own image stays a custom icon. The website
+    // count is only icons that have no image to keep.
+    if (!platform && src) {
+      const alt = altText || title;
+      icons.push({
+        id: generateId(),
+        platform: "custom",
+        imageUrl: src,
+        url,
+        ...(alt ? { alt } : {}),
+      });
+      return;
+    }
     if (!platform) generic += 1;
     icons.push({ id: generateId(), platform: platform ?? "website", url });
   });

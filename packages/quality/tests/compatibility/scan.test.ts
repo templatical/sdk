@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createCustomBlock,
   createSectionBlock,
+  createSocialIconsBlock,
   createTableBlock,
   createVideoBlock,
   createWrapperBlock,
@@ -92,5 +93,59 @@ describe("CSS scanner", () => {
     expect(
       scanBlock(createWrapperBlock({ backgroundImage: image })).urls,
     ).toEqual(["background.png"]);
+  });
+
+  it("collects a custom social icon image URL and not the icon link", () => {
+    expect(
+      scanBlock(
+        createSocialIconsBlock({
+          icons: [
+            { id: "fb", platform: "facebook", url: "https://facebook.com" },
+            {
+              id: "c",
+              platform: "custom",
+              url: "https://example.com/go",
+              imageUrl: "https://cdn.example/icon.webp",
+              alt: "Example",
+            },
+          ],
+        }),
+      ).urls,
+    ).toEqual(["https://cdn.example/icon.webp"]);
+  });
+
+  it("does not collect a non-string custom image URL", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        {
+          id: "ok",
+          platform: "custom",
+          url: "https://example.com/ok",
+          imageUrl: "https://cdn.example/ok.png",
+        },
+        {
+          id: "missing",
+          platform: "custom",
+          url: "https://example.com/missing",
+          imageUrl: "x",
+        },
+        {
+          id: "nil",
+          platform: "custom",
+          url: "https://example.com/nil",
+          imageUrl: "x",
+        },
+        {
+          id: "num",
+          platform: "custom",
+          url: "https://example.com/num",
+          imageUrl: "x",
+        },
+      ],
+    });
+    delete (block.icons[1] as { imageUrl?: string }).imageUrl;
+    (block.icons[2] as { imageUrl: unknown }).imageUrl = null;
+    (block.icons[3] as { imageUrl: unknown }).imageUrl = 5;
+    expect(scanBlock(block).urls).toEqual(["https://cdn.example/ok.png"]);
   });
 });

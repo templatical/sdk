@@ -41,6 +41,7 @@ export const TRANSLATABLE_FIELDS: Readonly<Record<string, readonly string[]>> =
     video: ["alt"],
     button: ["text"],
     menu: ["items.*.text"],
+    social: ["icons.*.alt"],
     table: ["rows.*.cells.*.content"],
     countdown: [
       "labelDays",
@@ -270,15 +271,17 @@ export function translatableFields(
   const target =
     block.type === "menu"
       ? { ...block, items: block.items.filter(localizableId) }
-      : block.type === "table"
-        ? {
-            ...block,
-            rows: block.rows.filter(localizableId).map((row) => ({
-              ...row,
-              cells: row.cells.filter(localizableId),
-            })),
-          }
-        : block;
+      : block.type === "social"
+        ? { ...block, icons: block.icons.filter(localizableId) }
+        : block.type === "table"
+          ? {
+              ...block,
+              rows: block.rows.filter(localizableId).map((row) => ({
+                ...row,
+                cells: row.cells.filter(localizableId),
+              })),
+            }
+          : block;
   return (TRANSLATABLE_FIELDS[block.type] ?? []).flatMap((pattern) =>
     expand(target, pattern),
   );

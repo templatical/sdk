@@ -12,7 +12,9 @@ import {
   addItemBtnClass,
 } from "../../constants/styleConstants";
 import { socialPlatformOptions } from "../../constants/socialIcons";
+import SocialCustomIconFields from "./SocialCustomIconFields.vue";
 import type {
+  CustomSocialIcon,
   SocialIcon,
   SocialIconTone,
   SocialIconsBlock,
@@ -45,15 +47,50 @@ function addSocialIcon(): void {
   emit("update", { icons: [...props.block.icons, newIcon] });
 }
 
-function updateSocialIcon(
-  iconId: string,
-  field: keyof SocialIcon,
-  value: string,
+function replaceSocialIcon(next: SocialIcon): void {
+  emit("update", {
+    icons: props.block.icons.map((icon) => (icon.id === next.id ? next : icon)),
+  });
+}
+
+/**
+ * Only `url` is shared by both icon shapes. `imageUrl` and `alt` belong to
+ * a custom icon, so they travel as a whole `CustomSocialIcon` from
+ * {@link replaceSocialIcon} and cannot land on a built-in icon.
+ */
+function updateSocialIcon(iconId: string, field: "url", value: string): void {
+  emit("update", {
+    icons: props.block.icons.map((icon) =>
+      icon.id === iconId ? { ...icon, [field]: value } : icon,
+    ),
+  });
+}
+
+function isCustomIcon(icon: SocialIcon): icon is CustomSocialIcon {
+  return icon.platform === "custom";
+}
+
+function setSocialIconPlatform(
+  icon: SocialIcon,
+  platform: SocialPlatform,
 ): void {
-  const updatedIcons = props.block.icons.map((icon) =>
-    icon.id === iconId ? { ...icon, [field]: value } : icon,
-  );
-  emit("update", { icons: updatedIcons });
+  if (platform === icon.platform) return;
+  // A fresh object: a custom icon is id, platform, url and imageUrl, and a
+  // built-in icon is only id, platform and url.
+  const next: SocialIcon =
+    platform === "custom"
+      ? {
+          id: icon.id,
+          platform: "custom",
+          url: icon.url,
+          imageUrl: "",
+        }
+      : {
+          id: icon.id,
+          platform,
+          url: icon.url,
+        };
+  replaceSocialIcon(next);
 }
 
 function removeSocialIcon(iconId: string): void {
@@ -84,9 +121,8 @@ function removeSocialIcon(iconId: string): void {
               class="tpl:flex-1"
               :value="icon.platform"
               @change="
-                updateSocialIcon(
-                  icon.id,
-                  'platform',
+                setSocialIconPlatform(
+                  icon,
                   ($event.target as HTMLSelectElement).value as SocialPlatform,
                 )
               "
@@ -98,6 +134,7 @@ function removeSocialIcon(iconId: string): void {
               >
                 {{ t.social.platforms[platform] }}
               </option>
+              <option value="custom">{{ t.social.platforms.custom }}</option>
             </select></FieldRow
           >
           <button
@@ -108,6 +145,11 @@ function removeSocialIcon(iconId: string): void {
             <X :size="14" :stroke-width="2" />
           </button>
         </div>
+        <SocialCustomIconFields
+          v-if="isCustomIcon(icon)"
+          :icon="icon"
+          @update="replaceSocialIcon"
+        />
         <FieldRow
           :path="icon.id.includes('.') ? undefined : `icons.${icon.id}.url`"
           :label="t.button.url"
@@ -117,6 +159,12 @@ function removeSocialIcon(iconId: string): void {
             :placeholder="t.social.urlPlaceholder"
             @update:model-value="updateSocialIcon(icon.id, 'url', $event)"
         /></FieldRow>
+        <p
+          v-if="isCustomIcon(icon)"
+          class="tpl:mt-1.5 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+        >
+          {{ t.social.customIconHint }}
+        </p>
       </div>
       <button :class="addItemBtnClass" @click="addSocialIcon">
         <Plus :size="14" :stroke-width="2" />

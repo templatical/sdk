@@ -163,6 +163,33 @@ function buildFixtureTemplate(): TemplateContent {
                   platform: "facebook",
                   url: "https://fb.test/a",
                 },
+                // A custom icon renders as its own `src` with no `name`, and
+                // must come back as a custom icon in its place in the row.
+                {
+                  id: generateId(),
+                  platform: "custom",
+                  url: "https://artsy.test/a",
+                  imageUrl: "https://cdn.test/icons/artsy.png",
+                  alt: "Artsy",
+                },
+                // Custom artwork whose alt names a built-in network still
+                // comes back as custom: alt only names a platform without a src.
+                {
+                  id: generateId(),
+                  platform: "custom",
+                  url: "https://fb.test/gold",
+                  imageUrl: "https://cdn.test/icons/fb-gold.png",
+                  alt: "Facebook",
+                },
+                // Custom artwork whose file is named after a network: the
+                // renderer's marker keeps it custom on the way back.
+                {
+                  id: generateId(),
+                  platform: "custom",
+                  url: "https://xing.test/own",
+                  imageUrl: "https://cdn.test/uploads/xing.png",
+                  alt: "Xing",
+                },
                 {
                   id: generateId(),
                   platform: "instagram",

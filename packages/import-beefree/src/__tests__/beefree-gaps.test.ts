@@ -236,11 +236,15 @@ describe("BeeFree module gaps", () => {
       expect(socialBlock.type).toBe("social");
       if (socialBlock.type !== "social") return;
       expect(socialBlock.icons.map((icon) => icon.platform)).toEqual([
-        "website",
+        "custom",
         "facebook",
       ]);
+      expect(socialBlock.icons[0]).toMatchObject({
+        imageUrl: "https://cdn.example.com/myspace.png",
+        url: "https://myspace.com/band",
+        alt: "Myspace",
+      });
       expect(socialBlock.visibility).toEqual({ desktop: true, mobile: false });
-      expect(JSON.stringify(socialBlock)).not.toContain("myspace.png");
       expect(section.visibility).toBeUndefined();
     });
 

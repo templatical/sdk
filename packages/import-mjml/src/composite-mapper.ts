@@ -14,13 +14,14 @@ import type {
   SocialIconTone,
   SocialIconSize,
   SocialIconStyle,
-  SocialPlatform,
+  BuiltInSocialPlatform,
   TableRowData,
 } from "@templatical/types";
 import type { Element } from "domhandler";
 import { parseAlignment, parseColor, parsePxValue } from "./attribute-parser";
 import {
   childElements,
+  isRenderedCustomSocialIcon,
   ownAttr,
   resolveAttributes,
   tagOf,
@@ -29,11 +30,11 @@ import {
 import { baseFields, type ConvertContext, type Converted } from "./block-base";
 
 /**
- * Exhaustive over `SocialPlatform` on purpose: adding a member to that union
+ * Exhaustive over `BuiltInSocialPlatform` on purpose: adding a member to that union
  * without adding it here is a compile error, so the importer cannot silently
  * fall back to "website" for a platform the block model gained.
  */
-const KNOWN_PLATFORMS: Record<SocialPlatform, true> = {
+const KNOWN_PLATFORMS: Record<BuiltInSocialPlatform, true> = {
   facebook: true,
   twitter: true,
   instagram: true,
@@ -54,7 +55,7 @@ const KNOWN_PLATFORMS: Record<SocialPlatform, true> = {
   website: true,
 };
 
-const PLATFORM_ALIASES: Record<string, SocialPlatform> = {
+const PLATFORM_ALIASES: Record<string, BuiltInSocialPlatform> = {
   x: "twitter",
   "x-twitter": "twitter",
 };
@@ -62,7 +63,7 @@ const PLATFORM_ALIASES: Record<string, SocialPlatform> = {
 /**
  * Icon packs (and MJML's `-noshare` variants) append tokens to the platform
  * slug: `facebook-round-outlined.png`, `facebook-noshare`. Those stems are not
- * `SocialPlatform` values, so a lookup that stops at the raw filename maps
+ * `BuiltInSocialPlatform` values, so a lookup that stops at the raw filename maps
  * the icon to `"website"` and the platform name is lost.
  */
 const PLATFORM_PACK_TOKENS = new Set([
@@ -74,12 +75,12 @@ const PLATFORM_PACK_TOKENS = new Set([
   "solid",
 ]);
 
-function lookupPlatform(cleaned: string): SocialPlatform | null {
+function lookupPlatform(cleaned: string): BuiltInSocialPlatform | null {
   if (PLATFORM_ALIASES[cleaned]) return PLATFORM_ALIASES[cleaned];
-  return cleaned in KNOWN_PLATFORMS ? (cleaned as SocialPlatform) : null;
+  return cleaned in KNOWN_PLATFORMS ? (cleaned as BuiltInSocialPlatform) : null;
 }
 
-function normalizePlatform(raw: string): SocialPlatform | null {
+function normalizePlatform(raw: string): BuiltInSocialPlatform | null {
   const cleaned = raw.trim().toLowerCase();
   if (!cleaned) return null;
 
@@ -176,24 +177,42 @@ export function convertSocial(
 
     const name = (childAttrs.name ?? "").trim();
     const alt = (childAttrs.alt ?? "").trim();
-    const platform =
-      normalizePlatform(name) ??
-      normalizePlatform(fromSrc.platform) ??
-      normalizePlatform(alt);
-    if (!platform) {
-      const rawName = name || fromSrc.platform || alt;
-      if (rawName) {
-        notes.push(
-          `Unrecognised social platform "${rawName}" mapped to "website".`,
-        );
+    const href = (childAttrs.href ?? "").trim();
+    // A rendered custom icon is marked, so its `src` stays its own artwork
+    // even when the file is named after a network. Otherwise `alt` names a
+    // platform only without a `src`: with one, an unrecognised file is the
+    // icon's own artwork, and it stays a custom icon below.
+    const platform = isRenderedCustomSocialIcon(childAttrs)
+      ? undefined
+      : (normalizePlatform(name) ??
+        normalizePlatform(fromSrc.platform) ??
+        (src ? undefined : normalizePlatform(alt)));
+    // An unrecognised icon with its own image stays a custom icon. Nothing
+    // is lost, so it adds no note. Without an image it stays `website`.
+    if (!platform && src) {
+      icons.push({
+        id: generateId(),
+        platform: "custom",
+        imageUrl: src,
+        url: href,
+        ...(alt ? { alt } : {}),
+      });
+    } else {
+      if (!platform) {
+        // An unrecognised icon here has no `src`: its name or alt names it.
+        const rawName = name || alt;
+        if (rawName) {
+          notes.push(
+            `Unrecognised social platform "${rawName}" mapped to "website".`,
+          );
+        }
       }
+      icons.push({
+        id: generateId(),
+        platform: platform ?? "website",
+        url: href,
+      });
     }
-
-    icons.push({
-      id: generateId(),
-      platform: platform ?? "website",
-      url: (childAttrs.href ?? "").trim(),
-    });
 
     const fromDir = iconStyle ? null : iconDirParts(fromSrc.style);
     if (fromDir) {

@@ -454,6 +454,9 @@ const ca: typeof en = {
     sizeLarge: "L",
     spacing: "Espaiat",
     align: "Alineació",
+    customIconHint:
+      "L'estil i el color no s'apliquen a les imatges personalitzades. Una imatge quadrada funciona millor.",
+    customIconMissing: "Icona personalitzada sense imatge",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -473,6 +476,7 @@ const ca: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Icona personalitzada",
     },
   },
 

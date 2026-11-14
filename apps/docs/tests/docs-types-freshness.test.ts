@@ -82,6 +82,8 @@ describe("api/types.md stays aligned with @templatical/types", () => {
   it.each([
     ["TemplateSettings", templateSrc],
     ["MergeTag", configSrc],
+    ["BuiltInSocialIcon", blocksSrc],
+    ["CustomSocialIcon", blocksSrc],
     ["MergeTagRequestContext", configSrc],
     ["MergeTagsConfig", configSrc],
   ] as const)("%s fields match source", (name, src) => {

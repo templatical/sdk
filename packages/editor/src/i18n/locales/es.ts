@@ -453,6 +453,9 @@ const es: typeof en = {
     sizeLarge: "L",
     spacing: "Espaciado",
     align: "Alineación",
+    customIconHint:
+      "El estilo y el color no se aplican a las imágenes personalizadas. Una imagen cuadrada funciona mejor.",
+    customIconMissing: "Icono personalizado sin imagen",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -472,6 +475,7 @@ const es: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Icono personalizado",
     },
   },
 

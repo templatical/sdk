@@ -1,6 +1,6 @@
-import type { SocialPlatform } from "@templatical/types";
+import type { BuiltInSocialPlatform } from "@templatical/types";
 
-const NAMED: Record<string, SocialPlatform> = {
+const NAMED: Record<string, BuiltInSocialPlatform> = {
   facebook: "facebook",
   fb: "facebook",
   twitter: "twitter",
@@ -53,7 +53,7 @@ const WEBSITE_NAMES = new Set(["website", "web", "link"]);
 
 function namedPlatform(
   candidate: string | undefined,
-): SocialPlatform | undefined {
+): BuiltInSocialPlatform | undefined {
   if (!candidate) return undefined;
   for (const w of peel(candidate).split(/\s+/)) {
     const hit = NAMED[w];
@@ -79,7 +79,7 @@ export function matchPlatform(
   name?: string,
   src?: string,
   alt?: string,
-): SocialPlatform | undefined {
+): BuiltInSocialPlatform | undefined {
   for (const candidate of [name, alt]) {
     const hit = namedPlatform(candidate);
     if (hit) return hit;
@@ -95,13 +95,13 @@ export function matchPlatform(
 }
 
 /**
- * Map a Stripo icon's title, alt, or src stem onto a SocialPlatform.
+ * Map a Stripo icon's title, alt, or src stem onto a BuiltInSocialPlatform.
  * Unknown names become `website` — same floor as the MJML importer.
  */
 export function normalizePlatform(
   name?: string,
   src?: string,
   alt?: string,
-): SocialPlatform {
+): BuiltInSocialPlatform {
   return matchPlatform(name, src, alt) ?? "website";
 }

@@ -9,6 +9,7 @@ import { duplicateBlockId } from "./rules/duplicate-block-id";
 import { emptyColumn } from "./rules/empty-column";
 import { emptySection } from "./rules/empty-section";
 import { columnWidthsIgnored } from "./rules/column-widths-ignored";
+import { socialIconMissingImage } from "./rules/social-icon-missing-image";
 import { heroNotApplied } from "./rules/hero-not-applied";
 import { nestedBackgroundImage } from "./rules/nested-background-image";
 import { nestedSection } from "./rules/nested-section";
@@ -25,6 +26,7 @@ export const STRUCTURE_RULES: Rule[] = [
   nestedBackgroundImage,
   heroNotApplied,
   columnWidthsIgnored,
+  socialIconMissingImage,
 ];
 
 export function lintStructure(

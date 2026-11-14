@@ -4,7 +4,7 @@ import type {
   SocialIconTone,
   SocialIconSize,
   SocialIconStyle,
-  SocialPlatform,
+  BuiltInSocialPlatform,
 } from "@templatical/types";
 import {
   socialIconColors,
@@ -14,7 +14,7 @@ import {
 import { computed } from "vue";
 
 const props = defineProps<{
-  platform: SocialPlatform;
+  platform: BuiltInSocialPlatform;
   iconStyle: SocialIconStyle;
   iconTone?: SocialIconTone;
   iconSize: SocialIconSize;

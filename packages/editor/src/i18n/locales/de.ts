@@ -452,6 +452,9 @@ const de: typeof en = {
     sizeLarge: "G",
     spacing: "Abstand",
     align: "Ausrichtung",
+    customIconHint:
+      "Stil und Farbe gelten nicht für benutzerdefinierte Bilder. Verwenden Sie am besten ein quadratisches Bild.",
+    customIconMissing: "Benutzerdefiniertes Symbol ohne Bild",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -471,6 +474,7 @@ const de: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Benutzerdefiniertes Symbol",
     },
   },
 

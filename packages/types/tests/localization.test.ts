@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   cloneBlock,
   createCustomBlock,
+  createDefaultTemplateContent,
   createParagraphBlock,
   createSectionBlock,
+  createSocialIconsBlock,
   createTableBlock,
   createWrapperBlock,
   isLocaleTag,
+  isTranslatablePath,
   localeCoverage,
   localizeBlock,
   readPath,
@@ -270,6 +273,84 @@ describe("list elements whose ids contain dots", () => {
       ],
     } as any;
     expect(translatableFields(table)).toEqual(["rows.r2.cells.c2.content"]);
+  });
+});
+
+describe("custom social icon alt", () => {
+  const social = () =>
+    createSocialIconsBlock({
+      id: "social",
+      icons: [
+        { id: "fb", platform: "facebook", url: "https://facebook.com" },
+        {
+          id: "gh",
+          platform: "custom",
+          url: "https://github.com/acme",
+          imageUrl: "https://cdn.example/gh.png",
+          alt: "GitHub",
+        },
+      ],
+    });
+
+  it("lists icons.<id>.alt for a custom icon and nothing for a built-in", () => {
+    expect(isTranslatablePath("social", "icons.gh.alt")).toBe(true);
+    expect(translatableFields(social())).toEqual(["icons.gh.alt"]);
+  });
+
+  it("applies a translation layer value in the localized view", () => {
+    const block = social();
+    block.l10n = {
+      de: {
+        text: {
+          "icons.gh.alt": {
+            value: "GitHub-Profil",
+            sourceHash: sourceHash("GitHub"),
+          },
+        },
+      },
+    };
+    const view = localizeBlock(block, "de", "en");
+    if (view.type !== "social") throw new Error("expected a social block");
+    expect(view.icons[0]).toEqual({
+      id: "fb",
+      platform: "facebook",
+      url: "https://facebook.com",
+    });
+    expect(view.icons[1]).toMatchObject({ alt: "GitHub-Profil" });
+
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ["de"];
+    content.blocks = [block];
+    expect(localeCoverage(content, "de")).toMatchObject({
+      translated: ["social/icons.gh.alt"],
+      missing: [],
+      stale: [],
+    });
+    if (block.icons[1].platform !== "custom") throw new Error("expected custom");
+    block.icons[1].alt = "GH";
+    expect(localeCoverage(content, "de").stale).toEqual(["social/icons.gh.alt"]);
+  });
+
+  it("omits a custom icon whose id contains a dot", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        {
+          id: "bad.id",
+          platform: "custom",
+          url: "https://example.com/bad",
+          imageUrl: "https://cdn.example/bad.png",
+          alt: "Bad",
+        },
+        {
+          id: "ok",
+          platform: "custom",
+          url: "https://example.com/ok",
+          imageUrl: "https://cdn.example/ok.png",
+          alt: "Ok",
+        },
+      ],
+    });
+    expect(translatableFields(block)).toEqual(["icons.ok.alt"]);
   });
 });
 

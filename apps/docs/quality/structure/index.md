@@ -1,10 +1,10 @@
 ---
-description: lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, empty sections or columns, heroes that render as regular sections, ignored column widths, and background images Outlook can't layer.
+description: lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, empty sections or columns, heroes that render as regular sections, ignored column widths, background images Outlook can't layer, and custom social icons without an image.
 ---
 
 # Structure linter
 
-`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, column widths the renderer ignores, and background images Outlook on Windows can't layer.
+`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, column widths the renderer ignores, background images Outlook on Windows can't layer, and custom social icons with no image.
 
 ## Purpose
 
@@ -20,6 +20,7 @@ The structure linter catches these before save / before send:
 - **Hero not applied.** A section with `hero` set that renders as a regular section: more than one column, no background image, or `height: "image"` without the image's size. The message says which.
 - **Ignored column widths.** A section's `columnWidths` is ignored and the layout's split renders: the list length differs from the column count, or a share is not a finite number above 0. The message says which.
 - **Background images Outlook can't layer.** Outlook on Windows paints a wrapper's background color over its section's background image, and can't layer a wrapper image and a section image. These two rules are compatibility warnings rather than corruption checks: every other client renders these combinations correctly.
+- **Custom social icon without an image.** A custom icon whose image URL is missing or blank is omitted when the email renders, so that link disappears. A merge-tag URL counts as present. Built-in platform icons are not checked.
 
 These rules are deterministic and locale-agnostic — they fire on JSON shapes, not phrases. Only the message text needs translating.
 

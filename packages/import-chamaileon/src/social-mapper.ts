@@ -6,7 +6,7 @@ import type {
   SocialIcon,
   SocialIconSize,
   SocialIconStyle,
-  SocialPlatform,
+  BuiltInSocialPlatform,
 } from "@templatical/types";
 import { parseAlignment, parsePadding, parsePx } from "./attribute-parser";
 import type { Converted, MapContext } from "./block-mapper";
@@ -18,11 +18,11 @@ import type {
 } from "./types";
 
 /**
- * Exhaustive over `SocialPlatform` on purpose: adding a member to that union
+ * Exhaustive over `BuiltInSocialPlatform` on purpose: adding a member to that union
  * without adding it here is a compile error, so this cannot silently fall back
  * to "website" for a platform the block model gained.
  */
-const KNOWN_PLATFORMS: Record<SocialPlatform, true> = {
+const KNOWN_PLATFORMS: Record<BuiltInSocialPlatform, true> = {
   facebook: true,
   twitter: true,
   instagram: true,
@@ -57,10 +57,10 @@ const KNOWN_STYLES = new Set<string>([
   "circle",
 ]);
 
-function normalizePlatform(raw: string): SocialPlatform | null {
+function normalizePlatform(raw: string): BuiltInSocialPlatform | null {
   const cleaned = raw.trim().toLowerCase();
   if (!cleaned) return null;
-  return cleaned in KNOWN_PLATFORMS ? (cleaned as SocialPlatform) : null;
+  return cleaned in KNOWN_PLATFORMS ? (cleaned as BuiltInSocialPlatform) : null;
 }
 
 function nearestSize(px: number): { size: SocialIconSize; exact: boolean } {

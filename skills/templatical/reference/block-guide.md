@@ -245,10 +245,20 @@ underline: bool, color?: hex }`.
 **Optional** — `l10n` (object), `iconTone` (SocialIconTone).
 <!-- END GENERATED FIELDS: social -->
 
-- `icons` — each is `{ id, platform, url }`.
+- `icons` — each is `{ id, platform, url }`, or a custom icon
+  `{ id, platform: "custom", url, imageUrl, alt }`.
 - `platform` is one of: `facebook`, `twitter`, `instagram`, `linkedin`,
   `xing`, `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`,
-  `discord`, `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
+  `discord`, `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`
+  (built-in icons), or `"custom"`.
+- `imageUrl` (required when `platform` is `"custom"`, and only then) — the
+  custom icon's image, drawn as wide as `iconSize` with its own proportions;
+  a square image lines up with the built-in icons.
+  `iconStyle` and `iconTone` don't apply to it (no badge, tint or rounding).
+  Use it for a network with no built-in icon (Spotify, Vimeo, Artsy…). Give it
+  `alt` too: the linter reports a missing image as an error
+  (`structure.social-icon-missing-image`) and missing alt text as a warning
+  (`a11y.social-icon-missing-alt`).
 - `iconStyle` is one of `"solid"`, `"outlined"`, `"rounded"`, `"square"`,
   `"circle"`, `"plain"` (the glyph alone, no badge).
 - `iconTone` is one of `"brand"` (each platform's color, the default),

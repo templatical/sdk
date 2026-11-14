@@ -1,10 +1,10 @@
 ---
-description: All 21 lintAccessibility rules — alt text, headings, link and button wording, contrast, touch targets, and preheader text — with default severities.
+description: lintAccessibility rules — alt text, headings, link and button wording, contrast, touch targets, preheader text, and custom social icon alt — with default severities.
 ---
 
 # Accessibility rule catalog
 
-The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
+The rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
 
 ## Images
 
@@ -15,6 +15,7 @@ The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule li
 | `a11y.img-alt-too-long` | warning | — | Alt text is too long — Screen readers don't pause inside alt text. Long alt strings become a wall of speech. Aim for under ~125 characters; put extra context in surrounding copy. |
 | `a11y.img-decorative-needs-empty-alt` | info | yes | Decorative image has alt text — Decorative images should be skipped by screen readers. Setting alt='' (empty) signals that intent. Non-empty alt on a decorative image is a contradiction. |
 | `a11y.img-linked-no-context` | warning | — | Linked image has no destination context — When an image is also a link, alt text doubles as the link label. Describing only what the image shows leaves users guessing where the link goes. |
+| `a11y.social-icon-missing-alt` | warning | — | A custom social icon's image is the link's only content and has no text alternative. A merge-tag image URL counts as an image. Built-in platform icons are not checked. [1](https://www.w3.org/WAI/tutorials/images/) |
 
 ## Headings
 
