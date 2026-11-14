@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import SocialCustomIconImage from "./SocialCustomIconImage.vue";
 import SocialIconSvg from "./SocialIconSvg.vue";
 import { useI18n } from "../../composables/useI18n";
 import type {
+  CustomSocialIcon,
+  SocialIcon,
   SocialIconsBlock as SocialIconsBlockType,
   ViewportSize,
 } from "@templatical/types";
@@ -28,6 +31,10 @@ const containerStyle = computed(() => ({
 }));
 
 const hasIcons = computed(() => props.block.icons.length > 0);
+
+function isCustomIcon(icon: SocialIcon): icon is CustomSocialIcon {
+  return icon.platform === "custom";
+}
 </script>
 
 <template>
@@ -40,8 +47,13 @@ const hasIcons = computed(() => props.block.icons.length > 0);
         class="tpl:cursor-default"
         @click.prevent
       >
+        <SocialCustomIconImage
+          v-if="isCustomIcon(icon)"
+          :icon="icon"
+          :icon-size="block.iconSize"
+        />
         <SocialIconSvg
-          v-if="icon.platform !== 'custom'"
+          v-else
           :platform="icon.platform"
           :icon-style="block.iconStyle"
           :icon-tone="block.iconTone"

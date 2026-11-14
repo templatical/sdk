@@ -451,6 +451,9 @@ const da: typeof en = {
     sizeLarge: "L",
     spacing: "Afstand",
     align: "Justering",
+    customIconHint:
+      "Stil og farve gælder ikke for brugerdefinerede billeder. Et kvadratisk billede fungerer bedst.",
+    customIconMissing: "Brugerdefineret ikon uden billede",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -470,6 +473,7 @@ const da: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Brugerdefineret ikon",
     },
   },
 
