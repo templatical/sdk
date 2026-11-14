@@ -178,7 +178,7 @@ Ein eigenes Icon (`platform: 'custom'`) zeigt Ihr eigenes Bild in der Reihe, fü
 - Es steht in derselben Reihe wie die eingebauten Icons, an seiner Stelle in `icons`, und verlinkt auf `url`.
 - Es wird als Quadrat in der `iconSize` des Blocks gezeichnet (24, 32 oder 48px). Verwenden Sie deshalb ein quadratisches Bild.
 - `iconStyle` und `iconTone` gelten dafür nicht: Das Bild wird so gezeigt, wie es ist, ohne Fläche, Einfärbung oder abgerundete Ecken.
-- Im Editor wählen Sie in der Plattformliste eines Icons **Eigenes Icon**. Das Bildfeld hat dieselbe Schaltfläche zum Durchsuchen der Medien und denselben Upload per Drag-and-drop wie der Bildblock, über Ihren `onRequestMedia`-Handler.
+- Im Editor wählen Sie in der Plattformliste eines Icons **Benutzerdefiniertes Symbol**. Das Bildfeld hat dieselbe Schaltfläche zum Durchsuchen der Medien und denselben Upload per Drag-and-drop wie der Bildblock, über Ihren `onRequestMedia`-Handler.
 - Der Linter meldet ein eigenes Icon ohne Bild (`social-icon-missing-image`, ein Fehler) und eines ohne Alternativtext (`social-icon-missing-alt`, eine Warnung).
 - In einer [lokalisierten Vorlage](./localized-templates.md) wird `alt` pro Sprache übersetzt, wie der Alternativtext eines Bildes.
 
