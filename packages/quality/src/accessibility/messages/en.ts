@@ -89,6 +89,10 @@ const en = {
       "No preheader text is set, so inboxes show fragments of the first block.",
     suggestion: "Add preheader text that previews the email.",
   },
+  "a11y.social-icon-missing-alt": {
+    message: "Icon {iconIndex} is a custom icon with no text alternative.",
+    suggestion: "Add alt text. The image is the link's only content.",
+  },
 };
 
 export default en;

@@ -530,7 +530,14 @@ export type SocialPlatform =
   | "github"
   | "dribbble"
   | "behance"
-  | "website";
+  | "website"
+  | "custom";
+
+/**
+ * Every `SocialPlatform` that has a built-in glyph: all of them except
+ * `"custom"`, whose icon is its own image (`CustomSocialIcon`).
+ */
+export type BuiltInSocialPlatform = Exclude<SocialPlatform, "custom">;
 
 /**
  * The icon's shape. `plain` is the glyph alone, with no badge or outline.
@@ -546,11 +553,34 @@ export type SocialIconTone = "brand" | "dark" | "light";
 
 export type SocialIconSize = "small" | "medium" | "large";
 
-export interface SocialIcon {
+/**
+ * An icon drawn with its platform's built-in glyph, in the block's
+ * `iconStyle` and `iconTone`.
+ */
+export interface BuiltInSocialIcon {
   id: string;
-  platform: SocialPlatform;
+  platform: BuiltInSocialPlatform;
   url: string;
 }
+
+/**
+ * An icon drawn from its own image. The block's `iconSize` sets its width and
+ * its height follows the image's proportions. The block's `iconStyle` and
+ * `iconTone` don't apply: the image is shown as it is, with no badge, tint or
+ * rounded corners.
+ */
+export interface CustomSocialIcon {
+  id: string;
+  platform: "custom";
+  url: string;
+  /** URL of the icon image. A square image lines up with the built-in icons. */
+  imageUrl: string;
+  /** Text alternative for the image, read out in place of the icon. */
+  alt?: string;
+}
+
+/** One icon in a social block: a built-in platform glyph, or a custom image when `platform` is `"custom"`. */
+export type SocialIcon = BuiltInSocialIcon | CustomSocialIcon;
 
 export interface SocialIconsBlock extends BaseBlock {
   type: "social";

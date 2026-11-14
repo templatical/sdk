@@ -295,6 +295,12 @@ describe("readForeignCssClasses", () => {
       }),
     ).toEqual(["promo"]);
   });
+
+  it("excludes the renderer's custom social icon marker", () => {
+    expect(
+      readForeignCssClasses({ "css-class": "tpl-social-custom promo" }),
+    ).toEqual(["promo"]);
+  });
 });
 
 describe("readParagraphGap", () => {

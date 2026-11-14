@@ -4,18 +4,18 @@ import type {
   SocialIconTone,
   SocialIconSize,
   SocialIconStyle,
-  SocialPlatform,
+  BuiltInSocialPlatform,
 } from "@templatical/types";
 import { attr, parseAlignment, parsePxValue } from "./attribute-parser";
 import { baseStyles, type Converted, type MapContext } from "./block-mapper";
 import type { TopolNode } from "./types";
 
 /**
- * Exhaustive over `SocialPlatform` on purpose: adding a member to that union
+ * Exhaustive over `BuiltInSocialPlatform` on purpose: adding a member to that union
  * without adding it here is a compile error, so this cannot silently fall back
  * to "website" for a platform the block model gained.
  */
-const KNOWN_PLATFORMS: Record<SocialPlatform, true> = {
+const KNOWN_PLATFORMS: Record<BuiltInSocialPlatform, true> = {
   facebook: true,
   twitter: true,
   instagram: true,
@@ -36,7 +36,7 @@ const KNOWN_PLATFORMS: Record<SocialPlatform, true> = {
   website: true,
 };
 
-const ALIASES: Record<string, SocialPlatform> = {
+const ALIASES: Record<string, BuiltInSocialPlatform> = {
   x: "twitter",
   "x-twitter": "twitter",
 };
@@ -67,11 +67,11 @@ const STYLE_ALIASES: Record<
   outlinedbw: { style: "outlined", tone: "dark" },
 };
 
-function normalizePlatform(raw: string): SocialPlatform | null {
+function normalizePlatform(raw: string): BuiltInSocialPlatform | null {
   const cleaned = raw.trim().toLowerCase();
   if (!cleaned) return null;
   if (ALIASES[cleaned]) return ALIASES[cleaned];
-  return cleaned in KNOWN_PLATFORMS ? (cleaned as SocialPlatform) : null;
+  return cleaned in KNOWN_PLATFORMS ? (cleaned as BuiltInSocialPlatform) : null;
 }
 
 function nearestSize(px: number): { size: SocialIconSize; exact: boolean } {

@@ -3745,9 +3745,6 @@ describe("convertBeeFreeTemplate", () => {
     name: "E-Mail",
     image: { href: "partner@example.com", prefix: "mailto:" },
   };
-  const artsyNote =
-    "Custom icon Artsy imported as the generic website icon; its image is not carried.";
-
   function socialIcons(
     content: ReturnType<typeof convertBeeFreeTemplate>["content"],
   ) {
@@ -3757,7 +3754,26 @@ describe("convertBeeFreeTemplate", () => {
     return social.icons.map((icon) => [icon.platform, icon.url]);
   }
 
-  it("keeps a custom icon in the social row as the generic website icon", () => {
+  it("never reads an inherited object key such as constructor as a platform", () => {
+    const { content, report } = convertBeeFreeTemplate(
+      socialTemplate([
+        { id: "constructor", image: { href: "https://example.com/a" } },
+        {
+          type: "custom",
+          name: "toString",
+          image: { href: "https://example.com/b" },
+        },
+      ]),
+    );
+
+    expect(socialIcons(content)).toEqual([
+      ["website", "https://example.com/a"],
+      ["website", "https://example.com/b"],
+    ]);
+    expect(report.entries[0].status).toBe("approximated");
+  });
+
+  it("keeps a custom icon in the social row with its image", () => {
     const { content, report } = convertBeeFreeTemplate(
       socialTemplate([instagram, facebook, artsy, emailIcon]),
     );
@@ -3765,14 +3781,21 @@ describe("convertBeeFreeTemplate", () => {
     expect(socialIcons(content)).toEqual([
       ["instagram", "https://instagram.com/example"],
       ["facebook", "https://facebook.com/page"],
-      ["website", "https://example.com/partner"],
+      ["custom", "https://example.com/partner"],
       ["email", "mailto:partner@example.com"],
     ]);
-    expect(JSON.stringify(content)).not.toContain("artsy.png");
+    const social = content.blocks[0];
+    if (social.type !== "social") throw new Error("expected a social block");
+    expect(social.icons[2]).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      url: "https://example.com/partner",
+      alt: "Custom",
+    });
     expect(report.entries).toHaveLength(1);
-    expect(report.entries[0].status).toBe("approximated");
-    expect(report.entries[0].note).toBe(artsyNote);
-    expect(report.warnings).toEqual([artsyNote]);
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
+    expect(report.warnings).toEqual([]);
   });
 
   it("keeps a custom icon at the start and at the end of the row", () => {
@@ -3780,18 +3803,20 @@ describe("convertBeeFreeTemplate", () => {
     const last = convertBeeFreeTemplate(socialTemplate([facebook, artsy]));
 
     expect(socialIcons(first.content)).toEqual([
-      ["website", "https://example.com/partner"],
+      ["custom", "https://example.com/partner"],
       ["facebook", "https://facebook.com/page"],
     ]);
     expect(socialIcons(last.content)).toEqual([
       ["facebook", "https://facebook.com/page"],
-      ["website", "https://example.com/partner"],
+      ["custom", "https://example.com/partner"],
     ]);
-    expect(first.report.entries[0].note).toBe(artsyNote);
-    expect(last.report.entries[0].note).toBe(artsyNote);
+    expect(first.report.entries[0].status).toBe("converted");
+    expect(first.report.entries[0].note).toBeUndefined();
+    expect(last.report.entries[0].status).toBe("converted");
+    expect(last.report.entries[0].note).toBeUndefined();
   });
 
-  it("names each custom icon in one social row", () => {
+  it("keeps every custom icon's image in one social row", () => {
     const other = {
       type: "custom",
       image: {
@@ -3805,16 +3830,24 @@ describe("convertBeeFreeTemplate", () => {
     );
 
     expect(socialIcons(content)).toEqual([
-      ["website", "https://example.com/partner"],
-      ["website", "https://example.com/lobby"],
+      ["custom", "https://example.com/partner"],
+      ["custom", "https://example.com/lobby"],
     ]);
-    expect(report.entries[0].status).toBe("approximated");
-    expect(report.entries[0].note).toBe(
-      `${artsyNote} Custom icon Lobby imported as the generic website icon; its image is not carried.`,
-    );
+    const social = content.blocks[0];
+    if (social.type !== "social") throw new Error("expected a social block");
+    expect(social.icons[0]).toMatchObject({
+      imageUrl: "https://cdn.example.com/artsy.png",
+      alt: "Custom",
+    });
+    expect(social.icons[1]).toMatchObject({
+      imageUrl: "https://cdn.example.com/lobby.png",
+      alt: "Lobby",
+    });
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
   });
 
-  it("drops an unsafe custom href and still keeps the website icon", () => {
+  it("drops an unsafe custom href and still keeps the custom icon", () => {
     const { content, report } = convertBeeFreeTemplate(
       socialTemplate([
         {
@@ -3828,13 +3861,20 @@ describe("convertBeeFreeTemplate", () => {
       ]),
     );
 
-    expect(socialIcons(content)).toEqual([["website", "#"]]);
+    expect(socialIcons(content)).toEqual([["custom", "#"]]);
+    const social = content.blocks[0];
+    if (social.type !== "social") throw new Error("expected a social block");
+    expect(social.icons[0]).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      url: "#",
+      alt: "Artsy",
+    });
     expect(JSON.stringify(content)).not.toMatch(/javascript:/);
-    expect(report.entries[0].status).toBe("approximated");
-    expect(report.entries[0].note).toBe(artsyNote);
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
     expect(report.warnings).toEqual([
       'Dropped the unsafe link "javascript:alert(1)" on a social icon.',
-      artsyNote,
     ]);
   });
 
@@ -3870,13 +3910,17 @@ describe("convertBeeFreeTemplate", () => {
 
     expect(socialIcons(content)).toEqual([
       ["facebook", "https://facebook.com/page"],
-      ["website", "https://vimeo.com/example"],
+      ["custom", "https://vimeo.com/example"],
     ]);
-    expect(JSON.stringify(content)).not.toContain("vimeo.png");
-    expect(report.entries[0].status).toBe("approximated");
-    expect(report.entries[0].note).toBe(
-      "Custom icon Vimeo imported as the generic website icon; its image is not carried.",
-    );
+    const social = content.blocks[0];
+    if (social.type !== "social") throw new Error("expected a social block");
+    expect(social.icons[1]).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/vimeo.png",
+      alt: "Vimeo",
+    });
+    expect(report.entries[0].status).toBe("converted");
+    expect(report.entries[0].note).toBeUndefined();
   });
 
   it("keeps a Xing icon on the social block", () => {
@@ -4068,12 +4112,18 @@ describe("convertBeeFreeTemplate", () => {
 
     expect(block.iconStyle).toBe("circle");
     expect(block.iconTone).toBeUndefined();
-    expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
-      ["website", "https://example.com/partner"],
+    expect(block.icons).toEqual([
+      expect.objectContaining({
+        platform: "custom",
+        imageUrl:
+          "https://cdn.example.com/social-networks-icon-sets/circle-blue/artsy.png",
+        url: "https://example.com/partner",
+        alt: "Custom",
+      }),
     ]);
     expect(report.entries[0].status).toBe("approximated");
-    expect(report.entries[0].note).toBe(`${setNote} ${artsyNote}`);
-    expect(report.warnings).toEqual([setNote, artsyNote]);
+    expect(report.entries[0].note).toBe(setNote);
+    expect(report.warnings).toEqual([setNote]);
   });
 
   it("adds 4px under a social row whose bottom padding is 10px", () => {

@@ -152,7 +152,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, Padding, `width` (siehe [Button-Breite](#button-breite)), `line-height` (siehe [Button-Zeilenhöhe](#button-zeilenhoehe)), `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (siehe [Divider-Breite](#divider-breite)), Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
-| `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. Die Plattform kommt aus `name`, dem `src`-Dateinamen (Pack-Suffixe wie `-round-outlined` werden abgetrennt) oder `alt`. |
+| `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. Die Plattform kommt aus `name`, dem `src`-Dateinamen (Pack-Suffixe wie `-round-outlined` werden abgetrennt) oder, nur ohne `src`, aus `alt`. Ein unerkanntes Icon mit Bild, auch eines, dessen `alt` ein Netzwerk nennt, wird ein benutzerdefiniertes Icon (eigenes Bild, Link und Alt-Text) im selben Social-Block. Ein von Templatical gerendertes eigenes Icon trägt `css-class="tpl-social-custom"` und bleibt benutzerdefiniert, auch wenn seine Datei nach einem Netzwerk benannt ist. Ohne Bild wird es ein `website`-Icon und als `approximated` gemeldet. |
 | `mj-navbar` (mit `mj-navbar-link`) | `MenuBlock` | Jeder Link → `MenuItemData`. |
 | `mj-table` | `TableBlock` | Bildet `<tr>`/`<td>`/`<th>`-Zeilen und -Zellen auf Templaticals Tabellen-Daten ab; eine führende `<th>`-Zeile setzt `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inneres Markup bleibt wortgetreu erhalten. |

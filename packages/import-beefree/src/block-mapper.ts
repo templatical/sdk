@@ -29,7 +29,7 @@ import type {
   DividerBlock,
   HeadingLevel,
   ImageBlock,
-  SocialPlatform,
+  BuiltInSocialPlatform,
   SocialIcon,
   SocialIconSize,
   SocialIconStyle,
@@ -151,7 +151,7 @@ function moduleKind(module: BeeFreeeModule): string | undefined {
   )?.[1];
 }
 
-const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
+const SOCIAL_PLATFORM_MAP: Record<string, BuiltInSocialPlatform> = {
   facebook: "facebook",
   twitter: "twitter",
   x: "twitter",
@@ -2634,12 +2634,15 @@ function socialKey(value: string | undefined): string {
 
 function platformFromKey(
   value: string | undefined,
-): SocialPlatform | undefined {
+): BuiltInSocialPlatform | undefined {
   const key = socialKey(value);
-  return key ? SOCIAL_PLATFORM_MAP[key] : undefined;
+  // Own keys only: `constructor` and friends are not networks.
+  return key && Object.hasOwn(SOCIAL_PLATFORM_MAP, key)
+    ? SOCIAL_PLATFORM_MAP[key]
+    : undefined;
 }
 
-const SOCIAL_HOSTS: readonly (readonly [string, SocialPlatform])[] = [
+const SOCIAL_HOSTS: readonly (readonly [string, BuiltInSocialPlatform])[] = [
   ["youtube.com", "youtube"],
   ["youtu.be", "youtube"],
   ["facebook.com", "facebook"],
@@ -2669,7 +2672,7 @@ const SOCIAL_HOSTS: readonly (readonly [string, SocialPlatform])[] = [
 /** The link's host when the icon's id and name are not a network. */
 function platformFromHref(
   href: string | undefined,
-): SocialPlatform | undefined {
+): BuiltInSocialPlatform | undefined {
   const raw = (href ?? "").trim();
   if (!raw) return undefined;
   if (/^mailto:/i.test(raw)) return "email";
@@ -2691,7 +2694,9 @@ function platformFromHref(
  * the other way around. A blank id is not a name. The link's host is the
  * last place the network is written.
  */
-function socialPlatform(icon: BeeFreeeSocialIcon): SocialPlatform | undefined {
+function socialPlatform(
+  icon: BeeFreeeSocialIcon,
+): BuiltInSocialPlatform | undefined {
   return (
     platformFromKey(icon.id) ??
     platformFromKey(icon.name) ??
@@ -2712,11 +2717,49 @@ function socialIconLabel(icon: BeeFreeeSocialIcon): string {
   return "custom";
 }
 
-function safeCopiedUrl(value: string, warnings: string[]): string {
+function safeCopiedUrl(
+  value: string,
+  kind: "src" | "href",
+  warnings: string[],
+): string {
   if (!value) return "";
-  if (isSafeHtmlUrl(value, "href")) return value;
-  warnings.push(`Dropped the unsafe link "${value}" on a social icon.`);
+  if (isSafeHtmlUrl(value, kind)) return value;
+  warnings.push(
+    kind === "src"
+      ? `Dropped the unsafe image "${value}" on a social icon.`
+      : `Dropped the unsafe link "${value}" on a social icon.`,
+  );
   return "";
+}
+
+/** A usable icon file: decoded, non-blank, and safe as an image `src`. */
+function socialImageUrl(icon: BeeFreeeSocialIcon, warnings: string[]): string {
+  const raw = icon.image?.src;
+  if (typeof raw !== "string") return "";
+  const decoded = decodeEntitiesInTokens(raw).trim();
+  if (!decoded) return "";
+  return safeCopiedUrl(decoded, "src", warnings);
+}
+
+/** Alt text: the image alt, then its title, then the icon name. */
+function socialAlt(icon: BeeFreeeSocialIcon): string | undefined {
+  for (const candidate of [icon.image?.alt, icon.image?.title, icon.name]) {
+    if (typeof candidate !== "string") continue;
+    const decoded = decodeEntitiesInTokens(candidate).trim();
+    if (decoded) return decoded;
+  }
+  return undefined;
+}
+
+function imagelessSocialNote(
+  icon: BeeFreeeSocialIcon,
+  platform: BuiltInSocialPlatform,
+): string {
+  const as =
+    platform === "website"
+      ? "the generic website icon"
+      : `the ${platform} icon`;
+  return `Custom icon ${socialIconLabel(icon)} has no image file; imported as ${as}.`;
 }
 
 function socialHref(icon: BeeFreeeSocialIcon): string {
@@ -2893,10 +2936,12 @@ function socialAppearance(descriptor: BeeFreeeModuleDescriptor): {
 const SOCIAL_ROW_STRUT_PX = 4;
 
 /**
- * One social block for the whole module, in source order. An icon that is
- * not a known `SocialIcon`, including `type: "custom"`, becomes platform
- * `website` with the same link this mapping already computes. `SocialIcon`
- * has no image field, so that file is not carried and the note names the icon.
+ * One social block for the whole module, in source order. A `type: "custom"`
+ * icon, and an unrecognised network, become a custom icon when the image file
+ * is usable: that file, the link and the alt text stay on the icon. A custom
+ * upload keeps its image even when its name is a known platform. An icon that
+ * would be custom but has no usable image becomes the recognised platform, or
+ * `website`, and is reported approximated.
  */
 function convertSocial(
   descriptor: BeeFreeeModuleDescriptor,
@@ -2922,19 +2967,35 @@ function convertSocial(
   const icons: SocialIcon[] = [];
   // The Icons module keeps items of another shape under the same key.
   for (const beeIcon of iconsList.icons as BeeFreeeSocialIcon[]) {
-    const recognised =
-      beeIcon.type === "custom" ? undefined : socialPlatform(beeIcon);
-    const href = safeCopiedUrl(socialHref(beeIcon), warnings);
-    if (!recognised) {
-      const note = `Custom icon ${socialIconLabel(beeIcon)} imported as the generic website icon; its image is not carried.`;
-      warnings.push(note);
-      notes.push(note);
+    const recognised = socialPlatform(beeIcon);
+    // Whitespace is a relative URL to isSafeHtmlUrl, so a blank link is
+    // rejected here and stored as "#", the same as a missing one.
+    const href = socialHref(beeIcon);
+    const url =
+      href.trim() === "" ? "#" : safeCopiedUrl(href, "href", warnings) || "#";
+    const customCandidate =
+      beeIcon.type === "custom" || recognised === undefined;
+    const imageUrl = customCandidate ? socialImageUrl(beeIcon, warnings) : "";
+    if (customCandidate && imageUrl) {
+      const alt = socialAlt(beeIcon);
+      icons.push({
+        id: generateId(),
+        platform: "custom",
+        imageUrl,
+        url,
+        ...(alt ? { alt } : {}),
+      });
+      continue;
     }
-    icons.push({
-      id: generateId(),
-      platform: recognised ?? "website",
-      url: href || "#",
-    });
+    if (!customCandidate && recognised) {
+      icons.push({ id: generateId(), platform: recognised, url });
+      continue;
+    }
+    const platform = recognised ?? "website";
+    const note = imagelessSocialNote(beeIcon, platform);
+    warnings.push(note);
+    notes.push(note);
+    icons.push({ id: generateId(), platform, url });
   }
 
   return {

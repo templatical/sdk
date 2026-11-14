@@ -396,6 +396,9 @@ const translations: typeof en = {
     sizeLarge: "大",
     spacing: "間隔",
     align: "配置",
+    customIconHint:
+      "スタイルと色はカスタム画像には適用されません。正方形の画像が最適です。",
+    customIconMissing: "画像のないカスタムアイコン",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -415,6 +418,7 @@ const translations: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "カスタムアイコン",
     },
   },
   menu: {

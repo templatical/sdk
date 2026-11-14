@@ -202,6 +202,13 @@ export function scanBlock(block: Block): Scan {
     case "wrapper":
       if (block.backgroundImage) urls.push(block.backgroundImage.url);
       break;
+    case "social":
+      for (const icon of block.icons) {
+        if (icon.platform !== "custom") continue;
+        const imageUrl = icon.imageUrl as unknown;
+        if (typeof imageUrl === "string") urls.push(imageUrl);
+      }
+      break;
   }
   return scanHtml(html.join("\n"), stylesheets.join("\n"), urls);
 }

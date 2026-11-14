@@ -27,7 +27,7 @@ import type {
   HeadingLevel,
   MenuItemData,
   SocialIcon,
-  SocialPlatform,
+  BuiltInSocialPlatform,
   TableCellData,
   TableRowData,
 } from "@templatical/types";
@@ -93,7 +93,7 @@ const SOCIAL_PLATFORMS = [
   "whatsapp",
   "telegram",
   "github",
-] as const satisfies ReadonlyArray<SocialPlatform>;
+] as const satisfies ReadonlyArray<BuiltInSocialPlatform>;
 
 const ENTITIES: Record<string, string> = {
   "&amp;": "&",
@@ -515,21 +515,49 @@ function convertNavbar(node: EasyEmailProNode, map: MapContext): Converted {
   );
 }
 
+const CUSTOM_SRC_NOTE =
+  "A recognised platform's own image was not used; it keeps the built-in icon.";
+const WEBSITE_ICON_NOTE = 'Unrecognised social icon mapped to "website".';
+
 function convertSocial(node: EasyEmailProNode, map: MapContext): Converted {
   const icons: SocialIcon[] = [];
-  let customSrc = false;
+  let recognisedCustomSrc = false;
+  let websiteFallback = false;
   for (const child of node.children ?? []) {
     if (!isElement(child) || child.type !== "standard-social-element") continue;
     const href = readAttr(child, "href", map.resolve);
     const src = readAttr(child, "src", map.resolve);
-    if (typeof src === "string" && !isUnset(src)) customSrc = true;
+    const platform = inferPlatform(href, src);
+    const imageUrl = typeof src === "string" ? src.trim() : "";
+    const srcSet = imageUrl !== "" && !isUnset(src);
+    const altRaw = readAttr(child, "alt", map.resolve);
+    const alt = typeof altRaw === "string" ? altRaw.trim() : "";
+    const url = setString(href) ?? "";
+    // An unrecognised icon with its own image stays a custom icon. A
+    // recognised platform keeps that platform; its image is not the glyph.
+    if (platform === undefined && srcSet) {
+      icons.push({
+        id: generateId(),
+        platform: "custom",
+        imageUrl,
+        url,
+        ...(alt ? { alt } : {}),
+      });
+      continue;
+    }
+    if (platform !== undefined && srcSet) recognisedCustomSrc = true;
+    if (platform === undefined) websiteFallback = true;
     icons.push({
       id: generateId(),
-      platform: inferPlatform(href, src),
-      url: setString(href) ?? "",
+      platform: platform ?? "website",
+      url,
     });
   }
   if (icons.length === 0) return empty();
+
+  const notes: string[] = [];
+  if (recognisedCustomSrc) notes.push(CUSTOM_SRC_NOTE);
+  if (websiteFallback) notes.push(WEBSITE_ICON_NOTE);
 
   const align = parseAlign(readAttr(node, "align", map.resolve));
   return finish(
@@ -539,13 +567,8 @@ function convertSocial(node: EasyEmailProNode, map: MapContext): Converted {
       ...leafStyles(node, map),
     }),
     node,
-    customSrc
-      ? report(
-          "standard-social",
-          "social",
-          "approximated",
-          "custom src was present; SocialIconsBlock has no custom PNG",
-        )
+    notes.length > 0
+      ? report("standard-social", "social", "approximated", notes.join(" "))
       : report("standard-social", "social", "converted"),
   );
 }
@@ -713,7 +736,15 @@ function firstUrl(node: EasyEmailProNode, map: MapContext): string | undefined {
   return undefined;
 }
 
-function inferPlatform(href: unknown, src: unknown): SocialPlatform {
+/**
+ * The platform named by the link host, then the image path. Undefined when
+ * neither names one, so a missing image can stay `website` and a present
+ * image can stay a custom icon.
+ */
+function inferPlatform(
+  href: unknown,
+  src: unknown,
+): BuiltInSocialPlatform | undefined {
   const host = hostname(typeof href === "string" ? href : "");
   for (const platform of SOCIAL_PLATFORMS) {
     if (host.includes(platform)) return platform;
@@ -722,7 +753,7 @@ function inferPlatform(href: unknown, src: unknown): SocialPlatform {
   for (const platform of SOCIAL_PLATFORMS) {
     if (path.includes(platform)) return platform;
   }
-  return "website";
+  return undefined;
 }
 
 function hostname(href: string): string {

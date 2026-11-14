@@ -837,28 +837,89 @@ describe("compiled pipeline", () => {
     });
   });
 
-  it("reports an unmatched social icon as a generic website icon", () => {
+  it("imports an unmatched icon with a src as a custom icon", () => {
     const { content, report } = convertStripoTemplate(
       socialTable(
         iconCell(
           "https://example.com/xing",
-          `<img src="https://cdn.example/xing/other.png">`,
+          `<img src="https://cdn.example/artsy/other.png" alt="Artsy" title="Gallery">`,
         ),
       ),
     );
     const icons = socialBlocks(content.blocks);
     expect(icons).toHaveLength(1);
     expect(icons[0].type).toBe("social");
-    expect(icons[0].icons.map((i) => i.platform)).toEqual(["website"]);
+    expect(icons[0].icons[0]).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example/artsy/other.png",
+      url: "https://example.com/xing",
+      alt: "Artsy",
+    });
     expect(socialEntry(report)).toEqual({
       sourceTag: "es-social",
       templaticalBlockType: "social",
-      status: "approximated",
-      note: "1 icon became a generic website icon.",
+      status: "converted",
     });
   });
 
-  it("counts one unmatched icon when the block also has a matched icon", () => {
+  it("keeps a recognised platform when the icon also has an image", () => {
+    const { content, report } = convertStripoTemplate(
+      socialTable(
+        iconCell(
+          "https://www.xing.com/pages/example",
+          `<img src="https://cdn.example/icons/other.png" alt="Xing" title="Xing">`,
+        ),
+      ),
+    );
+    expect(socialBlocks(content.blocks)[0].icons[0]).toMatchObject({
+      platform: "xing",
+      url: "https://www.xing.com/pages/example",
+    });
+    expect(socialBlocks(content.blocks)[0].icons[0]).not.toHaveProperty(
+      "imageUrl",
+    );
+    expect(socialEntry(report)).toEqual({
+      sourceTag: "es-social",
+      templaticalBlockType: "social",
+      status: "converted",
+    });
+  });
+
+  it("uses the image title when an unmatched icon has no alt", () => {
+    const { content } = convertStripoTemplate(
+      socialTable(
+        iconCell(
+          "https://example.com/lobby",
+          `<img src="https://cdn.example/lobby.png" title="Lobby">`,
+        ),
+      ),
+    );
+    expect(socialBlocks(content.blocks)[0].icons[0]).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example/lobby.png",
+      alt: "Lobby",
+    });
+  });
+
+  it("omits alt when an unmatched icon names neither alt nor title", () => {
+    const { content } = convertStripoTemplate(
+      socialTable(
+        iconCell(
+          "https://example.com/lobby",
+          `<img src="https://cdn.example/lobby.png">`,
+        ),
+      ),
+    );
+    const icon = socialBlocks(content.blocks)[0].icons[0];
+    expect(icon).toMatchObject({
+      platform: "custom",
+      imageUrl: "https://cdn.example/lobby.png",
+      url: "https://example.com/lobby",
+    });
+    expect(icon).not.toHaveProperty("alt");
+  });
+
+  it("does not count an unmatched icon that kept its image", () => {
     const { content, report } = convertStripoTemplate(
       socialTable(
         iconCell(
@@ -867,15 +928,39 @@ describe("compiled pipeline", () => {
         ) +
           iconCell(
             "https://example.com/xing",
-            `<img src="https://cdn.example/xing/other.png">`,
+            `<img src="https://cdn.example/artsy/other.png" alt="Artsy">`,
           ),
       ),
     );
     const icons = socialBlocks(content.blocks);
     expect(icons[0].icons.map((i) => i.platform)).toEqual([
       "facebook",
-      "website",
+      "custom",
     ]);
+    expect(icons[0].icons[1]).toMatchObject({
+      imageUrl: "https://cdn.example/artsy/other.png",
+      alt: "Artsy",
+      url: "https://example.com/xing",
+    });
+    expect(socialEntry(report)).toEqual({
+      sourceTag: "es-social",
+      templaticalBlockType: "social",
+      status: "converted",
+    });
+  });
+
+  it("counts an unmatched icon with no src as a generic website icon", () => {
+    const { content, report } = convertStripoTemplate(
+      socialTable(
+        iconCell(
+          "https://facebook.com/brand",
+          `<img title="Facebook" src="https://cdn.example/facebook.png" alt="Fb">`,
+        ) + iconCell("https://example.com/artsy", `<img alt="Artsy">`),
+      ),
+    );
+    expect(
+      socialBlocks(content.blocks)[0].icons.map((i) => i.platform),
+    ).toEqual(["facebook", "website"]);
     expect(socialEntry(report)).toEqual({
       sourceTag: "es-social",
       templaticalBlockType: "social",
@@ -884,22 +969,19 @@ describe("compiled pipeline", () => {
     });
   });
 
-  it("counts every unmatched icon in one note", () => {
+  it("counts every unmatched icon that has no src", () => {
     const { content, report } = convertStripoTemplate(
       socialTable(
-        iconCell(
-          "https://example.com/xing",
-          `<img src="https://cdn.example/xing/other.png">`,
-        ) +
-          iconCell(
-            "https://example.com/other",
-            `<img src="https://cdn.example/icons/mailbox.png">`,
-          ),
+        iconCell("https://example.com/artsy", `<img alt="Artsy">`) +
+          iconCell("https://example.com/other", `<img title="Lobby">`),
       ),
     );
     expect(
-      socialBlocks(content.blocks)[0].icons.map((i) => i.platform),
-    ).toEqual(["website", "website"]);
+      socialBlocks(content.blocks)[0].icons.map((i) => [i.platform, i.url]),
+    ).toEqual([
+      ["website", "https://example.com/artsy"],
+      ["website", "https://example.com/other"],
+    ]);
     expect(socialEntry(report)).toMatchObject({
       status: "approximated",
       note: "2 icons became generic website icons.",

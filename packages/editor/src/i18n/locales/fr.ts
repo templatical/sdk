@@ -415,6 +415,9 @@ const fr: typeof en = {
     sizeLarge: "L",
     spacing: "Espacement",
     align: "Alignement",
+    customIconHint:
+      "Le style et la couleur ne s'appliquent pas aux images personnalisées. Une image carrée convient le mieux.",
+    customIconMissing: "Icône personnalisée sans image",
     platforms: {
       facebook: "Facebook",
       twitter: "X (Twitter)",
@@ -434,6 +437,7 @@ const fr: typeof en = {
       github: "GitHub",
       dribbble: "Dribbble",
       behance: "Behance",
+      custom: "Icône personnalisée",
     },
   },
   menu: {

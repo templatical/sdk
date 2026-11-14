@@ -21,7 +21,7 @@ import type {
   DividerBlock,
   HeadingLevel,
   ImageBlock,
-  SocialPlatform,
+  BuiltInSocialPlatform,
   SocialIcon,
   MenuItemData,
 } from "@templatical/types";
@@ -41,7 +41,7 @@ import {
   parseDividerWidth,
 } from "./style-parser";
 
-const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
+const SOCIAL_PLATFORM_MAP: Record<string, BuiltInSocialPlatform> = {
   facebook: "facebook",
   twitter: "twitter",
   x: "twitter",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createTitleBlock,
   createMenuBlock,
+  createSocialIconsBlock,
   createImageBlock,
   createSectionBlock,
   sourceHash,
@@ -55,6 +56,68 @@ describe("deriveLayer", () => {
       text: { "items.i1.text": { value: "Start", sourceHash: sourceHash("Home") } },
       set: { "items.i1.url": "/de" },
     });
+  });
+
+  it("addresses a custom social icon alt by element id and keeps image URLs as overrides", () => {
+    const social = createSocialIconsBlock({
+      icons: [
+        { id: "fb", platform: "facebook", url: "https://facebook.com/en" },
+        {
+          id: "gh",
+          platform: "custom",
+          url: "https://github.com/en",
+          imageUrl: "https://cdn.example/gh.png",
+          alt: "GitHub",
+        },
+      ],
+    });
+    expect(
+      deriveLayer(
+        social,
+        {
+          ...social,
+          icons: [
+            { id: "fb", platform: "facebook", url: "https://facebook.com/de" },
+            {
+              id: "gh",
+              platform: "custom",
+              url: "https://github.com/de",
+              imageUrl: "https://cdn.example/gh-de.png",
+              alt: "GitHub-Profil",
+            },
+          ],
+        },
+        undefined,
+      ),
+    ).toEqual({
+      text: {
+        "icons.gh.alt": {
+          value: "GitHub-Profil",
+          sourceHash: sourceHash("GitHub"),
+        },
+      },
+      set: {
+        "icons.fb.url": "https://facebook.com/de",
+        "icons.gh.url": "https://github.com/de",
+        "icons.gh.imageUrl": "https://cdn.example/gh-de.png",
+      },
+    });
+  });
+
+  it("stores no alt translation for a built-in icon", () => {
+    const social = createSocialIconsBlock({
+      icons: [{ id: "fb", platform: "facebook", url: "https://facebook.com/en" }],
+    });
+    expect(
+      deriveLayer(
+        social,
+        {
+          ...social,
+          icons: [{ id: "fb", platform: "facebook", url: "https://facebook.com/de" }],
+        },
+        undefined,
+      ),
+    ).toEqual({ set: { "icons.fb.url": "https://facebook.com/de" } });
   });
 
   it("stores a nested style leaf as an override", () => {

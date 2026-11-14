@@ -1,0 +1,9 @@
+---
+"@templatical/import-mjml": patch
+"@templatical/import-stripo": patch
+"@templatical/import-easy-email-pro": patch
+---
+
+Fix unrecognised social icons losing their image (#1214): the MJML, Stripo and Easy Email Pro importers keep such an icon's image as a custom icon.
+
+A social icon whose network Templatical doesn't recognise, and that has an image, becomes a custom icon (`platform: "custom"`) with that image as `imageUrl`, its link as `url` and its alt text as `alt`, in its place in the row. Before, it became the generic `website` icon and lost its image. An unrecognised icon without an image still becomes `website`. In MJML this is an `mj-social-element` with a `src`; `alt` names a network only when there is no `src`. A custom icon Templatical rendered carries `css-class="tpl-social-custom"`, so it imports back as a custom icon even when its file is named after a network. In Stripo it is the icon's `<img>`, and in Easy Email Pro the element's `src`.

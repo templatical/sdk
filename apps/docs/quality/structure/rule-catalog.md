@@ -1,5 +1,5 @@
 ---
-description: lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, heroes that render as regular sections, ignored column widths, and background images Outlook can't layer — with severities and fixes.
+description: lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, heroes that render as regular sections, ignored column widths, background images Outlook can't layer, and custom social icons without an image — with severities and fixes.
 ---
 
 # Structure rule catalog
@@ -34,3 +34,9 @@ The rules `lintStructure` ships. Each rule lives in `packages/quality/src/struct
 |---|---|---|---|
 | `structure.wrapper-color-over-background-image` | warning | — | A section has a background image, and its wrapper (its own `wrapper`, or the layout band it sits in when the linted tree includes the layout) has a background color. Outlook on Windows paints the wrapper color over the section's image, so the image disappears there. Every other client layers them correctly. Remove the wrapper color, or move the image to the wrapper. |
 | `structure.nested-background-image` | warning | — | A section and its wrapper both have a background image. Outlook on Windows can't nest the two VML fills MJML generates for them, and the layout breaks. Keep the image on one of them. |
+
+## Social icons
+
+| Rule | Default severity | Auto-fix | What it checks |
+|---|---|---|---|
+| `structure.social-icon-missing-image` | error | — | A custom social icon has no image URL, or only whitespace. The renderer omits it, so the link disappears. A merge-tag URL counts as present. Built-in platform icons are not checked. |

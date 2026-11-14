@@ -93,6 +93,12 @@ const de: typeof en = {
       "Kein Preheader-Text gesetzt, daher zeigen Postfächer Bruchstücke des ersten Blocks.",
     suggestion: "Ergänze einen Preheader-Text als Vorschau auf die E-Mail.",
   },
+  "a11y.social-icon-missing-alt": {
+    message:
+      "Symbol {iconIndex} ist ein benutzerdefiniertes Symbol ohne Alternativtext.",
+    suggestion:
+      "Füge einen Alt-Text hinzu. Das Bild ist der einzige Inhalt des Links.",
+  },
 };
 
 export default de;
