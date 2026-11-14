@@ -323,4 +323,202 @@ describe("renderSocialIcons", () => {
     expect(nodeImage.src).toBe(src);
     expect(nodeImage.alt).toBe("");
   });
+
+  it("pins a built-in-only block to its exact MJML string", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        { id: "fb", platform: "facebook", url: "https://facebook.com" },
+        { id: "tw", platform: "twitter", url: "https://twitter.com" },
+      ],
+      iconStyle: "circle",
+      iconSize: "small",
+      spacing: 8,
+      align: "left",
+    });
+    expect(renderBlock(block, ctx)).toBe(`<mj-social
+  mode="horizontal"
+  align="left"
+  icon-padding="0"
+  padding="10px 10px 10px 10px"
+>
+<mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/facebook.png" href="https://facebook.com" icon-size="24px" padding="0 8px 0 0" border-radius="50%" background-color="transparent"></mj-social-element>
+<mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/twitter.png" href="https://twitter.com" icon-size="24px" padding="0 0px 0 0" border-radius="50%" background-color="transparent"></mj-social-element>
+</mj-social>`);
+  });
+
+  it("renders a custom-only row from imageUrl, with an empty alt and no name", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        {
+          id: "gh",
+          platform: "custom",
+          url: "https://github.com",
+          imageUrl: "https://cdn.example/gh.png",
+        },
+      ],
+      iconStyle: "circle",
+      iconSize: "large",
+      spacing: 16,
+    });
+    expect(renderBlock(block, ctx)).toBe(`<mj-social
+  mode="horizontal"
+  align="center"
+  icon-padding="0"
+  padding="10px 10px 10px 10px"
+>
+<mj-social-element src="https://cdn.example/gh.png" alt="" href="https://github.com" icon-size="48px" padding="0 0px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+</mj-social>`);
+  });
+
+  it("keeps mixed icons in source order and does not apply icon style to the custom one", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        { id: "fb", platform: "facebook", url: "https://facebook.com" },
+        {
+          id: "gh",
+          platform: "custom",
+          url: "https://github.com/org?a=1&b=2",
+          imageUrl: "https://cdn.example/gh.png?x=1&y=2",
+          alt: 'GitHub "profile" & logo',
+        },
+        { id: "tw", platform: "twitter", url: "https://twitter.com" },
+      ],
+      iconStyle: "circle",
+      spacing: 12,
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toBe(`<mj-social
+  mode="horizontal"
+  align="center"
+  icon-padding="0"
+  padding="10px 10px 10px 10px"
+>
+<mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/facebook.png" href="https://facebook.com" icon-size="32px" padding="0 12px 0 0" border-radius="50%" background-color="transparent"></mj-social-element>
+<mj-social-element src="https://cdn.example/gh.png?x=1&amp;y=2" alt="GitHub &quot;profile&quot; &amp; logo" href="https://github.com/org?a=1&amp;b=2" icon-size="32px" padding="0 12px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+<mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/twitter.png" href="https://twitter.com" icon-size="32px" padding="0 0px 0 0" border-radius="50%" background-color="transparent"></mj-social-element>
+</mj-social>`);
+    expect(result).not.toMatch(/\bname="/);
+  });
+
+  it("skips a custom icon with a blank imageUrl, including when it is last", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        {
+          id: "blank-first",
+          platform: "custom",
+          url: "https://example.com/blank",
+          imageUrl: "  \n\t",
+        },
+        { id: "fb", platform: "facebook", url: "https://facebook.com" },
+        {
+          id: "gh",
+          platform: "custom",
+          url: "https://github.com",
+          imageUrl: "https://cdn.example/gh.png",
+          alt: "GitHub",
+        },
+        {
+          id: "blank-last",
+          platform: "custom",
+          url: "https://example.com/last",
+          imageUrl: "",
+        },
+      ],
+      spacing: 12,
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toBe(`<mj-social
+  mode="horizontal"
+  align="center"
+  icon-padding="0"
+  padding="10px 10px 10px 10px"
+>
+<mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/solid/facebook.png" href="https://facebook.com" icon-size="32px" padding="0 12px 0 0" border-radius="4px" background-color="transparent"></mj-social-element>
+<mj-social-element src="https://cdn.example/gh.png" alt="GitHub" href="https://github.com" icon-size="32px" padding="0 0px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+</mj-social>`);
+    expect(result).not.toContain("example.com/blank");
+    expect(result).not.toContain("example.com/last");
+  });
+
+  it("renders nothing when every custom icon imageUrl is blank", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        {
+          id: "a",
+          platform: "custom",
+          url: "https://example.com/a",
+          imageUrl: "",
+        },
+        {
+          id: "b",
+          platform: "custom",
+          url: "https://example.com/b",
+          imageUrl: "   ",
+        },
+      ],
+    });
+    expect(renderBlock(block, ctx)).toBe("");
+  });
+
+  it("skips a custom icon whose imageUrl is missing, null, or not a string", () => {
+    const icons = [
+      {
+        id: "missing",
+        platform: "custom" as const,
+        url: "https://example.com/missing",
+        imageUrl: "x",
+      },
+      {
+        id: "nil",
+        platform: "custom" as const,
+        url: "https://example.com/nil",
+        imageUrl: "x",
+      },
+      {
+        id: "num",
+        platform: "custom" as const,
+        url: "https://example.com/num",
+        imageUrl: "x",
+      },
+      { id: "fb", platform: "facebook" as const, url: "https://facebook.com" },
+    ];
+    delete (icons[0] as { imageUrl?: string }).imageUrl;
+    (icons[1] as { imageUrl: unknown }).imageUrl = null;
+    (icons[2] as { imageUrl: unknown }).imageUrl = 5;
+    const block = createSocialIconsBlock({ icons, spacing: 12 });
+    expect(renderBlock(block, ctx)).toBe(`<mj-social
+  mode="horizontal"
+  align="center"
+  icon-padding="0"
+  padding="10px 10px 10px 10px"
+>
+<mj-social-element src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/solid/facebook.png" href="https://facebook.com" icon-size="32px" padding="0 0px 0 0" border-radius="4px" background-color="transparent"></mj-social-element>
+</mj-social>`);
+    const onlyMalformed = createSocialIconsBlock({
+      icons: icons.slice(0, 3),
+    });
+    expect(renderBlock(onlyMalformed, ctx)).toBe("");
+  });
+
+  it("renders a numeric alt as an empty alt", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        {
+          id: "gh",
+          platform: "custom",
+          url: "https://github.com",
+          imageUrl: "https://cdn.example/gh.png",
+          alt: 5 as unknown as string,
+        },
+      ],
+    });
+    expect(renderBlock(block, ctx)).toBe(`<mj-social
+  mode="horizontal"
+  align="center"
+  icon-padding="0"
+  padding="10px 10px 10px 10px"
+>
+<mj-social-element src="https://cdn.example/gh.png" alt="" href="https://github.com" icon-size="32px" padding="0 0px 0 0" border-radius="0" background-color="transparent"></mj-social-element>
+</mj-social>`);
+  });
 });

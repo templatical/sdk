@@ -1,6 +1,6 @@
 # Struktur-Linter
 
-`lintStructure(content, options?)` ist der Datenintegritäts-Checker in [`@templatical/quality`](../). Er durchläuft den `TemplateContent`-Blockbaum und meldet Formen, die auf Korruption hindeuten — doppelte IDs, Sektionen, deren `columns`-Layout nicht zum `children`-Array passt, verschachtelte Sektionen (vom Renderer abgelehnt), leere Sektionen / Spalten, Heros, die als normale Sektion dargestellt werden, Spaltenbreiten, die der Renderer ignoriert, und Hintergrundbilder, die Outlook unter Windows nicht übereinanderlegen kann.
+`lintStructure(content, options?)` ist der Datenintegritäts-Checker in [`@templatical/quality`](../). Er durchläuft den `TemplateContent`-Blockbaum und meldet Formen, die auf Korruption hindeuten — doppelte IDs, Sektionen, deren `columns`-Layout nicht zum `children`-Array passt, verschachtelte Sektionen (vom Renderer abgelehnt), leere Sektionen / Spalten, Heros, die als normale Sektion dargestellt werden, Spaltenbreiten, die der Renderer ignoriert, Hintergrundbilder, die Outlook unter Windows nicht übereinanderlegen kann, und eigene Social-Icons ohne Bild.
 
 ## Zweck
 
@@ -16,6 +16,7 @@ Der Struktur-Linter fängt diese Probleme vor Save / vor Versand:
 - **Hero nicht angewendet.** Eine Sektion mit gesetztem `hero`, die als normale Sektion dargestellt wird: mehr als eine Spalte, kein Hintergrundbild oder `height: "image"` ohne die Größe des Bilds. Die Meldung nennt den Grund.
 - **Ignorierte Spaltenbreiten.** Die `columnWidths` einer Sektion werden ignoriert und die Aufteilung des Layouts gilt: die Länge der Liste weicht von der Spaltenzahl ab, oder ein Anteil ist keine endliche Zahl über 0. Die Meldung nennt den Grund.
 - **Hintergrundbilder, die Outlook nicht übereinanderlegen kann.** Outlook unter Windows malt die Hintergrundfarbe eines Wrappers über das Hintergrundbild seiner Sektion und kann ein Wrapper-Bild und ein Sektionsbild nicht übereinanderlegen. Diese beiden Regeln sind Kompatibilitätswarnungen, keine Prüfungen auf beschädigte Daten: Alle anderen Clients stellen diese Kombinationen korrekt dar.
+- **Eigenes Social-Icon ohne Bild.** Ein eigenes Icon ohne Bild-URL oder nur mit Leerzeichen wird beim Rendern ausgelassen, sodass dieser Link verschwindet. Eine Merge-Tag-URL zählt als vorhanden. Integrierte Plattform-Icons werden nicht geprüft.
 
 Diese Regeln sind deterministisch und sprachunabhängig — sie feuern auf JSON-Formen, nicht auf Phrasen. Nur der Nachrichtentext muss übersetzt werden.
 

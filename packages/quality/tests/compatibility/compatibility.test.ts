@@ -4,6 +4,7 @@ import {
   createHtmlBlock,
   createImageBlock,
   createParagraphBlock,
+  createSocialIconsBlock,
 } from "@templatical/types";
 import {
   lintCompatibility,
@@ -260,6 +261,48 @@ describe("curated detector coverage", () => {
     ).find((entry) => entry.ruleId === "compat.css-background-image");
     expect(issue?.excerpt).toBe("background-image: url(data:image/png)");
     expect(issue?.excerpt).not.toContain("SECRET_PAYLOAD");
+  });
+
+  it("reports a webp custom icon image the same way as an image block", () => {
+    const src = "data:image/webp;base64,UklGRg==";
+    const content = createDefaultTemplateContent();
+    const image = createImageBlock({ src, alt: "Icon" });
+    content.blocks = [image];
+    const imageIssue = lintCompatibility(content).find(
+      (issue) => issue.ruleId === "compat.image-base64",
+    );
+    const social = createSocialIconsBlock({
+      icons: [
+        {
+          id: "c",
+          platform: "custom",
+          url: "https://example.com",
+          imageUrl: src,
+          alt: "Icon",
+        },
+      ],
+    });
+    content.blocks = [social];
+    const socialIssue = lintCompatibility(content).find(
+      (issue) => issue.ruleId === "compat.image-base64",
+    );
+    expect(imageIssue?.excerpt).toBe("data:image/webp");
+    expect(socialIssue).toMatchObject({
+      blockId: social.id,
+      ruleId: "compat.image-base64",
+      excerpt: "data:image/webp",
+    });
+    expect(
+      socialIssue?.clients?.find((client) => client.id === "gmx.desktop-webmail")
+        ?.support,
+    ).toBe("unsupported");
+    expect(
+      socialIssue?.clients?.find((client) => client.id === "gmx.desktop-webmail")
+        ?.support,
+    ).toBe(
+      imageIssue?.clients?.find((client) => client.id === "gmx.desktop-webmail")
+        ?.support,
+    );
   });
 
   it("does not treat a hosted URL containing data:image as an embedded image", () => {

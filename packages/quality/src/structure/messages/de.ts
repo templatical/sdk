@@ -64,6 +64,11 @@ const de: typeof en = {
     suggestion:
       "Verwende für jede Spalte eine positive Zahl oder entferne die Breiten.",
   },
+  "structure.social-icon-missing-image": {
+    message: "Symbol {iconIndex} ist ein benutzerdefiniertes Symbol ohne Bild.",
+    suggestion:
+      "Füge eine Bild-URL hinzu, wähle eine Plattform oder entferne das Symbol.",
+  },
 };
 
 export default de;

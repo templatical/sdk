@@ -57,6 +57,10 @@ const en = {
       "These column widths include a value that isn't a finite number above 0, so the layout's split is used.",
     suggestion: "Use a positive number for each column, or remove the widths.",
   },
+  "structure.social-icon-missing-image": {
+    message: "Icon {iconIndex} is a custom icon with no image.",
+    suggestion: "Add an image URL, or choose a platform or remove the icon.",
+  },
 };
 
 export default en;
