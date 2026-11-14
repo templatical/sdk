@@ -2744,7 +2744,7 @@ export interface SetDefaultLocaleOperation {
 
 `readPath` resolves array elements by id and returns `undefined` for an unresolved path. `writePath` clones the value, treats `null` as property deletion and returns `false` when the parent cannot resolve. `isSafePath` rejects empty and prototype-key segments. `isLocaleTag` accepts a 2–3 letter language followed by optional 2–8 character alphanumeric subtags. `defaultLocaleOf` returns `settings.locale`, falling back to `en`.
 
-`TRANSLATABLE_FIELDS` lists each block type's text path patterns, where `*` is an element id or, for custom blocks, a field key: title, paragraph and HTML `content`, image and video `alt`, button `text`, countdown labels and `expiredMessage`, menu `items.*.text`, table `rows.*.cells.*.content` and custom `fieldValues.*`. `SETTINGS_TRANSLATABLE_FIELDS` is `["preheaderText"]`. `translatableFields(block, definitions)` expands one block's patterns into concrete paths and keeps only custom fields whose definition type is `text` or `textarea`. A locale `text` entry must name one of these paths; every other override goes in `set`.
+`TRANSLATABLE_FIELDS` lists each block type's text path patterns, where `*` is an element id or, for custom blocks, a field key: title, paragraph and HTML `content`, image and video `alt`, button `text`, countdown labels and `expiredMessage`, menu `items.*.text`, social `icons.*.alt` (a custom icon's alt text), table `rows.*.cells.*.content` and custom `fieldValues.*`. `SETTINGS_TRANSLATABLE_FIELDS` is `["preheaderText"]`. `translatableFields(block, definitions)` expands one block's patterns into concrete paths and keeps only custom fields whose definition type is `text` or `textarea`. A locale `text` entry must name one of these paths; every other override goes in `set`.
 
 `pruneLocaleOrphans(block: Block): Block` recursively removes text paths that no longer resolve and set paths whose parent no longer resolves. `pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings` applies the same rule to settings. Both are pure and omit empty localization members. `isStructuralLocalePath(block: Block, path: string, value?: unknown): boolean` identifies section columns, whole built-in lists and element ids that locale overrides must not replace. Pass the proposed `set` value to check a whole-element replacement: its id must stay unchanged, and a table row must retain its cell ids in the same order. Custom `fieldValues.*` overrides are exempt.
 
@@ -3178,8 +3178,8 @@ interface BuiltInSocialIcon {
   url: string;
 }
 
-// Drawn from its own image, as a square at the icon size.
-// iconStyle and iconTone don't apply to it.
+// Drawn from its own image, as wide as the icon size, keeping its
+// proportions. iconStyle and iconTone don't apply to it.
 interface CustomSocialIcon {
   id: string;
   platform: 'custom';
@@ -9756,17 +9756,48 @@ A row of social media icons linking to platform profiles.
 
 Email clients that switch to dark mode, such as the Gmail app and Outlook, change the background but leave images as they are. A dark `plain` or `outlined` icon therefore carries a faint white halo that is barely visible on light backgrounds and keeps the icon visible as an outline once the background turns dark. Light icons have no halo, so they stay clean on colored bands, but clients that turn a dark background light (the Gmail app on iOS, Outlook for Windows) can hide a light `plain` or `outlined` icon. A filled shape avoids both, since its badge brings its own contrast.
 
-These platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
+These platforms have built-in icons: Facebook, Twitter/X, Instagram, LinkedIn, XING, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
-Each `SocialIcon` has:
+Each `SocialIcon` is a built-in icon or a custom icon:
 
 ```ts
-interface SocialIcon {
+type SocialIcon = BuiltInSocialIcon | CustomSocialIcon;
+
+interface BuiltInSocialIcon {
   id: string;
-  platform: SocialPlatform;
+  platform: BuiltInSocialPlatform; // every SocialPlatform except 'custom'
   url: string;
 }
+
+interface CustomSocialIcon {
+  id: string;
+  platform: 'custom';
+  url: string;
+  imageUrl: string; // the icon image
+  alt?: string;     // read by screen readers in place of the icon
+}
 ```
+
+### Custom icons
+
+A custom icon (`platform: 'custom'`) draws your own image in the row, for a network without a built-in icon or for your own artwork:
+
+```json
+{
+  "id": "0193a1b2-7c4d-7e5f-8a9b-0c1d2e3f4a5b",
+  "platform": "custom",
+  "url": "https://www.artsy.net/partner/example-gallery",
+  "imageUrl": "https://cdn.example.com/icons/artsy.png",
+  "alt": "Artsy"
+}
+```
+
+- It sits in the same row as the built-in icons, in its place in `icons`, and links to `url`.
+- It is drawn as wide as the block's `iconSize` (24, 32 or 48px), and its height follows the image's proportions, so a square image lines up with the built-in icons.
+- `iconStyle` and `iconTone` don't apply to it: the image is shown as it is, with no badge, tint or rounded corners.
+- In the editor, choose **Custom icon** in an icon's platform list. The image field has the same Browse button and drag-and-drop upload as the image block, through your `onRequestMedia` handler.
+- The linter reports a custom icon with no image (`structure.social-icon-missing-image`, an error) and one with no alt text (`a11y.social-icon-missing-alt`, a warning).
+- In a [localized template](./localized-templates.md), `alt` is translated per language like an image's alt text.
 
 ## Menu
 
@@ -12538,9 +12569,9 @@ A custom block with any `text` or `set` entry in the requested language loses it
 
 Language tags must match `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`: 2–3 ASCII letters, followed by zero or more hyphen-separated subtags of 2–8 ASCII letters or digits. Forms beginning with `x-…` or `i-…` are rejected because their language segment has one letter; grandfathered forms such as `no-bok` and `zh-min-nan` match and are accepted.
 
-A field path joins property names with `.`; at an array, the next segment is the element's `id`, never its index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. A field id is `<blockId>/<path>` or `settings/<path>`. Menu item, social icon, table row and table cell ids must not contain `.` or `/`: `validateTemplate` reports them, and `addBlock`, `updateBlock` and `setContent` refuse an operation that adds one (a new block, item, row or cell) with `invalid_operation`. An id already in the template stays editable, so a template saved with one can still be edited; rename it to localize that element and to pass validation.
+A field path joins property names with `.`; at an array, the next segment is the element's `id`, never its index: `items.nav-shop.text`, `icons.gh.alt`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. A field id is `<blockId>/<path>` or `settings/<path>`. Menu item, social icon, table row and table cell ids must not contain `.` or `/`: `validateTemplate` reports them, and `addBlock`, `updateBlock` and `setContent` refuse an operation that adds one (a new block, item, row or cell) with `invalid_operation`. An id already in the template stays editable, so a template saved with one can still be edited; rename it to localize that element and to pass validation.
 
-`text` holds human-readable fields only: the `TRANSLATABLE_FIELDS` of each block type (content, alt text, button text, countdown labels, menu item text, table cell content), the preheader, and custom `text` and `textarea` fields. Everything else, such as URLs, image sources, sizes and colors, is a `set` override. A path is in at most one of `text` and `set`. `set` can't replace section `columns` or whole built-in lists (`items`, `rows`, `rows.<id>.cells`, `icons`); override their element leaves instead. Empty layers and members are omitted, never stored as `{}` or `[]`. [Types](/api/types#localization) has the declarations and path rules.
+`text` holds human-readable fields only: the `TRANSLATABLE_FIELDS` of each block type (content, alt text, button text, countdown labels, menu item text, custom social icon alt, table cell content), the preheader, and custom `text` and `textarea` fields. Everything else, such as URLs, image sources, sizes and colors, is a `set` override. A path is in at most one of `text` and `set`. `set` can't replace section `columns` or whole built-in lists (`items`, `rows`, `rows.<id>.cells`, `icons`); override their element leaves instead. Empty layers and members are omitted, never stored as `{}` or `[]`. [Types](/api/types#localization) has the declarations and path rules.
 
 ## Layouts
 
@@ -13519,7 +13550,7 @@ BeeFree block types map to Templatical equivalents:
 | Button         | `button`                                                              | Converted (approximated when letter-spacing, an unreadable line-height or an unreadable width is not carried, when partial bold in the label is not carried, or when a percentage width is clamped or has no usable size) |
 | Divider        | `divider`, or `spacer` when it [draws no line](#undrawn-dividers)     | Converted (approximated when a partial-width divider is aligned left or right; skipped when it draws no line and takes no space) |
 | Spacer         | `spacer`, as tall as `spacer.style.height` (BeeFree's 60px default when it is missing or unreadable)                           | Converted (skipped when 0px tall)                                                                                                |
-| Social         | `social`                                                              | Converted (approximated when an icon is not a known network: it stays in the row as the generic website icon, and its image is not carried) |
+| Social         | `social`                                                              | Converted. A custom icon, or an icon-set network without a Templatical platform, becomes a [custom icon](./blocks.md#custom-icons) with its own image, link and alt text in the same row; a custom upload keeps its image even when named after a known network. Approximated when such an icon has no usable image: it stays in the row as the recognised platform, or as a website icon |
 | Icons          | `image` for one icon with no text, a non-empty image and positive px file width and height; otherwise `html` ([Icons](#icons)) | Converted, or HTML fallback |
 | Addon          | the block for the payload it carries ([Addons](#addons))              | As that module                                                                                                                   |
 | Empty          | none                                                                  | Skipped                                                                                                                          |
@@ -13713,7 +13744,7 @@ Global template settings are converted where possible:
 
 - **Custom fonts** -- `customFonts` on the result lists every BeeFree web font that has a URL. Pass that array to the editor `fonts.customFonts` option and to `renderToMjml`, or the face falls back. A font the template uses that has no URL, other than a system stack, is named in `report.warnings`.
 - **Conditional display** -- BeeFree dynamic content rules do not have a direct equivalent and are dropped during conversion.
-- **Icons** -- An Icons module becomes an HTML table, edited as HTML, unless it is one icon with no text, a non-empty image and positive px file width and height ([Icons](#icons)). In a Social module, the platform is read from the icon id, then its name, alt text, title, or the link host. Xing (`xing`, including a `xing.com` host) maps to the `xing` platform. An icon that is not a known network, including `type` `custom`, stays in that same row as platform `website`, with the link this mapping already computes (the prefix included, dropped when `isSafeHtmlUrl` rejects it). Its image is not carried, and the note names it by title, then alt, then name. The row's `text-align` becomes `align`. The gap between icons is the left and right of `computedStyle.padding` added together. `iconsDefaultWidth` picks the nearest of small (24px), medium (32px) and large (48px). An icon set in the icon file URL maps when the shape matches (`circle`, `rounded` or `square`); a black or white set sets the dark or light tone, and `circle-dark-gray` uses the dark tone. A set with no matching shape stays the solid brand icons and is reported approximated. An unknown `circle-*`, `rounded-*` or `square-*`/`squared-*` set takes that shape in brand colours and is reported approximated. The social block's bottom padding gains 4px, because BeeFree's inline-block icon table leaves a 4px line-box strut under the icons and MJML's column cell sets `font-size:0px`.
+- **Icons** -- An Icons module becomes an HTML table, edited as HTML, unless it is one icon with no text, a non-empty image and positive px file width and height ([Icons](#icons)). In a Social module, the platform is read from the icon id, then its name, alt text, title, or the link host. Xing (`xing`, including a `xing.com` host) maps to the `xing` platform. A `type` `custom` icon, or an icon whose network is not recognised, becomes a custom icon in that same social block when its image file can be kept: its own image, link (the prefix included, dropped when `isSafeHtmlUrl` rejects it) and alt text (alt, then title, then name). A custom upload keeps that image even when its name is a known platform. Without a usable image it becomes the recognised platform, or a `website` icon, and is reported approximated; the note names it by title, then alt, then name. The row's `text-align` becomes `align`. The gap between icons is the left and right of `computedStyle.padding` added together. `iconsDefaultWidth` picks the nearest of small (24px), medium (32px) and large (48px). An icon set in the icon file URL maps when the shape matches (`circle`, `rounded` or `square`); a black or white set sets the dark or light tone, and `circle-dark-gray` uses the dark tone. A set with no matching shape stays the solid brand icons and is reported approximated. An unknown `circle-*`, `rounded-*` or `square-*`/`squared-*` set takes that shape in brand colours and is reported approximated. The social block's bottom padding gains 4px, because BeeFree's inline-block icon table leaves a 4px line-box strut under the icons and MJML's column cell sets `font-size:0px`.
 - **Forms** -- BeeFree form modules have no Templatical equivalent. Each becomes an `html-fallback` HTML block, and the form's fields and submit action are not reproduced.
 - **Column box on multi-column rows** -- Padding is folded into the modules. A painted background or a drawn border that cannot be promoted to the section border is dropped with one warning per row (see [Column Layout Conversion](#column-layout-conversion)). A spacer ignores `styles.padding`, so column padding folded onto a spacer does not render.
 - **Mobile breakpoint** -- BeeFree stacks at `messageWidth + 20` (620px when the email is 600px). Templatical keeps MJML's 480px breakpoint. Import does not change it.
@@ -14139,7 +14170,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: missing or `100%` → `"full"`; another percentage stays a percentage, clamped to 0–100; px stays px, and becomes `"full"` once it fills the column's content width less the divider's padding. |
 | `standard-spacer` | `SpacerBlock` | Height from `height` px. |
 | `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Link text from children; `href` → `url`; `target === "_blank"` → `openInNewTab`. |
-| `standard-social` + `standard-social-element` | `SocialIconsBlock` | Platform inferred from `href` hostname, then `src` path. Custom PNG `src` is dropped, `approximated`. |
+| `standard-social` + `standard-social-element` | `SocialIconsBlock` | Platform inferred from `href` hostname, then `src` path. An unrecognised icon with an image becomes a custom icon (its own image, link and alt) in the same social block. A recognised platform with a custom `src` stays that platform, and the entry is `approximated`. Without an image, an unrecognised icon becomes a `website` icon and is reported approximated. |
 | `standard-table2` / `standard-table2-tr` / `standard-table2-td` | `TableBlock` | Converted. Plain `tr` / `td` rows are read too. |
 | `raw` | `HtmlBlock` | `data.content` as is. Converted. |
 | `line-break` | `<br>` | Inside the parent rich-text. No entry. |
@@ -14171,7 +14202,7 @@ A `standard-hero`'s `background-url` becomes its section's `backgroundImage`, pa
 - **Outlined buttons** — `border-enabled: true` plus an unset fill has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
 - **5+ columns** — Templatical supports these column layouts (`1`, `2`, `3`, `4`, `2-1`, `1-2`, `3-1`, `1-3`, `1-2-1`). Four equal columns stay `"4"`. A section of five or more columns folds onto `"4"`; overflow children append onto the last slot, `approximated`, and the note names the four-column limit.
 - **Nested group flatten** — a `standard-group` inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested group flattened (N columns)"`. Leaves convert; geometry is the loss.
-- **Custom social PNGs** — `standard-social-element` carries a custom PNG `src`. `SocialIconsBlock` has no custom src — it picks an icon from `platform` + `iconStyle`. The PNG is the loss; the entry is `approximated` when a custom `src` was present.
+- **Custom social PNGs** — An unrecognised `standard-social-element` with a `src` becomes a custom icon and keeps that image, link and alt. A recognised platform's custom `src` is not its built-in glyph, so that image is dropped and the entry is `approximated`.
 - **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
 - **`logic`** — Pro `logic.condition` / `logic.iteration` compile to Liquid (or a custom engine) at `toMJML` time. They are not `displayCondition.{ before, after }`. Empty nodes `skipped`. Populated nodes convert their children and drop the branching.
 - **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block renders on Cloud or through a `blockRenderers.countdown` override and is blank otherwise, so this package does not emit it. The GIF is a static image; the timer does not tick.
@@ -14680,7 +14711,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `line-height` (see [Button line height](#button-line-height)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (see [Divider width](#divider-width)), padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
-| `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. Platform comes from `name`, the `src` filename (pack suffixes such as `-round-outlined` stripped), or `alt`. |
+| `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. Platform comes from `name`, the `src` filename (pack suffixes such as `-round-outlined` stripped), or `alt`. An unrecognised icon with an image becomes a custom icon (its own image, link and alt) in the same social block. Without an image it becomes a `website` icon and is reported approximated. |
 | `mj-navbar` (with `mj-navbar-link`) | `MenuBlock` | Each link → `MenuItemData`. |
 | `mj-table` | `TableBlock` | Maps `<tr>`/`<td>`/`<th>` rows and cells to Templatical's table data; a leading `<th>` row sets `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
@@ -14922,7 +14953,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. Inline `font-size` (the anchor's, else the wrapping `es-button-border`'s) becomes `fontSize` when it is a px length or a bare number, rounded to whole pixels; any other value, or one that rounds to 0 or below, imports at the factory 15px, `approximated`. Inline `line-height` (the anchor's, else the wrapping `es-button-border`'s, where a percentage or `em` is first resolved against that wrapper's `font-size`, and an anchor's `inherit` takes the wrapper's; when the anchor sets its own `font-size` and the wrapper's is missing or not px, 15px stands in for the wrapper's and the button is noted) becomes `lineHeight`, a multiple of the label size: `150%` is `1.5`, a number or `em` length is itself, and a px length is over the button's font size, so `font-size:18px; line-height:27px` is `1.5`. A percentage or `em` beside an anchor `font-size` it can't read keeps its ratio to that 15px label. An anchor's `120%`, `normal` and a missing value stay unset (1.2); a wrapper's `120%` is resolved like any other wrapper percentage, so it stays unset only when it comes to 1.2 of the label. A value it can't read imports at 1.2, `approximated`. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
-| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched network becomes a website icon and the block is reported `approximated`. |
+| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`. An unmatched icon with an image becomes a custom icon (its own image, link and alt) in the same social block. Without an image it becomes a website icon and the block is reported `approximated`. |
 | `esd-block-spacer` | `spacer` or `divider` | A visible `border-bottom` or `border-top` on the spacer or its inner cell becomes a divider (style, colour, thickness, and the width rule below). Otherwise a spacer: height from `style`, the `height` attribute, or vertical padding. |
 | `esd-block-html` | `html` | Inner markup preserved. |
 
@@ -14939,7 +14970,7 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 | `a.es-button` | `button` | Inline `background` / `color` / `border-radius` / `font-size` / `line-height`, including from the wrapping `es-button-border`, read as for `esd-block-button`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
-| `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched network becomes a website icon and the block is reported `approximated`. |
+| `table.es-social` | `social` | Same platform mapping as the plugin path. An unmatched icon with an image becomes a custom icon (its own image, link and alt) in the same social block. Without an image it becomes a website icon and the block is reported `approximated`. |
 | `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
 | `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 
@@ -17070,7 +17101,7 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 
 Source: https://docs.templatical.com/quality/accessibility/rule-catalog
 
-The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
+The rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
 
 ## Images
 
@@ -17081,6 +17112,7 @@ The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule li
 | `a11y.img-alt-too-long` | warning | — | Alt text is too long — Screen readers don't pause inside alt text. Long alt strings become a wall of speech. Aim for under ~125 characters; put extra context in surrounding copy. |
 | `a11y.img-decorative-needs-empty-alt` | info | yes | Decorative image has alt text — Decorative images should be skipped by screen readers. Setting alt='' (empty) signals that intent. Non-empty alt on a decorative image is a contradiction. |
 | `a11y.img-linked-no-context` | warning | — | Linked image has no destination context — When an image is also a link, alt text doubles as the link label. Describing only what the image shows leaves users guessing where the link goes. |
+| `a11y.social-icon-missing-alt` | warning | — | A custom social icon's image is the link's only content and has no text alternative. A merge-tag image URL counts as an image. Built-in platform icons are not checked. [1](https://www.w3.org/WAI/tutorials/images/) |
 
 ## Headings
 
@@ -18596,7 +18628,7 @@ Auto-fixes are added conservatively — only when the right answer is unambiguou
 
 Source: https://docs.templatical.com/quality/structure/
 
-`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, column widths the renderer ignores, and background images Outlook on Windows can't layer.
+`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, column widths the renderer ignores, background images Outlook on Windows can't layer, and custom social icons with no image.
 
 ## Purpose
 
@@ -18612,6 +18644,7 @@ The structure linter catches these before save / before send:
 - **Hero not applied.** A section with `hero` set that renders as a regular section: more than one column, no background image, or `height: "image"` without the image's size. The message says which.
 - **Ignored column widths.** A section's `columnWidths` is ignored and the layout's split renders: the list length differs from the column count, or a share is not a finite number above 0. The message says which.
 - **Background images Outlook can't layer.** Outlook on Windows paints a wrapper's background color over its section's background image, and can't layer a wrapper image and a section image. These two rules are compatibility warnings rather than corruption checks: every other client renders these combinations correctly.
+- **Custom social icon without an image.** A custom icon whose image URL is missing or blank is omitted when the email renders, so that link disappears. A merge-tag URL counts as present. Built-in platform icons are not checked.
 
 These rules are deterministic and locale-agnostic — they fire on JSON shapes, not phrases. Only the message text needs translating.
 
@@ -18679,6 +18712,12 @@ The rules `lintStructure` ships. Each rule lives in `packages/quality/src/struct
 |---|---|---|---|
 | `structure.wrapper-color-over-background-image` | warning | — | A section has a background image, and its wrapper (its own `wrapper`, or the layout band it sits in when the linted tree includes the layout) has a background color. Outlook on Windows paints the wrapper color over the section's image, so the image disappears there. Every other client layers them correctly. Remove the wrapper color, or move the image to the wrapper. |
 | `structure.nested-background-image` | warning | — | A section and its wrapper both have a background image. Outlook on Windows can't nest the two VML fills MJML generates for them, and the layout breaks. Keep the image on one of them. |
+
+## Social icons
+
+| Rule | Default severity | Auto-fix | What it checks |
+|---|---|---|---|
+| `structure.social-icon-missing-image` | error | — | A custom social icon has no image URL, or only whitespace. The renderer omits it, so the link disappears. A merge-tag URL counts as present. Built-in platform icons are not checked. |
 
 ---
 
