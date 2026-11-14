@@ -18,8 +18,8 @@ export interface UseImageDropOptions {
    * Gate the zone. While falsy the drop is inert: no highlight, dropped files
    * are ignored. `useMediaDropField` passes `canDropMedia && !isUploading`
    * so a read-only library (`create: false`) renders no affordance, a
-   * missing media handler does the same, and a second drop can't race an
-   * in-flight upload.
+   * missing media handler does the same, and a second drop waits for an
+   * upload that can still land.
    */
   enabled?: MaybeRefOrGetter<boolean>;
 }

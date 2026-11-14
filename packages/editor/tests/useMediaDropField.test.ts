@@ -14,11 +14,16 @@ interface HarnessOptions {
   onRequestMedia?: unknown;
   canDropMedia?: boolean;
   blocked?: Ref<boolean>;
+  /** The field's value; `apply` writes the result's url into it. */
+  value?: Ref<string>;
 }
 
 /** Mounts the composable on a plain zone and exposes what it returns. */
 function mountHarness(options: HarnessOptions = {}) {
-  const apply = vi.fn<(result: MediaResult) => void>();
+  const value = options.value ?? ref("");
+  const apply = vi.fn<(result: MediaResult) => void>((result) => {
+    value.value = result.url;
+  });
   let field!: UseMediaDropFieldReturn;
   const Harness = defineComponent({
     setup() {
@@ -26,6 +31,7 @@ function mountHarness(options: HarnessOptions = {}) {
       field = useMediaDropField({
         target: zone,
         blocked: options.blocked,
+        value,
         apply,
       });
       return () => h("div", { ref: zone, "data-testid": "zone" });
@@ -45,7 +51,23 @@ function mountHarness(options: HarnessOptions = {}) {
       },
     },
   });
-  return { wrapper, apply, field: () => field };
+  return { wrapper, apply, value, field: () => field };
+}
+
+/** An `onRequestMedia` whose calls each wait for their own `settle`. */
+function deferredMedia() {
+  const settles: Array<(result: MediaResult | null) => void> = [];
+  const onRequestMedia = vi.fn(
+    () =>
+      new Promise<MediaResult | null>((resolve) => {
+        settles.push(resolve);
+      }),
+  );
+  return {
+    onRequestMedia,
+    settle: (call: number, result: MediaResult | null) =>
+      settles[call](result),
+  };
 }
 
 function dispatchDrag(
@@ -123,6 +145,169 @@ describe("useMediaDropField", () => {
     expect(field().dropEnabled.value).toBe(true);
     expect(field().showOverlay.value).toBe(false);
     expect(apply.mock.calls).toEqual([[{ url: "https://cdn/up.png" }]]);
+  });
+
+  it("keeps a value typed while a drop uploads", async () => {
+    let settle: (value: MediaResult | null) => void = () => {};
+    const onRequestMedia = vi.fn(
+      () =>
+        new Promise<MediaResult | null>((resolve) => {
+          settle = resolve;
+        }),
+    );
+    const value = ref("https://cdn/old.png");
+    const { wrapper, apply, field } = mountHarness({ onRequestMedia, value });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    expect(field().isUploading.value).toBe(true);
+
+    value.value = "https://typed.example/new.png";
+    // The result can no longer land, so the field stops showing an upload.
+    expect(field().isUploading.value).toBe(false);
+    expect(field().showOverlay.value).toBe(false);
+    expect(field().dropEnabled.value).toBe(true);
+
+    settle({ url: "https://cdn/up.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://typed.example/new.png");
+    expect(apply).not.toHaveBeenCalled();
+    expect(field().isUploading.value).toBe(false);
+  });
+
+  it("applies a drop onto an unchanged value", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/old.png");
+    const { wrapper, apply } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    media.settle(0, { url: "https://cdn/up.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://cdn/up.png");
+    expect(apply.mock.calls).toEqual([[{ url: "https://cdn/up.png" }]]);
+  });
+
+  it("lets a later drop win when the earlier upload finishes last", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/old.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    value.value = "https://typed.example/new.png";
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    expect(media.onRequestMedia).toHaveBeenCalledTimes(2);
+    expect(field().isUploading.value).toBe(true);
+
+    media.settle(1, { url: "https://cdn/second.png" });
+    await flushPromises();
+    media.settle(0, { url: "https://cdn/first.png" });
+    await flushPromises();
+
+    expect(value.value).toBe("https://cdn/second.png");
+    expect(apply.mock.calls).toEqual([[{ url: "https://cdn/second.png" }]]);
+    expect(field().isUploading.value).toBe(false);
+  });
+
+  it("keeps the later drop uploading when the stale one finishes first", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/old.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    value.value = "https://typed.example/new.png";
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+
+    media.settle(0, { url: "https://cdn/first.png" });
+    await flushPromises();
+    // The stale upload's end must not clear the later drop's state.
+    expect(field().isUploading.value).toBe(true);
+    expect(field().dropEnabled.value).toBe(false);
+    expect(apply).not.toHaveBeenCalled();
+
+    media.settle(1, { url: "https://cdn/second.png" });
+    await flushPromises();
+    expect(value.value).toBe("https://cdn/second.png");
+    expect(field().isUploading.value).toBe(false);
+  });
+
+  it("lets a Browse pick made during an upload win", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/old.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    const browse = field().openMediaBrowser();
+    media.settle(1, { url: "https://cdn/picked.png" });
+    await browse;
+    expect(value.value).toBe("https://cdn/picked.png");
+    expect(field().isUploading.value).toBe(false);
+
+    media.settle(0, { url: "https://cdn/up.png" });
+    await flushPromises();
+    expect(value.value).toBe("https://cdn/picked.png");
+    expect(apply.mock.calls).toEqual([[{ url: "https://cdn/picked.png" }]]);
+  });
+
+  it("applies a Browse pick even when the value changed while the picker was open", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/old.png");
+    const { apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+
+    const browse = field().openMediaBrowser();
+    value.value = "https://typed.example/new.png";
+    media.settle(0, { url: "https://cdn/picked.png" });
+    await browse;
+
+    expect(value.value).toBe("https://cdn/picked.png");
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the uploading state when the drop upload is cancelled", async () => {
+    const media = deferredMedia();
+    const value = ref("https://cdn/old.png");
+    const { wrapper, apply, field } = mountHarness({
+      onRequestMedia: media.onRequestMedia,
+      value,
+    });
+    await flushPromises();
+
+    dispatchDrag(wrapper, "drop");
+    await nextTick();
+    media.settle(0, null);
+    await flushPromises();
+
+    expect(field().isUploading.value).toBe(false);
+    expect(field().dropEnabled.value).toBe(true);
+    expect(value.value).toBe("https://cdn/old.png");
+    expect(apply).not.toHaveBeenCalled();
   });
 
   it("shows the overlay while an image is dragged over an enabled zone", async () => {

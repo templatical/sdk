@@ -90,6 +90,7 @@ A few notes:
 - **One file per drop.** `files` is an array for forward-compatibility, but the editor currently sends a single file (`files[0]`).
 - **Images only.** The editor pre-filters dropped files to image MIME types before calling you.
 - **No picker, no drop.** Without `onRequestMedia` and without a `media` provider whose `create` is a function, the drop affordance doesn't appear and drops are ignored.
+- **A late upload never replaces a newer URL.** If the field's URL changes while the upload runs (the user types or picks another URL, or drops a file on the same image's other drop zone, on the canvas or in the sidebar), the editor ignores the result and keeps the newer URL. The upload itself isn't undone: the file stays wherever your handler stored it.
 - **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL. [Base64 images fail in Gmail](https://www.caniemail.com/features/image-base64/).
 
 With a `media` provider whose `create` is a function, dropped files upload through that provider — no `onRequestMedia` needed. A custom handler still takes precedence.

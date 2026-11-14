@@ -91,6 +91,7 @@ Einige Hinweise:
 - **Eine Datei pro Drop.** `files` ist aus Gründen der Vorwärtskompatibilität ein Array, aber der Editor sendet derzeit eine einzelne Datei (`files[0]`).
 - **Nur Bilder.** Der Editor filtert abgelegte Dateien vor dem Aufruf auf Bild-MIME-Typen.
 - **Keine Auswahl, kein Drop.** Ohne `onRequestMedia` und ohne einen `media`-Provider, dessen `create` eine Funktion ist, erscheint kein Drop-Hinweis und Drops werden ignoriert.
+- **Ein später Upload ersetzt keine neuere URL.** Ändert sich die URL des Felds, während der Upload läuft (eine andere URL wird eingegeben oder ausgewählt, oder eine Datei wird auf der anderen Drop-Zone desselben Bilds abgelegt, im Canvas oder in der Seitenleiste), ignoriert der Editor das Ergebnis und behält die neuere URL. Der Upload selbst wird nicht rückgängig gemacht: Die Datei bleibt dort, wo Ihr Handler sie gespeichert hat.
 - **Keine `blob:`-URL zurückgeben.** `URL.createObjectURL(file)` ist sitzungslokal und bricht den Export. Laden Sie die Datei hoch und geben Sie eine dauerhafte URL zurück. [Base64-Bilder funktionieren in Gmail nicht](https://www.caniemail.com/features/image-base64/).
 
 Mit einem `media`-Provider, dessen `create` eine Funktion ist, werden abgelegte Dateien über diesen Provider hochgeladen — kein `onRequestMedia` nötig. Ein eigener Handler hat weiterhin Vorrang.

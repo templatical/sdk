@@ -182,6 +182,7 @@ const hasMergeTagSrc = computed(() =>
 const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
   useMediaDropField({
     target: dropZoneRef,
+    value: () => props.block.src,
     blocked: hasMergeTagSrc,
     apply: applyMedia,
   });

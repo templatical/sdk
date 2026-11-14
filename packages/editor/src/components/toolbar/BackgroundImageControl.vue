@@ -153,6 +153,7 @@ const dropZoneRef = ref<HTMLElement>();
 const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
   useMediaDropField({
     target: dropZoneRef,
+    value: url,
     // A merge-tag url is a deliberate dynamic value — never clobber it via drop.
     blocked: () => containsMergeTag(url.value, mergeTagSyntax),
     apply: (result) =>

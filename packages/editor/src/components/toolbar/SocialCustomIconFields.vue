@@ -56,6 +56,7 @@ function applyMedia(result: MediaResult): void {
 const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
   useMediaDropField({
     target: dropZoneRef,
+    value: imageUrl,
     blocked: hasMergeTagSrc,
     apply: applyMedia,
   });
