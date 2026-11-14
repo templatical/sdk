@@ -176,24 +176,36 @@ export function convertSocial(
 
     const name = (childAttrs.name ?? "").trim();
     const alt = (childAttrs.alt ?? "").trim();
+    const href = (childAttrs.href ?? "").trim();
     const platform =
       normalizePlatform(name) ??
       normalizePlatform(fromSrc.platform) ??
       normalizePlatform(alt);
-    if (!platform) {
-      const rawName = name || fromSrc.platform || alt;
-      if (rawName) {
-        notes.push(
-          `Unrecognised social platform "${rawName}" mapped to "website".`,
-        );
+    // An unrecognised icon with its own image stays a custom icon. Nothing
+    // is lost, so it adds no note. Without an image it stays `website`.
+    if (!platform && src) {
+      icons.push({
+        id: generateId(),
+        platform: "custom",
+        imageUrl: src,
+        url: href,
+        ...(alt ? { alt } : {}),
+      });
+    } else {
+      if (!platform) {
+        const rawName = name || fromSrc.platform || alt;
+        if (rawName) {
+          notes.push(
+            `Unrecognised social platform "${rawName}" mapped to "website".`,
+          );
+        }
       }
+      icons.push({
+        id: generateId(),
+        platform: platform ?? "website",
+        url: href,
+      });
     }
-
-    icons.push({
-      id: generateId(),
-      platform: platform ?? "website",
-      url: (childAttrs.href ?? "").trim(),
-    });
 
     const fromDir = iconStyle ? null : iconDirParts(fromSrc.style);
     if (fromDir) {

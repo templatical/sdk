@@ -2526,7 +2526,7 @@ describe("convertModule", () => {
       );
     });
 
-    it("keeps a custom icon whose link names a known network as website", () => {
+    it("keeps a custom Xing upload as a custom icon with its own image", () => {
       const warnings: string[] = [];
       const { block, extras, entry } = convertModule(
         makeModule("mailup-bee-newsletter-modules-social", {
@@ -2552,15 +2552,18 @@ describe("convertModule", () => {
       expect(extras ?? []).toEqual([]);
       expect(block.type).toBe("social");
       if (block.type !== "social") return;
-      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
-        ["website", "https://www.xing.com/pages/sonepardeutschland"],
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "custom",
+          imageUrl:
+            "https://core-beefree.s3.amazonaws.com/images/1eeabd3c-0ab0-6baa-8973-5b41c5e4a053/xing.png",
+          url: "https://www.xing.com/pages/sonepardeutschland",
+          alt: "Xing",
+        }),
       ]);
-      expect(JSON.stringify(block)).not.toContain("xing.png");
-      expect(warnings).toEqual([
-        "Custom icon Xing imported as the generic website icon; its image is not carried.",
-      ]);
-      expect(entry.status).toBe("approximated");
-      expect(entry.note).toBe(warnings[0]);
+      expect(warnings).toEqual([]);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
     });
 
     it("keeps a custom icon before a following YouTube icon in one row", () => {
@@ -2592,12 +2595,14 @@ describe("convertModule", () => {
       expect(block.type).toBe("social");
       if (block.type !== "social") return;
       expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
-        ["website", "https://www.xing.com/pages/example"],
+        ["custom", "https://www.xing.com/pages/example"],
         ["youtube", "https://www.youtube.com/channel/example"],
       ]);
-      expect(warnings).toEqual([
-        "Custom icon Xing imported as the generic website icon; its image is not carried.",
-      ]);
+      expect(block.icons[0]).toMatchObject({
+        imageUrl: "https://cdn.example.com/xing.png",
+        alt: "Xing",
+      });
+      expect(warnings).toEqual([]);
     });
 
     it("keeps a custom icon between recognised networks in one row", () => {
@@ -2638,13 +2643,16 @@ describe("convertModule", () => {
       if (block.type !== "social") return;
       expect(block.icons.map(({ platform }) => platform)).toEqual([
         "facebook",
-        "website",
+        "custom",
         "linkedin",
         "instagram",
       ]);
-      expect(warnings).toEqual([
-        "Custom icon Xing imported as the generic website icon; its image is not carried.",
-      ]);
+      expect(block.icons[1]).toMatchObject({
+        imageUrl: "https://cdn.example.com/xing.png",
+        url: "https://www.xing.com/pages/example",
+        alt: "Xing",
+      });
+      expect(warnings).toEqual([]);
     });
 
     it("keeps an unknown network before a following Facebook icon", () => {
@@ -2674,13 +2682,19 @@ describe("convertModule", () => {
       expect(extras ?? []).toEqual([]);
       expect(block.type).toBe("social");
       if (block.type !== "social") return;
-      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
-        ["website", "https://myspace.com/band"],
-        ["facebook", "https://facebook.com/page"],
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "custom",
+          imageUrl: "https://cdn.example.com/myspace.png",
+          url: "https://myspace.com/band",
+          alt: "Myspace",
+        }),
+        expect.objectContaining({
+          platform: "facebook",
+          url: "https://facebook.com/page",
+        }),
       ]);
-      expect(warnings).toEqual([
-        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
-      ]);
+      expect(warnings).toEqual([]);
     });
 
     it("keeps an icon with no link in the row as a website icon", () => {
@@ -2713,7 +2727,7 @@ describe("convertModule", () => {
         ["linkedin", "https://linkedin.com/company/x"],
       ]);
       expect(warnings).toEqual([
-        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
+        "Custom icon Myspace has no image file; imported as the generic website icon.",
       ]);
     });
 
@@ -2863,7 +2877,8 @@ describe("convertModule", () => {
       expect(JSON.stringify(block)).not.toMatch(/javascript:/);
       expect(warnings).toEqual([
         'Dropped the unsafe link "javascript:alert(1)" on a social icon.',
-        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
+        'Dropped the unsafe image "javascript:alert(2)" on a social icon.',
+        "Custom icon Myspace has no image file; imported as the generic website icon.",
       ]);
     });
 
@@ -3009,17 +3024,22 @@ describe("convertModule", () => {
       expect(extras ?? []).toEqual([]);
       expect(block.type).toBe("social");
       if (block.type !== "social") return;
-      expect(block.icons.map((icon) => [icon.platform, icon.url])).toEqual([
-        ["facebook", "https://facebook.com/page"],
-        ["website", "https://vimeo.com/example"],
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "facebook",
+          url: "https://facebook.com/page",
+        }),
+        expect.objectContaining({
+          platform: "custom",
+          imageUrl: "https://cdn.example.com/vimeo.png",
+          url: "https://vimeo.com/example",
+          alt: "Vimeo",
+        }),
       ]);
       expect(block.align).toBe("center");
-      expect(JSON.stringify(block)).not.toContain("vimeo.png");
-      expect(warnings).toEqual([
-        "Custom icon Vimeo imported as the generic website icon; its image is not carried.",
-      ]);
-      expect(entry.note).toBe(warnings[0]);
-      expect(entry.status).toBe("approximated");
+      expect(warnings).toEqual([]);
+      expect(entry.note).toBeUndefined();
+      expect(entry.status).toBe("converted");
     });
 
     it("imports a social module of only unknown icons as one row", () => {
@@ -3044,7 +3064,7 @@ describe("convertModule", () => {
         ["website", "https://myspace.com/band"],
       ]);
       expect(warnings).toEqual([
-        "Custom icon Myspace imported as the generic website icon; its image is not carried.",
+        "Custom icon Myspace has no image file; imported as the generic website icon.",
       ]);
     });
 
@@ -3238,13 +3258,448 @@ describe("convertModule", () => {
       expect(entry.status).toBe("approximated");
       expect(entry.note).toBe(
         [
-          "Custom icon Artsy imported as the generic website icon; its image is not carried.",
-          "Custom icon Custom imported as the generic website icon; its image is not carried.",
-          "Custom icon myspace imported as the generic website icon; its image is not carried.",
-          `Custom icon ${uuid} imported as the generic website icon; its image is not carried.`,
-          "Custom icon custom imported as the generic website icon; its image is not carried.",
+          "Custom icon Artsy has no image file; imported as the generic website icon.",
+          "Custom icon Custom has no image file; imported as the generic website icon.",
+          "Custom icon myspace has no image file; imported as the generic website icon.",
+          `Custom icon ${uuid} has no image file; imported as the generic website icon.`,
+          "Custom icon custom has no image file; imported as the generic website icon.",
         ].join(" "),
       );
+    });
+
+    it("keeps a Spotify icon-set icon as a custom icon", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "spotify",
+                image: {
+                  alt: "Spotify",
+                  href: "https://open.spotify.com/artist/example",
+                  src: "https://cdn.example.com/social-networks-icon-sets/circle-color/spotify.png",
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "custom",
+          imageUrl:
+            "https://cdn.example.com/social-networks-icon-sets/circle-color/spotify.png",
+          url: "https://open.spotify.com/artist/example",
+          alt: "Spotify",
+        }),
+      ]);
+      expect(block.iconStyle).toBe("circle");
+      expect(warnings).toEqual([]);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("imports an imageless custom icon as a website icon", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                image: {
+                  title: "Artsy",
+                  href: "https://www.artsy.net/partner",
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "website",
+          url: "https://www.artsy.net/partner",
+        }),
+      ]);
+      expect(block.icons[0]).not.toHaveProperty("imageUrl");
+      const note =
+        "Custom icon Artsy has no image file; imported as the generic website icon.";
+      expect(warnings).toEqual([note]);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(note);
+    });
+
+    it("imports an imageless custom icon named Xing as the xing icon", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                name: "Xing",
+                image: { href: "https://www.xing.com/pages/example" },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "xing",
+          url: "https://www.xing.com/pages/example",
+        }),
+      ]);
+      const note =
+        "Custom icon Xing has no image file; imported as the xing icon.";
+      expect(warnings).toEqual([note]);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(note);
+    });
+
+    it("drops an unsafe custom image and falls back to a website icon", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                image: {
+                  title: "Artsy",
+                  href: "https://www.artsy.net/partner",
+                  src: "javascript:alert(1)",
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "website",
+          url: "https://www.artsy.net/partner",
+        }),
+      ]);
+      expect(JSON.stringify(block)).not.toMatch(/javascript:/);
+      const note =
+        "Custom icon Artsy has no image file; imported as the generic website icon.";
+      expect(warnings).toEqual([
+        'Dropped the unsafe image "javascript:alert(1)" on a social icon.',
+        note,
+      ]);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(note);
+    });
+
+    it("keeps a mailto prefix on a custom icon", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                image: {
+                  alt: "Mail",
+                  href: "partner@example.com",
+                  prefix: "mailto:",
+                  src: "https://cdn.example.com/mail.png",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "custom",
+          imageUrl: "https://cdn.example.com/mail.png",
+          url: "mailto:partner@example.com",
+          alt: "Mail",
+        }),
+      ]);
+    });
+
+    it("keeps a tel prefix on a custom icon", () => {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                image: {
+                  alt: "Phone",
+                  href: "+4930123456",
+                  prefix: "tel:",
+                  src: "https://cdn.example.com/phone.png",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "custom",
+          imageUrl: "https://cdn.example.com/phone.png",
+          url: "tel:+4930123456",
+          alt: "Phone",
+        }),
+      ]);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("treats a whitespace-only href as a missing link on a custom icon", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                image: {
+                  alt: "Artsy",
+                  href: "   ",
+                  src: "https://cdn.example.com/artsy.png",
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "custom",
+          imageUrl: "https://cdn.example.com/artsy.png",
+          url: "#",
+          alt: "Artsy",
+        }),
+      ]);
+      expect(warnings).toEqual([]);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("treats a whitespace-only href as a missing link on a known network", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "facebook",
+                image: { href: "   " },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "facebook",
+          url: "#",
+        }),
+      ]);
+      expect(block.icons[0]).not.toHaveProperty("imageUrl");
+      expect(warnings).toEqual([]);
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("treats a whitespace-only custom image as no image file", () => {
+      const warnings: string[] = [];
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                image: {
+                  title: "Artsy",
+                  href: "https://www.artsy.net/partner",
+                  src: "   ",
+                },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons).toEqual([
+        expect.objectContaining({
+          platform: "website",
+          url: "https://www.artsy.net/partner",
+        }),
+      ]);
+      expect(block.icons[0]).not.toHaveProperty("imageUrl");
+      const note =
+        "Custom icon Artsy has no image file; imported as the generic website icon.";
+      expect(warnings).toEqual([note]);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(note);
+    });
+
+    it("uses alt, then title, then name for a custom icon", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                type: "custom",
+                name: "Name",
+                image: {
+                  alt: "Alt",
+                  title: "Title",
+                  href: "https://example.com/alt",
+                  src: "https://cdn.example.com/alt.png",
+                },
+              },
+              {
+                type: "custom",
+                name: "Name",
+                image: {
+                  alt: "  ",
+                  title: "Title",
+                  href: "https://example.com/title",
+                  src: "https://cdn.example.com/title.png",
+                },
+              },
+              {
+                type: "custom",
+                name: "Name",
+                image: {
+                  href: "https://example.com/name",
+                  src: "https://cdn.example.com/name.png",
+                },
+              },
+              {
+                type: "custom",
+                image: {
+                  href: "https://example.com/none",
+                  src: "https://cdn.example.com/{{ file|default(&quot;a&quot;) }}.png",
+                },
+              },
+            ],
+          },
+        }),
+        [],
+      );
+
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(block.icons[0]).toMatchObject({ alt: "Alt" });
+      expect(block.icons[1]).toMatchObject({ alt: "Title" });
+      expect(block.icons[2]).toMatchObject({ alt: "Name" });
+      expect(block.icons[3]).not.toHaveProperty("alt");
+      expect(block.icons[3]).toMatchObject({
+        platform: "custom",
+        imageUrl: 'https://cdn.example.com/{{ file|default("a") }}.png',
+        url: "https://example.com/none",
+      });
+    });
+
+    it("keeps a mixed module in source order in one social block", () => {
+      const warnings: string[] = [];
+      const { block, extras, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-social", {
+          iconsList: {
+            icons: [
+              {
+                name: "facebook",
+                image: { href: "https://facebook.com/page" },
+              },
+              {
+                type: "custom",
+                image: {
+                  alt: "Artsy",
+                  href: "https://www.artsy.net",
+                  src: "https://cdn.example.com/artsy.png",
+                },
+              },
+              {
+                name: "spotify",
+                image: {
+                  href: "https://open.spotify.com/artist/example",
+                  src: "https://cdn.example.com/spotify.png",
+                },
+              },
+              {
+                type: "custom",
+                name: "Lobby",
+                image: { href: "https://example.com/lobby" },
+              },
+            ],
+          },
+        }),
+        warnings,
+      );
+
+      expect(extras ?? []).toEqual([]);
+      expect(block.type).toBe("social");
+      if (block.type !== "social") return;
+      expect(
+        block.icons.map((icon) =>
+          icon.platform === "custom"
+            ? [icon.platform, icon.url, icon.imageUrl]
+            : [icon.platform, icon.url],
+        ),
+      ).toEqual([
+        ["facebook", "https://facebook.com/page"],
+        [
+          "custom",
+          "https://www.artsy.net",
+          "https://cdn.example.com/artsy.png",
+        ],
+        [
+          "custom",
+          "https://open.spotify.com/artist/example",
+          "https://cdn.example.com/spotify.png",
+        ],
+        ["website", "https://example.com/lobby"],
+      ]);
+      const note =
+        "Custom icon Lobby has no image file; imported as the generic website icon.";
+      expect(warnings).toEqual([note]);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(note);
     });
   });
 
