@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createSocialIconsBlock } from '@templatical/types';
 import type { SocialIconsBlock } from '@templatical/types';
 import SocialToolbar from '../src/components/toolbar/SocialToolbar.vue';
+import MergeTagInput from '../src/components/MergeTagInput.vue';
 import { socialPlatformOptions } from '../src/constants/socialIcons';
 import { ON_REQUEST_MEDIA_KEY } from '../src/keys';
 import { mountEditor } from './helpers/mount';
@@ -484,6 +485,68 @@ describe('SocialToolbar custom icons', () => {
     await flushPromises();
 
     expect(onRequestMedia).not.toHaveBeenCalled();
+    expect(wrapper.emitted('update')).toBeUndefined();
+  });
+
+  it('typing into the image, alt and link fields emits only that icon, as a whole custom icon', async () => {
+    const builtIn = { id: 'built', platform: 'facebook', url: 'fb' };
+    const own = {
+      id: 'own',
+      platform: 'custom',
+      url: 'https://shop.example',
+      imageUrl: 'https://cdn.example/icon.png',
+      alt: 'Shop',
+    };
+    const wrapper = mountIt(withIcons([builtIn, own]));
+    // Field order on the custom row: image, alt, then the link. The built-in
+    // row's link comes first.
+    const inputs = wrapper.findAllComponents(MergeTagInput);
+    expect(inputs).toHaveLength(4);
+
+    inputs[1].vm.$emit('update:modelValue', 'https://cdn.example/new.png');
+    inputs[2].vm.$emit('update:modelValue', 'Shop logo');
+    inputs[3].vm.$emit('update:modelValue', 'https://shop.example/de');
+    await flushPromises();
+
+    const updates = wrapper.emitted('update')!.map(
+      ([u]) => (u as Partial<SocialIconsBlock>).icons!,
+    );
+    expect(updates).toEqual([
+      [builtIn, { ...own, imageUrl: 'https://cdn.example/new.png' }],
+      [builtIn, { ...own, alt: 'Shop logo' }],
+      [builtIn, { ...own, url: 'https://shop.example/de' }],
+    ]);
+  });
+
+  it('emits nothing when the image URL is set to its current value', async () => {
+    const wrapper = mountIt(
+      withIcons([
+        {
+          id: 'own',
+          platform: 'custom',
+          url: '',
+          imageUrl: 'https://cdn.example/icon.png',
+        },
+      ]),
+    );
+
+    wrapper
+      .findAllComponents(MergeTagInput)[0]
+      .vm.$emit('update:modelValue', 'https://cdn.example/icon.png');
+    await flushPromises();
+
+    expect(wrapper.emitted('update')).toBeUndefined();
+  });
+
+  it('emits nothing when the select reports the platform the icon already has', async () => {
+    const wrapper = mountIt(
+      withIcons([{ id: 'a', platform: 'facebook', url: 'fb' }]),
+    );
+
+    const select = wrapper.find('[data-testid="social-platform-select"]');
+    (select.element as HTMLSelectElement).value = 'facebook';
+    await select.trigger('change');
+
     expect(wrapper.emitted('update')).toBeUndefined();
   });
 

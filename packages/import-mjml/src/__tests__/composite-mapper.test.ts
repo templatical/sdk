@@ -257,6 +257,56 @@ describe("mj-social", () => {
     expect(result.entry.status).toBe("converted");
   });
 
+  it("keeps a custom icon with no href as an empty link", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element src="https://cdn.example.com/artsy.png" alt="Artsy" />
+       </mj-social>`,
+      "mj-social",
+    );
+    const { id, ...icon } = (result.block as SocialIconsBlock).icons[0];
+
+    expect(id).toEqual(expect.any(String));
+    expect(icon).toEqual({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      alt: "Artsy",
+      url: "",
+    });
+  });
+
+  it("names an imageless unknown icon by its alt when it has no name", () => {
+    const { result } = convert(
+      '<mj-social><mj-social-element alt="Mastodon" href="https://m.test/a" /></mj-social>',
+      "mj-social",
+    );
+    const icon = (result.block as SocialIconsBlock).icons[0];
+
+    expect(icon).toEqual({
+      id: expect.any(String),
+      platform: "website",
+      url: "https://m.test/a",
+    });
+    expect(result.entry.note).toBe(
+      'Unrecognised social platform "Mastodon" mapped to "website".',
+    );
+  });
+
+  it("adds no note for an imageless icon with nothing to name it", () => {
+    const { result } = convert(
+      '<mj-social><mj-social-element href="https://m.test/a" /></mj-social>',
+      "mj-social",
+    );
+    const icon = (result.block as SocialIconsBlock).icons[0];
+
+    expect(icon).toEqual({
+      id: expect.any(String),
+      platform: "website",
+      url: "https://m.test/a",
+    });
+    expect(result.entry.note).toBeUndefined();
+  });
+
   it("falls back to website for an unknown platform and reports it", () => {
     const { result } = convert(
       '<mj-social><mj-social-element name="mastodon" href="https://m.test/a" /></mj-social>',

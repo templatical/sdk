@@ -793,6 +793,33 @@ describe("convertLeaf", () => {
     expect(icon).not.toHaveProperty("alt");
   });
 
+  it("keeps a custom social icon with no href as an empty link", () => {
+    const { blocks } = map({
+      type: "standard-social",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-social-element",
+          data: {},
+          attributes: {
+            src: "https://cdn.example.com/artsy.png",
+            alt: "Artsy",
+          },
+          children: [],
+        },
+      ],
+    });
+    const { id, ...icon } = (blocks[0] as SocialIconsBlock).icons[0];
+    expect(id).toEqual(expect.any(String));
+    expect(icon).toEqual({
+      platform: "custom",
+      imageUrl: "https://cdn.example.com/artsy.png",
+      alt: "Artsy",
+      url: "",
+    });
+  });
+
   it("stays converted when a custom icon sits beside a recognised platform with no src", () => {
     const { blocks, entries } = map({
       type: "standard-social",

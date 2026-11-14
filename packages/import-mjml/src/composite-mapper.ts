@@ -193,7 +193,8 @@ export function convertSocial(
       });
     } else {
       if (!platform) {
-        const rawName = name || fromSrc.platform || alt;
+        // An unrecognised icon here has no `src`: its name or alt names it.
+        const rawName = name || alt;
         if (rawName) {
           notes.push(
             `Unrecognised social platform "${rawName}" mapped to "website".`,

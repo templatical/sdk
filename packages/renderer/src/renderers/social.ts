@@ -1,22 +1,18 @@
-import type { SocialIconsBlock } from "@templatical/types";
+import type { CustomSocialIcon, SocialIconsBlock } from "@templatical/types";
 import { socialIconAssetDir } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
-/** A custom image URL the renderer can put in `src`. Untrusted JSON may not be a string. */
-function emittedImageUrl(
-  icon: SocialIconsBlock["icons"][number],
-): string | undefined {
-  if (icon.platform !== "custom") return undefined;
+/** The image URL `src` can carry: a non-blank string. Untrusted JSON may hold anything. */
+function hasUsableImage(icon: CustomSocialIcon): boolean {
   const imageUrl = icon.imageUrl as unknown;
-  if (typeof imageUrl !== "string" || imageUrl.trim() === "") return undefined;
-  return imageUrl;
+  return typeof imageUrl === "string" && imageUrl.trim() !== "";
 }
 
-function altText(icon: SocialIconsBlock["icons"][number]): string {
-  const alt = icon.platform === "custom" ? (icon.alt as unknown) : undefined;
+function altText(icon: CustomSocialIcon): string {
+  const alt = icon.alt as unknown;
   return typeof alt === "string" ? alt : "";
 }
 
@@ -52,7 +48,7 @@ export function renderSocialIcons(
   // A custom icon without a string image URL would compile to a broken <img>,
   // same as an image block with an empty src. Spacing uses what is emitted.
   const icons = block.icons.filter(
-    (icon) => icon.platform !== "custom" || emittedImageUrl(icon) !== undefined,
+    (icon) => icon.platform !== "custom" || hasUsableImage(icon),
   );
 
   if (icons.length === 0) {
@@ -110,8 +106,8 @@ export function renderSocialIcons(
 
     if (icon.platform === "custom") {
       // No `name`: MJML's network palette and href defaults must not apply.
-      const imageUrl = emittedImageUrl(icon) ?? "";
-      return `<mj-social-element src="${escapeAttr(imageUrl)}" alt="${escapeAttr(altText(icon))}" href="${url}" icon-size="${iconSizePx}px" padding="${padding}" border-radius="0" background-color="transparent"></mj-social-element>`;
+      // The filter above kept only custom icons with a usable image URL.
+      return `<mj-social-element src="${escapeAttr(icon.imageUrl)}" alt="${escapeAttr(altText(icon))}" href="${url}" icon-size="${iconSizePx}px" padding="${padding}" border-radius="0" background-color="transparent"></mj-social-element>`;
     }
 
     const platform = escapeAttr(icon.platform);
