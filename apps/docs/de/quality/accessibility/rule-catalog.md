@@ -1,6 +1,6 @@
 # Regelkatalog Barrierefreiheit
 
-Die 21 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. Jede Regel liegt in `packages/quality/src/accessibility/rules/`; Schweregrad, Meldungstexte und Wörterbücher sind pro Regel über die [Optionen](../options) anpassbar.
+Die Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. Jede Regel liegt in `packages/quality/src/accessibility/rules/`; Schweregrad, Meldungstexte und Wörterbücher sind pro Regel über die [Optionen](../options) anpassbar.
 
 ## Bilder
 
@@ -11,6 +11,7 @@ Die 21 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. 
 | `a11y.img-alt-too-long` | warning | — | Alt-Text ist zu lang — Screenreader machen innerhalb des Alt-Textes keine Pausen. Lange Texte werden zu einer Sprachwand. Bleibe unter ca. 125 Zeichen; zusätzlichen Kontext in den Fließtext auslagern. |
 | `a11y.img-decorative-needs-empty-alt` | info | ja | Dekoratives Bild hat Alt-Text — Dekorative Bilder sollten von Screenreadern übersprungen werden. Ein leerer Alt-Text (alt='') signalisiert genau das. Ein nicht leerer Alt-Text auf einem dekorativen Bild widerspricht sich. |
 | `a11y.img-linked-no-context` | warning | — | Verlinktes Bild ohne Zielkontext — Wenn ein Bild zugleich Link ist, fungiert der Alt-Text als Linktext. Wer nur das Bild beschreibt, lässt Nutzer im Unklaren über das Ziel. |
+| `a11y.social-icon-missing-alt` | warning | — | Das Bild eines eigenen Social-Icons ist der einzige Inhalt des Links und hat keinen Alternativtext. Eine Merge-Tag-Bild-URL zählt als Bild. Integrierte Plattform-Icons werden nicht geprüft. [1](https://www.w3.org/WAI/tutorials/images/) |
 
 ## Überschriften
 

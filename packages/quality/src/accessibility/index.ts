@@ -23,6 +23,7 @@ import { buttonVagueLabel } from "./rules/button-vague-label";
 import { buttonTouchTarget } from "./rules/button-touch-target";
 import { buttonLowContrast } from "./rules/button-low-contrast";
 import { missingPreheader } from "./rules/missing-preheader";
+import { socialIconMissingAlt } from "./rules/social-icon-missing-alt";
 
 export const ACCESSIBILITY_RULES: Rule[] = [
   imgMissingAlt,
@@ -46,6 +47,7 @@ export const ACCESSIBILITY_RULES: Rule[] = [
   buttonTouchTarget,
   buttonLowContrast,
   missingPreheader,
+  socialIconMissingAlt,
 ];
 
 export function lintAccessibility(
