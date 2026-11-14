@@ -25,6 +25,7 @@ const dropZoneRef = ref<HTMLElement>();
 const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
   useMediaDropField({
     target: dropZoneRef,
+    value: () => props.modelValue,
     blocked: () => !!props.readOnly,
     apply: (result) => emit("update:modelValue", result.url),
   });

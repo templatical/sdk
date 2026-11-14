@@ -1,10 +1,30 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { mount, shallowMount, flushPromises } from "@vue/test-utils";
-import { shallowRef, computed, ref, toValue, type MaybeRefOrGetter } from "vue";
-import { SYNTAX_PRESETS, createImageBlock } from "@templatical/types";
-import type { CustomBlockImageField } from "@templatical/types";
+import {
+  mount,
+  shallowMount,
+  flushPromises,
+  type VueWrapper,
+} from "@vue/test-utils";
+import {
+  shallowRef,
+  computed,
+  nextTick,
+  ref,
+  toValue,
+  type MaybeRefOrGetter,
+} from "vue";
+import {
+  SYNTAX_PRESETS,
+  createBackgroundImage,
+  createImageBlock,
+} from "@templatical/types";
+import type {
+  CustomBlockImageField,
+  CustomSocialIcon,
+  MediaResult,
+} from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
 import {
   MERGE_TAGS_KEY,
@@ -25,6 +45,8 @@ import { useImageDrop } from "../src/composables/useImageDrop";
 import ImageBlock from "../src/components/blocks/ImageBlock.vue";
 import ImageField from "../src/components/toolbar/fields/ImageField.vue";
 import ImageToolbar from "../src/components/toolbar/ImageToolbar.vue";
+import BackgroundImageControl from "../src/components/toolbar/BackgroundImageControl.vue";
+import SocialCustomIconFields from "../src/components/toolbar/SocialCustomIconFields.vue";
 
 function provideMap(onRequestMedia: unknown, canDrop?: boolean) {
   return {
@@ -239,4 +261,121 @@ describe("ImageToolbar drag-and-drop upload (#229)", () => {
       toValue(lastDropOptions().enabled as MaybeRefOrGetter<boolean>),
     ).toBe(false);
   });
+});
+
+describe("a drop upload never overwrites a URL changed while it ran", () => {
+  const OLD = "https://cdn/old.png";
+  const TYPED = "https://typed.example/new.png";
+  const UPLOADED = "https://cdn/up.png";
+  const field: CustomBlockImageField = {
+    type: "image",
+    key: "img",
+    label: "Image",
+  };
+  const icon = (imageUrl: string): CustomSocialIcon => ({
+    id: "i1",
+    platform: "custom",
+    url: "https://example.com",
+    imageUrl,
+  });
+
+  // Each caller passes its own `value` getter to useMediaDropField; a wrong
+  // one (a constant, another field) lets the stale upload through.
+  const callers: Array<{
+    name: string;
+    mount: (onRequestMedia: unknown) => VueWrapper;
+    retype: (wrapper: VueWrapper) => Promise<void>;
+  }> = [
+    {
+      name: "ImageBlock",
+      mount: (onRequestMedia) =>
+        mount(ImageBlock, {
+          props: { block: createImageBlock({ src: OLD }), viewport: "desktop" },
+          global: { provide: provideMap(onRequestMedia) },
+        }) as VueWrapper,
+      retype: (w) => w.setProps({ block: createImageBlock({ src: TYPED }) }),
+    },
+    {
+      name: "ImageToolbar",
+      mount: (onRequestMedia) =>
+        shallowMount(ImageToolbar, {
+          props: { block: createImageBlock({ src: OLD }) },
+          global: { provide: provideMap(onRequestMedia) },
+        }) as VueWrapper,
+      retype: (w) => w.setProps({ block: createImageBlock({ src: TYPED }) }),
+    },
+    {
+      name: "ImageField",
+      mount: (onRequestMedia) =>
+        shallowMount(ImageField, {
+          props: { field, modelValue: OLD },
+          global: { provide: provideMap(onRequestMedia) },
+        }) as VueWrapper,
+      retype: (w) => w.setProps({ modelValue: TYPED }),
+    },
+    {
+      name: "BackgroundImageControl",
+      mount: (onRequestMedia) =>
+        shallowMount(BackgroundImageControl, {
+          props: {
+            modelValue: createBackgroundImage(OLD),
+            testidPrefix: "bg",
+          },
+          global: { provide: provideMap(onRequestMedia) },
+        }) as VueWrapper,
+      retype: (w) => w.setProps({ modelValue: createBackgroundImage(TYPED) }),
+    },
+    {
+      name: "SocialCustomIconFields",
+      mount: (onRequestMedia) =>
+        shallowMount(SocialCustomIconFields, {
+          props: { icon: icon(OLD) },
+          global: { provide: provideMap(onRequestMedia) },
+        }) as VueWrapper,
+      retype: (w) => w.setProps({ icon: icon(TYPED) }),
+    },
+  ];
+
+  function deferredUpload() {
+    let settle: (result: MediaResult | null) => void = () => {};
+    const onRequestMedia = vi.fn(
+      () =>
+        new Promise<MediaResult | null>((resolve) => {
+          settle = resolve;
+        }),
+    );
+    return { onRequestMedia, settle: (r: MediaResult | null) => settle(r) };
+  }
+
+  const emittedUpload = (wrapper: VueWrapper): boolean =>
+    JSON.stringify(wrapper.emitted()).includes(UPLOADED);
+
+  it.each(callers)("$name keeps a URL typed during the upload", async (c) => {
+    const upload = deferredUpload();
+    const wrapper = c.mount(upload.onRequestMedia);
+
+    dropImage();
+    await nextTick();
+    await c.retype(wrapper);
+    upload.settle({ url: UPLOADED });
+    await flushPromises();
+
+    expect(upload.onRequestMedia).toHaveBeenCalledTimes(1);
+    expect(emittedUpload(wrapper)).toBe(false);
+  });
+
+  it.each(callers)(
+    "$name applies the upload when the URL is unchanged",
+    async (c) => {
+      const upload = deferredUpload();
+      const wrapper = c.mount(upload.onRequestMedia);
+
+      dropImage();
+      await nextTick();
+      upload.settle({ url: UPLOADED });
+      await flushPromises();
+
+      expect(emittedUpload(wrapper)).toBe(true);
+    },
+  );
 });

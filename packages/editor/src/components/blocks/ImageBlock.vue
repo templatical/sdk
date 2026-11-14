@@ -49,6 +49,7 @@ const dropZoneRef = ref<HTMLElement>();
 const { canBrowse, dropEnabled, isUploading, showOverlay, openMediaBrowser } =
   useMediaDropField({
     target: dropZoneRef,
+    value: () => props.block.src,
     // A merge-tag src is a deliberate dynamic value — never clobber it via drop.
     blocked: hasMergeTagSrc,
     apply: applyMedia,
