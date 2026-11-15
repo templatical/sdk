@@ -253,9 +253,13 @@ export async function renderToMjml(
   // every link (rich-text and menu). An unset `linkColor` keeps `color: inherit`
   // so links follow the text color and legacy content renders identically; a
   // per-link/per-item color still overrides (inline styles beat this rule).
-  const linkColor = toRender.settings.linkColor
-    ? escapeCssValue(toRender.settings.linkColor)
-    : "inherit";
+  // The rule is raw text in `<style>`. A CSS colour never contains `'` or
+  // `"`. A quote opens a string that runs to the end of the line and nests
+  // the following `@media` rules under `a`.
+  const linkColor =
+    toRender.settings.linkColor && !/['"]/.test(toRender.settings.linkColor)
+      ? escapeCssValue(toRender.settings.linkColor)
+      : "inherit";
   const linkDecoration = toRender.settings.linkUnderline ? "underline" : "none";
 
   const bodyContent = blocks

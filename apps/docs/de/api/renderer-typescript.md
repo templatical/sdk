@@ -158,20 +158,20 @@ import {
 
 ### `escapeHtml(text)`
 
-Maskiert HTML-Entitäten (`<`, `>`, `&`, `"`, `'`) in einem String. Verwenden Sie dies, wenn Sie Benutzerinhalte in HTML einfügen:
+Maskiert `&`, `<` und `>` (`&amp;`, `&lt;`, `&gt;`) in Elementtext (Inhalt zwischen Tags). `'` und `"` werden nicht maskiert. Für einen Attributwert verwenden Sie `escapeAttr`.
 
 ```ts
 escapeHtml('<script>alert("xss")</script>');
-// '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+// '&lt;script&gt;alert("xss")&lt;/script&gt;'
 ```
 
 ### `escapeAttr(text)`
 
-Maskiert einen String für die sichere Verwendung in HTML-Attributwerten:
+Maskiert `&`, `<`, `>` und `"` (`&amp;`, `&lt;`, `&gt;`, `&quot;`) in einem Attributwert in doppelten Anführungszeichen, und `'` bleibt unmaskiert. Der Renderer schreibt jedes Attribut in doppelte Anführungszeichen, daher kann ein unmaskiertes `'` den Wert nicht beenden. Ein Merge-Tag mit einem Argument in einfachen Anführungszeichen (<code v-pre>{{ x|default('y') }}</code>) erreicht so eine Template-Engine zum Sendezeitpunkt unverändert.
 
 ```ts
 const alt = escapeAttr('Photo of "sunrise" at O\'Hare');
-// 'Photo of &quot;sunrise&quot; at O&#x27;Hare'
+// 'Photo of &quot;sunrise&quot; at O\'Hare'
 ```
 
 ### `convertMergeTagsToValues(html)`

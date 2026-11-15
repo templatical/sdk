@@ -200,9 +200,11 @@ describe("border round-trip through MJML compiler", () => {
     });
 
     const mjml = renderBlock(block, ctx);
-    // Character references (`&#039;`) end in `;`; no other `;` may remain.
+    // `;`, `{`, `}` and newlines are stripped before attribute escaping, so
+    // no `;` remains outside a character reference. The `'` stays raw inside
+    // the double-quoted attribute and the payload stays one `border-top` value.
     expect(mjml.replace(/&#?\w+;/g, "")).not.toContain(";");
-    expect(mjml).toContain("red background: url(&#039;//attacker/log&#039;)");
+    expect(mjml).toContain("red background: url('//attacker/log')");
 
     // The payload survives only as part of one (invalid) `border-top` value,
     // never as a declaration of its own.

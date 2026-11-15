@@ -1,21 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { escapeHtml, escapeAttr, convertMergeTagsToValues } from '../src';
-import { escapeFontFamily } from '../src/escape';
+import { escapeCssValue, escapeFontFamily } from '../src/escape';
 import { expectLinear } from './helpers/expectLinear';
 
 describe('escapeHtml', () => {
-  it('escapes HTML entities', () => {
+  it('escapes <, > and & and leaves quotes raw', () => {
     expect(escapeHtml('Hello <b>World</b> & "test"')).toBe(
-      'Hello &lt;b&gt;World&lt;/b&gt; &amp; &quot;test&quot;',
+      'Hello &lt;b&gt;World&lt;/b&gt; &amp; "test"',
     );
+    expect(escapeHtml("it's")).toBe("it's");
+    expect(escapeHtml('"q"')).toBe('"q"');
+    expect(escapeHtml('<b>&')).toBe('&lt;b&gt;&amp;');
   });
 
   it('returns empty string for empty input', () => {
     expect(escapeHtml('')).toBe('');
-  });
-
-  it('escapes single quotes', () => {
-    expect(escapeHtml("it's")).toBe('it&#039;s');
   });
 });
 
@@ -23,6 +22,23 @@ describe('escapeAttr', () => {
   it('escapes attribute values', () => {
     expect(escapeAttr('test "value" & <tag>')).toBe(
       'test &quot;value&quot; &amp; &lt;tag&gt;',
+    );
+  });
+
+  it('leaves a single quote raw inside a double-quoted attribute', () => {
+    expect(escapeAttr("O'Hare")).toBe("O'Hare");
+  });
+
+  it('escapes &, <, > and " and leaves \' raw', () => {
+    expect(escapeAttr('a "b" & <c>')).toBe('a &quot;b&quot; &amp; &lt;c&gt;');
+  });
+});
+
+describe('escapeCssValue', () => {
+  it("keeps a single quote raw after stripping declaration breakouts", () => {
+    expect(escapeCssValue("O'Hare")).toBe("O'Hare");
+    expect(escapeCssValue("red; background: url('//attacker/log')")).toBe(
+      "red background: url('//attacker/log')",
     );
   });
 });
