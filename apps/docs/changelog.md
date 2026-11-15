@@ -15,6 +15,23 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.60.2
+
+<time datetime="2026-11-15">2026-11-15</time>
+
+### Fixes and improvements
+
+**The BeeFree importer keeps two kinds of content it used to lose:**
+
+`@templatical/import-beefree`
+
+- **Dynamic images.** A non-empty `image.dynamicSrc` merge tag becomes the image block's `src`, and the static `image.src` becomes its editor-only `placeholderUrl`. BeeFree's own HTML export uses `dynamicSrc`, so the import is reported `converted`. Before, the merge tag was dropped and the image showed BeeFree's placeholder file, or nothing.
+- **The space before a merge tag.** A `<code data-bee-type="mergetag">` chip, or a plain `<code>` around one token, keeps its plain leading space unless the text before it already ends in whitespace or it starts a block (no visible text since the start, a `<br>` or a block element tag), so `Hallo<code data-bee-type="mergetag"> {{contact.first_name}}</code>` imports as `Hallo {{contact.first_name}}`. This reverses the padding trim added in 0.55.0 (#1094), which dropped that space everywhere: BeeFree's own export keeps it.
+
+**Fix a dropped image overwriting a URL changed while it uploaded. An image block, its URL field in the sidebar, a section or band background image, a custom block's image field and a custom social icon's image field each take a drop upload's result only if the field still holds the URL it had when the file was dropped. A URL typed, picked with Browse, inserted as a merge tag or set by a drop on the image's other drop zone while the upload runs now stays, and the uploading overlay clears as soon as the URL changes. A Browse pick still applies even if the URL changed while the picker was open.**
+
+`@templatical/editor`
+
 ## 0.60.1
 
 <time datetime="2026-11-14">2026-11-14</time>
