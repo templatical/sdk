@@ -293,13 +293,27 @@ describe("BeeFree merge-tag code wrappers", () => {
     ).toBe("<p>Hello&nbsp;{{contact.first_name}},</p>");
   });
 
-  it("keeps a leading space in plain code after a word", () => {
+  it("drops a leading space inside a code element that holds one token", () => {
     expect(paragraph("<p>SIM-Karten:<code> {{anzahl}}</code></p>")).toBe(
-      "<p>SIM-Karten:<code> {{anzahl}}</code></p>",
+      "<p>SIM-Karten:<code>{{anzahl}}</code></p>",
     );
     expect(paragraph("<p>SIM-Karten:<code> {{anzahl}} </code></p>")).toBe(
-      "<p>SIM-Karten:<code> {{anzahl}} </code></p>",
+      "<p>SIM-Karten:<code>{{anzahl}} </code></p>",
     );
+  });
+
+  it("keeps a plain code element with nested markup as written", () => {
+    expect(paragraph("<p>Hi<code> <em>{{x}}</em></code></p>")).toBe(
+      "<p>Hi<code> <em>{{x}}</em></code></p>",
+    );
+  });
+
+  it("keeps chip padding after text while trimming plain-code padding", () => {
+    expect(
+      paragraph(
+        '<p>Hallo<code data-bee-type="mergetag"> {{a}}</code> und<code> {{b}}</code></p>',
+      ),
+    ).toBe("<p>Hallo {{a}} und<code>{{b}}</code></p>");
   });
 
   it("drops plain-code padding after whitespace or at a block start", () => {
@@ -317,21 +331,26 @@ describe("BeeFree merge-tag code wrappers", () => {
     );
   });
 
-  it("looks through inline tags before plain code", () => {
+  it("drops plain-code padding after inline tags with text", () => {
     expect(paragraph("<p>Hallo <strong><code> {{x}}</code></strong></p>")).toBe(
       "<p>Hallo <strong><code>{{x}}</code></strong></p>",
     );
     expect(paragraph("<p><strong>Hallo</strong><code> {{x}}</code></p>")).toBe(
-      "<p><strong>Hallo</strong><code> {{x}}</code></p>",
+      "<p><strong>Hallo</strong><code>{{x}}</code></p>",
     );
+    expect(
+      paragraph(
+        "<p><span><strong>Anzahl:</strong></span><code> {{TAG}}</code></p>",
+      ),
+    ).toBe("<p><span><strong>Anzahl:</strong></span><code>{{TAG}}</code></p>");
   });
 
-  it("keeps plain-code padding after an image", () => {
+  it("drops plain-code padding after an image", () => {
     expect(
       paragraph(
         '<p><img src="https://example.com/a.png"><code> {{x}}</code></p>',
       ),
-    ).toBe('<p><img src="https://example.com/a.png"><code> {{x}}</code></p>');
+    ).toBe('<p><img src="https://example.com/a.png"><code>{{x}}</code></p>');
   });
 
   it("joins a token split by a code element inside the braces", () => {
@@ -671,9 +690,9 @@ describe("BeeFree merge-tag code wrappers", () => {
     }, 2_000);
   }, 30_000);
 
-  // The empty inline code elements make a backward search from every opener
-  // quadratic; the separate exact assertion guards the retained markup.
-  it("tracks whitespace before plain code in linear time", () => {
+  // Empty inline code elements exercise the forward scan; the separate exact
+  // assertion guards the retained markup.
+  it("trims plain-code padding in linear time", () => {
     const adversarial = (n: number) =>
       "<p>" +
       "<span></span><code></code>".repeat(n) +
