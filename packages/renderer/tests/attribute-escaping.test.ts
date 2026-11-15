@@ -176,4 +176,46 @@ describe("template values in MJML attributes", () => {
     expect(mjml).not.toContain("1;position:fixed");
     expect(mjml).not.toContain("2}x{color:red");
   });
+
+  it("renders a linkColor that contains a quote as inherit", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.linkColor = "red'";
+    content.settings.linkUnderline = false;
+
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain("a { color: inherit; text-decoration: none; }");
+
+    const html = (await mjml2html(mjml)).html;
+    expect(html).toContain("a { color: inherit; text-decoration: none; }");
+    expect(html).toMatch(
+      /@media only screen and \(max-width: 480px\) \{\s*\.tpl-hide-mobile \{ display: none !important;/,
+    );
+  });
+
+  it("renders a linkColor that contains a double quote as inherit", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.linkColor = 'red"';
+    content.settings.linkUnderline = false;
+
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain("a { color: inherit; text-decoration: none; }");
+  });
+
+  it("leaves a CSS-escaped linkColor unchanged", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.linkColor = "r\\65 d";
+    content.settings.linkUnderline = false;
+
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain("a { color: r\\65 d; text-decoration: none; }");
+  });
+
+  it("leaves a plain linkColor unchanged", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.linkColor = "#ff0000";
+    content.settings.linkUnderline = false;
+
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain("a { color: #ff0000; text-decoration: none; }");
+  });
 });
