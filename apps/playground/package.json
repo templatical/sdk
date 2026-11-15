@@ -36,7 +36,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",
     "@types/mjml-browser": "^5.0.0",
-    "@vitejs/plugin-vue": "^6.0.10",
+    "@vitejs/plugin-vue": "^6.0.11",
     "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
