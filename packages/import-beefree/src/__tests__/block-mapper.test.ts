@@ -598,6 +598,91 @@ describe("convertModule", () => {
   });
 
   describe("image", () => {
+    it("uses a dynamic image source and keeps the static source for preview", () => {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", {
+          image: {
+            src: "https://example.com/qr-placeholder.png?a=1&amp;b=2",
+            dynamicSrc: " {{recipient.qr_code}} ",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "image") throw new Error("expected an image block");
+      expect(block.src).toBe("{{recipient.qr_code}}");
+      expect(block.placeholderUrl).toBe(
+        "https://example.com/qr-placeholder.png?a=1&amp;b=2",
+      );
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it.each(["", " \t "])(
+      "omits the preview source when a dynamic image has static source %j",
+      (src) => {
+        const { block, entry } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-image", {
+            image: { src, dynamicSrc: "{{recipient.qr_code}}" },
+          }),
+          [],
+        );
+        if (block.type !== "image") throw new Error("expected an image block");
+        expect(block.src).toBe("{{recipient.qr_code}}");
+        expect("placeholderUrl" in block).toBe(false);
+        expect(entry.status).toBe("converted");
+      },
+    );
+
+    it("decodes an entity inside the dynamic image source", () => {
+      const { block } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", {
+          image: {
+            src: "https://example.com/qr-placeholder.png",
+            dynamicSrc: "{{ guest|default(&quot;x&quot;) }}",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "image") throw new Error("expected an image block");
+      expect(block.src).toBe('{{ guest|default("x") }}');
+    });
+
+    it.each(["", "  \t\n ", 42 as unknown as string])(
+      "keeps the static source for unusable dynamic source %j",
+      (dynamicSrc) => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-image", {
+            image: {
+              src: "https://example.com/qr-placeholder.png",
+              dynamicSrc,
+            },
+          }),
+          [],
+        );
+        if (block.type !== "image") throw new Error("expected an image block");
+        expect(block.src).toBe("https://example.com/qr-placeholder.png");
+        expect("placeholderUrl" in block).toBe(false);
+      },
+    );
+
+    it("uses the same dynamic image mapping for an addon", () => {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-addon", {
+          image: {
+            src: "https://example.com/qr-placeholder.png",
+            dynamicSrc: "{{recipient.qr_code}}",
+          },
+        }),
+        [],
+      );
+      if (block.type !== "image") throw new Error("expected an image block");
+      expect(block.src).toBe("{{recipient.qr_code}}");
+      expect(block.placeholderUrl).toBe(
+        "https://example.com/qr-placeholder.png",
+      );
+      expect(entry.status).toBe("converted");
+    });
+
     it("converts image with src, alt, width", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-image", {
@@ -617,6 +702,7 @@ describe("convertModule", () => {
       expect(block.type).toBe("image");
       if (block.type === "image") {
         expect(block.src).toBe("https://example.com/photo.jpg");
+        expect("placeholderUrl" in block).toBe(false);
         expect(block.alt).toBe("A photo");
         expect(block.width).toBe(300);
         expect(block.linkUrl).toBe("https://example.com");

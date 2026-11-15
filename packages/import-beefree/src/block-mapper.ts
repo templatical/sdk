@@ -2057,8 +2057,15 @@ function convertImage(
     classes.includes(side),
   );
 
+  const staticSrc = decodeEntitiesInTokens(image.src || "");
+  const dynamicSrc =
+    typeof image.dynamicSrc === "string"
+      ? decodeEntitiesInTokens(image.dynamicSrc).trim()
+      : "";
+
   const block = createImageBlock({
-    src: decodeEntitiesInTokens(image.src || ""),
+    src: dynamicSrc || staticSrc,
+    ...(dynamicSrc && staticSrc.trim() ? { placeholderUrl: staticSrc } : {}),
     alt: decodeEntitiesInTokens(image.alt || ""),
     width,
     // The file's size feeds the editor's aspect-ratio lock; never rendered.

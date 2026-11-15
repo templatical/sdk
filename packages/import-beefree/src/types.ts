@@ -112,6 +112,8 @@ export interface BeeFreeeHeadingContent {
 export interface BeeFreeeImageContent {
   translations?: BeeFreeTranslations;
   src: string;
+  /** Per-recipient image source; `src` is its editor preview fallback. */
+  dynamicSrc?: string;
   href?: string;
   /**
    * Written by the GIPHY addon: the GIF's page on giphy.com, not a link the

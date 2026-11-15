@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { convertModule } from "../block-mapper";
-import { unwrapMergeTagCode } from "../merge-tokens";
+import {
+  trimHighlightedTokenPadding,
+  unwrapMergeTagCode,
+} from "../merge-tokens";
 import { convertBeeFreeTemplate } from "../converter";
 import type { BeeFreeeModule, BeeFreeTemplate } from "../types";
 import { expectLinear } from "./expectLinear";
@@ -96,12 +99,190 @@ describe("BeeFree merge-tag code wrappers", () => {
     ).toBe("<p>Dear {{contact.first_name}} {{contact.last_name}},</p>");
   });
 
-  it("drops the space a mergetag chip pads around its token", () => {
+  it("keeps the space after a word before a mergetag chip", () => {
     expect(
       paragraph(
         '<p>SIM-Karten:<code data-bee-type="mergetag"> {{anzahl}}</code></p>',
       ),
-    ).toBe("<p>SIM-Karten:{{anzahl}}</p>");
+    ).toBe("<p>SIM-Karten: {{anzahl}}</p>");
+  });
+
+  it("keeps the chip space between a word and a token", () => {
+    expect(
+      paragraph(
+        '<p>Hallo<code data-bee-type="mergetag"> {{contact.first_name}}</code>,</p>',
+      ),
+    ).toBe("<p>Hallo {{contact.first_name}},</p>");
+  });
+
+  it("drops the chip space after a plain space or non-breaking space", () => {
+    expect(
+      paragraph(
+        '<p>Hallo <code data-bee-type="mergetag"> {{contact.first_name}}</code></p>',
+      ),
+    ).toBe("<p>Hallo {{contact.first_name}}</p>");
+    expect(
+      paragraph(
+        '<p>Hallo&nbsp;<code data-bee-type="mergetag"> {{contact.first_name}}</code></p>',
+      ),
+    ).toBe("<p>Hallo&nbsp;{{contact.first_name}}</p>");
+    expect(
+      paragraph(
+        '<p>Hallo&#160;<code data-bee-type="mergetag"> {{contact.first_name}}</code></p>',
+      ),
+    ).toBe("<p>Hallo&#160;{{contact.first_name}}</p>");
+    expect(
+      paragraph(
+        '<p>Hallo&#Xa0;<code data-bee-type="mergetag"> {{contact.first_name}}</code></p>',
+      ),
+    ).toBe("<p>Hallo&#Xa0;{{contact.first_name}}</p>");
+  });
+
+  it.each([
+    ["&amp;nbsp;", "&nbsp;"],
+    ["&amp;#160;", "&#160;"],
+    ["&amp;#xA0;", "&#xA0;"],
+    ["&#0160;", "&#0160;"],
+  ])("drops a chip space after %s", (reference, restored) => {
+    expect(
+      paragraph(
+        `<p>Hallo${reference}<code data-bee-type="mergetag"> {{name}}</code></p>`,
+      ),
+    ).toBe(`<p>Hallo${restored}{{name}}</p>`);
+  });
+
+  it("drops a chip space after a whitespace chip whose reference decodes to a non-breaking space", () => {
+    expect(
+      paragraph(
+        '<p>Hi<code data-bee-type="mergetag">&#38;nbsp;</code><code data-bee-type="mergetag"> {{x}}</code></p>',
+      ),
+    ).toBe("<p>Hi&nbsp;{{x}}</p>");
+  });
+
+  it("drops plain-code padding after a doubled non-breaking-space reference", () => {
+    expect(paragraph("<p>Hallo&amp;nbsp;<code> {{name}}</code></p>")).toBe(
+      "<p>Hallo&nbsp;<code>{{name}}</code></p>",
+    );
+  });
+
+  it("drops the chip space at a block start or after a break", () => {
+    expect(
+      paragraph(
+        '<p><code data-bee-type="mergetag"> {{contact.first_name}}</code> kommt</p>',
+      ),
+    ).toBe("<p>{{contact.first_name}} kommt</p>");
+    expect(
+      unwrapMergeTagCode(
+        '<code data-bee-type="mergetag"> {{contact.first_name}}</code>',
+      ),
+    ).toBe("{{contact.first_name}}");
+    expect(
+      paragraph(
+        '<p>Hallo<br><code data-bee-type="mergetag"> {{contact.first_name}}</code></p>',
+      ),
+    ).toBe("<p>Hallo<br>{{contact.first_name}}</p>");
+  });
+
+  it("keeps the second chip's space after the first chip's token", () => {
+    expect(
+      paragraph(
+        '<p><code data-bee-type="mergetag"> {{a}}</code><code data-bee-type="mergetag"> {{b}}</code></p>',
+      ),
+    ).toBe("<p>{{a}} {{b}}</p>");
+  });
+
+  it("sees text before a nested chip inside its enclosing chip", () => {
+    expect(
+      paragraph(
+        '<p><code data-bee-type="mergetag">Hallo<code data-bee-type="mergetag"> {{x}}</code></code></p>',
+      ),
+    ).toBe("<p>Hallo {{x}}</p>");
+  });
+
+  it("looks through inline tags for the text before a chip", () => {
+    expect(
+      paragraph(
+        '<p>Hallo <strong><code data-bee-type="mergetag"> {{x}}</code></strong></p>',
+      ),
+    ).toBe("<p>Hallo <strong>{{x}}</strong></p>");
+    expect(
+      paragraph(
+        '<p><strong>Hallo</strong><code data-bee-type="mergetag"> {{x}}</code></p>',
+      ),
+    ).toBe("<p><strong>Hallo</strong> {{x}}</p>");
+  });
+
+  it("keeps the chip space after an image", () => {
+    expect(
+      paragraph(
+        '<p><img src="https://example.com/a.png"><code data-bee-type="mergetag"> {{x}}</code></p>',
+      ),
+    ).toBe('<p><img src="https://example.com/a.png"> {{x}}</p>');
+  });
+
+  it("drops padding after case-insensitive block tags and keeps it after incomplete tags", () => {
+    expect(
+      unwrapMergeTagCode(
+        'Hallo</H2><code data-bee-type="mergetag"> {{x}}</code>',
+      ),
+    ).toBe("Hallo</H2>{{x}}");
+    expect(
+      unwrapMergeTagCode(
+        'Hallo<a "<code data-bee-type="mergetag"> {{x}}</code>',
+      ),
+    ).toBe('Hallo<a " {{x}}');
+  });
+
+  it("treats a bare less-than sign as visible text before a chip", () => {
+    expect(
+      paragraph(
+        '<p>Price < <code data-bee-type="mergetag"> {{amount}}</code></p>',
+      ),
+    ).toBe("<p>Price < {{amount}}</p>");
+    expect(
+      paragraph(
+        '<p>Use a < b <code data-bee-type="mergetag"> {{name}}</code></p>',
+      ),
+    ).toBe("<p>Use a < b {{name}}</p>");
+    expect(
+      unwrapMergeTagCode('Hi<<code data-bee-type="mergetag"> {{x}}</code>'),
+    ).toBe("Hi< {{x}}");
+  });
+
+  it("recognizes a break after a literal less-than sign and digits", () => {
+    expect(
+      paragraph(
+        '<p>Total<10<br><code data-bee-type="mergetag"> {{x}}</code></p>',
+      ),
+    ).toBe("<p>Total<10<br>{{x}}</p>");
+  });
+
+  it("ignores an HTML comment with a greater-than sign before a chip", () => {
+    expect(
+      paragraph(
+        '<p>Hi <!-- a>b --><code data-bee-type="mergetag"> {{x}}</code></p>',
+      ),
+    ).toBe("<p>Hi <!-- a>b -->{{x}}</p>");
+  });
+
+  it("keeps the chip space after visible text and a comment", () => {
+    expect(
+      paragraph(
+        '<p>Hi<!-- note --><code data-bee-type="mergetag"> {{x}}</code></p>',
+      ),
+    ).toBe("<p>Hi<!-- note --> {{x}}</p>");
+  });
+
+  it("keeps the chip space after an unterminated comment", () => {
+    expect(
+      unwrapMergeTagCode('Hi<!--<code data-bee-type="mergetag"> {{x}}</code>'),
+    ).toBe("Hi<!-- {{x}}");
+  });
+
+  it("keeps a non-breaking space inside a chip at block start", () => {
+    expect(
+      paragraph('<p><code data-bee-type="mergetag">&nbsp;{{x}}</code></p>'),
+    ).toBe("<p>&nbsp;{{x}}</p>");
   });
 
   it("keeps a non-breaking space before the one token in a mergetag chip", () => {
@@ -112,13 +293,45 @@ describe("BeeFree merge-tag code wrappers", () => {
     ).toBe("<p>Hello&nbsp;{{contact.first_name}},</p>");
   });
 
-  it("drops a leading space inside a code element that holds one token", () => {
+  it("keeps a leading space in plain code after a word", () => {
     expect(paragraph("<p>SIM-Karten:<code> {{anzahl}}</code></p>")).toBe(
-      "<p>SIM-Karten:<code>{{anzahl}}</code></p>",
+      "<p>SIM-Karten:<code> {{anzahl}}</code></p>",
     );
     expect(paragraph("<p>SIM-Karten:<code> {{anzahl}} </code></p>")).toBe(
-      "<p>SIM-Karten:<code>{{anzahl}} </code></p>",
+      "<p>SIM-Karten:<code> {{anzahl}} </code></p>",
     );
+  });
+
+  it("drops plain-code padding after whitespace or at a block start", () => {
+    expect(paragraph("<p>Hallo <code> {{x}}</code></p>")).toBe(
+      "<p>Hallo <code>{{x}}</code></p>",
+    );
+    expect(paragraph("<p><code> {{x}}</code></p>")).toBe(
+      "<p><code>{{x}}</code></p>",
+    );
+    expect(paragraph("<p>Hallo<br><code> {{x}}</code></p>")).toBe(
+      "<p>Hallo<br><code>{{x}}</code></p>",
+    );
+    expect(paragraph("<p>Hallo&nbsp;<code> {{x}}</code></p>")).toBe(
+      "<p>Hallo&nbsp;<code>{{x}}</code></p>",
+    );
+  });
+
+  it("looks through inline tags before plain code", () => {
+    expect(paragraph("<p>Hallo <strong><code> {{x}}</code></strong></p>")).toBe(
+      "<p>Hallo <strong><code>{{x}}</code></strong></p>",
+    );
+    expect(paragraph("<p><strong>Hallo</strong><code> {{x}}</code></p>")).toBe(
+      "<p><strong>Hallo</strong><code> {{x}}</code></p>",
+    );
+  });
+
+  it("keeps plain-code padding after an image", () => {
+    expect(
+      paragraph(
+        '<p><img src="https://example.com/a.png"><code> {{x}}</code></p>',
+      ),
+    ).toBe('<p><img src="https://example.com/a.png"><code> {{x}}</code></p>');
   });
 
   it("joins a token split by a code element inside the braces", () => {
@@ -348,6 +561,32 @@ describe("BeeFree merge-tag code wrappers", () => {
     );
   });
 
+  it("keeps a chip space after a word in headings and button labels", () => {
+    const heading = convertModule(
+      moduleOf("mailup-bee-newsletter-modules-heading", {
+        heading: {
+          title: "h2",
+          text: '<h2>Hallo<code data-bee-type="mergetag"> {{contact.first_name}}</code></h2>',
+        },
+      }),
+      [],
+    ).block;
+    if (heading.type !== "title") throw new Error("expected a title");
+    expect(heading.content).toBe("<p>Hallo {{contact.first_name}}</p>");
+
+    const button = convertModule(
+      moduleOf("mailup-bee-newsletter-modules-button", {
+        button: {
+          label:
+            'Hallo<code data-bee-type="mergetag"> {{contact.first_name}}</code>',
+        },
+      }),
+      [],
+    ).block;
+    if (button.type !== "button") throw new Error("expected a button");
+    expect(button.text).toBe("Hallo {{contact.first_name}}");
+  });
+
   it("unwraps a speciallink chip in a heading", () => {
     const heading = convertModule(
       moduleOf("mailup-bee-newsletter-modules-heading", {
@@ -414,6 +653,55 @@ describe("BeeFree merge-tag code wrappers", () => {
       const html = chunk.repeat(n);
       return () => paragraph(html);
     }, 1_000);
+  }, 30_000);
+
+  // The exact result and CPU growth guard both matter: scanning backwards
+  // from each empty chip through earlier inline tags would be quadratic.
+  it("tracks whitespace before empty chips in linear time", () => {
+    const adversarial = (n: number) =>
+      "<p>" +
+      '<span></span><code data-bee-type="mergetag"></code>'.repeat(n) +
+      '<code data-bee-type="mergetag"> {{x}}</code></p>';
+    expect(unwrapMergeTagCode(adversarial(2_000))).toBe(
+      "<p>" + "<span></span>".repeat(2_000) + "{{x}}</p>",
+    );
+    expectLinear((n) => {
+      const html = adversarial(n);
+      return () => unwrapMergeTagCode(html);
+    }, 2_000);
+  }, 30_000);
+
+  // The empty inline code elements make a backward search from every opener
+  // quadratic; the separate exact assertion guards the retained markup.
+  it("tracks whitespace before plain code in linear time", () => {
+    const adversarial = (n: number) =>
+      "<p>" +
+      "<span></span><code></code>".repeat(n) +
+      "<code> {{x}}</code></p>";
+    expect(trimHighlightedTokenPadding(adversarial(2_000))).toBe(
+      "<p>" +
+        "<span></span><code></code>".repeat(2_000) +
+        "<code>{{x}}</code></p>",
+    );
+    expectLinear((n) => {
+      const html = adversarial(n);
+      return () => trimHighlightedTokenPadding(html);
+    }, 2_000);
+  }, 30_000);
+
+  // A comment without `-->` in each slice must not search the rest of the
+  // string for a later terminator; the scan remains linear in chip count.
+  it("tracks comments before chips in linear time", () => {
+    const adversarial = (n: number) =>
+      '<!--<code data-bee-type="mergetag"></code>'.repeat(n) +
+      '<code data-bee-type="mergetag"> {{x}}</code>';
+    expect(unwrapMergeTagCode(adversarial(2_000))).toBe(
+      "<!--".repeat(2_000) + " {{x}}",
+    );
+    expectLinear((n) => {
+      const html = adversarial(n);
+      return () => unwrapMergeTagCode(html);
+    }, 2_000);
   }, 30_000);
 
   it("unwraps the trimmed MERGETAG_CODE fixture", () => {
