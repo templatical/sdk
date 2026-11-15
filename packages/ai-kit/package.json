@@ -10,7 +10,7 @@
     "@anthropic-ai/sdk": "^1.8.0",
     "@types/node": "^26.6.6",
     "ai": "^7.0.170",
-    "openai": "^7.55.0",
+    "openai": "^7.56.0",
     "typescript": "^6.0.3",
     "vitest": "^5.1.0"
   },
