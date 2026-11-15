@@ -508,16 +508,7 @@ function blankChip(text: NonEmptyString): string {
   return whitespaceChip(text) as string;
 }
 
-/**
- * A chip between two merge tags may hold only whitespace: each non-breaking
- * space stays `&nbsp;`, and each run of other whitespace is one plain space.
- * A chip around one token leads with plain spaces that are not part of the
- * token. A non-breaking space in front of that token stays: it is the space
- * between the previous word and the token. A chip that also carries words, or
- * more than one token, is left as written. A space after the token stays: it
- * is the space the author typed.
- */
-/** Plain spaces the editor pads in front of a token. A non-breaking space is not padding. */
+/** Plain spaces before one token can be dropped at a block start or after whitespace. */
 function isPlainSpacePadding(text: string): boolean {
   return /^[ \t\n\r\f]*$/.test(text);
 }
@@ -534,12 +525,13 @@ function withoutLeadingTokenPadding(text: string): string {
 /**
  * What a mergetag chip keeps once nested chips are already unwrapped.
  * A chip that only holds whitespace keeps each non-breaking space. A plain
- * leading space before the one token is padding and drops.
+ * leading space before one token drops at a block start or after whitespace;
+ * after visible content it stays. A non-breaking space always stays.
  */
-function keptMergetagText(text: string): string {
+function keptMergetagText(text: string, dropLeadingPadding: boolean): string {
   const spans = tokenSpans(text);
   if (spans.length !== 1) return whitespaceChip(text as NonEmptyString) ?? text;
-  return withoutLeadingTokenPadding(text);
+  return dropLeadingPadding ? withoutLeadingTokenPadding(text) : text;
 }
 
 function fold(char: string): string {
@@ -814,10 +806,14 @@ function flattenRope(parts: ReadonlyArray<string | Rope>): string {
 }
 
 /**
- * A closed chip's text. Nested chips are already ropes, so a chain of chips
- * that is not a token or a padding space is not joined until the root.
+ * A closed chip's text. Plain leading padding before one token drops only at
+ * a block start or after whitespace. Nested chips are already ropes, so a
+ * chain of chips that is not a token or padding is not joined until the root.
  */
-function finishMergetag(parts: Array<string | Rope>): string | Rope {
+function finishMergetag(
+  parts: Array<string | Rope>,
+  dropLeadingPadding: boolean,
+): string | Rope {
   const flags = flagsOf(parts);
   if (!flags.brace && !flags.dirty) {
     if (flags.len === 0) return "";
@@ -825,7 +821,7 @@ function finishMergetag(parts: Array<string | Rope>): string | Rope {
     if (parts.length === 1) return parts[0];
     return { parts, ...flags };
   }
-  return keptMergetagText(flattenRope(parts));
+  return keptMergetagText(flattenRope(parts), dropLeadingPadding);
 }
 
 /**
@@ -843,15 +839,139 @@ interface CodeFrame {
   closeEnd: number;
   /** The chip that opened this frame. The close keeps that chip's content. */
   kind: BeeCodeChip;
+  /** Whether plain padding before its one token follows a block or whitespace. */
+  dropLeadingPadding: boolean;
+}
+
+type VisibleBeforeChip = "block-start" | "whitespace" | "text";
+
+const NBSP_REFERENCE = /&(?:amp;)?(?:nbsp;|#0*160;|#x0*a0;)/iy;
+
+/** What {@link whitespaceChip} writes: plain spaces and `&nbsp;`, nothing else. */
+const WHITESPACE_CHIP_OUTPUT = /^(?: |&nbsp;)+$/;
+
+const BLOCK_TAGS = new Set([
+  "p",
+  "div",
+  "li",
+  "ul",
+  "ol",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "table",
+  "tbody",
+  "thead",
+  "tfoot",
+  "tr",
+  "td",
+  "th",
+  "blockquote",
+  "pre",
+  "hr",
+  "center",
+  "section",
+  "article",
+  "header",
+  "footer",
+  "dl",
+  "dt",
+  "dd",
+]);
+
+/**
+ * Track visible source content in one forward pass over a slice. A `<` starts
+ * a tag only before an ASCII letter, `/`, `!` or `?`; comments stay invisible
+ * through `-->`, including an inner `>`. An unfinished tag or comment is text.
+ * Plain whitespace, U+00A0 and the single or doubled non-breaking-space
+ * references end in whitespace.
+ */
+function advanceVisibleBeforeChip(
+  html: string,
+  from: number,
+  end: number,
+  state: VisibleBeforeChip,
+): VisibleBeforeChip {
+  let i = from;
+  while (i < end) {
+    const char = html[i];
+    if (char === "<") {
+      const next = i + 1 < end ? html[i + 1] : "";
+      const code = next.charCodeAt(0);
+      if (!(
+        (code >= 65 && code <= 90) ||
+        (code >= 97 && code <= 122) ||
+        next === "/" ||
+        next === "!" ||
+        next === "?"
+      )) {
+        state = "text";
+        i++;
+        continue;
+      }
+      if (i + 4 <= end && html.startsWith("<!--", i)) {
+        let j = i + 4;
+        while (j + 2 < end) {
+          if (html[j] === "-" && html[j + 1] === "-" && html[j + 2] === ">") {
+            break;
+          }
+          j++;
+        }
+        if (j + 2 >= end) return "text";
+        i = j + 3;
+        continue;
+      }
+      const tagStart = i;
+      let quote = "";
+      i++;
+      while (i < end) {
+        const next = html[i];
+        if (quote) {
+          if (next === quote) quote = "";
+        } else if (next === '"' || next === "'") {
+          quote = next;
+        } else if (next === ">") {
+          break;
+        }
+        i++;
+      }
+      if (i === end) return "text";
+
+      let nameStart = tagStart + 1;
+      if (html[nameStart] === "/") nameStart++;
+      const nameEndStart = nameStart;
+      while (nameStart < i && isNameChar(html[nameStart])) nameStart++;
+      const name = html.slice(nameEndStart, nameStart).toLowerCase();
+      if (name === "br" || BLOCK_TAGS.has(name)) state = "block-start";
+      else if (name === "img") state = "text";
+      i++;
+      continue;
+    }
+    if (char === "&") {
+      NBSP_REFERENCE.lastIndex = i;
+      const nbsp = NBSP_REFERENCE.exec(html);
+      if (nbsp && NBSP_REFERENCE.lastIndex <= end) {
+        state = "whitespace";
+        i = NBSP_REFERENCE.lastIndex;
+        continue;
+      }
+    }
+    state = isSpace(char) || char === "\u00A0" ? "whitespace" : "text";
+    i++;
+  }
+  return state;
 }
 
 /**
  * Remove a BeeFree `<code>` chip.
  *
  * A `<code data-bee-type="mergetag">` chip keeps the text inside it. A chip
- * that holds only whitespace keeps each non-breaking space, and a plain
- * leading space before its one token is dropped. A chip that also carries
- * words, or more than one token, keeps that text as written.
+ * that holds only whitespace keeps each non-breaking space. Plain leading
+ * space before one token drops at a block start or after whitespace and stays
+ * after visible text. A chip with words or multiple tokens stays as written.
  *
  * A `<code data-bee-type="speciallink">` chip is removed and its inner HTML
  * is kept as written, link included, as BeeFree's own HTML export does.
@@ -870,6 +990,7 @@ export function unwrapMergeTagCode(html: string): string {
     stack.length > 0 ? stack[stack.length - 1].parts : root;
 
   let i = 0;
+  let visibleBeforeChip: VisibleBeforeChip = "block-start";
   while (i < html.length) {
     const frame = stack.length > 0 ? stack[stack.length - 1] : undefined;
     const open = indexOfCodeOpen(
@@ -878,12 +999,25 @@ export function unwrapMergeTagCode(html: string): string {
       frame ? frame.closeStart : html.length,
     );
     if (frame && open === -1) {
-      if (i < frame.closeStart)
+      if (i < frame.closeStart) {
         frame.parts.push(html.slice(i, frame.closeStart));
+        visibleBeforeChip = advanceVisibleBeforeChip(
+          html,
+          i,
+          frame.closeStart,
+          visibleBeforeChip,
+        );
+      }
       const inner =
         frame.kind === "speciallink"
           ? keepSpeciallinkHtml(frame.parts)
-          : finishMergetag(frame.parts);
+          : finishMergetag(frame.parts, frame.dropLeadingPadding);
+      // A whitespace chip writes the spaces its references decode to, and the
+      // source scan reads some of those references as text (`&#38;nbsp;`), so
+      // the chip's output decides what precedes the next chip.
+      if (typeof inner === "string" && WHITESPACE_CHIP_OUTPUT.test(inner)) {
+        visibleBeforeChip = "whitespace";
+      }
       stack.pop();
       dest().push(inner);
       i = frame.closeEnd;
@@ -899,6 +1033,12 @@ export function unwrapMergeTagCode(html: string): string {
       break;
     }
     dest().push(html.slice(i, open));
+    visibleBeforeChip = advanceVisibleBeforeChip(
+      html,
+      i,
+      open,
+      visibleBeforeChip,
+    );
     const kind = codeChipKind(html, open, openEnd);
     if (kind === undefined) {
       dest().push(html.slice(open, openEnd));
@@ -920,6 +1060,7 @@ export function unwrapMergeTagCode(html: string): string {
       closeStart: close.start,
       closeEnd: close.end,
       kind,
+      dropLeadingPadding: visibleBeforeChip !== "text",
     });
     i = openEnd;
   }
@@ -927,9 +1068,9 @@ export function unwrapMergeTagCode(html: string): string {
 }
 
 /**
- * A `<code>` that only highlights one token leads with plain spaces that are
- * not part of the token. A non-breaking space stays. The element stays, and
- * so does a space after the token.
+ * A `<code>` that highlights one token drops plain leading padding at a block
+ * start or after whitespace and keeps it after visible text. A non-breaking
+ * space always stays. The element stays, and so does a space after the token.
  * Nested markup inside the element is left as written.
  */
 export function trimHighlightedTokenPadding(html: string): string {
@@ -937,6 +1078,7 @@ export function trimHighlightedTokenPadding(html: string): string {
   const closes = indexCodeCloses(html);
   const parts: string[] = [];
   let i = 0;
+  let visibleBeforeCode: VisibleBeforeChip = "block-start";
   while (i < html.length) {
     const open = indexOfCodeOpen(html, i);
     if (open === -1) {
@@ -948,6 +1090,12 @@ export function trimHighlightedTokenPadding(html: string): string {
       parts.push(html.slice(i));
       break;
     }
+    visibleBeforeCode = advanceVisibleBeforeChip(
+      html,
+      i,
+      open,
+      visibleBeforeCode,
+    );
     parts.push(html.slice(i, openEnd));
     if (isSelfClosing(html, openEnd)) {
       i = openEnd;
@@ -959,7 +1107,17 @@ export function trimHighlightedTokenPadding(html: string): string {
       continue;
     }
     const inner = html.slice(openEnd, close.start);
-    parts.push(inner.includes("<") ? inner : withoutLeadingTokenPadding(inner));
+    parts.push(
+      inner.includes("<") || visibleBeforeCode === "text"
+        ? inner
+        : withoutLeadingTokenPadding(inner),
+    );
+    visibleBeforeCode = advanceVisibleBeforeChip(
+      html,
+      openEnd,
+      close.start,
+      visibleBeforeCode,
+    );
     parts.push(html.slice(close.start, close.end));
     i = close.end;
   }
