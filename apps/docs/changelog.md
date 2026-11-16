@@ -15,6 +15,28 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.60.3
+
+<time datetime="2026-11-16">2026-11-16</time>
+
+### Fixes and improvements
+
+**A plain `<code>` around one merge tag without `data-bee-type` drops its plain leading space again, wherever it sits: `SIM-Karten:<code> {{anzahl}}</code>` imports as `SIM-Karten:<code>{{anzahl}}</code>`.**
+
+`@templatical/import-beefree`
+
+BeeFree's own HTML export writes a plain `<code>` without that space. Version 0.60.2 kept it after text, adding a space absent from BeeFree's export. BeeFree's export keeps the space after text for a `<code data-bee-type="mergetag">` chip, so chips keep the 0.60.2 rule.
+
+**Quoted merge-tag arguments survive in rendered output. In an attribute, `'` stays raw and `"` is still `&quot;`. In element text, both quotes stay raw. `{{ x|default('y') }}` reaches Twig or Liquid intact in links, image sources, button labels, menu items, table cells and the preheader. A `linkColor` that contains `'` or `"` renders as `inherit`, so links follow the text colour instead of the client default the dropped declaration left them with. Rendered HTML otherwise changes byte-wise, with no visual change.**
+
+`@templatical/renderer`
+
+For direct callers of the exported `escapeHtml` and `escapeAttr`:
+
+- `escapeHtml` now escapes only `&`, `<` and `>`, so it is for element text only. It no longer makes a value safe inside any attribute.
+- An attribute value must use `escapeAttr` and stay in double quotes. `escapeAttr` escapes `&`, `<`, `>` and `"`, and leaves `'` raw, so it no longer makes a value safe inside single quotes.
+- A caller that wrote `escapeHtml` output into an attribute, or `escapeAttr` output into a single-quoted attribute, must switch to `escapeAttr` in a double-quoted attribute.
+
 ## 0.60.2
 
 <time datetime="2026-11-15">2026-11-15</time>
