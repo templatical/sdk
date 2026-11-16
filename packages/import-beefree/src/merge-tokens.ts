@@ -508,7 +508,7 @@ function blankChip(text: NonEmptyString): string {
   return whitespaceChip(text) as string;
 }
 
-/** Plain spaces before one token can be dropped at a block start or after whitespace. */
+/** Recognize plain padding before one token; a non-breaking space is not plain padding. */
 function isPlainSpacePadding(text: string): boolean {
   return /^[ \t\n\r\f]*$/.test(text);
 }
@@ -1068,17 +1068,16 @@ export function unwrapMergeTagCode(html: string): string {
 }
 
 /**
- * A `<code>` that highlights one token drops plain leading padding at a block
- * start or after whitespace and keeps it after visible text. A non-breaking
- * space always stays. The element stays, and so does a space after the token.
- * Nested markup inside the element is left as written.
+ * A plain `<code>` around one token drops plain leading padding wherever it
+ * sits, because BeeFree's export writes it without that space. A non-breaking
+ * space, the element and a space after the token stay. Nested markup inside
+ * the element is left as written. Chips are handled by `unwrapMergeTagCode`.
  */
 export function trimHighlightedTokenPadding(html: string): string {
   if (html.indexOf("<") === -1) return html;
   const closes = indexCodeCloses(html);
   const parts: string[] = [];
   let i = 0;
-  let visibleBeforeCode: VisibleBeforeChip = "block-start";
   while (i < html.length) {
     const open = indexOfCodeOpen(html, i);
     if (open === -1) {
@@ -1090,12 +1089,6 @@ export function trimHighlightedTokenPadding(html: string): string {
       parts.push(html.slice(i));
       break;
     }
-    visibleBeforeCode = advanceVisibleBeforeChip(
-      html,
-      i,
-      open,
-      visibleBeforeCode,
-    );
     parts.push(html.slice(i, openEnd));
     if (isSelfClosing(html, openEnd)) {
       i = openEnd;
@@ -1107,17 +1100,7 @@ export function trimHighlightedTokenPadding(html: string): string {
       continue;
     }
     const inner = html.slice(openEnd, close.start);
-    parts.push(
-      inner.includes("<") || visibleBeforeCode === "text"
-        ? inner
-        : withoutLeadingTokenPadding(inner),
-    );
-    visibleBeforeCode = advanceVisibleBeforeChip(
-      html,
-      openEnd,
-      close.start,
-      visibleBeforeCode,
-    );
+    parts.push(inner.includes("<") ? inner : withoutLeadingTokenPadding(inner));
     parts.push(html.slice(close.start, close.end));
     i = close.end;
   }

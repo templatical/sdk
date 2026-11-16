@@ -3,33 +3,42 @@ const HTML_ENTITIES: Record<string, string> = {
   "<": "&lt;",
   ">": "&gt;",
   '"': "&quot;",
-  "'": "&#039;",
 };
 
-const HTML_ENTITY_REGEX = /[&<>"']/g;
+/** Characters that must be escaped in element text. */
+const HTML_ENTITY_REGEX = /[&<>]/g;
 
 /**
- * Escape HTML special characters (& < > " ').
- * Equivalent to PHP htmlspecialchars with ENT_QUOTES | ENT_HTML5.
+ * Escape element text (content between tags). Escapes `&`, `<` and `>`
+ * (`&amp;`, `&lt;`, `&gt;`). A `'` and a `"` stay raw: element text never
+ * needs quote escaping, and a merge tag with a quoted argument
+ * (`{{ x|default('y') }}`) must reach a send-time template engine intact.
+ * Never for an attribute value: `escapeAttr` is the one to use there.
  */
 export function escapeHtml(text: string): string {
   if (text === "") {
     return "";
   }
 
-  return text.replace(HTML_ENTITY_REGEX, (char) => HTML_ENTITIES[char] ?? char);
+  return text.replace(HTML_ENTITY_REGEX, (char) => HTML_ENTITIES[char]);
 }
 
+/** Characters that can end or break a double-quoted attribute value. */
+const ATTR_ENTITY_REGEX = /[&<>"]/g;
+
 /**
- * Escape a string for use in an HTML attribute value.
- * Same implementation as escapeHtml for consistency with PHP.
+ * Escape a value for a double-quoted attribute, which is how the renderer
+ * writes every attribute. Escapes `&`, `<`, `>` and `"` (`&amp;`, `&lt;`,
+ * `&gt;`, `&quot;`). A `'` stays raw: inside double quotes it cannot end the
+ * value, and a quoted argument in a merge tag (`{{ x|default('y') }}`) must
+ * reach a send-time template engine intact.
  */
 export function escapeAttr(text: string): string {
   if (text === "") {
     return "";
   }
 
-  return text.replace(HTML_ENTITY_REGEX, (char) => HTML_ENTITIES[char] ?? char);
+  return text.replace(ATTR_ENTITY_REGEX, (char) => HTML_ENTITIES[char]);
 }
 
 /**
@@ -54,21 +63,16 @@ export function escapeCssValue(text: string): string {
   return escapeAttr(text.replace(/[;{}\r\n]/g, ""));
 }
 
-const FONT_FAMILY_ENTITY_REGEX = /[&<>"]/g;
-
 /**
  * Escape a font stack for a double-quoted `font-family="…"` MJML attribute.
  * A `"`-quoted family (`"Helvetica Neue", Arial`) must not end the attribute,
- * or the compiler reads it as empty. Unlike `escapeAttr`, single quotes are
- * left alone: they can't end a double-quoted attribute, and they're how the
- * renderer quotes families itself (`'Times New Roman', serif`), so every
- * stack without `&<>"` is emitted byte-for-byte.
+ * or the compiler reads it as empty. A `'` stays raw: it cannot end a
+ * double-quoted attribute, and the renderer quotes families itself
+ * (`'Times New Roman', serif`), so every stack without `&<>"` is emitted
+ * byte-for-byte.
  */
 export function escapeFontFamily(text: string): string {
-  return text.replace(
-    FONT_FAMILY_ENTITY_REGEX,
-    (char) => HTML_ENTITIES[char] ?? char,
-  );
+  return escapeAttr(text);
 }
 
 export { convertMergeTagsToValues } from "@templatical/types";
