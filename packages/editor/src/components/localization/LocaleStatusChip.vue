@@ -13,7 +13,7 @@ import { useI18n } from "../../composables/useI18n";
 import { useEditorRoot } from "../../composables/useEditorRoot";
 import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import { usePopoverPosition } from "../../composables/usePopoverPosition";
-import { languageName } from "../../utils/languageName";
+import { useLanguageName } from "../../composables/useLanguageName";
 import { plural } from "../../i18n/plural";
 import {
   ghostBtnCompactClass,
@@ -44,6 +44,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ target: [target: LocaleChipTarget | null] }>();
 const editor = inject(EDITOR_KEY, null);
+const languageName = useLanguageName(editor);
 const translation = inject(TRANSLATION_FEATURE_KEY, null);
 const chipOpeners = inject(LOCALE_CHIP_OPENERS_KEY, null);
 const uiLocale = inject(UI_LOCALE_KEY, "en") ?? "en";

@@ -97,8 +97,15 @@ import editorStylesInline, { ownedStyleRoots } from "virtual:editor-css";
 // ---------------------------------------------------------------------------
 
 export interface TemplaticalEditorConfig {
-  /** Enabled template languages. Versions are added by the author. */
-  localization?: { locales: string[]; doNotTranslate?: string[] };
+  /**
+   * Enabled template languages. Versions are added by the author.
+   * `languageNames` labels tags exactly as written; a missing or blank label keeps the default name.
+   */
+  localization?: {
+    locales: string[];
+    doNotTranslate?: string[];
+    languageNames?: Record<string, string>;
+  };
   /** Translation backend for enabled language versions. */
   translation?: TranslationProvider;
   onLocaleChange?: (locale: string) => void;
@@ -1248,6 +1255,21 @@ export async function init(
   )
     throw new SdkError(
       "localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.",
+    );
+  const languageNames = prepared.localization?.languageNames;
+  if (
+    languageNames !== undefined &&
+    (languageNames === null ||
+      typeof languageNames !== "object" ||
+      Array.isArray(languageNames) ||
+      Reflect.ownKeys(languageNames).some(
+        (key) =>
+          typeof (languageNames as Record<PropertyKey, unknown>)[key] !==
+          "string",
+      ))
+  )
+    throw new SdkError(
+      "localization.languageNames must be an object that maps language tags to label strings.",
     );
   prepareLayoutAndContent(prepared);
   return mountEditor(prepared, claimContainer(prepared.container));

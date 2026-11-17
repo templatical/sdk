@@ -35,3 +35,35 @@ it("validates trimmed do-not-translate terms and accepts the maximum list", asyn
   });
   editor.unmount();
 });
+
+it("validates the language label map and accepts blank labels", async () => {
+  const container = document.createElement("div");
+  const message =
+    "localization.languageNames must be an object that maps language tags to label strings.";
+  for (const languageNames of [
+    null,
+    "English",
+    ["English"],
+    { "en-GB": 42 },
+    { "en-GB": "English", "de-DE": null },
+  ]) {
+    await expect
+      .soft(
+        init({
+          container,
+          shadowDom: false,
+          localization: { locales: ["en-GB"], languageNames } as never,
+        }),
+      )
+      .rejects.toMatchObject({ name: "SdkError", message });
+  }
+  const editor = await init({
+    container,
+    shadowDom: false,
+    localization: {
+      locales: ["en-GB", "de-DE"],
+      languageNames: { "en-GB": "English", "de-DE": "" },
+    },
+  });
+  editor.unmount();
+});

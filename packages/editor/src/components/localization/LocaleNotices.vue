@@ -5,7 +5,7 @@ import { useI18n } from "../../composables/useI18n";
 import { TONE_STYLES } from "../../constants/noticeTones";
 import { plural } from "../../i18n/plural";
 import { UI_LOCALE_KEY } from "../../keys";
-import { languageName } from "../../utils/languageName";
+import { useLanguageName } from "../../composables/useLanguageName";
 
 export interface LocaleNotice {
   language: string;
@@ -14,6 +14,7 @@ export interface LocaleNotice {
 }
 
 const props = defineProps<{ notice: LocaleNotice }>();
+const languageName = useLanguageName();
 const emit = defineEmits<{ dismiss: [] }>();
 const { t, format } = useI18n();
 const uiLocale = inject(UI_LOCALE_KEY, undefined) ?? "en";

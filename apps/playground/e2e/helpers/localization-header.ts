@@ -50,7 +50,8 @@ export async function mountCrowdedHeader(
     setup() {
       const editor = useEditor({
         content,
-        localization: { locales: ["de", "zh-Hant-HK"] },
+        // The zh-CN sibling keeps zh-Hant-HK's full name.
+        localization: { locales: ["de", "zh-Hant-HK", "zh-CN"] },
       });
       const fontsManager = useFonts(undefined);
       const core = useEditorCore({
@@ -62,7 +63,7 @@ export async function mountCrowdedHeader(
         containerEl: ref(container),
       });
       core.popoverRoot.value = popover;
-      provide(LOCALIZATION_KEY, { locales: ["de", "zh-Hant-HK"] });
+      provide(LOCALIZATION_KEY, { locales: ["de", "zh-Hant-HK", "zh-CN"] });
       provide(SIZE_CHECK_KEY, {
         renderHtml: async () => "",
         canRenderHtml: () => false,
@@ -77,7 +78,7 @@ export async function mountCrowdedHeader(
         editor,
         core,
         showTemplateName: true,
-        localization: { locales: ["de", "zh-Hant-HK"] },
+        localization: { locales: ["de", "zh-Hant-HK", "zh-CN"] },
         ...(features === "all"
           ? headerFeatures()
           : {

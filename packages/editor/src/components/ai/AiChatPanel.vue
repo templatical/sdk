@@ -25,7 +25,7 @@ import { useI18n } from "../../composables/useI18n";
 import { secondaryBtnCompactClass } from "../../constants/styleConstants";
 import { EDITOR_KEY, UI_LOCALE_KEY } from "../../keys";
 import { validateChatAttachments } from "../../utils/aiAttachments";
-import { languageName } from "../../utils/languageName";
+import { useLanguageName } from "../../composables/useLanguageName";
 import { aiErrorMessage } from "../../utils/aiErrors";
 
 // The template's root is the shell itself, with nothing beside it (not even a
@@ -38,6 +38,7 @@ const emit = defineEmits<{ (e: "close"): void }>();
 
 const { t, format } = useI18n();
 const editor = inject(EDITOR_KEY, null);
+const languageName = useLanguageName(editor);
 const uiLocale = inject(UI_LOCALE_KEY, undefined);
 
 const promptInput = ref("");

@@ -6,7 +6,7 @@ import { deepEqual, generateId, readPath } from "@templatical/types";
 import { ghostBtnClass } from "../../constants/styleConstants";
 import { EDITOR_KEY } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
-import { languageName } from "../../utils/languageName";
+import { useLanguageName } from "../../composables/useLanguageName";
 
 const actionClass = ghostBtnClass.replace("tpl:text-sm", "tpl:text-xs");
 
@@ -21,6 +21,7 @@ const props = withDefaults(
 );
 const emit = defineEmits<{ (e: "reset"): void }>();
 const editor = inject(EDITOR_KEY, null);
+const languageName = useLanguageName(editor);
 const controlId = `tpl-field-${generateId()}`;
 const { t, format } = useI18n();
 const layer = computed(() => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { chromePillClass } from "../constants/styleConstants";
-import { languageName } from "../utils/languageName";
+import { useLanguageName } from "../composables/useLanguageName";
 import { formatRelativeTime } from "../utils/formatRelativeTime";
 import { EDITOR_KEY, LOCALIZATION_KEY, requireInject } from "../keys";
 import { useI18n } from "../composables/useI18n";
@@ -43,6 +43,7 @@ const emit = defineEmits<{
 
 const { t, format } = useI18n();
 const editor = requireInject(EDITOR_KEY, "CommentsSidebar");
+const languageName = useLanguageName(editor);
 
 const comments = computed(() => props.feature.headless);
 
