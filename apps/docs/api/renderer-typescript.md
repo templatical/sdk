@@ -158,7 +158,7 @@ import {
 
 ### `escapeHtml(text)`
 
-Escapes `&`, `<` and `>` (`&amp;`, `&lt;`, `&gt;`) in element text (content between tags). A `'` and a `"` stay raw. For an attribute value, use `escapeAttr`.
+Escapes `&`, `<` and `>` (`&amp;`, `&lt;`, `&gt;`) in element text (content between tags). A `'` and a `"` stay raw. `null` and `undefined` return `''`. For an attribute value, use `escapeAttr`.
 
 ```ts
 escapeHtml('<script>alert("xss")</script>');
@@ -167,7 +167,7 @@ escapeHtml('<script>alert("xss")</script>');
 
 ### `escapeAttr(text)`
 
-Escapes `&`, `<`, `>` and `"` (`&amp;`, `&lt;`, `&gt;`, `&quot;`) in a value for a double-quoted attribute and leaves `'` raw. The renderer writes every attribute in double quotes, so a raw `'` cannot end the value. A merge tag with a single-quoted argument (<code v-pre>{{ x|default('y') }}</code>) reaches a send-time template engine intact.
+Escapes `&`, `<`, `>` and `"` (`&amp;`, `&lt;`, `&gt;`, `&quot;`) in a value for a double-quoted attribute and leaves `'` raw. `null` and `undefined` return `''`. The renderer writes every attribute in double quotes, so a raw `'` cannot end the value. A merge tag with a single-quoted argument (<code v-pre>{{ x|default('y') }}</code>) reaches a send-time template engine intact.
 
 ```ts
 const alt = escapeAttr('Photo of "sunrise" at O\'Hare');

@@ -36,7 +36,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // them; a single paragraph is unwrapped into the heading.
   const content = unwrapParagraph(
     decodeStyleReferences(
-      fillEmptyParagraphs(convertMergeTagsToValues(block.content)),
+      fillEmptyParagraphs(convertMergeTagsToValues(block.content ?? "")),
     ),
   );
   // Clamp out-of-range levels to a defined entry so we never interpolate

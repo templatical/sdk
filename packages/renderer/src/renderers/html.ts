@@ -17,7 +17,7 @@ export function renderHtml(block: HtmlBlock, context: RenderContext): string {
     return "";
   }
 
-  const content = block.content;
+  const content = block.content ?? "";
 
   if (content === "") {
     return "";

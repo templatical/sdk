@@ -27,7 +27,9 @@ export function renderParagraph(
   // Skip when the user has cleared the paragraph — otherwise we emit a
   // styled `<td>` cell that adds visible whitespace to the email even
   // though the canvas shows nothing for an empty paragraph.
-  if (isBlankRichText(block.content)) {
+  const html = block.content ?? "";
+
+  if (isBlankRichText(html)) {
     return "";
   }
 
@@ -35,7 +37,7 @@ export function renderParagraph(
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   // The canvas fills blank lines with the same helper, so the two agree.
   const content = decodeStyleReferences(
-    fillEmptyParagraphs(convertMergeTagsToValues(block.content)),
+    fillEmptyParagraphs(convertMergeTagsToValues(html)),
   );
   const cssClassAttr = getCssClassAttr(block, [
     RICH_TEXT_CSS_CLASS,

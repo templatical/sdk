@@ -63,6 +63,20 @@ describe('escapeFontFamily', () => {
   });
 });
 
+describe('null and undefined input', () => {
+  // Stored JSON can carry null where the type says string (a backend that
+  // turns "" into null). Every helper renders it as the empty string.
+  it.each([
+    ['escapeHtml', escapeHtml],
+    ['escapeAttr', escapeAttr],
+    ['escapeCssValue', escapeCssValue],
+    ['escapeFontFamily', escapeFontFamily],
+  ] as const)('%s returns "" for null and undefined', (_name, escape) => {
+    expect(escape(null)).toBe('');
+    expect(escape(undefined)).toBe('');
+  });
+});
+
 describe('convertMergeTagsToValues', () => {
   it('replaces merge tag spans with their values', () => {
     const html = 'Hello <span data-merge-tag="{{name}}">Name</span>!';
