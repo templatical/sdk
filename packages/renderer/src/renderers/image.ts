@@ -19,9 +19,10 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
     return "";
   }
 
-  if (block.src === "") {
-    // Skip rather than emit `<mj-image src="">` which compiles to a
-    // broken-image icon. Mirrors video.ts behavior when no source is set.
+  // Skip rather than emit `<mj-image src="">` which compiles to a
+  // broken-image icon. Mirrors video.ts behavior when no source is set.
+  // `!`, not `=== ""`: stored JSON can hold null here.
+  if (!block.src) {
     return "";
   }
 

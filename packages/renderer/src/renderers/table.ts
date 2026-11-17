@@ -111,7 +111,7 @@ function renderCell(
   // tags are resolved first: convertMergeTagsToValues matches a literal
   // `<span`, so escaping has to run after it — escaping first would turn the
   // span into `&lt;span` and the `{{value}}` placeholder would never resolve.
-  const content = escapeHtml(convertMergeTagsToValues(cell.content));
+  const content = escapeHtml(convertMergeTagsToValues(cell.content ?? ""));
 
   const tag = isHeader ? "th" : "td";
 

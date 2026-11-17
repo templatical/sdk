@@ -158,7 +158,7 @@ import {
 
 ### `escapeHtml(text)`
 
-Maskiert `&`, `<` und `>` (`&amp;`, `&lt;`, `&gt;`) in Elementtext (Inhalt zwischen Tags). `'` und `"` werden nicht maskiert. Für einen Attributwert verwenden Sie `escapeAttr`.
+Maskiert `&`, `<` und `>` (`&amp;`, `&lt;`, `&gt;`) in Elementtext (Inhalt zwischen Tags). `'` und `"` werden nicht maskiert. `null` und `undefined` ergeben `''`. Für einen Attributwert verwenden Sie `escapeAttr`.
 
 ```ts
 escapeHtml('<script>alert("xss")</script>');
@@ -167,7 +167,7 @@ escapeHtml('<script>alert("xss")</script>');
 
 ### `escapeAttr(text)`
 
-Maskiert `&`, `<`, `>` und `"` (`&amp;`, `&lt;`, `&gt;`, `&quot;`) in einem Attributwert in doppelten Anführungszeichen, und `'` bleibt unmaskiert. Der Renderer schreibt jedes Attribut in doppelte Anführungszeichen, daher kann ein unmaskiertes `'` den Wert nicht beenden. Ein Merge-Tag mit einem Argument in einfachen Anführungszeichen (<code v-pre>{{ x|default('y') }}</code>) erreicht so eine Template-Engine zum Sendezeitpunkt unverändert.
+Maskiert `&`, `<`, `>` und `"` (`&amp;`, `&lt;`, `&gt;`, `&quot;`) in einem Attributwert in doppelten Anführungszeichen, und `'` bleibt unmaskiert. `null` und `undefined` ergeben `''`. Der Renderer schreibt jedes Attribut in doppelte Anführungszeichen, daher kann ein unmaskiertes `'` den Wert nicht beenden. Ein Merge-Tag mit einem Argument in einfachen Anführungszeichen (<code v-pre>{{ x|default('y') }}</code>) erreicht so eine Template-Engine zum Sendezeitpunkt unverändert.
 
 ```ts
 const alt = escapeAttr('Photo of "sunrise" at O\'Hare');

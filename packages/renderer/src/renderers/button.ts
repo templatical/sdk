@@ -81,8 +81,8 @@ export function renderButton(
  * MJML paints `#414141` when `background-color` is omitted, and `""` is not a
  * color it accepts. An unset button fill is the keyword `transparent`.
  */
-function buttonBackgroundAttr(color: string): string {
-  if (color.trim() === "") return "transparent";
+function buttonBackgroundAttr(color: string | null | undefined): string {
+  if ((color ?? "").trim() === "") return "transparent";
   return escapeAttr(color);
 }
 

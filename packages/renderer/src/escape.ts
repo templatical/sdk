@@ -1,3 +1,7 @@
+// Every helper here returns "" for null and undefined. Stored template JSON
+// can hold null where a block type says string (a backend that turns every ""
+// into null), and the email must still render, with that field empty.
+
 const HTML_ENTITIES: Record<string, string> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -15,8 +19,8 @@ const HTML_ENTITY_REGEX = /[&<>]/g;
  * (`{{ x|default('y') }}`) must reach a send-time template engine intact.
  * Never for an attribute value: `escapeAttr` is the one to use there.
  */
-export function escapeHtml(text: string): string {
-  if (text === "") {
+export function escapeHtml(text: string | null | undefined): string {
+  if (text === null || text === undefined || text === "") {
     return "";
   }
 
@@ -33,8 +37,8 @@ const ATTR_ENTITY_REGEX = /[&<>"]/g;
  * value, and a quoted argument in a merge tag (`{{ x|default('y') }}`) must
  * reach a send-time template engine intact.
  */
-export function escapeAttr(text: string): string {
-  if (text === "") {
+export function escapeAttr(text: string | null | undefined): string {
+  if (text === null || text === undefined || text === "") {
     return "";
   }
 
@@ -55,8 +59,8 @@ export function escapeAttr(text: string): string {
  * Without this, an attacker-controlled color like
  * `"red; background: url('//attacker/log')"` lands as a real CSS rule.
  */
-export function escapeCssValue(text: string): string {
-  if (text === "") {
+export function escapeCssValue(text: string | null | undefined): string {
+  if (text === null || text === undefined || text === "") {
     return "";
   }
   // Strip before escaping, so the `;` that ends each `&quot;` survives.
@@ -71,7 +75,7 @@ export function escapeCssValue(text: string): string {
  * (`'Times New Roman', serif`), so every stack without `&<>"` is emitted
  * byte-for-byte.
  */
-export function escapeFontFamily(text: string): string {
+export function escapeFontFamily(text: string | null | undefined): string {
   return escapeAttr(text);
 }
 
