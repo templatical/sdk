@@ -1,5 +1,13 @@
 # @templatical/editor
 
+## 0.60.4
+
+### Patch Changes
+
+- Updated dependencies [75949cd]
+  - @templatical/renderer@0.60.4
+  - @templatical/quality@0.60.4
+
 ## 0.60.3
 
 ### Patch Changes
