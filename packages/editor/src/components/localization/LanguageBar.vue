@@ -15,7 +15,7 @@ import {
   UI_LOCALE_KEY,
 } from "../../keys";
 import { plural } from "../../i18n/plural";
-import { languageName } from "../../utils/languageName";
+import { useLanguageName } from "../../composables/useLanguageName";
 import {
   ghostBtnCompactClass,
   primaryBtnClass,
@@ -30,6 +30,7 @@ const props = defineProps<{
   feature: UseTranslationFeatureReturn | null;
   change: number;
 }>();
+const languageName = useLanguageName(props.editor);
 const { t, format } = useI18n();
 const uiLocale = inject(UI_LOCALE_KEY, undefined) ?? "en";
 const definitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);

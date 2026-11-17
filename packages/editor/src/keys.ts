@@ -53,7 +53,12 @@ export const LOCALE_CHIP_OPENERS_KEY: InjectionKey<
 > = Symbol("localeChipOpeners");
 
 export const LOCALIZATION_KEY: InjectionKey<
-  { locales: string[]; doNotTranslate?: string[] } | undefined
+  | {
+      locales: string[];
+      doNotTranslate?: string[];
+      languageNames?: Record<string, string>;
+    }
+  | undefined
 > = Symbol("localization");
 
 /** Languages in which an ancestor section excludes its descendants. */

@@ -38,6 +38,13 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
+function localizedContent() {
+  const content = createDefaultTemplateContent();
+  content.settings.locale = "en";
+  content.settings.locales = ["ar", "fr"];
+  return content;
+}
+
 async function openInline(
   kind: "paragraph" | "title" = "paragraph",
   locale = "ar",
@@ -213,7 +220,7 @@ it("disables the block toolbar when the selected view becomes read-only", async 
   wrapper = mountEditor(Toolbar, {
     props: { block: createParagraphBlock({ id: "copy" }) },
     provides: {
-      [EDITOR_KEY]: { activeLocale },
+      [EDITOR_KEY]: { activeLocale, content: ref(localizedContent()) },
       [LOCALIZATION_KEY]: { locales: ["ar"] },
       [TRANSLATIONS_KEY]: en,
     },
@@ -320,7 +327,7 @@ it.each([
     wrapper = mountEditor(Toolbar, {
       props: { block },
       provides: {
-        [EDITOR_KEY]: { activeLocale },
+        [EDITOR_KEY]: { activeLocale, content: ref(localizedContent()) },
         [LOCALIZATION_KEY]: { locales: ["ar"] },
         [POPOVER_ROOT_KEY]: ref(popovers),
         [TRANSLATIONS_KEY]: en,

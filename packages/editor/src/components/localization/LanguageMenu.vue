@@ -28,7 +28,7 @@ import {
   UI_LOCALE_KEY,
 } from "../../keys";
 import { plural } from "../../i18n/plural";
-import { languageName } from "../../utils/languageName";
+import { useLanguageName } from "../../composables/useLanguageName";
 import {
   dangerBtnClass,
   primaryBtnClass,
@@ -39,6 +39,7 @@ import {
 import TplModal from "../TplModal.vue";
 
 const props = defineProps<{ editor: BaseEditorReturn; locales: string[] }>();
+const languageName = useLanguageName(props.editor);
 const { t, format } = useI18n();
 const uiLocale = inject(UI_LOCALE_KEY, undefined) ?? "en";
 const localeActions = inject(LOCALE_ACTIONS_KEY, null);

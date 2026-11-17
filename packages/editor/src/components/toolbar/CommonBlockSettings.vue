@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import FieldRow from "./FieldRow.vue";
-import { languageName } from "../../utils/languageName";
+import { useLanguageName } from "../../composables/useLanguageName";
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
@@ -61,6 +61,7 @@ const emit = defineEmits<{
 
 const { t, format } = useI18n();
 const editor = inject(EDITOR_KEY, null);
+const languageName = useLanguageName(editor);
 const localization = inject(LOCALIZATION_KEY, undefined);
 const activeLocale = computed(() => editor?.activeLocale?.value);
 const localeHidden = computed(
