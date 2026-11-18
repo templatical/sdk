@@ -10,10 +10,10 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@templatical/editor": "^0.60.4",
-    "@templatical/quality": "^0.60.4",
-    "@templatical/renderer": "^0.60.4",
-    "@templatical/types": "^0.60.4",
+    "@templatical/editor": "^0.61.0",
+    "@templatical/quality": "^0.61.0",
+    "@templatical/renderer": "^0.61.0",
+    "@templatical/types": "^0.61.0",
     "mjml": "^5.4.1",
     "nuxt": "^4.6.4",
     "vue": "^3.5.45"
