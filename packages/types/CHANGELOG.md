@@ -1,5 +1,11 @@
 # @templatical/types
 
+## 0.62.0
+
+### Patch Changes
+
+- 451aa06: Remove the unreleased Templatical Cloud integration. The SDK is configured through `init()` alone: every storage feature is a provider you pass to it (`templates`, `comments`, `versionHistory`, `savedBlocks`, `media`, `testEmail`, `render`, `ai`, `collaboration`). This drops `initCloud()`, `getSupportedCloudLocales()`, the `@templatical/core/cloud` subpath and the Cloud wire types in `@templatical/types`, and `pusher-js` is no longer a peer dependency.
+
 ## 0.61.0
 
 No changes in this release.

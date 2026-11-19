@@ -15,6 +15,22 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.62.0
+
+<time datetime="2026-11-19">2026-11-19</time>
+
+### Features
+
+**All packages are now MIT-licensed. `@templatical/editor`, `@templatical/core` and `@templatical/media-library` move from FSL-1.1-MIT to MIT; earlier releases keep their FSL-1.1-MIT terms, which convert to MIT two years after each release.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/media-library`
+
+### Fixes and improvements
+
+**Remove the unreleased Templatical Cloud integration. The SDK is configured through `init()` alone: every storage feature is a provider you pass to it (`templates`, `comments`, `versionHistory`, `savedBlocks`, `media`, `testEmail`, `render`, `ai`, `collaboration`). This drops `initCloud()`, `getSupportedCloudLocales()`, the `@templatical/core/cloud` subpath and the Cloud wire types in `@templatical/types`, and `pusher-js` is no longer a peer dependency.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/media-library` · `@templatical/types`
+
 ## 0.61.0
 
 <time datetime="2026-11-18">2026-11-18</time>

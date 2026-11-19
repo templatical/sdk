@@ -18,8 +18,37 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.61.0",
+  "latest": "0.62.0",
   "versions": [
+    {
+      "version": "0.62.0",
+      "date": "2026-11-19",
+      "changes": [
+        {
+          "hash": "d21fbfb",
+          "level": "minor",
+          "title": "All packages are now MIT-licensed. `@templatical/editor`, `@templatical/core` and `@templatical/media-library` move from FSL-1.1-MIT to MIT; earlier releases keep their FSL-1.1-MIT terms, which convert to MIT two years after each release.",
+          "body": "",
+          "packages": [
+            "@templatical/core",
+            "@templatical/editor",
+            "@templatical/media-library"
+          ]
+        },
+        {
+          "hash": "451aa06",
+          "level": "patch",
+          "title": "Remove the unreleased Templatical Cloud integration. The SDK is configured through `init()` alone: every storage feature is a provider you pass to it (`templates`, `comments`, `versionHistory`, `savedBlocks`, `media`, `testEmail`, `render`, `ai`, `collaboration`). This drops `initCloud()`, `getSupportedCloudLocales()`, the `@templatical/core/cloud` subpath and the Cloud wire types in `@templatical/types`, and `pusher-js` is no longer a peer dependency.",
+          "body": "",
+          "packages": [
+            "@templatical/core",
+            "@templatical/editor",
+            "@templatical/media-library",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.61.0",
       "date": "2026-11-18",
