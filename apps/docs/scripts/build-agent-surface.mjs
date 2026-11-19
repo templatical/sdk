@@ -34,7 +34,7 @@ const META_OUT = join(PUBLIC_DIR, "llms-meta.json");
 
 const SITE_TITLE = "Templatical";
 const SITE_SUMMARY =
-  "Drag-and-drop email editor for modern apps — source-available, MIT after two years.";
+  "All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).";
 
 // Generator output, and 27% of the corpus. public/changelog.json serves it.
 const EXCLUDED = new Set(["changelog.md"]);

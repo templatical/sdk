@@ -5,7 +5,7 @@ description: Which docs page to open first — embed the editor, connect your ba
 
 # Starting points
 
-Commercial use is free. The [License FAQ](/license-faq) is the competing-product restriction in plain language.
+All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT). [License](/license-faq).
 
 ## Embed the editor
 

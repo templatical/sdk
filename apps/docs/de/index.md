@@ -1,9 +1,10 @@
 ---
 layout: home
+description: Templatical ist ein einbettbares Drag-and-Drop-E-Mail-Editor-SDK — Speichern, Versionierung, Kommentare und Rendering sind an Ihr eigenes Backend angebunden. Alle Templatical-Pakete sind MIT-lizenziert (frühere Veröffentlichungen bis 0.61.x standen unter FSL-1.1-MIT).
 hero:
   name: Templatical
   text: E-Mail-Editor für Ihre Anwendung
-  tagline: E-Mail-Editor in Ihre App legen. Host-CSS kann ihn nicht beschädigen. Speichern, Versionen, Kommentare, Testversand und HTML-Export hängen an Ihrem Backend. Source-Available.
+  tagline: E-Mail-Editor in Ihre App legen. Host-CSS kann ihn nicht beschädigen. Speichern, Versionen, Kommentare, Testversand und HTML-Export hängen an Ihrem Backend. Alle Templatical-Pakete sind MIT-lizenziert (frühere Veröffentlichungen bis 0.61.x standen unter FSL-1.1-MIT).
   actions:
     - theme: brand
       text: Loslegen

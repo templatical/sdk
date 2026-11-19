@@ -32,10 +32,12 @@
     "email",
     "email-editor",
     "framework-agnostic",
+    "mit",
+    "open-source",
     "templatical",
     "vue-reactivity"
   ],
-  "license": "FSL-1.1-MIT",
+  "license": "MIT",
   "module": "./dist/index.js",
   "peerDependencies": {
     "pusher-js": "^8.6.0"

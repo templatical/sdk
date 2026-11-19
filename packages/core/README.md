@@ -3,7 +3,7 @@
 > Framework-agnostic editor logic — state, history, auto-save. The reactive engine behind `@templatical/editor`.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/core?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/core)
-[![License](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)](https://github.com/templatical/sdk/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 Powers [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor). Use this package directly if you want to build a custom UI on top of the Templatical state model — for example, a CLI tool, automation pipeline, or your own visual editor.
 
@@ -65,4 +65,4 @@ Full reference at **[docs.templatical.com](https://docs.templatical.com)**.
 
 ## License
 
-[FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) — free for any non-competing commercial use, automatically converts to MIT after 2 years per release.
+[MIT](https://github.com/templatical/sdk/blob/main/LICENSE).

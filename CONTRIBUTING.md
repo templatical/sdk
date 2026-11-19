@@ -186,9 +186,8 @@ Avoid discussing design decisions in inline PR comments before opening the PR â€
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the same license as the package you're contributing to:
+By contributing, you agree that your contributions will be licensed under MIT, the same licence as every package.
 
-- **FSL-1.1-MIT** (auto-converts to MIT after 2 years) for `editor`, `core`, `media-library`
-- **MIT** for every other package
+All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT). Each of those earlier releases converts to MIT two years after its release.
 
-See [`LICENSE`](./LICENSE) and [`LICENSE-MIT`](./LICENSE-MIT) for full terms, and [the license FAQ](https://docs.templatical.com/license-faq) for plain-English answers.
+See [`LICENSE`](./LICENSE) for the terms, and [the licence page](https://docs.templatical.com/license-faq).

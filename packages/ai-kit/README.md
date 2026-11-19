@@ -51,7 +51,7 @@ const editor = await init({
 await editor.load("tpl_123");
 ```
 
-AI needs a loaded template: the AI assistant and other entry points appear after `editor.load(id)` or `editor.create()` resolves. Omit `ai` to leave the feature out. Fix with AI and Write alt text also require `@templatical/quality` and lint on. The AI kit is MIT; the editor UI is source-available under FSL-1.1-MIT.
+AI needs a loaded template: the AI assistant and other entry points appear after `editor.load(id)` or `editor.create()` resolves. Omit `ai` to leave the feature out. Fix with AI and Write alt text also require `@templatical/quality` and lint on. The AI kit and the editor UI are MIT.
 
 ## On your server
 

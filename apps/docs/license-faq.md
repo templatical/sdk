@@ -1,153 +1,45 @@
 ---
-title: License FAQ
-description: Plain-English answers about Templatical's FSL-1.1-MIT and MIT licenses — what's allowed, what isn't, when FSL becomes MIT.
+title: License
+description: All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).
 ---
 
-# License FAQ
+# License
 
-This page answers the questions teams ask most often when evaluating Templatical's license. It's intentionally plain-English; if you need formal terms, the authoritative documents are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) (FSL-1.1-MIT) and [`LICENSE-MIT`](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) (MIT).
+All `@templatical/*` packages and the Agent Skill are MIT-licensed from the next release. The terms are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
 
-## TL;DR
-
-- **You can use Templatical for free in any commercial product**, including paid SaaS, internal tools, and on-premise installs.
-- **The only thing you can't do** is repackage Templatical itself as a competing email-editor product or service.
-- **After two years**, every release of FSL-licensed code automatically becomes MIT. No action required.
-- **Only the editor, core and media library are FSL-licensed** — every other package is pure MIT today.
-
-## Is Templatical open source?
-
-The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai-kit` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
-
-## What is FSL-1.1-MIT?
-
-FSL stands for [**Functional Source License**](https://fsl.software/). It's a modern source-available license designed by Sentry to balance two things teams care about:
-
-- **Freedom** — the code is open, you can read it, fork it, modify it, and redistribute it.
-- **Sustainability** — the maintainer can build a viable business around it without an Amazon-sized cloud provider repackaging the project as a managed service.
-
-FSL-1.1-**MIT** is the variant that automatically converts to the MIT License after two years. So Templatical's source is public today with a single narrow restriction, and becomes fully MIT-licensed open source two years after each release.
-
-**Templatical uses the canonical FSL-1.1-MIT text, unmodified**, plus one clearly-marked **Additional Permission** that grants embedding explicitly. The Additional Permission only adds rights — it cannot reduce anything the base license grants. If your legal team compares [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) against the [upstream template](https://github.com/getsentry/fsl.software/blob/main/FSL-1.1-MIT.template.md), the base text matches byte for byte, and the only delta is the section below it.
-
-## Which packages use which license?
+## Packages
 
 | Package | License |
 |---|---|
-| `@templatical/editor` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
-| `@templatical/core` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
-| `@templatical/media-library` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
-| `@templatical/types` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/renderer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/quality` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-html` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-mjml` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-topol` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-stripo` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/ai-kit` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/editor` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/core` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/media-library` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/types` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/renderer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/quality` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-html` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-mjml` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-topol` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-stripo` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
+| `@templatical/ai-kit` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE) |
 
-The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI, the `@templatical/ai-kit` server kit) is permissive MIT and free of any future-license consideration.
+The Agent Skill (`skills/templatical`) is MIT as well.
 
-## Can I use Templatical commercially?
+## Earlier releases
 
-**Yes.** You can embed Templatical in any commercial product — paid SaaS, internal tools, on-premise software, agency builds, anything — without paying us and without asking permission.
+Releases up to 0.61.x of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were published under FSL-1.1-MIT. Each of those releases converts to MIT two years after its release. Releases from the next version on are MIT from publication.
 
-The only restriction is the one in the LICENSE: you can't take Templatical, slap a different name on it, and offer *that* as a competing email-editor product — hosted, self-installed, or otherwise.
+## Open source
 
-## Can I embed Templatical in my SaaS?
+Yes. Every `@templatical/*` package and the Agent Skill are MIT-licensed open source.
 
-**Yes.** This is the most common use case and it's fully permitted.
-
-Concretely allowed:
-
-- ✅ Embedding the editor in your CRM, marketing automation, transactional email tool, newsletter platform, or any product where email composition is one feature among many.
-- ✅ Charging your customers for using your product, including the embedded editor as part of it.
-- ✅ Customizing the editor with your brand, theme, custom blocks, and Cloud features.
-- ✅ Using it inside an internal tool that never ships to external customers.
-
-Concretely not allowed:
-
-- ❌ Building a product whose primary purpose is composing or designing email templates — "Templatical, but yours" — whether you host it or ship it self-installed.
-- ❌ Forking Templatical and offering the fork as a drop-in commercial replacement for Templatical itself.
-
-If you're not sure whether your use case crosses the line, [open a discussion](https://github.com/templatical/sdk/discussions) or email <hi@templatical.com>. We'd rather give you a clear answer up front than have ambiguity.
-
-## What does "competing use" mean concretely?
-
-A "competing use" is one where the email editor *is* the product. Some worked examples:
-
-| Use case | Allowed? |
-|---|---|
-| You add Templatical to your CRM so users can compose campaign emails | ✅ Yes — email editor is a feature of your CRM. |
-| You add Templatical to a transactional email API so customers design templates before sending via your API | ✅ Yes — email editor is a feature of your sending platform. |
-| You build a newsletter SaaS where Templatical is one of several composition tools | ✅ Yes — email editor is a feature of your newsletter product. |
-| You embed the editor inside your company's internal marketing portal | ✅ Yes — internal use is unrestricted. |
-| You fork Templatical, rebrand it, and sell hosted Templatical-clone subscriptions | ❌ No — that substitutes for Templatical itself, hosted or not. |
-| You build "Templatical Cloud, but cheaper" and offer it as a SaaS | ❌ No — that substitutes for a product we offer using the editor. |
-
-The rule of thumb: if you remove Templatical from your product, do you still have a product? If yes, you're fine.
-
-## When does FSL code become MIT?
-
-**Two years after each release.** Every FSL-licensed release of `@templatical/editor`, `@templatical/core`, and `@templatical/media-library` automatically converts to the MIT License two years from the date that specific version was published.
-
-That means if a stable version of Templatical 1.0 is released in 2026, that exact version becomes MIT-licensed in 2028 — automatically, with no action required from anyone. Newer releases inherit a fresh two-year clock.
-
-In practice, this means you always have a fully MIT-licensed version of the codebase available, just one that's two years behind the latest release.
-
-## What if the license changes later?
-
-Any version already published stays under the terms it shipped with. A license change applies to releases made after it — it cannot reach backwards and withdraw rights from a version you already have.
-
-The two-year MIT conversion works the same way: [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) grants it **irrevocably** and in advance, for each release at the moment that release is published. Nothing we do later can take it back.
-
-## Why not pure MIT from the start?
-
-Templatical is built and maintained primarily by one developer. Pure MIT means a well-funded competitor could take Templatical, host it as a managed service tomorrow, and undercut the project's ability to fund its own development — without contributing anything back.
-
-FSL-1.1-MIT keeps the code open and forkable for everyone with legitimate use cases (which is essentially everyone reading this), while preventing exactly the parasitic-managed-service scenario. After two years, that restriction lifts automatically and the code is fully MIT.
-
-The same approach is used by [Sentry](https://sentry.io), [PowerSync](https://www.powersync.com), [GitButler](https://gitbutler.com), and others who want a sustainable path to open source without going proprietary.
-
-## Can I contribute to Templatical?
-
-**Yes, please.** Community contributions are welcome — bug fixes, features, docs improvements, additional locales, and custom block examples are all appreciated.
-
-By contributing, you agree your contribution is licensed under the same license as the package you're contributing to: FSL-1.1-MIT for `editor`, `core` and `media-library`, MIT for every other package.
-
-There is currently **no separate Contributor License Agreement (CLA)** to sign — your PR alone is enough.
-
-See [`CONTRIBUTING.md`](https://github.com/templatical/sdk/blob/main/CONTRIBUTING.md) for the full contribution guide.
-
-## Do I need to display attribution?
-
-**Yes, for redistributed code.** If you redistribute Templatical's source or build artifacts, you must keep the license notice. This is the same as any standard open-source license.
-
-You do **not** need to display "Powered by Templatical" or any user-visible credit in the email editor itself. The license does not require attribution in the editor UI.
-
-By default, the editor renders a small "Powered by Templatical" footer in the canvas. You can hide it by passing `branding: false` to `init()`:
-
-```ts
-await init({
-  container: "#editor",
-  branding: false, // hides the footer
-});
-```
-
-There is no header logo or other forced branding — the footer is the only attribution surface, and it's opt-out.
-
-## Is using the Cloud tier required?
+## Cloud tier
 
 **No.** The Cloud tier is optional. The SDK can run standalone; features that connect to your data use providers you implement.
 
 Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release. Comments, saved blocks, version history, test email, media and [AI](/backend/ai) use providers you implement on `init()`. Cloud is one adapter, not the feature.
-
-## What if I have a question this doesn't answer?
-
-For licensing questions, email <hi@templatical.com>. For everything else, [open a discussion](https://github.com/templatical/sdk/discussions) or [file an issue](https://github.com/templatical/sdk/issues).
-
-If you spot something unclear or missing in this FAQ, please tell us — clarity benefits everyone.

@@ -5,7 +5,7 @@ description: Welche Dokumentationsseite zuerst — Editor einbinden, Backend anb
 
 # Einstiegspunkte
 
-Kommerzielle Nutzung ist kostenlos. Die [Lizenz-FAQ](/de/license-faq) erklärt die Einschränkung für konkurrierende Editor-Produkte.
+Alle Templatical-Pakete sind MIT-lizenziert (frühere Veröffentlichungen bis 0.61.x standen unter FSL-1.1-MIT). [Lizenz](/de/license-faq).
 
 ## Editor einbinden
 

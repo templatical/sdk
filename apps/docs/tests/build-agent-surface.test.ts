@@ -313,9 +313,9 @@ describe("the committed artifacts", () => {
 
   it("shows a page's entry with exactly one heading, not the body's own leading H1 too", () => {
     // The generator strips the body's H1 so the index heading is the only
-    // one. License FAQ has no other ATX h1 in the body (unlike Installation,
+    // one. License has no other ATX h1 in the body (unlike Installation,
     // whose examples contain `# pnpm-workspace.yaml`), so a regression is a
-    // second `# License FAQ` rather than a different title.
+    // second `# License` rather than a different title.
     const { full } = buildOutputs();
     const sourceLine = `Source: ${SITE_URL}/license-faq`;
     const sourceIndex = full.indexOf(sourceLine);
@@ -323,7 +323,7 @@ describe("the committed artifacts", () => {
     const entryEnd = full.indexOf("\n---\n", sourceIndex);
     const entry = full.slice(entryStart, entryEnd === -1 ? full.length : entryEnd);
     const headingLines = entry.split("\n").filter((line) => line.startsWith("# "));
-    expect(headingLines).toEqual(["# License FAQ"]);
+    expect(headingLines).toEqual(["# License"]);
   });
 
   it("does not list Cloud pages in the committed index or full corpus", () => {
