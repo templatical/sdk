@@ -1,11 +1,11 @@
 ---
 title: License
-description: MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).
+description: MIT-licensed.
 ---
 
 # License
 
-All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release. The terms are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
+All Templatical packages are MIT-licensed. The terms are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
 
 ## Packages
 
@@ -32,11 +32,11 @@ The Agent Skill (`skills/templatical`) is MIT as well.
 
 ## Earlier releases
 
-All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release.
+Releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` before 0.62.0 were published under FSL-1.1-MIT; each converts to MIT two years after its release.
 
 ## Open source
 
-Yes. From 0.62.0, every `@templatical/*` package and the Agent Skill are MIT-licensed open source.
+Yes. Every `@templatical/*` package and the Agent Skill are MIT-licensed open source.
 
 ## Cloud tier
 

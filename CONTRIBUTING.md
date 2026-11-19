@@ -188,6 +188,6 @@ Avoid discussing design decisions in inline PR comments before opening the PR â€
 
 By contributing, you agree that your contributions will be licensed under MIT, the same licence as every package.
 
-All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release.
+All Templatical packages are MIT-licensed.
 
 See [`LICENSE`](./LICENSE) for the terms, and [the licence page](https://docs.templatical.com/license-faq).
