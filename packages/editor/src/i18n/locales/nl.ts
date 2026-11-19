@@ -767,8 +767,6 @@ const nl: typeof en = {
     replyOne: "{count} antwoord",
     replyMany: "{count} antwoorden",
     missingBlock: "Blok ontbreekt",
-    saveTemplateFirst:
-      "Sla de template op voordat je een opmerking bij dit blok plaatst.",
   },
   collaboration: {
     people: "Mensen die deze template bewerken",

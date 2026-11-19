@@ -222,12 +222,6 @@ describe("config.sectionWrapper reaches SectionToolbar through Editor.vue", () =
     );
   });
 
-  it("initCloud forwards config.sectionWrapper into the init() config", () => {
-    expect(readSrc("index.ts")).toContain(
-      "sectionWrapper: config.sectionWrapper",
-    );
-  });
-
   it("useEditorCore provides SECTION_WRAPPER_KEY from config.sectionWrapper", () => {
     const src = readSrc("composables/useEditorCore.ts");
     expect(src).toContain("SECTION_WRAPPER_KEY");
@@ -237,11 +231,8 @@ describe("config.sectionWrapper reaches SectionToolbar through Editor.vue", () =
     );
   });
 
-  it("both public config types expose sectionWrapper", () => {
+  it("the public config type exposes sectionWrapper", () => {
     expect(readSrc("index.ts")).toContain("sectionWrapper?: boolean");
-    expect(readSrc("cloud/cloudConfig.ts")).toContain(
-      "sectionWrapper?: boolean",
-    );
   });
 
   it("keys.ts declares SECTION_WRAPPER_KEY separately from LAYOUT_KEY", () => {

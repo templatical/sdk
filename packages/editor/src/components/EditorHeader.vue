@@ -50,20 +50,9 @@ const CollaboratorBar = defineAsyncComponent(
 );
 
 /**
- * The editor's one header. Both entry points render this — `initCloud()` adds its
- * own controls through the `left-extras` / `right-extras` slots rather than
- * through a second header component, which is what keeps the two layouts from
- * drifting apart again (they already had: only Cloud carried `min-w-[200px]`, so
- * the OSS centre column was never actually centred).
- *
- * The two slots are in the anchored columns on purpose. There is deliberately no
- * centre slot: that track's width must stay constant, and a slot is the one
- * thing a guard test cannot stop someone filling. See the centre column's own
- * comment for why width changes there move the Preview button.
- *
- * Everything here is capability-driven, so the same markup covers "no providers
- * configured at all" and a fully-wired Cloud session. Nothing in this file knows
- * that Cloud exists.
+ * The editor's header. Controls render according to the configured providers.
+ * The centre track has a constant width during a session; controls whose width
+ * can change belong in the anchored edge columns.
  */
 const containerElement = shallowRef<HTMLElement | null>(null);
 const headerElement = shallowRef<HTMLElement | null>(null);
@@ -198,8 +187,7 @@ onBeforeUnmount(() => {
          already centred on its own box. Equal side tracks keep the view controls
          centred; measured content decides when to compact. Nothing renders before a
          template exists; there is neither a name nor a write time yet. The stack
-         is gated as a whole so an empty one cannot add a `gap-2.5` before the
-         cloud extras. -->
+         is gated as a whole so an empty one adds no gap. -->
       <div
         class="tpl-header-left tpl:flex tpl:min-w-0 tpl:items-center tpl:gap-2.5"
       >
@@ -264,7 +252,6 @@ onBeforeUnmount(() => {
           :people="collaboration.people.value"
           :connection="collaboration.connection.value"
         />
-        <slot name="left-extras" />
       </div>
 
       <!-- Center: the three "how am I viewing the canvas" controls, and nothing
@@ -276,8 +263,7 @@ onBeforeUnmount(() => {
          sibling by half the delta, whichever side of the change it sits on.
          DOM order buys nothing. So a conditional control here drags the Preview
          button out from under the cursor — 114.5px when the sample/label toggle
-         used to live here, and repeatedly in Cloud as collaborators came and
-         went (#574).
+         used to live here (#574).
 
          The three opt-outs below are plain booleans captured at setup, so they
          cannot change this track's width during the session. No other `v-if`,
@@ -304,7 +290,7 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <!-- Right: save status → Comments → AI → [cloud extras] → test email → Save.
+      <!-- Right: save status → Comments → AI → test email → Save.
          Save is last: it is the primary action. `justify-end` anchors the row to
          the right edge, so a control appearing at its start extends the row
          leftward and moves nothing already in it — but note the row is already
@@ -327,7 +313,7 @@ onBeforeUnmount(() => {
         <!-- Comments. Needs a template as well as a provider — a comment is keyed
            to a template id, so before one is loaded there is nothing to attach a
            thread to. Shared chrome, because comments are a shared
-           provider-backed feature rather than a Cloud one. -->
+           provider-backed feature. -->
         <button
           v-if="comments?.isAvailable.value && comments.hasTemplate.value"
           type="button"
@@ -360,10 +346,8 @@ onBeforeUnmount(() => {
           </span>
         </button>
 
-        <!-- AI: after Comments, before test email, as Cloud's AI button sat. -->
+        <!-- AI: after Comments, before test email. -->
         <AiHeaderMenu v-if="ai" :feature="ai" />
-
-        <slot name="right-extras" />
 
         <component :is="'slot'" v-if="shadowRoot" name="tpl-header-actions" />
         <span v-else ref="actionsTarget" class="tpl-header-actions" />

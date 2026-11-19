@@ -28,8 +28,6 @@ import "./style.css";
   document.documentElement.classList.toggle("dark", dark);
 }
 
-// Lazy-load Cloud page — only fetched when user navigates to #cloud
-const Cloud = defineAsyncComponent(() => import("./Cloud.vue"));
 // Lazy-load multi-instance shadow-DOM playground — only used by e2e specs.
 const MultiInstance = defineAsyncComponent(() => import("./MultiInstance.vue"));
 
@@ -38,12 +36,10 @@ const pages: Record<
   ReturnType<typeof defineAsyncComponent> | typeof App
 > = {
   "": App,
-  "#cloud": Cloud,
   "#multi": MultiInstance,
 };
 
 function pageKeyFor(component: unknown): string {
-  if (component === Cloud) return "cloud";
   if (component === MultiInstance) return "multi";
   return "oss";
 }

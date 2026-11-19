@@ -836,7 +836,6 @@ const ptBR: typeof en = {
     replyOne: "{count} Resposta",
     replyMany: "{count} Respostas",
     missingBlock: "Bloco ausente",
-    saveTemplateFirst: "Salve o template antes de comentar neste bloco.",
   },
   collaboration: {
     people: "Pessoas editando este template",

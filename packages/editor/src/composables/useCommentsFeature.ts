@@ -34,13 +34,6 @@ export interface UseCommentsFeatureOptions {
    * feature up.
    */
   isAvailable?: () => boolean;
-  /**
-   * Whether a block id exists in the **stored** template. Cloud supplies this: a
-   * comment is anchored server-side, so filtering to a block that only exists on
-   * the canvas has nothing to show. Absent means "assume it does", which is right
-   * for a store that accepts any anchor.
-   */
-  isBlockSaved?: (blockId: string) => boolean;
 }
 
 export interface UseCommentsFeatureReturn {
@@ -88,9 +81,8 @@ export function useCommentsFeature(
   const headless = useComments({
     provider,
     getTemplateId: () => editor.state.template?.id ?? null,
-    // Read through a getter, never destructured: Cloud fills `user` from the JWT
-    // and a consumer may swap it, and the same lesson as `allowedRecipients`
-    // applies — a snapshot at setup pins the answer forever.
+    // Read through a getter: a consumer may change `user` after setup, and a
+    // snapshot would keep attributing comments to the previous user.
     getUser: () => options.user ?? null,
     onError: options.onError,
   });
@@ -118,9 +110,8 @@ export function useCommentsFeature(
     return options.isAvailable?.() ?? true;
   });
 
-  // A panel left open when the feature goes away — a Cloud plan fetch that
-  // withholds `commenting`, or a consumer clearing `user` — would sit there with
-  // no trigger to close it.
+  // Close an open panel when the feature becomes unavailable, for example when
+  // a consumer clears `user`.
   watch(isAvailable, (available) => {
     if (!available) isOpen.value = false;
   });
@@ -203,11 +194,6 @@ export function useCommentsFeature(
       getBlockCount: (blockId: string) =>
         headless.commentCountByBlock.value.get(blockId) ?? 0,
       openForBlock,
-      // Absent means "any anchor is fine", which is the right default for a store
-      // that accepts one. Cloud supplies the real check because it renders from
-      // the saved template.
-      isBlockSaved: (blockId: string) =>
-        options.isBlockSaved?.(blockId) ?? true,
       isAvailable,
       unresolvedCount,
       canCreate: headless.canCreate,

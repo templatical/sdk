@@ -326,9 +326,6 @@ export default {
       emptyError: "Paste your Easy Email Pro JSON or upload a file.",
     },
   },
-  mergeTagModal: {
-    title: "Insert Merge Tag",
-  },
   dataSourceModal: {
     fetching: "Fetching data from endpoint\u2026",
     fetchDescription:
@@ -385,17 +382,9 @@ export default {
   },
   common: {
     close: "Close",
-    or: "or",
   },
   error: {
     initFailed: "Failed to initialize editor: {message}",
-  },
-  mergeTags: {
-    firstName: "First Name",
-    lastName: "Last Name",
-    email: "Email",
-    company: "Company",
-    planName: "Plan Name",
   },
   a11y: {
     backToTemplates: "Back to templates",
@@ -424,80 +413,5 @@ export default {
     auto: "Auto",
     light: "Light",
     dark: "Dark",
-  },
-  shadowMode: {
-    shadow: "Shadow DOM",
-    light: "Light DOM",
-  },
-  cloud: {
-    title: "Templatical Cloud",
-    subtitle:
-      "Everything in the self-hosted editor, plus cloud-powered features.",
-    auth: {
-      apiCredentials: "API Credentials",
-      authProxy: "Auth Proxy",
-      apiDescription:
-        "Use your project\u2019s API credentials to connect directly. Meant only for development and testing \u2014 no backend required.",
-      proxyDescription:
-        "Point the SDK to your backend token endpoint. The editor will send a request to this URL to retrieve an access token before connecting.",
-      clientId: "Client ID",
-      clientSecret: "Client Secret",
-      tenant: "Tenant",
-      identitySigning: "Identity & Signing",
-      optional: "optional",
-      signingKey: "Signing Key",
-      signingKeyHelp:
-        "Found in your Templatical Cloud project settings under API Keys.",
-      collaboration: "Collaboration",
-      mcp: "MCP",
-      realtimeDescription:
-        "These modes are mutually exclusive. Collaboration lets multiple people edit together in real time with presence and block locking. MCP lets you connect your AI agent to the editor so it can read and modify the template \u2014 changes appear live as the agent works.",
-      userName: "User Name",
-      testEmail: "Test Email",
-      credentialsWarning:
-        "Credentials are stored in browser storage and sent directly from the browser. For production, use the Auth Proxy tab to route token requests through your backend.",
-      authEndpoint: "Auth Endpoint",
-      method: "Method",
-      credentials: "Credentials",
-      headers: "Headers",
-      body: "Body",
-      jsonOptional: "JSON, optional",
-    },
-    template: {
-      loadExisting: "Load Existing Template",
-      enterUuid: "Enter template UUID...",
-      load: "Load",
-      startFromScratch: "Start from Scratch",
-    },
-    features: {
-      versionHistory: "Version History",
-      autoSave: "Auto Save",
-      aiAssistant: "AI assistant",
-      realtimeCollaboration: "Real-time Collaboration",
-      mediaLibrary: "Media Library",
-      savedBlocks: "Saved Blocks",
-      testEmail: "Test Email",
-      mcpIntegration: "MCP Integration",
-      commenting: "Commenting",
-      templateScoring: "Template Scoring",
-      whiteLabel: "White Label",
-      andMore: "and more \u2192",
-    },
-    backToOss: "\u2190 Back to Playground",
-    editor: {
-      back: "Back",
-      cloud: "Cloud",
-      newTemplate: "New Template",
-      save: "Save",
-      retry: "Retry",
-    },
-    errors: {
-      requiredFields: "Client ID, Client Secret, and Tenant are required",
-      authUrlRequired: "Auth URL is required",
-      enterUuid: "Please enter a template UUID",
-      initFailed: "Failed to initialize: {message}",
-      invalidHeadersJson: "Auth headers contain invalid JSON — ignored",
-      invalidBodyJson: "Auth body contains invalid JSON — ignored",
-    },
   },
 } as const;

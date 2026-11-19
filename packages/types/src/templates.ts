@@ -78,11 +78,8 @@ export type TemplateSaveTrigger =
  * Configuration and outward notifications for the template lifecycle. Every
  * member is optional.
  *
- * Separate from the storage methods so `initCloud()` can accept this half alone:
- * Cloud owns template storage, because the id it issues is the join key for
- * collaboration, version history, comments, AI rewrite, scoring and the
- * server-side export. {@link TemplatesProvider} extends this, so one object
- * satisfies both entry points and moving to Cloud edits nothing.
+ * Separate from storage methods. {@link TemplatesProvider} extends this
+ * with the template lifecycle methods.
  */
 export interface TemplatesOptions {
   /**
@@ -92,8 +89,7 @@ export interface TemplatesOptions {
    * cadence is `changeDebounce` at the config root, since one timer drives both
    * this and the `onChange` notification, and `onChange` works with no provider.
    *
-   * Defaults to off for `init()` and on for `initCloud()` — a Cloud session
-   * always has a store.
+   * Defaults to off for `init()`.
    */
   autoSave?: boolean;
   /**

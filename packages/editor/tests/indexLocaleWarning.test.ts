@@ -55,7 +55,6 @@ describe("init() warns about an unusable locale", () => {
       return {
         ...actual,
         loadTranslations: vi.fn(async () => ({}) as never),
-        loadCloudTranslations: vi.fn(async () => ({}) as never),
       };
     });
   });
@@ -108,20 +107,4 @@ describe("init() warns about an unusable locale", () => {
     expect(await initWithLocale(undefined)).toEqual([]);
   });
 
-  // The cloud chunk deliberately ships fewer locales than the OSS one and falls
-  // back to English on its own — `guide/i18n.md` tells contributors not to
-  // translate it. Warning about that would fire for every `fr`/`es`/`nl`/`ca`
-  // consumer, who did nothing wrong.
-  it("says nothing about the cloud chunk's narrower coverage", async () => {
-    const { getSupportedLocales, getSupportedCloudLocales } =
-      await import("../src/i18n");
-    const ossOnly = getSupportedLocales().filter(
-      (l) => !getSupportedCloudLocales().includes(l),
-    );
-    expect(ossOnly.length).toBeGreaterThan(0);
-
-    for (const locale of ossOnly) {
-      expect(await initWithLocale(locale)).toEqual([]);
-    }
-  });
 });

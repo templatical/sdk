@@ -99,7 +99,6 @@ function deferred<T>() {
 }
 
 let init: typeof import("../src/index").init;
-let initCloud: typeof import("../src/index").initCloud;
 let unmount: typeof import("../src/index").unmount;
 
 // Everything a test mounts, so a failing test cannot leak an editor (and its
@@ -129,12 +128,8 @@ beforeEach(async () => {
       }),
     };
   });
-  vi.doMock("../src/cloud/createCloudRuntime", () => ({
-    bootstrapCloud: vi.fn(async () => ({ runtime: {}, providers: {} })),
-  }));
   vi.doMock("../src/i18n", () => ({
     loadTranslations: vi.fn(() => Promise.resolve({})),
-    loadCloudTranslations: vi.fn(() => Promise.resolve({})),
   }));
   vi.doMock("../src/composables", () => ({
     useFonts: vi.fn(() => ({
@@ -149,7 +144,6 @@ beforeEach(async () => {
 
   const mod = await import("../src/index");
   init = mod.init;
-  initCloud = mod.initCloud;
   unmount = mod.unmount;
 });
 
@@ -254,26 +248,6 @@ describe.each([
     expect(editorLabels(container)).toEqual(["b"]);
 
     settled[0].unmount();
-
-    expect(editorLabels(container)).toEqual(["b"]);
-    expect(firstBlockId(b.getContent())).toBe("live:b");
-  });
-
-  it("applies to initCloud() instances, which are the same editor", async () => {
-    const container = newContainer();
-    const cloudConfig = (label: string) =>
-      ({
-        container,
-        shadowDom,
-        content: contentFor(label),
-      }) as unknown as Parameters<typeof initCloud>[0];
-
-    const a = await initCloud(cloudConfig("a"));
-    const b = await initCloud(cloudConfig("b"));
-    mounted.push(a, b);
-    expect(editorLabels(container)).toEqual(["b"]);
-
-    a.unmount();
 
     expect(editorLabels(container)).toEqual(["b"]);
     expect(firstBlockId(b.getContent())).toBe("live:b");
@@ -424,59 +398,10 @@ describe.each([
     expect(editorLabels(container)).toEqual(["b"]);
   });
 
-  // `initCloud()` waits on the network before it mounts, so its calls settle in
-  // whatever order their bootstraps answer. The race is the one above, with a
-  // wider window.
-  it("keeps the later initCloud() editor when a cancelled earlier call's bootstrap settles after it mounted", async () => {
-    const { bootstrapCloud } = await import("../src/cloud/createCloudRuntime");
-    type Bootstrap = Awaited<ReturnType<typeof bootstrapCloud>>;
-    const first = deferred<Bootstrap>();
-    const second = deferred<Bootstrap>();
-    vi.mocked(bootstrapCloud)
-      .mockReturnValueOnce(first.promise)
-      .mockReturnValueOnce(second.promise);
-    const bootstrap = { runtime: {}, providers: {} } as unknown as Bootstrap;
 
-    const container = newContainer();
-    const cloudConfig = (label: string) =>
-      ({
-        container,
-        shadowDom,
-        content: contentFor(label),
-      }) as unknown as Parameters<typeof initCloud>[0];
-
-    let cancelled = false;
-    const firstEffect = (async () => {
-      const ed = await initCloud(cloudConfig("a"));
-      if (cancelled) {
-        ed.unmount();
-      }
-      return ed;
-    })();
-    cancelled = true;
-    // Vitest hands the real module to an `import()` of a factory-mocked module
-    // that starts before an earlier `import()` of it from the same importing
-    // module has resolved, even one microtask later (vitest-dev/vitest#7040).
-    // Each `initCloud()` imports `createCloudRuntime` from `src/index.ts`, so
-    // the second call starts once the first is waiting on its bootstrap, which
-    // is still before that bootstrap settles.
-    await vi.waitFor(() => expect(bootstrapCloud).toHaveBeenCalledTimes(1));
-    const secondEffect = initCloud(cloudConfig("b"));
-
-    second.resolve(bootstrap);
-    const b = await secondEffect;
-    mounted.push(b);
-    expect(editorLabels(container)).toEqual(["b"]);
-
-    first.resolve(bootstrap);
-    mounted.push(await firstEffect);
-
-    expect(editorLabels(container)).toEqual(["b"]);
-    expect(firstBlockId(b.getContent())).toBe("live:b");
-  });
 });
 
-// `init()` and `initCloud()` check `layout` and `content` when they are called,
+// `init()` checks `layout` and `content` when they are called,
 // before they claim the container. A call that fails a check rejects at once:
 // it supersedes no earlier call, and the container and the editor it shows stay
 // exactly as they were.
@@ -500,17 +425,7 @@ describe.each([
     },
   );
 
-  it.each([
-    {
-      entry: "init()",
-      call: (config: Parameters<typeof init>[0]) => init(config),
-    },
-    {
-      entry: "initCloud()",
-      call: (config: Parameters<typeof init>[0]) =>
-        initCloud(config as unknown as Parameters<typeof initCloud>[0]),
-    },
-  ])(
+  it.each([{ entry: "init()", call: (config: Parameters<typeof init>[0]) => init(config) }])(
     "$entry with an illegal layout does not supersede an earlier call still loading",
     async ({ call }) => {
       // Only the valid call's translations are held. If the illegal call ever

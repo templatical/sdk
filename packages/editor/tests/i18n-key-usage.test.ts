@@ -5,7 +5,7 @@ import { join, relative, sep } from "node:path";
 /**
  * Locale ↔ source agreement, in **both** directions:
  *
- * - **No dangling reference.** Every `t.…` / `cloudT.…` chain in the editor's
+ * - **No dangling reference.** Every `t.…` chain in the editor's
  *   source resolves to something the locale actually defines. Catches deleting
  *   (or renaming) a key that is still rendered — which no other check does:
  *   `i18n.test.ts` compares locales against *each other*, and `typecheck`
@@ -15,29 +15,19 @@ import { join, relative, sep } from "node:path";
  *   strings accumulating for UI that was never built — 128 of them had, and one
  *   block (81 keys × 7 locales) duplicated `@templatical/media-library`'s own.
  *
- * The two share one alias list and one resolver on purpose. They were separate
- * ad-hoc scripts once and drifted: the dead-key sweep matched only `t.`/`cloudT.`
- * and so reported keys as unused that a component reads through
- * `cloudTranslations`, while the dangling check — same blind spot — cheerfully
- * confirmed the deletion was safe. Two checks with one blind spot agree with each
- * other and are wrong together.
+ * The two share one alias list and one resolver so they check the same source.
  */
 
 const SRC = join(import.meta.dirname, "..", "src");
 const OSS_LOCALE = join(SRC, "i18n", "locales", "en.ts");
-const CLOUD_LOCALE = join(SRC, "i18n", "locales", "cloud", "en.ts");
 
 /**
  * Every identifier observed to hold a translations object.
  *
- * **Not just `t` and `cloudT`.** Translations reach components three ways —
- * `useI18n()`'s destructure, a `props.translations`, and `requireInject(
- * CLOUD_TRANSLATIONS_KEY)` under a local name — and the third is why
- * `cloudTranslations` is here. Adding a fourth spelling without adding it to
- * this list makes both directions silently under-report; the
+ * Translations reach components through `useI18n()` and props. Adding another
+ * spelling without adding it to this list makes both directions under-report; the
  * "recognises every translations holder" case below is what stops that.
  */
-const CLOUD_HOLDERS = ["cloudT", "cloudTranslations"] as const;
 const OSS_HOLDERS = [
   "t",
   "translations",
@@ -165,10 +155,7 @@ function keyPaths(file: string): { leaves: Set<string>; objects: Set<string> } {
  * Add to this list only with a reason. An entry that is *also* unreferenced by
  * tests is just dead code wearing an exemption.
  */
-const KEPT_WITHOUT_A_READER: Record<"oss" | "cloud", readonly string[]> = {
-  oss: ["history.undo", "history.redo"],
-  cloud: [],
-};
+const KEPT_WITHOUT_A_READER = ["history.undo", "history.redo"] as const;
 
 interface Analysis {
   leaves: Set<string>;
@@ -211,36 +198,20 @@ function analyse(locale: string, holders: readonly string[]): Analysis {
 }
 
 const OSS = analyse(OSS_LOCALE, OSS_HOLDERS);
-const CLOUD = analyse(CLOUD_LOCALE, CLOUD_HOLDERS);
 
 describe("i18n keys agree with the source that reads them", () => {
-  it("discovered the source tree and both locales (sanity check)", () => {
+  it("discovered the source tree and locale (sanity check)", () => {
     expect(sourceFiles().length).toBeGreaterThan(100);
     expect(OSS.leaves.size).toBeGreaterThan(300);
-    // Cloud has 11 keys after A1 PR 2 Task 1 removes AI strings; this only checks locale discovery.
-    expect(CLOUD.leaves.size).toBeGreaterThan(8);
   });
 
   it("OSS: every t.… reference resolves to a defined key", () => {
     expect(OSS.dangling).toEqual([]);
   });
 
-  it("cloud: every cloudT.… reference resolves to a defined key", () => {
-    expect(CLOUD.dangling).toEqual([]);
-  });
-
   it("OSS: every key is read by some component", () => {
     const dead = [...OSS.leaves]
-      .filter((k) => !OSS.used.has(k) && !KEPT_WITHOUT_A_READER.oss.includes(k))
-      .sort();
-    expect(dead).toEqual([]);
-  });
-
-  it("cloud: every key is read by some component", () => {
-    const dead = [...CLOUD.leaves]
-      .filter(
-        (k) => !CLOUD.used.has(k) && !KEPT_WITHOUT_A_READER.cloud.includes(k),
-      )
+      .filter((k) => !OSS.used.has(k) && !KEPT_WITHOUT_A_READER.includes(k as (typeof KEPT_WITHOUT_A_READER)[number]))
       .sort();
     expect(dead).toEqual([]);
   });
@@ -251,47 +222,40 @@ describe("i18n keys agree with the source that reads them", () => {
    * a place where dead keys go to hide.
    */
   it("nothing on the exemption list has since gained a reader", () => {
-    expect(KEPT_WITHOUT_A_READER.oss.filter((k) => OSS.used.has(k))).toEqual(
+    expect(KEPT_WITHOUT_A_READER.filter((k) => OSS.used.has(k))).toEqual(
       [],
     );
-    expect(
-      KEPT_WITHOUT_A_READER.cloud.filter((k) => CLOUD.used.has(k)),
-    ).toEqual([]);
   });
 
   /** An exemption for a key that no longer exists is equally stale. */
   it("every exempted key still exists in its locale", () => {
-    expect(KEPT_WITHOUT_A_READER.oss.filter((k) => !OSS.leaves.has(k))).toEqual(
+    expect(KEPT_WITHOUT_A_READER.filter((k) => !OSS.leaves.has(k))).toEqual(
       [],
     );
-    expect(
-      KEPT_WITHOUT_A_READER.cloud.filter((k) => !CLOUD.leaves.has(k)),
-    ).toEqual([]);
   });
 
   /**
    * The alias list is the one hand-maintained input, so it gets its own case:
    * if a component starts holding translations under a name absent from
-   * `CLOUD_HOLDERS` / `OSS_HOLDERS`, both directions above quietly narrow.
-   * Every `useI18n` / `useCloudI18n` destructure and every `CLOUD_TRANSLATIONS_KEY`
-   * inject must bind to a name this guard recognises.
+   * `OSS_HOLDERS`, both directions above quietly narrow. Every `useI18n`
+   * destructure and `TRANSLATIONS_KEY` inject must bind to a known name.
    */
   it("recognises every translations holder name in use", () => {
-    const known = new Set<string>([...CLOUD_HOLDERS, ...OSS_HOLDERS]);
+    const known = new Set<string>(OSS_HOLDERS);
     const unknown = new Set<string>();
 
     for (const file of sourceFiles()) {
       const src = readFileSync(file, "utf8");
-      // `const { t } = useI18n()` / `const { t: cloudT } = useCloudI18n()`
+      // `const { t } = useI18n()`
       for (const m of src.matchAll(
-        /const\s*\{\s*t\s*(?::\s*([A-Za-z_$][\w$]*))?\s*[,}][^=]*=\s*use(?:Cloud)?I18n/g,
+        /const\s*\{\s*t\s*(?::\s*([A-Za-z_$][\w$]*))?\s*[,}][^=]*=\s*useI18n/g,
       )) {
         const name = m[1] ?? "t";
         if (!known.has(name)) unknown.add(name);
       }
-      // `const x = requireInject(CLOUD_TRANSLATIONS_KEY, …)` / inject(TRANSLATIONS_KEY)
+      // `const x = requireInject(TRANSLATIONS_KEY, …)` / inject(TRANSLATIONS_KEY)
       for (const m of src.matchAll(
-        /const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:requireInject|inject)\s*\(\s*(?:CLOUD_)?TRANSLATIONS_KEY/g,
+        /const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:requireInject|inject)\s*\(\s*TRANSLATIONS_KEY/g,
       )) {
         if (!known.has(m[1]!)) unknown.add(m[1]!);
       }

@@ -2,9 +2,6 @@ import type { ComputedRef, Ref } from "vue";
 import type { AiFeatureName, BlockLock } from "@templatical/types";
 
 export interface EditorCapabilities {
-  plan?: {
-    hasFeature(feature: string): boolean;
-  };
   /**
    * Present only when an `AiProvider` is configured via `init({ ai })`. A
    * feature is enabled while its provider member is a function and a template
@@ -24,7 +21,7 @@ export interface EditorCapabilities {
   };
   /**
    * Present only when a `CollaborationProvider` is configured — via
-   * `init({ collaboration })`, and always under `initCloud()`.
+   * `init({ collaboration })`.
    */
   collaboration?: {
     /** The lock blocking this language view; omitted uses the active view, `null` the default. */
@@ -37,21 +34,11 @@ export interface EditorCapabilities {
   };
   /**
    * Present only when a `CommentsProvider` **and** a `user` are configured — via
-   * `init({ comments, user })`, or in Cloud whenever the plan grants `commenting`
-   * (its `user` comes from the JWT).
+   * `init({ comments, user })`.
    */
   comments?: {
     getBlockCount(blockId: string): number;
     openForBlock(blockId: string): void;
-    /**
-     * Whether the block exists in the **stored** template. A comment is anchored
-     * server-side, so filtering to a block that only exists on the canvas has
-     * nothing to show — the panel says so rather than rendering an empty list.
-     *
-     * Always `true` for a store that accepts any anchor; Cloud is what supplies a
-     * real answer.
-     */
-    isBlockSaved(blockId: string): boolean;
     /**
      * Whether the feature is usable right now. Reactive for the same reason as
      * `savedBlocks.isAvailable`, plus one of its own: with no `user` there is
@@ -73,8 +60,8 @@ export interface EditorCapabilities {
     canResolve: ComputedRef<boolean>;
   };
   /**
-   * Present only when a `SavedBlocksProvider` is configured — in OSS via
-   * `init({ savedBlocks })`, in Cloud whenever cloud mode is active.
+   * Present only when a `SavedBlocksProvider` is configured via
+   * `init({ savedBlocks })`.
    */
   savedBlocks?: {
     /**
@@ -98,10 +85,7 @@ export interface EditorCapabilities {
      */
     count: ComputedRef<number>;
     /**
-     * Whether the feature is usable right now. Reactive because Cloud only
-     * learns its plan entitlement after an async config fetch, which happens
-     * *after* capabilities are provided — so presence alone can't encode it.
-     * UI must gate on this, or it will render controls that do nothing.
+     * Whether the feature is usable right now. UI gates on this value.
      */
     isAvailable: ComputedRef<boolean>;
     /**
@@ -170,10 +154,7 @@ export interface EditorCapabilities {
   };
   /**
    * Present when a `VersionHistoryProvider` is configured via
-   * `init({ versionHistory })`. Always present in Cloud — Cloud injects its
-   * own adapter unconditionally, so `initCloud({ versionHistory })` (events
-   * only, no storage) attaches handlers to it rather than gating whether
-   * this capability exists.
+   * `init({ versionHistory })`.
    */
   versionHistory?: {
     /** Re-read the list from the provider. A no-op before a template exists. */
@@ -196,19 +177,14 @@ export interface EditorCapabilities {
     canRestore: ComputedRef<boolean>;
   };
   /**
-   * Present only when a `TestEmailProvider` is configured — in OSS via
-   * `init({ testEmail })`, in Cloud whenever cloud mode is active (or when a
-   * consumer supplied their own sender to `initCloud()`).
+   * Present only when a `TestEmailProvider` is configured via
+   * `init({ testEmail })`.
    */
   testEmail?: {
     /** Open the send dialog. A no-op while {@link isAvailable} is false. */
     open(): void;
     /**
-     * Whether the feature is usable right now. Reactive for the same reason as
-     * `savedBlocks.isAvailable`: Cloud resolves its plan entitlement and its
-     * allowed-recipient list *after* capabilities are provided, and an
-     * explicitly empty allowlist makes the feature unusable. UI must gate on
-     * this or it renders a button that does nothing.
+     * Whether the feature is usable right now. UI gates on this value.
      */
     isAvailable: ComputedRef<boolean>;
   };

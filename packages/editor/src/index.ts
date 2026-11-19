@@ -1,7 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference -- ambient-module declaration must be loaded for cross-package typecheck (workspace path alias resolves to source)
 /// <reference path="./virtual-modules.d.ts" />
 import { createApp, h, ref, type App, type Ref } from "vue";
-import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import type {
   AiProvider,
   Block,
@@ -48,14 +47,11 @@ import {
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 
 import Editor from "./Editor.vue";
-import type { CloudRuntime } from "./cloud/runtime";
-import type { TemplaticalCloudEditorConfig } from "./cloud/cloudConfig";
 import type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 import {
   getSupportedLocales,
   isLocaleSupported,
   loadTranslations,
-  loadCloudTranslations,
 } from "./i18n";
 import { logger } from "./utils/logger";
 import { useFonts, type UseFontsReturn } from "./composables";
@@ -909,24 +905,6 @@ export interface TemplaticalEditor extends TemplaticalEditorBase {
   getCustomBlockStylesheet(customType: string): string | undefined;
 }
 
-/**
- * `initCloud()` returns the **same** editor `init()` does.
- *
- * That is the point rather than a tidy-up: Cloud is a set of provider
- * implementations behind the same interfaces a consumer would implement, so if
- * the two entry points still returned different shapes, the claim would be
- * false. It also means moving between them is a config change and never a
- * rewrite of the calling code.
- *
- * Three cloud-only members went with the convergence: `create()` takes
- * `init()`'s `{ name?, content? }` input object now, rather than a bare
- * `TemplateContent`; `setThemeOverrides` is gone (`config.theme` is applied
- * at init on both entry points, and the entitlement that gated changing it
- * later is gone); and `sendTestEmail` is gone (the shared dialog is the
- * supported path).
- */
-export type TemplaticalCloudEditor = TemplaticalEditor;
-
 // ---------------------------------------------------------------------------
 // Shadow root helpers
 // ---------------------------------------------------------------------------
@@ -1130,7 +1108,7 @@ const ossEntries = new Map<Element, OssEntry>();
 // whatever was most recently mounted.
 let lastOssContainer: Element | null = null;
 
-// Which call may take a container over. Every `init()` / `initCloud()` whose
+// Which call may take a container over. Every `init()` whose
 // `layout` and `content` pass `prepareLayoutAndContent` claims its container
 // before its first await, and mounts only if its claim is still the latest once
 // its awaits settle. Calls on one container settle in whatever
@@ -1148,7 +1126,7 @@ interface ContainerClaim {
 
 /**
  * Resolve the configured container and claim it for this call. Runs before
- * the first await of `init()` and `initCloud()`, so claims follow call order.
+ * the first await of `init()`, so claims follow call order.
  */
 function claimContainer(target: string | HTMLElement): ContainerClaim {
   const container =
@@ -1184,8 +1162,8 @@ function unmountOssContainer(container: Element, onlyApp?: App): void {
 
 /**
  * Normalize the merge tags in `layout` and `content`, then refuse an illegal
- * tree. `init()` and `initCloud()` run this when they are called, before they
- * claim the container. A call that throws here rejects at once: it supersedes
+ * tree. `init()` runs this when called, before it
+ * claims the container. A call that throws here rejects at once: it supersedes
  * no earlier call, and the container and the editor it shows stay exactly as
  * they were.
  *
@@ -1224,7 +1202,7 @@ function prepareLayoutAndContent(
 export async function init(
   config: TemplaticalEditorConfig,
 ): Promise<TemplaticalEditor> {
-  // A copy, as `initCloud()` makes: the editor never writes to the caller's
+  // A copy: the editor never writes to the caller's
   // config, which may be frozen. A key reassigned on that object after this call
   // does not reach the editor.
   const prepared = { ...config };
@@ -1276,25 +1254,19 @@ export async function init(
 }
 
 /**
- * The one mount path. `init()` calls it with no runtime; `initCloud()` calls it
- * with Cloud's, having already resolved auth, the plan and every adapter. Both
- * prepare `layout` and `content` and claim the container when they are called,
- * before this runs.
+ * Mount the editor after preparing `layout` and `content` and claiming the
+ * container.
  */
 async function mountEditor(
   config: TemplaticalEditorConfig,
   { container, token }: ContainerClaim,
-  cloud?: CloudRuntime,
 ): Promise<TemplaticalEditor> {
   // An unusable `locale` fell back to English in silence, so a typo — "gr" for
   // Greek (the country code, not the language code "el"), or "english" — was
   // indistinguishable from the option being ignored. Regions and stray
   // whitespace are NOT typos: they resolve to a base language by design.
   // `paletteBlocks` and `colors` both warn on input they cannot use; this makes
-  // the third config option behave the same. Deliberately NOT extended to the
-  // cloud chunk, which ships fewer locales on purpose (`guide/i18n.md` tells
-  // contributors not to translate it) — warning there would fire for every
-  // fr/es/nl/ca consumer, who did nothing wrong.
+  // the third config option behave the same.
   if (config.locale !== undefined && !isLocaleSupported(config.locale)) {
     logger.warn(
       `config.locale: "${config.locale}" has no translations — falling back ` +
@@ -1308,7 +1280,7 @@ async function mountEditor(
   // Create fonts manager to pass to Editor
   const fontsManager = useFonts(config.fonts);
 
-  // A later `init()` or `initCloud()` on this container was made while this
+  // A later `init()` on this container was made while this
   // one awaited, so the container is that call's. Mounting here would replace
   // its editor whenever this call settles last: under React StrictMode, with a
   // cancelled effect's editor, which that effect then unmounts, leaving the
@@ -1341,7 +1313,6 @@ async function mountEditor(
           translations,
           fontsManager,
           shadowRoot: mount.shadowRoot ?? undefined,
-          cloud,
           // The test-email dialog's `includeMjml` payload comes off the same
           // ladder as `editor.toMjml()`, so a consumer's `render.toMjml` is what
           // a test carries when they configured one. `render` is declared below
@@ -1373,7 +1344,7 @@ async function mountEditor(
 }
 
 /**
- * The object `init()` and `initCloud()` resolve with. It reaches the editor
+ * The object `init()` resolves with. It reaches the editor
  * through `editorRef`, which is `null` before the editor mounts and after it
  * unmounts, and for good on a call a later one superseded; every method
  * answers either way.
@@ -1563,147 +1534,6 @@ function createEditorInstance({
 }
 
 // ---------------------------------------------------------------------------
-// Cloud init — a thin adapter-wiring wrapper over init()
-// ---------------------------------------------------------------------------
-
-/**
- * Mount the editor against Templatical Cloud.
- *
- * **This is `init()` with Cloud's adapters filled in**, and deliberately nothing
- * more. Templates, rendering and version history are providers, so Cloud's entry
- * point is adapter wiring rather than a second editor:
- *
- * 1. Build the auth manager and complete the handshake.
- * 2. Health-check the API, and fetch the plan config.
- * 3. Build Cloud's adapters over that auth manager.
- * 4. Delegate to `init()`.
- *
- * A failure in steps 1–2 **rejects**, rather than mounting an editor that shows
- * an error overlay. That is the one place the wrapper is genuinely not `init()`:
- * `init()` cannot fail after it mounts, and OSS should not grow the ability. A
- * session that dies *later* — an auth refresh that cannot renew the token — does
- * still surface as an overlay, because by then there is an editor to cover.
- *
- * `templates`, `comments` and `versionHistory` are all keyed to a template
- * id Cloud issued, which also anchors the server-side export — a store Cloud
- * never issued ids for would degrade all of them silently. Cloud therefore
- * keeps each key's storage, but each key is still accepted, for its
- * configuration and events:
- * `templates.load`/`create`/`save`,
- * `comments.list`/`create`/`update`/`delete`/`setResolved`, and
- * `versionHistory.list`/`get`/`create`/`restore` are ignored with a warning
- * naming them, while `templates`' `autoSave`, `unsavedChangesGuard`,
- * `nameField`, `onSaved`, `onCreated`, `onLoaded`, `comments`' `onCreated`,
- * `onUpdated`, `onDeleted`, `onResolved`, `onUnresolved`, and
- * `versionHistory`'s `onCreated`, `onRestored` are all honoured.
- *
- * `render` is not a key here at all, unlike `init()` — Cloud renders
- * server-side for test email, sends and exports, so a supplied renderer
- * would change only what you preview and export, never what Cloud delivers.
- * `resolvePreview` is the same key with the same type on both entry points,
- * so upgrading an OSS integration is a deletion. `savedBlocks`, `testEmail`
- * and `media` are the same key on both entry points too, but Cloud widens
- * each type to also accept an events-only shape — `boolean |
- * SavedBlocksOptions | SavedBlocksProvider`, `Pick<TestEmailOptions,
- * "onSent" | "defaultRecipient"> | TestEmailProvider`, and
- * `false | MediaOptions | MediaProvider` — so upgrading is still a
- * deletion: drop the key to adopt Cloud's store or sender, or leave it
- * exactly as it is to keep your own.
- *
- * `user` is not a key either: Cloud signs comment writes against the auth token's
- * `user` claim, so it fills `init({ user })` from there rather than letting a
- * browser name someone else.
- */
-export async function initCloud(
-  config: TemplaticalCloudEditorConfig,
-): Promise<TemplaticalCloudEditor> {
-  // Checked before the claim and the bootstrap, so an illegal `layout` or
-  // `content` rejects without touching the container or making any request.
-  // The three keys are copied first, so the caller's config is never written.
-  const prepared = {
-    layout: config.layout,
-    content: config.content,
-    mergeTags: config.mergeTags,
-  };
-  prepareLayoutAndContent(prepared);
-
-  // Claimed before the bootstrap's requests go out, so a later call on this
-  // container wins even when this call's bootstrap answers last, and a
-  // selector that matches nothing rejects without making any request.
-  const claim = claimContainer(config.container);
-
-  // Dynamic imports — every cloud module is tree-shaken from the OSS bundle, and
-  // an OSS consumer who never calls this downloads none of it.
-  const [{ bootstrapCloud }, cloudTranslations] = await Promise.all([
-    import("./cloud/createCloudRuntime"),
-    loadCloudTranslations(config.locale ?? "en"),
-  ]);
-
-  const { runtime, providers, user } = await bootstrapCloud({
-    config,
-    cloudTranslations,
-  });
-
-  return mountEditor(
-    {
-      container: config.container,
-      content: prepared.content,
-      layout: prepared.layout,
-      sectionWrapper: config.sectionWrapper,
-      shadowDom: config.shadowDom,
-      locale: config.locale,
-      uiTheme: config.uiTheme,
-      theme: config.theme,
-      branding: config.branding,
-      header: config.header,
-      smallScreenNotice: config.smallScreenNotice,
-      blockDefaults: config.blockDefaults,
-      templateDefaults: config.templateDefaults,
-      customBlocks: config.customBlocks,
-      paletteBlocks: config.paletteBlocks,
-      htmlBlockPreview: config.htmlBlockPreview,
-      colors: config.colors,
-      templateSettings: config.templateSettings,
-      fonts: config.fonts,
-      mergeTags: config.mergeTags,
-      logicTags: config.logicTags,
-      displayConditions: config.displayConditions,
-      resolvePreview: config.resolvePreview,
-      lint: config.lint,
-      onChange: config.onChange,
-      onError: config.onError,
-      onDirtyChange: config.onDirtyChange,
-      // Cloud's adapters, behind the very keys a consumer would fill in
-      // themselves. `savedBlocks` is absent when the consumer passed `false`.
-      // `templates` spreads Cloud's own provider first so its load/create/save
-      // always win over a consumer's config. Autosave defaults on here, unlike
-      // `init()`, because Cloud always has a store to save to; the debounce
-      // falls back to the same shared constant `useAutoSave` already defaults
-      // to, made explicit so a consumer's own `changeDebounce` reaches it.
-      templates: {
-        ...providers.templates,
-        autoSave: config.templates?.autoSave ?? true,
-        unsavedChangesGuard: config.templates?.unsavedChangesGuard,
-        nameField: config.templates?.nameField,
-      },
-      changeDebounce: config.changeDebounce ?? DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
-      render: providers.render,
-      versionHistory: providers.versionHistory,
-      savedBlocks: providers.savedBlocks,
-      testEmail: providers.testEmail,
-      comments: providers.comments,
-      media: providers.media,
-      onRequestMedia: config.onRequestMedia,
-      // From the JWT. Undefined when the project's token carries no `user` claim,
-      // which leaves comments unavailable rather than anonymous.
-      user,
-    },
-    claim,
-    runtime,
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Unmount helpers
 // ---------------------------------------------------------------------------
 
@@ -1722,7 +1552,6 @@ export function unmount(): void {
 // Re-exports
 // ---------------------------------------------------------------------------
 
-export type { TemplaticalCloudEditorConfig } from "./cloud/cloudConfig";
 export type {
   BlockDefaults,
   TemplateContent,
@@ -1829,12 +1658,6 @@ export {
   layoutWrapsSlot,
 } from "@templatical/types";
 
-export {
-  getSupportedLocales,
-  getSupportedCloudLocales,
-  isLocaleSupported,
-  isCloudLocaleSupported,
-  getBaseLocale,
-} from "./i18n";
+export { getSupportedLocales, isLocaleSupported, getBaseLocale } from "./i18n";
 
 export { AI_FIXABLE_RULES, AI_ALT_TEXT_RULES } from "./utils/aiFixableRules";

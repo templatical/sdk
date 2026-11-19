@@ -99,10 +99,8 @@ export type SavedBlockPatch = Partial<{
 /**
  * Outward notifications for saved-block mutations. Every member is optional.
  *
- * Separate from the storage methods so `initCloud()` can accept this half
- * alone: these fire the same way whichever store holds the entries, Cloud's
- * own or yours. {@link SavedBlocksProvider} extends this, so one object
- * satisfies both entry points.
+ * Separate from storage methods. {@link SavedBlocksProvider} extends this
+ * with methods for reading and writing entries.
  */
 export interface SavedBlocksOptions {
   /** A saved block was created and prepended to the list. */

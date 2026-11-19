@@ -17,7 +17,6 @@ export default defineConfig({
             external: [
                 'vue',
                 '@templatical/core',
-                '@templatical/core/cloud',
                 '@templatical/types',
                 '@vueuse/core',
                 '@lucide/vue',

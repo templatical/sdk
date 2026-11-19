@@ -28,8 +28,7 @@ export interface TestEmailPayload {
    *
    * **Untrusted.** It is read out of the browser and carries no signature, so it
    * is not authoritative about anything. Two things it is genuinely useful for:
-   * keeping one `send` implementation portable between your own backend and
-   * Templatical Cloud, and comparing it against `recipient` server-side — a
+   * comparing it against `recipient` server-side — a
    * mismatch means the client was tampered with or is buggy, which is worth
    * logging. Never treat it *as* the allowlist; that list belongs on your
    * server.
@@ -41,9 +40,8 @@ export interface TestEmailPayload {
  * Configuration and outward notifications for test-email sending. Every
  * member is optional.
  *
- * Separate from `send` so `initCloud()` can accept this half alone: these are
- * meaningful whichever backend does the sending, Cloud's own or yours.
- * {@link TestEmailProvider} extends this, adding only `send`.
+ * Separate from `send`. {@link TestEmailProvider} extends this, adding
+ * the method that sends the message.
  */
 export interface TestEmailOptions {
   /**

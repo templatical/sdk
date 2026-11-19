@@ -33,29 +33,6 @@ interface TemplatesEditor {
   hasTemplate: () => boolean;
 }
 
-/**
- * A veto over saving, supplied by whoever configured the editor.
- *
- * The one implementation is Cloud's lint save-gate: with the server policy
- * `accessibility.blockOnError` on and error-severity issues present, a manual
- * save opens a confirmation and an autosave simply does not fire. The shape is
- * generic because the header's Save must be *routable* through a gate — without
- * that, unifying the two headers would have silently dropped `blockOnError`.
- */
-export interface SaveGate {
-  /**
-   * Manual save (header button, Cmd+S). Runs the save, or defers it and raises a
-   * confirmation. Resolves to whether it ran.
-   */
-  tryRunSave: (run: () => Promise<unknown> | unknown) => Promise<boolean>;
-  /**
-   * Autosave. Runs the save only when the gate would not block, and does nothing
-   * at all otherwise — no prompt on a debounce timer, and no write that would
-   * demote the policy to a manual-save-only speed bump.
-   */
-  runUnlessBlocked: (run: () => Promise<unknown> | unknown) => Promise<boolean>;
-}
-
 export interface UseTemplatesFeatureOptions {
   /** Storage backend — consumer-supplied via `init({ templates })`. */
   provider: TemplatesProvider;
@@ -71,13 +48,6 @@ export interface UseTemplatesFeatureOptions {
    * for always-available (the OSS case: a configured provider is the whole gate).
    */
   isAvailable?: () => boolean;
-  /**
-   * Optional veto over every save this feature performs. Read through a getter
-   * rather than passed by value because Cloud builds its gate from
-   * `core.templateLint`, which only exists after `useEditorCore()` — i.e. after
-   * this composable is constructed.
-   */
-  getSaveGate?: () => SaveGate | null;
 }
 
 export interface UseTemplatesFeatureReturn {
@@ -97,12 +67,7 @@ export interface UseTemplatesFeatureReturn {
    * withheld `save`.
    */
   requestSave: (trigger?: TemplateSaveTrigger) => void;
-  /**
-   * The autosave path. Identical to {@link requestSave} except that a configured
-   * gate is consulted with `runUnlessBlocked` instead of `tryRunSave`, so a
-   * blocked autosave is skipped silently rather than raising a prompt while the
-   * user is typing. The template stays dirty and the header keeps saying so.
-   */
+  /** The autosave path, using the same in-flight save queue. */
   requestAutoSave: () => void;
   /**
    * Commit an inline rename and persist it. Empty (or whitespace-only) names and
@@ -287,7 +252,7 @@ export function useTemplatesFeature(
     );
   }
 
-  /** True when there is nothing a save could do, whatever the gate says. */
+  /** True when there is nothing a save could do. */
   function cannotSave(): boolean {
     // The UI hides the button in each of these cases; this covers Cmd+S and
     // programmatic callers, where a refusal would surface as an error badge for
@@ -297,11 +262,6 @@ export function useTemplatesFeature(
 
   function requestSave(trigger: TemplateSaveTrigger = "manual"): void {
     if (cannotSave()) return;
-    const gate = options.getSaveGate?.();
-    if (gate) {
-      void gate.tryRunSave(() => runSave(trigger));
-      return;
-    }
     void runSave(trigger);
   }
 
@@ -312,11 +272,6 @@ export function useTemplatesFeature(
     if (!canSave.value || !hasTemplate.value) return;
     if (isSaving.value) {
       queuedAutoSave = true;
-      return;
-    }
-    const gate = options.getSaveGate?.();
-    if (gate) {
-      void gate.runUnlessBlocked(() => runSave("autosave"));
       return;
     }
     void runSave("autosave");

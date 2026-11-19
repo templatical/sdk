@@ -2,8 +2,8 @@
 /**
  * Build the editor as a real Webpack 5 consumer would.
  *
- * The editor uses dynamic `import()` with try/catch to load three optional
- * packages (`pusher-js`, `@templatical/quality`, `@templatical/renderer`).
+ * The editor uses dynamic `import()` with try/catch to load two optional
+ * packages (`@templatical/quality`, `@templatical/renderer`).
  * Quality is installed by default from the local tarball through the shared
  * materializer's optional-dependency closure; the others remain optional peers.
  * A Vite build stubs a missing one because the manifest declares it optional,
@@ -21,7 +21,7 @@
  *   5. Assert: build succeeds; unresolved optional-peer warnings are allowed,
  *      but nothing may try to resolve a package in FORBIDDEN_SPECIFIERS.
  *
- * The try/catch at each of the four sites is what holds Webpack at a warning;
+ * The try/catch at each site is what holds Webpack at a warning;
  * unwrap any one of them and this script fails exactly as the reporter's build
  * did. There are no `webpackIgnore` magic comments anywhere in the source — the
  * warnings a passing run prints ARE the resolution attempts, and the
@@ -50,7 +50,6 @@ const CONSUMER_ROOT = mkdtempSync(join(tmpdir(), "tpl-webpack-consumer-"));
 const CONSUMER_DIR = join(CONSUMER_ROOT, "app");
 
 const OPTIONAL_PEERS = [
-  "pusher-js",
   "@templatical/quality",
   "@templatical/renderer",
 ];

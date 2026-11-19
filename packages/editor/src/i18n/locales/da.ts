@@ -837,7 +837,6 @@ const da: typeof en = {
     replyOne: "{count} svar",
     replyMany: "{count} svar",
     missingBlock: "Manglende blok",
-    saveTemplateFirst: "Gem skabelonen, før du kommenterer denne blok.",
   },
   collaboration: {
     people: "Personer der redigerer denne skabelon",

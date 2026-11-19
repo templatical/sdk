@@ -10,7 +10,7 @@ import type {
 import { useCommentsFeature } from "../src/composables/useCommentsFeature";
 
 /**
- * The editor-side seam both entry points share.
+ * The editor-side comments feature.
  *
  * Three things carry the weight here:
  *
@@ -45,7 +45,6 @@ function setup(
     templateId?: string | null;
     isOpen?: ReturnType<typeof ref<boolean>>;
     isAvailable?: () => boolean;
-    isBlockSaved?: (blockId: string) => boolean;
   } = {},
 ) {
   const provider: CommentsProvider = {
@@ -76,7 +75,6 @@ function setup(
       user: opts.user === undefined ? USER : opts.user,
       isOpen: opts.isOpen,
       isAvailable: opts.isAvailable,
-      isBlockSaved: opts.isBlockSaved,
     });
   });
 
@@ -358,20 +356,6 @@ describe("useCommentsFeature", () => {
 
       expect(feature.capability.getBlockCount("blk-1")).toBe(2);
       expect(feature.capability.getBlockCount("blk-2")).toBe(0);
-    });
-
-    it("assumes any anchor is saved when no predicate is supplied", () => {
-      const { feature } = setup();
-      expect(feature.capability.isBlockSaved("anything")).toBe(true);
-    });
-
-    it("defers to Cloud's predicate when one is supplied", () => {
-      const { feature } = setup(
-        {},
-        { isBlockSaved: (id) => id === "saved-block" },
-      );
-      expect(feature.capability.isBlockSaved("saved-block")).toBe(true);
-      expect(feature.capability.isBlockSaved("canvas-only")).toBe(false);
     });
 
     it("carries isAvailable and the unresolved count for the shared chrome", async () => {

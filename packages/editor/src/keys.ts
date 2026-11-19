@@ -25,8 +25,7 @@ import type {
   SyntaxPreset,
   TemplateContent,
 } from "@templatical/types";
-import type { Translations, CloudTranslations } from "./i18n";
-import type { AuthManager } from "@templatical/core/cloud";
+import type { Translations } from "./i18n";
 import type { UseSavedBlocksReturn } from "@templatical/core";
 import type { BaseEditorReturn } from "./composables/useEditorCore";
 import type { ImageUrlResolver } from "./composables/useImageUrlResolver";
@@ -436,7 +435,6 @@ export const TEMPLATE_LINT_KEY: InjectionKey<
 export interface SizeCheckContext {
   renderHtml: () => Promise<string>;
   canRenderHtml: () => boolean;
-  cloud: boolean;
   options: import("@templatical/quality").LintOptions;
 }
 
@@ -468,26 +466,10 @@ export const POPOVER_ROOT_KEY: InjectionKey<Ref<HTMLElement | null>> =
 
 /**
  * Reactive saved-blocks state, provided by `useSavedBlocksFeature` when a
- * `SavedBlocksProvider` is configured. Shared by OSS and Cloud — the storage
- * transport lives behind the provider, so this key is not cloud-specific.
+ * `SavedBlocksProvider` is configured. Storage lives behind the provider.
  */
 export const SAVED_BLOCKS_KEY: InjectionKey<UseSavedBlocksReturn> =
   Symbol("savedBlocks");
-
-// ---------------------------------------------------------------------------
-// Cloud-only keys (provided by createCloudRuntime, consumed by cloud components)
-// ---------------------------------------------------------------------------
-
-export const AUTH_MANAGER_KEY: InjectionKey<AuthManager> =
-  Symbol("authManager");
-
-// Comments are deliberately not injected: the panel takes `useCommentsFeature`'s
-// return as a **prop** the way `TestEmailPanel` and `SavedBlocksPanels` do, and the
-// per-block indicators read the comments entry on `CAPABILITIES_KEY`. Nothing
-// injects the composable itself.
-
-export const CLOUD_TRANSLATIONS_KEY: InjectionKey<CloudTranslations> =
-  Symbol("cloudTranslations");
 
 // ---------------------------------------------------------------------------
 // Helper for required injections with explicit null default + throw

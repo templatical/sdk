@@ -9,7 +9,6 @@ import type {
 } from "@templatical/types";
 import {
   useTemplatesFeature,
-  type SaveGate,
   type UseTemplatesFeatureReturn,
 } from "../src/composables/useTemplatesFeature";
 
@@ -79,7 +78,6 @@ function withFeature(options: {
   editor?: MockEditor;
   guardUnsavedChanges?: boolean;
   isAvailable?: () => boolean;
-  getSaveGate?: () => SaveGate | null;
 }) {
   const provider = options.provider ?? createProvider();
   const editor = options.editor ?? createEditor({ template: { id: "tpl_1" } });
@@ -93,7 +91,6 @@ function withFeature(options: {
           editor,
           guardUnsavedChanges: options.guardUnsavedChanges,
           isAvailable: options.isAvailable,
-          getSaveGate: options.getSaveGate,
         });
         return () => h("div");
       },
@@ -708,24 +705,5 @@ describe("useTemplatesFeature", () => {
       expect(editor.save).toHaveBeenCalledWith("restore");
     });
 
-    it("keeps the trigger when a save gate defers the run", async () => {
-      // The gate wraps the run in a thunk. A trigger read at the wrong point
-      // would arrive as the default rather than the caller's value.
-      const gate = {
-        tryRunSave: vi.fn(async (run: () => Promise<unknown> | unknown) => {
-          await run();
-          return true;
-        }),
-        runUnlessBlocked: vi.fn(async () => false),
-      };
-      const { feature, editor } = withFeature({ getSaveGate: () => gate });
-
-      feature.requestSave("rename");
-      await Promise.resolve();
-      await Promise.resolve();
-
-      expect(gate.tryRunSave).toHaveBeenCalledTimes(1);
-      expect(editor.save).toHaveBeenCalledWith("rename");
-    });
   });
 });

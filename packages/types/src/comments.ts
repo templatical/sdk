@@ -116,10 +116,8 @@ export interface CommentEventMeta {
 /**
  * Outward notifications about the review conversation. Every member is optional.
  *
- * Separate from the storage methods so `initCloud()` can accept this half alone:
- * a comment is keyed to a template id Cloud issued and its author is signed by
- * the auth token, so Cloud owns the conversation. {@link CommentsProvider}
- * extends this, so one object satisfies both entry points.
+ * Separate from storage methods. {@link CommentsProvider} extends this with
+ * the methods for reading and writing comments.
  *
  * Each fires once per change the editor applied, after the list reflects it. A
  * handler that throws is reported through `onError` and never fails the write.

@@ -47,10 +47,6 @@ export default defineConfig({
             // Resolve workspace packages to source for dev — avoids needing pre-built dist
             '@templatical/editor/src': resolve(packagesDir, 'editor/src'),
             '@templatical/editor': resolve(packagesDir, 'editor/src/index.ts'),
-            '@templatical/core/cloud': resolve(
-                packagesDir,
-                'core/src/cloud/index.ts',
-            ),
             '@templatical/core': resolve(packagesDir, 'core/src/index.ts'),
             '@templatical/types': resolve(packagesDir, 'types/src/index.ts'),
             '@templatical/ai-kit/client': resolve(
@@ -117,13 +113,9 @@ export default defineConfig({
                     if (id.includes('/vue/') || id.includes('@vue/reactivity')) {
                         return 'vue-runtime';
                     }
-                    // VueUse — shared between App and Cloud pages
+                    // VueUse — shared across playground pages
                     if (id.includes('@vueuse/')) {
                         return 'vueuse';
-                    }
-                    // Pusher — only needed when Cloud collaboration is active
-                    if (id.includes('pusher-js')) {
-                        return 'pusher';
                     }
                 },
             },

@@ -840,8 +840,6 @@ const de: typeof en = {
     replyOne: "{count} Antwort",
     replyMany: "{count} Antworten",
     missingBlock: "Fehlender Block",
-    saveTemplateFirst:
-      "Speichern Sie die Vorlage, bevor Sie diesen Block kommentieren.",
   },
   collaboration: {
     people: "Personen, die diese Vorlage bearbeiten",

@@ -40,7 +40,6 @@ describe("Editor HTML size context", () => {
   it("reports unavailable HTML rendering for a direct mount", async () => {
     const context = await sizeContext();
     expect(context.canRenderHtml()).toBe(false);
-    expect(context.cloud).toBe(false);
     expect(context.options).toEqual({});
     await expect(context.renderHtml()).rejects.toThrow(
       "HTML rendering is unavailable",

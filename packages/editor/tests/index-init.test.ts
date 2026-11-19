@@ -15,7 +15,6 @@ vi.mock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
 
 vi.mock("../src/i18n", () => ({
   loadTranslations: vi.fn(),
-  loadCloudTranslations: vi.fn(),
 }));
 
 vi.mock("../src/composables", () => ({
@@ -44,8 +43,7 @@ describe("editor entry — concurrent init does not orphan first app", () => {
     vi.doMock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
     vi.doMock("../src/i18n", () => ({
       loadTranslations: vi.fn(),
-      loadCloudTranslations: vi.fn(),
-    }));
+        }));
     vi.doMock("../src/composables", () => ({
       useFonts: vi.fn(() => ({ fonts: { value: [] } })),
     }));
@@ -107,6 +105,4 @@ describe("editor entry — concurrent init does not orphan first app", () => {
     expect(stillMounted()).toEqual([]);
   });
 
-  // `initCloud()` mounts through the same path. Its concurrency is covered
-  // with real Vue in `instance-unmount.test.ts`.
 });

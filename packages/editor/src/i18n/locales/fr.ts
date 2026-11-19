@@ -768,7 +768,6 @@ const fr: typeof en = {
     replyOne: "{count} réponse",
     replyMany: "{count} réponses",
     missingBlock: "Bloc introuvable",
-    saveTemplateFirst: "Enregistrez le modèle avant de commenter ce bloc.",
   },
   collaboration: {
     people: "Personnes qui modifient ce modèle",

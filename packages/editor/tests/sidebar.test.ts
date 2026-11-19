@@ -84,7 +84,7 @@ describe('Sidebar', () => {
     const buttons = wrapper.findAll('button[data-palette-type]');
     const types = buttons.map((b) => b.attributes('data-palette-type'));
 
-    // Countdown is only present when `caps.plan` is configured (cloud mode).
+    // Countdown has no insertable provider.
     expect(types).toEqual([
       'section',
       'hero',
@@ -355,16 +355,15 @@ describe('Sidebar', () => {
     );
   });
 
-  it('includes countdown when plan capability is provided (cloud mode)', () => {
+  it('does not offer countdown in the palette', () => {
     const { editor } = makeEditor();
     const wrapper = mountSidebar({
       [EDITOR_KEY]: editor,
-      [CAPABILITIES_KEY]: { plan: { hasFeature: () => true } } as any,
     });
     const types = wrapper
       .findAll('button[data-palette-type]')
       .map((b) => b.attributes('data-palette-type'));
-    expect(types).toContain('countdown');
+    expect(types).not.toContain('countdown');
   });
 
   it('clicking a palette item creates+inserts a block and selects it', async () => {
@@ -657,8 +656,6 @@ describe('Sidebar', () => {
     expect(btn.exists()).toBe(true);
   });
 
-  // No CLOUD_TRANSLATIONS_KEY provide needed: the saved-blocks strings moved
-  // into the OSS chunk, so the rail no longer depends on cloud translations.
   it('shows the saved blocks browser button when the capability is available with count > 0', async () => {
     const { editor } = makeEditor();
     const openBrowser = vi.fn();
@@ -869,13 +866,4 @@ describe('Sidebar — blocks (palette allowlist + order)', () => {
     warnSpy.mockRestore();
   });
 
-  it('includes countdown when listed and the plan capability is present', () => {
-    const { editor } = makeEditor();
-    const wrapper = mountSidebar({
-      [EDITOR_KEY]: editor,
-      [CAPABILITIES_KEY]: { plan: { hasFeature: () => true } } as any,
-      [PALETTE_BLOCKS_KEY]: ['section', 'countdown'],
-    });
-    expect(paletteTypes(wrapper)).toEqual(['section', 'countdown']);
-  });
 });

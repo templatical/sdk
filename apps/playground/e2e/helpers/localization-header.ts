@@ -67,7 +67,6 @@ export async function mountCrowdedHeader(
       provide(SIZE_CHECK_KEY, {
         renderHtml: async () => "",
         canRenderHtml: () => false,
-        cloud: false,
         options: { disabled: true },
       });
       onUnmounted(() => {

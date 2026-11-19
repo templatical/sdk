@@ -17,15 +17,6 @@ describe("layout config wiring", () => {
     expect(readSrc("Editor.vue")).toContain("layout: props.config.layout");
   });
 
-  // `initCloud()` forwards it by mapping its own config onto `init()`'s, through
-  // the copy it prepares before its claim — there is one `useEditorCore` call
-  // site now, so this is the only hop left.
-  it("initCloud forwards config.layout into the init() config", () => {
-    const src = readSrc("index.ts");
-    expect(src).toContain("layout: config.layout");
-    expect(src).toContain("layout: prepared.layout");
-  });
-
   it("useEditorCore provides LAYOUT_KEY from config.layout", () => {
     const src = readSrc("composables/useEditorCore.ts");
     expect(src).toContain("LAYOUT_KEY");
@@ -33,11 +24,8 @@ describe("layout config wiring", () => {
     expect(src).toContain("provide(LAYOUT_KEY, config.layout)");
   });
 
-  it("both public config types expose layout", () => {
+  it("the public config type exposes layout", () => {
     expect(readSrc("index.ts")).toContain("layout?: TemplateContent");
-    expect(readSrc("cloud/cloudConfig.ts")).toContain(
-      "layout?: TemplateContent",
-    );
   });
 
   it("keys.ts declares LAYOUT_KEY", () => {
@@ -45,7 +33,7 @@ describe("layout config wiring", () => {
     expect(readSrc("keys.ts")).toContain('Symbol("layout")');
   });
 
-  it("init/initCloud normalize layout then validateLayout, and refuse slot/wrapper in content", () => {
+  it("init normalizes layout then validates it and refuses slot/wrapper in content", () => {
     const src = readSrc("index.ts");
     expect(src).toContain(
       "config.layout = normalizeContentForConfig(config.layout, config.mergeTags)",

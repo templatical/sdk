@@ -81,10 +81,8 @@ export interface VersionHistoryListResult {
  * Outward notifications about a template's version history. Every member is
  * optional.
  *
- * Separate from the storage methods so `initCloud()` can accept this half
- * alone: a version is keyed to a template id Cloud issued, so Cloud owns
- * version-history storage. {@link VersionHistoryProvider} extends this, so one
- * object satisfies both entry points.
+ * Separate from storage methods. {@link VersionHistoryProvider} extends this
+ * with methods for reading and writing versions.
  */
 export interface VersionHistoryOptions {
   /**
@@ -104,7 +102,7 @@ export interface VersionHistoryOptions {
 /**
  * Storage contract for a template's version history.
  *
- * Pass an implementation as `versionHistory` to `init()` or `initCloud()`. With
+ * Pass an implementation as `versionHistory` to `init()`. With
  * no provider the history control does not render and none of its UI is
  * downloaded.
  *

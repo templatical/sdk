@@ -62,7 +62,7 @@ export default defineConfig({
       // Bundle Vue, @templatical/core, @templatical/types, @templatical/media-library
       // and all transitive Vue libs inline so the editor ships as a self-contained
       // drop-in. The only externals are optional peers the consumer opts into.
-      external: ['@templatical/quality', '@templatical/renderer', 'pusher-js'],
+      external: ['@templatical/quality', '@templatical/renderer'],
     },
   },
 })

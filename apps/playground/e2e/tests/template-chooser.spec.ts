@@ -185,14 +185,12 @@ test.describe("Setup catalog", () => {
     await expect.poll(importColor).toBe("rgb(198, 120, 221)");
   });
 
-  test("does not link to the Cloud playground, which stays reachable by URL", async ({
+  test("does not link to a retired Cloud route", async ({
     chooserPage,
     page,
   }) => {
     await chooserPage.goto();
     await expect(page.locator('a[href="#cloud"]')).toHaveCount(0);
-    await page.goto("/#cloud");
-    await expect(page.locator("#cloud-client-id")).toBeVisible();
   });
 
   test("has no Shadow DOM toggle on either header", async ({

@@ -13,15 +13,8 @@ describe("TplModal location + importers", () => {
     expect(existsSync(resolve(SRC, "components/TplModal.vue"))).toBe(true);
   });
 
-  it("source does NOT exist at src/cloud/components/TplModal.vue", () => {
-    expect(existsSync(resolve(SRC, "cloud/components/TplModal.vue"))).toBe(
-      false,
-    );
-  });
-
   // The saved-blocks dialogs live in `src/components/` alongside TplModal, so
-  // for them the canonical import is the sibling path — the inverse of the
-  // cloud-resident importers below.
+  // for them the canonical import is the sibling path.
   it("SavedBlocksBrowserModal imports TplModal as a sibling", () => {
     const content = read("components/SavedBlocksBrowserModal.vue");
     expect(content).toContain('import TplModal from "./TplModal.vue"');
@@ -38,27 +31,6 @@ describe("TplModal location + importers", () => {
     );
   });
 
-  it("the saved-blocks dialogs no longer live under src/cloud/", () => {
-    expect(
-      existsSync(resolve(SRC, "cloud/components/SaveModuleDialog.vue")),
-    ).toBe(false);
-    expect(
-      existsSync(resolve(SRC, "cloud/components/ModuleBrowserModal.vue")),
-    ).toBe(false);
-    expect(
-      existsSync(resolve(SRC, "cloud/components/ModulePreviewCanvas.vue")),
-    ).toBe(false);
-  });
-
-  /* TestEmailModal moved out of `cloud/components/` when test email became a
-     BYO feature shared by both editors, so it now sits alongside TplModal. */
-  it("CloudSaveGateModal imports TplModal from the shared components directory", () => {
-    const content = read("cloud/components/CloudSaveGateModal.vue");
-    expect(content).toContain(
-      'import TplModal from "../../components/TplModal.vue"',
-    );
-  });
-
   it("TestEmailModal imports TplModal from its own directory", () => {
     const content = read("components/TestEmailModal.vue");
     expect(content).toContain('import TplModal from "./TplModal.vue"');
@@ -67,17 +39,4 @@ describe("TplModal location + importers", () => {
     );
   });
 
-  it("no file under src/ imports from cloud/components/TplModal", () => {
-    const { execSync } =
-      require("node:child_process") as typeof import("node:child_process");
-    const stdout = execSync(
-      `grep -rln "cloud/components/TplModal" "${SRC}" || true`,
-      { encoding: "utf-8" },
-    );
-    const matches = stdout
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-    expect(matches).toEqual([]);
-  });
 });

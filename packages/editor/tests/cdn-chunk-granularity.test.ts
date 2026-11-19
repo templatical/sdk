@@ -7,12 +7,8 @@ import { init as initLexer, parse } from "es-module-lexer";
  * Guards the CDN bundle's lazy-loading contract.
  *
  * `bundle-topology.test.ts` deliberately skips `dist/cdn/`, so for a long time
- * nothing checked the CDN build's chunk graph at all — which is how the former
- * `features` manual chunk went unnoticed. That entry forced the Cloud
- * panels (CommentsSidebar, TestEmailModal, VersionHistoryMenu)
- * into one chunk that became statically reachable from the entry. Every Cloud
- * session downloaded all 66.5 KB gzip of it whether or not the user opened a
- * single panel: `defineAsyncComponent` was fully defeated, silently, for years.
+ * nothing checked the CDN build's chunk graph. A former `features` manual
+ * chunk pulled lazy panels into the entry's static graph.
  *
  * The invariant here is the one that actually matters to a consumer: **a
  * component the source lazy-loads must not be in the entry's static-import
@@ -161,8 +157,7 @@ describe("CDN chunk granularity", () => {
   });
 
   it("finds the lazy components by reading source, and they resolve to chunks", () => {
-    // Sanity-check the source scan itself. Known lazy dialogs across both the
-    // OSS and cloud surfaces — if the regex breaks, this fails loudly instead of
+    // Sanity-check the source scan itself. Known lazy dialogs — if the regex breaks, this fails loudly instead of
     // letting the real assertion pass with an empty set.
     expect(lazyComponents.has("TestEmailModal")).toBe(true);
     expect(lazyComponents.has("SaveBlockDialog")).toBe(true);
@@ -230,9 +225,7 @@ describe("CDN chunk granularity", () => {
       "AiAltTextReview",
       "CommentsSidebar",
       "TestEmailModal",
-      // Was `SnapshotHistory`, a cloud-only component. Version history is a
-      // shared, capability-gated feature now, and its header control lives in
-      // `components/` — the chunk-per-panel invariant is unchanged.
+      // Version history is provider-gated; its control lives in components/.
       "VersionHistoryMenu",
     ];
     const resolved = panels.map((name) => owner.get(name));

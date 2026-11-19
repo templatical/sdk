@@ -55,7 +55,7 @@ import WrapperBlock from "./blocks/WrapperBlock.vue";
 
 // `countdown` is deliberately absent: it resolves from the block registry, which
 // `useEditorCore` populates with a lazy `defineAsyncComponent` so OSS bundles
-// don't carry a Cloud-only block. `resolveBlockComponent` checks the registry
+// don't eagerly carry the countdown block. `resolveBlockComponent` checks the registry
 // first, so a static entry here would never be reached — but its static import
 // would still pull the module into the eager graph and defeat the laziness.
 // The other fallback maps (SectionBlock, BlockPreviewCanvas,

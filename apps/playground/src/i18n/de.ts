@@ -334,9 +334,6 @@ export default {
         "F\u00fcgen Sie Ihr Easy-Email-Pro-JSON ein oder laden Sie eine Datei hoch.",
     },
   },
-  mergeTagModal: {
-    title: "Merge-Tag einf\u00fcgen",
-  },
   dataSourceModal: {
     fetching: "Daten vom Endpunkt abrufen\u2026",
     fetchDescription:
@@ -394,17 +391,9 @@ export default {
   },
   common: {
     close: "Schlie\u00dfen",
-    or: "oder",
   },
   error: {
     initFailed: "Editor konnte nicht initialisiert werden: {message}",
-  },
-  mergeTags: {
-    firstName: "Vorname",
-    lastName: "Nachname",
-    email: "E-Mail",
-    company: "Unternehmen",
-    planName: "Tarifname",
   },
   a11y: {
     backToTemplates: "Zur\u00fcck zu Vorlagen",
@@ -433,80 +422,5 @@ export default {
     auto: "Auto",
     light: "Hell",
     dark: "Dunkel",
-  },
-  shadowMode: {
-    shadow: "Shadow DOM",
-    light: "Light DOM",
-  },
-  cloud: {
-    title: "Templatical Cloud",
-    subtitle:
-      "Alles aus dem selbst gehosteten Editor, plus Cloud-basierte Funktionen.",
-    auth: {
-      apiCredentials: "API-Zugangsdaten",
-      authProxy: "Auth-Proxy",
-      apiDescription:
-        "Verwenden Sie die API-Zugangsdaten Ihres Projekts, um direkt zu verbinden. Nur f\u00fcr Entwicklung und Tests gedacht \u2014 kein Backend erforderlich.",
-      proxyDescription:
-        "Verweisen Sie das SDK auf Ihren Backend-Token-Endpunkt. Der Editor sendet eine Anfrage an diese URL, um ein Zugriffstoken abzurufen, bevor er sich verbindet.",
-      clientId: "Client-ID",
-      clientSecret: "Client-Secret",
-      tenant: "Mandant",
-      identitySigning: "Identit\u00e4t & Signierung",
-      optional: "optional",
-      signingKey: "Signierschl\u00fcssel",
-      signingKeyHelp:
-        "Zu finden in Ihren Templatical Cloud-Projekteinstellungen unter API-Schl\u00fcssel.",
-      collaboration: "Zusammenarbeit",
-      mcp: "MCP",
-      realtimeDescription:
-        "Diese Modi schlie\u00dfen sich gegenseitig aus. Zusammenarbeit erm\u00f6glicht mehreren Personen die gleichzeitige Bearbeitung mit Pr\u00e4senz und Blocksperre. MCP erm\u00f6glicht die Verbindung Ihres KI-Agenten mit dem Editor, sodass er die Vorlage lesen und \u00e4ndern kann \u2014 \u00c4nderungen erscheinen live.",
-      userName: "Benutzername",
-      testEmail: "Test-E-Mail",
-      credentialsWarning:
-        "Zugangsdaten werden im Browser-Speicher gespeichert und direkt vom Browser gesendet. F\u00fcr die Produktion verwenden Sie den Auth-Proxy-Tab, um Token-Anfragen \u00fcber Ihr Backend zu leiten.",
-      authEndpoint: "Auth-Endpunkt",
-      method: "Methode",
-      credentials: "Zugangsdaten",
-      headers: "Headers",
-      body: "Body",
-      jsonOptional: "JSON, optional",
-    },
-    template: {
-      loadExisting: "Bestehende Vorlage laden",
-      enterUuid: "Vorlagen-UUID eingeben...",
-      load: "Laden",
-      startFromScratch: "Neu beginnen",
-    },
-    features: {
-      versionHistory: "Versionsverlauf",
-      autoSave: "Automatisches Speichern",
-      aiAssistant: "KI-Assistent",
-      realtimeCollaboration: "Echtzeit-Zusammenarbeit",
-      mediaLibrary: "Medienbibliothek",
-      savedBlocks: "Gespeicherte Blöcke",
-      testEmail: "Test-E-Mail",
-      mcpIntegration: "MCP-Integration",
-      commenting: "Kommentare",
-      templateScoring: "Vorlagenbewertung",
-      whiteLabel: "White Label",
-      andMore: "und mehr \u2192",
-    },
-    backToOss: "\u2190 Zur\u00fcck zum Playground",
-    editor: {
-      back: "Zur\u00fcck",
-      cloud: "Cloud",
-      newTemplate: "Neue Vorlage",
-      save: "Speichern",
-      retry: "Erneut versuchen",
-    },
-    errors: {
-      requiredFields: "Client-ID, Client-Secret und Mandant sind erforderlich",
-      authUrlRequired: "Auth-URL ist erforderlich",
-      enterUuid: "Bitte geben Sie eine Vorlagen-UUID ein",
-      initFailed: "Initialisierung fehlgeschlagen: {message}",
-      invalidHeadersJson: "Auth-Header enthalten ungültiges JSON — ignoriert",
-      invalidBodyJson: "Auth-Body enthält ungültiges JSON — ignoriert",
-    },
   },
 } satisfies Translations;

@@ -839,7 +839,6 @@ const ca: typeof en = {
     replyOne: "{count} resposta",
     replyMany: "{count} respostes",
     missingBlock: "Bloc no trobat",
-    saveTemplateFirst: "Desa la plantilla abans de comentar en aquest bloc.",
   },
   collaboration: {
     people: "Persones que editen aquesta plantilla",

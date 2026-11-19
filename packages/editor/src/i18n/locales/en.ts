@@ -832,7 +832,6 @@ export default {
     replyOne: "{count} Reply",
     replyMany: "{count} Replies",
     missingBlock: "Missing block",
-    saveTemplateFirst: "Save the template before commenting on this block.",
   },
   collaboration: {
     people: "People editing this template",

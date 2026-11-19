@@ -15,9 +15,7 @@ export type AutoSaveConfig = boolean;
  *
  * The one call site is `Editor.vue`'s `autoSaveEnabled`, which always passes
  * `false` as `defaultEnabled` — a consumer without a `templates` provider has
- * nothing to save to. `initCloud()` inlines its own default instead of
- * calling this (`config.templates?.autoSave ?? true`, in `index.ts`), since
- * Cloud always has a store to save to.
+ * nothing to save to.
  */
 export function resolveAutoSave(
   value: AutoSaveConfig | undefined,

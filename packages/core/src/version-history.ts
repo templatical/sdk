@@ -11,15 +11,14 @@ import { notifyHandler } from "./error-reporting";
 
 export interface UseVersionHistoryOptions {
   /**
-   * Storage backend. Supplied by the consumer via `init({ versionHistory })`,
-   * or by Cloud's own adapter — this composable is transport-agnostic and never
-   * talks to a network itself.
+   * Storage backend supplied by the consumer via `init({ versionHistory })`.
+   * This composable is transport-agnostic and never talks to a network itself.
    */
   provider: VersionHistoryProvider;
   /**
    * Which template's history this is. A getter rather than a value because a
-   * session can outlive the template: `initCloud()` constructs the feature at
-   * setup and only learns the id once `create()` / `load()` resolves.
+   * session can outlive the template and only learns the id once
+   * `create()` / `load()` resolves.
    */
   getTemplateId: () => string | null;
   onError?: (error: Error) => void;

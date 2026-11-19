@@ -838,7 +838,6 @@ const es: typeof en = {
     replyOne: "{count} respuesta",
     replyMany: "{count} respuestas",
     missingBlock: "Bloque no encontrado",
-    saveTemplateFirst: "Guarda la plantilla antes de comentar en este bloque.",
   },
   collaboration: {
     people: "Personas que editan esta plantilla",
