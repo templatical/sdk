@@ -5,7 +5,7 @@
 <h1 align="center">Templatical</h1>
 
 <p align="center">
-  All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).
+  All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release.
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@
 
 ---
 
-All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT). **Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, media, real-time collaboration and AI are providers you pass to `init()`. [Bring your own AI backend](https://docs.templatical.com/backend/ai) for chat, rewrite and chat attachments. Live collaboration runs over your own backend with `init({ collaboration })`.
+All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release. **Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, media, real-time collaboration and AI are providers you pass to `init()`. [Bring your own AI backend](https://docs.templatical.com/backend/ai) for chat, rewrite and chat attachments. Live collaboration runs over your own backend with `init({ collaboration })`.
 
 For content checks, use [deliverability lint](https://docs.templatical.com/quality/deliverability/) and [compatibility lint](https://docs.templatical.com/quality/compatibility/); deterministic lint does not predict inbox placement.
 
@@ -187,4 +187,4 @@ Templatical is built and maintained by a solo developer. If your company uses it
 
 ## License
 
-All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT). Terms: [MIT](./LICENSE). [License](https://docs.templatical.com/license-faq).
+All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release. Terms: [MIT](./LICENSE). [License](https://docs.templatical.com/license-faq).

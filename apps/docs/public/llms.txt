@@ -1,13 +1,13 @@
 # Templatical
 
-> All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).
+> MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).
 
 Documentation for SDK version 0.61.0. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
 
 ## Overview
 
-- [Templatical](https://docs.templatical.com/): Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend. All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).
-- [License](https://docs.templatical.com/license-faq): All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).
+- [Templatical](https://docs.templatical.com/): Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend. MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).
+- [License](https://docs.templatical.com/license-faq): MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).
 - [Showcase & use cases](https://docs.templatical.com/showcase): Where Templatical fits — common product patterns, real-world integrations, and how to add yours to the showcase.
 
 ## Getting Started

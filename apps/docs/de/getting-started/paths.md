@@ -5,7 +5,7 @@ description: Welche Dokumentationsseite zuerst — Editor einbinden, Backend anb
 
 # Einstiegspunkte
 
-Alle Templatical-Pakete sind MIT-lizenziert (frühere Veröffentlichungen bis 0.61.x standen unter FSL-1.1-MIT). [Lizenz](/de/license-faq).
+Alle Templatical-Pakete stehen ab 0.62.0 unter der MIT-Lizenz. Frühere Releases von `@templatical/editor`, `@templatical/core` und `@templatical/media-library` standen unter FSL-1.1-MIT; jedes Release wird zwei Jahre nach Erscheinen MIT-lizenziert. [Lizenz](/de/license-faq).
 
 ## Editor einbinden
 
