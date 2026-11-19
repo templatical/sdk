@@ -7,7 +7,6 @@
   "folders": ["apps/docs", "examples"],
   "excludeFolders": [
     "apps/docs/de",
-    "apps/docs/cloud",
     "apps/docs/public",
     "apps/docs/tests",
     "apps/docs/scripts",
@@ -20,8 +19,8 @@
     "Call `editor.unmount()` when the component is removed. Use your framework's snippet from the installation guide: when the component unmounts before `init()` resolves, that call still mounts an editor, so unmount the instance that arrives late.",
     "Templates are JSON: a `TemplateContent` object (`{ blocks, settings }`). Read it with `editor.getContent()`, restore it with `init({ content })` or `editor.setContent()`, and store it as JSON.",
     "Render a template to MJML with `await renderToMjml(content)` from `@templatical/renderer`, then compile the MJML to HTML on your server with the `mjml` package. The SDK bundles no MJML compiler, so `editor.toHtml()` needs a `render` provider.",
-    "Storage features are providers: plain objects passed to `init()` as `templates`, `versionHistory`, `comments`, `savedBlocks`, `media` and `testEmail`. Each is off until its key is passed, and none needs Cloud; `initCloud()` is the hosted variant.",
-    "Bundled: `@templatical/core`. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. Optional peers: `@templatical/renderer`, `pusher-js`.",
+    "Storage features are providers passed to `init()`: `templates`, `versionHistory`, `comments`, `savedBlocks`, `media`, `testEmail`, `render`, `ai` and `collaboration`. Each stays off until its key is passed.",
+    "Bundled: `@templatical/core`. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. Optional peer: `@templatical/renderer`.",
     "Working apps with full code: `https://docs.templatical.com/frameworks/<page>.md` for `nextjs`, `nuxt`, `sveltekit`, `react-router` (with server routes) and `react` (Vite, no backend). The apps are in the repo's `examples/` folder."
   ]
 }

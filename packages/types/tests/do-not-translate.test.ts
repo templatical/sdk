@@ -60,13 +60,13 @@ describe("do-not-translate masking", () => {
   });
 
   it("trims and escapes terms and chooses the longest non-overlapping match", () => {
-    const text = "Templatical Cloud, Templatical and C++ [Acme].";
+    const text = "Templatical Studio, Templatical and C++ [Acme].";
     const masked = maskTags(text, syntax, "text", {
-      doNotTranslate: [" Templatical ", "Templatical Cloud", "C++", "[Acme]"],
+      doNotTranslate: [" Templatical ", "Templatical Studio", "C++", "[Acme]"],
     });
     expect(masked).toEqual({
       text: '<x id="1"/>, <x id="2"/> and <x id="3"/> <x id="4"/>.',
-      tokens: ["Templatical Cloud", "Templatical", "C++", "[Acme]"],
+      tokens: ["Templatical Studio", "Templatical", "C++", "[Acme]"],
     });
     expect(unmaskTags(masked.text, masked.tokens)).toBe(text);
   });
@@ -208,33 +208,33 @@ describe("do-not-translate strings round trip", () => {
     ["an html field", "p/content"],
     ["a text field", "settings/preheaderText"],
   ])("a German compound with a protected term in %s", (_label, id) => {
-    const source = "Templatical Cloud stores cloud files";
-    const german = "Templatical Cloud speichert Cloud-Dateien";
-    const config = { syntax, only: "all" as const, doNotTranslate: ["Cloud"] };
-    function cloudFixture() {
+    const source = "Templatical Studio stores studio files";
+    const german = "Templatical Studio speichert Studio-Dateien";
+    const config = { syntax, only: "all" as const, doNotTranslate: ["Studio"] };
+    function studioFixture() {
       const content = fixture();
       content.blocks = [createParagraphBlock({ id: "p", content: source })];
       content.settings.preheaderText = source;
       return content;
     }
-    const field = (content: ReturnType<typeof cloudFixture>) =>
+    const field = (content: ReturnType<typeof studioFixture>) =>
       localeStrings(content, "de", config).strings.find(
         (entry) => entry.id === id,
       )!;
 
     it("accepts the term as plain text next to its placeholder", () => {
-      const content = cloudFixture();
+      const content = studioFixture();
       const extracted = localeStrings(content, "de", config);
       const entry = field(content);
-      expect(entry.source).toBe('Templatical <x id="1"/> stores cloud files');
-      expect(extracted.tokens[id]).toEqual(["Cloud"]);
+      expect(entry.source).toBe('Templatical <x id="1"/> stores studio files');
+      expect(extracted.tokens[id]).toEqual(["Studio"]);
       const result = applyLocaleStrings(
         content,
         "de",
         [
           {
             id,
-            text: 'Templatical <x id="1"/> speichert Cloud-Dateien',
+            text: 'Templatical <x id="1"/> speichert Studio-Dateien',
             sourceHash: entry.sourceHash,
           },
         ],
@@ -248,12 +248,12 @@ describe("do-not-translate strings round trip", () => {
           : applied.settings.l10n?.de.text?.preheaderText;
       expect(stored).toEqual({ value: german, sourceHash: sourceHash(source) });
       expect(field(applied).text).toBe(
-        'Templatical <x id="1"/> speichert Cloud-Dateien',
+        'Templatical <x id="1"/> speichert Studio-Dateien',
       );
     });
 
     it("still requires the placeholder itself", () => {
-      const content = cloudFixture();
+      const content = studioFixture();
       const extracted = localeStrings(content, "de", config);
       const result = applyLocaleStrings(
         content,

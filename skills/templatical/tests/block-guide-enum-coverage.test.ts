@@ -31,7 +31,7 @@ type SchemaNode = {
   properties?: Record<string, SchemaNode>;
 };
 
-// `countdown` needs Cloud to render, `custom` is registered at runtime, and
+// Rendering `countdown` needs a GIF service the SDK doesn't ship, `custom` is registered at runtime, and
 // `slot`/`wrapper` are layout markers — the skill emits none of them and the
 // guide documents none. `countdown` carries an inline `separator` enum, so
 // without this it would be looked up in a section that does not exist.

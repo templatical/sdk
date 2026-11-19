@@ -8,7 +8,6 @@
     "@vue/reactivity": "^3.5.45"
   },
   "devDependencies": {
-    "pusher-js": "^8.6.0",
     "typescript": "^6.0.3",
     "vitest": "^5.1.0",
     "vue": "^3.5.45"
@@ -17,10 +16,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./cloud": {
-      "types": "./dist/cloud/index.d.ts",
-      "import": "./dist/cloud/index.js"
     }
   },
   "files": [
@@ -39,14 +34,6 @@
   ],
   "license": "MIT",
   "module": "./dist/index.js",
-  "peerDependencies": {
-    "pusher-js": "^8.6.0"
-  },
-  "peerDependenciesMeta": {
-    "pusher-js": {
-      "optional": true
-    }
-  },
   "publishConfig": {
     "access": "public"
   },

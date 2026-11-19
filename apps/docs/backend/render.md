@@ -218,7 +218,6 @@ What to watch for:
 
 - This is the one arrangement where implementing `toMjml` still puts `@templatical/renderer` in your frontend bundle. The table above describes providers that render elsewhere; here you are calling the local renderer yourself.
 - Custom-block stylesheets arrive on each block as `renderedStylesheet`, and the renderer emits them when you pass no `getCustomBlockStylesheet`. Pass one only to supply the CSS yourself; it then decides every type, and the copies are ignored.
-- `initCloud()` ignores `render`, so this is an `init()` arrangement.
 
 ::: tip Showing it in the preview too
 The canvas shows the template, not the chrome around it. [`resolvePreview`](/guide/preview-rendering#show-what-your-platform-appends-at-send-time) is what puts it there — by calling the same composition function as above, or by asking the backend that appends for real.
@@ -249,7 +248,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-It generalises `renderCustomBlock` from one block type to any. A backend whose output is a *superset* of the browser's can inject exactly that delta instead of forking the renderer, and parity for every other block type then holds by construction. Templatical Cloud uses it for two blocks: a server-generated animated countdown GIF and a composited video play button.
+It generalises `renderCustomBlock` from one block type to any. A backend whose output is a *superset* of the browser's can inject exactly that delta instead of forking the renderer, and parity for every other block type then holds by construction. A `blockRenderers.countdown` override emits an image when you generate the GIF yourself; the SDK ships no GIF service.
 
 An override owns everything the built-in did, including the hidden-on-all-viewports early return and `fluid-on-mobile`: an override that emits an `mj-image` adds it with [`fluidOnMobileAttr`](/api/renderer-typescript#fluid-on-mobile-attr), or the image keeps its desktop width on a phone.
 

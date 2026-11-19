@@ -39,6 +39,6 @@ unannounced is the failure this procedure exists to avoid.
    blank editor with a 404 on `style.css` looks identical to a working one
    until something actually looks.
 5. **Report** what changed, what was left alone, and what's still needed — a
-   provider, an optional peer, a Cloud auth endpoint, each map row decided later.
+   provider, an optional peer, each map row decided later.
 
 For AI assistant file attachments or screenshot/PDF import, consult [providers.md](providers.md) and fetch `backend/ai`, `api/ai-kit` and `guide/bring-your-own-ai` through [docs.md](docs.md). Check `chat` is a function, `chatAttachments` is true and a template is loaded. Text-only backends set `features: { chatAttachments: false }`; use `runAiWireConformance` to check multipart generate and upload limits. The author sends after the import picker; no automatic turn starts.

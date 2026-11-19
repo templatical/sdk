@@ -19,12 +19,6 @@ describe("logicTags config wiring", () => {
     );
   });
 
-  // `initCloud()` forwards it by mapping its own config onto `init()`'s — there
-  // is one `useEditorCore` call site now, so this is the only hop left.
-  it("initCloud forwards config.logicTags into the init() config", () => {
-    expect(read("index.ts")).toContain("logicTags: config.logicTags");
-  });
-
   it("useEditorCore provides the logic tags, pairs, onRequest, and picker keys", () => {
     const src = read("composables/useEditorCore.ts");
     expect(src).toContain("provide(LOGIC_TAGS_KEY, config.logicTags?.tags ?? [])");

@@ -96,7 +96,7 @@ Wenn Sie Templatical per CDN laden, gibt es nichts zu installieren. Das Editor-C
 
 ## Editor anbinden {#wire-into-the-editor}
 
-Übergeben Sie `lint` an `init()` oder `initCloud()`:
+Übergeben Sie `lint` an `init()`:
 
 ```ts
 import { init } from "@templatical/editor";

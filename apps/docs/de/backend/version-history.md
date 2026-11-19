@@ -1,6 +1,6 @@
 ---
 title: Versionsverlauf
-description: Frühere Versionen einer Vorlage durchsehen, in der Vorschau ansehen und wiederherstellen — über Ihren eigenen Speicher oder den von Templatical Cloud.
+description: Frühere Versionen einer Vorlage durchsehen, in der Vorschau ansehen und wiederherstellen, gespeichert von einem Provider, den Sie implementieren.
 ---
 
 # Versionsverlauf

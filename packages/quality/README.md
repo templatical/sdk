@@ -35,7 +35,7 @@ for (const issue of issues) {
 
 ### Editor
 
-`@templatical/editor` lazy-imports this package on demand. Pass `accessibility` to `init()` / `initCloud()`:
+`@templatical/editor` lazy-imports this package on demand. Pass `accessibility` to `init()`:
 
 ```ts
 import { init } from "@templatical/editor";

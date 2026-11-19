@@ -32,8 +32,10 @@ describe("AI and collaboration agent jobs", () => {
     );
   });
 
-  it("does not promise current Cloud AI in the integration route", () => {
-    expect(read("reference/integrate.md")).not.toMatch(/AI wired in/i);
+  it("does not route integration through initCloud", () => {
+    expect(read("reference/integrate.md")).not.toMatch(/initCloud|AI wired in/i);
+    expect(read("SKILL.md")).not.toMatch(/initCloud/);
+    expect(read("evals/evals.json")).not.toMatch(/initCloud|Templatical Cloud/);
   });
 });
 

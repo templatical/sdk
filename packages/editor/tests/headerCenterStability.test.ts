@@ -156,10 +156,8 @@ describe("header centre track holds a constant width", () => {
     );
   });
 
-  it("puts the cloud presence bar in the left column", () => {
-    // Presence sits with the template's identity, where the cloud plan-usage
-    // readout already is.
-    expect(leftColumn()).toContain('<slot name="left-extras" />');
+  it("keeps the left column free of extension slots", () => {
+    expect(leftColumn()).not.toContain('<slot name="left-extras" />');
   });
 });
 

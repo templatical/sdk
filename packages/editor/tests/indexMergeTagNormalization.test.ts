@@ -3,7 +3,7 @@
 // The entry-level half of merge-tag normalization: every way consumer content
 // reaches the editor must go through the normalizer, not just `init()`.
 //
-// Mocked the same way as `index-cloud-init.test.ts` — `h` captures the props
+// `h` captures the props
 // handed to `Editor.vue`, so `config.content` can be inspected at the moment of
 // mount, and the component instance is set by hand to drive the post-mount
 // branches of the returned instance's methods.
@@ -40,22 +40,7 @@ function firstParagraph(content: TemplateContent): string {
 
 const captured: { props: Record<string, unknown> | null } = { props: null };
 
-const fakeRuntime = { attach: vi.fn(), ready: vi.fn(), destroy: vi.fn() };
-const fakeProviders = {
-  templates: { load: vi.fn(), create: vi.fn(), save: vi.fn() },
-  render: { toMjml: vi.fn(async () => "<mjml/>") },
-  versionHistory: {
-    list: vi.fn(),
-    get: vi.fn(),
-    create: false,
-    restore: false,
-  },
-  savedBlocks: { list: vi.fn(), create: false, update: false, delete: false },
-  testEmail: { send: vi.fn() },
-};
-
 let initFn: typeof import("../src/index").init;
-let initCloudFn: typeof import("../src/index").initCloud;
 
 beforeEach(async () => {
   vi.clearAllMocks();
@@ -77,15 +62,8 @@ beforeEach(async () => {
     };
   });
   vi.doMock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
-  vi.doMock("../src/cloud/createCloudRuntime", () => ({
-    bootstrapCloud: vi.fn(async () => ({
-      runtime: fakeRuntime,
-      providers: fakeProviders,
-    })),
-  }));
   vi.doMock("../src/i18n", () => ({
     loadTranslations: vi.fn(() => Promise.resolve({})),
-    loadCloudTranslations: vi.fn(() => Promise.resolve({})),
   }));
   vi.doMock("../src/composables", () => ({
     useFonts: vi.fn(() => ({
@@ -100,7 +78,6 @@ beforeEach(async () => {
 
   const mod = await import("../src/index");
   initFn = mod.init;
-  initCloudFn = mod.initCloud;
 });
 
 afterEach(() => {
@@ -193,43 +170,6 @@ describe("init() normalizes and validates layout", () => {
       "[Templatical] layout: must contain exactly one slot block",
     );
     expect(captured.props).toBeNull();
-  });
-});
-
-describe("initCloud() normalizes content on the way in", () => {
-  it("converts a bare token in the seeded content before mount", async () => {
-    await initCloudFn({
-      container: container(),
-      projectId: "p1",
-      token: "t1",
-      content: bareContent(),
-      mergeTags: MERGE_TAGS,
-    } as unknown as Parameters<typeof initCloudFn>[0]);
-
-    expect(firstParagraph(mountedConfig().content)).toBe(WRAPPED);
-  });
-});
-
-describe("initCloud() normalizes layout", () => {
-  it("converts a bare token in layout chrome before mount", async () => {
-    const layout: TemplateContent = {
-      blocks: [createParagraphBlock({ content: BARE }), createSlotBlock()],
-      settings: {},
-    } as TemplateContent;
-
-    await initCloudFn({
-      container: container(),
-      projectId: "p1",
-      token: "t1",
-      layout,
-      mergeTags: MERGE_TAGS,
-    } as unknown as Parameters<typeof initCloudFn>[0]);
-
-    const mounted = (captured.props as { config: { layout: TemplateContent } })
-      .config.layout;
-    expect((mounted.blocks[0] as ParagraphBlock).content).toBe(WRAPPED);
-    expect(mounted.blocks[1]?.type).toBe("slot");
-    expect((layout.blocks[0] as ParagraphBlock).content).toBe(BARE);
   });
 });
 

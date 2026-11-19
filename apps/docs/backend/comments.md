@@ -1,6 +1,6 @@
 ---
 title: Comments
-description: A threaded review conversation on a template — over your own storage, or Templatical Cloud's.
+description: A threaded review conversation on a template, stored by a provider you implement.
 ---
 
 # Comments
@@ -230,8 +230,6 @@ Which of `onResolved` / `onUnresolved` fires is decided by the **stored** result
 A transport that echoes a write back to its sender — `subscribe`'s contract permits it — is compared against the stored comment: an echo that changes nothing is applied silently, with no event.
 
 That bound holds for an echo that lands **after** the mutation's own response. One that arrives first applies as `origin: 'remote'`, and the local call still emits its own `origin: 'local'` event once its response settles — two events for one write, the first attributed to the wrong origin. Keep de-duplicating on your side if your transport can echo that early.
-
-**Templatical Cloud is unaffected.** `createCloudCommentsProvider` stamps every write with an `X-Socket-ID` header, and Cloud's backend excludes that connection when it fans the change back out, so no early echo reaches this editor.
 :::
 
 A handler that throws is caught and reported to `onError` — it never fails the write that triggered it.

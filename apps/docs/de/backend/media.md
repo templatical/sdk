@@ -27,7 +27,7 @@ Einträge landen im `localStorage` unter `templatical:media`. `create` speichert
 ## Installation
 
 ::: warning Nur für die eigenständige Nutzung
-Installieren Sie [`@templatical/media-library`](/de/getting-started/installation) nicht neben dem Editor. `init({ media })` und Clouds Speicher enthalten Durchsuchen bereits als Lazy-Chunk; Vue wird nicht installiert. Dieses Paket ist das eigenständige SDK — `init()`, `useMediaLibrary` oder `MediaLibraryModal` in Ihrer eigenen Vue-App.
+Installieren Sie [`@templatical/media-library`](/de/getting-started/installation) nicht neben dem Editor. `init({ media })` enthält Durchsuchen bereits als Lazy-Chunk; Vue wird nicht installiert. Dieses Paket ist das eigenständige SDK — `init()`, `useMediaLibrary` oder `MediaLibraryModal` in Ihrer eigenen Vue-App.
 :::
 
 ::: code-group
@@ -140,7 +140,7 @@ interface MediaListParams {
   cursor?: string;
   folderId?: string | null;
   category?: MediaCategory;   // "images" | "documents" | "videos" | "audio"
-  templateId?: string;        // wenn eine Vorlage geladen ist; Cloud ignoriert
+  templateId?: string;        // wenn eine Vorlage geladen ist
 }
 
 interface MediaListPage {
@@ -150,7 +150,7 @@ interface MediaListPage {
 ```
 
 - **Die `id` kommt vom Provider.** Der Editor erzeugt nie eine eigene, sondern verwendet, was `create()` zurückgibt.
-- **`templateId` ist opportunistisch.** Wird bei `list` / `create` / `importFromUrl` übergeben, wenn eine Vorlage geladen ist; auf einer leeren Arbeitsfläche weggelassen. Medien sind nicht daran gebunden. Cloud ignoriert es; ein CMS, das eine Galerie pro Vorlage abgrenzt, liest es hier.
+- **`templateId` ist opportunistisch.** Wird bei `list` / `create` / `importFromUrl` übergeben, wenn eine Vorlage geladen ist; auf einer leeren Arbeitsfläche weggelassen. Medien sind nicht daran gebunden. Ein CMS, das eine Galerie pro Vorlage abgrenzt, liest es hier.
 - **Die Reihenfolge kommt vom Provider.** Der Editor stellt die Reihenfolge von `list()` dar und sortiert nie um.
 - **Zeitstempel dienen nur der Anzeige.** Lassen Sie beide weg, entfällt die Angabe.
 - **`maxFileSize` / `mimeTypes`** am Provider sind eine clientseitige Vorprüfung, keine Sicherheitsgrenze — das Backend muss zusätzlich durchsetzen. Der Hinweis in der Upload-Zone wird daraus gebildet, und abgelehnte Dateien werden darunter genannt.

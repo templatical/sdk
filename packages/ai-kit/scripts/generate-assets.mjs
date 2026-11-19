@@ -1,8 +1,7 @@
 // Writes the package's generated assets:
 //
-// - prompts/operations.md, apps/docs/api/operations.md without locale operations: the
-//   operation vocabulary the editing prompt teaches (Cloud's MCP server serves
-//   the same file);
+// - prompts/operations.md, from apps/docs/api/operations.md without locale
+//   operations: the operation vocabulary the editing prompt teaches;
 // - src/generated/assets.ts, every prompt and schema file as a string
 //   constant, so the isomorphic source never reads a file at run time.
 //

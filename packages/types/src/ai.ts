@@ -38,7 +38,7 @@ export interface AiRequestBase {
   templateId: string;
   /**
    * The template as the editor has it, after it sent its pending edits. A
-   * backend that holds the template itself (Templatical Cloud) ignores it.
+   * backend that holds the template itself can use its stored copy instead.
    */
   content: TemplateContent;
   /** The collaboration revision `content` is at, or `null` without collaboration. */
@@ -298,8 +298,7 @@ export interface AiLimitDetails extends Readonly<Record<string, unknown>> {
  *
  * Reject with an `SdkError` whose `code` is an `AiErrorCode` and whose
  * message the user can read. `@templatical/ai-kit/client`'s
- * `createHttpAiProvider` implements this over a documented REST and SSE wire;
- * Templatical Cloud is one backend for it.
+ * `createHttpAiProvider` implements this over a documented REST and SSE wire.
  */
 export interface AiProvider {
   chat:

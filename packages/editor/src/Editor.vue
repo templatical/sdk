@@ -24,9 +24,6 @@ import {
   defaultLocaleGaps,
   safeClone,
 } from "@templatical/types";
-// Type-only, so no cloud module is statically reachable from the OSS entry —
-// see `cloud/runtime.ts` for why the seam is shaped this way.
-import type { CloudRuntime } from "./cloud/runtime";
 import NoticeStack from "./components/NoticeStack.vue";
 import type { LocaleNotice } from "./components/localization/LocaleNotices.vue";
 import LanguageBar from "./components/localization/LanguageBar.vue";
@@ -103,17 +100,6 @@ const props = defineProps<{
    */
   shadowRoot?: ShadowRoot;
   /**
-   * Cloud's adapter wiring, supplied only by `initCloud()`.
-   *
-   * There is **one** editor component. Cloud is a set of providers on
-   * `config` plus this runtime, which exists purely for the handful of
-   * composables that must run at a specific point inside this `setup()` —
-   * collaboration before the history interceptor, the lint save-gate after
-   * `useEditorCore`. Everything else it contributes arrives through the
-   * ordinary config keys an OSS consumer would fill in themselves.
-   */
-  cloud?: CloudRuntime;
-  /**
    * Render the current template to MJML, for `testEmail`'s `includeMjml` option.
    *
    * Supplied by the entry point, which owns the resolution ladder behind
@@ -135,7 +121,6 @@ provide(SIZE_CHECK_KEY, {
     props.renderHtml?.() ??
     Promise.reject(new Error("HTML rendering is unavailable")),
   canRenderHtml: () => props.canRenderHtml?.() ?? false,
-  cloud: !!props.cloud,
   options: props.config.lint ?? {},
 });
 
@@ -238,8 +223,6 @@ if (collaboration) {
 }
 collaboration?.attach(editor);
 
-const cloudAttachment = props.cloud ? props.cloud.attach({ editor }) : null;
-
 // --- Templates (opt-in: only when a storage provider is configured) ---
 // Built before `useEditorCore` so its capability can be passed in, which is what
 // lights up the header's name field, status indicator and save button — and what
@@ -249,11 +232,6 @@ const templates = templatesProvider
       provider: templatesProvider,
       editor,
       guardUnsavedChanges: props.config.templates?.unsavedChangesGuard,
-      // Cloud's lint save-gate, when there is one. Read through a getter
-      // because the gate needs `core.templateLint`, which does not exist yet.
-      // Without this the collapse would have silently dropped the server's
-      // `accessibility.blockOnError` policy.
-      getSaveGate: props.cloud ? () => props.cloud!.getSaveGate() : undefined,
     })
   : null;
 
@@ -279,10 +257,6 @@ const savedBlocks = props.config.savedBlocks
       provider: props.config.savedBlocks,
       editor,
       onError: props.config.onError,
-      // Cloud's store is plan-gated; a consumer's own store never is.
-      isAvailable: props.cloud
-        ? () => props.cloud!.isSavedBlocksAvailable()
-        : undefined,
     })
   : null;
 
@@ -320,11 +294,6 @@ const testEmail = props.config.testEmail
       renderMjml: props.renderMjml,
       usesLocalRenderer: props.usesLocalRenderer,
       onError: props.config.onError,
-      // Cloud folds in the plan feature and "the template must be saved", both
-      // constraints of *its* sending path rather than of the contract.
-      isAvailable: props.cloud
-        ? () => props.cloud!.isTestEmailAvailable()
-        : undefined,
     })
   : null;
 
@@ -343,20 +312,7 @@ const comments = props.config.comments
       provider: props.config.comments,
       editor,
       user: props.config.user,
-      // Cloud supplies its comments state; the open-source AI feature keeps
-      // comments and AI panels exclusive in their shared 360px gutter.
-      isOpen: cloudAttachment?.panelState.commentsOpen,
       onError: props.config.onError,
-      // Cloud folds in the `commenting` plan feature and "the template must be
-      // saved", both constraints of *its* store rather than of the contract.
-      isAvailable: props.cloud
-        ? () => props.cloud!.isCommentsAvailable()
-        : undefined,
-      // Cloud anchors a comment to a block in the saved template; a consumer's
-      // store accepts whatever anchor it is given.
-      isBlockSaved: props.cloud
-        ? (blockId: string) => props.cloud!.isBlockSaved(blockId)
-        : undefined,
     })
   : null;
 
@@ -468,17 +424,6 @@ const CollaborationNotices = defineAsyncComponent(
   () => import("./components/collaboration/CollaborationNotices.vue"),
 );
 
-// --- Cloud chrome (opt-in: only under `initCloud()`) ---
-// One lazy wrapper for every panel, overlay and modal Cloud adds, plus one for
-// its header controls. Same discipline as `SavedBlocksPanels` / `TestEmailPanel`:
-// an OSS consumer never downloads any of it.
-const CloudPanels = defineAsyncComponent(
-  () => import("./cloud/components/CloudPanels.vue"),
-);
-const CloudHeaderExtras = defineAsyncComponent(
-  () => import("./cloud/components/CloudHeaderExtras.vue"),
-);
-
 // --- Version history (opt-in: only when a storage provider is configured) ---
 // The header control lives in `EditorHeader`; this is the preview banner, which
 // renders outside the header. Both are lazy.
@@ -540,10 +485,6 @@ const autoSaveOptions =
           );
           // `requestAutoSave()` already no-ops without a saveable template, so a
           // read-only provider costs one predicate per tick and nothing else.
-          // It is the *ungated* request only in the sense that it never raises a
-          // prompt: Cloud's lint gate still refuses it, which is what keeps
-          // `accessibility.blockOnError` a policy rather than a manual-save
-          // speed bump.
           if (isAutoSaving) templates!.requestAutoSave();
         },
         ...(props.config.changeDebounce !== undefined
@@ -611,15 +552,6 @@ watch(
   },
 );
 
-// Cloud's setup-time wiring that needs `core`: the lint save-gate (reads
-// `core.templateLint`) and the capability entries Cloud contributes — mutated
-// into the very object `useEditorCore` provided, so injecting components see
-// them on first render.
-const cloudReady =
-  props.cloud && cloudAttachment
-    ? props.cloud.ready({ core, capabilities })
-    : null;
-
 // --- Version history (opt-in: only when a storage provider is configured) ---
 // Constructed *after* `useEditorCore` because it drives `history` /
 // `conditionPreview` / `autoSave`, which core owns. Its capability is therefore
@@ -653,14 +585,9 @@ const versionHistory = props.config.versionHistory
       // only warning about it. Without a templates provider — or with one whose
       // `save` is `false` — there is nowhere to put that work, and the
       // confirmation says so rather than offering an action that can't happen.
-      // Cloud additionally refuses while the lint gate would block: stacking a
-      // second modal on the confirmation would be worse than saying there is
-      // currently nowhere to put the work.
       saveBeforeRestore: templates
         ? {
-            canSave: () =>
-              templates.canSave.value &&
-              !(props.cloud?.getSaveGate()?.shouldBlock.value ?? false),
+            canSave: () => templates.canSave.value,
             save: () => templates.save("restore"),
           }
         : null,
@@ -679,8 +606,7 @@ if (versionHistory) capabilities.versionHistory = versionHistory.capability;
  * Whether a 360px feature panel occupies the right-hand gutter.
  *
  * Comments and the open-source AI panels share this gutter; the AI feature
- * keeps their open states mutually exclusive. Cloud also supplies its panel
- * state, which shares the comments ref.
+ * keeps their open states mutually exclusive.
  *
  * Two things read this, and **both must**: the canvas/footer insets below, and
  * `RightSidebar`'s `shifted-left` — the properties panel sits at `right-0` too, so
@@ -688,9 +614,7 @@ if (versionHistory) capabilities.versionHistory = versionHistory.capability;
  */
 const rightPanelOpen = computed(
   () =>
-    comments?.isOpen.value === true ||
-    (ai !== null && ai.panel.value !== null) ||
-    cloudAttachment?.panelState.rightPanelOpen.value === true,
+    comments?.isOpen.value === true || (ai !== null && ai.panel.value !== null),
 );
 
 const bodyInsetClass = computed(() => {
@@ -735,7 +659,6 @@ onMounted(async () => {
 onUnmounted(() => {
   props.fontsManager.cleanupFontLinks();
   ai?.destroy();
-  props.cloud?.destroy();
   core.destroy();
 });
 
@@ -812,9 +735,7 @@ defineExpose({
          lands exactly where it would against the root. Locked by
          `tests/popover-root-clip-scope.test.ts`. -->
     <div class="tpl:absolute tpl:inset-0 tpl:overflow-hidden">
-      <!-- One header for both entry points. Cloud's own controls arrive through
-           the three slots; everything else here is capability-gated, so the same
-           markup covers "no providers at all" and a fully-wired Cloud session. -->
+      <!-- Shared header for configured providers. -->
       <EditorHeader
         :editor="editor"
         :localization="props.config.localization"
@@ -829,12 +750,6 @@ defineExpose({
         :header="props.config.header"
         :shadow-root="props.shadowRoot"
       >
-        <template v-if="cloudAttachment" #left-extras>
-          <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
-        </template>
-        <template v-if="cloudAttachment" #right-extras>
-          <CloudHeaderExtras part="right" :cloud="cloudAttachment" />
-        </template>
       </EditorHeader>
 
       <!-- Left sidebar — absolute, below header -->
@@ -1096,17 +1011,6 @@ defineExpose({
         @dismiss="localeNotice = null"
       />
     </NoticeStack>
-
-    <!-- Cloud sidebars, modals and overlays. One lazy wrapper, mounted only
-         under `initCloud()`; an OSS consumer downloads none of it. -->
-    <CloudPanels
-      v-if="cloud && cloudAttachment && cloudReady"
-      :editor="editor"
-      :core="core"
-      :runtime="cloud"
-      :cloud="cloudAttachment"
-      :ready="cloudReady"
-    />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the
          chrome and `.tpl-popover-root`, so the opaque notice covers everything

@@ -8,7 +8,7 @@ import ts from "typescript";
  * These tests guard the editor's bundle topology — specifically the constraints
  * that, if violated, cause silent runtime failures in published consumers:
  *
- *   1. Only optional cloud peers may be external imports. Anything else (Vue,
+ *   1. Only optional peers may be external imports. Anything else (Vue,
  *      `@templatical/core`, `@templatical/types`, vue libs) must be bundled
  *      inline. If `@templatical/core` becomes external, consumer's
  *      `node_modules/@vue/reactivity` becomes a second reactivity instance and
@@ -28,7 +28,6 @@ const DIST = join(import.meta.dirname, "..", "dist");
 const ALLOWED_EXTERNALS = new Set([
   "@templatical/quality",
   "@templatical/renderer",
-  "pusher-js",
 ]);
 
 function isBareSpecifier(spec: string): boolean {
@@ -136,7 +135,6 @@ describe("editor bundle topology", () => {
       "@vue/runtime-core",
       "@vue/runtime-dom",
       "@templatical/core",
-      "@templatical/core/cloud",
       "@templatical/types",
       "@templatical/media-library",
       "@vueuse/core",
@@ -204,6 +202,7 @@ describe("editor bundle topology", () => {
       (k) => pkg.peerDependenciesMeta[k]?.optional === true,
     );
     expect(peers.sort()).toEqual(optionalPeers.sort());
+    expect(peers.sort()).toEqual(["@templatical/quality", "@templatical/renderer"]);
     expect(peers).not.toContain("@templatical/media-library");
   });
 
@@ -324,12 +323,8 @@ describe("editor bundle topology", () => {
     // The `examples (nextjs)` CI job covers this too, but only after a full `next build`;
     // this fails in the `test` job in milliseconds and names the chunk.
     //
-    // Scope is deliberately the npm `dist/` alone. The CDN build inlines every
-    // optional peer including pusher-js, which ships UMD, so
-    // `dist/cdn/chunks/pusher-*.js` carries the marker legitimately — that
-    // bundle is loaded as an ES module straight by a browser and never passes
-    // through Turbopack. Widening this scan would fail on that and invite
-    // someone to weaken the assertion instead.
+    // Scope is deliberately the npm `dist/` alone; the CDN bundle follows a
+    // separate build path.
     const UMD_MARKERS = ["define.amd", 'define["amd"]', "define['amd']"];
     for (const chunk of allFiles) {
       const code = readFileSync(chunk, "utf8");

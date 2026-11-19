@@ -47,11 +47,7 @@ export default defineConfig({
                 //
                 // Forcing our own modules into a named chunk creates static import
                 // edges between otherwise-independent lazy subgraphs, which silently
-                // makes a lazy chunk EAGER. That is not theoretical: the former
-                // `features` group (6 `defineAsyncComponent` cloud panels) became
-                // statically reachable from the entry, so every Cloud session
-                // downloaded all 66.5 KB gzip of it whether or not the user opened a
-                // single panel — `defineAsyncComponent` was fully defeated for them.
+                // makes a lazy chunk eager.
                 //
                 // The failure also moves: removing only `features` promoted
                 // `media-library` to eager (41.2 -> 65.7 KB) and grew the eager
@@ -83,9 +79,6 @@ export default defineConfig({
                     ) {
                         return 'tiptap';
                     }
-                    if (id.includes('pusher-js')) {
-                        return 'pusher';
-                    }
                     if (id.includes('htmlparser2')) {
                         return 'htmlparser';
                     }
@@ -112,7 +105,6 @@ export default defineConfig({
             '@templatical/media-library': resolve(import.meta.dirname, '../media-library/src/editor-modal.ts'),
             '@templatical/quality': resolve(import.meta.dirname, '../quality/src/index.ts'),
             '@templatical/renderer': resolve(import.meta.dirname, '../renderer/src/index.ts'),
-            '@templatical/core/cloud': resolve(import.meta.dirname, '../core/src/cloud/index.ts'),
             '@templatical/core': resolve(import.meta.dirname, '../core/src/index.ts'),
             '@templatical/types': resolve(import.meta.dirname, '../types/src/index.ts'),
         },

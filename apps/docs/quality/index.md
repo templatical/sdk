@@ -107,7 +107,7 @@ If you load Templatical via CDN, there's nothing to install. The editor's CDN bu
 
 ## Wire into the editor {#wire-into-the-editor}
 
-Pass `lint` to `init()` or `initCloud()`:
+Pass `lint` to `init()`:
 
 ```ts
 import { init } from "@templatical/editor";

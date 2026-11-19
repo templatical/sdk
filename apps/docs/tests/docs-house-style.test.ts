@@ -5,17 +5,15 @@ import config from "../.vitepress/config";
 
 /**
  * OSS docs house style: voice, package-manager install snippets, renderer
- * wording, Cloud-vs-OSS attribution, preview URL, countdown.
+ * wording, preview URL, countdown.
  *
- * Skip: changelog (history), cloud/ (WIP), public/ (generated).
+ * Skip: changelog (history), public/ (generated).
  */
 
 const DOCS = join(import.meta.dirname, "..");
 const REPO = join(DOCS, "../..");
 
 const SKIP_DIRS = new Set([
-  "cloud",
-  "de/cloud",
   "public",
   "node_modules",
   ".vitepress",
@@ -86,7 +84,7 @@ describe("OSS docs house style", () => {
     expect(pages).not.toContain("changelog.md");
   });
 
-  it("has no editorial adverbs outside changelog and Cloud", () => {
+  it("has no editorial adverbs outside the changelog", () => {
     const hits: string[] = [];
     for (const rel of pages) {
       const src = readDocs(rel);
@@ -145,12 +143,12 @@ describe("OSS docs house style", () => {
     expect(hits).toEqual([]);
   });
 
-  it("does not list comments or saved blocks as Cloud additions in the license FAQ", () => {
+  it("does not describe a Cloud tier in the license FAQ", () => {
     const src = readDocs("license-faq.md");
-    expect(src).not.toMatch(
-      /adds AI rewrite, real-time collaboration, comments/i,
+    expect(src).not.toMatch(/Templatical Cloud|Cloud tier|initCloud/);
+    expect(src).toMatch(
+      /Live collaboration runs over your own backend with `init\(\{ collaboration \}\)`/,
     );
-    expect(src).toMatch(/Cloud is one adapter, not the feature/);
   });
 
   it("keeps the editor screenshot as a single marketing URL with no-referrer", () => {
@@ -213,28 +211,14 @@ describe("OSS docs house style", () => {
     expect(hits).toEqual([]);
   });
 
-  it("keeps Cloud out of nav, sidebar, robots, and the sitemap", () => {
+  it("does not disallow retired Cloud routes or filter them from the sitemap", () => {
     const robots = readDocs("public/robots.txt");
-    expect(robots).toMatch(/^Disallow: \/cloud\/$/m);
-    expect(robots).toMatch(/^Disallow: \/de\/cloud\/$/m);
-
-    const transform = config.sitemap?.transformItems;
-    expect(typeof transform).toBe("function");
-    // VitePress passes relative URLs here (generateSitemap: the page path with
-    // `.md` dropped and `index.md` reduced to its directory), never absolute
-    // ones, so the fixture must use that shape or the filter goes untested.
-    expect(
-      transform!([
-        { url: "guide/theming" },
-        { url: "cloud/ai" },
-        { url: "cloud/" },
-        { url: "de/cloud/ai" },
-        { url: "de/guide/theming" },
-        { url: "" },
-      ]),
-    ).toEqual([{ url: "guide/theming" }, { url: "de/guide/theming" }, { url: "" }]);
+    expect(robots).not.toMatch(/^Disallow: \/cloud\/$/m);
+    expect(robots).not.toMatch(/^Disallow: \/de\/cloud\/$/m);
+    expect(config.sitemap?.transformItems).toBeUndefined();
 
     const src = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
+    expect(src).not.toMatch(/isCloudPage/);
     expect(src).not.toMatch(/link:\s*"\/(?:de\/)?cloud/);
   });
 

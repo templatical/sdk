@@ -23,9 +23,8 @@ describe("useAutoSave", () => {
   });
 
   /**
-   * The one default both entry points read — `init()` falls through to it, and
-   * `initCloud()` injects it explicitly. The editor package used to keep a
-   * second copy at 5000, which drifted from this one with nothing linking them.
+   * The default `init()` reads. The editor imports this constant rather than
+   * declaring its own: a second copy drifts with nothing linking them.
    */
   it("defaults to DEFAULT_AUTO_SAVE_DEBOUNCE_MS, which is 2 seconds", () => {
     expect(DEFAULT_AUTO_SAVE_DEBOUNCE_MS).toBe(2000);

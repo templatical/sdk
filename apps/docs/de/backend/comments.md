@@ -1,6 +1,6 @@
 ---
 title: Kommentare
-description: Ein Review-Gespräch mit Threads an einer Vorlage — über Ihren eigenen Speicher oder den von Templatical Cloud.
+description: Ein Review-Gespräch mit Threads an einer Vorlage, gespeichert von einem Provider, den Sie implementieren.
 ---
 
 # Kommentare
@@ -231,7 +231,6 @@ Ein Transport, der einen Schreibvorgang an den eigenen Absender zurückspiegelt 
 
 Diese Zusicherung gilt für ein Echo, das **nach** der Antwort des eigenen Schreibvorgangs eintrifft. Trifft es vorher ein, wendet der Editor es zuerst als `origin: 'remote'` an, und der lokale Aufruf löst — sobald seine Antwort eintrifft — trotzdem noch sein eigenes `origin: 'local'`-Event aus: zwei Events für einen Schreibvorgang, das erste davon falsch zugeordnet. Kann Ihr Transport so früh zurückspiegeln, deduplizieren Sie auf Ihrer Seite weiterhin selbst.
 
-**Templatical Cloud ist davon nicht betroffen.** `createCloudCommentsProvider` versieht jeden Schreibvorgang mit einem `X-Socket-ID`-Header, den das Backend von Cloud beim Zurückspiegeln der Änderung ausschließt — ein verfrühtes Echo erreicht diesen Editor also nie.
 :::
 
 Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` gemeldet — sie lässt den auslösenden Schreibvorgang nie fehlschlagen.

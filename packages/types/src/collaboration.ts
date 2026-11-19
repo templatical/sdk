@@ -171,7 +171,7 @@ export type OperationsAfterResult =
 
 /**
  * The bring-your-own collaboration contract: ordered operations, presence and
- * block locks over your backend. Templatical Cloud is one implementation.
+ * block locks over your backend.
  *
  * `join` may be called again for the template already joined, after a
  * reconnect: answer with the current revision, locks and members without

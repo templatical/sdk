@@ -18,7 +18,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
   - **Opt-out mode** (`shadowDom: false`, light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Use this if you need to support older Firefox or Safari, or if your integration requires light-DOM access to editor internals. See the [Shadow DOM guide](../guide/shadow-dom) for trade-offs.
 - **Container element** -- must have a defined height (the editor fills its container). In default mode, must be an element type that can host a shadow root (e.g. `<div>`, `<section>`, `<article>`). See [container element requirements](../api/editor#container-element-requirements).
 - **No `transform`, and no stacking context, on an ancestor of the container** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` below `1`, `isolation`, `contain`, and positioned elements with a `z-index` each change where the editor's overlays are painted or positioned. These are plain CSS rules, not Templatical-specific limitations, and they affect any library that positions overlays with `position: fixed`. See [Embedding the editor](./embedding) for what each one breaks and how to work around it.
-- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. It enables the Issues panel and lint badges; `@templatical/renderer` and `pusher-js` remain optional peers. See [Optional peers](#optional-peers).
+- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. It enables the Issues panel and lint badges; `@templatical/renderer` remains an optional peer. See [Optional peers](#optional-peers).
 
 ## Network requests
 
@@ -110,7 +110,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/editor`          | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required                                                                                            |
 | `@templatical/renderer`        | Converts templates to MJML for email sending.                                                                                            | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
 | `@templatical/quality`         | Template linters (accessibility, structure, links, deliverability, compatibility) that drive the editor's Issues panel and a headless / CI check.                             | Optional dependency of the editor, installed by default                        |
-| `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` or Cloud's store |
+| `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
 | `@templatical/template-tools`  | CLI and library for validating, rendering, editing, importing, and live-previewing templates outside the editor.                        | Optional — run via `npx`, nothing to install; for CI checks, scripts, or generating templates without a mounted editor |
@@ -130,17 +130,16 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 
 ## Optional peers
 
-The editor lazy-loads optional packages via dynamic `import()`, gated by feature use. Quality installs by default; renderer and pusher-js remain optional peers:
+The editor lazy-loads optional packages via dynamic `import()`, gated by feature use. Quality installs by default; the renderer remains an optional peer:
 
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
 | `@templatical/quality`       | Editor mount (Issues panel)     | Optional dependency of the editor, installed by default |
-| `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 
 `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
 
-Without pusher-js, Cloud realtime stays off. Without the renderer or a rendering provider, `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
+Without the renderer or a rendering provider, `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
 
 ### A note on bundler output
 
@@ -155,7 +154,7 @@ module.exports = {
     {
       module: /@templatical[\\/]editor/,
       message:
-        /Can't resolve '(pusher-js|@templatical\/(quality|renderer))'/,
+        /Can't resolve '@templatical\/(quality|renderer)'/,
     },
   ],
 };
@@ -421,7 +420,7 @@ If you prefer not to use a package manager, load the editor directly via script 
 <div id="editor" style="height: 100vh;"></div>
 ```
 
-The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, Pusher, etc.) are code-split into separate chunks and loaded on demand.
+The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, and the rest) are code-split into separate chunks and loaded on demand.
 
 ### Pinning a version
 

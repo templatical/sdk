@@ -189,7 +189,7 @@ Jedes Blatt-Tag in der Mapping-Tabelle oben wird konvertiert — Topols eigener 
 - **Überschriften-Ebenen** — `TitleBlock` unterstützt die Ebenen 1 bis 4. Ein `mj-text`, das ein einzelnes `<h5>` oder `<h6>` umschließt, wird auf Ebene 4 begrenzt.
 - **Die Plattform `google`** — `SocialPlatform` hat kein `google`-Element, daher wird ein `google-href` stattdessen auf `website` abgebildet. Das ist der Normalfall, kein Randfall: Topols eigenes Social-Widget schreibt weiterhin `google-href` für Google+, ein vor Jahren eingestelltes Netzwerk.
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` außerhalb dieser drei wird auf die nächstliegende aufgelöst — und Topols eigener Standardwert ist 35px, also ist das bei Social-Blöcken der Normalfall, nicht die Ausnahme.
-- **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends in einem Topol-Design, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Import.
+- **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends in einem Topol-Design, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Kommentarthread mit der Block-ID als Schlüssel — einen Import.
 
 ## Nicht übertragene Merkmale
 

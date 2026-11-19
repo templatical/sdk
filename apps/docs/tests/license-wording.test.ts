@@ -81,11 +81,15 @@ describe("the licence FAQ", () => {
   });
 });
 
-it("states the shipped BYO collaboration route and excludes hosted Cloud collaboration", () => {
+it("states the shipped BYO collaboration route and does not mention Templatical Cloud", () => {
   for (const path of ["README.md", "apps/docs/license-faq.md"]) {
-    expect(read(path)).toContain("Live collaboration runs over your own backend with `init({ collaboration })`.");
-    expect(read(path)).toContain("Templatical Cloud's hosted collaboration isn't in this SDK release.");
+    expect(read(path)).toContain(
+      "Live collaboration runs over your own backend with `init({ collaboration })`.",
+    );
+    expect(read(path)).not.toMatch(/Templatical Cloud|initCloud/);
   }
-  expect(read("apps/docs/de/license-faq.md")).toContain("Live-Zusammenarbeit läuft über Ihr eigenes Backend mit `init({ collaboration })`.");
-  expect(read("apps/docs/de/license-faq.md")).toContain("Die gehostete Zusammenarbeit von Templatical Cloud ist in dieser SDK-Version nicht enthalten.");
+  expect(read("apps/docs/de/license-faq.md")).toContain(
+    "Live-Zusammenarbeit läuft über Ihr eigenes Backend mit `init({ collaboration })`.",
+  );
+  expect(read("apps/docs/de/license-faq.md")).not.toMatch(/Templatical Cloud|initCloud/);
 });

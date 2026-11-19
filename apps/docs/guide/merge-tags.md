@@ -377,7 +377,7 @@ const editor = await init({
 editor.setMergeTags(nextTags);
 ```
 
-Everything that renders a tag reads the same list, so the canvas, the sidebar fields and the built-in picker repaint together. It is available on `initCloud()` too.
+Everything that renders a tag reads the same list, so the canvas, the sidebar fields and the built-in picker repaint together.
 
 ::: warning Mutating the array does not work
 Pushing into the array you passed to `init()` is not supported. It never repaints anything already on screen — only tags rendered *after* the push pick up the change. Call `setMergeTags` instead.
@@ -395,7 +395,7 @@ There is nothing to call and nothing to enable. It runs wherever content arrives
 
 | Path | When |
 |---|---|
-| `init({ content })` / `initCloud({ content })` | before mount |
+| `init({ content })` | before mount |
 | `editor.setContent(content)` | before the content reaches the canvas |
 | `editor.insertBlock(block)` | before the block reaches the canvas |
 | `editor.create({ content })` | before the content becomes editor state |

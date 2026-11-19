@@ -125,9 +125,9 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 2. **Proposes the change and waits** — the packages to add, the files to create or edit, the mount point — before touching anything.
 3. **Writes it**, installing with your own package manager.
 4. **Verifies by running your dev server** and reading its console and network output — not by asking you to check yourself.
-5. **Reports** what changed, what was left alone, and what's still needed — a provider, an optional peer, a Cloud auth endpoint.
+5. **Reports** what changed, what was left alone, and what's still needed — a provider or an optional peer.
 
-Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against a table of verified traps — a missing `style.css` import, a trapped `position: fixed` ancestor, a container with no height, and more.
+Diagnosing an existing integration runs the same steps backwards: it reads your `init()` call, bundler config and CSS setup, and checks each against a table of verified traps — a missing `style.css` import, a trapped `position: fixed` ancestor, a container with no height, and more.
 
 ### Upgrade to a newer release
 
@@ -155,7 +155,7 @@ Custom blocks are consumer-registered runtime extensions — the skill has no wa
 
 ### Never emit `countdown`
 
-`countdown` needs Cloud's server-side animated GIF; the OSS renderer cannot produce it. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
+Rendering `countdown` needs a server-side GIF service the SDK does not ship. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
 
 ### Never emit `slot` or `wrapper`
 

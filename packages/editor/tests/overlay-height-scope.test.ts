@@ -153,7 +153,6 @@ describe("overlay height scope", () => {
     // otherwise make every case below pass. These known consumers are the current floor.
     const files = PANELS.map((panel) => panel.file).sort();
     expect(files).toEqual([
-      "cloud/components/CloudSaveGateModal.vue",
       "components/LogicTagPickerModal.vue",
       "components/MergeTagPickerModal.vue",
       "components/RestoreVersionDialog.vue",

@@ -455,9 +455,6 @@ importers:
         specifier: ^3.5.45
         version: 3.5.45
     devDependencies:
-      pusher-js:
-        specifier: ^8.6.0
-        version: 8.6.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -473,9 +470,6 @@ importers:
       '@templatical/renderer':
         specifier: workspace:*
         version: link:../renderer
-      pusher-js:
-        specifier: ^8.6.0
-        version: 8.6.0
     devDependencies:
       '@lucide/vue':
         specifier: ^1.73.0
@@ -3986,9 +3980,6 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  pusher-js@8.6.0:
-    resolution: {integrity: sha512-wShJPfCS/kYkCBVzVW67wa9cnQIgHTszEK2XHNrFkOgGruuGw081aERAxfRjfdFU+WcIt8x6dvbwkTW4iZuQ8Q==}
-
   qified@0.10.1:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
     engines: {node: '>=20'}
@@ -4332,9 +4323,6 @@ packages:
     resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
-
-  tweetnacl@1.0.3:
-    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -8074,10 +8062,6 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  pusher-js@8.6.0:
-    dependencies:
-      tweetnacl: 1.0.3
-
   qified@0.10.1:
     dependencies:
       hookified: 2.2.0
@@ -8403,8 +8387,6 @@ snapshots:
       esbuild: 0.28.2
     optionalDependencies:
       fsevents: 2.3.3
-
-  tweetnacl@1.0.3: {}
 
   type-check@0.4.0:
     dependencies:

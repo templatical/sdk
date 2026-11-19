@@ -244,7 +244,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact Templatical keyword maps to the nearest one. See [Background images](#background-images).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.
 - **HTML blocks** — for the same reason, an `HtmlBlock`'s content renders as plain `mj-text` markup with nothing marking it as HTML. Importing it back produces a `ParagraphBlock` holding the same markup.
-- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a Cloud comment thread, for example — survives a round trip.
+- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a comment thread keyed by block id, for example — survives a round trip.
 
 ## Things that don't map automatically
 

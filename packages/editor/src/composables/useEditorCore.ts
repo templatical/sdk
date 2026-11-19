@@ -155,10 +155,10 @@ import { collectColorFieldIssues } from "../utils/collectColorFieldIssues";
 import { logger } from "../utils/logger";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
-// Block components — shared between OSS and Cloud editors
+// Built-in block components
 import { defineAsyncComponent } from "vue";
 import ButtonBlock from "../components/blocks/ButtonBlock.vue";
-// Cloud-only at insertion; lazy so OSS users without countdown content pay nothing.
+// Lazy so editors without countdown content do not load it.
 const CountdownBlockComponent = defineAsyncComponent(
   () => import("../components/blocks/CountdownBlock.vue"),
 );
@@ -297,10 +297,7 @@ export interface UseEditorCoreOptions {
     enabled?: () => boolean;
   } | null;
 
-  /** Extra CSS custom properties merged into theme styles (Cloud uses for drop-zone text) */
-  themeExtraStyles?: () => Record<string, string>;
-
-  /** Cloud capabilities exposed to OSS components. Empty in OSS mode. */
+  /** Feature capabilities exposed to editor components. */
   capabilities?: EditorCapabilities;
 
   /**
@@ -429,7 +426,6 @@ export function useEditorCore(
     // whatever the locale is.
     extraStyles: () => ({
       "--tpl-drop-text": `"${translations.canvas.dropHere}"`,
-      ...options.themeExtraStyles?.(),
     }),
   });
 

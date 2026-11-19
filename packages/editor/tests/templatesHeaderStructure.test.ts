@@ -80,7 +80,7 @@ describe("EditorHeader templates surface", () => {
       const header = headerSource();
       const left = header.slice(
         header.indexOf("tpl-header-left"),
-        header.indexOf('name="left-extras"'),
+        header.indexOf('class="tpl-header-center"'),
       );
       expect(left).toContain("<TemplateTimestamp");
       expect(left).toContain("tpl:flex-col");
@@ -128,32 +128,22 @@ describe("EditorHeader templates surface", () => {
   });
 
   describe("one header, not two", () => {
-    // `CloudHeader.vue` was a second copy of this layout kept in step by hand,
-    // and it had already drifted (only it carried `min-w-[200px]`). Cloud now
-    // fills three slots in this component instead.
     it("Editor.vue renders the shared header rather than inline markup", () => {
       expect(editorSource).toContain("<EditorHeader");
       expect(editorSource).not.toContain("<header");
     });
 
-    it("offers a slot in each anchored column", () => {
-      // Two, not three. The centre track carries no slot: its width must stay
-      // constant or it re-centres and moves the Preview button (#574), and a
-      // slot is the one thing a guard test cannot stop someone filling. See
-      // `headerCenterStability.test.ts`.
-      for (const name of ["left-extras", "right-extras"]) {
-        expect(headerSource()).toContain(`<slot name="${name}" />`);
-      }
+    it("has no unused header extension slots", () => {
+      expect(headerSource()).not.toContain('name="left-extras"');
+      expect(headerSource()).not.toContain('name="right-extras"');
       expect(headerSource()).not.toContain("center-extras");
     });
 
-    it("puts the cloud extras between the status indicator and the test email", () => {
+    it("puts the test email after the status indicator", () => {
       const header = headerSource();
       const status = header.indexOf("<TemplateSaveStatus");
-      const extras = header.indexOf('<slot name="right-extras" />');
       const testEmail = header.indexOf('data-testid="test-email-trigger"');
-      expect(status).toBeLessThan(extras);
-      expect(extras).toBeLessThan(testEmail);
+      expect(status).toBeLessThan(testEmail);
     });
   });
 
@@ -254,7 +244,7 @@ describe("EditorHeader templates surface", () => {
 
       const comments = region(
         'data-testid="comments-trigger"',
-        'name="right-extras"',
+        'data-testid="test-email-trigger"',
       );
       const test = region(
         'data-testid="test-email-trigger"',
@@ -303,7 +293,7 @@ describe("EditorHeader templates surface", () => {
       const header = headerSource();
       const comments = header.slice(
         header.indexOf('data-testid="comments-trigger"'),
-        header.indexOf('name="right-extras"'),
+        header.indexOf('data-testid="test-email-trigger"'),
       );
       expect(comments).toContain("backgroundColor: 'var(--tpl-primary-light)'");
       expect(comments).not.toContain("'var(--tpl-primary)'");
@@ -357,13 +347,7 @@ describe("EditorHeader templates surface", () => {
       expect(editorSource).toContain("provider: templatesProvider,");
     });
 
-    it("routes saves through a gate when one is configured", () => {
-      // Cloud's lint save-gate. Without this, a shared header would silently drop
-      // the server's `accessibility.blockOnError` policy, because the save reaches
-      // the provider through the capability rather than through Cloud's own chrome.
-      expect(editorSource).toContain(
-        "getSaveGate: props.cloud ? () => props.cloud!.getSaveGate() : undefined",
-      );
+    it("routes autosaves through the templates feature", () => {
       expect(editorSource).toContain("templates!.requestAutoSave()");
     });
 

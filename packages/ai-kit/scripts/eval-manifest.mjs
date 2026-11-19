@@ -1,6 +1,5 @@
 // Writes eval/MANIFEST.sha256: one `<sha256>  <file>` line per test-set file,
-// sorted by file name. Templatical Cloud's `cloud:ai-eval` copies the folder
-// and checks every file against this list, so run it after any edit:
+// sorted by file name. This pins the SDK's AI eval set; run it after any edit:
 //
 //   pnpm --filter @templatical/ai-kit run eval:manifest
 //

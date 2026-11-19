@@ -9,12 +9,12 @@
   Prefer native blocks — reach for `html` only when nothing else fits, since raw
   HTML is not visually editable afterward.
 - **Never emit `countdown`, `custom`, `slot`, or `wrapper` blocks** (even though
-  the schema allows them): `countdown` needs the Templatical **Cloud** backend to
-  render its animated GIF — the open-source renderer can't, so it would break —
+  the schema allows them): rendering `countdown` needs a server-side GIF service
+  the SDK doesn't ship — the renderer emits a placeholder, not a GIF —
   and `custom` blocks are consumer-registered runtime extensions that can't be
   produced from a prompt. `slot` and `wrapper` are layout markers, not campaign
-  blocks. If the user asks for a countdown, say it's a Cloud feature and offer a
-  static stand-in instead — a `title`/`paragraph` with the date/time, or a "X days
+  blocks. If the user asks for a countdown, say that and offer a
+  static stand-in — a `title`/`paragraph` with the date/time, or a "X days
   to go" line (optionally a `{{merge_tag}}`).
 - **A shell around the email is `init({ layout })`, not more blocks.**
   View-in-browser, an imprint or legal footer, a company address, an

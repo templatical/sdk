@@ -67,7 +67,4 @@ also sanitizes the result; email output keeps the template's HTML. Follow
 
 ## Out of scope
 
-- **Not a Cloud onboarding flow.** `initCloud()` and its provider contracts are
-  covered; signing up, issuing keys and plan entitlements happen in Cloud's own
-  dashboard.
 - **Never touches git.** File changes are the user's to review and commit.

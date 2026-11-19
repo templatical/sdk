@@ -188,10 +188,27 @@ describe("collectPages", () => {
     expect(collectPages(DOCS).some((p) => p.path.startsWith("de/"))).toBe(false);
   });
 
-  it("excludes Cloud from the agent index", () => {
+  it("finds no cloud pages in the live docs tree", () => {
     expect(collectPages(DOCS).some((p) => p.path.startsWith("cloud/"))).toBe(
       false,
     );
+  });
+
+  it("indexes a cloud/ page when one exists, with no directory exclusion", () => {
+    const srcDir = mkdtempSync(join(tmpdir(), "agent-surface-cloud-"));
+    const page = join(srcDir, "cloud", "getting-started.md");
+    mkdirSync(dirname(page), { recursive: true });
+    writeFileSync(
+      page,
+      "---\ndescription: A page under cloud/ is ordinary docs.\n---\n\n# Getting Started\n\nBody.\n",
+    );
+    try {
+      expect(collectPages(srcDir).map((p: { path: string }) => p.path)).toEqual([
+        "cloud/getting-started.md",
+      ]);
+    } finally {
+      rmSync(srcDir, { recursive: true, force: true });
+    }
   });
 
   it("excludes pages marked llms: false", () => {
@@ -484,9 +501,9 @@ Hello {{ first_name }}, your order {{ order.id }} shipped.
     // Nested page — proves the destination directory is created — and
     // carries frontmatter plus merge-tag tokens for the byte-identical check.
     writeFixtureFile(srcDir, "guide/nested.md", NESTED_FIXTURE);
-    // de/ and cloud/ — SKIP_DIRS inversions: copied as raw markdown even
-    // though the generated index omits both. Every other skipped dir is
-    // not walked at all.
+    // de/ is the one SKIP_DIRS inversion: copied as raw markdown even though
+    // the generated index omits it. cloud/ is an ordinary directory here, so
+    // its page is copied too. Every other skipped dir is not walked at all.
     writeFixtureFile(srcDir, "de/root.md", "# Root (DE)\n\nGerman root content.\n");
     writeFixtureFile(srcDir, "de/guide/nested.md", "# Nested (DE)\n\nGerman nested content.\n");
     writeFixtureFile(
@@ -494,9 +511,8 @@ Hello {{ first_name }}, your order {{ order.id }} shipped.
       "cloud/getting-started.md",
       "# Getting Started\n\nCloud fixture.\n",
     );
-    // One page under each SKIP_DIRS entry other than "de" and "cloud" —
-    // none may reach the output, and their containing directory is never
-    // even walked.
+    // One page under each SKIP_DIRS entry other than "de" — none may reach
+    // the output, and their containing directory is never even walked.
     writeFixtureFile(srcDir, "node_modules/skip.md", "# Skip\n\nnode_modules.\n");
     writeFixtureFile(srcDir, ".vitepress/skip.md", "# Skip\n\n.vitepress.\n");
     writeFixtureFile(srcDir, "public/skip.md", "# Skip\n\npublic.\n");
@@ -513,7 +529,7 @@ Hello {{ first_name }}, your order {{ order.id }} shipped.
     rmSync(destDir, { recursive: true, force: true });
   });
 
-  it("returns exactly the markdown pages, excluding every skip-dir except de/ and cloud/", () => {
+  it("returns exactly the markdown pages, excluding every skip-dir except de/", () => {
     const copied = copyMarkdownSources(destDir, srcDir);
     expect([...copied].sort()).toEqual(
       [

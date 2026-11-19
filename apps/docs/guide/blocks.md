@@ -26,7 +26,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Navigation links | [Menu](#menu) | Horizontal link list with separators |
 | Tabular data | [Table](#table) | Data table with optional header styling |
 | Video preview | [Video](#video) | Clickable thumbnail (email clients don't support embedded video) |
-| Countdown to a deadline | [Countdown](#countdown) | Animated timer; rendering needs Templatical Cloud |
+| Countdown to a deadline | [Countdown](#countdown) | Animated timer; rendering needs a server-side GIF service the SDK does not ship |
 | Raw markup | [HTML](#html) | Escape hatch for custom code |
 | Domain-specific content | [Custom](#custom) | Your own block types with fields and Liquid templates |
 
@@ -254,8 +254,8 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 
 A live countdown to a deadline, rendered as an animated GIF.
 
-::: warning Rendering requires Templatical Cloud
-An animated GIF has to be generated per recipient at send time, which a browser cannot do. The open-source renderer has no renderer for this block: it emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). On a hosted backend that can render GIFs, the block renders normally.
+::: warning Rendering needs a server-side GIF service
+An animated GIF has to be generated per recipient at send time, which a browser cannot do. The SDK does not ship that service. `@templatical/renderer` emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). A `blockRenderers.countdown` override can emit an image when you generate the GIF yourself.
 :::
 
 | Property | Type | Description |

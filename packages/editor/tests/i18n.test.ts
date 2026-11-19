@@ -6,24 +6,14 @@ import en from "../src/i18n/locales/en";
 import de from "../src/i18n/locales/de";
 import ptBR from "../src/i18n/locales/pt-BR";
 
-import cloudEn from "../src/i18n/locales/cloud/en";
-import cloudDe from "../src/i18n/locales/cloud/de";
-
 import {
   getBaseLocale,
   loadTranslations,
-  loadCloudTranslations,
   isLocaleSupported,
-  isCloudLocaleSupported,
   getSupportedLocales,
-  getSupportedCloudLocales,
 } from "../src/i18n";
 import { useI18n } from "../src/composables/useI18n";
-import {
-  useCloudI18n,
-  useCloudI18nStrict,
-} from "../src/composables/useCloudI18n";
-import { TRANSLATIONS_KEY, CLOUD_TRANSLATIONS_KEY } from "../src/keys";
+import { TRANSLATIONS_KEY } from "../src/keys";
 
 function withProvide<T>(
   setup: () => T,
@@ -162,34 +152,6 @@ describe("getSupportedLocales", () => {
   });
 });
 
-describe("getSupportedCloudLocales", () => {
-  it("returns cloud-supported locales", () => {
-    const locales = getSupportedCloudLocales();
-    expect(locales).toContain("en");
-    expect(locales).toContain("de");
-  });
-});
-
-describe("isCloudLocaleSupported", () => {
-  it("returns true for supported cloud locales", () => {
-    expect(isCloudLocaleSupported("en")).toBe(true);
-    expect(isCloudLocaleSupported("de")).toBe(true);
-    expect(isCloudLocaleSupported("pt-BR")).toBe(true);
-  });
-
-  it("returns true for region variants of supported cloud locales", () => {
-    expect(isCloudLocaleSupported("en-US")).toBe(true);
-    expect(isCloudLocaleSupported("de-AT")).toBe(true);
-    expect(isCloudLocaleSupported("pt-br")).toBe(true);
-  });
-
-  it("returns false for unsupported cloud locales", () => {
-    expect(isCloudLocaleSupported("fr")).toBe(false);
-    expect(isCloudLocaleSupported("pt")).toBe(false);
-    expect(isCloudLocaleSupported("pt-PT")).toBe(false);
-  });
-});
-
 describe("loadTranslations", () => {
   it("loads English OSS translations", async () => {
     const t = await loadTranslations("en");
@@ -256,47 +218,6 @@ describe("loadTranslations", () => {
   });
 });
 
-describe("loadCloudTranslations", () => {
-  it("loads English cloud translations", async () => {
-    const t = await loadCloudTranslations("en");
-    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
-  });
-
-  it("loads German cloud translations", async () => {
-    const t = await loadCloudTranslations("de");
-    expect(t.loading.initializing).toBe("Initialisieren...");
-  });
-
-  it("loads pt-BR cloud translations", async () => {
-    const t = await loadCloudTranslations("pt-BR");
-    expect(t.loading.initializing).toBe("Inicializando...");
-  });
-
-  it("does not map pt or pt-PT to pt-BR cloud translations", async () => {
-    const pt = await loadCloudTranslations("pt");
-    const ptPT = await loadCloudTranslations("pt-PT");
-    expect(pt.loading.initializing).toBe("Initializing...");
-    expect(ptPT.loading.initializing).toBe("Initializing...");
-  });
-
-  it("normalizes locale with region", async () => {
-    const t = await loadCloudTranslations("en-US");
-    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
-  });
-
-  it("falls back to English for unsupported cloud locale", async () => {
-    const t = await loadCloudTranslations("fr");
-    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
-  });
-
-  it("falls back to English when only OSS translation exists for the locale", async () => {
-    // Simulates an OSS-only contributor: cloud locale not yet translated.
-    // The fallback resolves cloud independently of OSS.
-    const t = await loadCloudTranslations("xx");
-    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
-  });
-});
-
 describe("plural locale entries", () => {
   it("provides plural pairs for every migrated counted string", () => {
     for (const key of [
@@ -360,55 +281,6 @@ describe("OSS locale parity", () => {
   }
 });
 
-describe("cloud locale parity", () => {
-  // Skip-if-absent: only enforces parity for cloud locale files that exist.
-  // An OSS-only contributor adding `locales/fr.ts` without `locales/cloud/fr.ts`
-  // does not fail this test — the cloud chunk simply falls back to English.
-  const cloudLocales = import.meta.glob<{ default: typeof cloudEn }>(
-    "../src/i18n/locales/cloud/*.ts",
-    { eager: true },
-  );
-  const cloudEnEntries = getNestedEntries(cloudEn).sort(([a], [b]) =>
-    a.localeCompare(b),
-  );
-
-  for (const [path, mod] of Object.entries(cloudLocales)) {
-    const locale = localeFromPath(path);
-    if (locale === "en") continue;
-
-    describe(`cloud locale ${locale}`, () => {
-      const localeEntries = getNestedEntries(mod.default).sort(([a], [b]) =>
-        a.localeCompare(b),
-      );
-
-      it("has the same nested keys as cloud/en", () => {
-        expect(localeEntries.map(([k]) => k)).toEqual(
-          cloudEnEntries.map(([k]) => k),
-        );
-      });
-
-      it("preserves placeholder tokens for every key", () => {
-        const localeMap = new Map(localeEntries);
-        const mismatches: Array<{
-          key: string;
-          en: string[];
-          locale: string[];
-        }> = [];
-        for (const [key, enValue] of cloudEnEntries) {
-          const localeValue = localeMap.get(key);
-          if (localeValue === undefined) continue;
-          const enPh = getPlaceholders(enValue);
-          const localePh = getPlaceholders(localeValue);
-          if (enPh.join(",") !== localePh.join(",")) {
-            mismatches.push({ key, en: enPh, locale: localePh });
-          }
-        }
-        expect(mismatches).toEqual([]);
-      });
-    });
-  }
-});
-
 describe("useI18n", () => {
   it("uses override translations", () => {
     const { t } = useI18n(en);
@@ -441,9 +313,7 @@ describe("useI18n", () => {
     });
 
     it("formats actual translation strings", () => {
-      expect(format(cloudEn.header.templatesUsed, { used: 3, max: 10 })).toBe(
-        "3/10 templates used",
-      );
+      expect(format(en.footer.poweredBy, {})).toBe("Powered by");
     });
   });
 
@@ -500,51 +370,5 @@ describe("useI18n", () => {
         "useI18n() requires a translations provider. Ensure the component renders inside the editor, below Editor.vue.",
       );
     });
-  });
-});
-
-describe("useCloudI18n", () => {
-  it("returns null when no cloud translations are provided", () => {
-    const { t } = withProvide(() => useCloudI18n(), {});
-    expect(t).toBeNull();
-  });
-
-  it("returns the injected cloud translations", () => {
-    const { t } = withProvide(() => useCloudI18n(), {
-      [CLOUD_TRANSLATIONS_KEY as symbol]: cloudEn,
-    });
-    expect(t?.header.templatesUsed).toBe("{used}/{max} templates used");
-  });
-
-  it("unwraps Ref<CloudTranslations>", () => {
-    const cloudRef = ref(cloudEn);
-    const { t } = withProvide(() => useCloudI18n(), {
-      [CLOUD_TRANSLATIONS_KEY as symbol]: cloudRef,
-    });
-    expect(t?.header.templatesUsed).toBe("{used}/{max} templates used");
-  });
-
-  it("uses override over injected", () => {
-    const { t } = withProvide(() => useCloudI18n(cloudDe), {
-      [CLOUD_TRANSLATIONS_KEY as symbol]: cloudEn,
-    });
-    expect(t?.loading.initializing).toBe("Initialisieren...");
-  });
-});
-
-describe("useCloudI18nStrict", () => {
-  it("returns non-null cloud translations when provided", () => {
-    const { t } = withProvide(() => useCloudI18nStrict(), {
-      [CLOUD_TRANSLATIONS_KEY as symbol]: cloudEn,
-    });
-    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
-  });
-
-  it("throws when no cloud translations are provided", () => {
-    expect(() => {
-      withProvide(() => useCloudI18nStrict(), {});
-    }).toThrow(
-      "useCloudI18nStrict() requires a cloud translations provider. Ensure the component renders inside an editor mounted with initCloud().",
-    );
   });
 });

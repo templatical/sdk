@@ -78,6 +78,35 @@ describe("retired docs routes", () => {
     );
   });
 
+  it("sends every retired Cloud page to the backend page that replaced it", () => {
+    const target = (from: string) => list.find((rule) => rule.from === from)?.to;
+    const pairs: Array<[string, string]> = [
+      ["/cloud/templates", "/backend/templates"],
+      ["/cloud/comments", "/backend/comments"],
+      ["/cloud/version-history", "/backend/version-history"],
+      ["/cloud/saved-blocks", "/backend/saved-blocks"],
+      ["/cloud/collaboration", "/backend/collaboration"],
+      ["/cloud/ai", "/backend/ai"],
+      ["/cloud/test-emails", "/backend/test-email"],
+      ["/cloud/media-library", "/backend/media"],
+      ["/cloud/rendering", "/backend/render"],
+      ["/cloud/saved-modules", "/backend/saved-blocks"],
+      ["/cloud/snapshots", "/backend/version-history"],
+      ["/cloud/getting-started", "/backend/"],
+      ["/cloud/authentication", "/backend/"],
+      ["/cloud/headless-api", "/backend/"],
+      ["/cloud/mcp", "/backend/"],
+      ["/cloud/multi-tenant", "/backend/"],
+      ["/cloud/template-scoring", "/backend/"],
+      ["/cloud/", "/backend/"],
+      ["/cloud", "/backend/"],
+    ];
+    for (const [from, to] of pairs) {
+      expect(target(from), from).toBe(to);
+      expect(target(`/de${from}`), `/de${from}`).toBe(`/de${to}`);
+    }
+  });
+
   it("mirrors every English rule for German", () => {
     const german = new Set(
       list.filter((rule) => rule.from.startsWith("/de/")).map((r) => `${r.from} ${r.to}`),

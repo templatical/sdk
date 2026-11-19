@@ -17,13 +17,9 @@ export type BlockRenderer = (block: Block, context: RenderContext) => string;
  * built-in renderer for that type wholesale — including its hidden-on-all-
  * viewports check, which becomes the override's responsibility.
  *
- * Generalises `renderCustomBlock`, which is the same idea for one block type. Its
- * reason to exist is that Templatical Cloud's render output is a deliberate
- * *superset*: countdown blocks resolve to a server-generated animated GIF and
- * video thumbnails get a composited play button, neither of which a browser can
- * do at render time. With this hook Cloud's renderer is the published one plus
- * two injected functions, so parity for every other block type holds by
- * construction instead of by review.
+ * Generalises `renderCustomBlock`, which handles one block type. A backend can
+ * inject renderers for server-generated countdown GIFs or composited video
+ * thumbnails while retaining the built-in output for every other block type.
  */
 export type BlockRendererMap = Partial<Record<BlockType, BlockRenderer>>;
 

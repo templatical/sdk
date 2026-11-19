@@ -73,6 +73,11 @@ describe("per-page canonical URL", () => {
     expect(canonicalOf(head)).toEqual([]);
     expect(ogUrlOf(head)).toEqual([]);
   });
+
+  it("does not strip URLs from the sitemap", () => {
+    expect(config.sitemap?.hostname).toBe("https://docs.templatical.com");
+    expect(config.sitemap?.transformItems).toBeUndefined();
+  });
 });
 
 describe("per-page social metadata", () => {

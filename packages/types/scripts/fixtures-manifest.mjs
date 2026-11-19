@@ -1,6 +1,6 @@
 // Writes tests/fixtures/operations/MANIFEST.sha256: one `<sha256>  <file>`
-// line per fixture, sorted by file name. Templatical Cloud copies the folder
-// and checks every file against this list, so run it after any fixture edit:
+// line per fixture, sorted by file name. Run it after any fixture edit so the
+// manifest continues to check the exact fixture set:
 //
 //   pnpm --filter @templatical/types run fixtures:manifest
 //

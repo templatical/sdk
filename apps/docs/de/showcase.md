@@ -30,9 +30,9 @@ Sie bauen ein Mailchimp-ähnliches Produkt, ein Automatisierungs-Tool oder eine 
 - Der Drop-in-Editor wird mit einem Funktionsaufruf gemountet — kein Umbau Ihres bestehenden Dashboards.
 - Theming über Design-Tokens sorgt dafür, dass die E-Mails Ihrer Kunden sich nativ in Ihre Marke einfügen, nicht in Templaticals.
 - Anzeigebedingungen und Merge-Tags sind eingebaut — wichtig für personalisierungslastige Newsletter-Nutzung.
-- Cloud ist der gemanagte Adapter für KI-Umschreibung und Echtzeit-Zusammenarbeit sowie gehosteten Speicher — Kommentare, Versionsverlauf und gespeicherte Blöcke sind Provider, die Sie an `init()` übergeben, gestützt auf Ihren eigenen Speicher.
+- Kommentare, Versionsverlauf, gespeicherte Blöcke, KI-Umschreibung und Echtzeit-Zusammenarbeit sind Provider, die Sie an `init()` übergeben, gestützt auf Ihren eigenen Speicher.
 
-**Typisches Setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) im Kunden-Dashboard eingebettet, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) für MJML und danach jede MJML-Bibliothek für HTML, optional Cloud-Tarif für KI/Collab.
+**Typisches Setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) im Kunden-Dashboard eingebettet, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) für MJML und danach jede MJML-Bibliothek für HTML.
 
 ### CRM- oder Marketing-Automation-Produkt
 
@@ -43,14 +43,14 @@ Sie bauen ein CRM, ein Sales-Engagement-Tool oder eine Marketing-Automation-Plat
 - Eigene Blöcke lassen Sie Daten Ihres Produkts (Kontaktfelder, Deal-Infos, berechnete Werte) als first-class Inhaltsblöcke anbieten, die Kunden in E-Mails ziehen können.
 - Echtzeit-Zusammenarbeit erlaubt es Sales- und Marketing-Teams, Kampagnen-Templates gemeinsam zu bearbeiten, ohne sich gegenseitig zu überschreiben.
 
-**Typisches Setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) mit `customBlocks` für Ihre Domänen-Entitäten, plus [`@templatical/core/cloud`](https://www.npmjs.com/package/@templatical/core) für Collab, falls gewünscht; Kommentare sind ein `comments`-Provider an `init()`.
+**Typisches Setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) mit `customBlocks` für Ihre Domänen-Entitäten, `init({ collaboration })` für die gemeinsame Bearbeitung und ein `comments`-Provider an `init()`.
 
 ### Interner E-Mail-Komponent
 
 Sie bauen kein kundenfacings Produkt — Sie brauchen ein kontrolliertes Werkzeug, mit dem Ihr Team Transactional- und Marketing-E-Mails designt, mit dem JSON-Output gespeichert in Ihren eigenen Systemen.
 
 **Templatical passt, weil:**
-- Vollständig selbst hostbar. Das SDK hat keine zwingende Cloud-Abhängigkeit.
+- Vollständig selbst hostbar.
 - UI in 9 Sprachen und Sprachversionen eines Templates: englische, deutsche, portugiesische, spanische, katalanische, französische, niederländische, japanische und dänische UI sowie optionale [Template-Sprachversionen](/de/guide/localized-templates).
 - TypeScript-strict end-to-end, was die Anbindung an bestehende interne Tools und Codegen-Pipelines vereinfacht.
 

@@ -1,6 +1,6 @@
 ---
 title: Connect your backend
-description: Saving, version history, comments, collaboration, saved blocks, media, test emails, rendering and AI are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
+description: Saving, version history, comments, collaboration, saved blocks, media, test emails, rendering and AI are each one config key holding methods you implement.
 ---
 
 # Connect your backend

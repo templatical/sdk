@@ -16,8 +16,6 @@ const REPO = join(DOCS, "../..");
 const SCENES_DIR = join(REPO, "apps/playground/src/scenes");
 
 const SKIP_DIRS = new Set([
-  "cloud",
-  "de/cloud",
   "public",
   "node_modules",
   ".vitepress",

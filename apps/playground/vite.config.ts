@@ -6,6 +6,7 @@ import { inlineStyleCssPlugin } from '../../packages/editor/scripts/inline-style
 import { readBuildInfo } from './scripts/build-info.ts';
 
 const packagesDir = resolve(import.meta.dirname, '../../packages');
+const editorEntry = resolve(packagesDir, 'editor/src/index.ts');
 
 export default defineConfig({
     // The SDK version and commit this build runs, shown in the settings menu
@@ -47,10 +48,6 @@ export default defineConfig({
             // Resolve workspace packages to source for dev — avoids needing pre-built dist
             '@templatical/editor/src': resolve(packagesDir, 'editor/src'),
             '@templatical/editor': resolve(packagesDir, 'editor/src/index.ts'),
-            '@templatical/core/cloud': resolve(
-                packagesDir,
-                'core/src/cloud/index.ts',
-            ),
             '@templatical/core': resolve(packagesDir, 'core/src/index.ts'),
             '@templatical/types': resolve(packagesDir, 'types/src/index.ts'),
             '@templatical/ai-kit/client': resolve(
@@ -113,17 +110,19 @@ export default defineConfig({
         rolldownOptions: {
             output: {
                 manualChunks(id: string) {
+                    // The editor has a single static importer, so without a pin
+                    // Rolldown folds its CSS into the entry's host stylesheet,
+                    // which inline-style-css rejects as a mixed asset.
+                    if (id === editorEntry) {
+                        return 'editor';
+                    }
                     // Vue runtime — cached across navigations
                     if (id.includes('/vue/') || id.includes('@vue/reactivity')) {
                         return 'vue-runtime';
                     }
-                    // VueUse — shared between App and Cloud pages
+                    // VueUse — shared across playground pages
                     if (id.includes('@vueuse/')) {
                         return 'vueuse';
-                    }
-                    // Pusher — only needed when Cloud collaboration is active
-                    if (id.includes('pusher-js')) {
-                        return 'pusher';
                     }
                 },
             },

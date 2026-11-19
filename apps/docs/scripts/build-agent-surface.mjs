@@ -10,13 +10,11 @@
 // tests/build-agent-surface.test.ts asserts the committed files equal a fresh
 // generation, the same guard build-changelog.mjs carries.
 //
-// English only. The de/ mirror is deliberately absent from the index: agents
-// work in English for an API surface, and a mirrored index would double its
-// size for no gain. Cloud is absent too: that tier is WIP and has no OSS
-// clients, and listing it sends agents into pages that contradict the BYO
-// contracts. Per-page raw markdown (served by the buildEnd hook in
-// .vitepress/config.ts) still covers every locale and cloud/: it copies every
-// page, inlining only `<<<` includes.
+// English only. The de/ mirror is absent from the index: agents work in
+// English for an API surface, and a mirrored index would double its size for
+// no gain. Per-page raw markdown (served by the buildEnd hook in
+// .vitepress/config.ts) still covers every locale: it copies every page,
+// inlining only `<<<` includes.
 import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -43,7 +41,6 @@ const EXCLUDED = new Set(["changelog.md"]);
 // this generator writes — walking it would feed the output back into the input.
 const SKIP_DIRS = new Set([
   "de",
-  "cloud",
   "node_modules",
   ".vitepress",
   "public",
@@ -322,7 +319,7 @@ export function renderIndex(pages, meta) {
  * Strip a body's own leading H1. `renderFull()` supplies the entry's heading
  * itself (from `page.title`, the same fallback chain the index uses) — the
  * body's leading H1 is redundant at best and, on a page whose frontmatter
- * title differs from its H1 (e.g. cloud/getting-started.md), a second,
+ * title differs from its H1, a second,
  * different heading right after the first. Anchored to the very start of the
  * string, so only a genuinely leading H1 is removed; a heading further down
  * the body is real content and stays.
@@ -402,9 +399,9 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
  * `index.md` basename while cleanUrls serves the page itself at the bare
  * directory URL.
  *
- * Called from VitePress's buildEnd hook. Covers every locale, including de/,
- * and cloud/: it copies every page, inlining only `<<<` includes. Only the
- * generated index is English-only and Cloud-free. Not routed through public/:
+ * Called from VitePress's buildEnd hook. Covers every locale, including de/:
+ * it copies every page, inlining only `<<<` includes. Only the generated
+ * index is English-only. Not routed through public/:
  * that directory is copied to the output root, and mirroring a route tree
  * inside it invites collisions with real routes.
  */
@@ -414,7 +411,7 @@ export function copyMarkdownSources(outDir, docsDir = DOCS_DIR) {
     for (const entry of readdirSync(dir)) {
       const abs = join(dir, entry);
       if (statSync(abs).isDirectory()) {
-        if (!SKIP_DIRS.has(entry) || entry === "de" || entry === "cloud") {
+        if (!SKIP_DIRS.has(entry) || entry === "de") {
           walkAll(abs);
         }
         continue;

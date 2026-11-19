@@ -20,15 +20,14 @@ import { notifyHandler, wrapReportedError } from "./error-reporting";
 
 export interface UseCommentsOptions {
   /**
-   * Storage backend. Supplied by the consumer via `init({ comments })`, or by
-   * Cloud's own adapter — this composable is transport-agnostic and never talks
-   * to a network itself.
+   * Storage backend supplied by the consumer via `init({ comments })`.
+   * This composable is transport-agnostic and never talks to a network itself.
    */
   provider: CommentsProvider;
   /**
    * Which template's conversation this is. A getter rather than a value because a
-   * session can outlive the template: `initCloud()` constructs the feature at
-   * setup and only learns the id once `create()` / `load()` resolves.
+   * session can outlive the template and only learns the id once
+   * `create()` / `load()` resolves.
    */
   getTemplateId: () => string | null;
   /**
@@ -449,9 +448,8 @@ export interface UseCommentListenerOptions {
  *
  * A no-op when the provider has no `subscribe` — realtime is optional, and
  * comments without it work exactly the same except that a colleague's comment
- * only appears on the next read. Nothing here knows about a transport: Cloud's
- * Pusher channel lives inside `createCloudCommentsProvider`, and an SSE or
- * long-poll implementation is the same three lines on the consumer's side.
+ * only appears on the next read. Nothing here knows about a transport;
+ * providers can use SSE, long polling, or another delivery mechanism.
  *
  * Re-subscribes when the template id changes, and unsubscribes on scope dispose —
  * so a session that loads a second template does not keep receiving the first

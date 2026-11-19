@@ -182,7 +182,7 @@ createVideoBlock({
 
 ### Countdown
 
-`createCountdownBlock` builds a countdown block, but countdown GIFs need Cloud or a `blockRenderers.countdown` override — the OSS renderer emits a placeholder.
+`createCountdownBlock` builds a countdown block. Rendering it needs a server-side GIF service the SDK does not ship. The renderer emits a placeholder unless `blockRenderers.countdown` supplies an image.
 
 ### Section
 

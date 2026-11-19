@@ -24,7 +24,7 @@ misbehaves · [docs.md](docs.md) for anything not covered here
 other required runtime dependencies. `@templatical/quality` is an optional
 dependency installed separately by default. There is **no** framework component —
 no `<TemplaticalEditor />`, no Vue SFC export, no `@templatical/react`. The
-public API is `init()` / `initCloud()` / `unmount()` in every stack, including
+public API is `init()` / `unmount()` in every stack, including
 React. The `useRef` + `useEffect` wrapper below is that API used
 idiomatically, not a missing-component workaround.
 
@@ -32,7 +32,7 @@ idiomatically, not a missing-component workaround.
 npm install @templatical/editor
 ```
 
-`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. The default install is recommended for the Issues panel and lint badges. `@templatical/renderer` and `pusher-js` stay optional peers; install them only for the features used (see [failure-modes.md](failure-modes.md)).
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. The default install is recommended for the Issues panel and lint badges. `@templatical/renderer` stays an optional peer; install it only for the feature used (see [failure-modes.md](failure-modes.md)).
 
 ## Host capability map
 
@@ -203,31 +203,6 @@ The full-stack examples share these files byte for byte (React Router names the 
 - `providers.ts`, the editor's `fetch`-based providers
 
 Only the framework glue differs. When a consumer's repository uses one of these frameworks, follow that example's file layout. The provider contracts are in [providers.md](providers.md).
-
-## Cloud
-
-`initCloud()` is the same mount with Cloud's storage, comments, saved blocks,
-test email and rendering wired in behind an auth endpoint the consumer
-hosts — swap the import, add `auth`, nothing else about the mount changes:
-
-```ts
-import { initCloud } from "@templatical/editor";
-
-const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
-});
-```
-
-Cloud AI is not available. For the AI assistant, Rewrite, Fix with AI and Write alt text today, bring your own AI provider through `init({ ai })`: [providers.md](providers.md) and [docs.md](docs.md) → `/backend/ai` and `/guide/bring-your-own-ai`.
-
-Issuing keys, plan entitlements and the Cloud account itself are Cloud's own
-dashboard — this skill documents `initCloud()`'s shape and the provider
-contracts it fills in, not signup. The auth endpoint the consumer's server
-needs to implement is in [docs.md](docs.md) → `cloud/getting-started`.
-
-Countdown is Cloud-only. `paletteBlocks` (or any other `init()` key) cannot
-turn it on under a plain `init()` — see [failure-modes.md](failure-modes.md).
 
 ## Display conditions
 

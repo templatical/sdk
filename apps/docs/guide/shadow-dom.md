@@ -11,7 +11,7 @@ This page is the canonical reference for the isolation model. If you just want t
 
 ## Isolation
 
-When you call `init()` or `initCloud()` and pass a container element, Templatical:
+When you call `init()` and pass a container element, Templatical:
 
 1. Calls `container.attachShadow({ mode: 'open' })` to create a shadow root on your element.
 2. Mounts the Vue app inside the shadow root instead of replacing the container's children directly.
@@ -115,7 +115,7 @@ What you lose:
 
 What still works:
 
-- Every other feature is identical: same blocks, same i18n, same cloud features, same API surface. The boundary is the only change.
+- Every other feature is identical: same blocks, same i18n, same API surface. The boundary is the only change.
 
 ### Hardening light-DOM mode against host CSS
 

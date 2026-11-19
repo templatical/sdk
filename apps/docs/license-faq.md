@@ -38,8 +38,6 @@ Releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-l
 
 Yes. Every `@templatical/*` package and the Agent Skill are MIT-licensed open source.
 
-## Cloud tier
+## Providers
 
-**No.** The Cloud tier is optional. The SDK can run standalone; features that connect to your data use providers you implement.
-
-Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release. Comments, saved blocks, version history, test email, media and [AI](/backend/ai) use providers you implement on `init()`. Cloud is one adapter, not the feature.
+Comments, saved blocks, version history, test email, media, [AI](/backend/ai) and live collaboration are providers you pass to `init()`. Live collaboration runs over your own backend with `init({ collaboration })`.

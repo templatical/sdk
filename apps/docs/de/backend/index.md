@@ -1,6 +1,6 @@
 ---
 title: Backend anbinden
-description: Speichern, Versionsverlauf, Kommentare, Zusammenarbeit, gespeicherte Blöcke, Medien, Test-E-Mails, Rendering und KI sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren eigenen Stack oder gegen Templatical Cloud.
+description: Speichern, Versionsverlauf, Kommentare, Zusammenarbeit, gespeicherte Blöcke, Medien, Test-E-Mails, Rendering und KI sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren.
 ---
 
 # Backend anbinden

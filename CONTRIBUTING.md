@@ -17,10 +17,9 @@ Not sure what to pick up?
 A pnpm workspace of `@templatical/*` packages. `@templatical/types` is the root of the dependency graph; `@templatical/editor` is the leaf and bundles its **required runtime** — Vue, `core`, `types` and every transitive Vue library — inline. `@templatical/quality` is an optional dependency installed separately by default. A few things that surprise people:
 
 - **`types` builds first, and nothing needs building before it** — the media types it references resolve through its tsconfig `paths` to media-library's *source*, so no `dist/` need exist. A workspace dependency there is forbidden: it would close `types → media-library → core → types`, which pnpm rejects with `ERR_PNPM_TASK_CYCLE` before running anything, and the cycle guard in `packages/editor/tests/consumer-fixture.test.ts` keeps it out.
-- **`Editor.vue` is the only editor component.** There is no `CloudEditor.vue` — Cloud is an optional attachment on the same component, reached through a type-only import so no cloud code is statically reachable from the `init()` entry.
+- **`Editor.vue` is the only editor component.** `init()` mounts it.
 - **Typecheck needs no build** — each package's tsconfig `paths` map sibling `@templatical/*` imports straight to source, so `pnpm run typecheck` works on a clean checkout.
 - **The editor mounts in shadow DOM by default** (`shadowDom ?? true`); the `tpl:` Tailwind prefix and `.tpl-*` class prefix are collision protection for the `shadowDom: false` opt-out path.
-- **`@templatical/core/cloud` is a separate subpath export** — importing `@templatical/core` never pulls it in.
 
 For block-level concerns, the docs are usually the right reference: [block reference](https://docs.templatical.com/guide/blocks), [theming](https://docs.templatical.com/guide/theming), [renderer API](https://docs.templatical.com/api/renderer-typescript).
 

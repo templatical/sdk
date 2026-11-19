@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const SRC = resolve(import.meta.dirname, "../src");
@@ -24,7 +24,7 @@ describe("operation vocabulary naming", () => {
     // v1 positioned blocks by index and broadcast between peers with no
     // server order; nothing reads these names any more.
     const index = read("index.ts");
-    const cloud = read("cloud.ts");
+    expect(existsSync(resolve(SRC, "cloud.ts"))).toBe(false);
     for (const name of [
       "TemplateOperation",
       "TemplateOperationPayload",
@@ -33,7 +33,6 @@ describe("operation vocabulary naming", () => {
       "Collaborator",
     ]) {
       expect(index).not.toMatch(new RegExp(`\\b${name}\\b`));
-      expect(cloud).not.toMatch(new RegExp(`\\b${name}\\b`));
     }
   });
 });

@@ -27,7 +27,7 @@ Entries go into `localStorage` under `templatical:media`. `create` stores the fi
 ## Installation
 
 ::: warning Only needed standalone
-Do not install [`@templatical/media-library`](/getting-started/installation#package-overview) next to the editor. `init({ media })` and Cloud's store already ship Browse as a lazy chunk; Vue is not installed. This package is the standalone SDK — `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
+Do not install [`@templatical/media-library`](/getting-started/installation#package-overview) next to the editor. `init({ media })` ships Browse as a lazy chunk; Vue is not installed. This package is the standalone SDK — `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
 :::
 
 ::: code-group
@@ -140,7 +140,7 @@ interface MediaListParams {
   cursor?: string;
   folderId?: string | null;
   category?: MediaCategory;   // "images" | "documents" | "videos" | "audio"
-  templateId?: string;        // when a template is loaded; Cloud ignores
+  templateId?: string;        // when a template is loaded
 }
 
 interface MediaListPage {
@@ -150,7 +150,7 @@ interface MediaListPage {
 ```
 
 - **`id` comes from the provider.** The editor never generates one; it uses whatever `create()` returns.
-- **`templateId` is opportunistic.** Passed on `list` / `create` / `importFromUrl` when a template is loaded; omitted on a blank canvas. Media is not gated on it. Cloud ignores it; a CMS that scopes a gallery per template reads it here.
+- **`templateId` is opportunistic.** Passed on `list` / `create` / `importFromUrl` when a template is loaded; omitted on a blank canvas. Media is not gated on it. A CMS that scopes a gallery per template reads it here.
 - **Ordering comes from the provider.** The editor renders `list()`'s order and never re-sorts.
 - **Timestamps are display only.** Omit both and no label renders.
 - **`maxFileSize` / `mimeTypes`** on the provider are a client pre-check, not a security boundary — the backend must enforce too. The upload zone's hint is built from them, and files they reject are named under it.

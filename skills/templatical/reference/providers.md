@@ -59,8 +59,7 @@ already up.
 `setLocale(locale: string): void` selects the default or an existing version; an unknown version throws `SdkError` with code `unknown_locale`.
 `onLocaleChange?: (locale: string) => void` receives the language the canvas shows (`getLocale()`) whenever it changes: a selected version, a fallback to the default, or a new default while the default is shown (Make default, its undo or redo, another session's `setDefaultLocale`, or a loaded or restored template whose default differs).
 
-Full contracts and Cloud as one implementation of each: [docs.md](docs.md) →
-the `backend/` pages.
+Full contracts: [docs.md](docs.md) → the `backend/` pages.
 
 Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. The three first-party adapters accept these files; an adapter of your own that doesn't sets `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.
 

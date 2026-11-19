@@ -7,10 +7,8 @@ export default defineConfig({
   target: 'es2022',
   sourcemap: true,
   clean: true,
-  // tsconfig.build.json excludes tests. PlanConfig's media/storage types are
-  // local Cloud wire types, so they inline in the bundled .d.ts rather than
-  // becoming an external import. declarationMap stays off — sources aren't
-  // published.
+  // tsconfig.build.json excludes tests. declarationMap stays off because
+  // sources are not published.
   dts: {
     resolver: 'tsc',
     tsconfig: 'tsconfig.build.json',

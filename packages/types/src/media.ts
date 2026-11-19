@@ -76,15 +76,14 @@ export interface MediaFolder {
  * cannot page or search.
  *
  * `templateId` is opportunistic — present when a template is loaded, omitted
- * on a blank canvas. Cloud's store ignores it; a CMS that scopes a gallery
- * per template reads it here.
+ * on a blank canvas. A CMS that scopes a gallery per template reads it here.
  */
 export interface MediaListParams {
   search?: string;
   cursor?: string;
   folderId?: string | null;
   category?: MediaCategory;
-  /** When a template is loaded; Cloud ignores. */
+  /** When a template is loaded. */
   templateId?: string;
 }
 
@@ -112,7 +111,7 @@ export interface MediaUsageInfo {
 
 /**
  * Quota snapshot for the storage ring. `storage()` may resolve `null` when
- * the store does not track quota (or, for Cloud, until plan config has loaded).
+ * the store does not track quota.
  */
 export interface MediaStorageInfo {
   usedBytes: number;
@@ -182,10 +181,8 @@ export interface MediaFoldersProvider {
  * Configuration and outward notifications for the media library. Every member
  * is optional.
  *
- * Separate from the storage methods so `initCloud()` can accept this half
- * alone: these fire the same way whichever store holds the assets, Cloud's
- * own or yours. {@link MediaProvider} extends this, so one object satisfies
- * both entry points.
+ * Separate from storage methods. {@link MediaProvider} extends this with
+ * methods for listing, creating, and updating assets.
  *
  * `maxFileSize` / `mimeTypes` are a **client pre-check**, not a security
  * boundary — the backend must enforce too.

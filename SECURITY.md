@@ -51,7 +51,6 @@ In scope:
 Out of scope (please report these to the appropriate vendor instead):
 
 - Third-party dependencies — open an advisory upstream; we'll bump versions once a fix lands
-- Templatical Cloud infrastructure (templatical.com, api.templatical.com) — email `security@templatical.com` directly
 - Demo content on `play.templatical.com` (rate-limited, no real user data)
 - Self-hosted deployments configured by third parties
 

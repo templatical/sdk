@@ -179,7 +179,7 @@ init({
 });
 ```
 
-Removes the field from the header, whether or not your provider can save. `editor.create({ name })`, `setName()` and the `name` in each save patch keep working, so your own chrome can still manage names. `initCloud()` accepts the same key on its own `templates` object.
+Removes the field from the header, whether or not your provider can save. `editor.create({ name })`, `setName()` and the `name` in each save patch keep working, so your own chrome can still manage names.
 
 With the field hidden, the write time becomes the header's only left-column content.
 
@@ -244,7 +244,7 @@ router.beforeEach((to, from, next) => {
 });
 ```
 
-`onDirtyChange` works with or without a provider, at the config root either way. `initCloud()` accepts `unsavedChangesGuard` on its own `templates` object, on the same terms — Cloud always has a store to save to, so the guard is on there unless you refuse it.
+`onDirtyChange` works with or without a provider, at the config root either way.
 
 ## The instance API
 

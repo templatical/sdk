@@ -15,7 +15,6 @@
       ],
       "@templatical/ai-kit": ["../../packages/ai-kit/src/index.ts"],
       "@templatical/core": ["../../packages/core/src/index.ts"],
-      "@templatical/core/cloud": ["../../packages/core/src/cloud/index.ts"],
       "@templatical/media-library": [
         "../../packages/media-library/src/index.ts"
       ],

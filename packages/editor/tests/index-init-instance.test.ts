@@ -1,29 +1,11 @@
 // @vitest-environment happy-dom
-//
-// Exercises the public SDK entry surface that `index-init.test.ts` and
-// `shadow-mount.test.ts` don't: the `initCloud()` flow, the top-level
-// `unmount()` export, and the instance methods
-// (getContent/setContent/setTheme/renderCustomBlock/getCustomBlockStylesheet)
-// in both their pre-ready (ref null) and post-ready branches.
-//
-// `initCloud()` is now a wrapper over `init()`: it bootstraps auth + the plan,
-// builds Cloud's adapters, and mounts the *same* `Editor.vue`. So there is no
-// second component to mock and no `ready` event to resolve — what is asserted
-// instead is that Cloud's providers arrive as ordinary `init()` config keys and
-// that both entry points return the same instance shape.
-//
-// Vue / Editor.vue / i18n are mocked the same way as shadow-mount.test.ts so we
-// drive just the entry logic, not the editor's full bootstrap. A `setup()`
-// render is invoked to capture the props passed to `h(...)`, including the
-// template `ref` — we then set the instance ourselves.
+// Public init() instance methods before and after Editor.vue becomes ready.
+// Mock Vue rendering to capture the editor ref and exercise the entry surface.
 
-import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import {
   createDefaultTemplateContent,
   createParagraphBlock,
   createSlotBlock,
-  createWrapperBlock,
-  type TemplateContent,
 } from "@templatical/types";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
@@ -41,26 +23,7 @@ const fakeApps: Array<{
   unmount: ReturnType<typeof vi.fn>;
 }> = [];
 
-// Stand-ins for what `bootstrapCloud` hands back. The real thing is covered by
-// `createCloudRuntime.test.ts`; here we only care that the wrapper forwards it.
-const bootstrapCalls: boolean[] = [];
-const fakeRuntime = { attach: vi.fn(), ready: vi.fn(), destroy: vi.fn() };
-const fakeProviders = {
-  templates: { load: vi.fn(), create: vi.fn(), save: vi.fn() },
-  render: { toMjml: vi.fn(async () => "<mjml>cloud</mjml>") },
-  versionHistory: {
-    list: vi.fn(),
-    get: vi.fn(),
-    create: false,
-    restore: false,
-  },
-  savedBlocks: { list: vi.fn(), create: false, update: false, delete: false },
-  testEmail: { send: vi.fn() },
-  media: { list: vi.fn(), create: false, update: false, delete: false },
-};
-
 let initFn: typeof import("../src/index").init;
-let initCloudFn: typeof import("../src/index").initCloud;
 let unmountFn: typeof import("../src/index").unmount;
 
 // Builds template content shaped like the #203 repro: a paragraph nested in
@@ -98,14 +61,12 @@ beforeEach(async () => {
   vi.resetModules();
   captured.props = null;
   fakeApps.length = 0;
-  bootstrapCalls.length = 0;
 
   vi.doMock("vue", async () => {
     const actual = await vi.importActual<typeof import("vue")>("vue");
     return {
       ...actual,
       createApp: vi.fn((options: { setup: () => () => unknown }) => {
-        // Run setup() then the render fn so the mocked h captures props.
         options.setup()();
         const app = { mount: vi.fn(), unmount: vi.fn() };
         fakeApps.push(app);
@@ -118,19 +79,10 @@ beforeEach(async () => {
     };
   });
   vi.doMock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
-  vi.doMock("../src/cloud/createCloudRuntime", () => ({
-    bootstrapCloud: vi.fn(async () => {
-      bootstrapCalls.push(true);
-      return { runtime: fakeRuntime, providers: fakeProviders };
-    }),
-  }));
   vi.doMock("../src/i18n", () => ({
     loadTranslations: vi.fn(() => Promise.resolve({})),
-    loadCloudTranslations: vi.fn(() => Promise.resolve({})),
   }));
   vi.doMock("../src/composables", () => ({
-    // `customFonts` / `defaultFallback` are what `resolveRenderFonts` reads to
-    // build the render payload's fonts half.
     useFonts: vi.fn(() => ({
       fonts: { value: [] },
       customFonts: { value: [] },
@@ -143,323 +95,11 @@ beforeEach(async () => {
 
   const mod = await import("../src/index");
   initFn = mod.init;
-  initCloudFn = mod.initCloud;
   unmountFn = mod.unmount;
 });
 
 afterEach(() => {
   vi.useRealTimers();
-});
-
-// Omit `content`: `{}` is truthy and `assertNoSlotInContent` walks `blocks`.
-function cloudConfig(
-  container: HTMLElement,
-  extra: Record<string, unknown> = {},
-) {
-  return {
-    container,
-    shadowDom: false,
-    ...extra,
-  } as unknown as Parameters<typeof initCloudFn>[0];
-}
-
-describe("initCloud — a thin wrapper over init()", () => {
-  async function mountCloud(refValue: Record<string, unknown> | null) {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const p = initCloudFn(cloudConfig(container));
-    await vi.waitFor(() => expect(captured.props).not.toBeNull());
-    if (refValue) {
-      (captured.props!.ref as Ref<unknown>).value = refValue;
-    }
-    return { instance: await p, container };
-  }
-
-  it("bootstraps Cloud before mounting anything", async () => {
-    const { container } = await mountCloud(null);
-
-    expect(bootstrapCalls.length).toBe(1);
-    expect(fakeApps[0].mount).toHaveBeenCalledWith(container);
-  });
-
-  it("mounts the same Editor.vue, with Cloud's runtime alongside the config", async () => {
-    await mountCloud(null);
-
-    // The proof the collapse worked: one editor component, and the cloud half
-    // arrives as a prop rather than as a second component.
-    expect(captured.props!.cloud).toBe(fakeRuntime);
-    expect(captured.props!.onReady).toBeUndefined();
-  });
-
-  it("passes Cloud's adapters through the ordinary init() config keys", async () => {
-    await mountCloud(null);
-    const config = captured.props!.config as Record<string, unknown>;
-    const templates = config.templates as Record<string, unknown>;
-
-    // `templates` is a new merged object (config keys are layered onto it), so
-    // the storage methods are asserted individually rather than by reference
-    // to `fakeProviders.templates` as a whole.
-    expect(templates.load).toBe(fakeProviders.templates.load);
-    expect(templates.create).toBe(fakeProviders.templates.create);
-    expect(templates.save).toBe(fakeProviders.templates.save);
-    expect(config.render).toBe(fakeProviders.render);
-    expect(config.versionHistory).toBe(fakeProviders.versionHistory);
-    expect(config.savedBlocks).toBe(fakeProviders.savedBlocks);
-    expect(config.testEmail).toBe(fakeProviders.testEmail);
-    expect(config.media).toBe(fakeProviders.media);
-  });
-
-  it("forwards displayConditions including onRequest by reference", async () => {
-    const onRequest = vi.fn(async () => null);
-    const displayConditions = { onRequest };
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const p = initCloudFn(cloudConfig(container, { displayConditions }));
-    await vi.waitFor(() => expect(captured.props).not.toBeNull());
-    await p;
-    const config = captured.props!.config as Record<string, unknown>;
-    expect(config.displayConditions).toBe(displayConditions);
-  });
-
-  it("forwards header actions and toggle opt-outs by reference", async () => {
-    const header = {
-      actions: document.createElement("div"),
-      previewToggle: false,
-      darkModeToggle: false,
-      viewportToggle: false,
-    };
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    await initCloudFn(cloudConfig(container, { header }));
-    expect((captured.props!.config as Record<string, unknown>).header).toBe(
-      header,
-    );
-  });
-
-  it("forwards onRequestMedia as the UI override", async () => {
-    const onRequestMedia = vi.fn();
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const p = initCloudFn(cloudConfig(container, { onRequestMedia }));
-    await vi.waitFor(() => expect(captured.props).not.toBeNull());
-    await p;
-    const config = captured.props!.config as Record<string, unknown>;
-    expect(config.onRequestMedia).toBe(onRequestMedia);
-    expect(config.media).toBe(fakeProviders.media);
-  });
-
-  it("defaults autosave on, at the shared default cadence", async () => {
-    // Autosave and its cadence are two separate keys: `templates.autoSave`
-    // (Cloud differs from `init()` here — on unless refused, since Cloud
-    // always has a store) and `changeDebounce` (Cloud does NOT differ here —
-    // both entry points land on `DEFAULT_AUTO_SAVE_DEBOUNCE_MS`, the one
-    // constant both read; made explicit for Cloud so a consumer's own
-    // `changeDebounce` reaches it through this same config).
-    await mountCloud(null);
-    const config = captured.props!.config as Record<string, unknown>;
-
-    expect((config.templates as Record<string, unknown>).autoSave).toBe(true);
-    expect(config.changeDebounce).toBe(DEFAULT_AUTO_SAVE_DEBOUNCE_MS);
-  });
-
-  it("honours an explicit templates.autoSave: false", async () => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const p = initCloudFn(
-      cloudConfig(container, { templates: { autoSave: false } }),
-    );
-    await vi.waitFor(() => expect(captured.props).not.toBeNull());
-    await p;
-
-    const config = captured.props!.config as Record<string, unknown>;
-    expect((config.templates as Record<string, unknown>).autoSave).toBe(false);
-  });
-
-  it("honours an explicit changeDebounce", async () => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const p = initCloudFn(cloudConfig(container, { changeDebounce: 250 }));
-    await vi.waitFor(() => expect(captured.props).not.toBeNull());
-    await p;
-
-    expect(
-      (captured.props!.config as Record<string, unknown>).changeDebounce,
-    ).toBe(250);
-  });
-
-  it("forwards the unsaved-changes keys init() owns", async () => {
-    // `unsavedChangesGuard` sits on `templates`, alongside `autoSave` and
-    // `nameField`; `onDirtyChange` stays at the config root. Both keys reach
-    // Cloud's mounted config the same way `init()`'s do.
-    const onDirtyChange = vi.fn();
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const p = initCloudFn(
-      cloudConfig(container, {
-        onDirtyChange,
-        templates: { unsavedChangesGuard: false },
-      }),
-    );
-    await vi.waitFor(() => expect(captured.props).not.toBeNull());
-    await p;
-
-    const config = captured.props!.config as Record<string, unknown>;
-    expect(config.onDirtyChange).toBe(onDirtyChange);
-    expect(
-      (config.templates as Record<string, unknown>).unsavedChangesGuard,
-    ).toBe(false);
-  });
-
-  // The container is claimed when `initCloud()` is called, so a selector that
-  // matches nothing fails before any auth, health or plan request goes out.
-  it("throws when the container selector matches nothing, before bootstrapping", async () => {
-    await expect(
-      initCloudFn(
-        cloudConfig(document.createElement("div"), {
-          container: "#does-not-exist",
-        }),
-      ),
-    ).rejects.toThrow(/Container element not found/);
-    expect(bootstrapCalls).toEqual([]);
-  });
-
-  // `layout` and `content` are checked when `initCloud()` is called too, so an
-  // illegal one fails before any request goes out.
-  it.each([
-    {
-      name: "a layout with no slot",
-      seed: {
-        layout: {
-          blocks: [createParagraphBlock({ content: "<p>Header</p>" })],
-          settings: {},
-        } as TemplateContent,
-      },
-      error: "[Templatical] layout: must contain exactly one slot block",
-    },
-    {
-      name: "content holding a slot",
-      seed: {
-        content: {
-          blocks: [createSlotBlock()],
-          settings: {},
-        } as TemplateContent,
-      },
-      error: "[Templatical] slot is not a valid content block",
-    },
-    {
-      name: "content holding a wrapper",
-      seed: {
-        content: {
-          blocks: [createWrapperBlock()],
-          settings: {},
-        } as TemplateContent,
-      },
-      error: "[Templatical] wrapper is not a valid content block",
-    },
-  ])("rejects $name before bootstrapping", async ({ seed, error }) => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-
-    await expect(initCloudFn(cloudConfig(container, seed))).rejects.toThrow(
-      error,
-    );
-    expect(bootstrapCalls).toEqual([]);
-  });
-
-  it("rejects when the bootstrap fails, rather than mounting a dead editor", async () => {
-    const { bootstrapCloud } = await import("../src/cloud/createCloudRuntime");
-    vi.mocked(bootstrapCloud).mockRejectedValueOnce(
-      new Error("Health check failed: API is not reachable"),
-    );
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-
-    await expect(initCloudFn(cloudConfig(container))).rejects.toThrow(
-      /API is not reachable/,
-    );
-    expect(fakeApps.length).toBe(0);
-  });
-
-  it("returns the same instance shape init() does", async () => {
-    // `TemplaticalCloudEditor` *is* `TemplaticalEditor` — the convergence is the
-    // proof, so a divergent member would be a regression rather than a feature.
-    const fakeEditor = {
-      getContent: vi.fn(() => ({ blocks: [] })),
-      setContent: vi.fn(),
-      setTheme: vi.fn(),
-      renderCustomBlock: vi.fn(),
-      getCustomBlockStylesheet: vi.fn(),
-      create: vi.fn(async () => ({ id: "t1", content: {} })),
-      load: vi.fn(async () => ({ id: "t2", content: {} })),
-      save: vi.fn(async () => ({ id: "t3", content: {} })),
-      isDirty: vi.fn(() => false),
-    };
-    const { instance } = await mountCloud(fakeEditor);
-
-    expect(Object.keys(instance).sort()).toEqual([
-      "create",
-      "getContent",
-      "getCustomBlockStylesheet",
-      "getLocale",
-      "insertBlock",
-      "isDirty",
-      "load",
-      "refreshPreview",
-      "renderCustomBlock",
-      "save",
-      "setContent",
-      "setLocale",
-      "setMergeTags",
-      "setTheme",
-      "toHtml",
-      "toMjml",
-      "unmount",
-    ]);
-  });
-
-  it("resolves toMjml through the render provider the bootstrap supplied", async () => {
-    const fakeEditor = {
-      getContent: vi.fn(() => ({ blocks: [] })),
-      setContent: vi.fn(),
-      setTheme: vi.fn(),
-      renderCustomBlock: vi.fn(),
-      getCustomBlockStylesheet: vi.fn(),
-    };
-    const { instance } = await mountCloud(fakeEditor);
-
-    await expect(instance.toMjml()).resolves.toBe("<mjml>cloud</mjml>");
-  });
-
-  it("takes init()'s create(input) shape, not a bare TemplateContent", async () => {
-    const fakeEditor = {
-      getContent: vi.fn(() => ({})),
-      setContent: vi.fn(),
-      setTheme: vi.fn(),
-      renderCustomBlock: vi.fn(),
-      getCustomBlockStylesheet: vi.fn(),
-      create: vi.fn(async () => ({ id: "t1", content: {} })),
-      load: vi.fn(),
-      save: vi.fn(),
-      isDirty: vi.fn(() => false),
-    };
-    const { instance } = await mountCloud(fakeEditor);
-
-    await instance.create({ name: "Fresh" });
-    expect(fakeEditor.create).toHaveBeenCalledWith({ name: "Fresh" });
-  });
-
-  it("unmounts through the one editor registry", async () => {
-    const { instance } = await mountCloud({
-      getContent: vi.fn(() => ({})),
-      setContent: vi.fn(),
-      setTheme: vi.fn(),
-      renderCustomBlock: vi.fn(),
-      getCustomBlockStylesheet: vi.fn(),
-    });
-
-    instance.unmount();
-    expect(fakeApps[0].unmount).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe("OSS init — instance methods", () => {
@@ -757,8 +397,8 @@ describe("OSS init — instance methods", () => {
       expect(config.content).not.toBe(content);
     });
 
-    // `init()` mounts on a copy of the config itself, as `initCloud()` does, so
-    // the prepared `layout` and `content` never land on the caller's object,
+    // `init()` mounts on a copy of the config itself, so the prepared
+    // `layout` and `content` never land on the caller's object,
     // which may be frozen.
     it("init() leaves the caller's config untouched", async () => {
       const container = document.createElement("div");
@@ -898,14 +538,9 @@ describe("top-level unmount()", () => {
   });
 });
 
-describe("templates-scoped config on Cloud", () => {
+describe("resolveAutoSave", () => {
   it("resolveAutoSave falls back to defaultEnabled only when value is undefined", () => {
-    // A direct unit test of the helper's `??` semantics, not of `initCloud()`
-    // — `initCloud()` inlines `config.templates?.autoSave ?? true` in
-    // `index.ts` rather than calling this function, and the package's one
-    // real call site is `Editor.vue`'s, which always passes `false`.
-    // "Defaults autosave on" and "lets the provider object turn it off" are
-    // covered behaviourally above, through a real `initCloud()` call.
+    // The helper uses `??`: only an undefined value selects the default.
     expect(resolveAutoSave(undefined, true)).toBe(true);
     expect(resolveAutoSave(false, true)).toBe(false);
     expect(resolveAutoSave(true, false)).toBe(true);

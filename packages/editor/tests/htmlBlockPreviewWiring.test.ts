@@ -19,25 +19,14 @@ describe("htmlBlockPreview config wiring", () => {
     );
   });
 
-  // `initCloud()` forwards it by mapping its own config onto `init()`'s — there
-  // is one `useEditorCore` call site now, so this is the only hop left.
-  it("initCloud forwards config.htmlBlockPreview into the init() config", () => {
-    expect(readSrc("index.ts")).toContain(
-      "htmlBlockPreview: config.htmlBlockPreview",
-    );
-  });
-
   it("useEditorCore provides the normalized HTML_BLOCK_PREVIEW_KEY", () => {
     const src = readSrc("composables/useEditorCore.ts");
     expect(src).toContain("HTML_BLOCK_PREVIEW_KEY");
     expect(src).toContain("resolveHtmlBlockPreview(config.htmlBlockPreview)");
   });
 
-  it("both public config types expose htmlBlockPreview", () => {
+  it("the public config type exposes htmlBlockPreview", () => {
     expect(readSrc("index.ts")).toContain(
-      "htmlBlockPreview?: HtmlBlockPreviewConfig",
-    );
-    expect(readSrc("cloud/cloudConfig.ts")).toContain(
       "htmlBlockPreview?: HtmlBlockPreviewConfig",
     );
   });

@@ -78,13 +78,13 @@ reviews:
       instructions: |
         - Popups teleport into the editor's popover root (`<Teleport :to="popoverRoot">` with `usePopoverRoot()`), never `<Teleport to="body">`: the editor mounts in a shadow root by default.
         - Focus and selection go through `useEditorRoot()`, never `document.activeElement` or `window.getSelection()` directly. Two document-level uses are intentional: `composables/useFonts.ts` appends font links to `document.head`, and the editor keydown listener sits on `document`.
-        - User-visible strings come from `useI18n()`, or `useCloudI18n()` for Cloud-only UI, never hardcoded. A new or changed key lands in every locale file under `src/i18n/locales/` (or `src/i18n/locales/cloud/` for Cloud strings) in the same PR. Interpolation uses `format()`, not `.replace()`.
+        - User-visible strings come from `useI18n()`, never hardcoded. A new or changed key lands in every locale file under `src/i18n/locales/` in the same PR. Interpolation uses `format()`, not `.replace()`.
         - On/off controls use `components/ToggleSwitch.vue`. A native `<input type="checkbox">` is not allowed.
         - Classes use the `tpl:` Tailwind prefix and `tpl-` component classes. An element carrying the bare `tpl` class must also bind `:style="themeStyles"`, or it resets the consumer's theme for its subtree.
         - A dialog panel inside `TplModal` caps its height with a percentage such as `max-h-[90%]`, never `vh`: a transformed ancestor in the host page traps `position: fixed`.
-        - Panels and dialogs load with `defineAsyncComponent`. Don't statically import a lazy component, a Cloud module or an optional peer (`@templatical/renderer`, `@templatical/quality`, `pusher-js`) into the eager graph. `Editor.vue` imports `src/cloud/runtime.ts` with `import type` only.
+        - Panels and dialogs load with `defineAsyncComponent`. Don't statically import a lazy component or an optional peer (`@templatical/renderer`, `@templatical/quality`) into the eager graph.
         - `inject()` uses a `Symbol` key from `keys.ts` with an explicit `null` default and a null check, never a bare string key or an `undefined as unknown as T` cast.
-        - A new `TemplaticalEditorConfig` key also goes into the config literal in `Editor.vue`, `useEditorCore`'s options, `initCloud()`'s forward in `index.ts`, and the Agent Skill under `skills/templatical/reference/`. Without the `Editor.vue` literal the option is silently inert.
+        - A new `TemplaticalEditorConfig` key also goes into the config literal in `Editor.vue`, `useEditorCore`'s options, and the Agent Skill under `skills/templatical/reference/`. Without the `Editor.vue` literal the option is silently inert.
         - Every `<VueDraggable>` keeps `:force-fallback="true"`, and `draggable="false"` never appears on `BlockWrapper`.
 
     - path: "packages/editor/package.json"
@@ -94,20 +94,19 @@ reviews:
 
     - path: "packages/editor/vite.*config.ts"
       instructions: |
-        - `external` lists only the optional peers (`@templatical/quality`, `@templatical/renderer`, `pusher-js`).
+        - `external` lists only the optional peers (`@templatical/quality`, `@templatical/renderer`).
         - `manualChunks` in `vite.cdn.config.ts` groups third-party dependencies only, never first-party source: grouping first-party modules makes lazy chunks eager.
         - `@tailwindcss/vite` stays in both configs, or the published CSS loses every utility.
 
     - path: "packages/core/src/**"
       instructions: |
-        - `vue` is aliased to `@vue/reactivity` at build time. Don't import Vue runtime APIs (components, `provide`/`inject`, lifecycle hooks) in core or `core/cloud`.
-        - The dynamic `import("pusher-js")` stays wrapped in try/catch with an install hint, because `pusher-js` is an optional peer.
+        - `vue` is aliased to `@vue/reactivity` at build time. Don't import Vue runtime APIs (components, `provide`/`inject`, lifecycle hooks) in core.
         - Content snapshots use `safeClone` from `@templatical/types`, never a bare `JSON.parse(JSON.stringify(...))`: Sortable can leave DOM back-references in block data.
 
     - path: "packages/types/**"
       instructions: |
         - `@templatical/types` has no runtime dependencies and must not gain one, including another workspace package.
-        - `src/operations.ts` defines the operations contract, and `tests/fixtures/operations/**` are its test cases (one case per file, run by `tests/operations.test.ts`). The SDK owns this contract and may change cases. Templatical Cloud isn't live; its engine will be built against the fixtures as they stand, so don't ask for Cloud parity or hold a release for Cloud. Do flag a change to the check order, an error code or the accepted wire shapes that the changeset doesn't list as a breaking change, and a fixture change without a regenerated `MANIFEST.sha256`.
+        - `src/operations.ts` defines the operations contract, and `tests/fixtures/operations/**` are its test cases (one case per file, run by `tests/operations.test.ts`). The SDK owns this contract and may change cases. Do flag a change to the check order, an error code or the accepted wire shapes that the changeset doesn't list as a breaking change, and a fixture change without a regenerated `MANIFEST.sha256`.
         - The operations engine writes by assigning and deleting keys, so a Vue proxy's traps see each change. `Object.defineProperty` is used only for a key named `__proto__`.
 
     - path: "packages/import-*/src/**"

@@ -253,7 +253,7 @@ Global template settings are converted where possible:
 - **Display conditions / dynamic content** — Unlayer's conditional content syntax has no direct equivalent and is dropped during conversion. Use Templatical's [display conditions](/guide/display-conditions) to recreate them.
 - **Custom modules / paid-tier blocks** — Unlayer custom blocks are converted to placeholder HTML blocks. Recreate them as a [custom block](/guide/custom-blocks) if reusable.
 - **Forms** — Unlayer form blocks are skipped. Most email clients block form submission for security reasons; rebuild the call-to-action as a button linking to a hosted form.
-- **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: that block needs Cloud's server-side GIF and the OSS renderer cannot produce it. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
+- **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: rendering it needs a server-side GIF service the SDK does not ship. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
 - **Link hover styles and per-block link styles** — `linkStyle.linkHoverColor` and `linkHoverUnderline` have no Templatical field and are dropped. A text block's own `linkStyle` is not read, so its links take the document's link settings.
 - **AMP for Email** — not currently supported in Templatical.
 

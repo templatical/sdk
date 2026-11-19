@@ -1,6 +1,6 @@
 ---
 title: Version History
-description: Browse, preview and restore a template's past versions — over your own storage, or Templatical Cloud's.
+description: Browse, preview and restore a template's past versions, stored by a provider you implement.
 ---
 
 # Version History

@@ -48,7 +48,6 @@ export default defineConfig({
     resolve: {
         alias: {
             '@templatical/media-library': resolve(import.meta.dirname, 'src/index.ts'),
-            '@templatical/core/cloud': resolve(import.meta.dirname, '../core/src/cloud/index.ts'),
             '@templatical/core': resolve(import.meta.dirname, '../core/src/index.ts'),
             '@templatical/types': resolve(import.meta.dirname, '../types/src/index.ts'),
         },

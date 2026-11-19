@@ -100,8 +100,8 @@ describe("config.branding on the real Editor.vue", () => {
 });
 
 /**
- * installation.md promises that init() makes no requests to Templatical. Only
- * src/cloud talks to Templatical, by design, so it is excluded.
+ * installation.md promises that init() makes no requests to Templatical.
+ * Scan every editor source file for remote assets hosted there.
  */
 describe("requests to templatical.com", () => {
   const SRC = join(import.meta.dirname, "../src");
@@ -113,7 +113,7 @@ describe("requests to templatical.com", () => {
       const abs = join(dir, name);
       const rel = relative(SRC, abs).split(sep).join("/");
       if (statSync(abs).isDirectory()) {
-        if (rel !== "cloud") walk(abs, acc);
+        walk(abs, acc);
       } else if (/\.(vue|ts)$/.test(name)) {
         acc.push(rel);
       }
@@ -121,7 +121,7 @@ describe("requests to templatical.com", () => {
     return acc;
   }
 
-  it("no editor source outside src/cloud loads anything from templatical.com", () => {
+  it("no editor source loads remote assets from templatical.com", () => {
     const files = walk(SRC);
     expect(files.length).toBeGreaterThan(50);
     const hits = files.flatMap((rel) =>

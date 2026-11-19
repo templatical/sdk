@@ -375,7 +375,6 @@ describe("design system conformance", () => {
       "components/ai/AiHeaderMenu.vue",
       "components/MergeTagSuggestionList.vue",
       "components/ColorPicker.vue",
-      "cloud/components/CloudSaveGateModal.vue",
     ];
 
     it("every floating surface paints --tpl-bg, not --tpl-bg-elevated", () => {
@@ -609,15 +608,4 @@ describe("design system conformance", () => {
     });
   });
 
-  describe("Cloud loading overlay is announced", () => {
-    it("is a polite busy status labelled from the locale", () => {
-      const src = readFileSync(
-        join(SRC, "cloud/components/CloudLoadingOverlay.vue"),
-        "utf8",
-      );
-      expect(src).toContain('role="status"');
-      expect(src).toContain('aria-busy="true"');
-      expect(src).toContain("cloudT.loading.initializing");
-    });
-  });
 });

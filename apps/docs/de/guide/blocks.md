@@ -26,7 +26,7 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 | Navigationslinks | [Menu](#menu) | Horizontale Linkliste mit Trennzeichen |
 | Tabellarische Daten | [Table](#table) | Datentabelle mit optionaler Kopfzeilenformatierung |
 | Video-Vorschau | [Video](#video) | Klickbares Thumbnail (E-Mail-Clients unterstützen keine eingebetteten Videos) |
-| Countdown bis zu einem Stichtag | [Countdown](#countdown) | Animierter Timer; das Rendern erfordert Templatical Cloud |
+| Countdown bis zu einem Stichtag | [Countdown](#countdown) | Animierter Timer; das Rendern braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert |
 | Rohes Markup | [HTML](#html) | Notausgang für benutzerdefinierten Code |
 | Domänenspezifische Inhalte | [Custom](#custom) | Ihre eigenen Blocktypen mit Feldern und Liquid-Templates |
 
@@ -254,8 +254,8 @@ E-Mail-Clients unterstützen keine eingebettete Videowiedergabe. Der Renderer gi
 
 Ein laufender Countdown bis zu einem Stichtag, gerendert als animiertes GIF.
 
-::: warning Das Rendern erfordert Templatical Cloud
-Ein animiertes GIF muss zum Versandzeitpunkt pro Empfänger erzeugt werden — das kann ein Browser nicht. Der Open-Source-Renderer hat für diesen Block keinen Renderer: Er gibt einen `templatical:unrenderable-block`-Markerkommentar aus und protokolliert eine Warnung, sodass eine Versand-Pipeline das erkennen und ablehnen kann. Siehe [Blöcke ohne Renderer](/de/backend/render#blocke-ohne-renderer). Auf einem gehosteten Backend, das GIFs rendern kann, wird der Block normal gerendert.
+::: warning Das Rendern braucht einen serverseitigen GIF-Dienst
+Ein animiertes GIF muss zum Versandzeitpunkt pro Empfänger erzeugt werden — das kann ein Browser nicht. Das SDK liefert diesen Dienst nicht mit. `@templatical/renderer` gibt einen `templatical:unrenderable-block`-Markerkommentar aus und protokolliert eine Warnung, sodass eine Versand-Pipeline das erkennen und ablehnen kann. Siehe [Blöcke ohne Renderer](/de/backend/render#blocke-ohne-renderer). Ein `blockRenderers.countdown`-Override kann ein Bild ausgeben, wenn Sie das GIF selbst erzeugen.
 :::
 
 | Eigenschaft | Typ | Beschreibung |

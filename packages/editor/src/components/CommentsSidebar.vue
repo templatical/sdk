@@ -114,16 +114,6 @@ function isBlockMissing(blockId: string | null | undefined): boolean {
   return !allBlockIds.value.has(blockId);
 }
 
-const isBlockFilterUnsaved = computed(() => {
-  if (filterMode.value !== "block" || !filterBlockId.value) {
-    return false;
-  }
-  // Asked through the capability rather than off the editor: a comment anchors to
-  // a block in the *saved* template, and only the provider's side knows what that
-  // contains. A store that accepts any anchor answers `true` and this never fires.
-  return props.feature.capability.isBlockSaved(filterBlockId.value) === false;
-});
-
 const filteredComments = computed(() => {
   let items = comments.value.comments.value;
 
@@ -844,13 +834,6 @@ defineExpose({ filterByBlock, focusNewComment });
       class="tpl:border-t tpl:p-3 tpl:border-[var(--tpl-border)]"
     >
       <div
-        v-if="isBlockFilterUnsaved"
-        class="tpl:flex tpl:min-h-[68px] tpl:items-center tpl:rounded-md tpl:px-3 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)]"
-      >
-        {{ t.comments.saveTemplateFirst }}
-      </div>
-      <div
-        v-else
         class="tpl-comments-input-wrapper tpl-focus-ring-host tpl:flex tpl:min-h-[68px] tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
       >
         <textarea

@@ -46,7 +46,6 @@ async function mountSidebar(
       Pick<CommentsProvider, "create" | "update" | "delete" | "setResolved">
     >;
     user?: EditorUser | null;
-    isBlockSaved?: (blockId: string) => boolean;
     filterBlockId?: string | null;
     /** Block ids present on the canvas, so anchored comments aren't "missing". */
     canvasBlockIds?: string[];
@@ -81,7 +80,6 @@ async function mountSidebar(
     provider,
     editor,
     user: opts.user === undefined ? USER : opts.user,
-    isBlockSaved: opts.isBlockSaved,
   });
 
   // The list is read when the panel opens; drive that explicitly rather than
@@ -326,45 +324,20 @@ describe("CommentsSidebar", () => {
       expect(wrapper.text()).not.toContain("on block two");
     });
 
-    it("replaces the composer with a save-first notice for an unsaved block", async () => {
-      // Cloud anchors a comment server-side; a block that only exists on the canvas
-      // has nothing stored to attach to.
+    it("shows the composer for a block filter", async () => {
       const { wrapper } = await mountSidebar({
         threads: [],
-        filterBlockId: "canvas-only",
-        isBlockSaved: () => false,
+        filterBlockId: "selected-block",
       });
-
-      expect(wrapper.text()).toContain("comments.saveTemplateFirst");
-      expect(wrapper.find("textarea").exists()).toBe(false);
-    });
-
-    it("shows the composer when the anchor block is stored", async () => {
-      const { wrapper } = await mountSidebar({
-        threads: [],
-        filterBlockId: "saved-block",
-        isBlockSaved: () => true,
-      });
-
-      expect(wrapper.text()).not.toContain("comments.saveTemplateFirst");
       expect(wrapper.find("textarea").exists()).toBe(true);
     });
   });
 
   describe("i18n", () => {
-    it("reads its strings from the OSS chunk, not the cloud one", () => {
-      // The panel is shared now, so `useCloudI18nStrict` would throw outside a
-      // Cloud session. Structural, because a runtime throw is what a consumer
-      // would otherwise see.
-      const source = String(CommentsSidebar);
-      expect(source).not.toContain("useCloudI18nStrict");
-    });
-
     it("renders no hard-coded English", async () => {
       const { wrapper } = await mountSidebar({
         threads: [comment("c-1", { blockId: "blk-1" })],
         canvasBlockIds: ["blk-1"],
-        isBlockSaved: () => true,
       });
 
       // The jump-to-block button was a bare `Block` literal — the one hard-coded
@@ -531,7 +504,6 @@ describe("CommentsSidebar mutations", () => {
       threads: [],
       filterBlockId: "blk-1",
       canvasBlockIds: ["blk-1"],
-      isBlockSaved: () => true,
     });
     await wrapper.find('[data-testid="comments-input"]').setValue("on this");
     await wrapper.get('[data-testid="comments-send"]').trigger("click");

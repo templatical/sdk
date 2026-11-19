@@ -513,30 +513,4 @@ export type {
   AiTurnResult,
 } from "./ai";
 
-// Cloud types (zero runtime cost — all type-only except re-exported ViewportSize/SyntaxPreset)
-export type {
-  ApiError,
-  ApiResponse,
-  AuthConfig,
-  AuthRequestOptions,
-  CommentResponse,
-  CreateCommentData,
-  DirectAuthConfig,
-  SdkAuthConfig,
-  HealthCheckResult,
-  MediaCategoryData,
-  MediaConfig,
-  PlanConfig,
-  PlanFeatures,
-  PlanLimits,
-  ProxyAuthConfig,
-  StorageInfo,
-  TemplateVersionResponse,
-  TestEmailConfig,
-  TokenData,
-  UpdateCommentData,
-  UserConfig,
-  WebSocketServerConfig,
-} from "./cloud";
-
 export { elementIdIssues } from "./element-ids";

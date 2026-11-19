@@ -124,7 +124,6 @@ const chipOpeners = inject(LOCALE_CHIP_OPENERS_KEY, null);
 const sizeAvailable = computed(
   () =>
     !!sizeCheck &&
-    !sizeCheck.cloud &&
     sizeCheck.canRenderHtml() &&
     sizeCheck.options.disabled !== true &&
     sizeCheck.options.compatibility !== false &&

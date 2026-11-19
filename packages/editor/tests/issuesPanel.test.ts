@@ -60,7 +60,6 @@ function mountPanel(
   sizeCheck?: {
     renderHtml: () => Promise<string>;
     canRenderHtml: () => boolean;
-    cloud: boolean;
     options: {
       locale?: string;
       compatibility?: false | { rules?: Record<string, string> };
@@ -278,7 +277,7 @@ describe("IssuesPanel", () => {
     const wrapper = mountPanel(
       [],
       vi.fn(),
-      { renderHtml, canRenderHtml: () => true, cloud: false, options: {} },
+      { renderHtml, canRenderHtml: () => true, options: {} },
       content,
     );
     expect(renderHtml).not.toHaveBeenCalled();
@@ -322,7 +321,6 @@ describe("IssuesPanel", () => {
     const wrapper = mountPanel([], vi.fn(), {
       renderHtml: async () => "x".repeat(1024),
       canRenderHtml: () => true,
-      cloud: false,
       options: {},
     });
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
@@ -345,28 +343,21 @@ describe("IssuesPanel", () => {
     const wrapper = mountPanel([], vi.fn(), {
       renderHtml: async () => "x".repeat(92_161),
       canRenderHtml: () => true,
-      cloud: false,
       options: { locale: "de" },
     });
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("Gmail schneidet"));
   });
 
-  it("hides size check without a safe provider, in Cloud, or when disabled", () => {
+  it("hides size check without a safe provider or when disabled", () => {
     const options = {};
     const context = {
       renderHtml: vi.fn(async () => "hello"),
       canRenderHtml: () => true,
-      cloud: false,
       options,
     };
     expect(
       mountPanel([], vi.fn(), { ...context, canRenderHtml: () => false })
-        .find('[data-testid="issue-check-size"]')
-        .exists(),
-    ).toBe(false);
-    expect(
-      mountPanel([], vi.fn(), { ...context, cloud: true })
         .find('[data-testid="issue-check-size"]')
         .exists(),
     ).toBe(false);
@@ -396,7 +387,6 @@ describe("IssuesPanel", () => {
         throw new Error("Network unavailable");
       },
       canRenderHtml: () => true,
-      cloud: false,
       options: {},
     });
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
@@ -418,7 +408,7 @@ describe("IssuesPanel", () => {
     const wrapper = mountPanel(
       [],
       vi.fn(),
-      { renderHtml, canRenderHtml: () => true, cloud: false, options: {} },
+      { renderHtml, canRenderHtml: () => true, options: {} },
       content,
     );
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
@@ -451,7 +441,6 @@ describe("IssuesPanel", () => {
     const wrapper = mountPanel([], vi.fn(), {
       renderHtml,
       canRenderHtml: () => true,
-      cloud: false,
       options: {},
     });
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");

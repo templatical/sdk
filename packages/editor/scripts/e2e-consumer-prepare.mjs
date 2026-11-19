@@ -66,13 +66,13 @@ try {
 
   // The dev server the smoke runs against never resolves an `import()` it
   // doesn't reach, so a consumer's production build is the only place an
-  // undeclared optional import fails. The fixture installs no `pusher-js`.
-  // A bare import also resolves from every ancestor node_modules, so the
-  // build proves nothing once `pusher-js` is in one of them. Check those
+  // undeclared optional import fails. A bare import also resolves from every
+  // ancestor node_modules, so the build proves nothing once an optional peer is
+  // in one of them. Check those
   // folders the way a bundler does, not with Node's resolver: it also reads
   // NODE_PATH, which pnpm's `.bin` shims point at its hoist folder, and Vite
   // never consults it.
-  for (const name of ["pusher-js", "@templatical/quality"]) {
+  for (const name of ["@templatical/quality"]) {
     const leaked = ancestorNodeModules(CONSUMER_DIR).find((dir) =>
       existsSync(join(dir, name, "package.json")),
     );

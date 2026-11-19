@@ -652,6 +652,11 @@ export interface TableBlock extends BaseBlock {
   textAlign: "left" | "center" | "right";
 }
 
+/**
+ * A countdown needs a server-side GIF service, which the SDK does not ship.
+ * The renderer emits an unrenderable marker unless `blockRenderers.countdown`
+ * or `render.toMjml` supplies the MJML output.
+ */
 export interface CountdownBlock extends BaseBlock {
   type: "countdown";
   targetDate: string;
@@ -683,8 +688,8 @@ export interface CustomBlock extends BaseBlock {
   renderedHtml?: string;
   /**
    * The definition's `stylesheet`, copied in when `renderedHtml` is written.
-   * A render provider's backend, and Cloud rendering from storage, have no
-   * definition to ask, so `@templatical/renderer` emits this when no
+   * A render provider's backend has no definition to ask, so
+   * `@templatical/renderer` emits this when no
    * `getCustomBlockStylesheet` resolver is passed. A resolver, when passed,
    * decides every type, so a stale copy never overrides a live definition.
    */

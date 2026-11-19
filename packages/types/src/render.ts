@@ -47,7 +47,7 @@ export interface RenderPayload {
  * fail in different ways, and are wanted by different callers. Rendering is never
  * a field on a save result.
  *
- * Pass an implementation as `render` to `init()` or `initCloud()`. **Every method
+ * Pass an implementation as `render` to `init()`. **Every method
  * is independently optional**, and each one the editor resolves on its own:
  *
  * | Call | Order |

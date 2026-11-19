@@ -233,7 +233,7 @@ This catalog explains every `compat.*` rule, its trigger, exclusions, severity a
 
 **What fires:** Compiled HTML larger than `thresholds.maxHtmlBytes` (default `92_160` UTF-8 bytes); equality passes.
 
-**Where it runs:** Never in `lintTemplate` or the editor's live Issues list. Three surfaces measure it: `lintCompiledHtml(html)` on HTML you compile; `templatical validate --html`, which needs the optional `mjml` peer (exit 3 without it); and the editor's **Email size** check, shown only when the [render provider](/backend/render) implements `toHtml` or `compileMjml`, and not in Cloud mode.
+**Where it runs:** Never in `lintTemplate` or the editor's live Issues list. Three surfaces measure it: `lintCompiledHtml(html)` on HTML you compile; `templatical validate --html`, which needs the optional `mjml` peer (exit 3 without it); and the editor's **Email size** check, shown only when the [render provider](/backend/render) implements `toHtml` or `compileMjml`.
 
 **Evidence:** Only `lintCompiledHtml` checks this; template JSON and pass-through scans do not estimate compiled size. Google does not document the approximately 102 KB limit; it comes from community tests, which also show clipping below it after a sending service adds markup.
 

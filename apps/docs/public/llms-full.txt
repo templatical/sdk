@@ -62,7 +62,7 @@ export interface AiRequestBase {
   templateId: string;
   /**
    * The template as the editor has it, after it sent its pending edits. A
-   * backend that holds the template itself (Templatical Cloud) ignores it.
+   * backend that already holds that template can ignore this copy.
    */
   content: TemplateContent;
   /** The collaboration revision `content` is at, or `null` without collaboration. */
@@ -1005,7 +1005,7 @@ If your integration must use an unsupported element (e.g. mounting into a `<form
 
 ### Header actions {#header-actions}
 
-`header.actions` moves a host-owned `HTMLElement` into the header's right column, after AI and before Test email and Save. `header.darkModeToggle`, `header.previewToggle` and `header.viewportToggle` default to `true`; set any of them to `false` to hide that centre control for the entire editor session. The same `header` option works with `initCloud()`.
+`header.actions` moves a host-owned `HTMLElement` into the header's right column, after AI and before Test email and Save. `header.darkModeToggle`, `header.previewToggle` and `header.viewportToggle` default to `true`; set any of them to `false` to hide that centre control for the entire editor session.
 
 ```ts
 import { init } from "@templatical/editor";
@@ -1053,7 +1053,7 @@ const editor = await init({
 - **Strict allowlist + order.** Only the listed types are shown, in exactly this order. Any built-in not listed (here `hero`, `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) is hidden from the palette.
 - **Reference built-ins by their bare type** (`"section"`, `"image"`, …) and **custom blocks by their `custom:`-prefixed type** (`"custom:qrcode"`), so the two can be interleaved freely.
 - **`"hero"` is a shortcut, not a block type.** It inserts a one-column section in hero mode with a title, a paragraph and a button (see [Hero](/guide/sections-and-columns#hero)). List it like a built-in.
-- **Unknown entries are skipped.** A typo, an unregistered custom block, or `countdown` outside a Cloud plan is logged to the console with a warning and left out of the palette.
+- **Unknown entries are skipped.** A typo, an unregistered custom block, or `countdown` is logged to the console with a warning and left out of the palette.
 - **Filtering the palette never affects rendering.** Hiding a block type only removes it from the palette — existing content that already uses that type still renders correctly. `paletteBlocks` controls what users can _insert_, not what the editor can _display_.
 
 Omit `paletteBlocks` (or pass an empty array) to show the full default palette.
@@ -1294,10 +1294,6 @@ const html = await editor.toHtml();
 ```
 
 Resolves `render.toHtml` first, then `toMjml()`'s output through `render.compileMjml`. **Requires one of the two**: the SDK bundles no MJML compiler, so with no `render` provider this always rejects, and the error names the method to add. See [Rendering & Export](/backend/render).
-
-::: tip Cloud editor
-The Cloud editor exposes **both** methods, resolved against Cloud's server-side renderer (or your own `render` provider). Note Cloud renders the _saved_ template, so each call saves first.
-:::
 
 ### `renderCustomBlock(block)`
 
@@ -1714,9 +1710,8 @@ An operation is one change to a template: add, move, delete or update a block, u
 
 - **[Collaboration](/backend/collaboration)** — an editor with `init({ collaboration })` sends every edit to your backend as a batch of operations, and applies other people's batches.
 - **The CLI** — `template-tools edit` applies them to a template file.
-- **Templatical Cloud** — stores every batch with its revision, and AI agents connected to its MCP server edit with the same vocabulary through `edit_template`.
 
-`applyOperations` from `@templatical/types` (MIT) applies them. Templatical Cloud's server runs an engine with the same rules, and a shared set of test cases keeps the two identical.
+`applyOperations` from `@templatical/types` (MIT) applies them. The fixtures in that package are the contract for every caller.
 
 ## The six operations
 
@@ -1856,15 +1851,15 @@ Run `pnpm --filter @templatical/types exec vitest run tests/operations.test.ts t
 
 A refused batch throws an `OperationError` with `code` and `opIndex`, the 0-based index of the refused operation.
 
-| Code                  | When                                                                               | Templatical Cloud answers |
-| --------------------- | ---------------------------------------------------------------------------------- | ------------------------- |
-| `block_exists`        | A new block's id, or an id inside it, is already in the template                   | 409                       |
-| `block_missing`       | The block, parent section, or parent wrapper isn't there                           | 409                       |
-| `anchor_missing`      | The `after` block isn't in the target container                                    | 409                       |
-| `precondition_failed` | `expect` doesn't hold                                                              | 409                       |
-| `lock_held`           | Another session holds the block                                                    | 409                       |
-| `locked_by_others`    | Another session holds a lock, for `setContent` or a change of the default language | 409                       |
-| `invalid_operation`   | The operation is malformed or can never apply                                      | 422                       |
+| Code                  | When                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| `block_exists`        | A new block's id, or an id inside it, is already in the template                   |
+| `block_missing`       | The block, parent section, or parent wrapper isn't there                           |
+| `anchor_missing`      | The `after` block isn't in the target container                                    |
+| `precondition_failed` | `expect` doesn't hold                                                              |
+| `lock_held`           | Another session holds the block                                                    |
+| `locked_by_others`    | Another session holds a lock, for `setContent` or a change of the default language |
+| `invalid_operation`   | The operation is malformed or can never apply                                      |
 
 ### Which error wins
 
@@ -2304,7 +2299,7 @@ npx -y @templatical/template-tools edit emails/welcome.json \
   --op '{"op":"updateBlock","blockId":"button_1","set":{"backgroundColor":"#1d4ed8"}}'
 ```
 
-One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. The operations are the vocabulary the editor, collaboration backends and Templatical Cloud share — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings` and `setContent` — described in the [Operations reference](/api/operations). An operation in the old `{ "operation", "data" }` form is refused with a pointer to the new one.
+One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. The operations are the vocabulary the editor and collaboration backends share — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings` and `setContent` — described in the [Operations reference](/api/operations). An operation in the old `{ "operation", "data" }` form is refused with a pointer to the new one.
 
 A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). When the engine names a block, such as the first block hidden in a language that can't become the default, the message ends with `Block: "<id>".` unless the reason already contains that id in double quotes. A refusal exits `2`, with the message on stderr in both modes and nothing on stdout, also with `--json`. Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
 
@@ -2491,7 +2486,7 @@ The JSON Schema for a custom block working file — a `CustomBlockDefinition` wi
 
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 
-It never imports `@templatical/core`, the editor or the media library. `edit` runs the operation engine from `@templatical/types`: the same engine the editor's collaboration and Templatical Cloud apply, kept identical to Cloud's by shared fixtures. This package is MIT, as are `@templatical/core`, the editor and the media library — safe to run via a bare, unauthenticated `npx`.
+It never imports `@templatical/core`, the editor or the media library. `edit` runs the operation engine from `@templatical/types`: the same engine the editor's collaboration applies, kept identical by shared fixtures. This package is MIT, as are `@templatical/core`, the editor and the media library — safe to run via a bare, unauthenticated `npx`.
 
 `validate <file> --html --json` renders and compiles the email, reports `htmlBytes`, and adds `compat.gmail-clipping` if the compiled HTML exceeds the configured size. It requires the optional `mjml` peer; when absent, exit code `3` and the install hint arrive before any JSON output. `compat.*` findings are warning or info in template validation and never cause exit `1`. `custom-block validate` uses `compat.*` IDs for client facts instead of the old `safety.*` IDs; flex/grid, positioning, SVG, script, `@import`, and external stylesheets remain errors there, while `compat.html-style` is disabled. Issues carry `suggestion` and `reference`, and may include `clients` and `excerpt`.
 
@@ -3270,7 +3265,7 @@ interface HtmlBlock extends BaseBlock {
 
 ### CountdownBlock
 
-Renders as an animated GIF, which requires the Templatical Cloud backend -- `@templatical/renderer` emits a `templatical:unrenderable-block` marker instead. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer).
+Renders as an animated GIF. That needs a server-side GIF service the SDK does not ship. `@templatical/renderer` emits a `templatical:unrenderable-block` marker instead. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer).
 
 ```ts
 interface CountdownBlock extends BaseBlock {
@@ -3504,7 +3499,7 @@ import {
   generateId,
 } from '@templatical/types';
 
-// Countdown GIFs need Cloud or a `blockRenderers.countdown` override; the OSS renderer emits a placeholder.
+// Countdown GIFs need a server-side GIF service the SDK does not ship. The renderer emits a placeholder unless `blockRenderers.countdown` supplies an image.
 
 // Create with defaults
 const paragraph = createParagraphBlock();
@@ -3664,7 +3659,7 @@ export interface AiRequestBase {
   templateId: string;
   /**
    * The template as the editor has it, after it sent its pending edits. A
-   * backend that holds the template itself (Templatical Cloud) ignores it.
+   * backend that already holds that template can ignore this copy.
    */
   content: TemplateContent;
   /** The collaboration revision `content` is at, or `null` without collaboration. */
@@ -4443,7 +4438,7 @@ Serialize the batches of one template: two applied at once would both read the s
 
 ### Locks and ownership
 
-A lock belongs to a session and to the identity behind it together: the user id, or `guest:<sessionId>` for a session without a user. Compare both, as `ownerOf` does above, so a session id borrowed from another user's request can't act on their lock. Give locks a short expiry (Templatical Cloud uses 30 seconds; the editor renews every 10), and when a session takes a new block, release the block it held before. Leave lock checks to `applyOperations`: pass every unexpired lock with its owner, and the acting owner as `session`.
+A lock belongs to a session and to the identity behind it together: the user id, or `guest:<sessionId>` for a session without a user. Compare both, as `ownerOf` does above, so a session id borrowed from another user's request can't act on their lock. Give locks a short expiry (the editor renews every 10 seconds), and when a session takes a new block, release the block it held before. Leave lock checks to `applyOperations`: pass every unexpired lock with its owner, and the acting owner as `session`.
 
 ### Catching up
 
@@ -4700,8 +4695,6 @@ Which of `onResolved` / `onUnresolved` fires is decided by the **stored** result
 A transport that echoes a write back to its sender — `subscribe`'s contract permits it — is compared against the stored comment: an echo that changes nothing is applied silently, with no event.
 
 That bound holds for an echo that lands **after** the mutation's own response. One that arrives first applies as `origin: 'remote'`, and the local call still emits its own `origin: 'local'` event once its response settles — two events for one write, the first attributed to the wrong origin. Keep de-duplicating on your side if your transport can echo that early.
-
-**Templatical Cloud is unaffected.** `createCloudCommentsProvider` stamps every write with an `X-Socket-ID` header, and Cloud's backend excludes that connection when it fans the change back out, so no early echo reaches this editor.
 :::
 
 A handler that throws is caught and reported to `onError` — it never fails the write that triggered it.
@@ -4863,7 +4856,7 @@ Entries go into `localStorage` under `templatical:media`. `create` stores the fi
 ## Installation
 
 ::: warning Only needed standalone
-Do not install [`@templatical/media-library`](/getting-started/installation#package-overview) next to the editor. `init({ media })` and Cloud's store already ship Browse as a lazy chunk; Vue is not installed. This package is the standalone SDK — `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
+Do not install [`@templatical/media-library`](/getting-started/installation#package-overview) next to the editor. `init({ media })` ships Browse as a lazy chunk; Vue is not installed. This package is the standalone SDK — `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
 :::
 
 ::: code-group
@@ -4976,7 +4969,7 @@ interface MediaListParams {
   cursor?: string;
   folderId?: string | null;
   category?: MediaCategory;   // "images" | "documents" | "videos" | "audio"
-  templateId?: string;        // when a template is loaded; Cloud ignores
+  templateId?: string;        // when a template is loaded
 }
 
 interface MediaListPage {
@@ -4986,7 +4979,7 @@ interface MediaListPage {
 ```
 
 - **`id` comes from the provider.** The editor never generates one; it uses whatever `create()` returns.
-- **`templateId` is opportunistic.** Passed on `list` / `create` / `importFromUrl` when a template is loaded; omitted on a blank canvas. Media is not gated on it. Cloud ignores it; a CMS that scopes a gallery per template reads it here.
+- **`templateId` is opportunistic.** Passed on `list` / `create` / `importFromUrl` when a template is loaded; omitted on a blank canvas. Media is not gated on it. A CMS that scopes a gallery per template reads it here.
 - **Ordering comes from the provider.** The editor renders `list()`'s order and never re-sorts.
 - **Timestamps are display only.** Omit both and no label renders.
 - **`maxFileSize` / `mimeTypes`** on the provider are a client pre-check, not a security boundary — the backend must enforce too. The upload zone's hint is built from them, and files they reject are named under it.
@@ -5430,7 +5423,6 @@ What to watch for:
 
 - This is the one arrangement where implementing `toMjml` still puts `@templatical/renderer` in your frontend bundle. The table above describes providers that render elsewhere; here you are calling the local renderer yourself.
 - Custom-block stylesheets arrive on each block as `renderedStylesheet`, and the renderer emits them when you pass no `getCustomBlockStylesheet`. Pass one only to supply the CSS yourself; it then decides every type, and the copies are ignored.
-- `initCloud()` ignores `render`, so this is an `init()` arrangement.
 
 ::: tip Showing it in the preview too
 The canvas shows the template, not the chrome around it. [`resolvePreview`](/guide/preview-rendering#show-what-your-platform-appends-at-send-time) is what puts it there — by calling the same composition function as above, or by asking the backend that appends for real.
@@ -5461,7 +5453,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-It generalises `renderCustomBlock` from one block type to any. A backend whose output is a *superset* of the browser's can inject exactly that delta instead of forking the renderer, and parity for every other block type then holds by construction. Templatical Cloud uses it for two blocks: a server-generated animated countdown GIF and a composited video play button.
+It generalises `renderCustomBlock` from one block type to any. A backend whose output is a *superset* of the browser's can inject exactly that delta instead of forking the renderer, and parity for every other block type then holds by construction. A `blockRenderers.countdown` override emits an image when you generate the GIF yourself; the SDK ships no GIF service.
 
 An override owns everything the built-in did, including the hidden-on-all-viewports early return and `fluid-on-mobile`: an override that emits an `mj-image` adds it with [`fluidOnMobileAttr`](/api/renderer-typescript#fluid-on-mobile-attr), or the image keeps its desktop width on a phone.
 
@@ -5955,7 +5947,7 @@ init({
 });
 ```
 
-Removes the field from the header, whether or not your provider can save. `editor.create({ name })`, `setName()` and the `name` in each save patch keep working, so your own chrome can still manage names. `initCloud()` accepts the same key on its own `templates` object.
+Removes the field from the header, whether or not your provider can save. `editor.create({ name })`, `setName()` and the `name` in each save patch keep working, so your own chrome can still manage names.
 
 With the field hidden, the write time becomes the header's only left-column content.
 
@@ -6020,7 +6012,7 @@ router.beforeEach((to, from, next) => {
 });
 ```
 
-`onDirtyChange` works with or without a provider, at the config root either way. `initCloud()` accepts `unsavedChangesGuard` on its own `templates` object, on the same terms — Cloud always has a store to save to, so the guard is on there unless you refuse it.
+`onDirtyChange` works with or without a provider, at the config root either way.
 
 ## The instance API
 
@@ -6187,7 +6179,7 @@ An empty array reads as a decision ("nobody may be sent to"), not as "unset". Us
 **Validate the recipient on your server**, every time. Without that, your endpoint is an open relay — anyone who can reach it can mail arbitrary addresses from your domain.
 :::
 
-The payload echoes the list back as `allowedRecipients` so one `send` implementation stays portable between your backend and Templatical Cloud. It is **untrusted** — unsigned, and read out of the browser. Beyond portability it is good for one thing: compare it against `recipient` server-side, where a mismatch means a tampered or buggy client and is worth logging.
+The payload echoes the list back as `allowedRecipients`. It is **untrusted** — unsigned, and read out of the browser. Compare it against `recipient` server-side, where a mismatch means a tampered or buggy client and is worth logging.
 
 ## Events
 
@@ -6374,7 +6366,7 @@ A translation may keep, move or drop the inline styles of its default, but not a
 
 A translation that keeps, moves or drops a default style, or has no styles, passes both. `localeStrings` and `applyLocaleStrings` stay pure and don't check styles or sanitize.
 
-`localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. In `html` fields, terms match the decoded text: numeric references, the HTML 4.01 named references, `&apos;` and the uppercase aliases `&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;` and `&REG;` are decoded before matching, so `&apos;` matches a term's `'`. Other named references stay as written, and reference names are case-exact (`&Amp;` stays literal). In `text` fields, terms match the text as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. An extra literal occurrence of a term is plain text: with `["Cloud"]`, the source `Templatical Cloud stores cloud files` masks to `Templatical <x id="1"/> stores cloud files`, and the German `Templatical <x id="1"/> speichert Cloud-Dateien` is accepted, because every placeholder returns exactly once. `TranslationRequest` is unchanged.
+`localization.doNotTranslate?: string[]` protects configured terms with the same exact placeholder check. Omit it to protect only merge and logic tags. `init()` accepts at most 500 terms, each 1–100 characters after trimming; invalid input rejects with `SdkError`: `localization.doNotTranslate must be an array of at most 500 terms, each 1–100 characters.` Matching is case-sensitive and uses whole words: Unicode letters, numbers and `_` are word characters. In `html` fields, terms match the decoded text: numeric references, the HTML 4.01 named references, `&apos;` and the uppercase aliases `&AMP;`, `&COPY;`, `&GT;`, `&LT;`, `&QUOT;` and `&REG;` are decoded before matching, so `&apos;` matches a term's `'`. Other named references stay as written, and reference names are case-exact (`&Amp;` stays literal). In `text` fields, terms match the text as written. Longer terms match first, without overlap, in text content and HTML attribute values. Merge tags and whole chips take precedence over overlapping terms. Every match joins the field's source-order id sequence; successful unmasking restores the original term bytes. A missing or changed placeholder rejects that field with `tags_changed` and keeps its previous value. An extra literal occurrence of a term is plain text: with `["Acme"]`, the source `Acme stores archive files` masks to `<x id="1"/> stores archive files`, and the German `<x id="1"/> speichert Acme-Dateien` is accepted, because every placeholder returns exactly once. `TranslationRequest` is unchanged.
 
 For headless flows, pass the same `doNotTranslate?: readonly string[]` to `localeStrings` and `applyLocaleStrings`; `maskTags(text, syntax, format, { doNotTranslate })` also accepts it. The helpers trim terms when matching; the size limits are validated by `init()`. Existing translations reuse the source's ids. If a stored translation lacks or changes a protected term, a selected field remains eligible: the old translation is not sent, and translation starts from the current default. Check a configured term by translating a field containing it: the provider receives a placeholder and the saved translation contains the original term.
 
@@ -8647,7 +8639,6 @@ By producing MJML instead of HTML directly, Templatical stays lightweight and gi
 | --- | --- | --- |
 | **In the browser** — no `render` provider, or `compileMjml` only | your **frontend** app, next to the editor | **Optional.** `toMjml()` is already at hand when the user saves, so keeping the result avoids re-rendering later. The [Quick Start](/getting-started/quick-start) does this. |
 | **On your backend** — you implement `render.toMjml` | your **backend** — or nothing at all, if it renders in another language | **No.** Your backend produces the MJML as it renders. A browser copy is a second source that can disagree with it. See [Rendering & Export](/backend/render). |
-| **Hosted Cloud** | nowhere — the hosted backend renders from the *saved* template and re-derives on demand | **No.** |
 
 ::: warning A stored render is a cache
 MJML depends on the JSON *and* on your renderer — your fonts config, any `blockRenderers` overrides, the package version itself. Change any of those and stored copies are stale while the JSON still renders correctly. Re-derive rather than repair.
@@ -8697,7 +8688,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
   - **Opt-out mode** (`shadowDom: false`, light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Use this if you need to support older Firefox or Safari, or if your integration requires light-DOM access to editor internals. See the [Shadow DOM guide](../guide/shadow-dom) for trade-offs.
 - **Container element** -- must have a defined height (the editor fills its container). In default mode, must be an element type that can host a shadow root (e.g. `<div>`, `<section>`, `<article>`). See [container element requirements](../api/editor#container-element-requirements).
 - **No `transform`, and no stacking context, on an ancestor of the container** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` below `1`, `isolation`, `contain`, and positioned elements with a `z-index` each change where the editor's overlays are painted or positioned. These are plain CSS rules, not Templatical-specific limitations, and they affect any library that positions overlays with `position: fixed`. See [Embedding the editor](./embedding) for what each one breaks and how to work around it.
-- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. It enables the Issues panel and lint badges; `@templatical/renderer` and `pusher-js` remain optional peers. See [Optional peers](#optional-peers).
+- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. It enables the Issues panel and lint badges; `@templatical/renderer` remains an optional peer. See [Optional peers](#optional-peers).
 
 ## Network requests
 
@@ -8789,7 +8780,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/editor`          | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required                                                                                            |
 | `@templatical/renderer`        | Converts templates to MJML for email sending.                                                                                            | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
 | `@templatical/quality`         | Template linters (accessibility, structure, links, deliverability, compatibility) that drive the editor's Issues panel and a headless / CI check.                             | Optional dependency of the editor, installed by default                        |
-| `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` or Cloud's store |
+| `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
 | `@templatical/template-tools`  | CLI and library for validating, rendering, editing, importing, and live-previewing templates outside the editor.                        | Optional — run via `npx`, nothing to install; for CI checks, scripts, or generating templates without a mounted editor |
@@ -8809,17 +8800,16 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 
 ## Optional peers
 
-The editor lazy-loads optional packages via dynamic `import()`, gated by feature use. Quality installs by default; renderer and pusher-js remain optional peers:
+The editor lazy-loads optional packages via dynamic `import()`, gated by feature use. Quality installs by default; the renderer remains an optional peer:
 
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
 | `@templatical/quality`       | Editor mount (Issues panel)     | Optional dependency of the editor, installed by default |
-| `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 
 `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
 
-Without pusher-js, Cloud realtime stays off. Without the renderer or a rendering provider, `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
+Without the renderer or a rendering provider, `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
 
 ### A note on bundler output
 
@@ -8834,7 +8824,7 @@ module.exports = {
     {
       module: /@templatical[\\/]editor/,
       message:
-        /Can't resolve '(pusher-js|@templatical\/(quality|renderer))'/,
+        /Can't resolve '@templatical\/(quality|renderer)'/,
     },
   ],
 };
@@ -9100,7 +9090,7 @@ If you prefer not to use a package manager, load the editor directly via script 
 <div id="editor" style="height: 100vh;"></div>
 ```
 
-The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, Pusher, etc.) are code-split into separate chunks and loaded on demand.
+The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, and the rest) are code-split into separate chunks and loaded on demand.
 
 ### Pinning a version
 
@@ -9554,9 +9544,9 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 2. **Proposes the change and waits** — the packages to add, the files to create or edit, the mount point — before touching anything.
 3. **Writes it**, installing with your own package manager.
 4. **Verifies by running your dev server** and reading its console and network output — not by asking you to check yourself.
-5. **Reports** what changed, what was left alone, and what's still needed — a provider, an optional peer, a Cloud auth endpoint.
+5. **Reports** what changed, what was left alone, and what's still needed — a provider or an optional peer.
 
-Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against a table of verified traps — a missing `style.css` import, a trapped `position: fixed` ancestor, a container with no height, and more.
+Diagnosing an existing integration runs the same steps backwards: it reads your `init()` call, bundler config and CSS setup, and checks each against a table of verified traps — a missing `style.css` import, a trapped `position: fixed` ancestor, a container with no height, and more.
 
 ### Upgrade to a newer release
 
@@ -9584,7 +9574,7 @@ Custom blocks are consumer-registered runtime extensions — the skill has no wa
 
 ### Never emit `countdown`
 
-`countdown` needs Cloud's server-side animated GIF; the OSS renderer cannot produce it. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
+Rendering `countdown` needs a server-side GIF service the SDK does not ship. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
 
 ### Never emit `slot` or `wrapper`
 
@@ -9643,7 +9633,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Navigation links | [Menu](#menu) | Horizontal link list with separators |
 | Tabular data | [Table](#table) | Data table with optional header styling |
 | Video preview | [Video](#video) | Clickable thumbnail (email clients don't support embedded video) |
-| Countdown to a deadline | [Countdown](#countdown) | Animated timer; rendering needs Templatical Cloud |
+| Countdown to a deadline | [Countdown](#countdown) | Animated timer; rendering needs a server-side GIF service the SDK does not ship |
 | Raw markup | [HTML](#html) | Escape hatch for custom code |
 | Domain-specific content | [Custom](#custom) | Your own block types with fields and Liquid templates |
 
@@ -9871,8 +9861,8 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 
 A live countdown to a deadline, rendered as an animated GIF.
 
-::: warning Rendering requires Templatical Cloud
-An animated GIF has to be generated per recipient at send time, which a browser cannot do. The open-source renderer has no renderer for this block: it emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). On a hosted backend that can render GIFs, the block renders normally.
+::: warning Rendering needs a server-side GIF service
+An animated GIF has to be generated per recipient at send time, which a browser cannot do. The SDK does not ship that service. `@templatical/renderer` emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). A `blockRenderers.countdown` override can emit an image when you generate the GIF yourself.
 :::
 
 | Property | Type | Description |
@@ -11732,7 +11722,7 @@ The editor normalizes locale codes by stripping region suffixes:
 | `'fr-BE'` | `fr` |
 | `'it'` | `en` (unsupported, falls back to English) |
 
-If the resolved locale is not supported, the editor falls back to English and warns once on the console, naming the locales that would have worked. The fallback is silent only for the cloud chunk, which ships fewer locales on purpose (see below).
+If the resolved locale is not supported, the editor falls back to English and warns once on the console, naming the locales that would have worked.
 
 ## Async loading
 
@@ -11871,10 +11861,6 @@ const translations: typeof en = {
 
 export default translations;
 ```
-
-### Cloud strings are optional
-
-Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. The AI assistant, static starters, rewrite, chat attachments and the **Import from screenshot or PDF** shortcut live in the main chunk too, including `ai.chat.*`, `ai.import.*` and `ai.canvas.importHint`. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — the lint save gate and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
 
 Submit a pull request with your translation file. Contributions for any language are welcome.
 
@@ -13290,7 +13276,7 @@ const editor = await init({
 editor.setMergeTags(nextTags);
 ```
 
-Everything that renders a tag reads the same list, so the canvas, the sidebar fields and the built-in picker repaint together. It is available on `initCloud()` too.
+Everything that renders a tag reads the same list, so the canvas, the sidebar fields and the built-in picker repaint together.
 
 ::: warning Mutating the array does not work
 Pushing into the array you passed to `init()` is not supported. It never repaints anything already on screen — only tags rendered *after* the push pick up the change. Call `setMergeTags` instead.
@@ -13308,7 +13294,7 @@ There is nothing to call and nothing to enable. It runs wherever content arrives
 
 | Path | When |
 |---|---|
-| `init({ content })` / `initCloud({ content })` | before mount |
+| `init({ content })` | before mount |
 | `editor.setContent(content)` | before the content reaches the canvas |
 | `editor.insertBlock(block)` | before the block reaches the canvas |
 | `editor.create({ content })` | before the content becomes editor state |
@@ -14190,7 +14176,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `html-block-node` | HTML fragment | Inside the parent rich-text. No entry. |
 | `html-node` | Inline HTML element | Inside the parent rich-text: `<tagName>` with its string attributes; void tags (`br`, `img`, …) self-close. No entry. An `html-node` directly in a column is `html-fallback`. |
 | `mergetag` | <code v-pre>{{ name }}</code> | Inside the parent rich-text, written as Easy Email Pro renders it; the editor turns the token into a merge tag. No entry. |
-| `marketing-countdown` | Overlay text + `ImageBlock` of `src` | The GIF is the timer. Does not emit `type: "countdown"` (Cloud-only). `approximated`. |
+| `marketing-countdown` | Overlay text + `ImageBlock` of `src` | The GIF is the timer. Does not emit `type: "countdown"`: rendering needs a server-side GIF service the SDK does not ship. `approximated`. |
 | kit `common-video` | `VideoBlock` | Converted when a URL is present; otherwise `html-fallback`. |
 | kit shopwindow / qr-code / countdown-v2 | `HtmlBlock` | `JSON.stringify(node)`, `html-fallback`. |
 | `section_widget` / `wrapper_widget` | Children | `$var` from `data.input`; every produced entry `approximated`. |
@@ -14218,7 +14204,7 @@ A `standard-hero`'s `background-url` becomes its section's `backgroundImage`, pa
 - **Custom social PNGs** — An unrecognised `standard-social-element` with a `src` becomes a custom icon and keeps that image, link and alt. A recognised platform's custom `src` is not its built-in glyph, so that image is dropped and the entry is `approximated`.
 - **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
 - **`logic`** — Pro `logic.condition` / `logic.iteration` compile to Liquid (or a custom engine) at `toMJML` time. They are not `displayCondition.{ before, after }`. Empty nodes `skipped`. Populated nodes convert their children and drop the branching.
-- **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block renders on Cloud or through a `blockRenderers.countdown` override and is blank otherwise, so this package does not emit it. The GIF is a static image; the timer does not tick.
+- **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Rendering Templatical's `countdown` block needs a server-side GIF service the SDK does not ship. A `blockRenderers.countdown` override can supply an image; otherwise the renderer emits a placeholder, so this package does not emit `countdown`. The GIF is a static image; the timer does not tick.
 - **Header and footer lock** — `page-header` / `page-footer` content becomes ordinary sections. The fixed position and the `editable` flag have no Templatical equivalent.
 - **Hero inner box** — a `standard-hero`'s `inner-padding` (and its `-top` / `-right` / `-bottom` / `-left` longhands) and `inner-background-color` frame its content in a padded, filled box. A hero section has no inner box, so they are dropped with a note naming each, and the entry is `approximated`; the hero's own `padding` and `background-color` still apply.
 
@@ -14816,7 +14802,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact Templatical keyword maps to the nearest one. See [Background images](#background-images).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.
 - **HTML blocks** — for the same reason, an `HtmlBlock`'s content renders as plain `mj-text` markup with nothing marking it as HTML. Importing it back produces a `ParagraphBlock` holding the same markup.
-- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a Cloud comment thread, for example — survives a round trip.
+- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a comment thread keyed by block id, for example — survives a round trip.
 
 ## Things that don't map automatically
 
@@ -15215,7 +15201,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
 - **The `google` platform** — `SocialPlatform` has no `google` member, so a `google-href` maps to `website` instead. This is the common case, not an edge case: Topol's own social widget still writes `google-href` for Google+, a network retired years ago.
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `icon-size` outside those three resolves to the nearest one — and Topol's own default is 35px, so this is the common case for social blocks, not the exception.
-- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear anywhere in a Topol design, so nothing that keys off one — a Cloud comment thread, for example — survives an import.
+- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear anywhere in a Topol design, so nothing that keys off one — a comment thread keyed by block id, for example — survives an import.
 
 ## Things that don't map automatically
 
@@ -15489,7 +15475,7 @@ Global template settings are converted where possible:
 - **Display conditions / dynamic content** — Unlayer's conditional content syntax has no direct equivalent and is dropped during conversion. Use Templatical's [display conditions](/guide/display-conditions) to recreate them.
 - **Custom modules / paid-tier blocks** — Unlayer custom blocks are converted to placeholder HTML blocks. Recreate them as a [custom block](/guide/custom-blocks) if reusable.
 - **Forms** — Unlayer form blocks are skipped. Most email clients block form submission for security reasons; rebuild the call-to-action as a button linking to a hosted form.
-- **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: that block needs Cloud's server-side GIF and the OSS renderer cannot produce it. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
+- **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: rendering it needs a server-side GIF service the SDK does not ship. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
 - **Link hover styles and per-block link styles** — `linkStyle.linkHoverColor` and `linkHoverUnderline` have no Templatical field and are dropped. A text block's own `linkStyle` is not read, so its links take the document's link settings.
 - **AMP for Email** — not currently supported in Templatical.
 
@@ -15921,7 +15907,7 @@ createVideoBlock({
 
 ### Countdown
 
-`createCountdownBlock` builds a countdown block, but countdown GIFs need Cloud or a `blockRenderers.countdown` override — the OSS renderer emits a placeholder.
+`createCountdownBlock` builds a countdown block. Rendering it needs a server-side GIF service the SDK does not ship. The renderer emits a placeholder unless `blockRenderers.countdown` supplies an image.
 
 ### Section
 
@@ -16260,7 +16246,7 @@ This page is the canonical reference for the isolation model. If you just want t
 
 ## Isolation
 
-When you call `init()` or `initCloud()` and pass a container element, Templatical:
+When you call `init()` and pass a container element, Templatical:
 
 1. Calls `container.attachShadow({ mode: 'open' })` to create a shadow root on your element.
 2. Mounts the Vue app inside the shadow root instead of replacing the container's children directly.
@@ -16364,7 +16350,7 @@ What you lose:
 
 What still works:
 
-- Every other feature is identical: same blocks, same i18n, same cloud features, same API surface. The boundary is the only change.
+- Every other feature is identical: same blocks, same i18n, same API surface. The boundary is the only change.
 
 ### Hardening light-DOM mode against host CSS
 
@@ -16940,11 +16926,9 @@ Releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-l
 
 Yes. Every `@templatical/*` package and the Agent Skill are MIT-licensed open source.
 
-## Cloud tier
+## Providers
 
-**No.** The Cloud tier is optional. The SDK can run standalone; features that connect to your data use providers you implement.
-
-Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release. Comments, saved blocks, version history, test email, media and [AI](/backend/ai) use providers you implement on `init()`. Cloud is one adapter, not the feature.
+Comments, saved blocks, version history, test email, media, [AI](/backend/ai) and live collaboration are providers you pass to `init()`. Live collaboration runs over your own backend with `init({ collaboration })`.
 
 ---
 
@@ -17106,7 +17090,7 @@ const html = (await mjml2html(mjml, { validationLevel: "soft" })).html;
 const sizeIssues = lintCompiledHtml(html);
 ```
 
-Install `mjml` separately for this example. In the editor, the Issues panel shows an **Email size** section when its render provider implements `toHtml` or `compileMjml`. It explains that Gmail cuts off emails over about 102 KB. Choose **Check size** to measure the compiled HTML. A passing result shows the size and confirms Gmail will show the whole email; an oversized result shows the size and a clipping warning in the issues list. After an edit, the last size remains visible with an out-of-date message and the button changes to **Check again**. Cloud mode does not show this section because its current HTML render path saves first.
+Install `mjml` separately for this example. In the editor, the Issues panel shows an **Email size** section when its render provider implements `toHtml` or `compileMjml`. It explains that Gmail cuts off emails over about 102 KB. Choose **Check size** to measure the compiled HTML. A passing result shows the size and confirms Gmail will show the whole email; an oversized result shows the size and a clipping warning in the issues list. After an edit, the last size remains visible with an out-of-date message and the button changes to **Check again**.
 
 ## Check it
 
@@ -17363,7 +17347,7 @@ This catalog explains every `compat.*` rule, its trigger, exclusions, severity a
 
 **What fires:** Compiled HTML larger than `thresholds.maxHtmlBytes` (default `92_160` UTF-8 bytes); equality passes.
 
-**Where it runs:** Never in `lintTemplate` or the editor's live Issues list. Three surfaces measure it: `lintCompiledHtml(html)` on HTML you compile; `templatical validate --html`, which needs the optional `mjml` peer (exit 3 without it); and the editor's **Email size** check, shown only when the [render provider](/backend/render) implements `toHtml` or `compileMjml`, and not in Cloud mode.
+**Where it runs:** Never in `lintTemplate` or the editor's live Issues list. Three surfaces measure it: `lintCompiledHtml(html)` on HTML you compile; `templatical validate --html`, which needs the optional `mjml` peer (exit 3 without it); and the editor's **Email size** check, shown only when the [render provider](/backend/render) implements `toHtml` or `compileMjml`.
 
 **Evidence:** Only `lintCompiledHtml` checks this; template JSON and pass-through scans do not estimate compiled size. Google does not document the approximately 102 KB limit; it comes from community tests, which also show clipping below it after a sending service adds markup.
 
@@ -17911,7 +17895,7 @@ If you load Templatical via CDN, there's nothing to install. The editor's CDN bu
 
 ## Wire into the editor {#wire-into-the-editor}
 
-Pass `lint` to `init()` or `initCloud()`:
+Pass `lint` to `init()`:
 
 ```ts
 import { init } from "@templatical/editor";
@@ -18655,9 +18639,9 @@ You're building a Mailchimp-style product, an automation tool, or a creator-news
 - Drop-in editor mounts with one function call — no rewrite of your existing dashboard.
 - Theming via design tokens means your customers' emails feel native to your brand, not Templatical's.
 - Display conditions and merge tags are built in — important for personalization-heavy newsletter use.
-- Cloud is the managed adapter for AI rewrite and real-time collaboration, plus hosted storage — comments, version history, and saved blocks are providers you pass to `init()`, backed by your own storage.
+- Comments, version history, saved blocks, AI rewrite and real-time collaboration are providers you pass to `init()`, backed by your own storage.
 
-**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for MJML then any MJML library for HTML, optional Cloud tier for AI/collab.
+**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for MJML then any MJML library for HTML.
 
 ### CRM or marketing automation product
 
@@ -18668,14 +18652,14 @@ You're building a CRM, a sales-engagement tool, or a marketing automation platfo
 - Custom blocks let you surface your product's data (contact fields, deal info, calculated values) as first-class content blocks customers can drop into emails.
 - Real-time collaboration lets sales and marketing teams co-edit campaign templates without clobbering each other.
 
-**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) with `customBlocks` registered for your domain entities, plus [`@templatical/core/cloud`](https://www.npmjs.com/package/@templatical/core) for collab if you want it; comments are a `comments` provider on `init()`.
+**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) with `customBlocks` registered for your domain entities, `init({ collaboration })` for co-editing, and a `comments` provider on `init()`.
 
 ### Internal email composer
 
 You're not building a customer-facing product — you need a controlled tool for your team to design transactional and marketing emails, with the JSON output stored in your own systems.
 
 **Templatical fits because:**
-- Self-hostable in full. The SDK has no required cloud dependency.
+- Self-hostable in full.
 - UI in 9 languages and language versions of a template: English, German, Portuguese, Spanish, Catalan, French, Dutch, Japanese and Danish UI, plus opt-in [template language versions](/guide/localized-templates).
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
 

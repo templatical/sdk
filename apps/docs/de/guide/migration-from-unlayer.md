@@ -251,7 +251,7 @@ Globale Template-Einstellungen werden übertragen, wo möglich:
 - **Anzeigebedingungen / dynamische Inhalte** — Unlayers Syntax für bedingte Inhalte hat keine direkte Entsprechung und wird bei der Konvertierung verworfen. Nutzen Sie Templaticals [Anzeigebedingungen](/de/guide/display-conditions), um sie neu aufzubauen.
 - **Custom-Module / Blöcke aus kostenpflichtigen Tarifen** — Unlayers Custom Blocks werden in Platzhalter-HTML-Blöcke konvertiert. Bauen Sie sie als [Custom Block](/de/guide/custom-blocks) neu auf, wenn sie wiederverwendbar sind.
 - **Formulare** — Unlayers Formular-Blöcke werden übersprungen. Die meisten E-Mail-Clients blockieren aus Sicherheitsgründen das Absenden von Formularen; bauen Sie den Call-to-Action als Button neu auf, der auf ein gehostetes Formular verlinkt.
-- **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Kein `type: "countdown"` erzeugen: dieser Block braucht Clouds serverseitiges GIF, der OSS-Renderer kann es nicht erzeugen. Als statischen Titel oder Absatz neu aufbauen (Datum, oder „noch X Tage“) oder den HTML-Platzhalter behalten.
+- **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Kein `type: "countdown"` erzeugen: das Rendern braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert. Als statischen Titel oder Absatz neu aufbauen (Datum, oder „noch X Tage“) oder den HTML-Platzhalter behalten.
 - **Hover-Linkstile und Linkstile einzelner Blöcke** — `linkStyle.linkHoverColor` und `linkHoverUnderline` haben kein Templatical-Feld und werden verworfen. Den eigenen `linkStyle` eines Textblocks liest der Konverter nicht; dessen Links übernehmen die Link-Einstellungen des Dokuments.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 

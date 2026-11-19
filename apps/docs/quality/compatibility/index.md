@@ -44,7 +44,7 @@ const html = (await mjml2html(mjml, { validationLevel: "soft" })).html;
 const sizeIssues = lintCompiledHtml(html);
 ```
 
-Install `mjml` separately for this example. In the editor, the Issues panel shows an **Email size** section when its render provider implements `toHtml` or `compileMjml`. It explains that Gmail cuts off emails over about 102 KB. Choose **Check size** to measure the compiled HTML. A passing result shows the size and confirms Gmail will show the whole email; an oversized result shows the size and a clipping warning in the issues list. After an edit, the last size remains visible with an out-of-date message and the button changes to **Check again**. Cloud mode does not show this section because its current HTML render path saves first.
+Install `mjml` separately for this example. In the editor, the Issues panel shows an **Email size** section when its render provider implements `toHtml` or `compileMjml`. It explains that Gmail cuts off emails over about 102 KB. Choose **Check size** to measure the compiled HTML. A passing result shows the size and confirms Gmail will show the whole email; an oversized result shows the size and a clipping warning in the issues list. After an edit, the last size remains visible with an out-of-date message and the button changes to **Check again**.
 
 ## Check it
 

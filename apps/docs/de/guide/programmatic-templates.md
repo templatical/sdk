@@ -182,7 +182,7 @@ createVideoBlock({
 
 ### Countdown
 
-`createCountdownBlock` erzeugt einen Countdown-Block, aber Countdown-GIFs brauchen Cloud oder ein `blockRenderers.countdown`-Override — der OSS-Renderer gibt einen Platzhalter aus.
+`createCountdownBlock` erzeugt einen Countdown-Block. Das Rendern braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert. Der Renderer gibt einen Platzhalter aus, sofern `blockRenderers.countdown` kein Bild liefert.
 
 ### Section
 

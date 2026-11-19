@@ -14,6 +14,7 @@ import {
   type CollaborationProvider,
   type Template,
   type TemplateContent,
+  type TemplatePatch,
   type VersionHistoryProvider,
 } from "@templatical/types";
 import Editor from "../src/Editor.vue";
@@ -29,6 +30,8 @@ const LAZY_CHUNK = { timeout: 5000 };
 interface ExposedEditor {
   load: (id: string) => Promise<Template>;
   getContent: () => TemplateContent;
+  setContent: (content: TemplateContent) => void;
+  isDirty: () => boolean;
 }
 
 async function flush(): Promise<void> {
@@ -39,7 +42,11 @@ function ids(content: TemplateContent): string[] {
   return content.blocks.map((block) => block.id);
 }
 
-async function mountEditor({ collaborate = true } = {}) {
+async function mountEditor({
+  collaborate = true,
+  saveEnabled = false,
+  restoreEnabled = false,
+} = {}) {
   const title = createTitleBlock({ content: "<p>Live</p>" });
   const live: TemplateContent = {
     ...createDefaultTemplateContent(),
@@ -68,7 +75,12 @@ async function mountEditor({ collaborate = true } = {}) {
     })),
     get: vi.fn(async () => safeClone(version)),
     create: false,
-    restore: false,
+    restore: restoreEnabled
+      ? vi.fn(async (): Promise<Template> => ({
+          id: "tpl-1",
+          content: version,
+        }))
+      : false,
   };
   const wrapper = mount(Editor, {
     props: {
@@ -83,7 +95,17 @@ async function mountEditor({ collaborate = true } = {}) {
             content: safeClone(live),
           }),
           create: false,
-          save: false,
+          save: saveEnabled
+            ? vi.fn(
+                async (
+                  id: string,
+                  patch: TemplatePatch,
+                ): Promise<Template> => ({
+                  id,
+                  content: patch.content ?? live,
+                }),
+              )
+            : false,
         },
         ...(collaborate ? { collaboration: provider } : {}),
         versionHistory,
@@ -154,4 +176,67 @@ describe("Editor.vue previewing a version", () => {
 
     expect(canvas).toEqual({ previewing: [older.id], after: [title.id] });
   });
+});
+
+describe("Editor.vue restore confirmation", () => {
+  it.each([
+    [true, true],
+    [false, false],
+  ])(
+    "offers save first = %s when the templates provider can save = %s",
+    async (saveEnabled, expectedOffer) => {
+      const { wrapper, vm } = await mountEditor({
+        collaborate: false,
+        saveEnabled,
+        restoreEnabled: true,
+      });
+      vm.setContent({
+        ...createDefaultTemplateContent(),
+        blocks: [createParagraphBlock({ content: "<p>Unsaved</p>" })],
+      });
+      expect(vm.isDirty()).toBe(true);
+
+      await vi.waitFor(
+        () =>
+          expect(
+            wrapper.find('[data-testid="version-history-toggle"]').exists(),
+          ).toBe(true),
+        LAZY_CHUNK,
+      );
+      await wrapper
+        .get('[data-testid="version-history-toggle"]')
+        .trigger("click");
+      await vi.waitFor(
+        () =>
+          expect(
+            wrapper.find('[data-testid="version-history-entry"]').exists(),
+          ).toBe(true),
+        LAZY_CHUNK,
+      );
+      await wrapper
+        .get('[data-testid="version-history-entry"]')
+        .trigger("click");
+      await vi.waitFor(
+        () =>
+          expect(
+            wrapper.find('[data-testid="version-preview-restore"]').exists(),
+          ).toBe(true),
+        LAZY_CHUNK,
+      );
+      await wrapper
+        .get('[data-testid="version-preview-restore"]')
+        .trigger("click");
+      await vi.waitFor(
+        () =>
+          expect(
+            wrapper.find('[data-testid="restore-version-dialog"]').exists(),
+          ).toBe(true),
+        LAZY_CHUNK,
+      );
+
+      expect(
+        wrapper.find('[data-testid="restore-version-save-first"]').exists(),
+      ).toBe(expectedOffer);
+    },
+  );
 });

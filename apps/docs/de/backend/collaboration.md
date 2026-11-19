@@ -125,7 +125,7 @@ Wenden Sie die Batches eines Templates nacheinander an: Zwei gleichzeitig angewe
 
 ### Sperren und Besitz
 
-Eine Sperre gehört einer Sitzung und der Identität dahinter zugleich: der Nutzer-ID oder `guest:<sessionId>` für eine Sitzung ohne Nutzer. Vergleichen Sie beides, wie `ownerOf` oben, damit eine aus der Anfrage eines anderen Nutzers übernommene Sitzungs-ID nicht auf dessen Sperre wirken kann. Geben Sie Sperren eine kurze Laufzeit (Templatical Cloud verwendet 30 Sekunden; der Editor erneuert alle 10), und wenn eine Sitzung einen neuen Block nimmt, geben Sie den zuvor gehaltenen frei. Überlassen Sie die Sperrprüfung `applyOperations`: Übergeben Sie jede nicht abgelaufene Sperre mit ihrem Besitzer und den handelnden Besitzer als `session`.
+Eine Sperre gehört einer Sitzung und der Identität dahinter zugleich: der Nutzer-ID oder `guest:<sessionId>` für eine Sitzung ohne Nutzer. Vergleichen Sie beides, wie `ownerOf` oben, damit eine aus der Anfrage eines anderen Nutzers übernommene Sitzungs-ID nicht auf dessen Sperre wirken kann. Geben Sie Sperren eine kurze Laufzeit (der Editor erneuert alle 10 Sekunden), und wenn eine Sitzung einen neuen Block nimmt, geben Sie den zuvor gehaltenen frei. Überlassen Sie die Sperrprüfung `applyOperations`: Übergeben Sie jede nicht abgelaufene Sperre mit ihrem Besitzer und den handelnden Besitzer als `session`.
 
 ### Aufholen
 

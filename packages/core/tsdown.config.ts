@@ -1,9 +1,7 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  // Array entry preserves the source layout: src/index.ts → dist/index.js and
-  // src/cloud/index.ts → dist/cloud/index.js (matches the package.json exports).
-  entry: ['src/index.ts', 'src/cloud/index.ts'],
+  entry: ['src/index.ts'],
   format: ['esm'],
   platform: 'neutral',
   target: 'es2022',

@@ -749,8 +749,6 @@ const translations: typeof en = {
     replyOne: "{count} 件の返信",
     replyMany: "{count} 件の返信",
     missingBlock: "ブロックが見つかりません",
-    saveTemplateFirst:
-      "このブロックにコメントする前にテンプレートを保存してください。",
   },
   collaboration: {
     people: "このテンプレートを編集中のユーザー",

@@ -198,14 +198,6 @@ const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
     label: getBlockTypeLabel(type, t),
   }));
 
-  // Countdown requires Templatical Cloud for server-side GIF rendering
-  if (caps.plan) {
-    types.splice(-1, 0, {
-      type: "countdown",
-      label: getBlockTypeLabel("countdown", t),
-    });
-  }
-
   return types;
 });
 
@@ -233,7 +225,7 @@ const resolvedPalette = computed(() =>
 const blockTypes = computed<BlockTypeItem[]>(() => resolvedPalette.value.items);
 
 // Warn once per unknown `paletteBlocks` entry (a typo, an unregistered custom block, or
-// `countdown` outside a Cloud plan). Done in a watcher rather than inside the
+// `countdown` without an insertable provider). Done in a watcher rather than inside the
 // computed so recomputes don't repeat the warning.
 const warnedPaletteEntries = new Set<string>();
 watch(
@@ -321,8 +313,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
     @focusin="isExpanded = true"
     @focusout="handleRailFocusOut"
   >
-    <!-- Saved blocks browser trigger. Needs the feature to be available (a
-         provider configured, and in Cloud the plan to allow it). -->
+    <!-- Saved blocks browser trigger. Needs an available provider. -->
     <div
       v-if="showSavedBlocksSection"
       class="tpl:border-b tpl:px-1 tpl:pb-1 tpl:border-[var(--tpl-border)]"

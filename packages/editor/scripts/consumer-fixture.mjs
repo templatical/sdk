@@ -110,7 +110,7 @@ export function readFixtureRoots(fixtureManifest) {
 /**
  * Walk dependencies and optionalDependencies from the direct packages to
  * everything npm would resolve transitively. Peers are not followed:
- * renderer and pusher-js are optional peers only, so a fixture that wants one
+ * renderer is an optional peer, so a fixture that wants it
  * declares it directly. Quality also has an optional dependency declaration,
  * so it and its dependencies must be packed even for omitted installs.
  */

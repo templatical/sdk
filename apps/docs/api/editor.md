@@ -100,7 +100,7 @@ If your integration must use an unsupported element (e.g. mounting into a `<form
 
 ### Header actions {#header-actions}
 
-`header.actions` moves a host-owned `HTMLElement` into the header's right column, after AI and before Test email and Save. `header.darkModeToggle`, `header.previewToggle` and `header.viewportToggle` default to `true`; set any of them to `false` to hide that centre control for the entire editor session. The same `header` option works with `initCloud()`.
+`header.actions` moves a host-owned `HTMLElement` into the header's right column, after AI and before Test email and Save. `header.darkModeToggle`, `header.previewToggle` and `header.viewportToggle` default to `true`; set any of them to `false` to hide that centre control for the entire editor session.
 
 ```ts
 import { init } from "@templatical/editor";
@@ -148,7 +148,7 @@ const editor = await init({
 - **Strict allowlist + order.** Only the listed types are shown, in exactly this order. Any built-in not listed (here `hero`, `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) is hidden from the palette.
 - **Reference built-ins by their bare type** (`"section"`, `"image"`, …) and **custom blocks by their `custom:`-prefixed type** (`"custom:qrcode"`), so the two can be interleaved freely.
 - **`"hero"` is a shortcut, not a block type.** It inserts a one-column section in hero mode with a title, a paragraph and a button (see [Hero](/guide/sections-and-columns#hero)). List it like a built-in.
-- **Unknown entries are skipped.** A typo, an unregistered custom block, or `countdown` outside a Cloud plan is logged to the console with a warning and left out of the palette.
+- **Unknown entries are skipped.** A typo, an unregistered custom block, or `countdown` is logged to the console with a warning and left out of the palette.
 - **Filtering the palette never affects rendering.** Hiding a block type only removes it from the palette — existing content that already uses that type still renders correctly. `paletteBlocks` controls what users can _insert_, not what the editor can _display_.
 
 Omit `paletteBlocks` (or pass an empty array) to show the full default palette.
@@ -389,10 +389,6 @@ const html = await editor.toHtml();
 ```
 
 Resolves `render.toHtml` first, then `toMjml()`'s output through `render.compileMjml`. **Requires one of the two**: the SDK bundles no MJML compiler, so with no `render` provider this always rejects, and the error names the method to add. See [Rendering & Export](/backend/render).
-
-::: tip Cloud editor
-The Cloud editor exposes **both** methods, resolved against Cloud's server-side renderer (or your own `render` provider). Note Cloud renders the _saved_ template, so each call saves first.
-:::
 
 ### `renderCustomBlock(block)`
 
