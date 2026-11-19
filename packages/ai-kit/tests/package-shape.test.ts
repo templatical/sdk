@@ -70,7 +70,7 @@ describe("@templatical/ai-kit's shape", () => {
     expect(offending).toEqual([]);
   });
 
-  it("imports no FSL package, and LLM SDKs only in their adapters", () => {
+  it("imports no editor or core package, and LLM SDKs only in their adapters", () => {
     const llm = /from "(ai|openai|@anthropic-ai\/[^"]+|@ai-sdk\/[^"]+)"/;
     const files = sourceFiles(join(PKG, "src"));
     expect(

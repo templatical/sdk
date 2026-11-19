@@ -129,7 +129,7 @@ reviews:
         - A page's frontmatter `description` and its first sentence answer the page's question on their own: they become the `llms.txt` line and the search snippet.
         - Give exact names, types, defaults and limits, checked against the source. No derived counts ("16 platforms") and no claims nobody can verify ("works in every email client"): name the members instead.
         - Headings are noun phrases a reader would search for, never claims or slogans. No editorial adverbs (genuinely, precisely, deliberately, merely) and no "not X, but Y" constructions.
-        - FSL-licensed code (editor, core, media-library) is "source-available", never "open source".
+        - All packages are MIT.
         - Code samples run as shown: real imports of real exports, no `...` placeholders. Prefer `<<<` includes of files CI runs over hand-written snippets.
 
     - path: "apps/playground/e2e/**"

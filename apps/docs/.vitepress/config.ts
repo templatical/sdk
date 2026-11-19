@@ -201,7 +201,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Changelog", link: "/changelog" },
         { text: "Showcase", link: "/showcase" },
-        { text: "License FAQ", link: "/license-faq" },
+        { text: "License", link: "/license-faq" },
         // The machine-readable index, alongside the per-page `<link
         // rel="alternate">` the transformHead hook emits. A `.txt` path is not
         // treated as a route by VitePress's router, so this navigates to the
@@ -427,7 +427,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Changelog", link: "/de/changelog" },
         { text: "Showcase", link: "/de/showcase" },
-        { text: "Lizenz-FAQ", link: "/de/license-faq" },
+        { text: "Lizenz", link: "/de/license-faq" },
         // Deliberately without the /de/ prefix every other link here carries:
         // llms.txt is English-only by design (build-agent-surface.mjs skips
         // de/), so /de/llms.txt does not exist. Both locales point at the one
@@ -444,7 +444,7 @@ const isCloudPage = (url: string) => /^(?:de\/)?cloud(?:\/|$)/.test(url);
 export default defineConfig({
   title: "Templatical",
   description:
-    "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
+    "Embeddable drag-and-drop email editor SDK for your own app and backend. Open source, MIT-licensed.",
   cleanUrls: true,
   // Page dates come from git. A shallow clone would date every page to its
   // one commit, so lastUpdated (and the sitemap's lastmod) is on only with
@@ -556,7 +556,7 @@ export default defineConfig({
       lang: "en",
       title: "Templatical",
       description:
-        "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
+        "Embeddable drag-and-drop email editor SDK for your own app and backend. Open source, MIT-licensed.",
       themeConfig: {
         nav: enNav,
         sidebar: enSidebar,
@@ -567,7 +567,7 @@ export default defineConfig({
         },
         footer: {
           message:
-            'Released under the <a href="https://github.com/templatical/sdk/blob/main/LICENSE">FSL-1.1-MIT License</a>.',
+            'Released under the <a href="https://github.com/templatical/sdk/blob/main/LICENSE">MIT License</a>.',
           copyright: "Copyright © 2026-present Templatical",
         },
       },
@@ -577,7 +577,7 @@ export default defineConfig({
       lang: "de",
       title: "Templatical",
       description:
-        "Drag-and-Drop-E-Mail-Editor für moderne Anwendungen — Source-Available, MIT nach zwei Jahren",
+        "Einbettbares Drag-and-Drop-E-Mail-Editor-SDK für Ihre eigene App und Ihr eigenes Backend. Open Source, MIT-lizenziert.",
       themeConfig: {
         nav: deNav,
         sidebar: deSidebar,
@@ -588,7 +588,7 @@ export default defineConfig({
         },
         footer: {
           message:
-            'Veröffentlicht unter der <a href="https://github.com/templatical/sdk/blob/main/LICENSE">FSL-1.1-MIT-Lizenz</a>.',
+            'Veröffentlicht unter der <a href="https://github.com/templatical/sdk/blob/main/LICENSE">MIT-Lizenz</a>.',
           copyright: "Copyright © 2026-present Templatical",
         },
         docFooter: {

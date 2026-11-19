@@ -3,7 +3,7 @@
 > Media library for Templatical — composable, Vue components, and a standalone visual SDK.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/media-library?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/media-library)
-[![License](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)](https://github.com/templatical/sdk/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 Browse, upload, organize, crop, and replace media assets. Used by [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) behind a `MediaProvider` (the editor bundles the Browse UI — you do not install this package for `init({ media })`), and available as a standalone SDK for any app that needs a media manager.
 
@@ -111,4 +111,4 @@ Full reference at **[docs.templatical.com](https://docs.templatical.com)**.
 
 ## License
 
-[FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) — free for any non-competing commercial use, automatically converts to MIT after 2 years per release.
+[MIT](https://github.com/templatical/sdk/blob/main/LICENSE).

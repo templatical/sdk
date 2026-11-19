@@ -1,148 +1,53 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO = join(import.meta.dirname, "../../..");
-const DOCS = join(REPO, "apps/docs");
-const SKILL = join(REPO, "skills/templatical");
 const read = (path: string) => readFileSync(join(REPO, path), "utf8");
 
-const SKIP_DIRS = new Set(["public", "node_modules", ".vitepress", "tests", "scripts"]);
-const SKIP_FILES = new Set(["changelog.md", "de/changelog.md"]);
-
-function docsPages(dir = DOCS, acc: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const abs = join(dir, name);
-    const rel = relative(DOCS, abs).split(sep).join("/");
-    if (statSync(abs).isDirectory()) {
-      if (!SKIP_DIRS.has(name)) docsPages(abs, acc);
-    } else if (rel.endsWith(".md") && !SKIP_FILES.has(rel)) {
-      acc.push(`apps/docs/${rel}`);
-    }
-  }
-  return acc;
-}
-
-function skillPages(dir = SKILL, acc: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const abs = join(dir, name);
-    if (statSync(abs).isDirectory()) {
-      if (name !== "node_modules") skillPages(abs, acc);
-    } else if (name.endsWith(".md")) {
-      acc.push(relative(REPO, abs).split(sep).join("/"));
-    }
-  }
-  return acc;
-}
-
-/**
- * The editor, core and media library are FSL-1.1-MIT: source-available, not
- * open source, and "OSS" names the free tier whose editor is that FSL code.
- * Copy therefore avoids "open source", "quelloffen" and "OSS" in every
- * grammatical position ("Templatical is open source", "the OSS SDK", "ein
- * Open-Source-Projekt"). The one allowance is a mention that sits next to a
- * subject that really is open source: the MIT renderer, the Agent Skill, MJML,
- * Easy Email or GrapesJS. Each mention is judged on its own, by the 60
- * characters on either side of it. Docs put a whole paragraph on one line, so
- * a subject named elsewhere in the paragraph does not excuse it ("The OSS
- * palette ... The OSS renderer ..."). The two licence FAQ pages discuss
- * licensing explicitly and are pinned by the cases below instead.
- */
-const SUBJECT_REACH = 60;
-// Global so matchAll yields every mention. A global regex keeps lastIndex
-// between .test calls, so this one is only ever read through matchAll.
-const LICENCE_WORDING = /open[- ]?source|quelloffen|\bOSS\b/gi;
-const OPEN_SOURCE_SUBJECT =
-  /renderer|Agent Skill|Agent-Skill|markup language|Markup-Sprache|Easy[- ]Email|GrapesJS/i;
-const isLicenceClaim = (line: string) =>
-  [...line.matchAll(LICENCE_WORDING)].some(
-    (mention) =>
-      !OPEN_SOURCE_SUBJECT.test(
-        line.slice(
-          Math.max(0, mention.index - SUBJECT_REACH),
-          mention.index + mention[0].length + SUBJECT_REACH,
-        ),
-      ),
-  );
-
-const LICENCE_PAGES = new Set(["apps/docs/license-faq.md", "apps/docs/de/license-faq.md"]);
-
-const COPY = [
-  ...docsPages(),
-  "README.md",
-  "CONTRIBUTING.md",
-  ...readdirSync(join(REPO, "packages"))
-    .map((dir) => `packages/${dir}/README.md`)
-    .filter((path) => existsSync(join(REPO, path))),
-  "examples/README.md",
-  ...readdirSync(join(REPO, "examples"))
-    .map((dir) => `examples/${dir}/README.md`)
-    .filter((path) => existsSync(join(REPO, path))),
-  ...skillPages(),
-  "apps/playground/src/i18n/en.ts",
-  "apps/playground/src/i18n/de.ts",
-];
+const FACT_EN = "Templatical is open source: every package is MIT-licensed.";
+const FACT_DE = "Templatical ist Open Source: Alle Pakete stehen unter der MIT-Lizenz.";
+const SITE_EN =
+  "Embeddable drag-and-drop email editor SDK for your own app and backend. Open source, MIT-licensed.";
+const SITE_DE =
+  "Einbettbares Drag-and-Drop-E-Mail-Editor-SDK für Ihre eigene App und Ihr eigenes Backend. Open Source, MIT-lizenziert.";
+const SUMMARY =
+  "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, your own backend behind every storage feature. Open source, MIT-licensed.";
+const HOME_EN = "Open source (MIT), free to embed and self-host.";
+const HOME_DE = "Open Source (MIT), kostenlos einbettbar und selbst hostbar.";
+const LICENSE_EN =
+  "Every Templatical package is MIT-licensed: use, modify and embed it commercially, keeping the copyright notice.";
+const LICENSE_DE =
+  "Jedes Templatical-Paket steht unter der MIT-Lizenz: Sie dürfen es nutzen, ändern und kommerziell einbetten, solange der Urheberrechtshinweis erhalten bleibt.";
 
 describe("licence wording in user-facing copy", () => {
-  it("scans the docs, READMEs, contributing guide, skill and playground strings", () => {
-    expect(COPY.length).toBeGreaterThan(100);
-    expect(COPY).toContain("CONTRIBUTING.md");
-    expect(COPY).toContain("packages/ai-kit/README.md");
-    expect(COPY).toContain("skills/templatical/SKILL.md");
-    expect(COPY).toContain("skills/templatical/reference/failure-modes.md");
-    expect(COPY).toContain("examples/README.md");
-    expect(COPY).toContain("examples/nextjs/README.md");
-    expect(COPY.filter((path) => path.includes("node_modules"))).toEqual([]);
+  it("states the MIT licence where answer engines read first", () => {
+    expect(read("README.md")).toContain(FACT_EN);
+    expect(read("apps/docs/index.md")).toContain("Open source, MIT-licensed.");
+    expect(read("apps/docs/index.md")).toContain(HOME_EN);
+    expect(read("apps/docs/de/index.md")).toContain("Open Source, MIT-lizenziert.");
+    expect(read("apps/docs/de/index.md")).toContain(HOME_DE);
+    expect(read("apps/docs/license-faq.md")).toContain(FACT_EN);
+    expect(read("apps/docs/license-faq.md")).toContain(LICENSE_EN);
+    expect(read("apps/docs/de/license-faq.md")).toContain(FACT_DE);
+    expect(read("apps/docs/de/license-faq.md")).toContain(LICENSE_DE);
+    expect(read("apps/docs/getting-started/hosted-builders.md")).toContain(FACT_EN);
+    expect(read("apps/docs/getting-started/paths.md")).toContain(FACT_EN);
+    expect(read("apps/docs/de/getting-started/hosted-builders.md")).toContain(FACT_DE);
+    expect(read("apps/docs/de/getting-started/paths.md")).toContain(FACT_DE);
+    expect(read("apps/docs/.vitepress/config.ts")).toContain(SITE_EN);
+    expect(read("apps/docs/.vitepress/config.ts")).toContain(SITE_DE);
+    expect(read("CONTRIBUTING.md")).toContain(FACT_EN);
+    expect(read("context7.json")).toContain("Open source, MIT-licensed.");
   });
 
-  it("never calls FSL code open source", () => {
-    const hits = COPY.filter((path) => !LICENCE_PAGES.has(path)).flatMap((path) =>
-      read(path)
-        .split("\n")
-        .flatMap((line, i) =>
-          isLicenceClaim(line) ? [`${path}:${i + 1}: ${line.trim().slice(0, 120)}`] : [],
-        ),
-    );
-    expect(hits).toEqual([]);
-  });
-});
-
-describe("the licence-claim predicate", () => {
-  it.each([
-    "Templatical is open source.",
-    "The editor is open-source, so it is free.",
-    "Templatical is an open-source email builder.",
-    "an open-source project",
-    "open-source editors",
-    "Free & open source",
-    "Templatical ist Open Source.",
-    "ein Open-Source-Projekt",
-    "Der Editor ist quelloffen.",
-    "the OSS SDK",
-  ])("flags %j", (line) => {
-    expect(isLicenceClaim(line)).toBe(true);
-  });
-
-  it.each([
-    "The OSS renderer emits a placeholder.",
-    "One free, open-source Agent Skill",
-    "MJML is an open-source markup language",
-    "Open-source Easy Email is a different JSON",
-    "der OSS-Renderer kann es nicht erzeugen",
-  ])("passes %j", (line) => {
-    expect(isLicenceClaim(line)).toBe(false);
-  });
-
-  it("flags a claim that sits far from the allowed subject on the same line", () => {
-    // One paragraph on one line, as the docs write them: the last sentence, which
-    // carries "renderer", starts more than 60 characters after the OSS claim in
-    // the first. The line names an allowed subject, but not next to that claim.
-    const line =
-      "The OSS palette never offers countdown. Listing it in paletteBlocks logs an " +
-      "unknown-block warning; it does not enable the block. " +
-      "The OSS renderer emits a placeholder.";
-    expect(OPEN_SOURCE_SUBJECT.test(line)).toBe(true);
-    expect(isLicenceClaim(line)).toBe(true);
+  it("states MIT in the agent summary", () => {
+    const summary = read("apps/docs/public/llms.txt")
+      .split("\n")
+      .find((line) => line.startsWith("> "));
+    expect(summary).toBe(`> ${SUMMARY}`);
+    expect(summary).toContain("MIT");
+    expect(read("apps/docs/scripts/build-agent-surface.mjs")).toContain(SUMMARY);
   });
 });
 
@@ -169,9 +74,9 @@ describe("the licence FAQ", () => {
   );
 
   it.each([
-    ["apps/docs/license-faq.md", "## Is Templatical open source?"],
-    ["apps/docs/de/license-faq.md", "## Ist Templatical Open Source?"],
-  ])("%s answers the open-source question", (page, heading) => {
+    ["apps/docs/license-faq.md", "## Open source"],
+    ["apps/docs/de/license-faq.md", "## Open Source"],
+  ])("%s names open source as a topic", (page, heading) => {
     expect(read(page)).toContain(heading);
   });
 });

@@ -56,13 +56,15 @@
     "email-builder",
     "email-editor",
     "email-template",
+    "mit",
     "mjml",
+    "open-source",
     "templatical",
     "tiptap",
     "vue",
     "wysiwyg"
   ],
-  "license": "FSL-1.1-MIT",
+  "license": "MIT",
   "module": "./dist/templatical-editor.js",
   "optionalDependencies": {
     "@templatical/quality": "workspace:*"

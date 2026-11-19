@@ -5,7 +5,7 @@ description: Which docs page to open first — embed the editor, connect your ba
 
 # Starting points
 
-Commercial use is free. The [License FAQ](/license-faq) is the competing-product restriction in plain language.
+Templatical is open source: every package is MIT-licensed. [License](/license-faq).
 
 ## Embed the editor
 
