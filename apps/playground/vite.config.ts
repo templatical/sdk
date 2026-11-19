@@ -6,6 +6,7 @@ import { inlineStyleCssPlugin } from '../../packages/editor/scripts/inline-style
 import { readBuildInfo } from './scripts/build-info.ts';
 
 const packagesDir = resolve(import.meta.dirname, '../../packages');
+const editorEntry = resolve(packagesDir, 'editor/src/index.ts');
 
 export default defineConfig({
     // The SDK version and commit this build runs, shown in the settings menu
@@ -109,6 +110,12 @@ export default defineConfig({
         rolldownOptions: {
             output: {
                 manualChunks(id: string) {
+                    // The editor has a single static importer, so without a pin
+                    // Rolldown folds its CSS into the entry's host stylesheet,
+                    // which inline-style-css rejects as a mixed asset.
+                    if (id === editorEntry) {
+                        return 'editor';
+                    }
                     // Vue runtime — cached across navigations
                     if (id.includes('/vue/') || id.includes('@vue/reactivity')) {
                         return 'vue-runtime';
