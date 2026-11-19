@@ -5,13 +5,13 @@
 <h1 align="center">Templatical</h1>
 
 <p align="center">
-  Drag-and-drop email editor for modern apps — source-available, MIT after two years
+  All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@templatical/editor"><img src="https://img.shields.io/npm/v/@templatical/editor?label=npm&color=cb3837" alt="npm version" /></a>
   <a href="https://www.npmjs.com/package/@templatical/editor"><img src="https://img.shields.io/npm/dm/@templatical/editor?label=downloads&color=cb3837" alt="npm downloads" /></a>
-  <a href="https://github.com/templatical/sdk/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-FSL--1.1--MIT-blue" alt="License" /></a>
+  <a href="https://github.com/templatical/sdk/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
   <a href="https://github.com/templatical/sdk/actions"><img src="https://img.shields.io/github/actions/workflow/status/templatical/sdk/ci.yml?branch=main" alt="CI" /></a>
   <a href="https://codecov.io/gh/templatical/sdk"><img src="https://codecov.io/gh/templatical/sdk/branch/main/graph/badge.svg" alt="Coverage" /></a>
   <a href="https://github.com/templatical/sdk/stargazers"><img src="https://img.shields.io/github/stars/templatical/sdk?style=social" alt="GitHub stars" /></a>
@@ -37,7 +37,7 @@
 
 ---
 
-**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, media, real-time collaboration and AI need no Cloud — you pass providers to `init()`. [Bring your own AI backend](https://docs.templatical.com/backend/ai) for chat, rewrite and chat attachments. Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release.
+All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT). **Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, media, real-time collaboration and AI need no Cloud — you pass providers to `init()`. [Bring your own AI backend](https://docs.templatical.com/backend/ai) for chat, rewrite and chat attachments. Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release.
 
 For content checks, use [deliverability lint](https://docs.templatical.com/quality/deliverability/) and [compatibility lint](https://docs.templatical.com/quality/compatibility/); deterministic lint does not predict inbox placement.
 
@@ -125,9 +125,9 @@ const mjml = await editor.toMjml();
 
 | Package                                                                                    | Description                                                      | License                  |
 | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------ |
-| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor)                 | Visual drag-and-drop editor                                      | [FSL-1.1-MIT](./LICENSE) |
-| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core)                     | Framework-agnostic editor logic, state, history                  | [FSL-1.1-MIT](./LICENSE) |
-| [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library)   | Media library — composable, components, standalone SDK           | [FSL-1.1-MIT](./LICENSE) |
+| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor)                 | Visual drag-and-drop editor                                      | [MIT](./LICENSE)         |
+| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core)                     | Framework-agnostic editor logic, state, history                  | [MIT](./LICENSE)         |
+| [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library)   | Media library — composable, components, standalone SDK           | [MIT](./LICENSE)         |
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types)                   | Shared TypeScript types and block factories                      | [MIT](./LICENSE-MIT)     |
 | [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer)             | JSON → MJML renderer (browser + Node)                            | [MIT](./LICENSE-MIT)     |
 | [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)               | Template quality linter — accessibility, structure, and link rules (browser + Node) | [MIT](./LICENSE-MIT)     |
@@ -141,18 +141,6 @@ const mjml = await editor.toMjml();
 | [`@templatical/import-stripo`](https://www.npmjs.com/package/@templatical/import-stripo)   | Convert Stripo email templates to Templatical format             | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-chamaileon`](https://www.npmjs.com/package/@templatical/import-chamaileon) | Convert Chamaileon `getDocument()` JSON to Templatical format | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-easy-email-pro`](https://www.npmjs.com/package/@templatical/import-easy-email-pro) | Convert Easy Email Pro persist JSON to Templatical format | [MIT](./LICENSE-MIT)     |
-
-## Why FSL-1.1-MIT?
-
-Editor packages (`@templatical/editor`, `@templatical/core`, `@templatical/media-library`) are licensed under [Functional Source License 1.1](./LICENSE), which automatically converts to MIT after **2 years per release**. You can:
-
-- ✅ Embed it in your SaaS, CRM, marketing tool, or transactional product
-- ✅ Self-host, modify, fork for internal use
-- ✅ Use it commercially without paying anything
-
-The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other packages — types, renderer, quality, the import-* converters, the `@templatical/template-tools` CLI, and `@templatical/ai-kit` — are pure MIT.
-
-[Full license FAQ →](https://docs.templatical.com/license-faq)
 
 ## Documentation
 
@@ -199,5 +187,4 @@ Templatical is built and maintained by a solo developer. If your company uses it
 
 ## License
 
-- **Editor packages** (`@templatical/editor`, `@templatical/core`, `@templatical/media-library`) — [FSL-1.1-MIT](./LICENSE)
-- **Types, renderer, quality, importers, the `@templatical/template-tools` CLI and `@templatical/ai-kit`** — [MIT](./LICENSE-MIT)
+All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT). Terms: [MIT](./LICENSE). [License](https://docs.templatical.com/license-faq).

@@ -3,9 +3,9 @@
 > Vue 3 visual drag-and-drop email editor — drop into any web app with one function call.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/editor?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/editor)
-[![License](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)](https://github.com/templatical/sdk/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
-The visual editor for [Templatical](https://github.com/templatical/sdk) — a source-available drag-and-drop email editor with JSON templates and MJML output.
+The visual editor for [Templatical](https://github.com/templatical/sdk) — an MIT-licensed drag-and-drop email editor with JSON templates and MJML output.
 
 - 🧩 **14 block types** — title, paragraph, image, button, section, divider, spacer, social icons, menu, table, HTML, video, countdown, custom
 - 🛡 **Shadow DOM isolated** — mounts inside an open shadow root by default so host page CSS cannot bleed in
@@ -103,4 +103,4 @@ Full docs at **[docs.templatical.com](https://docs.templatical.com)**.
 
 ## License
 
-[FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) — free for any non-competing commercial use, automatically converts to MIT after 2 years per release. [License FAQ](https://docs.templatical.com/license-faq).
+[MIT](https://github.com/templatical/sdk/blob/main/LICENSE). [License](https://docs.templatical.com/license-faq).

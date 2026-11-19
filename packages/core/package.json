@@ -27,10 +27,12 @@
     "email",
     "email-editor",
     "framework-agnostic",
+    "mit",
+    "open-source",
     "templatical",
     "vue-reactivity"
   ],
-  "license": "FSL-1.1-MIT",
+  "license": "MIT",
   "module": "./dist/index.js",
   "publishConfig": {
     "access": "public"

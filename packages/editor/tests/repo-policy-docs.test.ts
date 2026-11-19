@@ -32,15 +32,6 @@ describe("CONTRIBUTING.md", () => {
     expect(paths.filter((path) => !existsSync(join(REPO, path)))).toEqual([]);
   });
 
-  it("names exactly the FSL packages as FSL", () => {
-    const fsl = packageJsons
-      .filter(({ pkg }) => pkg.license === "FSL-1.1-MIT")
-      .map(({ dir }) => dir)
-      .sort();
-    const line = src.split("\n").find((l) => l.startsWith("- **FSL-1.1-MIT**")) ?? "";
-    expect([...line.matchAll(/`([a-z-]+)`/g)].map(([, name]) => name).sort()).toEqual(fsl);
-  });
-
   it("does not pin a Vitest major in prose", () => {
     expect(src).not.toMatch(/Vitest \d/);
   });
@@ -85,5 +76,60 @@ describe("CONTRIBUTING.md", () => {
   it("says locale parity covers every locale, not only en and de", () => {
     expect(src).toContain("if any locale's keys diverge from `en.ts`");
     expect(src).not.toContain("if `en.ts` and `de.ts` keys diverge");
+  });
+});
+
+describe("package licences", () => {
+  const skillManifests = readdirSync(join(REPO, "skills"))
+    .filter((dir) => existsSync(join(REPO, "skills", dir, "package.json")))
+    .map((dir) => ({
+      id: `skills/${dir}`,
+      license: JSON.parse(read(`skills/${dir}/package.json`)).license as string,
+    }));
+  const manifests = [
+    ...packageJsons.map(({ dir, pkg }) => ({
+      id: `packages/${dir}`,
+      license: pkg.license as string,
+    })),
+    ...skillManifests,
+  ];
+  const licenseFiles = [
+    "LICENSE",
+    ...readdirSync(join(REPO, "packages"))
+      .filter((dir) => existsSync(join(REPO, "packages", dir, "LICENSE")))
+      .map((dir) => `packages/${dir}/LICENSE`)
+      .sort(),
+  ];
+
+  it("licenses every package and the skill as MIT, and every LICENSE file matches the renderer", () => {
+    expect(manifests.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([
+        "packages/editor",
+        "packages/core",
+        "packages/media-library",
+        "packages/renderer",
+        "skills/templatical",
+      ]),
+    );
+    expect(manifests.length).toBe(17);
+    for (const { id, license } of manifests) {
+      expect(license, id).toBe("MIT");
+    }
+
+    const canon = readFileSync(join(REPO, "packages/renderer/LICENSE"));
+    expect(canon.subarray(0, "MIT License".length).toString("utf8")).toBe("MIT License");
+    expect(licenseFiles).toEqual(
+      expect.arrayContaining([
+        "LICENSE",
+        "packages/editor/LICENSE",
+        "packages/core/LICENSE",
+        "packages/media-library/LICENSE",
+        "packages/renderer/LICENSE",
+      ]),
+    );
+    expect(licenseFiles.length).toBe(16);
+    for (const path of licenseFiles) {
+      expect(readFileSync(join(REPO, path)), path).toEqual(canon);
+    }
   });
 });

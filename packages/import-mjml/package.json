@@ -29,8 +29,10 @@
     "email-template",
     "importer",
     "migration",
+    "mit",
     "mjml",
     "mjml-import",
+    "open-source",
     "templatical"
   ],
   "license": "MIT",

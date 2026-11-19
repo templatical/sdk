@@ -18,7 +18,7 @@ Do not open a public issue. See [SECURITY.md](../SECURITY.md) for the private ch
 
 ## Licensing and commercial use
 
-Email `hi@templatical.com`. The [License FAQ](https://docs.templatical.com/license-faq) answers most FSL questions; write if yours is not covered or you would rather not ask in public.
+Email `hi@templatical.com`. The [License](https://docs.templatical.com/license-faq) page answers most licence questions; write if yours is not covered or you would rather not ask in public.
 
 ## Code of conduct
 
