@@ -1,5 +1,12 @@
 # @templatical/import-mjml
 
+## 0.62.0
+
+### Patch Changes
+
+- Updated dependencies [451aa06]
+  - @templatical/types@0.62.0
+
 ## 0.61.0
 
 ### Patch Changes

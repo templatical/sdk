@@ -3,7 +3,7 @@
 > Bring your own AI backend to the [Templatical](https://templatical.com) email editor.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/ai-kit?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/ai-kit)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 The editor's AI (the AI assistant with Undo and attachments, Rewrite, Fix with AI, Write alt text and static localized chat starters) runs on an `AiProvider` you pass to `init({ ai })`. This package is everything around that contract, with no LLM SDK and no Node-only API: it runs in Node, Deno, Bun, Workers and the browser.
 

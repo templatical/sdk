@@ -1,5 +1,17 @@
 # @templatical/media-library
 
+## 0.62.0
+
+### Minor Changes
+
+- d21fbfb: All packages are now MIT-licensed. `@templatical/editor`, `@templatical/core` and `@templatical/media-library` move from FSL-1.1-MIT to MIT; earlier releases keep their FSL-1.1-MIT terms, which convert to MIT two years after each release.
+
+### Patch Changes
+
+- 451aa06: Remove the unreleased Templatical Cloud integration. The SDK is configured through `init()` alone: every storage feature is a provider you pass to it (`templates`, `comments`, `versionHistory`, `savedBlocks`, `media`, `testEmail`, `render`, `ai`, `collaboration`). This drops `initCloud()`, `getSupportedCloudLocales()`, the `@templatical/core/cloud` subpath and the Cloud wire types in `@templatical/types`, and `pusher-js` is no longer a peer dependency.
+- Updated dependencies [451aa06]
+  - @templatical/types@0.62.0
+
 ## 0.61.0
 
 ### Patch Changes
