@@ -23,12 +23,6 @@ export function marksOfReplacedText(state: State, from: number): Marks {
   return $from.parent.type.allowedMarks($from.nodeAfter?.marks ?? []);
 }
 
-/** Each end of a wrapped selection uses the marks at its own insertion point. */
-export function marksAtPosition(state: State, pos: number): Marks {
-  const $pos = state.doc.resolve(pos);
-  return $pos.parent.type.allowedMarks($pos.marks());
-}
-
 /** TipTap content specs carry ProseMirror marks as JSON. */
 export function withMergeTagMarks<T extends object>(
   content: T,

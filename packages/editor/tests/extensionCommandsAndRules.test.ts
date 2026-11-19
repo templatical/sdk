@@ -14,6 +14,25 @@ import { LineHeight } from "../src/extensions/LineHeight";
 import { MergeTagNode } from "../src/extensions/MergeTagNode";
 import { LogicMergeTagNode } from "../src/extensions/LogicMergeTagNode";
 
+/** Rule handlers read the replaced text's marks; plain text carries none here. */
+function ruleState(replaceWith: ReturnType<typeof vi.fn>) {
+  return {
+    tr: { replaceWith },
+    doc: {
+      resolve: () => ({
+        parent: { type: { allowedMarks: (marks: unknown[]) => marks } },
+        nodeAfter: null,
+      }),
+    },
+  };
+}
+
+/** A created node that, like ProseMirror's, returns itself when given no marks. */
+function unmarkedNode(attrs: unknown) {
+  const node = { __node: true, attrs, mark: () => node };
+  return node;
+}
+
 // The existing textStyleExtensions.test.ts covers the global-attribute
 // parse/render. This file covers the COMMANDS and the merge-tag INPUT/PASTE
 // rule handlers — the actual transaction-composing logic — by invoking the
@@ -30,7 +49,6 @@ function chainMock(runReturn = true) {
   return c;
 }
 
- 
 function commandsOf(ext: any, options: Record<string, unknown>) {
   return ext.configure({}).config.addCommands.call({ options });
 }
@@ -42,7 +60,9 @@ describe("FontSize commands", () => {
 
     const result = cmds.setFontSize("18px")({ chain: () => chain });
 
-    expect(chain.setMark).toHaveBeenCalledWith("textStyle", { fontSize: "18px" });
+    expect(chain.setMark).toHaveBeenCalledWith("textStyle", {
+      fontSize: "18px",
+    });
     expect(chain.run).toHaveBeenCalledTimes(1);
     expect(result).toBe(true);
   });
@@ -131,8 +151,11 @@ describe("LineHeight commands", () => {
   });
 });
 
- 
-function nodeRules(ext: any, kind: "addInputRules" | "addPasteRules", ctx: any) {
+function nodeRules(
+  ext: any,
+  kind: "addInputRules" | "addPasteRules",
+  ctx: any,
+) {
   return ext.configure({}).config[kind].call(ctx);
 }
 
@@ -140,7 +163,7 @@ describe("MergeTagNode input/paste rules", () => {
   function ctx(mergeTags: Array<{ label: string; value: string }> = []) {
     return {
       options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: () => mergeTags },
-      type: { create: vi.fn((attrs) => ({ __node: true, attrs })) },
+      type: { create: vi.fn((attrs) => unmarkedNode(attrs)) },
     };
   }
 
@@ -151,7 +174,7 @@ describe("MergeTagNode input/paste rules", () => {
 
     const replaceWith = vi.fn();
     rules[0].handler({
-      state: { tr: { replaceWith } },
+      state: ruleState(replaceWith),
       range: { from: 3, to: 17 },
       match: ["{{first_name}}"],
     });
@@ -170,7 +193,7 @@ describe("MergeTagNode input/paste rules", () => {
 
     const replaceWith = vi.fn();
     rules[0].handler({
-      state: { tr: { replaceWith } },
+      state: ruleState(replaceWith),
       range: { from: 0, to: 11 },
       match: ["{{unknown}}"],
     });
@@ -187,7 +210,7 @@ describe("MergeTagNode input/paste rules", () => {
 
     const replaceWith = vi.fn();
     rules[0].handler({
-      state: { tr: { replaceWith } },
+      state: ruleState(replaceWith),
       range: { from: 5, to: 14 },
       match: ["{{email}}"],
     });
@@ -218,7 +241,7 @@ describe("LogicMergeTagNode input/paste rules", () => {
 
     const replaceWith = vi.fn();
     rules[0].handler({
-      state: { tr: { replaceWith } },
+      state: ruleState(replaceWith),
       range: { from: 0, to: 13 },
       match: ["{% if user %}"],
     });
@@ -240,7 +263,7 @@ describe("LogicMergeTagNode input/paste rules", () => {
 
     const replaceWith = vi.fn();
     rules[0].handler({
-      state: { tr: { replaceWith } },
+      state: ruleState(replaceWith),
       range: { from: 0, to: 5 },
       match: ["plain"],
     });
@@ -255,7 +278,7 @@ describe("LogicMergeTagNode input/paste rules", () => {
 
     const replaceWith = vi.fn();
     rules[0].handler({
-      state: { tr: { replaceWith } },
+      state: ruleState(replaceWith),
       range: { from: 2, to: 17 },
       match: ["{% for x in y %}"],
     });
@@ -272,7 +295,7 @@ describe("LogicMergeTagNode input/paste rules", () => {
 
     const replaceWith = vi.fn();
     rules[0].handler({
-      state: { tr: { replaceWith } },
+      state: ruleState(replaceWith),
       range: { from: 0, to: 4 },
       match: ["nope"],
     });

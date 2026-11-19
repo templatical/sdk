@@ -20,10 +20,6 @@ import { mountEditor } from "./helpers/mount";
 const STYLED = '<p><span style="font-size: 20px">Hello world</span></p>';
 const CHIP =
   '<span data-merge-tag="{{first_name}}" data-label="First Name">First Name</span>';
-const LOGIC_OPEN =
-  '<span data-logic-merge-tag="{% if vip %}" data-keyword="IF">IF</span>';
-const LOGIC_CLOSE =
-  '<span data-logic-merge-tag="{% endif %}" data-keyword="ENDIF">ENDIF</span>';
 let wrapper: VueWrapper<any> | null = null;
 let vueErrors: unknown[] = [];
 
@@ -87,6 +83,14 @@ function select(editor: Editor, from: number, to = from) {
   editor.commands.setTextSelection({ from, to });
 }
 
+/** Logic chips print no text, so they sit at the paragraph's top level. */
+function logicChipParents(editor: Editor) {
+  const doc = new DOMParser().parseFromString(editor.getHTML(), "text/html");
+  return [...doc.querySelectorAll("[data-logic-merge-tag]")].map(
+    (chip) => chip.parentElement?.tagName,
+  );
+}
+
 function expectStyled(editor: Editor, inside: string) {
   expect(editor.getHTML()).toContain(
     `<span style="font-size: 20px;">Hello ${inside}world</span>`,
@@ -94,7 +98,7 @@ function expectStyled(editor: Editor, inside: string) {
   expect(vueErrors).toEqual([]);
 }
 
-describe("merge and logic chips inherit the text marks", () => {
+describe("merge tag chips inherit the text marks", () => {
   it("inserts a toolbar merge tag inside styled paragraph text and renders it in MJML", async () => {
     const { editor } = await mountWithContent(STYLED);
     select(editor, 7);
@@ -130,14 +134,14 @@ describe("merge and logic chips inherit the text marks", () => {
       '<p><span style="font-size: 20px">Hello</span></p>',
     );
     select(editor, 6);
-    const mark = editor.schema.marks.textStyle.create({ fontSize: "20px" });
+    const mark = editor.schema.marks.textStyle.create({ fontSize: "30px" });
     editor.view.dispatch(editor.state.tr.setStoredMarks([mark]));
     editor.commands.insertMergeTag({
       label: "First Name",
       value: "{{first_name}}",
     });
     expect(editor.getHTML()).toContain(
-      `<span style="font-size: 20px;"><span data-merge-tag="{{first_name}}"`,
+      `<span style="font-size: 20px;">Hello</span><span style="font-size: 30px;">${CHIP}</span>`,
     );
   });
 
@@ -199,16 +203,6 @@ describe("merge and logic chips inherit the text marks", () => {
     );
   });
 
-  it("turns a typed logic tag inside styled text into a styled chip", async () => {
-    const { editor } = await mountWithContent(
-      '<p><span style="font-size: 20px">Hello {% if vip %world</span></p>',
-    );
-    select(editor, 1 + "Hello {% if vip %".length);
-    typeText(editor, "}");
-    await flushPromises();
-    expectStyled(editor, LOGIC_OPEN);
-  });
-
   it("turns a pasted merge tag inside styled text into a styled chip", async () => {
     const { editor } = await mountWithContent(STYLED);
     select(editor, 7);
@@ -229,39 +223,7 @@ describe("merge and logic chips inherit the text marks", () => {
     );
   });
 
-  it("turns a pasted logic tag inside styled text into a styled chip", async () => {
-    const { editor } = await mountWithContent(STYLED);
-    select(editor, 7);
-    editor.view.pasteText("{% if vip %}");
-    await flushPromises();
-    expectStyled(editor, LOGIC_OPEN);
-  });
-
-  it("inserts a standalone logic tag inside styled text", async () => {
-    const { editor } = await mountWithContent(STYLED);
-    select(editor, 7);
-    insertLogicTagSelection(
-      editor,
-      { label: "If VIP", value: "{% if vip %}" },
-      SYNTAX_PRESETS.liquid,
-    );
-    expectStyled(editor, LOGIC_OPEN);
-  });
-
-  it("wraps styled selection with logic chips marked at each boundary", async () => {
-    const { editor } = await mountWithContent(STYLED);
-    select(editor, 7, 12);
-    insertLogicTagSelection(
-      editor,
-      { label: "If VIP", before: "{% if vip %}", after: "{% endif %}" },
-      SYNTAX_PRESETS.liquid,
-    );
-    expect(editor.getHTML()).toContain(
-      `<span style="font-size: 20px;">Hello ${LOGIC_OPEN}world${LOGIC_CLOSE}</span>`,
-    );
-  });
-
-  it("uses different marks at the two ends of a wrapped selection", async () => {
+  it("keeps logic chips outside formatting so a condition can't split an element", async () => {
     const { editor } = await mountWithContent(
       '<p><span style="font-size: 20px">Hello </span><strong>world</strong></p>',
     );
@@ -271,21 +233,31 @@ describe("merge and logic chips inherit the text marks", () => {
       { label: "If VIP", before: "{% if vip %}", after: "{% endif %}" },
       SYNTAX_PRESETS.liquid,
     );
-    expect(editor.getHTML()).toContain(
-      `<span style="font-size: 20px;">He${LOGIC_OPEN}llo </span>`,
-    );
-    expect(editor.getHTML()).toContain(`<strong>wo${LOGIC_CLOSE}rld</strong>`);
+    expect(logicChipParents(editor)).toEqual(["P", "P"]);
   });
 
-  it("inserts adjacent logic chips with stored marks", async () => {
+  it("keeps a standalone logic tag in styled text unmarked", async () => {
     const { editor } = await mountWithContent(STYLED);
     select(editor, 7);
     insertLogicTagSelection(
       editor,
-      { label: "If VIP", before: "{% if vip %}", after: "{% endif %}" },
+      { label: "If VIP", value: "{% if vip %}" },
       SYNTAX_PRESETS.liquid,
     );
-    expectStyled(editor, `${LOGIC_OPEN}${LOGIC_CLOSE}`);
+    expect(logicChipParents(editor)).toEqual(["P"]);
+  });
+
+  it("keeps typed and pasted logic tags in styled text unmarked", async () => {
+    const { editor } = await mountWithContent(
+      '<p><span style="font-size: 20px">Hello {% if vip %world</span></p>',
+    );
+    select(editor, 1 + "Hello {% if vip %".length);
+    typeText(editor, "}");
+    await flushPromises();
+    editor.view.pasteText("{% endif %}");
+    await flushPromises();
+    expect(logicChipParents(editor)).toEqual(["P", "P"]);
+    expect(vueErrors).toEqual([]);
   });
 
   it("preserves bold marks on an inserted merge tag", async () => {
