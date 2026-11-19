@@ -18,8 +18,23 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.62.0",
+  "latest": "0.62.1",
   "versions": [
+    {
+      "version": "0.62.1",
+      "date": "2026-11-19",
+      "changes": [
+        {
+          "hash": "7b57447",
+          "level": "patch",
+          "title": "Merge tag chips inserted into formatted text keep that text's formatting through the toolbar, autocomplete, typing and paste, so the exported tag renders in the surrounding font size, colour and weight. Logic tag chips print no text and stay outside formatting, so a condition never splits a formatted element. Templates saved earlier keep their unstyled tags.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.62.0",
       "date": "2026-11-19",

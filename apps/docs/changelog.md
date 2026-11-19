@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.62.1
+
+<time datetime="2026-11-19">2026-11-19</time>
+
+### Fixes and improvements
+
+**Merge tag chips inserted into formatted text keep that text's formatting through the toolbar, autocomplete, typing and paste, so the exported tag renders in the surrounding font size, colour and weight. Logic tag chips print no text and stay outside formatting, so a condition never splits a formatted element. Templates saved earlier keep their unstyled tags.**
+
+`@templatical/editor`
+
 ## 0.62.0
 
 <time datetime="2026-11-19">2026-11-19</time>
