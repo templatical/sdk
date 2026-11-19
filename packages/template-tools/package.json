@@ -40,6 +40,7 @@
     "schema.json",
     "custom-block-schema.json"
   ],
+  "funding": "https://github.com/sponsors/orkhanahmadov",
   "homepage": "https://templatical.com",
   "keywords": [
     "cli",
