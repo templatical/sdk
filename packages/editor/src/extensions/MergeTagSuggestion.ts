@@ -7,6 +7,7 @@ import Suggestion, {
 } from "@tiptap/suggestion";
 import type { Ref } from "vue";
 import { createMergeTagPopup, filterMergeTags } from "../utils/mergeTagPopup";
+import { marksOfReplacedText, withMergeTagMarks } from "../utils/mergeTagMarks";
 
 export interface MergeTagSuggestionOptions {
   /** Available merge tags */
@@ -124,10 +125,16 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
         editor
           .chain()
           .focus()
-          .insertContentAt(range, {
-            type: "mergeTagNode",
-            attrs: { label: props.label, value: props.value },
-          })
+          .insertContentAt(
+            range,
+            withMergeTagMarks(
+              {
+                type: "mergeTagNode",
+                attrs: { label: props.label, value: props.value },
+              },
+              marksOfReplacedText(editor.state, range.from),
+            ),
+          )
           .run();
       },
       render: createMergeTagSuggestionRenderer(emptyText, popoverRootRef),
