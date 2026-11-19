@@ -5,7 +5,7 @@ description: Which docs page to open first — embed the editor, connect your ba
 
 # Starting points
 
-All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release. [License](/license-faq).
+All Templatical packages are MIT-licensed. [License](/license-faq).
 
 ## Embed the editor
 

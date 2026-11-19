@@ -441,7 +441,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
 export default defineConfig({
   title: "Templatical",
   description:
-    "MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).",
+    "MIT-licensed.",
   cleanUrls: true,
   // Page dates come from git. A shallow clone would date every page to its
   // one commit, so lastUpdated (and the sitemap's lastmod) is on only with
@@ -551,7 +551,7 @@ export default defineConfig({
       lang: "en",
       title: "Templatical",
       description:
-        "MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).",
+        "MIT-licensed.",
       themeConfig: {
         nav: enNav,
         sidebar: enSidebar,
@@ -572,7 +572,7 @@ export default defineConfig({
       lang: "de",
       title: "Templatical",
       description:
-        "MIT-lizenziert ab 0.62.0 (Editor-, Core- und Media-Library-Releases vor 0.62.0 standen unter FSL-1.1-MIT).",
+        "MIT-lizenziert.",
       themeConfig: {
         nav: deNav,
         sidebar: deSidebar,

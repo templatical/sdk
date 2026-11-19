@@ -31,8 +31,7 @@ const FULL_OUT = join(PUBLIC_DIR, "llms-full.txt");
 const META_OUT = join(PUBLIC_DIR, "llms-meta.json");
 
 const SITE_TITLE = "Templatical";
-const SITE_SUMMARY =
-  "MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).";
+const SITE_SUMMARY = "MIT-licensed.";
 
 // Generator output, and 27% of the corpus. public/changelog.json serves it.
 const EXCLUDED = new Set(["changelog.md"]);
