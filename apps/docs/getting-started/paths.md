@@ -5,7 +5,7 @@ description: Which docs page to open first — embed the editor, connect your ba
 
 # Starting points
 
-All Templatical packages are MIT-licensed. [License](/license-faq).
+Templatical is open source: every package is MIT-licensed. [License](/license-faq).
 
 ## Embed the editor
 

@@ -5,37 +5,49 @@ import { describe, expect, it } from "vitest";
 const REPO = join(import.meta.dirname, "../../..");
 const read = (path: string) => readFileSync(join(REPO, path), "utf8");
 
-const PLAIN_EN = "All Templatical packages are MIT-licensed.";
-const PLAIN_DE = "Alle Templatical-Pakete stehen unter der MIT-Lizenz.";
-const SHORT_EN = "MIT-licensed.";
-const SHORT_DE = "MIT-lizenziert.";
+const FACT_EN = "Templatical is open source: every package is MIT-licensed.";
+const FACT_DE = "Templatical ist Open Source: Alle Pakete stehen unter der MIT-Lizenz.";
+const SITE_EN =
+  "Embeddable drag-and-drop email editor SDK for your own app and backend. Open source, MIT-licensed.";
+const SITE_DE =
+  "Einbettbares Drag-and-Drop-E-Mail-Editor-SDK für Ihre eigene App und Ihr eigenes Backend. Open Source, MIT-lizenziert.";
+const SUMMARY =
+  "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, your own backend behind every storage feature. Open source, MIT-licensed.";
+const HOME_EN = "Open source (MIT), free to embed and self-host.";
+const HOME_DE = "Open Source (MIT), kostenlos einbettbar und selbst hostbar.";
+const LICENSE_EN =
+  "Every Templatical package is MIT-licensed: use, modify and embed it commercially, keeping the copyright notice.";
+const LICENSE_DE =
+  "Jedes Templatical-Paket steht unter der MIT-Lizenz: Sie dürfen es nutzen, ändern und kommerziell einbetten, solange der Urheberrechtshinweis erhalten bleibt.";
 
 describe("licence wording in user-facing copy", () => {
   it("states the MIT licence where answer engines read first", () => {
-    expect(read("README.md")).toContain(PLAIN_EN);
-    expect(read("apps/docs/index.md")).toContain(PLAIN_EN);
-    expect(read("apps/docs/de/index.md")).toContain(PLAIN_DE);
-    expect(read("apps/docs/license-faq.md")).toContain(PLAIN_EN);
-    expect(read("apps/docs/de/license-faq.md")).toContain(PLAIN_DE);
-    expect(read("apps/docs/getting-started/hosted-builders.md")).toContain(PLAIN_EN);
-    expect(read("apps/docs/getting-started/paths.md")).toContain(PLAIN_EN);
-    expect(read("apps/docs/de/getting-started/hosted-builders.md")).toContain(PLAIN_DE);
-    expect(read("apps/docs/de/getting-started/paths.md")).toContain(PLAIN_DE);
-    expect(read("apps/docs/.vitepress/config.ts")).toContain(SHORT_EN);
-    expect(read("apps/docs/.vitepress/config.ts")).toContain(SHORT_DE);
-    expect(read("CONTRIBUTING.md")).toContain(PLAIN_EN);
-    expect(read("context7.json")).toContain(SHORT_EN);
+    expect(read("README.md")).toContain(FACT_EN);
+    expect(read("apps/docs/index.md")).toContain("Open source, MIT-licensed.");
+    expect(read("apps/docs/index.md")).toContain(HOME_EN);
+    expect(read("apps/docs/de/index.md")).toContain("Open Source, MIT-lizenziert.");
+    expect(read("apps/docs/de/index.md")).toContain(HOME_DE);
+    expect(read("apps/docs/license-faq.md")).toContain(FACT_EN);
+    expect(read("apps/docs/license-faq.md")).toContain(LICENSE_EN);
+    expect(read("apps/docs/de/license-faq.md")).toContain(FACT_DE);
+    expect(read("apps/docs/de/license-faq.md")).toContain(LICENSE_DE);
+    expect(read("apps/docs/getting-started/hosted-builders.md")).toContain(FACT_EN);
+    expect(read("apps/docs/getting-started/paths.md")).toContain(FACT_EN);
+    expect(read("apps/docs/de/getting-started/hosted-builders.md")).toContain(FACT_DE);
+    expect(read("apps/docs/de/getting-started/paths.md")).toContain(FACT_DE);
+    expect(read("apps/docs/.vitepress/config.ts")).toContain(SITE_EN);
+    expect(read("apps/docs/.vitepress/config.ts")).toContain(SITE_DE);
+    expect(read("CONTRIBUTING.md")).toContain(FACT_EN);
+    expect(read("context7.json")).toContain("Open source, MIT-licensed.");
   });
 
   it("states MIT in the agent summary", () => {
     const summary = read("apps/docs/public/llms.txt")
       .split("\n")
       .find((line) => line.startsWith("> "));
-    expect(summary).toBe(`> ${SHORT_EN}`);
+    expect(summary).toBe(`> ${SUMMARY}`);
     expect(summary).toContain("MIT");
-    expect(read("apps/docs/scripts/build-agent-surface.mjs")).toContain(
-      `const SITE_SUMMARY = "${SHORT_EN}";`,
-    );
+    expect(read("apps/docs/scripts/build-agent-surface.mjs")).toContain(SUMMARY);
   });
 });
 

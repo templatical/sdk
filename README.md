@@ -5,7 +5,7 @@
 <h1 align="center">Templatical</h1>
 
 <p align="center">
-  All Templatical packages are MIT-licensed.
+  Templatical is open source: every package is MIT-licensed.
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@
 
 ---
 
-All Templatical packages are MIT-licensed. **Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, media, real-time collaboration and AI need no Cloud — you pass providers to `init()`. [Bring your own AI backend](https://docs.templatical.com/backend/ai) for chat, rewrite and chat attachments. Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release.
+Templatical is open source: every package is MIT-licensed. **Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, media, real-time collaboration and AI need no Cloud — you pass providers to `init()`. [Bring your own AI backend](https://docs.templatical.com/backend/ai) for chat, rewrite and chat attachments. Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release.
 
 For content checks, use [deliverability lint](https://docs.templatical.com/quality/deliverability/) and [compatibility lint](https://docs.templatical.com/quality/compatibility/); deterministic lint does not predict inbox placement.
 
@@ -187,4 +187,4 @@ Templatical is built and maintained by a solo developer. If your company uses it
 
 ## License
 
-All Templatical packages are MIT-licensed. Terms: [MIT](./LICENSE). [License](https://docs.templatical.com/license-faq).
+Templatical is open source: every package is MIT-licensed. Terms: [MIT](./LICENSE). [License](https://docs.templatical.com/license-faq).

@@ -131,9 +131,9 @@ describe("context7.json", () => {
     expect(description).not.toContain("\n");
   });
 
-  it("states that the project is MIT-licensed", () => {
+  it("states that the project is open source and MIT-licensed", () => {
     const { description } = loadConfig();
-    expect(description).toContain("MIT-licensed.");
+    expect(description.endsWith("Open source, MIT-licensed.")).toBe(true);
     expect(description.length).toBeLessThanOrEqual(200);
   });
 
