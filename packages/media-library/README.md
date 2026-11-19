@@ -23,10 +23,26 @@ Peer dep: `vue@^3.5`. Not needed next to `@templatical/editor` — that package 
 
 ```ts
 import { init } from '@templatical/media-library';
+import type { MediaLibraryConfig } from '@templatical/media-library';
 import '@templatical/media-library/style.css';
 
+const provider = {
+  list: async () => ({ items: [] }),
+  create: false,
+  update: false,
+  delete: false,
+  folders: false,
+  replace: false,
+  importFromUrl: false,
+  checkUsage: false,
+  frequentlyUsed: false,
+  storage: false,
+} satisfies MediaLibraryConfig['provider'];
+
+const container = document.createElement('div');
+document.body.append(container);
 const media = await init({
-  container: '#media',
+  container,
   provider,
   onSelect(asset) {
     console.log('Picked:', asset.url);
@@ -37,7 +53,7 @@ const media = await init({
 media.unmount();
 ```
 
-`provider` is a `MediaProvider` you implement. `onSelect` is optional. `accept` narrows categories; omit it for every category.
+This provider opens an empty, read-only library. Replace `list` with your storage query to show assets. `onSelect` is optional. `accept` narrows categories; omit it for every category.
 
 ### Vue component
 
@@ -62,6 +78,20 @@ import '@templatical/media-library/style.css';
 
 ```ts
 import { useMediaLibrary } from '@templatical/media-library';
+import type { MediaLibraryConfig } from '@templatical/media-library';
+
+const provider = {
+  list: async () => ({ items: [] }),
+  create: false,
+  update: false,
+  delete: false,
+  folders: false,
+  replace: false,
+  importFromUrl: false,
+  checkUsage: false,
+  frequentlyUsed: false,
+  storage: false,
+} satisfies MediaLibraryConfig['provider'];
 
 const lib = useMediaLibrary({
   provider,
@@ -71,7 +101,7 @@ const lib = useMediaLibrary({
 });
 ```
 
-`provider` is a `MediaProvider` you implement. See the [media contract](https://docs.templatical.com/backend/media).
+This provider returns an empty, read-only library. See the [media contract](https://docs.templatical.com/backend/media) to connect your storage.
 
 ## Exports
 

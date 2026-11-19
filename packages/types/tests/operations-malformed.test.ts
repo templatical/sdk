@@ -8,9 +8,8 @@ import {
 
 /**
  * Batches a backend or an agent can send that aren't well formed. The shared
- * JSON fixtures pin the engine's contract with Templatical Cloud's PHP engine;
- * these cover the TypeScript engine's own shape checks on input no typed
- * caller would build.
+ * JSON fixtures pin the operation engine's contract. These cover shape checks
+ * on input no typed caller would build.
  */
 
 const CONTENT = {

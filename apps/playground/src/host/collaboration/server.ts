@@ -21,17 +21,15 @@ import {
  * engine, the way a self-hosted backend would. It knows nothing about
  * transport; `shared.worker.ts` runs one instance for every tab.
  *
- * It mirrors Templatical Cloud's rules (the S6 cross-track contract): batches
- * apply in order and all or nothing, a repeated `batchId` answers with its
+ * Batches apply in order and all or nothing; a repeated `batchId` answers with its
  * revision, locks belong to a session and an identity together, and a batch
  * broadcast that would be larger than 8,000 bytes goes out as a re-sync.
  *
- * It also applies the SDK's snapshot rule, which Templatical Cloud doesn't
- * apply yet: a batch holding a `setContent` must be based on the current
- * revision, checked after a repeated `batchId`.
+ * A batch holding a `setContent` must be based on the current revision,
+ * checked after a repeated `batchId`.
  */
 
-/** Presence colours, in Templatical Cloud's order. */
+/** Stable palette for presence colours. */
 export const COLLABORATION_COLORS = [
   "#3b82f6",
   "#ef4444",
@@ -54,12 +52,12 @@ export const MEMBER_TTL_MS = 15_000;
 /** Batches kept for `operationsAfter`; an older revision gets a re-sync. */
 export const LOG_LIMIT = 200;
 
-/** Batches per submit, as Cloud allows. */
+/** Maximum operations in one submitted batch. */
 export const MAX_OPS_PER_BATCH = 100;
 
 /**
- * A batch whose broadcast, JSON-encoded twice as it travels in a Pusher
- * request body, is larger than this goes out as a re-sync instead.
+ * A batch whose broadcast exceeds this size after two JSON encodings goes
+ * out as a re-sync instead.
  */
 export const BROADCAST_MAX_BYTES = 8000;
 
@@ -120,7 +118,7 @@ export function crc32(text: string): number {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-/** A person's colour: the same on every screen, as Cloud picks it. */
+/** A person's colour is deterministic across every screen. */
 export function colorFor(identity: string): string {
   return COLLABORATION_COLORS[crc32(identity) % COLLABORATION_COLORS.length];
 }

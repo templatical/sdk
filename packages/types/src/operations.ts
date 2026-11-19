@@ -190,7 +190,7 @@ export interface UpdateSettingsLocaleOperation {
 
 /**
  * One change to a template, in the vocabulary the editor, the CLI's `edit`
- * command, collaboration backends and Templatical Cloud share. Positions are
+ * command and collaboration backends share. Positions are
  * anchored to a sibling rather than an index, so an operation means the same
  * thing after someone else's change lands first.
  */
@@ -265,7 +265,7 @@ export interface OperationContext {
 /**
  * The column count of a section layout. `"1"` → 1. `"3"` and `"1-2-1"` → 3.
  * `"4"` → 4. `"2"`, `"1-2"`, `"2-1"`, `"1-3"` and `"3-1"` → 2. Anything else
- * → 2. The section toolbar and Templatical Cloud's engine use the same rule.
+ * → 2. The section toolbar uses this rule.
  */
 export function getColumnCount(layout: unknown): number {
   if (layout === "1") return 1;
@@ -286,8 +286,7 @@ export function getColumnCount(layout: unknown): number {
  * `setDefaultLocale` promotes a version to the base and checks every lock.
  *
  * Each operation is checked in a fixed order, and the first failing check
- * decides the error (the cross-track contract's C1, which Templatical Cloud's
- * PHP engine follows too):
+ * decides the error:
  *
  * 1. its shape (`invalid_operation`), a section's `columns` in `unset` included;
  * 2. the blocks it names (`block_missing`, `block_exists`);

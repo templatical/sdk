@@ -56,7 +56,7 @@ function load(file: string): Fixture {
   return JSON.parse(readFileSync(join(FIXTURES, file), "utf8")) as Fixture;
 }
 
-describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () => {
+describe("operation fixtures", () => {
   it("has a manifest that matches every fixture byte for byte", () => {
     expect(readFileSync(join(FIXTURES, "MANIFEST.sha256"), "utf8")).toBe(
       freshManifest(),

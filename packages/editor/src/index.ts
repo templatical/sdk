@@ -418,7 +418,8 @@ export interface TemplaticalEditorConfig {
    * in hero mode with starter content.
    *
    * Unknown entries — a typo, an unregistered custom block, or `countdown`
-   * outside a Cloud plan — are logged with a warning and skipped. Filtering
+   * which is not insertable from the palette — are logged with a warning and
+   * skipped. Filtering
    * the palette never affects rendering: existing content using a hidden
    * block type still renders correctly.
    */
@@ -777,7 +778,7 @@ export interface HeaderOptions {
   viewportToggle?: boolean;
 }
 
-/** Function type for media browser requests, used by both OSS and Cloud editors. */
+/** Function type for media browser requests. */
 export type OnRequestMedia = (
   context?: MediaRequestContext,
 ) => Promise<MediaResult | null>;
