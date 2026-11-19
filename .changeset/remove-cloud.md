@@ -1,14 +1,8 @@
 ---
-"@templatical/editor": minor
-"@templatical/core": minor
-"@templatical/types": minor
-"@templatical/media-library": minor
+"@templatical/editor": patch
+"@templatical/core": patch
+"@templatical/types": patch
+"@templatical/media-library": patch
 ---
 
-Breaking changes:
-
-- `initCloud()` is removed. Use `init()` with your own providers: `templates`, `comments`, `versionHistory`, `savedBlocks`, `media`, `testEmail`, `render`, `ai`, and `collaboration`.
-- `getSupportedCloudLocales()`, `TemplaticalCloudEditorConfig` and `TemplaticalCloudEditor` are removed from `@templatical/editor` with no replacement; `getSupportedLocales()` lists the editor's locales.
-- The `@templatical/core/cloud` subpath is removed with no replacement.
-- Cloud wire types (`PlanConfig`, `MediaConfig`, `StorageInfo`, and auth/token types) are removed from `@templatical/types`.
-- `pusher-js` is no longer a peer dependency.
+Remove the unreleased Templatical Cloud integration. The SDK is configured through `init()` alone: every storage feature is a provider you pass to it (`templates`, `comments`, `versionHistory`, `savedBlocks`, `media`, `testEmail`, `render`, `ai`, `collaboration`). This drops `initCloud()`, `getSupportedCloudLocales()`, the `@templatical/core/cloud` subpath and the Cloud wire types in `@templatical/types`, and `pusher-js` is no longer a peer dependency.
