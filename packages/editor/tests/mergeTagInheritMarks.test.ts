@@ -10,6 +10,7 @@ import {
   SYNTAX_PRESETS,
 } from "@templatical/types";
 import { renderToMjml } from "@templatical/renderer";
+import { Liquid } from "liquidjs";
 import ParagraphEditor from "../src/components/blocks/ParagraphEditor.vue";
 import TitleEditor from "../src/components/blocks/TitleEditor.vue";
 import en from "../src/i18n/locales/en";
@@ -234,6 +235,17 @@ describe("merge tag chips inherit the text marks", () => {
       SYNTAX_PRESETS.liquid,
     );
     expect(logicChipParents(editor)).toEqual(["P", "P"]);
+
+    const content = createDefaultTemplateContent();
+    content.blocks = [createParagraphBlock({ content: editor.getHTML() })];
+    const mjml = await renderToMjml(content);
+    const liquid = new Liquid();
+    expect(await liquid.parseAndRender(mjml, { vip: false })).toContain(
+      '<p><span style="font-size: 20px;">He</span><strong>rld</strong></p>',
+    );
+    expect(await liquid.parseAndRender(mjml, { vip: true })).toContain(
+      '<p><span style="font-size: 20px;">He</span><span style="font-size: 20px;">llo </span><strong>wo</strong><strong>rld</strong></p>',
+    );
   });
 
   it("keeps a standalone logic tag in styled text unmarked", async () => {
