@@ -20,7 +20,7 @@ describe("@templatical/ai-kit's shape", () => {
   it("is MIT, with the licence text in the package", () => {
     expect(pkg.license).toBe("MIT");
     expect(readFileSync(join(PKG, "LICENSE"), "utf8")).toBe(
-      readFileSync(resolve(PKG, "../../LICENSE-MIT"), "utf8"),
+      readFileSync(resolve(PKG, "../../LICENSE"), "utf8"),
     );
   });
 

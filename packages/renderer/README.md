@@ -3,7 +3,7 @@
 > JSON → MJML renderer for Templatical email templates. Runs in the browser or on Node.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/renderer?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/renderer)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 Converts Templatical's JSON template format into MJML, which you then compile to HTML using any [MJML library](https://mjml.io). Pure functions, zero runtime dependencies aside from `@templatical/types`.
 

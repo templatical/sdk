@@ -3,7 +3,7 @@
 > Accessibility linter for Templatical email templates. Runs in the browser or on Node.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/quality?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/quality)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 Deterministic accessibility checks against the JSON `TemplateContent` block tree — missing alt text, low-contrast text and buttons, vague link / CTA copy, heading-skip, undersized touch targets, and more. Same package validates inside the editor (live sidebar tab + canvas badges) and in headless / CI checks.
 
