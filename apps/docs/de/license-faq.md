@@ -38,8 +38,6 @@ Veröffentlichungen bis 0.61.x von `@templatical/editor`, `@templatical/core` un
 
 Ja. Jedes `@templatical/*`-Paket und der Agent Skill sind MIT-lizenziertes Open Source.
 
-## Cloud-Tarif
+## Provider
 
-**Nein.** Der Cloud-Tarif ist optional. Das SDK kann eigenständig laufen; Funktionen, die auf Ihre Daten zugreifen, verwenden von Ihnen implementierte Provider.
-
-Live-Zusammenarbeit läuft über Ihr eigenes Backend mit `init({ collaboration })`. Die gehostete Zusammenarbeit von Templatical Cloud ist in dieser SDK-Version nicht enthalten. Cloud stellt gehosteten Speicher bereit; sein KI-Provider ist in dieser SDK-Version nicht enthalten. Kommentare, gespeicherte Blöcke, Versionsverlauf, Test-E-Mail, Medien und [KI](/de/backend/ai) verwenden von Ihnen implementierte Provider an `init()`. Cloud ist ein Adapter, nicht die Funktion.
+Kommentare, gespeicherte Blöcke, Versionsverlauf, Test-E-Mail, Medien, [KI](/de/backend/ai) und Live-Zusammenarbeit sind Provider, die Sie an `init()` übergeben. Live-Zusammenarbeit läuft über Ihr eigenes Backend mit `init({ collaboration })`.

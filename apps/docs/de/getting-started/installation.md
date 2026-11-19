@@ -18,7 +18,7 @@ Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.
   - **Opt-out-Modus** (`shadowDom: false`, Light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Verwenden Sie diesen Modus, wenn Sie ältere Firefox- oder Safari-Versionen unterstützen müssen oder Ihre Integration Light-DOM-Zugriff auf Editor-Interna benötigt. Siehe den [Shadow-DOM-Leitfaden](../guide/shadow-dom) für die Kompromisse.
 - **Container-Element** -- muss eine definierte Höhe haben (der Editor füllt seinen Container aus). Im Standardmodus muss es ein Elementtyp sein, der einen Shadow Root hosten kann (z. B. `<div>`, `<section>`, `<article>`). Siehe [Container-Element-Anforderungen](../api/editor#container-element-requirements).
 - **Kein `transform` und kein Stacking-Kontext auf einem Vorfahren des Containers** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` unter `1`, `isolation`, `contain` und positionierte Elemente mit `z-index` verändern jeweils, wo die Overlays des Editors gezeichnet oder positioniert werden. Das sind reine CSS-Regeln, keine Templatical-spezifischen Einschränkungen; sie betreffen jede Bibliothek, die Overlays mit `position: fixed` positioniert. Was jede Eigenschaft konkret bricht und wie Sie es umgehen, steht unter [Den Editor einbetten](./embedding).
-- **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. `@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus. Es aktiviert das Panel „Probleme“ und die Lint-Badges; `@templatical/renderer` und `pusher-js` bleiben optionale Peers. Siehe [Optionale Peers](#optionale-peers).
+- **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. `@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus. Es aktiviert das Panel „Probleme“ und die Lint-Badges; `@templatical/renderer` bleibt ein optionaler Peer. Siehe [Optionale Peers](#optionale-peers).
 
 ## Netzwerk-Anfragen
 
@@ -112,7 +112,7 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/core`            | Framework-agnostische Editor-Logik (State, History)                                                                     | Nur für Headless-Nutzung außerhalb des Editors |
 | `@templatical/renderer`        | Rendert Templates zu MJML                                                                                               | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
 | `@templatical/quality`         | Template-Linter (Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität) für das Panel „Probleme“ des Editors und Headless- / CI-Checks                | Optionale Abhängigkeit des Editors, standardmäßig mitinstalliert                 |
-| `@templatical/media-library`   | Eigenständiges Medien-SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in einer Vue-App). Die Durchsuchen-Oberfläche des Editors ist in `@templatical/editor` gebündelt. | Optional – nur für eigenständige Nutzung, nicht für `init({ media })` oder Clouds Speicher |
+| `@templatical/media-library`   | Eigenständiges Medien-SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in einer Vue-App). Die Durchsuchen-Oberfläche des Editors ist in `@templatical/editor` gebündelt. | Optional – nur für eigenständige Nutzung, nicht für `init({ media })` |
 | `@templatical/template-tools`  | CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren und Live-Vorschauen von Templates außerhalb des Editors | Optional – per `npx` ausführen, nichts zu installieren; für CI-Checks, Skripte oder das Erzeugen von Templates ohne gemounteten Editor |
 | `@templatical/ai-kit`             | KI über Ihr eigenes Backend: `createHttpAiProvider` für `init({ ai })`, dazu ein Server-Kit und ein Test-Kit für Ihr Backend. MIT. | Optional – dort installieren, wo Sie KI nutzen (Client und Server) |
 | `@templatical/import-beefree`  | Konvertiert BeeFree-JSON-Templates in das Templatical-Format                                                            | Optional                                                                                                     |
@@ -130,17 +130,16 @@ Der Editor bündelt Vue, TipTap, `@templatical/core` und `@templatical/types` in
 
 ## Optionale Peers
 
-Der Editor lädt optionale Pakete per dynamischem `import()`, abhängig vom genutzten Feature. Quality wird standardmäßig installiert; Renderer und pusher-js bleiben optionale Peers:
+Der Editor lädt optionale Pakete per dynamischem `import()`, abhängig vom genutzten Feature. Quality wird standardmäßig installiert; der Renderer bleibt ein optionaler Peer:
 
 | Peer                         | Wann geladen                                   | Installieren, wenn Sie                   |
 | ---------------------------- | ---------------------------------------------- | ---------------------------------------- |
 | `@templatical/renderer`      | Erster Aufruf von `editor.toMjml()`            | MJML-Export aus dem Browser benötigen    |
 | `@templatical/quality`       | Beim Mounten des Editors (Panel „Probleme“)        | Optionale Abhängigkeit des Editors, standardmäßig mitinstalliert |
-| `pusher-js`                  | Cloud-Realtime-Verbindung                      | `initCloud()` verwenden                  |
 
 `@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus.
 
-Ohne pusher-js bleibt Cloud-Realtime aus. Ohne Renderer oder Rendering-Provider wirft `editor.toMjml()` einen klaren Fehler, der das fehlende Paket nennt. Durchsuchen braucht kein Extra-Paket — das Modal ist ein Lazy-Chunk des Editors.
+Ohne Renderer oder Rendering-Provider wirft `editor.toMjml()` einen klaren Fehler, der das fehlende Paket nennt. Durchsuchen braucht kein Extra-Paket — das Modal ist ein Lazy-Chunk des Editors.
 
 ### Hinweis zur Bundler-Ausgabe
 
@@ -155,7 +154,7 @@ module.exports = {
     {
       module: /@templatical[\\/]editor/,
       message:
-        /Can't resolve '(pusher-js|@templatical\/(quality|renderer))'/,
+        /Can't resolve '@templatical\/(quality|renderer)'/,
     },
   ],
 };
@@ -421,7 +420,7 @@ Wenn Sie keinen Paketmanager verwenden möchten, können Sie den Editor direkt �
 <div id="editor" style="height: 100vh;"></div>
 ```
 
-Der CDN-Build ist vollständig eigenständig – alle Abhängigkeiten sind gebündelt. Schwere Bibliotheken (TipTap, Vue, Pusher usw.) werden per Code-Splitting in separate Chunks aufgeteilt und bei Bedarf nachgeladen.
+Der CDN-Build ist vollständig eigenständig – alle Abhängigkeiten sind gebündelt. Schwere Bibliotheken (TipTap, Vue und der Rest) werden per Code-Splitting in separate Chunks aufgeteilt und bei Bedarf nachgeladen.
 
 ### Eine Version pinnen
 

@@ -438,9 +438,6 @@ const deSidebar: DefaultTheme.SidebarMulti = {
   ],
 };
 
-/** Cloud docs are disallowed in public/robots.txt, so the sitemap must not list them. */
-const isCloudPage = (url: string) => /^(?:de\/)?cloud(?:\/|$)/.test(url);
-
 export default defineConfig({
   title: "Templatical",
   description:
@@ -455,8 +452,6 @@ export default defineConfig({
   srcExclude: ["tests/**"],
   sitemap: {
     hostname: SITE_URL,
-    transformItems: (items: { url: string }[]) =>
-      items.filter((item) => !isCloudPage(item.url)),
   },
   // Serve each page's source markdown beside its rendered page: append `.md`
   // to the page's URL, or `index.md` when that URL ends in `/`. Agents that

@@ -123,7 +123,7 @@ An empty array reads as a decision ("nobody may be sent to"), not as "unset". Us
 **Validate the recipient on your server**, every time. Without that, your endpoint is an open relay — anyone who can reach it can mail arbitrary addresses from your domain.
 :::
 
-The payload echoes the list back as `allowedRecipients` so one `send` implementation stays portable between your backend and Templatical Cloud. It is **untrusted** — unsigned, and read out of the browser. Beyond portability it is good for one thing: compare it against `recipient` server-side, where a mismatch means a tampered or buggy client and is worth logging.
+The payload echoes the list back as `allowedRecipients`. It is **untrusted** — unsigned, and read out of the browser. Compare it against `recipient` server-side, where a mismatch means a tampered or buggy client and is worth logging.
 
 ## Events
 

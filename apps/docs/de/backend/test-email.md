@@ -123,7 +123,7 @@ Ein leeres Array wird als Entscheidung gelesen („niemand darf angeschrieben we
 **Prüfen Sie den Empfänger auf Ihrem Server**, und zwar jedes Mal. Ohne diese Prüfung ist Ihr Endpunkt ein offenes Relay: Wer ihn erreicht, kann beliebige Adressen von Ihrer Domain aus anschreiben.
 :::
 
-Die Nutzlast gibt die Liste als `allowedRecipients` zurück, damit eine `send`-Implementierung zwischen Ihrem Backend und Templatical Cloud portabel bleibt. Sie ist **nicht vertrauenswürdig** — ohne Signatur und aus dem Browser gelesen. Über die Portabilität hinaus taugt sie für eines: den Vergleich mit `recipient` auf dem Server, wo eine Abweichung einen manipulierten oder fehlerhaften Client bedeutet und sich zu protokollieren lohnt.
+Die Nutzlast gibt die Liste als `allowedRecipients` zurück. Sie ist **nicht vertrauenswürdig** — ohne Signatur und aus dem Browser gelesen. Vergleichen Sie sie mit `recipient` auf dem Server, wo eine Abweichung einen manipulierten oder fehlerhaften Client bedeutet und sich zu protokollieren lohnt.
 
 ## Events
 

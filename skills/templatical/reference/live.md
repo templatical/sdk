@@ -87,8 +87,9 @@ npx -y @templatical/template-tools@0.61.0 live stop --json
 - **`.templatical/` is a working directory** — it holds the shared template and
   the bridge's pidfile. Suggest the user add `.templatical/` to their project's
   `.gitignore` (don't edit their `.gitignore` without asking).
-- **Local and single-user.** This is an ephemeral local bridge, not the Cloud
-  realtime/collaboration path (no accounts, no persistence, no multi-user).
+- **Local and single-user.** This is an ephemeral local bridge (no accounts,
+  no persistence, no multi-user). Live collaboration over a host backend is
+  `init({ collaboration })`, documented in [providers.md](providers.md).
 - **`html` blocks run as-is** in the preview (the editor sanitizes rich text, but
   raw `html` blocks are not sanitized). It's the user's own local content, but be
   aware the preview executes it.

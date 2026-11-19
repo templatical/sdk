@@ -189,7 +189,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
 - **The `google` platform** — `SocialPlatform` has no `google` member, so a `google-href` maps to `website` instead. This is the common case, not an edge case: Topol's own social widget still writes `google-href` for Google+, a network retired years ago.
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `icon-size` outside those three resolves to the nearest one — and Topol's own default is 35px, so this is the common case for social blocks, not the exception.
-- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear anywhere in a Topol design, so nothing that keys off one — a Cloud comment thread, for example — survives an import.
+- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear anywhere in a Topol design, so nothing that keys off one — a comment thread keyed by block id, for example — survives an import.
 
 ## Things that don't map automatically
 

@@ -1,6 +1,6 @@
 ---
 title: Operationen
-description: Das Operations-Vokabular, das Editor, CLI, Collaboration-Backends und Templatical Cloud teilen.
+description: Das Operations-Vokabular, das Editor, CLI und Collaboration-Backends teilen.
 ---
 
 # Operationen
@@ -9,9 +9,8 @@ Eine Operation ist eine Änderung an einem Template: einen Block hinzufügen, ve
 
 - **[Zusammenarbeit](/de/backend/collaboration)** — ein Editor mit `init({ collaboration })` schickt jede Änderung als Batch von Operationen an Ihr Backend und wendet die Batches anderer an.
 - **Die CLI** — `template-tools edit` wendet sie auf eine Template-Datei an.
-- **Templatical Cloud** — speichert jeden Batch mit seiner Revision, und mit seinem MCP-Server verbundene KI-Agenten bearbeiten mit demselben Vokabular über `edit_template`.
 
-`applyOperations` aus `@templatical/types` (MIT) wendet sie an. Der Server von Templatical Cloud verwendet eine Engine mit denselben Regeln, und gemeinsame Testfälle halten beide identisch.
+`applyOperations` aus `@templatical/types` (MIT) wendet sie an. Die Fixtures in diesem Paket sind der Vertrag für jeden Aufrufer.
 
 ## Die sechs Operationen
 
@@ -151,15 +150,15 @@ Führen Sie `pnpm --filter @templatical/types exec vitest run tests/operations.t
 
 Ein abgelehnter Batch wirft einen `OperationError` mit `code` und `opIndex`, dem 0-basierten Index der abgelehnten Operation.
 
-| Code                  | Wann                                                                                          | Templatical Cloud antwortet |
-| --------------------- | --------------------------------------------------------------------------------------------- | --------------------------- |
-| `block_exists`        | Die ID eines neuen Blocks oder eine ID darin gibt es im Template schon                        | 409                         |
-| `block_missing`       | Der Block, die Eltern-Sektion oder der Eltern-Wrapper fehlt                                   | 409                         |
-| `anchor_missing`      | Der `after`-Block ist nicht im Zielcontainer                                                  | 409                         |
-| `precondition_failed` | `expect` gilt nicht                                                                           | 409                         |
-| `lock_held`           | Eine andere Sitzung hält den Block                                                            | 409                         |
-| `locked_by_others`    | Eine andere Sitzung hält eine Sperre, bei `setContent` oder einem Wechsel der Standardsprache | 409                         |
-| `invalid_operation`   | Die Operation ist fehlerhaft oder kann nie gelten                                             | 422                         |
+| Code                  | Wann                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| `block_exists`        | Die ID eines neuen Blocks oder eine ID darin gibt es im Template schon                        |
+| `block_missing`       | Der Block, die Eltern-Sektion oder der Eltern-Wrapper fehlt                                   |
+| `anchor_missing`      | Der `after`-Block ist nicht im Zielcontainer                                                  |
+| `precondition_failed` | `expect` gilt nicht                                                                           |
+| `lock_held`           | Eine andere Sitzung hält den Block                                                            |
+| `locked_by_others`    | Eine andere Sitzung hält eine Sperre, bei `setContent` oder einem Wechsel der Standardsprache |
+| `invalid_operation`   | Die Operation ist fehlerhaft oder kann nie gelten                                             |
 
 ### Welcher Fehler gewinnt
 

@@ -55,10 +55,6 @@ watch(editor.content, (next) => {
 - `useSavedBlocks` — reactive list/create/update/remove over a `SavedBlocksProvider` (saved blocks)
 - `createLocalStorageSavedBlocksProvider` — bundled browser-local `SavedBlocksProvider`, for demos and prototypes
 
-## Cloud subpath
-
-The `@templatical/core/cloud` subpath provides Templatical Cloud integrations (Auth, API client, WebSocket, comments, and `createCloudSavedBlocksProvider`). Used by `@templatical/editor`'s `initCloud()`.
-
 ## Documentation
 
 Full reference at **[docs.templatical.com](https://docs.templatical.com)**.

@@ -179,7 +179,7 @@ init({
 });
 ```
 
-Entfernt das Feld aus dem Header, unabhängig davon, ob Ihr Provider speichern kann. `editor.create({ name })`, `setName()` und der `name` in jedem Speicher-Patch funktionieren weiter, Ihre eigene Bedienoberfläche kann den Namen also weiterhin verwalten. `initCloud()` akzeptiert denselben Schlüssel auf seinem eigenen `templates`-Objekt.
+Entfernt das Feld aus dem Header, unabhängig davon, ob Ihr Provider speichern kann. `editor.create({ name })`, `setName()` und der `name` in jedem Speicher-Patch funktionieren weiter, Ihre eigene Bedienoberfläche kann den Namen also weiterhin verwalten.
 
 Ist das Feld ausgeblendet, bleibt der Zeitstempel der einzige Inhalt der linken Header-Spalte.
 
@@ -244,7 +244,7 @@ router.beforeEach((to, from, next) => {
 });
 ```
 
-`onDirtyChange` funktioniert mit und ohne Provider, in beiden Fällen an der Wurzel der Konfiguration. `initCloud()` akzeptiert `unsavedChangesGuard` auf seinem eigenen `templates`-Objekt, zu denselben Bedingungen — Cloud hat immer einen Speicherort, die Rückfrage ist dort also aktiv, sofern Sie sie nicht abschalten.
+`onDirtyChange` funktioniert mit und ohne Provider, in beiden Fällen an der Wurzel der Konfiguration.
 
 ## Die Instanz-API
 

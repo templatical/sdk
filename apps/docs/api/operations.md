@@ -1,6 +1,6 @@
 ---
 title: Operations
-description: The operation vocabulary the editor, the CLI, collaboration backends and Templatical Cloud share.
+description: The operation vocabulary the editor, the CLI and collaboration backends share.
 ---
 
 # Operations
@@ -9,9 +9,8 @@ An operation is one change to a template: add, move, delete or update a block, u
 
 - **[Collaboration](/backend/collaboration)** — an editor with `init({ collaboration })` sends every edit to your backend as a batch of operations, and applies other people's batches.
 - **The CLI** — `template-tools edit` applies them to a template file.
-- **Templatical Cloud** — stores every batch with its revision, and AI agents connected to its MCP server edit with the same vocabulary through `edit_template`.
 
-`applyOperations` from `@templatical/types` (MIT) applies them. Templatical Cloud's server runs an engine with the same rules, and a shared set of test cases keeps the two identical.
+`applyOperations` from `@templatical/types` (MIT) applies them. The fixtures in that package are the contract for every caller.
 
 ## The six operations
 
@@ -151,15 +150,15 @@ Run `pnpm --filter @templatical/types exec vitest run tests/operations.test.ts t
 
 A refused batch throws an `OperationError` with `code` and `opIndex`, the 0-based index of the refused operation.
 
-| Code                  | When                                                                               | Templatical Cloud answers |
-| --------------------- | ---------------------------------------------------------------------------------- | ------------------------- |
-| `block_exists`        | A new block's id, or an id inside it, is already in the template                   | 409                       |
-| `block_missing`       | The block, parent section, or parent wrapper isn't there                           | 409                       |
-| `anchor_missing`      | The `after` block isn't in the target container                                    | 409                       |
-| `precondition_failed` | `expect` doesn't hold                                                              | 409                       |
-| `lock_held`           | Another session holds the block                                                    | 409                       |
-| `locked_by_others`    | Another session holds a lock, for `setContent` or a change of the default language | 409                       |
-| `invalid_operation`   | The operation is malformed or can never apply                                      | 422                       |
+| Code                  | When                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| `block_exists`        | A new block's id, or an id inside it, is already in the template                   |
+| `block_missing`       | The block, parent section, or parent wrapper isn't there                           |
+| `anchor_missing`      | The `after` block isn't in the target container                                    |
+| `precondition_failed` | `expect` doesn't hold                                                              |
+| `lock_held`           | Another session holds the block                                                    |
+| `locked_by_others`    | Another session holds a lock, for `setContent` or a change of the default language |
+| `invalid_operation`   | The operation is malformed or can never apply                                      |
 
 ### Which error wins
 

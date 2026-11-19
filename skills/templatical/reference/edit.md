@@ -22,8 +22,7 @@ npx -y @templatical/template-tools@0.61.0 edit .templatical/<name>.json --op '{"
 
 `edit` applies the operation, validates the result, and writes the file — all
 in one step, and nothing is written if the result isn't structurally valid.
-The vocabulary is the one the editor, collaboration backends and Templatical
-Cloud share:
+The vocabulary is the one the editor and collaboration backends share:
 
 | Operation        | Shape                                                                         |
 | ---------------- | ----------------------------------------------------------------------------- |
@@ -78,10 +77,6 @@ both gaps and text German translated to the English value keep current entries.
 `updateSettings` refuses to change `settings.locale` while versions exist.
 
 For custom `text`/`textarea` gaps, pass `--definitions definitions.json` to `edit`. Headless, use `createSetDefaultLocaleOperation(content, "de", definitions)` from `@templatical/types` and apply its result. `customTextFields?: Record<string, string[]>` captures custom block ids and their safe existing `fieldValues.<key>` string paths for deterministic replay; without it, only existing custom text entries identify translatable fields. The visual editor captures registered definitions automatically. Metadata keys `__proto__`, `constructor` and `prototype` are refused with `invalid_operation` even for existing custom block ids; the builder also refuses to capture paths for them, so rename such an id first.
-
-An agent connected to a template through Templatical Cloud's hosted MCP server
-edits with this same vocabulary through the server's `edit_template` tool, so
-the shapes and rules here hold there too.
 
 Positions name a sibling, never an index: `parent` is `null` for the top level
 or `{"sectionId":"…","column":0}` for a section column, or `{"wrapperId":"A"}` for a wrapper’s direct child list, and `after` is the id

@@ -125,7 +125,7 @@ Serialize the batches of one template: two applied at once would both read the s
 
 ### Locks and ownership
 
-A lock belongs to a session and to the identity behind it together: the user id, or `guest:<sessionId>` for a session without a user. Compare both, as `ownerOf` does above, so a session id borrowed from another user's request can't act on their lock. Give locks a short expiry (Templatical Cloud uses 30 seconds; the editor renews every 10), and when a session takes a new block, release the block it held before. Leave lock checks to `applyOperations`: pass every unexpired lock with its owner, and the acting owner as `session`.
+A lock belongs to a session and to the identity behind it together: the user id, or `guest:<sessionId>` for a session without a user. Compare both, as `ownerOf` does above, so a session id borrowed from another user's request can't act on their lock. Give locks a short expiry (the editor renews every 10 seconds), and when a session takes a new block, release the block it held before. Leave lock checks to `applyOperations`: pass every unexpired lock with its owner, and the acting owner as `session`.
 
 ### Catching up
 

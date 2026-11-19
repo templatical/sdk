@@ -11,7 +11,7 @@ Diese Seite ist die kanonische Referenz für das Isolationsmodell. Wenn Sie den 
 
 ## Isolation
 
-Wenn Sie `init()` oder `initCloud()` aufrufen und ein Container-Element übergeben, geht Templatical folgendermaßen vor:
+Wenn Sie `init()` aufrufen und ein Container-Element übergeben, geht Templatical folgendermaßen vor:
 
 1. Ruft `container.attachShadow({ mode: 'open' })` auf, um einen Shadow Root auf Ihrem Element zu erstellen.
 2. Hängt die Vue-App in den Shadow Root ein, statt die Kinder des Containers direkt zu ersetzen.
@@ -115,7 +115,7 @@ Was Sie verlieren:
 
 Was weiterhin funktioniert:
 
-- Jede andere Funktion ist identisch: dieselben Blöcke, dieselbe i18n, dieselben Cloud-Funktionen, dieselbe API-Oberfläche. Die Grenze ist die einzige Änderung.
+- Jede andere Funktion ist identisch: dieselben Blöcke, dieselbe i18n, dieselbe API-Oberfläche. Die Grenze ist die einzige Änderung.
 
 ### Light-DOM-Modus gegen Host-CSS härten
 

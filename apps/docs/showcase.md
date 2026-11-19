@@ -30,9 +30,9 @@ You're building a Mailchimp-style product, an automation tool, or a creator-news
 - Drop-in editor mounts with one function call — no rewrite of your existing dashboard.
 - Theming via design tokens means your customers' emails feel native to your brand, not Templatical's.
 - Display conditions and merge tags are built in — important for personalization-heavy newsletter use.
-- Cloud is the managed adapter for AI rewrite and real-time collaboration, plus hosted storage — comments, version history, and saved blocks are providers you pass to `init()`, backed by your own storage.
+- Comments, version history, saved blocks, AI rewrite and real-time collaboration are providers you pass to `init()`, backed by your own storage.
 
-**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for MJML then any MJML library for HTML, optional Cloud tier for AI/collab.
+**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for MJML then any MJML library for HTML.
 
 ### CRM or marketing automation product
 
@@ -43,14 +43,14 @@ You're building a CRM, a sales-engagement tool, or a marketing automation platfo
 - Custom blocks let you surface your product's data (contact fields, deal info, calculated values) as first-class content blocks customers can drop into emails.
 - Real-time collaboration lets sales and marketing teams co-edit campaign templates without clobbering each other.
 
-**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) with `customBlocks` registered for your domain entities, plus [`@templatical/core/cloud`](https://www.npmjs.com/package/@templatical/core) for collab if you want it; comments are a `comments` provider on `init()`.
+**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) with `customBlocks` registered for your domain entities, `init({ collaboration })` for co-editing, and a `comments` provider on `init()`.
 
 ### Internal email composer
 
 You're not building a customer-facing product — you need a controlled tool for your team to design transactional and marketing emails, with the JSON output stored in your own systems.
 
 **Templatical fits because:**
-- Self-hostable in full. The SDK has no required cloud dependency.
+- Self-hostable in full.
 - UI in 9 languages and language versions of a template: English, German, Portuguese, Spanish, Catalan, French, Dutch, Japanese and Danish UI, plus opt-in [template language versions](/guide/localized-templates).
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
 

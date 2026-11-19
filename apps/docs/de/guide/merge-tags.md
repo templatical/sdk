@@ -377,7 +377,7 @@ const editor = await init({
 editor.setMergeTags(nextTags);
 ```
 
-Alles, was ein Tag darstellt, liest dieselbe Liste — Canvas, Felder der Seitenleiste und der integrierte Picker werden gemeinsam neu gezeichnet. Auch unter `initCloud()` verfügbar.
+Alles, was ein Tag darstellt, liest dieselbe Liste — Canvas, Felder der Seitenleiste und der integrierte Picker werden gemeinsam neu gezeichnet.
 
 ::: warning Das Array zu mutieren funktioniert nicht
 In das an `init()` übergebene Array zu schreiben wird nicht unterstützt. Es zeichnet nichts neu, was bereits auf dem Bildschirm steht — nur Tags, die *nach* dem Schreibvorgang dargestellt werden, übernehmen die Änderung. Verwenden Sie stattdessen `setMergeTags`.
@@ -395,7 +395,7 @@ Sie müssen nichts aufrufen und nichts aktivieren. Das geschieht überall dort, 
 
 | Weg | Zeitpunkt |
 |---|---|
-| `init({ content })` / `initCloud({ content })` | vor dem Mounten |
+| `init({ content })` | vor dem Mounten |
 | `editor.setContent(content)` | bevor der Inhalt die Arbeitsfläche erreicht |
 | `editor.insertBlock(block)` | bevor der Block die Arbeitsfläche erreicht |
 | `editor.create({ content })` | bevor der Inhalt zum Editor-Status wird |

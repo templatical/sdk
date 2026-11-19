@@ -244,7 +244,7 @@ MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer oh
 - **Hintergrundbilder** — ein `background-size`, `background-position` oder `background-repeat` ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende abgebildet. Siehe [Hintergrundbilder](#hintergrundbilder).
 - **Video-Blöcke** — ein `VideoBlock` wird genauso gerendert wie ein verlinkter `ImageBlock`, sodass nichts im MJML ihn als Video kennzeichnet. Beim Import daraus entsteht ein `ImageBlock` mit demselben Vorschaubild und Link; der Inhalt bleibt erhalten, der Blocktyp nicht.
 - **HTML-Blöcke** — aus demselben Grund rendert der Inhalt eines `HtmlBlock` als reines `mj-text`-Markup ohne jede Kennzeichnung als HTML. Beim Import daraus entsteht ein `ParagraphBlock` mit demselben Markup.
-- **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends im gerenderten MJML, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Durchlauf durch Export und Re-Import.
+- **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends im gerenderten MJML, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Kommentarthread mit der Block-ID als Schlüssel — einen Durchlauf durch Export und Re-Import.
 
 ## Nicht übertragene Merkmale
 

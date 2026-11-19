@@ -125,9 +125,9 @@ Bitten Sie ihn, eine komplett neue Integration aufzusetzen, einer bestehenden ei
 2. **Schlägt er die Änderung vor und wartet** — die hinzuzufügenden Pakete, die zu erstellenden oder zu bearbeitenden Dateien, den Mount-Punkt — bevor er irgendetwas anfasst.
 3. **Setzt er sie um**, installiert dabei mit Ihrem eigenen Paketmanager.
 4. **Überprüft er, indem er Ihren Dev-Server startet** und dessen Konsolen- und Netzwerkausgabe liest — nicht, indem er Sie bittet, selbst nachzusehen.
-5. **Berichtet er**, was sich geändert hat, was unangetastet blieb, und was noch gebraucht wird — ein Provider, eine optionale Peer-Abhängigkeit, ein Cloud-Auth-Endpunkt.
+5. **Berichtet er**, was sich geändert hat, was unangetastet blieb, und was noch gebraucht wird — ein Provider oder eine optionale Peer-Abhängigkeit.
 
-Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte rückwärts: Er liest Ihren `init()`-/`initCloud()`-Aufruf, die Bundler-Konfiguration und das CSS-Setup, und prüft jedes davon gegen eine Tabelle verifizierter Fallstricke — ein fehlender `style.css`-Import, ein gefangener `position: fixed`-Vorfahre, ein Container ohne Höhe, und mehr.
+Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte rückwärts: Er liest Ihren `init()`-Aufruf, die Bundler-Konfiguration und das CSS-Setup, und prüft jedes davon gegen eine Tabelle verifizierter Fallstricke — ein fehlender `style.css`-Import, ein gefangener `position: fixed`-Vorfahre, ein Container ohne Höhe, und mehr.
 
 ### Auf ein neueres Release aktualisieren
 
@@ -155,7 +155,7 @@ Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Kons
 
 ### Nie `countdown` ausgeben
 
-`countdown` braucht das serverseitige animierte GIF von Cloud; der OSS-Renderer kann es nicht erzeugen. Bei einer Countdown-Anfrage das sagen und einen statischen Ersatz anbieten — Titel oder Absatz mit dem Datum, oder eine Zeile „Noch X Tage“.
+Das Rendern von `countdown` braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert. Bei einer Countdown-Anfrage das sagen und einen statischen Ersatz anbieten — Titel oder Absatz mit dem Datum, oder eine Zeile „Noch X Tage“.
 
 ### Nie `slot` oder `wrapper` ausgeben
 

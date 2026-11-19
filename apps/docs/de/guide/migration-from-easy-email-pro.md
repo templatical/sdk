@@ -191,7 +191,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 | `html-block-node` | HTML-Fragment | Innerhalb des Eltern-Rich-Texts. Kein Eintrag. |
 | `html-node` | Inline-HTML-Element | Innerhalb des Eltern-Rich-Texts: `<tagName>` mit seinen String-Attributen; Void-Tags (`br`, `img`, …) schließen sich selbst. Kein Eintrag. Ein `html-node` direkt in einer Spalte ist `html-fallback`. |
 | `mergetag` | <code v-pre>{{ name }}</code> | Innerhalb des Eltern-Rich-Texts, so geschrieben, wie Easy Email Pro ihn rendert; der Editor macht aus dem Token ein Merge-Tag. Kein Eintrag. |
-| `marketing-countdown` | Overlay-Text + `ImageBlock` von `src` | Das GIF ist der Timer. Es wird kein `type: "countdown"` erzeugt (Cloud-only). `approximated`. |
+| `marketing-countdown` | Overlay-Text + `ImageBlock` von `src` | Das GIF ist der Timer. Es wird kein `type: "countdown"` erzeugt: das Rendern braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert. `approximated`. |
 | Kit `common-video` | `VideoBlock` | Converted, wenn eine URL vorhanden ist; sonst `html-fallback`. |
 | Kit shopwindow / qr-code / countdown-v2 | `HtmlBlock` | `JSON.stringify(node)`, `html-fallback`. |
 | `section_widget` / `wrapper_widget` | Kinder | `$var` aus `data.input`; jeder erzeugte Eintrag `approximated`. |
@@ -219,7 +219,7 @@ Das `background-url` eines `standard-hero` wird zum `backgroundImage` seiner Sek
 - **Benutzerdefinierte Social-PNGs** — Ein unerkanntes `standard-social-element` mit `src` wird ein benutzerdefiniertes Icon und behält Bild, Link und Alt-Text. Das eigene `src` einer erkannten Plattform ist nicht ihre eingebaute Glyphe, daher entfällt dieses Bild und der Eintrag ist `approximated`.
 - **AMP** — `AMP_*`-Knoten haben keine Templatical-Entsprechung. Als JSON in einem `HtmlBlock` erhalten, `html-fallback`.
 - **`logic`** — Pro-`logic.condition` / `logic.iteration` werden zur `toMJML`-Zeit nach Liquid (oder einer eigenen Engine) kompiliert. Sie sind nicht `displayCondition.{ before, after }`. Leere Knoten `skipped`. Gefüllte Knoten konvertieren ihre Kinder und verwerfen die Verzweigung.
-- **Countdown als GIF** — `marketing-countdown` ist Overlay-Text plus ein `ImageBlock` von `attributes.src`. Templaticals `countdown`-Block rendert auf Cloud oder über einen `blockRenderers.countdown`-Override und ist sonst leer, daher erzeugt dieses Paket ihn nicht. Das GIF ist ein statisches Bild; der Timer läuft nicht.
+- **Countdown als GIF** — `marketing-countdown` ist Overlay-Text plus ein `ImageBlock` von `attributes.src`. Das Rendern von Templaticals `countdown`-Block braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert. Ein `blockRenderers.countdown`-Override kann ein Bild liefern; sonst gibt der Renderer einen Platzhalter aus, daher erzeugt dieses Paket keinen `countdown`. Das GIF ist ein statisches Bild; der Timer läuft nicht.
 - **Sperre von Header und Footer** — Der Inhalt von `page-header` / `page-footer` wird zu gewöhnlichen Sektionen. Die feste Position und das `editable`-Flag haben keine Templatical-Entsprechung.
 - **Innere Box eines Heros** — `inner-padding` (samt den Langformen `-top` / `-right` / `-bottom` / `-left`) und `inner-background-color` eines `standard-hero` rahmen seinen Inhalt in eine gepolsterte, gefüllte Box. Eine Hero-Sektion hat keine innere Box, daher werden sie mit einer Notiz je Attribut verworfen, und der Eintrag ist `approximated`; `padding` und `background-color` des Heros selbst gelten weiterhin.
 

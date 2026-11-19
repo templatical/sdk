@@ -530,7 +530,7 @@ interface HtmlBlock extends BaseBlock {
 
 ### CountdownBlock
 
-Renders as an animated GIF, which requires the Templatical Cloud backend -- `@templatical/renderer` emits a `templatical:unrenderable-block` marker instead. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer).
+Renders as an animated GIF. That needs a server-side GIF service the SDK does not ship. `@templatical/renderer` emits a `templatical:unrenderable-block` marker instead. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer).
 
 ```ts
 interface CountdownBlock extends BaseBlock {
@@ -764,7 +764,7 @@ import {
   generateId,
 } from '@templatical/types';
 
-// Countdown GIFs need Cloud or a `blockRenderers.countdown` override; the OSS renderer emits a placeholder.
+// Countdown GIFs need a server-side GIF service the SDK does not ship. The renderer emits a placeholder unless `blockRenderers.countdown` supplies an image.
 
 // Create with defaults
 const paragraph = createParagraphBlock();

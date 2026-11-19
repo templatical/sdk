@@ -15,7 +15,7 @@ npm install @templatical/media-library
 
 Peer dep: `vue@^3.5`. Not needed next to `@templatical/editor` — that package already contains the modal.
 
-> **Storage.** The library is storage-agnostic. Pass a `MediaProvider` — Cloud's adapter is `createCloudMediaProvider` from `@templatical/core/cloud`. See the [media contract](https://docs.templatical.com/backend/media).
+> **Storage.** The library is storage-agnostic. Pass a `MediaProvider` you implement. See the [media contract](https://docs.templatical.com/backend/media).
 
 ## Usage
 
@@ -23,12 +23,11 @@ Peer dep: `vue@^3.5`. Not needed next to `@templatical/editor` — that package 
 
 ```ts
 import { init } from '@templatical/media-library';
-import { createCloudMediaProvider } from '@templatical/core/cloud';
 import '@templatical/media-library/style.css';
 
 const media = await init({
   container: '#media',
-  provider: createCloudMediaProvider(authManager),
+  provider,
   onSelect(asset) {
     console.log('Picked:', asset.url);
   },
@@ -38,7 +37,7 @@ const media = await init({
 media.unmount();
 ```
 
-`onSelect` is optional. `accept` narrows categories; omit it for every category. Any object implementing `MediaProvider` works — Cloud is one adapter.
+`provider` is a `MediaProvider` you implement. `onSelect` is optional. `accept` narrows categories; omit it for every category.
 
 ### Vue component
 
@@ -63,29 +62,16 @@ import '@templatical/media-library/style.css';
 
 ```ts
 import { useMediaLibrary } from '@templatical/media-library';
-import { createCloudMediaProvider } from '@templatical/core/cloud';
 
 const lib = useMediaLibrary({
-  provider: createCloudMediaProvider(authManager),
+  provider,
   onError(error) {
     console.error(error);
   },
 });
 ```
 
-### API client (low-level)
-
-For server-side or programmatic media operations, `MediaApiClient` is exported from `@templatical/core/cloud`. `createCloudMediaProvider` maps the response onto `MediaProvider`.
-
-```ts
-import { MediaApiClient, createCloudMediaProvider } from '@templatical/core/cloud';
-
-const client = new MediaApiClient(authManager);
-const response = await client.browseMedia({ folderId: null });
-
-const provider = createCloudMediaProvider(authManager);
-const page = await provider.list();
-```
+`provider` is a `MediaProvider` you implement. See the [media contract](https://docs.templatical.com/backend/media).
 
 ## Exports
 

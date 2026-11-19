@@ -44,7 +44,7 @@ const html = (await mjml2html(mjml, { validationLevel: "soft" })).html;
 const sizeIssues = lintCompiledHtml(html);
 ```
 
-Installieren Sie `mjml` für dieses Beispiel separat. Im Issues-Panel des Editors erscheint der Abschnitt **E-Mail-Größe**, wenn der Render-Provider `toHtml` oder `compileMjml` anbietet. Er erklärt, dass Gmail E-Mails über etwa 102 KB abschneidet. Mit **Größe prüfen** wird das kompilierte HTML gemessen. Ohne Clipping-Warnung erscheint die Größe mit dem Hinweis, dass Gmail die ganze E-Mail anzeigt; bei Überschreitung erscheint die Größe zusammen mit einer Clipping-Warnung in der Problemliste. Nach einer Änderung bleibt die letzte Größe mit einem Hinweis auf die veraltete Prüfung sichtbar und der Button heißt **Erneut prüfen**. Im Cloud-Modus fehlt der Abschnitt, weil der derzeitige HTML-Renderpfad zuerst speichert.
+Installieren Sie `mjml` für dieses Beispiel separat. Im Issues-Panel des Editors erscheint der Abschnitt **E-Mail-Größe**, wenn der Render-Provider `toHtml` oder `compileMjml` anbietet. Er erklärt, dass Gmail E-Mails über etwa 102 KB abschneidet. Mit **Größe prüfen** wird das kompilierte HTML gemessen. Ohne Clipping-Warnung erscheint die Größe mit dem Hinweis, dass Gmail die ganze E-Mail anzeigt; bei Überschreitung erscheint die Größe zusammen mit einer Clipping-Warnung in der Problemliste. Nach einer Änderung bleibt die letzte Größe mit einem Hinweis auf die veraltete Prüfung sichtbar und der Button heißt **Erneut prüfen**.
 
 ## Prüfen
 

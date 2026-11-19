@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * agents query, what to index and which instructions to show beside it. It
  * indexes the English docs and the examples' READMEs (Context7 reads
  * documentation formats, not source files): the German mirror duplicates every
- * page, the Cloud pages describe a tier that is not live, and `public/` holds
+ * page, and `public/` holds
  * the generated `llms-full.txt`, which repeats the whole corpus. Because the
  * examples' code never reaches the index, one rule points agents at the
  * framework pages' served markdown, which includes it.
@@ -16,7 +16,7 @@ import { describe, expect, it } from "vitest";
  * (https://context7.com/docs/library-owners). Context7 validates the file
  * against its published schema (https://context7.com/schema/context7.json)
  * and ignores all of it when one field fails: a single rule over 255
- * characters is enough to index the Cloud pages and generated output this
+ * characters is enough to index generated output this
  * config excludes. So the schema's limits are asserted below, not trusted.
  * The description states the licence: every package is MIT, and it must not
  * say "source-available" or FSL. The rule that says what to install makes claims about the
@@ -87,7 +87,6 @@ function editorOptionalPeers(): string[] {
 
 const EXCLUDED_FOLDERS = [
   "apps/docs/de",
-  "apps/docs/cloud",
   "apps/docs/public",
   "apps/docs/tests",
   "apps/docs/scripts",
@@ -108,7 +107,6 @@ const ESSENTIALS: Array<[string, ...string[]]> = [
     "mjml",
   ],
   ["describe storage features as providers", "savedBlocks"],
-  ["name initCloud as the hosted variant", "initCloud()"],
   ["point at the framework pages", "docs.templatical.com/frameworks/"],
 ];
 
@@ -143,10 +141,18 @@ describe("context7.json", () => {
     expect(loadConfig().folders).toEqual(["apps/docs", "examples"]);
   });
 
-  it("excludes the German mirror, Cloud, generated output, tests, scripts and VitePress internals", () => {
+  it("excludes the German mirror, generated output, tests, scripts and VitePress internals", () => {
     const { excludeFolders } = loadConfig();
     expect(excludeFolders).toEqual(expect.arrayContaining(EXCLUDED_FOLDERS));
     expect(excludeFolders).not.toContain("apps/docs");
+    expect(excludeFolders).not.toContain("apps/docs/cloud");
+  });
+
+  it("does not name initCloud or Templatical Cloud", () => {
+    const { description, rules, excludeFolders } = loadConfig();
+    expect([description, ...rules, ...excludeFolders].join("\n")).not.toMatch(
+      /initCloud|Templatical Cloud|apps\/docs\/cloud/,
+    );
   });
 
   it("lists only folders that exist, so a rename cannot leave a dead entry", () => {

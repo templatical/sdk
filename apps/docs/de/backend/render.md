@@ -218,7 +218,6 @@ Worauf Sie achten sollten:
 
 - Dies ist die eine Konstellation, in der `@templatical/renderer` trotz implementiertem `toMjml` in Ihrem Frontend-Bundle bleibt. Die Tabelle oben beschreibt Provider, die anderswo rendern; hier rufen Sie den lokalen Renderer selbst auf.
 - Die Stylesheets der Custom Blocks kommen an jedem Block als `renderedStylesheet` an, und der Renderer gibt sie aus, wenn Sie kein `getCustomBlockStylesheet` übergeben. Übergeben Sie eines nur, um das CSS selbst zu liefern; es entscheidet dann für jeden Typ, und die Kopien werden ignoriert.
-- `initCloud()` ignoriert `render`; dies ist also eine `init()`-Konstellation.
 
 ::: tip Auch in der Vorschau zeigen
 Die Arbeitsfläche zeigt die Vorlage, nicht das Chrome darum herum. Dafür sorgt [`resolvePreview`](/de/guide/preview-rendering#zeigen-was-ihre-plattform-beim-versand-anhangt) — entweder über dieselbe Kompositionsfunktion wie oben oder über das Backend, das beim echten Versand anhängt.
@@ -249,7 +248,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-Es verallgemeinert `renderCustomBlock` von einem Blocktyp auf beliebige. Ein Backend, dessen Ausgabe eine *Obermenge* der des Browsers ist, kann genau diese Differenz einspeisen, statt den Renderer zu forken, und die Gleichwertigkeit aller übrigen Blocktypen ergibt sich dann konstruktiv. Templatical Cloud nutzt es für zwei Blöcke: ein serverseitig erzeugtes animiertes Countdown-GIF und einen zusammengesetzten Video-Play-Button.
+Es verallgemeinert `renderCustomBlock` von einem Blocktyp auf beliebige. Ein Backend, dessen Ausgabe eine *Obermenge* der des Browsers ist, kann genau diese Differenz einspeisen, statt den Renderer zu forken, und die Gleichwertigkeit aller übrigen Blocktypen ergibt sich dann konstruktiv. Eine `blockRenderers.countdown`-Überschreibung gibt ein Bild aus, wenn Sie das GIF selbst erzeugen; das SDK liefert keinen GIF-Dienst mit.
 
 Eine Überschreibung übernimmt alles, was der eingebaute Renderer tat — einschließlich des vorzeitigen Ausstiegs für Blöcke, die auf allen Viewports verborgen sind, und `fluid-on-mobile`: Eine Überschreibung, die ein `mj-image` ausgibt, ergänzt es mit [`fluidOnMobileAttr`](/de/api/renderer-typescript#fluid-on-mobile-attr), sonst behält das Bild auf dem Smartphone seine Desktop-Breite.
 

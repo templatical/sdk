@@ -25,7 +25,7 @@ export interface AiRequestBase {
   templateId: string;
   /**
    * The template as the editor has it, after it sent its pending edits. A
-   * backend that holds the template itself (Templatical Cloud) ignores it.
+   * backend that already holds that template can ignore this copy.
    */
   content: TemplateContent;
   /** The collaboration revision `content` is at, or `null` without collaboration. */
