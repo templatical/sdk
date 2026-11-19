@@ -31,7 +31,8 @@ const FULL_OUT = join(PUBLIC_DIR, "llms-full.txt");
 const META_OUT = join(PUBLIC_DIR, "llms-meta.json");
 
 const SITE_TITLE = "Templatical";
-const SITE_SUMMARY = "MIT-licensed.";
+const SITE_SUMMARY =
+  "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, your own backend behind every storage feature. Open source, MIT-licensed.";
 
 // Generator output, and 27% of the corpus. public/changelog.json serves it.
 const EXCLUDED = new Set(["changelog.md"]);

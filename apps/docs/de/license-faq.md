@@ -1,11 +1,11 @@
 ---
 title: Lizenz
-description: MIT-lizenziert.
+description: "Jedes Templatical-Paket steht unter der MIT-Lizenz: Sie dürfen es nutzen, ändern und kommerziell einbetten, solange der Urheberrechtshinweis erhalten bleibt."
 ---
 
 # Lizenz
 
-Alle Templatical-Pakete stehen unter der MIT-Lizenz. Der Wortlaut steht in [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
+Templatical ist Open Source: Alle Pakete stehen unter der MIT-Lizenz. Der Wortlaut steht in [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
 
 ## Pakete
 

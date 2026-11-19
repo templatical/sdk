@@ -441,7 +441,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
 export default defineConfig({
   title: "Templatical",
   description:
-    "MIT-licensed.",
+    "Embeddable drag-and-drop email editor SDK for your own app and backend. Open source, MIT-licensed.",
   cleanUrls: true,
   // Page dates come from git. A shallow clone would date every page to its
   // one commit, so lastUpdated (and the sitemap's lastmod) is on only with
@@ -551,7 +551,7 @@ export default defineConfig({
       lang: "en",
       title: "Templatical",
       description:
-        "MIT-licensed.",
+        "Embeddable drag-and-drop email editor SDK for your own app and backend. Open source, MIT-licensed.",
       themeConfig: {
         nav: enNav,
         sidebar: enSidebar,
@@ -572,7 +572,7 @@ export default defineConfig({
       lang: "de",
       title: "Templatical",
       description:
-        "MIT-lizenziert.",
+        "Einbettbares Drag-and-Drop-E-Mail-Editor-SDK für Ihre eigene App und Ihr eigenes Backend. Open Source, MIT-lizenziert.",
       themeConfig: {
         nav: deNav,
         sidebar: deSidebar,

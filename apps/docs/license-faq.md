@@ -1,11 +1,11 @@
 ---
 title: License
-description: MIT-licensed.
+description: "Every Templatical package is MIT-licensed: use, modify and embed it commercially, keeping the copyright notice."
 ---
 
 # License
 
-All Templatical packages are MIT-licensed. The terms are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
+Templatical is open source: every package is MIT-licensed. The terms are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
 
 ## Packages
 

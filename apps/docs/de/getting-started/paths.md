@@ -5,7 +5,7 @@ description: Welche Dokumentationsseite zuerst — Editor einbinden, Backend anb
 
 # Einstiegspunkte
 
-Alle Templatical-Pakete stehen unter der MIT-Lizenz. [Lizenz](/de/license-faq).
+Templatical ist Open Source: Alle Pakete stehen unter der MIT-Lizenz. [Lizenz](/de/license-faq).
 
 ## Editor einbinden
 

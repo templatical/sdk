@@ -1,6 +1,6 @@
 # Templatical
 
-> MIT-licensed.
+> Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, your own backend behind every storage feature. Open source, MIT-licensed.
 
 ---
 
@@ -8517,7 +8517,7 @@ Source: https://docs.templatical.com/getting-started/hosted-builders
 
 Templatical is an SDK you mount in your product. Storage, send, and accounts stay yours. Unlayer, BeeFree, Stripo, Topol, Chamaileon, and Easy Email Pro are hosted products: their dashboard, their storage, their terms.
 
-All Templatical packages are MIT-licensed. [License](/license-faq).
+Templatical is open source: every package is MIT-licensed. [License](/license-faq).
 
 ## Comparison
 
@@ -9118,7 +9118,7 @@ The example above is unversioned on purpose: unpkg resolves a URL with no versio
 
 Source: https://docs.templatical.com/getting-started/paths
 
-All Templatical packages are MIT-licensed. [License](/license-faq).
+Templatical is open source: every package is MIT-licensed. [License](/license-faq).
 
 ## Embed the editor
 
@@ -16893,7 +16893,7 @@ Source: https://docs.templatical.com/
 
 Source: https://docs.templatical.com/license-faq
 
-All Templatical packages are MIT-licensed. The terms are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
+Templatical is open source: every package is MIT-licensed. The terms are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE).
 
 ## Packages
 

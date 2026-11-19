@@ -187,6 +187,6 @@ Avoid discussing design decisions in inline PR comments before opening the PR â€
 
 By contributing, you agree that your contributions will be licensed under MIT, the same licence as every package.
 
-All Templatical packages are MIT-licensed.
+Templatical is open source: every package is MIT-licensed.
 
 See [`LICENSE`](./LICENSE) for the terms, and [the licence page](https://docs.templatical.com/license-faq).
