@@ -159,7 +159,7 @@ test.describe("Template import", () => {
     expect(ids).toEqual(IMPORT_SCENE_IDS.map((id) => `scene-link-${id}`));
   });
 
-  test("imports a BeeFree template and renders converted blocks", async ({
+  test("imports a Beefree template and renders converted blocks", async ({
     scenePage,
     editorPage,
     page,
@@ -177,7 +177,7 @@ test.describe("Template import", () => {
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("imports the multilingual BeeFree sample and opens Español", async ({
+  test("imports the multilingual Beefree sample and opens Español", async ({
     scenePage,
     editorPage,
     page,
@@ -300,7 +300,7 @@ test.describe("Template import", () => {
     await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
   });
 
-  test("BeeFree scene shows only the BeeFree textarea", async ({
+  test("Beefree scene shows only the Beefree textarea", async ({
     scenePage,
     page,
   }) => {
@@ -309,7 +309,7 @@ test.describe("Template import", () => {
     await expect(page.locator(SELECTORS.importTextareaUnlayer)).toHaveCount(0);
   });
 
-  test("shows an error when the BeeFree JSON is invalid", async ({
+  test("shows an error when the Beefree JSON is invalid", async ({
     scenePage,
     page,
   }) => {

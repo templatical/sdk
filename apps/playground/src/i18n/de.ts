@@ -272,7 +272,7 @@ export default {
     },
     sources: {
       unlayer: "Aus Unlayer",
-      beefree: "Aus BeeFree",
+      beefree: "Aus Beefree",
       stripo: "Aus Stripo",
       topol: "Aus Topol",
       chamaileon: "Aus Chamaileon",
@@ -287,9 +287,9 @@ export default {
     cancel: "Abbrechen",
     beefree: {
       description:
-        "F\u00fcgen Sie den JSON-Export aus Ihrem BeeFree-Editor unten ein.",
+        "F\u00fcgen Sie den JSON-Export aus Ihrem Beefree-Editor unten ein.",
       emptyError:
-        "F\u00fcgen Sie Ihr BeeFree-JSON ein oder laden Sie eine Datei hoch.",
+        "F\u00fcgen Sie Ihr Beefree-JSON ein oder laden Sie eine Datei hoch.",
     },
     unlayer: {
       description:
@@ -405,7 +405,7 @@ export default {
     realtimeMode: "Echtzeitmodus",
     templateUuid: "Vorlagen-UUID",
     editorConfig: "Editor-Konfiguration",
-    beefreeJsonContent: "BeeFree-JSON-Inhalt",
+    beefreeJsonContent: "Beefree-JSON-Inhalt",
     unlayerJsonContent: "Unlayer-JSON-Inhalt",
     htmlSourceContent: "HTML-Quelltext-Inhalt",
     mjmlSourceContent: "MJML-Quelltext-Inhalt",

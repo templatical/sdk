@@ -142,7 +142,7 @@ function makeStyles(values: UnlayerContentValues): Block["styles"] {
 
 /**
  * Apply Unlayer text-level styles as TipTap-compatible inline markup.
- * Mirrors the BeeFree importer's helper but reads from Unlayer's flat
+ * Mirrors the Beefree importer's helper but reads from Unlayer's flat
  * values shape rather than a CSS style record.
  */
 function inlineStylesToHtml(

@@ -1,11 +1,11 @@
 ---
 title: Hosted builders
-description: How Templatical compares to hosted email builders such as Unlayer, BeeFree, and Stripo, and which importer to open for an existing template.
+description: How Templatical compares to hosted email builders such as Unlayer, Beefree, and Stripo, and which importer to open for an existing template.
 ---
 
 # Hosted builders
 
-Templatical is an SDK you mount in your product. Storage, send, and accounts stay yours. Unlayer, BeeFree, Stripo, Topol, Chamaileon, and Easy Email Pro are hosted products: their dashboard, their storage, their terms.
+Templatical is an SDK you mount in your product. Storage, send, and accounts stay yours. Unlayer, Beefree, Stripo, Topol, Chamaileon, and Easy Email Pro are hosted products: their dashboard, their storage, their terms.
 
 Templatical is open source: every package is MIT-licensed. [License](/license-faq).
 
@@ -26,7 +26,7 @@ Each converter maps a native export onto Templatical JSON. Unmapped pieces becom
 | Source | Runbook |
 |---|---|
 | Unlayer | [From Unlayer](/guide/migration-from-unlayer) |
-| BeeFree | [From BeeFree](/guide/migration-from-beefree) |
+| Beefree | [From Beefree](/guide/migration-from-beefree) |
 | Stripo | [From Stripo](/guide/migration-from-stripo) |
 | Topol | [From Topol](/guide/migration-from-topol) |
 | Chamaileon | [From Chamaileon](/guide/migration-from-chamaileon) |

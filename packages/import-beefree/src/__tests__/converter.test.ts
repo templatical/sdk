@@ -14,12 +14,54 @@ import { realMenu, realTable, realVideo } from "./fixtures/real-modules";
 describe("convertBeeFreeTemplate", () => {
   it("throws for invalid input", () => {
     expect(() => convertBeeFreeTemplate({} as BeeFreeTemplate)).toThrow(
-      "Invalid BeeFree template",
+      "Invalid Beefree template",
     );
 
     expect(() =>
       convertBeeFreeTemplate({ page: {} } as BeeFreeTemplate),
     ).toThrow("missing page.rows");
+  });
+
+  it("names Beefree in the invalid-template error and never BeeFree", () => {
+    const message =
+      "Invalid Beefree template: missing page.rows. Ensure you are passing a valid Beefree JSON export.";
+    for (const template of [{}, { page: {} }] as BeeFreeTemplate[]) {
+      expect(() => convertBeeFreeTemplate(template)).toThrow(message);
+      try {
+        convertBeeFreeTemplate(template);
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe(message);
+        expect((error as Error).message).not.toContain("BeeFree");
+      }
+    }
+  });
+
+  it("names Beefree in a column-limit warning and never BeeFree", () => {
+    const { report } = convertBeeFreeTemplate({
+      page: {
+        rows: [
+          {
+            columns: [1, 2, 3, 4, 5].map(() => ({
+              "grid-columns": 3,
+              modules: [
+                {
+                  type: "mailup-bee-newsletter-modules-text",
+                  descriptor: { text: { html: "<p>x</p>" } },
+                },
+              ],
+            })),
+          },
+        ],
+      },
+    });
+
+    expect(report.warnings).toEqual([
+      "Row with 5 columns (3-3-3-3-3) was flattened to a single column. Beefree supports arbitrary columns, but Templatical supports up to four columns.",
+    ]);
+    for (const warning of report.warnings) {
+      expect(warning).not.toContain("BeeFree");
+    }
   });
 
   it("converts minimal template", () => {
@@ -46,7 +88,7 @@ describe("convertBeeFreeTemplate", () => {
     expect(report.summary.total).toBe(0);
   });
 
-  // BeeFree exports keep the body width in `computedStyle.messageWidth` and
+  // Beefree exports keep the body width in `computedStyle.messageWidth` and
   // usually carry no `style.width`, which would leave every import at 600px.
   it("reads the body width from computedStyle.messageWidth", () => {
     const { content } = convertBeeFreeTemplate({
@@ -168,7 +210,7 @@ describe("convertBeeFreeTemplate", () => {
     expect("linkColor" in content.settings).toBe(false);
   });
 
-  // BeeFree underlines per link, in the link's own markup, and has no
+  // Beefree underlines per link, in the link's own markup, and has no
   // template-wide switch; links default to underlined, as in a browser.
   it("underlines links", () => {
     const { content } = convertBeeFreeTemplate({ page: { rows: [] } });
@@ -1242,9 +1284,9 @@ describe("convertBeeFreeTemplate", () => {
   });
 
   // The export's `image.width` × `image.height` are the files (254 × 59 and
-  // 1920 × 466); BeeFree shows them at 172.5px left-aligned and across the
+  // 1920 × 466); Beefree shows them at 172.5px left-aligned and across the
   // 600px column.
-  it("imports the real fixture's images at the size BeeFree shows them", () => {
+  it("imports the real fixture's images at the size Beefree shows them", () => {
     const { content } = convertBeeFreeTemplate(fixture as BeeFreeTemplate);
     const images = content.blocks
       .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
@@ -1278,7 +1320,7 @@ describe("convertBeeFreeTemplate", () => {
     ]);
   });
 
-  it("converts real BeeFree fixture", () => {
+  it("converts real Beefree fixture", () => {
     const { content, report } = convertBeeFreeTemplate(
       fixture as BeeFreeTemplate,
     );
@@ -1576,8 +1618,8 @@ describe("convertBeeFreeTemplate", () => {
 
     expect(customFonts).toEqual([]);
     expect(report.warnings).toEqual([
-      'Font "Montserrat" is used but BeeFree provides no URL for it.',
-      'Font "Open Sans" is used but BeeFree provides no URL for it.',
+      'Font "Montserrat" is used but Beefree provides no URL for it.',
+      'Font "Open Sans" is used but Beefree provides no URL for it.',
     ]);
   });
 
@@ -1724,7 +1766,7 @@ describe("convertBeeFreeTemplate", () => {
     });
   });
 
-  // The reproduction from #1070: only the last divider draws a line in BeeFree.
+  // The reproduction from #1070: only the last divider draws a line in Beefree.
   it("imports dividers that draw no line as spacers", () => {
     const divider = (borderTop: string) => ({
       type: "mailup-bee-newsletter-modules-divider",
@@ -3549,7 +3591,7 @@ describe("convertBeeFreeTemplate", () => {
         "paragraph",
       ]);
       expect(ratioNotes(report.warnings)).toEqual([
-        "Row with 5 columns (3-3-3-3-3) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to four columns.",
+        "Row with 5 columns (3-3-3-3-3) was flattened to a single column. Beefree supports arbitrary columns, but Templatical supports up to four columns.",
       ]);
     });
 
@@ -4219,7 +4261,7 @@ describe("image fluidOnMobile", () => {
 
   it("pins a half-column image that fills only after column padding is folded", () => {
     // 270px in a 300px column, then 10px + 20px of column padding: the room
-    // becomes 270, so the renderer would stretch it. BeeFree keeps 270.
+    // becomes 270, so the renderer would stretch it. Beefree keeps 270.
     const [image, other] = imagesIn({
       page: {
         body: { content: { computedStyle: { messageWidth: "600px" } } },
@@ -4389,7 +4431,7 @@ describe("image fluidOnMobile", () => {
   });
 });
 
-// The descriptors BeeFree writes for a menu, a table and a video, imported in
+// The descriptors Beefree writes for a menu, a table and a video, imported in
 // one row: each keeps its content and gets its own report entry.
 describe("real menu, table and video exports", () => {
   it("imports their content and reports each one", () => {

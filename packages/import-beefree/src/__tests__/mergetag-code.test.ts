@@ -28,7 +28,7 @@ function paragraph(html: string): string {
 const FIXTURE_HTML =
   '<div class="txtTinyMce-wrapper" style="font-size: 14px; line-height: 21px;"><p style="text-align: center;"><span style="color: #000000;">Lorem ipsum dolor{{ Lorem }}Lorem ipsum dolor</span></p><p style="text-align: center;"><span style="color: #000000;"><strong>Lorem ipsum dolor{{ Lorem }} </strong></span></p><p style="text-align: center;"><a href="{{ guest.link }}" target="_blank" style="text-decoration: underline;" rel="noopener">{{ Lorem }}</a></p></div>';
 
-describe("BeeFree merge-tag code wrappers", () => {
+describe("Beefree merge-tag code wrappers", () => {
   it("unwraps a plain mergetag code wrapper to the token", () => {
     expect(
       paragraph(

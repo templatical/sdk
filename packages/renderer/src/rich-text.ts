@@ -233,7 +233,7 @@ function decodeTagStyle(tag: string): string {
  * style attribute of every element a rule matches and splits it on `;`
  * without decoding references first. The `;` that ends `&apos;`, `&quot;` or
  * `&nbsp;` outside a `url()` therefore cuts a declaration in two, and the
- * compile throws. Imported content carries such references: BeeFree's TinyMCE
+ * compile throws. Imported content carries such references: Beefree's TinyMCE
  * output and import-mjml's serializer write them.
  */
 export function decodeStyleReferences(html: string): string {

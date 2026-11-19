@@ -46,7 +46,7 @@ Each scene is also raw markdown: /scenes/<id>.md
 ## Import
 
 - [Unlayer](https://play.templatical.com/scenes/import-unlayer): Paste Unlayer JSON
-- [BeeFree](https://play.templatical.com/scenes/import-beefree): Paste BeeFree JSON
+- [Beefree](https://play.templatical.com/scenes/import-beefree): Paste Beefree JSON
 - [Stripo](https://play.templatical.com/scenes/import-stripo): Paste Stripo HTML
 - [Topol](https://play.templatical.com/scenes/import-topol): Paste Topol JSON
 - [Chamaileon](https://play.templatical.com/scenes/import-chamaileon): Paste Chamaileon JSON

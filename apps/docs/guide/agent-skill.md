@@ -63,7 +63,7 @@ npx skills add templatical/sdk
 
 - **Build** a template from a brief — "make a product-launch email", "design a welcome email".
 - **Edit** an existing template as a scoped change, not a rewrite.
-- **Import** a template from almost anywhere — dedicated converters for Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML and HTML, and for anything else it maps the source onto the block schema by hand.
+- **Import** a template from almost anywhere — dedicated converters for Unlayer, Beefree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML and HTML, and for anything else it maps the source onto the block schema by hand.
 - **Validate** a template's JSON against the block schema and get back precise, per-block errors.
 - **Export** a template as sendable MJML or HTML.
 - **Preview it live** in the real Templatical editor in your browser, kept in sync as you keep prompting — your own hand-edits included.
@@ -109,13 +109,13 @@ Build in plain JSON first and switch to a live preview mid-session — it picks 
 
 ### Import an existing template
 
-Already have a template somewhere else? The skill converts **Unlayer**, **BeeFree**, **Stripo**, **Topol**, **Chamaileon**, **Easy Email Pro**, **MJML**, and **HTML** emails into Templatical JSON — point it at the file and it writes a working template plus a short report of what converted cleanly and what fell back to raw HTML (import is lossy by nature). Then preview it live and refine the rough edges into native blocks.
+Already have a template somewhere else? The skill converts **Unlayer**, **Beefree**, **Stripo**, **Topol**, **Chamaileon**, **Easy Email Pro**, **MJML**, and **HTML** emails into Templatical JSON — point it at the file and it writes a working template plus a short report of what converted cleanly and what fell back to raw HTML (import is lossy by nature). Then preview it live and refine the rough edges into native blocks.
 
 **No converter for your source? It still works.** The skill knows the block schema, so it can read an unfamiliar template and map it across by hand — a WordPress block template, a Mailchimp or Klaviyo export, a hand-written HTML email, even a screenshot or PDF of one. It reads the source, plans the mapping, builds the blocks, then validates the result like any other template. Slower and less exact than a converter, and worth asking for by name.
 
 The converter list grows, so the skill asks the CLI what is available rather than assuming — you never need to check first.
 
-To run the converters directly in your own code instead, see the migration guides: [Unlayer](/guide/migration-from-unlayer), [BeeFree](/guide/migration-from-beefree), [Stripo](/guide/migration-from-stripo), [Topol](/guide/migration-from-topol), [Chamaileon](/guide/migration-from-chamaileon), [Easy Email Pro](/guide/migration-from-easy-email-pro), [MJML](/guide/migration-from-mjml), [HTML](/guide/migration-from-html).
+To run the converters directly in your own code instead, see the migration guides: [Unlayer](/guide/migration-from-unlayer), [Beefree](/guide/migration-from-beefree), [Stripo](/guide/migration-from-stripo), [Topol](/guide/migration-from-topol), [Chamaileon](/guide/migration-from-chamaileon), [Easy Email Pro](/guide/migration-from-easy-email-pro), [MJML](/guide/migration-from-mjml), [HTML](/guide/migration-from-html).
 
 ### Integrate the editor — or diagnose an existing integration
 

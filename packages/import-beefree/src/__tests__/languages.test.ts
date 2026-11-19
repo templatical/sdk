@@ -3,7 +3,7 @@ import { sourceHash } from "@templatical/types";
 import { convertBeeFreeTemplate } from "../index";
 import { multilingual } from "./fixtures/multilingual";
 
-describe("BeeFree languages", () => {
+describe("Beefree languages", () => {
   it.each([
     [0, "content", "<p>Hello</p>", "<p>Hola</p>"],
     [1, "content", "<p>Welcome</p>", "<p>Bienvenido</p>"],

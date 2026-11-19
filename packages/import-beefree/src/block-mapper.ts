@@ -102,7 +102,7 @@ export interface ModuleContext {
 }
 
 /**
- * Maps BeeFree module type strings to short keys.
+ * Maps Beefree module type strings to short keys.
  */
 const MODULE_TYPE_MAP: Record<string, string> = {
   "mailup-bee-newsletter-modules-text": "paragraph",
@@ -221,7 +221,7 @@ function stripTagsPlain(text: string): string {
 }
 
 /**
- * Rich text keeps the markup around a merge tag. Unwrap the BeeFree `<code>`
+ * Rich text keeps the markup around a merge tag. Unwrap the Beefree `<code>`
  * before decoding, so a token quoted inside `data-bee-code` is not decoded
  * in the attribute. A quote inside a token stays encoded in an attribute
  * and is decoded in a text node.
@@ -244,7 +244,7 @@ function finishTextHtml(html: string): string {
 }
 
 /**
- * A `<p>` BeeFree does not draw. The decision reads the module's source
+ * A `<p>` Beefree does not draw. The decision reads the module's source
  * HTML, before the style pass and before merge-tag chips are unwrapped. It
  * has no text other than ASCII whitespace, no non-breaking space, and no
  * replaced or void element, and its subtree at any depth holds an element
@@ -566,7 +566,7 @@ function openTagDrawsBox(html: string, start: number, end: number): boolean {
 }
 
 /**
- * Paragraphs BeeFree does not draw, as source ranges. One forward pass.
+ * Paragraphs Beefree does not draw, as source ranges. One forward pass.
  * A no-ink paragraph is listed only when it contains an element other than
  * `<span>`. An empty `<p>` holds nothing, so it is not listed.
  */
@@ -792,7 +792,7 @@ interface StyleDecl {
 }
 
 /**
- * A block BeeFree's text markup uses as a root. `ul` / `ol` carry the module's
+ * A block Beefree's text markup uses as a root. `ul` / `ol` carry the module's
  * alignment and line-height; their items carry the text styles.
  */
 const TEXT_ROOTS = new Set([
@@ -810,7 +810,7 @@ const TEXT_ROOTS = new Set([
 ]);
 
 /**
- * BeeFree stores a text module's line-height as a percentage (`120%`, `200%`)
+ * Beefree stores a text module's line-height as a percentage (`120%`, `200%`)
  * or a unitless number, and renders that — not the px value TinyMCE writes
  * into the blob. The paragraph editor stores the unitless ratio.
  */
@@ -846,7 +846,7 @@ function moduleLetterSpacing(value: string | undefined): string | undefined {
 }
 
 /**
- * The colour BeeFree paints on a text module's links: `linkColor` or
+ * The colour Beefree paints on a text module's links: `linkColor` or
  * `link-color` on the module style, then the same keys on `computedStyle`.
  */
 function moduleLinkColor(
@@ -1086,7 +1086,7 @@ function chunkText(chunks: Chunk[]): string {
 }
 
 /**
- * The list box BeeFree renders, in px.
+ * The list box Beefree renders, in px.
  *
  * `liIndent` is the indent (`40px` when it is absent or not a px length, the
  * UA indent). The export wraps the outer list in a -half margin against that
@@ -1126,7 +1126,7 @@ function listBoxFor(content: {
 }
 
 /**
- * Apply a BeeFree text module's style as TipTap-compatible inline markup.
+ * Apply a Beefree text module's style as TipTap-compatible inline markup.
  *
  * `text-align`, `line-height` and `font-size` go on each block root (`p`,
  * `li`, `h1`–`h6`, `div`, `ul`, `ol`). The line box uses that element's font
@@ -1134,7 +1134,7 @@ function listBoxFor(content: {
  * rendered text default of 14px. Color, weight, family, letter-spacing and
  * the same font size wrap the text of a root that holds no nested block. A
  * declaration the blob already sets stays; the module line-height replaces
- * one, because that is the value BeeFree renders.
+ * one, because that is the value Beefree renders.
  *
  * An `<a>` with no colour of its own takes `linkColor` inline, so it wins over
  * the document link colour. An anchor that already states a colour keeps it.
@@ -1563,7 +1563,7 @@ function isParagraphOpen(html: string, open: number): boolean {
 /**
  * The gap between this block's paragraphs.
  *
- * BeeFree paragraphs sit at margin 0, so the gap is 0 unless a `<p>` states a
+ * Beefree paragraphs sit at margin 0, so the gap is 0 unless a `<p>` states a
  * px `margin-bottom` or the bottom of a `margin` shorthand. The first such
  * length wins; one block has one gap.
  */
@@ -1586,7 +1586,7 @@ function paragraphSpacingFromHtml(html: string): number {
 }
 
 /**
- * A paragraph module's gap, in px. BeeFree stores it on
+ * A paragraph module's gap, in px. Beefree stores it on
  * `computedStyle.paragraphSpacing` and renders it as `margin-bottom` on every
  * paragraph but the last. That wins over a margin written into the HTML. A
  * missing or non-px value falls back to the HTML.
@@ -1807,7 +1807,7 @@ function headingLevelForSize(px: number, source: HeadingLevel): HeadingLevel {
 }
 
 /**
- * Set when the chosen level's size is more than 1px off BeeFree's font size,
+ * Set when the chosen level's size is more than 1px off Beefree's font size,
  * so the line box is not the source size. Names the source level when the
  * chosen level is a different one.
  */
@@ -1829,7 +1829,7 @@ function alignInStyle(css: string | undefined): string | undefined {
 }
 
 /**
- * Alignment on a heading tag BeeFree wrapped the text in
+ * Alignment on a heading tag Beefree wrapped the text in
  * (`<h1 style="text-align: center">`). The tag is stripped before the text
  * is stored, so the alignment has to be read first.
  */
@@ -1914,7 +1914,7 @@ function convertHeading(
     ? `<span style=${quoteStyleValue(typography)}>${content}</span>`
     : content;
 
-  // BeeFree's effective size is the module style, then the font-size on the
+  // Beefree's effective size is the module style, then the font-size on the
   // heading tag. With neither, the tag has no published pixel default
   // (`titleDefaultStyles` is `{}`), so the level stays the source tag.
   const source = parseHeadingLevel(tag);
@@ -1943,7 +1943,7 @@ function convertHeading(
 }
 
 /**
- * The classes BeeFree records in `computedStyle.class` for an image: its
+ * The classes Beefree records in `computedStyle.class` for an image: its
  * alignment, `autowidth` / `fixedwidth`, and in older exports `fullwidth`.
  */
 function computedClasses(descriptor: BeeFreeeModuleDescriptor): string[] {
@@ -1952,7 +1952,7 @@ function computedClasses(descriptor: BeeFreeeModuleDescriptor): string[] {
 }
 
 /**
- * A px length BeeFree computed: `"172.5px"`, or a bare number in older
+ * A px length Beefree computed: `"172.5px"`, or a bare number in older
  * exports. 0 when it isn't one.
  */
 function computedPx(value: unknown): number {
@@ -1963,7 +1963,7 @@ function computedPx(value: unknown): number {
 }
 
 /**
- * The width BeeFree shows an image at, as `ImageBlock.width`. BeeFree records
+ * The width Beefree shows an image at, as `ImageBlock.width`. Beefree records
  * it in `computedStyle.width` for both classes: a `fixedwidth` image at the
  * width the author set, an `autowidth` one at its file's width capped at the
  * column. `image.width` and `image.height` are the file's own size, the
@@ -2010,7 +2010,7 @@ function percentOfRoom(
   };
 }
 
-/** A percentage BeeFree computed (`"50%"`), or `undefined` when it isn't one. */
+/** A percentage Beefree computed (`"50%"`), or `undefined` when it isn't one. */
 function computedPercent(value: unknown): number | undefined {
   if (typeof value !== "string") return undefined;
   const match = /^(\d+(?:\.\d+)?|\.\d+)%$/.exec(value.trim());
@@ -2041,7 +2041,7 @@ function convertImage(
 
   // `image.width` × `image.height` is the file, so the height is never carried
   // over: the image keeps its aspect ratio at the width it is shown at. A
-  // percentage radius resolves against that shown size, and only when BeeFree
+  // percentage radius resolves against that shown size, and only when Beefree
   // stated a width.
   const fileWidth = parsePxValue(image.width);
   const fileHeight = parsePxValue(image.height);
@@ -2250,7 +2250,7 @@ function buttonLabelBoldness(label: string): "all" | "mixed" | "none" {
 }
 
 /**
- * BeeFree's readable weight maps to the nearest button step unless all label
+ * Beefree's readable weight maps to the nearest button step unless all label
  * text is bold in the HTML, which takes precedence over the module weight.
  * An unweighted label otherwise imports as regular.
  */
@@ -2531,7 +2531,7 @@ function convertDivider(
   const align = dividerAlign(descriptor);
   if (width !== "full" && (align === "left" || align === "right")) {
     notes.push(
-      `BeeFree aligns this divider ${align}; Templatical centres every divider.`,
+      `Beefree aligns this divider ${align}; Templatical centres every divider.`,
     );
   }
 
@@ -2548,7 +2548,7 @@ function convertDivider(
 }
 
 /**
- * BeeFree keeps a divider's alignment in `computedStyle.align`; some exports
+ * Beefree keeps a divider's alignment in `computedStyle.align`; some exports
  * also write it to the module style's `text-align`.
  */
 function dividerAlign(
@@ -2563,7 +2563,7 @@ function dividerAlign(
 /**
  * The room a divider that draws no line takes: its top and bottom padding plus
  * the width of a transparent border. `undefined` when the line is drawn.
- * BeeFree templates space content this way.
+ * Beefree templates space content this way.
  */
 function undrawnDividerHeight(
   descriptor: BeeFreeeModuleDescriptor,
@@ -2591,7 +2591,7 @@ function convertUndrawnDivider(
   });
 }
 
-/** BeeFree's documented height for a spacer it has no height for. */
+/** Beefree's documented height for a spacer it has no height for. */
 const BEEFREE_SPACER_HEIGHT = 60;
 
 /** A spacer's height in px; an explicit 0 stays 0. */
@@ -2614,7 +2614,7 @@ function convertHtml(
   bodyFontFamily?: string,
 ): Block {
   const html = importedHtml(descriptor.html?.html ?? "");
-  // BeeFree centres an HTML module and applies no font-size, line-height
+  // Beefree centres an HTML module and applies no font-size, line-height
   // or word-break, so the browser defaults apply: 16px, `line-height:
   // normal` and `word-break: normal`. `mj-text` overrides all three. The
   // wrapper restores them and copies the page body font; with none, it sets
@@ -2697,7 +2697,7 @@ function platformFromHref(
 }
 
 /**
- * BeeFree stores a custom icon's id as a UUID and the network in `name`, or
+ * Beefree stores a custom icon's id as a UUID and the network in `name`, or
  * the other way around. A blank id is not a name. The link's host is the
  * last place the network is written.
  */
@@ -2783,7 +2783,7 @@ function socialHref(icon: BeeFreeeSocialIcon): string {
 }
 
 /**
- * BeeFree names an icon set in the file URL
+ * Beefree names an icon set in the file URL
  * (`…/social-networks-icon-sets/circle-dark-gray/facebook.png`).
  * A gray set uses the dark tone: the block's monochrome dark is `#1f1f1f`,
  * the nearest circle that is not a brand-coloured solid. A listed name maps
@@ -2857,7 +2857,7 @@ function socialIconSet(
 }
 
 /**
- * The gap between icons. BeeFree's padding is the space on each side of an
+ * The gap between icons. Beefree's padding is the space on each side of an
  * icon, so two neighbours contribute both sides. Rounded once, after the sum.
  * `undefined` when the padding isn't a length, and the block keeps 10.
  */
@@ -2939,7 +2939,7 @@ function socialAppearance(descriptor: BeeFreeeModuleDescriptor): {
   };
 }
 
-/** BeeFree's inline-block icon table leaves a 4px line-box strut under the icons; MJML's column cell sets `font-size:0px`, so the importer adds it to the bottom padding. */
+/** Beefree's inline-block icon table leaves a 4px line-box strut under the icons; MJML's column cell sets `font-size:0px`, so the importer adds it to the bottom padding. */
 const SOCIAL_ROW_STRUT_PX = 4;
 
 /**
@@ -3030,7 +3030,7 @@ function iconItems(descriptor: BeeFreeeModuleDescriptor): BeeFreeeIconItem[] {
   return Array.isArray(icons) ? (icons as BeeFreeeIconItem[]) : [];
 }
 
-/** The padding BeeFree keeps around each icon, `computedStyle.iconSpacing`. */
+/** The padding Beefree keeps around each icon, `computedStyle.iconSpacing`. */
 function iconSpacing(descriptor: BeeFreeeModuleDescriptor): SpacingValue {
   const value = descriptor.computedStyle?.iconSpacing;
   if (typeof value !== "object" || value === null) return extractPadding({});
@@ -3042,7 +3042,7 @@ function iconSpacing(descriptor: BeeFreeeModuleDescriptor): SpacingValue {
 }
 
 /**
- * The height BeeFree draws every icon at, and an icon's width at that height,
+ * The height Beefree draws every icon at, and an icon's width at that height,
  * from its file's size. The width is `undefined` when the size isn't stated.
  */
 function iconSize(
@@ -3076,7 +3076,7 @@ function convertSingleIcon(
   const { width } = iconSize(descriptor, item);
   if (!src || stringField(item.text) || width === undefined) return undefined;
 
-  // The module's padding plus the space BeeFree keeps around the icon.
+  // The module's padding plus the space Beefree keeps around the icon.
   const styles = makeStyles(descriptor);
   const spacing = iconSpacing(descriptor);
   const padding = {
@@ -3116,7 +3116,7 @@ function iconTextStyle(style: Record<string, string>): string {
 }
 
 /**
- * The Icons module as the table BeeFree draws: the icons side by side, each at
+ * The Icons module as the table Beefree draws: the icons side by side, each at
  * the icon height inside its `iconSpacing`, with its text on the side
  * `textPosition` names, in the module's text style.
  */
@@ -3259,7 +3259,7 @@ const DERIVED_THUMBNAIL_URL =
   /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}|vimeo\.com\/(?:video\/)?\d+/;
 
 /**
- * A video's shown width: BeeFree writes a percentage of the column
+ * A video's shown width: Beefree writes a percentage of the column
  * (`computedStyle.width`, else `style.width`), or a px length. It follows the
  * image rule: 100% or more, missing or unreadable is `"full"`, a percentage
  * under 100% is px of the room, and a px width that reaches the room is
@@ -3298,7 +3298,7 @@ function convertVideo(
   const notes = note ? [note] : [];
   if (playsInPlace) {
     notes.push(
-      `BeeFree plays a ${video.mode} video in place; Templatical links a thumbnail of it.`,
+      `Beefree plays a ${video.mode} video in place; Templatical links a thumbnail of it.`,
     );
   }
   if (!thumbnailUrl && url && !DERIVED_THUMBNAIL_URL.test(url)) {
@@ -3325,7 +3325,7 @@ function convertVideo(
 }
 
 /**
- * The gap on each side of a menu separator: half of BeeFree's left and right
+ * The gap on each side of a menu separator: half of Beefree's left and right
  * item padding, so the space between two items matches. An unreadable side
  * counts as 0 when the other side reads; with neither, the factory spacing
  * applies.
@@ -3372,7 +3372,7 @@ function convertMenu(
   return {
     block: createMenuBlock({
       items,
-      // BeeFree writes `separator` only when the menu has one.
+      // Beefree writes `separator` only when the menu has one.
       separator:
         typeof computed.separator === "string"
           ? decodeEntitiesInTokens(computed.separator)
@@ -3389,7 +3389,7 @@ function convertMenu(
     }),
     notes:
       computed.layout === "vertical"
-        ? ["BeeFree's vertical menu layout was imported horizontal."]
+        ? ["Beefree's vertical menu layout was imported horizontal."]
         : [],
   };
 }
@@ -3422,9 +3422,9 @@ const TABLE_BORDER_SIDES = [
 ] as const;
 
 /**
- * One border for every cell edge from BeeFree's four sides. Equal sides keep
+ * One border for every cell edge from Beefree's four sides. Equal sides keep
  * their width and color; sides that differ take the widest drawn one, with a
- * note. A side BeeFree leaves out draws nothing. With no side stated, the
+ * note. A side Beefree leaves out draws nothing. With no side stated, the
  * factory border applies.
  */
 function tableBorder(style: Record<string, string>): {
@@ -3460,7 +3460,7 @@ function tableBorder(style: Record<string, string>): {
 }
 
 /**
- * What a BeeFree header row states that Templatical's does not draw: its
+ * What a Beefree header row states that Templatical's does not draw: its
  * header row is bold in the body's color, size and alignment. Only stated
  * header styles are compared.
  */
@@ -3511,7 +3511,7 @@ function convertTable(
   const computed = table.computedStyle ?? {};
 
   // Templatical table cells are a plain-text field (the editor stores the
-  // cell's innerText), so strip any HTML a BeeFree cell carried the same way
+  // cell's innerText), so strip any HTML a Beefree cell carried the same way
   // button labels are stripped. If a strip actually removed markup, the cell
   // lost formatting or a link URL, so the conversion is an approximation.
   let cellHtmlStripped = false;
@@ -3576,7 +3576,7 @@ function convertHtmlFallback(module: BeeFreeeModule): Block {
   if (descriptor.text?.html) html = descriptor.text.html;
   else if (descriptor.html?.html) html = descriptor.html.html;
   else if (descriptor.heading?.text) html = descriptor.heading.text;
-  else html = `<!-- Unsupported BeeFree module: ${module.type} -->`;
+  else html = `<!-- Unsupported Beefree module: ${module.type} -->`;
 
   return createHtmlBlock({
     content: importedHtml(html),
@@ -3585,7 +3585,7 @@ function convertHtmlFallback(module: BeeFreeeModule): Block {
 }
 
 /**
- * Converts a single BeeFree module to a Templatical block.
+ * Converts a single Beefree module to a Templatical block.
  * Returns the block and a report entry.
  */
 function convertModuleBase(

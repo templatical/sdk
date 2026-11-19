@@ -1,8 +1,8 @@
 export type BeeFreeTranslations = Record<string, Record<string, unknown>>;
 
 /**
- * BeeFree JSON type definitions.
- * Based on the BeeFree export format used by the BEE Plugin / BEE Pro editor.
+ * Beefree JSON type definitions.
+ * Based on the Beefree export format used by the BEE Plugin / BEE Pro editor.
  */
 
 export interface BeeFreeTemplate {
@@ -73,7 +73,7 @@ export interface BeeFreeeModule {
 export interface BeeFreeeModuleDescriptor {
   style?: Record<string, string>;
   /**
-   * Values BeeFree computed for the module. Numbers appear in older exports
+   * Values Beefree computed for the module. Numbers appear in older exports
    * (`width: 187.5`), and the Icons module nests objects (`iconSpacing`), so
    * every reader checks the type it needs.
    */
@@ -188,7 +188,7 @@ export interface BeeFreeeSocialIcon {
 }
 
 /**
- * The Video module's `video` (`IPluginModuleVideo` in BeeFree's `bee.ts`).
+ * The Video module's `video` (`IPluginModuleVideo` in Beefree's `bee.ts`).
  * The width is the module's `style.width` / `computedStyle.width` and the
  * alignment its `computedStyle.class`.
  */
@@ -200,7 +200,7 @@ export interface BeeFreeeVideoContent {
   thumbSrc?: string;
   thumbAlt?: string;
   thumbRatio?: string;
-  /** The play icon BeeFree draws over the thumbnail. */
+  /** The play icon Beefree draws over the thumbnail. */
   iconSrc?: string;
   iconType?: number;
   iconSize?: number;
@@ -224,7 +224,7 @@ export interface BeeFreeeMenuItem {
 /** The Table module's `table` (`IPluginModuleTable` in `bee.ts`). */
 export interface BeeFreeeTableContent {
   content?: {
-    /** Header rows; BeeFree writes one, or none when the header is off. */
+    /** Header rows; Beefree writes one, or none when the header is off. */
     headers?: BeeFreeeTableRow[];
     rows?: BeeFreeeTableRow[];
   };
@@ -274,7 +274,7 @@ export interface ImportReport {
 }
 
 /**
- * The result of a BeeFree import operation.
+ * The result of a Beefree import operation.
  */
 export interface ImportResult {
   content: import("@templatical/types").TemplateContent;

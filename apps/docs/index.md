@@ -58,7 +58,7 @@ features:
     link: /guide/shadow-dom
     linkText: How isolation works
   - title: Bring your existing templates
-    details: Importers for Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, and HTML. Migrate at your pace, no rebuild required.
+    details: Importers for Unlayer, Beefree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, and HTML. Migrate at your pace, no rebuild required.
     link: /getting-started/hosted-builders
     linkText: Hosted builders
 ---

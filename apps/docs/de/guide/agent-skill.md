@@ -63,7 +63,7 @@ npx skills add templatical/sdk
 
 - **Bauen** Sie eine Vorlage aus einem Briefing — „mach mir eine Produktlaunch-E-Mail", „gestalte eine Willkommens-E-Mail".
 - **Bearbeiten** Sie eine bestehende Vorlage als gezielte Änderung, nicht als Neuschrieb.
-- **Importieren** Sie eine Vorlage aus nahezu jeder Quelle — mit eigenen Konvertern für Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML und HTML, und für alles andere bildet er die Quelle von Hand auf das Block-Schema ab.
+- **Importieren** Sie eine Vorlage aus nahezu jeder Quelle — mit eigenen Konvertern für Unlayer, Beefree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML und HTML, und für alles andere bildet er die Quelle von Hand auf das Block-Schema ab.
 - **Validieren** Sie das JSON einer Vorlage gegen das Block-Schema und erhalten Sie präzise Fehler pro Block zurück.
 - **Exportieren** Sie eine Vorlage als versandfertiges MJML oder HTML.
 - **Sehen Sie sie live** im echten Templatical-Editor in Ihrem Browser an — sie bleibt synchron, während Sie weiter prompten, Änderungen von Hand eingeschlossen.
@@ -109,13 +109,13 @@ Bauen Sie zuerst in reinem JSON und wechseln Sie mitten in der Sitzung zu einer 
 
 ### Eine bestehende Vorlage importieren
 
-Haben Sie bereits eine Vorlage in einem anderen Editor? Der Skill wandelt **Unlayer**-, **BeeFree**-, **Stripo**-, **Topol**-, **Chamaileon**-, **Easy Email Pro**-, **MJML**- und **HTML**-E-Mails in Templatical-JSON um — zeigen Sie ihm die Datei, und er schreibt eine funktionierende Vorlage plus einen kurzen Bericht darüber, was sauber konvertiert wurde und was auf rohes HTML zurückgefallen ist (der Import ist naturgemäß verlustbehaftet). Sehen Sie sie sich anschließend live an und verfeinern Sie die groben Stellen zu nativen Blöcken.
+Haben Sie bereits eine Vorlage in einem anderen Editor? Der Skill wandelt **Unlayer**-, **Beefree**-, **Stripo**-, **Topol**-, **Chamaileon**-, **Easy Email Pro**-, **MJML**- und **HTML**-E-Mails in Templatical-JSON um — zeigen Sie ihm die Datei, und er schreibt eine funktionierende Vorlage plus einen kurzen Bericht darüber, was sauber konvertiert wurde und was auf rohes HTML zurückgefallen ist (der Import ist naturgemäß verlustbehaftet). Sehen Sie sie sich anschließend live an und verfeinern Sie die groben Stellen zu nativen Blöcken.
 
 **Kein Konverter für Ihre Quelle? Es funktioniert trotzdem.** Der Skill kennt das Block-Schema und kann deshalb eine unbekannte Vorlage lesen und von Hand übertragen — eine WordPress-Block-Vorlage, einen Mailchimp- oder Klaviyo-Export, eine handgeschriebene HTML-E-Mail, sogar einen Screenshot oder ein PDF davon. Er liest die Quelle, plant die Abbildung, baut die Blöcke und validiert das Ergebnis wie jede andere Vorlage. Langsamer und weniger exakt als ein Konverter — und es lohnt sich, ausdrücklich danach zu fragen.
 
 Die Liste der Konverter wächst, deshalb fragt der Skill die CLI, was verfügbar ist, anstatt es anzunehmen — Sie müssen das nie vorab prüfen.
 
-Um die Konverter stattdessen direkt in Ihrem eigenen Code zu verwenden, siehe die Migrationsleitfäden: [Unlayer](/de/guide/migration-from-unlayer), [BeeFree](/de/guide/migration-from-beefree), [Stripo](/de/guide/migration-from-stripo), [Topol](/de/guide/migration-from-topol), [Chamaileon](/de/guide/migration-from-chamaileon), [Easy Email Pro](/de/guide/migration-from-easy-email-pro), [MJML](/de/guide/migration-from-mjml), [HTML](/de/guide/migration-from-html).
+Um die Konverter stattdessen direkt in Ihrem eigenen Code zu verwenden, siehe die Migrationsleitfäden: [Unlayer](/de/guide/migration-from-unlayer), [Beefree](/de/guide/migration-from-beefree), [Stripo](/de/guide/migration-from-stripo), [Topol](/de/guide/migration-from-topol), [Chamaileon](/de/guide/migration-from-chamaileon), [Easy Email Pro](/de/guide/migration-from-easy-email-pro), [MJML](/de/guide/migration-from-mjml), [HTML](/de/guide/migration-from-html).
 
 ### Den Editor integrieren — oder eine bestehende Integration diagnostizieren
 

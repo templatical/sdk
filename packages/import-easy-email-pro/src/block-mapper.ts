@@ -176,7 +176,7 @@ function convertParagraph(node: EasyEmailProNode, map: MapContext): Converted {
 
 /**
  * ParagraphBlock has no color / fontSize / textAlign. Bake the cascaded
- * values into a wrapping `<p style>` (single wrapper, Unlayer/BeeFree class).
+ * values into a wrapping `<p style>` (single wrapper, Unlayer/Beefree class).
  */
 function paragraphHtml(node: EasyEmailProNode, map: MapContext): string {
   const html = serialiseChildren(node.children);

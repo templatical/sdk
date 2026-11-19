@@ -1,8 +1,8 @@
-# BeeFree
+# Beefree
 
-Paste BeeFree JSON
+Paste Beefree JSON
 
-convertBeeFreeTemplate + init({ content }) — BeeFree page.rows JSON.
+convertBeeFreeTemplate + init({ content }) — Beefree page.rows JSON.
 
 Contract: https://docs.templatical.com/guide/migration-from-beefree#usage
 Live: https://play.templatical.com/scenes/import-beefree

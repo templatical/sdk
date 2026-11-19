@@ -29,7 +29,7 @@ npx skills update templatical
 - **Edit** — change a template that already exists, as a scoped edit rather
   than a rewrite.
 - **Import** — convert a template from almost anywhere. Dedicated converters
-  handle Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML and
+  handle Unlayer, Beefree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML and
   HTML; for anything else, it reads the source and maps it onto the block
   schema by hand — a WordPress block template, a Mailchimp or Klaviyo export,
   even a screenshot of an email.

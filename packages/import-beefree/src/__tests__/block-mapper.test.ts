@@ -198,7 +198,7 @@ describe("convertModule", () => {
     );
   });
 
-  // BeeFree paragraphs are margin 0. An absent `paragraphSpacing` renders as
+  // Beefree paragraphs are margin 0. An absent `paragraphSpacing` renders as
   // the 8px default, so every text or list block states its gap.
   describe("paragraph spacing", () => {
     function spacing(
@@ -543,7 +543,7 @@ describe("convertModule", () => {
     });
 
     // The title line box is the level size from HEADING_LEVEL_FONT_SIZE
-    // (h1 36, h2 28, h3 22, h4 18). The span keeps BeeFree's exact size.
+    // (h1 36, h2 28, h3 22, h4 18). The span keeps Beefree's exact size.
     it.each([
       { px: 18, title: "h1", level: 4, lineBox: 18, note: undefined },
       { px: 23, title: "h1", level: 3, lineBox: 22, note: undefined },
@@ -711,7 +711,7 @@ describe("convertModule", () => {
       expect(entry.status).toBe("converted");
     });
 
-    // `image.width` × `image.height` is the file BeeFree was given (1920 × 466
+    // `image.width` × `image.height` is the file Beefree was given (1920 × 466
     // for the hero in a real export), so carrying the height over pins the
     // file's height under a narrower shown width and stretches the image.
     it("never carries image.height over", () => {
@@ -793,7 +793,7 @@ describe("convertModule", () => {
         ]);
       });
 
-      // BeeFree shows an autowidth image at its file's width, capped at the
+      // Beefree shows an autowidth image at its file's width, capped at the
       // column, and records that in computedStyle.width: a 111px logo stays
       // 111px in an 800px template (#1069).
       it("shows an autowidth image at its computed width", () => {
@@ -970,7 +970,7 @@ describe("convertModule", () => {
       });
     });
 
-    // BeeFree keeps the radius in the image's own `style` map rather than
+    // Beefree keeps the radius in the image's own `style` map rather than
     // alongside width/height, so it is read from a different place than every
     // other image property here.
     it("carries a px corner radius from the image style", () => {
@@ -1020,7 +1020,7 @@ describe("convertModule", () => {
       ).toBe(60);
     });
 
-    // 600 is `convertImage`'s fallback, not something BeeFree said.
+    // 600 is `convertImage`'s fallback, not something Beefree said.
     it("drops a percentage radius when no width was stated", () => {
       expect(
         imageWith({
@@ -1155,7 +1155,7 @@ describe("convertModule", () => {
           button: {
             label,
             href: "https://example.com",
-            // BeeFree JSON stores a numeric font-weight; the descriptor type
+            // Beefree JSON stores a numeric font-weight; the descriptor type
             // only names strings.
             style: style as Record<string, string>,
           },
@@ -1829,7 +1829,7 @@ describe("convertModule", () => {
       expect(left.block.width).toBe("50%");
       expect(left.entry.status).toBe("approximated");
       expect(left.entry.note).toBe(
-        "BeeFree aligns this divider left; Templatical centres every divider.",
+        "Beefree aligns this divider left; Templatical centres every divider.",
       );
 
       const right = dividerWith({
@@ -1838,7 +1838,7 @@ describe("convertModule", () => {
       });
       expect(right.entry.status).toBe("approximated");
       expect(right.entry.note).toBe(
-        "BeeFree aligns this divider right; Templatical centres every divider.",
+        "Beefree aligns this divider right; Templatical centres every divider.",
       );
     });
 
@@ -1849,7 +1849,7 @@ describe("convertModule", () => {
       });
       expect(entry.status).toBe("approximated");
       expect(entry.note).toBe(
-        "BeeFree aligns this divider right; Templatical centres every divider.",
+        "Beefree aligns this divider right; Templatical centres every divider.",
       );
     });
 
@@ -1870,7 +1870,7 @@ describe("convertModule", () => {
     });
   });
 
-  // BeeFree templates space content with dividers that draw nothing: only
+  // Beefree templates space content with dividers that draw nothing: only
   // their padding, and a transparent border's width, take up room (#1070).
   describe("divider that draws no line", () => {
     function invisible(
@@ -2031,7 +2031,7 @@ describe("convertModule", () => {
         align: "center",
         linkUrl: "https://example.com/gift",
       });
-      // The module's padding plus the space BeeFree keeps around each icon.
+      // The module's padding plus the space Beefree keeps around each icon.
       expect(block.styles.padding).toEqual({
         top: 10,
         right: 6,
@@ -2510,7 +2510,7 @@ describe("convertModule", () => {
     it("falls back to an HTML comment for an addon with nothing to read", () => {
       const { block, entry } = convertModule(makeModule(ADDON, {}), []);
       expect(block.type === "html" && block.content).toBe(
-        `<!-- Unsupported BeeFree module: ${ADDON} -->`,
+        `<!-- Unsupported Beefree module: ${ADDON} -->`,
       );
       expect(entry).toEqual({
         beeFreeModuleType: ADDON,
@@ -2539,7 +2539,7 @@ describe("convertModule", () => {
       return block.height;
     }
 
-    it("keeps the height BeeFree states", () => {
+    it("keeps the height Beefree states", () => {
       const { block, entry } = spacer({ height: "40px" });
       expect(block.type === "spacer" && block.height).toBe(40);
       expect(entry).toEqual({
@@ -2550,8 +2550,8 @@ describe("convertModule", () => {
       expect(spacerHeight({ height: "12.6px" })).toBe(13);
     });
 
-    // BeeFree draws a spacer it has no height for at its 60px default.
-    it("uses BeeFree's 60px default when the height is absent or unreadable", () => {
+    // Beefree draws a spacer it has no height for at its 60px default.
+    it("uses Beefree's 60px default when the height is absent or unreadable", () => {
       expect(spacerHeight()).toBe(60);
       expect(spacerHeight({})).toBe(60);
       expect(spacerHeight({ height: "" })).toBe(60);
@@ -2575,7 +2575,7 @@ describe("convertModule", () => {
       }
     });
 
-    it("does not skip a spacer with a height or BeeFree's default", () => {
+    it("does not skip a spacer with a height or Beefree's default", () => {
       expect(
         skippedModuleEntry(
           makeModule(SPACER, { spacer: { style: { height: "1px" } } }),
@@ -3997,7 +3997,7 @@ describe("convertModule", () => {
         expect(block.thumbnailUrl).toBe("");
         expect(entry.status).toBe("approximated");
         expect(entry.note).toBe(
-          `BeeFree plays a ${mode} video in place; Templatical links a thumbnail of it.`,
+          `Beefree plays a ${mode} video in place; Templatical links a thumbnail of it.`,
         );
         expect(warnings).toEqual([]);
       },
@@ -4117,7 +4117,7 @@ describe("convertModule", () => {
       expect(block.items[1].url).toBe("#");
     });
 
-    it("keeps the separator BeeFree computed", () => {
+    it("keeps the separator Beefree computed", () => {
       const { block } = convertModule(
         menu({ computedStyle: { separator: "•" } }),
         [],
@@ -4225,7 +4225,7 @@ describe("convertModule", () => {
       );
       expect(entry.status).toBe("approximated");
       expect(entry.note).toBe(
-        "BeeFree's vertical menu layout was imported horizontal.",
+        "Beefree's vertical menu layout was imported horizontal.",
       );
     });
 
@@ -4267,7 +4267,7 @@ describe("convertModule", () => {
     const contents = (block: { rows: { cells: { content: string }[] }[] }) =>
       block.rows.map((r) => r.cells.map((c) => c.content));
 
-    it("imports BeeFree's documented table", () => {
+    it("imports Beefree's documented table", () => {
       const warnings: string[] = [];
       const { block, entry } = convertModule(realTable(), warnings);
 
@@ -4375,7 +4375,7 @@ describe("convertModule", () => {
       );
     });
 
-    it("has no header row when BeeFree writes no headers", () => {
+    it("has no header row when Beefree writes no headers", () => {
       const { block, entry } = convertModule(table(), []);
       if (block.type !== "table") throw new Error("expected a table");
       expect(block.hasHeaderRow).toBe(false);
@@ -4454,7 +4454,7 @@ describe("convertModule", () => {
       );
     });
 
-    it("counts a side BeeFree leaves out as drawing nothing", () => {
+    it("counts a side Beefree leaves out as drawing nothing", () => {
       const side = "1px solid #dddddd";
       const { block, entry } = convertModule(
         table({
@@ -4507,7 +4507,7 @@ describe("convertModule", () => {
       expect(block.borderWidth).toBe(0);
     });
 
-    it("keeps the default 1px #e0e0e0 border when BeeFree states none", () => {
+    it("keeps the default 1px #e0e0e0 border when Beefree states none", () => {
       const { block } = convertModule(table(), []);
       if (block.type !== "table") throw new Error("expected a table");
       expect(block.borderWidth).toBe(1);
@@ -4782,7 +4782,7 @@ describe("convertModule", () => {
       const mod3 = makeModule("some-unknown-type", {});
       const { block: b3 } = convertModule(mod3, warnings);
       if (b3.type === "html") {
-        expect(b3.content).toContain("Unsupported BeeFree module");
+        expect(b3.content).toContain("Unsupported Beefree module");
         expect(b3.content).toContain("some-unknown-type");
       }
     });
@@ -5022,7 +5022,7 @@ describe("convertModule", () => {
       });
     });
 
-    // BeeFree's paragraph modules write `font-family: inherit`. Carried over,
+    // Beefree's paragraph modules write `font-family: inherit`. Carried over,
     // the keyword becomes the block's own font and the sent email falls back
     // to the client's default face instead of the template's.
     describe("CSS-wide keywords as a font", () => {
@@ -5200,7 +5200,7 @@ describe("convertModule", () => {
       });
     });
 
-    // BeeFree paints a text module's style as the base and the TinyMCE blob
+    // Beefree paints a text module's style as the base and the TinyMCE blob
     // on top. Line-height is the exception: the HTML export drops the blob's
     // px line-height and renders the module value as a unitless ratio.
     describe("text, list and link styles", () => {
@@ -5226,7 +5226,7 @@ describe("convertModule", () => {
 
       it("puts the module font-size on the paragraph so the line box is not the 14px default", () => {
         // mj-text is 14px. A 12px size only on an inner span leaves the
-        // paragraph's strut at 14px, so each line is taller than BeeFree.
+        // paragraph's strut at 14px, so each line is taller than Beefree.
         expect(
           textHtml("text", "<p>Hi</p>", {
             "font-size": "12px",
@@ -5238,7 +5238,7 @@ describe("convertModule", () => {
       });
 
       it("keeps an empty paragraph between text and keeps a module that is only blank", () => {
-        // An empty `<p>` is a blank line BeeFree draws. It stays in the
+        // An empty `<p>` is a blank line Beefree draws. It stays in the
         // paragraph, so the renderer fills it; the block is not a spacer.
         // A module whose only paragraph is blank stays that empty paragraph.
         const style = {
@@ -5633,7 +5633,7 @@ describe("convertModule", () => {
         );
       });
 
-      it("writes the list box BeeFree renders onto ul, ol and li", () => {
+      it("writes the list box Beefree renders onto ul, ol and li", () => {
         // Outer text sits 20px in: half of the 40px indent, which is what the
         // export's -20px wrapper does against the 40px UA padding. A nested
         // list keeps the full indent. Margins are 0, and the marker reverts

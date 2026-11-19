@@ -106,7 +106,7 @@ const CORPUS_TEXT_IMPORTED =
 const GREETING =
   '<p style="font-size:16px;line-height:19px;word-break:break-word;text-align:left;"><strong><span style="font-size:16px;line-height:19px;"><code spellcheck="false" data-bee-type="mergetag" data-bee-code="" data-bee-name="First name">Dear </code><code spellcheck="false" data-bee-type="mergetag" data-bee-code="" data-bee-name="First name">{{contact.first_name}}</code><code spellcheck="false" data-bee-type="mergetag" data-bee-code="" data-bee-name="First name">&nbsp;</code><code spellcheck="false" data-bee-type="mergetag" data-bee-code="" data-bee-name="Last name">{{contact.last_name}}</code><code spellcheck="false" data-bee-type="mergetag" data-bee-code="" data-bee-name="First name">,</code></span></strong></p>';
 
-describe("BeeFree module gaps", () => {
+describe("Beefree module gaps", () => {
   describe("module visibility", () => {
     it("hides one module on mobile inside a two-column row and leaves the section unset", () => {
       const { content, report } = imported(
@@ -1602,7 +1602,7 @@ describe("BeeFree module gaps", () => {
       };
     }
 
-    it("centres a Twig control tag the way BeeFree's export wraps it", () => {
+    it("centres a Twig control tag the way Beefree's export wraps it", () => {
       const { content, entry } = htmlContent(
         "{% for companion in guest.companions %}",
       );

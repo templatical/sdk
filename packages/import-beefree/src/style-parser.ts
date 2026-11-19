@@ -7,7 +7,7 @@ import type {
 } from "@templatical/types";
 
 /**
- * Parses CSS-like style values from BeeFree descriptors.
+ * Parses CSS-like style values from Beefree descriptors.
  */
 
 /**
@@ -438,7 +438,7 @@ function backgroundRepeatFlag(raw: string): {
   return { repeat: true, exact: parts.every((part) => part === "repeat") };
 }
 
-/** CSS's initial values: what a browser paints for a longhand BeeFree leaves out. */
+/** CSS's initial values: what a browser paints for a longhand Beefree leaves out. */
 const CSS_BACKGROUND_DEFAULTS = {
   size: "auto",
   x: "left",
@@ -472,7 +472,7 @@ function cssUrl(value: string | undefined): string {
 }
 
 /**
- * A row's background image from a BeeFree style map (`content.style` or
+ * A row's background image from a Beefree style map (`content.style` or
  * `container.style`), `null` when `background-image` holds no `url()`.
  * Unset longhands take CSS's initial values; a value with no exact keyword
  * takes the nearest one and adds a note naming it. `label` names the element

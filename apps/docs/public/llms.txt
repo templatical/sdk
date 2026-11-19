@@ -14,7 +14,7 @@ Documentation for SDK version 0.62.1. Every page below is also available as raw 
 
 - [Author features](https://docs.templatical.com/getting-started/author-features): What people see in the editor — saved blocks, comments, version history, test email, Issues, media — and which init() key or package turns each one on.
 - [Embedding the editor](https://docs.templatical.com/getting-started/embedding): CSS constraints on the container you mount the editor into, and what breaks when an ancestor violates them.
-- [Hosted builders](https://docs.templatical.com/getting-started/hosted-builders): How Templatical compares to hosted email builders such as Unlayer, BeeFree, and Stripo, and which importer to open for an existing template.
+- [Hosted builders](https://docs.templatical.com/getting-started/hosted-builders): How Templatical compares to hosted email builders such as Unlayer, Beefree, and Stripo, and which importer to open for an existing template.
 - [How Rendering Works](https://docs.templatical.com/getting-started/how-rendering-works): Understand the JSON → MJML rendering pipeline in Templatical.
 - [Installation](https://docs.templatical.com/getting-started/installation): Install the Templatical email editor with quality checks enabled by default, or load it from a CDN.
 - [Starting points](https://docs.templatical.com/getting-started/paths): Which docs page to open first — embed the editor, connect your backend, generate a template from a prompt, or compile JSON to sendable HTML.
@@ -46,7 +46,7 @@ Documentation for SDK version 0.62.1. Every page below is also available as raw 
 - [Localized templates](https://docs.templatical.com/guide/localized-templates): Keep language versions of one email in settings.locales and l10n, fill them with Translate through your TranslationProvider, project them with resolveLocale and check or render them with --locale.
 - [Logic Tags](https://docs.templatical.com/guide/logic-tags): Insert and highlight control-flow logic tags in Templatical email templates.
 - [Merge Tags](https://docs.templatical.com/guide/merge-tags): Dynamic content via merge tags in Templatical email templates.
-- [Migration from BeeFree](https://docs.templatical.com/guide/migration-from-beefree): Convert BeeFree email templates to Templatical format using @templatical/import-beefree.
+- [Migration from Beefree](https://docs.templatical.com/guide/migration-from-beefree): Convert Beefree email templates to Templatical format using @templatical/import-beefree.
 - [Migrating from Chamaileon](https://docs.templatical.com/guide/migration-from-chamaileon): Convert Chamaileon email templates to Templatical format using @templatical/import-chamaileon.
 - [Migrating from Easy Email Pro](https://docs.templatical.com/guide/migration-from-easy-email-pro): Convert Easy Email Pro email templates to Templatical format using @templatical/import-easy-email-pro.
 - [Migration from HTML](https://docs.templatical.com/guide/migration-from-html): Convert HTML email templates to Templatical format using @templatical/import-html.
