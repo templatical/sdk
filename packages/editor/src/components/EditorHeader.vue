@@ -262,8 +262,8 @@ onBeforeUnmount(() => {
          redistributes symmetrically about the header's centre and moves every
          sibling by half the delta, whichever side of the change it sits on.
          DOM order buys nothing. So a conditional control here drags the Preview
-         button out from under the cursor — 114.5px when the sample/label toggle
-         used to live here (#574).
+         button out from under the cursor: a 189px switch here moves it 114.5px
+         (#574).
 
          The three opt-outs below are plain booleans captured at setup, so they
          cannot change this track's width during the session. No other `v-if`,
