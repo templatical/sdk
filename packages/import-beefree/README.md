@@ -1,11 +1,11 @@
 # @templatical/import-beefree
 
-> Convert BeeFree email templates to Templatical's JSON format.
+> Convert Beefree email templates to Templatical's JSON format.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/import-beefree?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/import-beefree)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
-Migrate from [BeeFree](https://beefree.io) to [Templatical](https://github.com/templatical/sdk) without rebuilding your templates by hand. Maps BeeFree modules to Templatical block types and reports any modules that need manual conversion.
+Migrate from [Beefree](https://beefree.io) to [Templatical](https://github.com/templatical/sdk) without rebuilding your templates by hand. Maps Beefree modules to Templatical block types and reports any modules that need manual conversion.
 
 ## Install
 
@@ -42,7 +42,7 @@ console.log(result.report.summary);
 
 ## What's converted
 
-| BeeFree module | Templatical block |
+| Beefree module | Templatical block |
 |---|---|
 | heading / title | `TitleBlock` |
 | paragraph / text | `ParagraphBlock` |
@@ -60,7 +60,7 @@ Unknown or partially-supported modules are flagged in `result.report` so you can
 
 ## API
 
-- `convertBeeFreeTemplate(template)` — converts a BeeFree JSON template, returns `{ content, report, customFonts }`
+- `convertBeeFreeTemplate(template)` — converts a Beefree JSON template, returns `{ content, report, customFonts }`
 
 Types:
 - `BeeFreeTemplate` — input shape (see source for full structure)
@@ -71,7 +71,7 @@ Types:
 
 ## Documentation
 
-- [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
+- [Migrating from Beefree](https://docs.templatical.com/guide/migration-from-beefree)
 
 Full reference at **[docs.templatical.com](https://docs.templatical.com)**.
 

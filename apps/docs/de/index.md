@@ -58,7 +58,7 @@ features:
     link: /de/guide/shadow-dom
     linkText: So funktioniert die Isolation
   - title: Bestehende Templates übernehmen
-    details: Importer für Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML und HTML. Migrieren Sie in Ihrem Tempo, kein Neuaufbau erforderlich.
+    details: Importer für Unlayer, Beefree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML und HTML. Migrieren Sie in Ihrem Tempo, kein Neuaufbau erforderlich.
     link: /de/getting-started/hosted-builders
     linkText: Gehostete Builder
 ---

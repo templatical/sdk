@@ -62,7 +62,7 @@ export interface ConvertBeeFreeOptions {
 }
 
 /**
- * A column's share of BeeFree's 12-column grid. An omitted value counts as 6,
+ * A column's share of Beefree's 12-column grid. An omitted value counts as 6,
  * half the grid, which is what a 2-column row uses when neither side states one.
  */
 function columnUnits(column: BeeFreeeColumn): number {
@@ -168,7 +168,7 @@ function exactPreset(columns: BeeFreeeColumn[]): ColumnLayout | null {
 }
 
 /**
- * The section layout for a BeeFree row. One column needs no section from
+ * The section layout for a Beefree row. One column needs no section from
  * this function. Five or more columns flatten, with the ratio in the
  * warning. Two, three or four columns keep an exact preset, or the even
  * preset of that count plus `columnWidths` from the grid shares. A share
@@ -183,7 +183,7 @@ function resolveColumns(
   if (columns.length === 1) return null;
   if (columns.length >= 5) {
     warnings.push(
-      `Row with ${columns.length} columns (${gridLabel(columns)}) was flattened to a single column. BeeFree supports arbitrary columns, but Templatical supports up to four columns.`,
+      `Row with ${columns.length} columns (${gridLabel(columns)}) was flattened to a single column. Beefree supports arbitrary columns, but Templatical supports up to four columns.`,
     );
     return null;
   }
@@ -630,7 +630,7 @@ function imageFillsColumn(
 }
 
 /**
- * BeeFree does not widen an image on a phone when the image sits in a column
+ * Beefree does not widen an image on a phone when the image sits in a column
  * narrower than the email. Pin those that fill their column, which is when
  * the renderer would stretch them. A full-width row stays on the automatic
  * rule.
@@ -679,7 +679,7 @@ function foldColumnPadding(blocks: Block[], padding: SpacingValue): void {
 }
 
 /**
- * Processes a single BeeFree row into one or more Templatical blocks.
+ * Processes a single Beefree row into one or more Templatical blocks.
  */
 function processRow(
   row: BeeFreeeRow,
@@ -845,7 +845,7 @@ function processRow(
 }
 
 /**
- * Extracts template-level settings from the BeeFree body.
+ * Extracts template-level settings from the Beefree body.
  */
 function extractSettings(
   template: BeeFreeTemplate,
@@ -872,7 +872,7 @@ function extractSettings(
     backgroundColor: bgColor,
     textColor: parseColor(contentStyle.color) || FALLBACK_TEXT_COLOR,
     ...(linkColor ? { linkColor } : {}),
-    // BeeFree underlines per link, in the link's own markup, and has no
+    // Beefree underlines per link, in the link's own markup, and has no
     // template-wide switch, so links take the browser default: underlined.
     linkUnderline: true,
     fontFamily,
@@ -881,9 +881,9 @@ function extractSettings(
 }
 
 /**
- * Converts a BeeFree template JSON to Templatical TemplateContent.
+ * Converts a Beefree template JSON to Templatical TemplateContent.
  *
- * @param template - The parsed BeeFree JSON object
+ * @param template - The parsed Beefree JSON object
  * @returns An ImportResult with the converted content and a detailed report
  *
  * @example
@@ -908,7 +908,7 @@ export function convertBeeFreeTemplate(
   // Validate structure
   if (!template?.page?.rows) {
     throw new Error(
-      "Invalid BeeFree template: missing page.rows. Ensure you are passing a valid BeeFree JSON export.",
+      "Invalid Beefree template: missing page.rows. Ensure you are passing a valid Beefree JSON export.",
     );
   }
 
@@ -992,7 +992,7 @@ export function convertBeeFreeTemplate(
 }
 
 /**
- * Families BeeFree ships as system stacks, beyond the built-in web-safe set.
+ * Families Beefree ships as system stacks, beyond the built-in web-safe set.
  * They show up as the face itself or as a fallback (`Helvetica Neue`,
  * `Lucida Grande`) and have nothing to download.
  */
@@ -1091,7 +1091,7 @@ function warnForMissingFontUrls(
     loaded.add(key);
     warn(
       warnings,
-      `Font "${name}" is used but BeeFree provides no URL for it.`,
+      `Font "${name}" is used but Beefree provides no URL for it.`,
     );
   }
 }

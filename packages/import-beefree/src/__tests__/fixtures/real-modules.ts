@@ -1,6 +1,6 @@
 import type { BeeFreeeModule } from "../../types";
 
-// The menu, table and video descriptors BeeFree writes, as typed by
+// The menu, table and video descriptors Beefree writes, as typed by
 // `IPluginModuleMenu`, `IPluginModuleTable` and `IPluginModuleVideo` in
 // https://github.com/BeefreeSDK/beefree-sdk-npm-official/blob/master/src/types/bee.ts
 // (checked 2026-11-09). Key structure is copied from real exports; values are
@@ -64,7 +64,7 @@ export function realMenu(): BeeFreeeModule {
 }
 
 /**
- * The table in BeeFree's own email-to-page sample,
+ * The table in Beefree's own email-to-page sample,
  * `.gitbook/assets/email-to-page-conversion.yaml` of
  * https://github.com/BeefreeSDK/beefree-sdk-docs (799613dc).
  */
@@ -124,7 +124,7 @@ export function realTable(): BeeFreeeModule {
 /**
  * A thumbnail-mode video, the shape of
  * `test/testing-bee-templates/separated-blocks/video.json` in
- * https://github.com/Ecomailcz/bee-to-topol (aeac68f0), a real BeeFree export.
+ * https://github.com/Ecomailcz/bee-to-topol (aeac68f0), a real Beefree export.
  * The width is a percentage and the alignment is `computedStyle.class`.
  */
 export function realVideo(): BeeFreeeModule {

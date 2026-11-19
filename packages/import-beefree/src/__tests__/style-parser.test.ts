@@ -325,7 +325,7 @@ describe("readBeefreeBackgroundImage", () => {
     expect(read({ "background-image": value })?.image.url).toBe(expected);
   });
 
-  it("reads BeeFree's own longhands exactly", () => {
+  it("reads Beefree's own longhands exactly", () => {
     expect(
       read({
         "background-image": "url(https://cdn.test/hero.jpg)",

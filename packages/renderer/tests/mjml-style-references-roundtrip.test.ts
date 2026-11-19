@@ -14,7 +14,7 @@ import { decodeStyleReferences } from "../src/rich-text";
  * attribute of every `<p>`, `<ul>`, `<ol>` and `<li>` it matches. Juice splits
  * on `;` without decoding character references, so the `;` that ends
  * `&apos;` or `&nbsp;` cut a declaration in two and the compile threw
- * `Cannot read properties of undefined (reading 'indexOf')`. BeeFree's
+ * `Cannot read properties of undefined (reading 'indexOf')`. Beefree's
  * TinyMCE output and import-mjml's serializer both write such references.
  */
 async function compile(blocks: Block[]): Promise<string> {

@@ -39,6 +39,6 @@ Der Editor speichert JSON. `@templatical/renderer` erzeugt MJML. Jede MJML-Bibli
 
 ## Gehosteten Builder verlassen
 
-Unlayer, BeeFree, Stripo und die anderen sind Produkte mit eigenem Konto. Importer legen deren Export auf Templatical-JSON.
+Unlayer, Beefree, Stripo und die anderen sind Produkte mit eigenem Konto. Importer legen deren Export auf Templatical-JSON.
 
 - [Gehostete Builder](/de/getting-started/hosted-builders)

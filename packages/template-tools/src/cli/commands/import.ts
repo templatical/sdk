@@ -183,7 +183,7 @@ export function detectFormat(fileName: string, content: string): string | null {
     }
     // Unlayer designs come from editor.saveDesign(): { body: { rows } }.
     if (obj?.body?.rows) return "unlayer";
-    // BeeFree templates: { page: { rows } }.
+    // Beefree templates: { page: { rows } }.
     if (obj?.page?.rows) return "beefree";
     // Topol designs are an MJML-shaped tree rooted at the global style.
     if (obj?.tagName === "mj-global-style") return "topol";

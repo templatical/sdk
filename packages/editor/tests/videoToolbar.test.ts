@@ -14,7 +14,7 @@ function mountIt(block: VideoBlock) {
 
 /**
  * Imports and agent-written JSON carry widths the presets don't list (the
- * BeeFree importer falls back to 600), so the control must still show them.
+ * Beefree importer falls back to 600), so the control must still show them.
  */
 describe("VideoToolbar width control", () => {
   const widthSelect = (w: ReturnType<typeof mountIt>) =>

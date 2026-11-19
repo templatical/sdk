@@ -29,7 +29,7 @@ Die zwei Ebenen ergänzen sich:
 | Quelle eines `javascript:`-Links | `normalizeLinkUrl` | `sanitizeHtml` | `lintLinks` |
 |---|---|---|---|
 | Nutzer tippt im Rich-Text-Link-Dialog | ✅ beim Einfügen blockiert | n/a (erreicht den Inhalt nie) | n/a |
-| Importiertes BeeFree- / Unlayer- / HTML- / MJML- / Topol- / Stripo- / Chamaileon- / Easy-Email-Pro-JSON | ❌ umgeht den Dialog | ✅ beim Rendern entfernt | ✅ zeigt dem Autor an |
+| Importiertes Beefree- / Unlayer- / HTML- / MJML- / Topol- / Stripo- / Chamaileon- / Easy-Email-Pro-JSON | ❌ umgeht den Dialog | ✅ beim Rendern entfernt | ✅ zeigt dem Autor an |
 | Programmatisches `setContent()` mit fehlerhaftem Anker | ❌ | ✅ beim Rendern entfernt | ✅ zeigt dem Autor an |
 | `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (strukturierte Felder, kein HTML) | ❌ | ❌ Sanitizer bereinigt Live-Rich-Text und Custom-Block-HTML im Canvas, keine strukturierten Felder | ✅ zeigt dem Autor an |
 

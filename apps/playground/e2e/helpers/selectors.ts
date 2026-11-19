@@ -317,7 +317,7 @@ export const SELECTORS = {
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
-  // Template import (BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon / Easy Email Pro)
+  // Template import (Beefree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon / Easy Email Pro)
   chooserMigrationBand: '[data-testid="chooser-migration-band"]',
   chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
   chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',

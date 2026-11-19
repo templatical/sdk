@@ -8,7 +8,7 @@ import {
 import { renderToMjml } from "../src";
 
 /**
- * A BeeFree row's container colour is the band outside the content box, and
+ * A Beefree row's container colour is the band outside the content box, and
  * its content colour is the inner box. The editor stores that band as
  * `section.wrapper` and the inner colour as the section fill. The wrapper is
  * the email body width (`settings.width`); the section inside it is the

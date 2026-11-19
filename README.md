@@ -133,7 +133,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)               | Template quality linter — accessibility, structure, and link rules (browser + Node) | [MIT](./LICENSE)     |
 | [`@templatical/template-tools`](https://www.npmjs.com/package/@templatical/template-tools) | CLI and library: validate, render (MJML/HTML), edit, import, live-preview templates | [MIT](./LICENSE)     |
 | [`@templatical/ai-kit`](https://www.npmjs.com/package/@templatical/ai-kit) | Bring your own AI backend: the wire, an HTTP provider, a server kit and a conformance suite | [MIT](./LICENSE)     |
-| [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format                  | [MIT](./LICENSE)     |
+| [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert Beefree templates to Templatical format                  | [MIT](./LICENSE)     |
 | [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format                  | [MIT](./LICENSE)     |
 | [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE)     |
 | [`@templatical/import-mjml`](https://www.npmjs.com/package/@templatical/import-mjml)       | Convert MJML email templates to Templatical format               | [MIT](./LICENSE)     |
@@ -154,7 +154,7 @@ const mjml = await editor.toMjml();
 - [Version History](https://docs.templatical.com/backend/version-history) — browse, preview and restore past versions over your own storage
 - [AI Agent Skills](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt, or get integration help, in your own agent
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
-- [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
+- [Migrating from Beefree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Stripo](https://docs.templatical.com/guide/migration-from-stripo)
 - [Migrating from Topol](https://docs.templatical.com/guide/migration-from-topol)
 - [Migrating from Chamaileon](https://docs.templatical.com/guide/migration-from-chamaileon)

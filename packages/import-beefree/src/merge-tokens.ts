@@ -448,7 +448,7 @@ export function decodePlainTextEntities(value: string): string {
 }
 
 /**
- * BeeFree writes a non-breaking space as `&amp;nbsp;`. The extra `&amp;`
+ * Beefree writes a non-breaking space as `&amp;nbsp;`. The extra `&amp;`
  * leaves the letters `&nbsp;` in the mail. Put back the single reference.
  * Any other reference outside a token stays as written.
  */
@@ -638,7 +638,7 @@ function isSelfClosing(html: string, openEnd: number): boolean {
   return html[i] === "/";
 }
 
-/** A BeeFree `<code>` chip. Anything else is ordinary code and stays. */
+/** A Beefree `<code>` chip. Anything else is ordinary code and stays. */
 type BeeCodeChip = "mergetag" | "speciallink";
 
 /**
@@ -966,7 +966,7 @@ function advanceVisibleBeforeChip(
 }
 
 /**
- * Remove a BeeFree `<code>` chip.
+ * Remove a Beefree `<code>` chip.
  *
  * A `<code data-bee-type="mergetag">` chip keeps the text inside it. A chip
  * that holds only whitespace keeps each non-breaking space. Plain leading
@@ -974,7 +974,7 @@ function advanceVisibleBeforeChip(
  * after visible text. A chip with words or multiple tokens stays as written.
  *
  * A `<code data-bee-type="speciallink">` chip is removed and its inner HTML
- * is kept as written, link included, as BeeFree's own HTML export does.
+ * is kept as written, link included, as Beefree's own HTML export does.
  *
  * A `<code>` with no `data-bee-type`, or with any other value, stays. A
  * self-closing chip is removed. An opener with no closer is left as written.
@@ -1069,7 +1069,7 @@ export function unwrapMergeTagCode(html: string): string {
 
 /**
  * A plain `<code>` around one token drops plain leading padding wherever it
- * sits, because BeeFree's export writes it without that space. A non-breaking
+ * sits, because Beefree's export writes it without that space. A non-breaking
  * space, the element and a space after the token stay. Nested markup inside
  * the element is left as written. Chips are handled by `unwrapMergeTagCode`.
  */
