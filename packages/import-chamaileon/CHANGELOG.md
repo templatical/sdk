@@ -1,5 +1,11 @@
 # @templatical/import-chamaileon
 
+## 0.62.1
+
+### Patch Changes
+
+- @templatical/types@0.62.1
+
 ## 0.62.0
 
 ### Patch Changes
