@@ -36,12 +36,12 @@ function skillPages(dir = SKILL, acc: string[] = []): string[] {
 }
 
 /**
- * Every package is MIT. "source-available", "source available" and
+ * Every package is MIT from 0.62.0. "source-available", "source available" and
  * "Functional Source" are banned on every line. FSL is banned unless every
  * occurrence sits inside one exact allowed sentence: the canonical licence
- * sentence (either language) or the licence page's history sentence. Matching
- * is the whole sentence, so a line that only contains 0.61.x and FSL-1.1-MIT
- * still fails. `\b` keeps proofsLabel from matching FSL.
+ * sentence or its short form, in either language. Matching is the whole
+ * sentence, so a line that only contains FSL-1.1-MIT still fails. `\b` keeps
+ * proofsLabel from matching FSL.
  * .coderabbit.yaml may name the banned term on its policy line.
  * Changelogs are outside this scan: docs changelog is skipped below, and
  * package changelogs are not in COPY.
@@ -49,14 +49,23 @@ function skillPages(dir = SKILL, acc: string[] = []): string[] {
 const STALE_LICENCE = /source-available|source available|Functional Source/i;
 const FSL_TOKEN = /\bFSL\b/i;
 const CANONICAL_EN =
-  "All Templatical packages are MIT-licensed (earlier releases up to 0.61.x were FSL-1.1-MIT).";
+  "All Templatical packages are MIT-licensed from 0.62.0. Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT; each converts to MIT two years after its release.";
 const CANONICAL_DE =
-  "Alle Templatical-Pakete sind MIT-lizenziert (frühere Veröffentlichungen bis 0.61.x standen unter FSL-1.1-MIT).";
-const HISTORY_EN =
-  "Releases up to 0.61.x of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were published under FSL-1.1-MIT.";
-const HISTORY_DE =
-  "Veröffentlichungen bis 0.61.x von `@templatical/editor`, `@templatical/core` und `@templatical/media-library` erschienen unter FSL-1.1-MIT.";
-const ALLOWED_SENTENCES = [CANONICAL_EN, CANONICAL_DE, HISTORY_EN, HISTORY_DE];
+  "Alle Templatical-Pakete stehen ab 0.62.0 unter der MIT-Lizenz. Frühere Releases von `@templatical/editor`, `@templatical/core` und `@templatical/media-library` standen unter FSL-1.1-MIT; jedes Release wird zwei Jahre nach Erscheinen MIT-lizenziert.";
+const SHORT_EN =
+  "MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).";
+const SHORT_DE =
+  "MIT-lizenziert ab 0.62.0 (Editor-, Core- und Media-Library-Releases vor 0.62.0 standen unter FSL-1.1-MIT).";
+const ALLOWED_SENTENCES = [CANONICAL_EN, CANONICAL_DE, SHORT_EN, SHORT_DE];
+/**
+ * The retired unqualified sentence. Split so the old version token is not a
+ * contiguous source literal: the tree must not contain it outside changelogs.
+ */
+const RETIRED_EN = [
+  "All Templatical packages are MIT-licensed (earlier releases up to ",
+  "0.",
+  "61.x were FSL-1.1-MIT).",
+].join("");
 const CODERABBIT_POLICY = ".coderabbit.yaml";
 const CODERABBIT_POLICY_LINE = 'All packages are MIT. "source-available" must not appear.';
 
@@ -95,6 +104,7 @@ const COPY = [
   "apps/docs/public/robots.txt",
   "apps/docs/public/llms.txt",
   "apps/docs/scripts/build-agent-surface.mjs",
+  "apps/docs/.vitepress/config.ts",
 ];
 
 describe("licence wording in user-facing copy", () => {
@@ -112,10 +122,11 @@ describe("licence wording in user-facing copy", () => {
     expect(COPY).toContain("apps/docs/public/robots.txt");
     expect(COPY).toContain("apps/docs/public/llms.txt");
     expect(COPY).toContain("apps/docs/scripts/build-agent-surface.mjs");
+    expect(COPY).toContain("apps/docs/.vitepress/config.ts");
     expect(COPY.filter((path) => path.includes("node_modules"))).toEqual([]);
   });
 
-  it("does not call the project source-available or FSL, except the 0.61.x history sentence", () => {
+  it("does not call the project source-available or FSL, except an allowed licence sentence", () => {
     const hits = COPY.flatMap((path) =>
       read(path)
         .split("\n")
@@ -138,15 +149,17 @@ describe("licence wording in user-facing copy", () => {
     expect(read("apps/docs/getting-started/paths.md")).toContain(CANONICAL_EN);
     expect(read("apps/docs/de/getting-started/hosted-builders.md")).toContain(CANONICAL_DE);
     expect(read("apps/docs/de/getting-started/paths.md")).toContain(CANONICAL_DE);
+    expect(read("apps/docs/.vitepress/config.ts")).toContain(SHORT_EN);
+    expect(read("apps/docs/.vitepress/config.ts")).toContain(SHORT_DE);
   });
 
   it("states MIT in the agent summary", () => {
     const summary = read("apps/docs/public/llms.txt")
       .split("\n")
       .find((line) => line.startsWith("> "));
-    expect(summary).toBe(`> ${CANONICAL_EN}`);
+    expect(summary).toBe(`> ${SHORT_EN}`);
     expect(read("apps/docs/scripts/build-agent-surface.mjs")).toContain(
-      `const SITE_SUMMARY =\n  "${CANONICAL_EN}";`,
+      `const SITE_SUMMARY =\n  "${SHORT_EN}";`,
     );
   });
 });
@@ -158,8 +171,9 @@ describe("the stale-licence predicate", () => {
     "Functional Source License, Version 1.1",
     "licensed under FSL-1.1-MIT",
     "only the editor is FSL",
-    "The editor is currently FSL-1.1-MIT; releases up to 0.61.x were FSL-1.1-MIT.",
-    "Releases up to 0.61.x were published under FSL-1.1-MIT and each converts to MIT two years after its release.",
+    "The editor is currently FSL-1.1-MIT; earlier releases were FSL-1.1-MIT.",
+    "Earlier releases of `@templatical/editor`, `@templatical/core` and `@templatical/media-library` were FSL-1.1-MIT.",
+    RETIRED_EN,
   ])("flags %j", (line) => {
     expect(staleLicenceLine(line)).toBe(true);
   });
@@ -167,8 +181,8 @@ describe("the stale-licence predicate", () => {
   it.each([
     CANONICAL_EN,
     CANONICAL_DE,
-    HISTORY_EN,
-    HISTORY_DE,
+    SHORT_EN,
+    SHORT_DE,
     `${CANONICAL_EN} Terms: [MIT](./LICENSE).`,
     "Templatical is open source.",
     "ein quelloffener Agent Skill",

@@ -18,8 +18,8 @@ import { describe, expect, it } from "vitest";
  * and ignores all of it when one field fails: a single rule over 255
  * characters is enough to index the Cloud pages and generated output this
  * config excludes. So the schema's limits are asserted below, not trusted.
- * The description states the licence: every package is MIT, and it must not
- * say "source-available" or FSL. The rule that says what to install makes claims about the
+ * The description states the licence: MIT from 0.62.0, and FSL only inside the
+ * short history sentence. It must not say "source-available". The rule that says what to install makes claims about the
  * editor's manifest, so the manifest is read here rather than trusted: the
  * rule must name each optional peer the manifest declares.
  */
@@ -132,10 +132,14 @@ describe("context7.json", () => {
     expect(description).not.toContain("\n");
   });
 
-  it("states the licence as MIT and does not say source-available or FSL", () => {
+  it("states MIT from 0.62.0 and names FSL only in the short history sentence", () => {
     const { description } = loadConfig();
-    expect(description).toContain("MIT-licensed");
-    expect(description).not.toMatch(/source-available|source available|Functional Source|\bFSL\b/i);
+    const short =
+      "MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).";
+    expect(description).toContain(short);
+    expect(description.split(short).join("")).not.toMatch(
+      /source-available|source available|Functional Source|\bFSL\b/i,
+    );
     expect(description.length).toBeLessThanOrEqual(200);
   });
 

@@ -3,7 +3,7 @@
   "url": "https://context7.com/templatical/sdk",
   "public_key": "pk_GwdvZ2YYNH5Q55iJ7tAce",
   "projectTitle": "Templatical",
-  "description": "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, framework-agnostic, with your own backend behind every storage feature. MIT-licensed.",
+  "description": "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, your own backend. MIT-licensed from 0.62.0 (editor, core and media-library releases before 0.62.0 were FSL-1.1-MIT).",
   "folders": ["apps/docs", "examples"],
   "excludeFolders": [
     "apps/docs/de",

@@ -7,7 +7,7 @@ description: Templatical im Vergleich zu gehosteten E-Mail-Buildern wie Unlayer,
 
 Templatical ist ein SDK, das Sie in Ihr Produkt mounten. Speicher, Versand und Konten bleiben bei Ihnen. Unlayer, BeeFree, Stripo, Topol, Chamaileon und Easy Email Pro sind gehostete Produkte: deren Dashboard, deren Speicher, deren Bedingungen.
 
-Alle Templatical-Pakete sind MIT-lizenziert (frühere Veröffentlichungen bis 0.61.x standen unter FSL-1.1-MIT). [Lizenz](/de/license-faq).
+Alle Templatical-Pakete stehen ab 0.62.0 unter der MIT-Lizenz. Frühere Releases von `@templatical/editor`, `@templatical/core` und `@templatical/media-library` standen unter FSL-1.1-MIT; jedes Release wird zwei Jahre nach Erscheinen MIT-lizenziert. [Lizenz](/de/license-faq).
 
 ## Vergleich
 
