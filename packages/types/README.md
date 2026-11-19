@@ -3,7 +3,7 @@
 > Shared TypeScript types, block factory functions, and type guards for the Templatical email editor.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/types?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/types)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 Package with no required runtime dependencies containing all shared types for the [Templatical](https://github.com/templatical/sdk) email editor ecosystem. Block schemas, template config, factory helpers, and type guards. The custom-block Liquid factory takes an optional `liquidjs` peer.
 

@@ -3,7 +3,7 @@
 > Convert Unlayer email templates to Templatical's JSON format.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/import-unlayer?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/import-unlayer)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 Migrate from [Unlayer](https://unlayer.com) (the `react-email-editor` design JSON) to [Templatical](https://github.com/templatical/sdk) without rebuilding your templates by hand. Maps Unlayer content types to Templatical block types and reports anything that needs manual review.
 

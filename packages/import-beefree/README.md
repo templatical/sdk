@@ -3,7 +3,7 @@
 > Convert BeeFree email templates to Templatical's JSON format.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/import-beefree?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/import-beefree)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
 Migrate from [BeeFree](https://beefree.io) to [Templatical](https://github.com/templatical/sdk) without rebuilding your templates by hand. Maps BeeFree modules to Templatical block types and reports any modules that need manual conversion.
 
