@@ -2,6 +2,11 @@ import type { LogicPair, SyntaxPreset } from "@templatical/types";
 import type { Editor } from "@tiptap/core";
 import type { LogicTagPickerResult } from "../composables/useLogicTagPicker";
 import { mergeTagNodeSpec } from "./mergeTagNodeSpec";
+import {
+  marksAtPosition,
+  marksAtSelection,
+  withMergeTagMarks,
+} from "./mergeTagMarks";
 
 /** A pair carries `before`/`after`; a standalone tag carries `value`. */
 export function isLogicTagPair(item: LogicTagPickerResult): item is LogicPair {
@@ -25,16 +30,27 @@ export function insertLogicTagSelection(
     editor
       .chain()
       .focus()
-      .insertContent(mergeTagNodeSpec(item.value, item.label, syntax))
+      .insertContent(
+        withMergeTagMarks(
+          mergeTagNodeSpec(item.value, item.label, syntax),
+          marksAtSelection(editor.state),
+        ),
+      )
       .run();
     return;
   }
 
-  const openSpec = mergeTagNodeSpec(item.before, item.label, syntax);
-  const closeSpec = mergeTagNodeSpec(item.after, item.label, syntax);
   const { from, to } = editor.state.selection;
 
   if (from !== to) {
+    const openSpec = withMergeTagMarks(
+      mergeTagNodeSpec(item.before, item.label, syntax),
+      marksAtPosition(editor.state, from),
+    );
+    const closeSpec = withMergeTagMarks(
+      mergeTagNodeSpec(item.after, item.label, syntax),
+      marksAtPosition(editor.state, to),
+    );
     // Wrap the selection. Insert the closer at `to` first so the opener's
     // insert at `from` (which shifts everything after it) doesn't invalidate
     // `to` mid-chain — `from < to`, so `to`'s insert leaves `from` valid.
@@ -47,6 +63,15 @@ export function insertLogicTagSelection(
     return;
   }
 
+  const marks = marksAtSelection(editor.state);
+  const openSpec = withMergeTagMarks(
+    mergeTagNodeSpec(item.before, item.label, syntax),
+    marks,
+  );
+  const closeSpec = withMergeTagMarks(
+    mergeTagNodeSpec(item.after, item.label, syntax),
+    marks,
+  );
   // No selection: drop both pills and park the caret between them. Each pill
   // is an inline atom of size 1, so the gap sits at `from + 1`.
   editor

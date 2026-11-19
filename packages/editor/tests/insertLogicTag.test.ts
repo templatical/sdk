@@ -11,7 +11,10 @@ const liquid = SYNTAX_PRESETS.liquid;
 
 type Call = [string, ...unknown[]];
 
-function makeEditor(from: number, to: number): { editor: Editor; calls: Call[] } {
+function makeEditor(
+  from: number,
+  to: number,
+): { editor: Editor; calls: Call[] } {
   const calls: Call[] = [];
   const chain = {
     focus() {
@@ -36,7 +39,24 @@ function makeEditor(from: number, to: number): { editor: Editor; calls: Call[] }
     },
   };
   const editor = {
-    state: { selection: { from, to } },
+    state: {
+      storedMarks: null,
+      selection: {
+        from,
+        to,
+        empty: from === to,
+        $from: {
+          parent: { type: { allowedMarks: (marks: unknown[]) => marks } },
+          marks: () => [],
+        },
+      },
+      doc: {
+        resolve: () => ({
+          parent: { type: { allowedMarks: (marks: unknown[]) => marks } },
+          marks: () => [],
+        }),
+      },
+    },
     chain: () => chain,
   } as unknown as Editor;
   return { editor, calls };
@@ -58,7 +78,11 @@ describe("isLogicTagPair", () => {
 describe("insertLogicTagSelection", () => {
   it("inserts a standalone tag at the cursor as a logic node", () => {
     const { editor, calls } = makeEditor(3, 3);
-    insertLogicTagSelection(editor, { label: "Else", value: "{% else %}" }, liquid);
+    insertLogicTagSelection(
+      editor,
+      { label: "Else", value: "{% else %}" },
+      liquid,
+    );
     expect(calls).toEqual([
       ["focus"],
       [

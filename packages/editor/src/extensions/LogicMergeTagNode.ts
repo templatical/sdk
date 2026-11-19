@@ -10,6 +10,7 @@ import {
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
 import { isNodeSelected } from "./isNodeSelected";
 import { renderVueNodeView } from "./renderVueNodeView";
+import { marksOfReplacedText } from "../utils/mergeTagMarks";
 
 export interface LogicMergeTagNodeOptions {
   syntax: SyntaxPreset;
@@ -108,10 +109,12 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
             this.options.syntax,
           );
 
-          const node = this.type.create({
-            value: fullValue,
-            keyword,
-          });
+          const node = this.type
+            .create({
+              value: fullValue,
+              keyword,
+            })
+            .mark(marksOfReplacedText(state, range.from));
 
           state.tr.replaceWith(range.from, range.to, node);
         },
@@ -143,10 +146,12 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
             this.options.syntax,
           );
 
-          const node = this.type.create({
-            value: fullValue,
-            keyword,
-          });
+          const node = this.type
+            .create({
+              value: fullValue,
+              keyword,
+            })
+            .mark(marksOfReplacedText(state, range.from));
 
           state.tr.replaceWith(range.from, range.to, node);
         },

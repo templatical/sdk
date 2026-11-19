@@ -9,6 +9,11 @@ import {
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
 import { isNodeSelected } from "./isNodeSelected";
 import { renderVueNodeView } from "./renderVueNodeView";
+import {
+  marksAtSelection,
+  marksOfReplacedText,
+  withMergeTagMarks,
+} from "../utils/mergeTagMarks";
 
 export interface MergeTagNodeOptions {
   /**
@@ -104,13 +109,18 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
     return {
       insertMergeTag:
         (attrs: InsertMergeTagAttrs) =>
-        ({ commands }) => {
+        ({ commands, state }) => {
           // Whitelist explicitly — even if a caller smuggles extra keys via
           // a wider type assertion, only label/value reach the node attrs.
-          return commands.insertContent({
-            type: this.name,
-            attrs: { label: attrs.label, value: attrs.value },
-          });
+          return commands.insertContent(
+            withMergeTagMarks(
+              {
+                type: this.name,
+                attrs: { label: attrs.label, value: attrs.value },
+              },
+              marksAtSelection(state),
+            ),
+          );
         },
     };
   },
@@ -132,10 +142,12 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
           const fullValue = match[0];
           const label = getMergeTagLabel(fullValue, this.options.mergeTags());
 
-          const node = this.type.create({
-            label,
-            value: fullValue,
-          });
+          const node = this.type
+            .create({
+              label,
+              value: fullValue,
+            })
+            .mark(marksOfReplacedText(state, range.from));
 
           state.tr.replaceWith(range.from, range.to, node);
         },
@@ -160,10 +172,12 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
           const fullValue = match[0];
           const label = getMergeTagLabel(fullValue, this.options.mergeTags());
 
-          const node = this.type.create({
-            label,
-            value: fullValue,
-          });
+          const node = this.type
+            .create({
+              label,
+              value: fullValue,
+            })
+            .mark(marksOfReplacedText(state, range.from));
 
           state.tr.replaceWith(range.from, range.to, node);
         },
