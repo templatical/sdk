@@ -183,7 +183,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.
 
 ## Sponsors
 
-Templatical is built and maintained by a solo developer. If your company uses it in production, consider [sponsoring on GitHub](https://github.com/sponsors/orkhanahmadov) — it directly funds new features, faster releases, and continued open development.
+Templatical is open source (MIT). [Sponsor development on GitHub](https://github.com/sponsors/orkhanahmadov) to fund maintenance and releases, or see [sponsorship tiers and supporters](./SPONSORS.md).
 
 ## License
 

@@ -2,9 +2,31 @@
 
 Templatical is built and currently maintained by one person, alongside a full-time job — 10+ packages, the docs, the importers, the CI and the release train.
 
-Sponsorship funds the release cadence and the bug turnaround, and it keeps the licence promise real: every editor package becomes plain MIT two years after release. That only holds while someone is here to maintain it.
+Templatical is open source (MIT). Sponsorship keeps the MIT email editor maintained and funds the release cadence and bug turnaround.
 
 **[Sponsor on GitHub →](https://github.com/sponsors/orkhanahmadov)**
+
+**Monthly sponsorship**
+
+| Amount     | Benefit                                                      |
+| ---------- | ------------------------------------------------------------ |
+| $5/month   | Thanks.                                                      |
+| $10/month  | Name in SPONSORS.md.                                         |
+| $25/month  | Name and link in SPONSORS.md.                                |
+| $50/month  | Company logo in README and docs.                             |
+| $100/month | $50 benefits, plus company logo on templatical.com.          |
+| $250/month | $100 benefits, plus priority issue triage.                   |
+| $500/month | $250 benefits, plus a 1-hour monthly call and roadmap input. |
+
+**One-time sponsorship**
+
+| Amount | Benefit                                                         |
+| ------ | --------------------------------------------------------------- |
+| $10    | Thanks.                                                         |
+| $25    | Name in SPONSORS.md.                                            |
+| $100   | Name and link in SPONSORS.md.                                   |
+| $500   | Company logo in README and docs for 12 months.                  |
+| $1,000 | Company logo in README, docs and templatical.com for 12 months. |
 
 ## Founding sponsors
 
@@ -20,6 +42,8 @@ The people and companies who backed Templatical before the sponsor tiers carried
 ## Companies
 
 Logo placement — $50/month and up, or $500 one-time (12 months).
+
+Companies can sponsor from their GitHub organization or email <hi@templatical.com> for an invoice.
 
 > This space is waiting for the first company to claim it. If Templatical is in your
 > product, [put your logo here](https://github.com/sponsors/orkhanahmadov).

@@ -202,6 +202,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Changelog", link: "/changelog" },
         { text: "Showcase", link: "/showcase" },
         { text: "License", link: "/license-faq" },
+        { text: "Sponsor", link: "https://github.com/sponsors/orkhanahmadov" },
         // The machine-readable index, alongside the per-page `<link
         // rel="alternate">` the transformHead hook emits. A `.txt` path is not
         // treated as a route by VitePress's router, so this navigates to the
@@ -428,6 +429,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Changelog", link: "/de/changelog" },
         { text: "Showcase", link: "/de/showcase" },
         { text: "Lizenz", link: "/de/license-faq" },
+        { text: "Sponsern", link: "https://github.com/sponsors/orkhanahmadov" },
         // Deliberately without the /de/ prefix every other link here carries:
         // llms.txt is English-only by design (build-agent-surface.mjs skips
         // de/), so /de/llms.txt does not exist. Both locales point at the one

@@ -557,6 +557,9 @@ describe("renderReleaseNotes", () => {
     expect(out).toContain("**Added it**");
     expect(out).toContain("All 9 `@templatical/*` packages are published at `1.0.0`");
     expect(out).toContain("https://docs.templatical.com/changelog");
+    expect(out.trimEnd().split("\n").at(-1)).toBe(
+      "Templatical is open source (MIT). [Sponsor its development](https://github.com/sponsors/orkhanahmadov).",
+    );
   });
 
   it("does not repeat the version as a heading — the release title carries it", () => {

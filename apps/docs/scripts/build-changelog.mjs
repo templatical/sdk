@@ -441,6 +441,8 @@ export function renderReleaseNotes(versions, version, allPackages = []) {
     `All ${allPackages.length || readPackageChangelogs().length} \`@templatical/*\` packages are published at \`${version}\` — they share one version number.`,
     "",
     "Full changelog: https://docs.templatical.com/changelog",
+    "",
+    "Templatical is open source (MIT). [Sponsor its development](https://github.com/sponsors/orkhanahmadov).",
   ].join("\n");
   return `${renderVersionBody(match)}\n\n${footer}\n`;
 }
