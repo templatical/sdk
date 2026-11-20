@@ -68,8 +68,10 @@ describe("seeded setup scenes", () => {
     expect(block?.type).toBe("countdown");
     if (block?.type !== "countdown") throw new Error("missing countdown");
     const url = scene.config(noQuery).countdown?.imageUrl(block);
-    expect(url).toBe("/countdown-sample.gif");
-    const gif = readFileSync(join(import.meta.dirname, "../public", url!.slice(1)));
+    expect(url).toBe("https://play.templatical.com/countdown-sample.gif");
+    const gif = readFileSync(
+      join(import.meta.dirname, "../public", new URL(url!).pathname.slice(1)),
+    );
     expect(gif.subarray(0, 6).toString()).toMatch(/^GIF8[79]a$/);
     expect(gif.length).toBeLessThan(20_000);
   });

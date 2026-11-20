@@ -61,7 +61,7 @@ Pass the same URL function to `renderToMjml` through `blockRenderers.countdown`:
 
 ```ts
 import { renderCountdownImage, renderToMjml } from "@templatical/renderer";
-import { createCountdownBlock, createDefaultTemplateContent } from "@templatical/types";
+import { createCountdownBlock, createDefaultTemplateContent, isCountdown } from "@templatical/types";
 import type { CountdownBlock } from "@templatical/types";
 
 const imageUrl = (block: CountdownBlock): string => {
@@ -79,9 +79,12 @@ content.blocks.push(createCountdownBlock({
 
 const mjml = await renderToMjml(content, {
   blockRenderers: {
-    countdown: (block) => renderCountdownImage(block, imageUrl(block), {
-      locale: content.settings.locale,
-    }),
+    countdown: (block) => {
+      if (!isCountdown(block)) return "";
+      return renderCountdownImage(block, imageUrl(block), {
+        locale: content.settings.locale,
+      });
+    },
   },
 });
 ```

@@ -419,8 +419,8 @@ export interface TemplaticalEditorConfig {
    * in hero mode with starter content.
    *
    * Unknown entries — a typo, an unregistered custom block, or `countdown`
-   * which is not insertable from the palette — are logged with a warning and
-   * skipped. Filtering
+   * without a countdown provider (`countdown: { imageUrl }`) — are logged with
+   * a warning and skipped. Filtering
    * the palette never affects rendering: existing content using a hidden
    * block type still renders correctly.
    */

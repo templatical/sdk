@@ -2,6 +2,7 @@ import type { CountdownBlock } from "@templatical/types";
 import { countdownAltText } from "@templatical/types";
 import { escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { getCssClassAttr, isHiddenOnAll } from "../visibility";
 import { renderUnrenderableBlock } from "../unrenderable";
 
@@ -18,6 +19,7 @@ export function renderCountdownImage(
 
   const alt = countdownAltText(block, options?.locale);
   const padding = toPaddingString(block.styles.padding);
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const visibility = getCssClassAttr(block);
 
   // The countdown has no stored width. MJML reads the image's own dimensions;
@@ -27,6 +29,6 @@ export function renderCountdownImage(
   alt="${escapeAttr(alt)}"
   fluid-on-mobile="true"
   align="center"
-  padding="${padding}"${visibility}
+  padding="${padding}"${bgColor}${visibility}
 />`;
 }

@@ -2,7 +2,7 @@ import { createCountdownBlock } from "@templatical/types";
 import type { Scene } from "../types";
 import { setupBaseCanvas } from "./shared";
 
-const SAMPLE_GIF = "/countdown-sample.gif";
+const SAMPLE_GIF = "https://play.templatical.com/countdown-sample.gif";
 
 export const countdown: Scene = {
   id: "countdown",
@@ -49,7 +49,7 @@ const editor = await init({
   container: document.getElementById("editor"),
   content,
   countdown: {
-    imageUrl: () => "/countdown-sample.gif",
+    imageUrl: () => "https://play.templatical.com/countdown-sample.gif",
   },
 });`,
 };

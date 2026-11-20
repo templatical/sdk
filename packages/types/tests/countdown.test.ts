@@ -16,6 +16,12 @@ describe("countdownAltText", () => {
     );
   });
 
+  it("formats an English regional locale with its requested date conventions", () => {
+    expect(countdownAltText(block, "en-GB")).toBe(
+      "Countdown to 24 December 2026 at 18:00 (Europe/Berlin)",
+    );
+  });
+
   it("uses English for unknown and malformed locale tags", () => {
     expect(countdownAltText(block, "xx-XX")).toBe(
       countdownAltText(block, "en"),

@@ -73,4 +73,24 @@ describe("renderCountdownImage", () => {
       'alt="Countdown to December 24, 2026 at 6:00 PM (Europe/Berlin)"',
     );
   });
+
+  it("carries the countdown background through an mjml@5 compile", async () => {
+    const colored = {
+      ...block,
+      styles: { ...block.styles, backgroundColor: "#fffbeb" },
+    };
+    const content = createDefaultTemplateContent();
+    content.blocks = [colored];
+    const mjml = await renderToMjml(content, {
+      blockRenderers: {
+        countdown: () =>
+          renderCountdownImage(colored, "https://example.com/count.gif"),
+      },
+    });
+    expect(mjml).toContain('container-background-color="#fffbeb"');
+
+    const result = await mjml2html(mjml, { validationLevel: "strict" });
+    expect(result.errors).toEqual([]);
+    expect(result.html).toContain("#fffbeb");
+  });
 });

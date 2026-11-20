@@ -31,14 +31,23 @@ const canonical = new Map(
   COUNTDOWN_ALT_LOCALES.map((locale) => [locale.toLowerCase(), locale]),
 );
 
-function supportedLocale(
-  locale: string | undefined,
-): keyof typeof COUNTDOWN_LABELS {
-  const normalized = locale?.trim().replace(/_/g, "-").toLowerCase() ?? "";
+function supportedLocale(locale: string | undefined): {
+  labelLocale: keyof typeof COUNTDOWN_LABELS;
+  formatLocale: string;
+} {
+  const requested = locale?.trim().replace(/_/g, "-") ?? "";
+  let validated: string;
+  try {
+    validated = Intl.getCanonicalLocales(requested)[0] ?? "en";
+  } catch {
+    return { labelLocale: "en", formatLocale: "en" };
+  }
+
+  const normalized = validated.toLowerCase();
   const exact = canonical.get(normalized);
-  if (exact) return exact as keyof typeof COUNTDOWN_LABELS;
   const base = canonical.get(normalized.split("-")[0]);
-  return (base ?? "en") as keyof typeof COUNTDOWN_LABELS;
+  const labelLocale = (exact ?? base ?? "en") as keyof typeof COUNTDOWN_LABELS;
+  return { labelLocale, formatLocale: exact || base ? validated : "en" };
 }
 
 /**
@@ -49,19 +58,19 @@ export function countdownAltText(
   block: CountdownBlock,
   locale: string | undefined,
 ): string {
-  const resolved = supportedLocale(locale);
-  const label = COUNTDOWN_LABELS[resolved];
+  const { labelLocale, formatLocale } = supportedLocale(locale);
+  const label = COUNTDOWN_LABELS[labelLocale];
   if (typeof block.targetDate !== "string") return label;
   const date = new Date(block.targetDate);
   if (!Number.isFinite(date.getTime())) return label;
 
   try {
-    const formatted = new Intl.DateTimeFormat(resolved, {
+    const formatted = new Intl.DateTimeFormat(formatLocale, {
       dateStyle: "long",
       timeStyle: "short",
       timeZone: block.timezone,
     }).format(date);
-    const lead = resolved === "en" ? `${label} to` : `${label}:`;
+    const lead = labelLocale === "en" ? `${label} to` : `${label}:`;
     return `${lead} ${formatted} (${block.timezone})`;
   } catch {
     return label;

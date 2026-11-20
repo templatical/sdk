@@ -24,7 +24,7 @@ const editor = await init({
   container: document.getElementById("editor"),
   content,
   countdown: {
-    imageUrl: () => "/countdown-sample.gif",
+    imageUrl: () => "https://play.templatical.com/countdown-sample.gif",
   },
 });
 ```
