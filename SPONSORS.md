@@ -43,7 +43,7 @@ The people and companies who backed Templatical before the sponsor tiers carried
 
 Logo placement — $50/month and up, or $500 one-time (12 months).
 
-Companies can sponsor from their GitHub organization or email <hi@templatical.com> for an invoice.
+Companies can sponsor from their GitHub organization account; GitHub provides the receipts, and invoiced billing for organizations that need it.
 
 > This space is waiting for the first company to claim it. If Templatical is in your
 > product, [put your logo here](https://github.com/sponsors/orkhanahmadov).
