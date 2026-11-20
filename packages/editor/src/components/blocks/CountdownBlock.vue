@@ -3,10 +3,17 @@ import type {
   CountdownBlock as CountdownBlockType,
   ViewportSize,
 } from "@templatical/types";
+import { countdownAltText } from "@templatical/types";
 import { useIntervalFn } from "@vueuse/core";
-import { computed, ref } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import { useI18n } from "../../composables/useI18n";
-import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
+import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
+import {
+  COUNTDOWN_PROVIDER_KEY,
+  EDITOR_KEY,
+  FONTS_MANAGER_KEY,
+  requireInject,
+} from "../../keys";
 
 const props = defineProps<{
   block: CountdownBlockType;
@@ -14,6 +21,24 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const provider = inject(COUNTDOWN_PROVIDER_KEY, undefined);
+const editor = inject(EDITOR_KEY, null);
+const imageFailed = ref(false);
+const rawImageUrl = computed(() => provider?.imageUrl(props.block) ?? "");
+const imageSrc = useResolvedImageSrc(() => rawImageUrl.value);
+const alt = computed(() =>
+  countdownAltText(props.block, editor?.content.value.settings.locale),
+);
+
+watch(
+  () => props.block,
+  () => {
+    imageFailed.value = false;
+  },
+);
+watch(imageSrc, () => {
+  imageFailed.value = false;
+});
 
 const now = ref(Date.now());
 useIntervalFn(() => {
@@ -108,9 +133,19 @@ const separatorStyle = computed(() => ({
 </script>
 
 <template>
+  <!-- BlockWrapper applies styles.padding around this image, as for ImageBlock. -->
+  <div v-if="provider && imageSrc && !imageFailed" class="tpl:text-center">
+    <img
+      :src="imageSrc"
+      :alt="alt"
+      class="tpl:mx-auto tpl:block tpl:max-w-full tpl:h-auto"
+      @error="imageFailed = true"
+    />
+  </div>
+
   <!-- Empty state: no target date -->
   <div
-    v-if="!block.targetDate"
+    v-else-if="!block.targetDate"
     class="tpl:flex tpl:items-center tpl:justify-center tpl:py-8 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
   >
     {{ t.countdown.setDate }}

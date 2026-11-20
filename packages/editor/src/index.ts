@@ -8,6 +8,7 @@ import type {
   CollaborationProvider,
   CollaborationRemoteChange,
   ColorsConfig,
+  CountdownProvider,
   CommentsProvider,
   CustomBlock,
   CustomBlockDefinition,
@@ -424,6 +425,13 @@ export interface TemplaticalEditorConfig {
    * block type still renders correctly.
    */
   paletteBlocks?: string[];
+
+  /**
+   * Image URL provider for countdown blocks. Makes countdown insertable in the
+   * palette, previews the image on the canvas, and renders it through the
+   * bundled MJML renderer. The host owns the image endpoint.
+   */
+  countdown?: CountdownProvider;
 
   /**
    * Render each HTML block's raw content as a live preview in the editor
@@ -1525,6 +1533,7 @@ function createEditorInstance({
             instance.getCustomBlockStylesheet(customType),
           getFonts: () => resolveRenderFonts(fontsManager),
           socialIconsBaseUrl: config.socialIconsBaseUrl,
+          countdown: config.countdown,
           getLayout: () => config.layout,
         },
         ...(options ? ([options] as const) : []),

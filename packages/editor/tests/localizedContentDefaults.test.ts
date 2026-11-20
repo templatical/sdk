@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   COUNTDOWN_BLOCK_DEFAULTS,
   VIDEO_BLOCK_DEFAULTS,
+  COUNTDOWN_ALT_LOCALES,
 } from "@templatical/types";
 import {
   CONTENT_DEFAULT_LOCALES,
@@ -118,6 +119,9 @@ describe("localizedContentDefaults", () => {
   it("registers the same locale set as the OSS UI bundles", async () => {
     const { getSupportedLocales } = await import("../src/i18n");
     expect([...CONTENT_DEFAULT_LOCALES].sort()).toEqual(
+      [...getSupportedLocales()].sort(),
+    );
+    expect([...COUNTDOWN_ALT_LOCALES].sort()).toEqual(
       [...getSupportedLocales()].sort(),
     );
   });

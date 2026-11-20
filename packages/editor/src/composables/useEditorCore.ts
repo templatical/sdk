@@ -31,6 +31,7 @@ import type {
 import type {
   Block,
   BlockDefaults,
+  CountdownProvider,
   ColorsConfig,
   CustomBlockDefinition,
   DisplayConditionsConfig,
@@ -78,6 +79,7 @@ import {
   BLOCK_REGISTRY_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
+  COUNTDOWN_PROVIDER_KEY,
   HTML_BLOCK_PREVIEW_KEY,
   LAYOUT_KEY,
   SECTION_WRAPPER_KEY,
@@ -264,6 +266,7 @@ export interface UseEditorCoreOptions {
     templateDefaults?: TemplateDefaults;
     customBlocks?: CustomBlockDefinition[];
     paletteBlocks?: string[];
+    countdown?: CountdownProvider;
     htmlBlockPreview?: HtmlBlockPreviewConfig;
     layout?: TemplateContent;
     sectionWrapper?: boolean;
@@ -669,6 +672,7 @@ export function useEditorCore(
   provide(BLOCK_REGISTRY_KEY, registry);
   provide(CUSTOM_BLOCK_DEFINITIONS_KEY, config.customBlocks ?? []);
   provide(PALETTE_BLOCKS_KEY, config.paletteBlocks);
+  provide(COUNTDOWN_PROVIDER_KEY, config.countdown);
   provide(
     HTML_BLOCK_PREVIEW_KEY,
     resolveHtmlBlockPreview(config.htmlBlockPreview),

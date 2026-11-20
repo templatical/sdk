@@ -652,6 +652,7 @@ export { getWidthPercentages, getWidthPixels } from "./columns";
 export { toPaddingString } from "./padding";
 export { DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 export { renderBlock } from "./renderers";
+export { renderCountdownImage } from "./renderers/countdown";
 export {
   renderUnrenderableBlock,
   UNRENDERABLE_MARKER_PREFIX,

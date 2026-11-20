@@ -8,7 +8,7 @@
  * inserts a one-column section in hero mode with starter content. The
  * result's `items` contains exactly the candidates named in `paletteBlocks`, in
  * that order. Entries with no matching candidate (a typo, an unregistered
- * custom block, or a plan-gated built-in like `countdown` outside Cloud) are
+ * custom block, or `countdown` without an image URL provider) are
  * collected into `unknown` so the caller can warn and skip. A type listed more
  * than once is rendered once.
  *

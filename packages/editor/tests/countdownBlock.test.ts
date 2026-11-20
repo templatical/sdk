@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { createCountdownBlock } from '@templatical/types';
 import CountdownBlock from '../src/components/blocks/CountdownBlock.vue';
 import { mountEditor } from './helpers/mount';
+import { COUNTDOWN_PROVIDER_KEY, IMAGE_URL_RESOLVER_KEY, EDITOR_KEY } from '../src/keys';
+import { createImageUrlResolver } from '../src/composables/useImageUrlResolver';
+import { createDefaultTemplateContent } from '@templatical/types';
+import { nextTick, ref } from 'vue';
 
 const FUTURE_DATE = new Date(Date.now() + 2 * 86_400_000 + 3 * 3_600_000).toISOString(); // ~2d 3h ahead
 const PAST_DATE = new Date(Date.now() - 60_000).toISOString();
@@ -21,6 +25,43 @@ function mount(overrides: Parameters<typeof createCountdownBlock>[0] = {}) {
 }
 
 describe('CountdownBlock', () => {
+  it('shows the resolved provider image and content-locale alt, then falls back on error', async () => {
+    const block = createCountdownBlock({
+      targetDate: '2026-12-24T17:00:00.000Z',
+      timezone: 'Europe/Berlin',
+    });
+    const content = createDefaultTemplateContent();
+    content.settings.locale = 'de';
+    const imageUrl = (item: typeof block) =>
+      `https://example.com/${encodeURIComponent(item.targetDate)}.gif`;
+    const wrapper = mountEditor(CountdownBlock, {
+      props: { block, viewport: 'desktop' },
+      provides: {
+        [COUNTDOWN_PROVIDER_KEY]: { imageUrl },
+        [IMAGE_URL_RESOLVER_KEY]: createImageUrlResolver((src) => `${src}?preview=1`),
+        [EDITOR_KEY]: { content: ref(content) },
+      },
+    });
+
+    const image = wrapper.get('img');
+    expect(image.attributes('src')).toBe(
+      `https://example.com/${encodeURIComponent(block.targetDate)}.gif?preview=1`,
+    );
+    expect(image.attributes('alt')).toBe(
+      'Countdown: 24. Dezember 2026 um 18:00 (Europe/Berlin)',
+    );
+    await image.trigger('error');
+    expect(wrapper.find('img').exists()).toBe(false);
+    expect(wrapper.findAll('.tpl\\:text-center > div:first-child')).toHaveLength(4);
+
+    const nextDate = '2026-12-25T17:00:00.000Z';
+    await wrapper.setProps({ block: { ...block, targetDate: nextDate } });
+    await nextTick();
+    expect(wrapper.get('img').attributes('src')).toBe(
+      `https://example.com/${encodeURIComponent(nextDate)}.gif`,
+    );
+  });
+
   it('shows setDate prompt when no targetDate is set', () => {
     const wrapper = mount({ targetDate: '' });
     expect(wrapper.text()).toContain('countdown.setDate');

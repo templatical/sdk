@@ -18,6 +18,7 @@ import {
   PALETTE_BLOCKS_KEY,
   BLOCK_DEFAULTS_KEY,
   CAPABILITIES_KEY,
+  COUNTDOWN_PROVIDER_KEY,
   EDITOR_KEY,
 } from "../keys";
 
@@ -31,6 +32,7 @@ interface BlockTypeItem {
 const { t, format } = useI18n();
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const paletteBlocks = inject(PALETTE_BLOCKS_KEY, undefined);
+const countdownProvider = inject(COUNTDOWN_PROVIDER_KEY, undefined);
 const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
 const editor = inject(EDITOR_KEY, null);
 const scrollToBlock = useScrollToBlock();
@@ -193,7 +195,10 @@ const builtInBlockTypeOrder: string[] = [
 ];
 
 const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
-  const types: BlockTypeItem[] = builtInBlockTypeOrder.map((type) => ({
+  const available = countdownProvider
+    ? [...builtInBlockTypeOrder, "countdown"]
+    : builtInBlockTypeOrder;
+  const types: BlockTypeItem[] = available.map((type) => ({
     type,
     label: getBlockTypeLabel(type, t),
   }));
