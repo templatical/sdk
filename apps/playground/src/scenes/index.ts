@@ -1,4 +1,5 @@
 import { customBlocks } from "./author/custom-blocks";
+import { customBlocksDataSource } from "./author/custom-blocks-data-source";
 import { countdown } from "./author/countdown";
 import { defaults } from "./author/defaults";
 import { displayConditions } from "./author/display-conditions";
@@ -66,6 +67,7 @@ export const SCENES: readonly Scene[] = [
   shadowDomOff,
   issues,
   customBlocks,
+  customBlocksDataSource,
   countdown,
   mediaOnRequest,
   mergeTags,

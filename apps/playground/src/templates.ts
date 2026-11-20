@@ -141,41 +141,6 @@ export const eventDetailsBlock: CustomBlockDefinition = {
 </div>`,
 };
 
-export const pricingCardBlock: CustomBlockDefinition = {
-  type: "pricing-card",
-  name: "Pricing Card",
-  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
-  description: "Displays a pricing plan with name, price, and features list",
-  fields: [
-    { type: "text", key: "planName", label: "Plan Name", default: "Pro" },
-    { type: "text", key: "price", label: "Price", default: "$29/mo" },
-    {
-      type: "textarea",
-      key: "features",
-      label: "Features (one per line)",
-      default:
-        "Unlimited projects\n10 team members\nPriority support\nCustom integrations",
-    },
-    {
-      type: "color",
-      key: "accentColor",
-      label: "Accent Color",
-      default: "#0d9488",
-    },
-    {
-      type: "boolean",
-      key: "highlighted",
-      label: "Highlighted",
-      default: true,
-    },
-  ],
-  template: `<div style="border: {{ highlighted | if: '2px' | else: '1px' }} solid {{ highlighted | if: accentColor | else: '#e5e7eb' }}; border-radius: 8px; padding: 24px; text-align: center; {{ highlighted | if: 'background-color: #f0fdfa;' }}">
-  <div style="font-size: 14px; font-weight: 600; color: {{ accentColor }}; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">{{ planName }}</div>
-  <div style="font-size: 32px; font-weight: bold; color: #111827; margin-bottom: 16px;">{{ price }}</div>
-  <div style="text-align: left; font-size: 14px; color: #4b5563; line-height: 1.8;">{{ features | escape | newline_to_br | raw }}</div>
-</div>`,
-};
-
 export const testimonialBlock: CustomBlockDefinition = {
   type: "testimonial",
   name: "Testimonial",
@@ -260,57 +225,6 @@ export const testimonialBlock: CustomBlockDefinition = {
   }
 }
 `,
-};
-
-export const productCardBlock: CustomBlockDefinition = {
-  type: "product-card",
-  name: "Product Card",
-  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
-  description: "Displays a product with image, name, price, and buy link",
-  fields: [
-    { type: "image", key: "imageUrl", label: "Product Image", default: "" },
-    {
-      type: "text",
-      key: "name",
-      label: "Product Name",
-      default: "Product Name",
-    },
-    {
-      type: "text",
-      key: "originalPrice",
-      label: "Original Price",
-      default: "",
-    },
-    { type: "text", key: "salePrice", label: "Sale Price", default: "$49.99" },
-    {
-      type: "text",
-      key: "badge",
-      label: "Badge (optional)",
-      default: "",
-      placeholder: "e.g. -30%, NEW, HOT",
-    },
-    {
-      type: "text",
-      key: "url",
-      label: "Product URL",
-      default: "https://example.com",
-    },
-    {
-      type: "color",
-      key: "badgeColor",
-      label: "Badge Color",
-      default: "#dc2626",
-    },
-  ],
-  template: `<div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; text-align: center;">
-  {% if imageUrl %}<img src="{{ imageUrl }}" width="100%" style="display: block; max-height: 200px; object-fit: cover;" />{% else %}<div style="height: 160px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 13px;">No image</div>{% endif %}
-  <div style="padding: 14px;">
-    {% if badge %}<span style="display: inline-block; background: {{ badgeColor }}; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px;">{{ badge }}</span>{% endif %}
-    <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 6px;">{{ name }}</div>
-    <div style="font-size: 14px; margin-bottom: 10px;">{% if originalPrice %}<span style="text-decoration: line-through; color: #9ca3af; margin-right: 6px;">{{ originalPrice }}</span>{% endif %}<span style="color: #111827; font-weight: 700;">{{ salePrice }}</span></div>
-    <a href="{{ url }}" style="display: inline-block; background: #111827; color: #fff; font-size: 13px; font-weight: 600; padding: 8px 20px; border-radius: 6px; text-decoration: none;">Shop Now</a>
-  </div>
-</div>`,
 };
 
 // ─── NEW: Featured Article (with Data Source) ─────────────────
@@ -696,15 +610,6 @@ export const shippingTrackerBlock: CustomBlockDefinition = {
   {% if trackingUrl %}<div style="margin-top: 14px;"><a href="{{ trackingUrl }}" style="display: inline-block; background: {{ accentColor }}; color: #ffffff; font-size: 13px; font-weight: 600; padding: 10px 24px; border-radius: 6px; text-decoration: none;">Track Your Order</a></div>{% endif %}
 </div>`,
 };
-
-export const customBlockDefinitions: CustomBlockDefinition[] = [
-  eventDetailsBlock,
-  pricingCardBlock,
-  testimonialBlock,
-  productCardBlock,
-  featuredArticleBlock,
-  productShowcaseBlock,
-];
 
 // ─── Product Launch ───────────────────────────────────────────
 // Showcases: Display Conditions (3 audience segments), Merge Tags, Custom Block

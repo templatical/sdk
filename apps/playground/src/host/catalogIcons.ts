@@ -40,6 +40,7 @@ export const SCENE_ICONS: Record<string, Component> = {
   "shadow-dom-off": AppWindow,
   issues: CircleAlert,
   "custom-blocks": Puzzle,
+  "custom-blocks-data-source": Puzzle,
   countdown: Timer,
   "media-on-request": ImagePlus,
   "merge-tags": Braces,

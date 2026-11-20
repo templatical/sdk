@@ -10910,7 +10910,7 @@ A merge tag whose text contains `"` or `'` reaches the output entity-encoded as 
 
 **Check it:** Set a text field to `<b>Hello</b>` and render it with <code v-pre>{{ body }}</code>: the canvas shows the literal text `<b>Hello</b>`. Change the template to <code v-pre>{{ body | raw }}</code>: the canvas shows **Hello** in bold.
 
-## Data sources
+## Data sources {#data-sources}
 
 Custom blocks become even more powerful when backed by an API data source. Instead of manually filling in every field, a data source fetches external data and populates the block automatically. When the block is added to the canvas (or when the user triggers a refresh), the `onFetch` callback is called and the returned data populates the block's field values.
 
@@ -10925,6 +10925,8 @@ interface DataSourceFetchContext {
   blockId: string;
 }
 ```
+
+[Open in playground](https://play.templatical.com/scenes/custom-blocks-data-source)
 
 The `label` is displayed on the fetch button in the editor UI. The `onFetch` callback receives a context object with the block's current `fieldValues` and `blockId`. Return the fetched data as an object, or `null` if the fetch should be skipped.
 
