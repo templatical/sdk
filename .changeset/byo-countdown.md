@@ -1,4 +1,5 @@
 ---
+"@templatical/ai-kit": patch
 "@templatical/types": minor
 "@templatical/renderer": minor
 "@templatical/editor": minor
