@@ -187,7 +187,7 @@ Using Templatical in production? Tell us in [Who's using Templatical?](https://g
 
 ## Sponsored by
 
-Templatical is open source (MIT). Company sponsors get their logo here, in the docs and on templatical.com: [sponsor development on GitHub](https://github.com/sponsors/orkhanahmadov), or see [sponsorship tiers and supporters](./SPONSORS.md).
+Templatical is open source (MIT). Company sponsors get their logo here and in the docs from $50/month, and on the templatical.com homepage from $100/month: [sponsor development on GitHub](https://github.com/sponsors/orkhanahmadov), or see [sponsorship tiers and supporters](./SPONSORS.md).
 
 ## License
 
