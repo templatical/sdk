@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import type { Block, BlockType } from "@templatical/types";
+import type { Block, BlockType, CountdownProvider } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
 import { computed, inject, onScopeDispose, ref, watch } from "vue";
@@ -32,7 +32,10 @@ interface BlockTypeItem {
 const { t, format } = useI18n();
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const paletteBlocks = inject(PALETTE_BLOCKS_KEY, undefined);
-const countdownProvider = inject(COUNTDOWN_PROVIDER_KEY, undefined);
+const countdownProvider = inject<CountdownProvider | null>(
+  COUNTDOWN_PROVIDER_KEY,
+  null,
+);
 const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
 const editor = inject(EDITOR_KEY, null);
 const scrollToBlock = useScrollToBlock();

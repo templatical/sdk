@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   CountdownBlock as CountdownBlockType,
+  CountdownProvider,
   ViewportSize,
 } from "@templatical/types";
 import { countdownAltText } from "@templatical/types";
@@ -21,7 +22,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const provider = inject(COUNTDOWN_PROVIDER_KEY, undefined);
+const provider = inject<CountdownProvider | null>(COUNTDOWN_PROVIDER_KEY, null);
 const editor = inject(EDITOR_KEY, null);
 const imageFailed = ref(false);
 const rawImageUrl = computed(() => provider?.imageUrl(props.block) ?? "");

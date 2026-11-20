@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises } from '@vue/test-utils';
 import { createCountdownBlock } from '@templatical/types';
 import CountdownBlock from '../src/components/blocks/CountdownBlock.vue';
 import { mountEditor } from './helpers/mount';
 import { COUNTDOWN_PROVIDER_KEY, IMAGE_URL_RESOLVER_KEY, EDITOR_KEY } from '../src/keys';
 import { createImageUrlResolver } from '../src/composables/useImageUrlResolver';
+import { RESOLVE_IMAGE_DEBOUNCE_MS } from '../src/constants/timeouts';
 import { createDefaultTemplateContent } from '@templatical/types';
 import { nextTick, ref } from 'vue';
 
@@ -55,11 +57,23 @@ describe('CountdownBlock', () => {
     expect(wrapper.findAll('.tpl\\:text-center > div:first-child')).toHaveLength(4);
 
     const nextDate = '2026-12-25T17:00:00.000Z';
-    await wrapper.setProps({ block: { ...block, targetDate: nextDate } });
-    await nextTick();
-    expect(wrapper.get('img').attributes('src')).toBe(
-      `https://example.com/${encodeURIComponent(nextDate)}.gif`,
-    );
+    vi.useFakeTimers();
+    try {
+      await wrapper.setProps({ block: { ...block, targetDate: nextDate } });
+      await nextTick();
+      expect(wrapper.get('img').attributes('src')).toBe(
+        'https://example.com/2026-12-25T17%3A00%3A00.000Z.gif',
+      );
+
+      await vi.advanceTimersByTimeAsync(RESOLVE_IMAGE_DEBOUNCE_MS);
+      await flushPromises();
+      await nextTick();
+      expect(wrapper.get('img').attributes('src')).toBe(
+        'https://example.com/2026-12-25T17%3A00%3A00.000Z.gif?preview=1',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows setDate prompt when no targetDate is set', () => {

@@ -44,13 +44,13 @@ interface CountdownProvider {
 `imageUrl` runs synchronously and returns the image URL. `CountdownBlock.targetDate` and `CountdownBlock.timezone` are strings; the latter is an IANA timezone. The image supplies its own size. The following exports are available for headless rendering and recipient-facing alt text:
 
 ```ts
-renderCountdownImage(
+declare function renderCountdownImage(
   block: CountdownBlock,
   src: string,
   options?: { locale?: string },
 ): string;
 
-countdownAltText(block: CountdownBlock, locale: string | undefined): string;
+declare function countdownAltText(block: CountdownBlock, locale: string | undefined): string;
 ```
 
 `renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
