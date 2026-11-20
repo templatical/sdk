@@ -1,20 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { checkLiquid, createLiquid, createRecipeLiquid } from "../src/custom-block/liquid";
-import { pricingCardBlock } from "../../../apps/playground/src/templates";
+import {
+  checkLiquid,
+  createLiquid,
+  createRecipeLiquid,
+} from "../src/custom-block/liquid";
+
+// The Pricing Card custom block's Liquid template, kept here so this package's
+// test does not depend on the playground's block definitions.
+const PRICING_CARD_TEMPLATE = `<div style="border: {{ highlighted | if: '2px' | else: '1px' }} solid {{ highlighted | if: accentColor | else: '#e5e7eb' }}; border-radius: 8px; padding: 24px; text-align: center; {{ highlighted | if: 'background-color: #f0fdfa;' }}">
+  <div style="font-size: 14px; font-weight: 600; color: {{ accentColor }}; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">{{ planName }}</div>
+  <div style="font-size: 32px; font-weight: bold; color: #111827; margin-bottom: 16px;">{{ price }}</div>
+  <div style="text-align: left; font-size: 14px; color: #4b5563; line-height: 1.8;">{{ features | escape | newline_to_br | raw }}</div>
+</div>`;
 
 const base = {
   type: "features",
   name: "Features",
   fields: [
     { key: "heading", label: "Heading", type: "text" },
-    { key: "items", label: "Items", type: "repeatable", fields: [
-      { key: "title", label: "Title", type: "text" },
-      { key: "url", label: "URL", type: "text" },
-    ] },
+    {
+      key: "items",
+      label: "Items",
+      type: "repeatable",
+      fields: [
+        { key: "title", label: "Title", type: "text" },
+        { key: "url", label: "URL", type: "text" },
+      ],
+    },
   ],
-  template: "<h2>{{ heading }}</h2>{% for item in items %}<a href=\"{{ item.url }}\">{{ item.title }}</a>{{ forloop.index }}{% endfor %}",
+  template:
+    '<h2>{{ heading }}</h2>{% for item in items %}<a href="{{ item.url }}">{{ item.title }}</a>{{ forloop.index }}{% endfor %}',
 } as const;
 
 const run = (patch: object) => checkLiquid({ ...base, ...patch } as never);
@@ -39,57 +56,111 @@ describe("checkLiquid", () => {
         ruleId: "liquid.file-tag",
         severity: "error",
         path: "/template",
-        message: "`{% include %}` loads another template file, and a custom block has none to load. Write its content inline instead.",
+        message:
+          "`{% include %}` loads another template file, and a custom block has none to load. Write its content inline instead.",
       },
       {
         ruleId: "liquid.file-tag",
         severity: "error",
         path: "/template",
-        message: "`{% render %}` loads another template file, and a custom block has none to load. Write its content inline instead.",
+        message:
+          "`{% render %}` loads another template file, and a custom block has none to load. Write its content inline instead.",
       },
     ]);
   });
 
   it("errors on a variable no field defines", () => {
     const issues = run({ template: `${base.template}{{ subtitle }}` });
-    expect(issues).toEqual([expect.objectContaining({ ruleId: "liquid.undefined-variable", severity: "error" })]);
+    expect(issues).toEqual([
+      expect.objectContaining({
+        ruleId: "liquid.undefined-variable",
+        severity: "error",
+      }),
+    ]);
     expect(issues[0].message).toContain("`subtitle`");
   });
 
   it("warns on a field the template never reads", () => {
-    const issues = run({ template: "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}" });
-    expect(issues).toEqual([expect.objectContaining({ ruleId: "liquid.unused-field", severity: "warning", path: "/fields/0" })]);
+    const issues = run({
+      template:
+        "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}",
+    });
+    expect(issues).toEqual([
+      expect.objectContaining({
+        ruleId: "liquid.unused-field",
+        severity: "warning",
+        path: "/fields/0",
+      }),
+    ]);
   });
 
   it("counts a field the data-source recipe reads as used", () => {
-    const template = "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}";
+    const template =
+      "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}";
     const recipe = (request: object) => ({ label: "Fetch", request, map: {} });
-    expect(run({ template, dataSourcePreview: recipe({ url: "https://x.test/{{ heading }}" }) })).toEqual([]);
-    expect(run({ template, dataSourcePreview: recipe({ url: "https://x.test/", body: '{"q":"{{ heading }}"}' }) })).toEqual([]);
+    expect(
+      run({
+        template,
+        dataSourcePreview: recipe({ url: "https://x.test/{{ heading }}" }),
+      }),
+    ).toEqual([]);
+    expect(
+      run({
+        template,
+        dataSourcePreview: recipe({
+          url: "https://x.test/",
+          body: '{"q":"{{ heading }}"}',
+        }),
+      }),
+    ).toEqual([]);
   });
 
   it("still warns when neither the template nor the recipe reads a field", () => {
-    const template = "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}";
-    const issues = run({ template, dataSourcePreview: { label: "Fetch", request: { url: "https://x.test/p" }, map: {} } });
-    expect(issues).toEqual([expect.objectContaining({ ruleId: "liquid.unused-field", path: "/fields/0" })]);
-    expect(issues[0].message).toBe("Field `heading` is never read by the template or the data-source recipe.");
+    const template =
+      "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}";
+    const issues = run({
+      template,
+      dataSourcePreview: {
+        label: "Fetch",
+        request: { url: "https://x.test/p" },
+        map: {},
+      },
+    });
+    expect(issues).toEqual([
+      expect.objectContaining({
+        ruleId: "liquid.unused-field",
+        path: "/fields/0",
+      }),
+    ]);
+    expect(issues[0].message).toBe(
+      "Field `heading` is never read by the template or the data-source recipe.",
+    );
   });
 
   it("errors on a repeatable sub-key the repeatable doesn't define", () => {
-    const issues = run({ template: `${base.template}{% for x in items %}{{ x.image }}{% endfor %}` });
+    const issues = run({
+      template: `${base.template}{% for x in items %}{{ x.image }}{% endfor %}`,
+    });
     expect(issues.map((i) => i.ruleId)).toEqual(["liquid.unknown-item-key"]);
     expect(issues[0].message).toContain("`image`");
   });
 
   it("errors when a loop iterates a field that isn't repeatable", () => {
-    const issues = run({ template: `${base.template}{% for c in heading %}{{ c }}{% endfor %}` });
+    const issues = run({
+      template: `${base.template}{% for c in heading %}{{ c }}{% endfor %}`,
+    });
     expect(issues.map((i) => i.ruleId)).toEqual(["liquid.loop-not-repeatable"]);
   });
 
   it("scopes a loop local to its own loop when two loops share the name", () => {
     const fields = [
       ...base.fields,
-      { key: "links", label: "Links", type: "repeatable", fields: [{ key: "href", label: "Href", type: "text" }] },
+      {
+        key: "links",
+        label: "Links",
+        type: "repeatable",
+        fields: [{ key: "href", label: "Href", type: "text" }],
+      },
     ];
     const template = `${base.template}{% for item in links %}{{ item.href }}{% endfor %}`;
     expect(run({ fields, template })).toEqual([]);
@@ -98,37 +169,64 @@ describe("checkLiquid", () => {
   it("still flags a sub-key the loop's own collection lacks when the local is reused", () => {
     const fields = [
       ...base.fields,
-      { key: "links", label: "Links", type: "repeatable", fields: [{ key: "href", label: "Href", type: "text" }] },
+      {
+        key: "links",
+        label: "Links",
+        type: "repeatable",
+        fields: [{ key: "href", label: "Href", type: "text" }],
+      },
     ];
-    const issues = run({ fields, template: `${base.template}{% for item in links %}{{ item.title }}{% endfor %}` });
+    const issues = run({
+      fields,
+      template: `${base.template}{% for item in links %}{{ item.title }}{% endfor %}`,
+    });
     expect(issues.map((i) => i.ruleId)).toEqual(["liquid.unknown-item-key"]);
-    expect(issues[0].message).toBe("`item.title` reads `title`, which `links`'s items don't define.");
+    expect(issues[0].message).toBe(
+      "`item.title` reads `title`, which `links`'s items don't define.",
+    );
   });
 
   it("does not treat a dotted collection as iterating its head field", () => {
-    const issues = run({ template: `${base.template}{% for c in heading.sub %}{{ c }}{% endfor %}` });
+    const issues = run({
+      template: `${base.template}{% for c in heading.sub %}{{ c }}{% endfor %}`,
+    });
     expect(issues).toEqual([]);
   });
 
   it("checks loops nested inside other tags", () => {
-    const issues = run({ template: `${base.template}{% if heading %}{% for c in heading %}{{ c }}{% endfor %}{% endif %}` });
+    const issues = run({
+      template: `${base.template}{% if heading %}{% for c in heading %}{{ c }}{% endfor %}{% endif %}`,
+    });
     expect(issues.map((i) => i.ruleId)).toEqual(["liquid.loop-not-repeatable"]);
   });
 
   it("builds both block engines only through the public factory", () => {
-    const editor = readFileSync(resolve(import.meta.dirname,
-      "../../editor/src/composables/useBlockRegistry.ts"), "utf8");
-    const tools = readFileSync(resolve(import.meta.dirname, "../src/custom-block/liquid.ts"), "utf8");
-    const blockFactory = tools.split("export function createLiquid()")[1].split("export function createRecipeLiquid()")[0];
-    expect(editor).toContain('createCustomBlockLiquid(await import("liquidjs"))');
+    const editor = readFileSync(
+      resolve(
+        import.meta.dirname,
+        "../../editor/src/composables/useBlockRegistry.ts",
+      ),
+      "utf8",
+    );
+    const tools = readFileSync(
+      resolve(import.meta.dirname, "../src/custom-block/liquid.ts"),
+      "utf8",
+    );
+    const blockFactory = tools
+      .split("export function createLiquid()")[1]
+      .split("export function createRecipeLiquid()")[0];
+    expect(editor).toContain(
+      'createCustomBlockLiquid(await import("liquidjs"))',
+    );
     expect(editor).not.toMatch(/\bnew Liquid\s*\(/);
     expect(blockFactory).toContain("createCustomBlockLiquid(liquidjs)");
     expect(blockFactory).not.toMatch(/\bnew (?:liquidjs\.)?Liquid\s*\(/);
     expect(tools.match(/\bnew liquidjs\.Liquid\s*\(/g)).toHaveLength(1);
-    expect(tools.split("export function createRecipeLiquid()")[1]).toContain("new liquidjs.Liquid(");
+    expect(tools.split("export function createRecipeLiquid()")[1]).toContain(
+      "new liquidjs.Liquid(",
+    );
   });
 });
-
 
 describe("custom block engines", () => {
   it("uses the shared Liquid budgets in recipe rendering", () => {
@@ -137,11 +235,15 @@ describe("custom block engines", () => {
     expect(engine.options.renderLimit).toBe(2000);
   });
   it("createLiquid escapes echo output through the public factory", async () => {
-    expect(await createLiquid().parseAndRender("{% echo v %}", { v: "<script>x</script>" })).toBe("&lt;script&gt;x&lt;/script&gt;");
+    expect(
+      await createLiquid().parseAndRender("{% echo v %}", {
+        v: "<script>x</script>",
+      }),
+    ).toBe("&lt;script&gt;x&lt;/script&gt;");
   });
 
   it("renders Pricing Card line breaks without treating field HTML as markup", async () => {
-    const html = await createLiquid().parseAndRender(pricingCardBlock.template, {
+    const html = await createLiquid().parseAndRender(PRICING_CARD_TEMPLATE, {
       highlighted: false,
       accentColor: "#000000",
       planName: "Plan",
@@ -152,6 +254,10 @@ describe("custom block engines", () => {
   });
 
   it("keeps JSON body quotes in the recipe engine", async () => {
-    expect(await createRecipeLiquid().parseAndRender('{"q":{{ value | json }}}', { value: 'A "quote" & <tag>' })).toBe('{"q":"A \\"quote\\" & <tag>"}');
+    expect(
+      await createRecipeLiquid().parseAndRender('{"q":{{ value | json }}}', {
+        value: 'A "quote" & <tag>',
+      }),
+    ).toBe('{"q":"A \\"quote\\" & <tag>"}');
   });
 });

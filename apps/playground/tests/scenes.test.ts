@@ -35,6 +35,10 @@ import { NOTE_IDS } from "../src/host/sceneNotes";
 import { SCENE_ICONS } from "../src/host/catalogIcons";
 import { sceneHref } from "../src/host/sceneHref";
 import { configKeys, snippetContainsKeys } from "../src/host/snippet-keys";
+import {
+  registerDataSourcePicker,
+  resolveDataSourcePicker,
+} from "../src/templates";
 
 const DOCS_ROOT = join(import.meta.dirname, "../../docs");
 
@@ -91,6 +95,7 @@ const CONFIGURE_IDS = [
   "shadow-dom-off",
   "issues",
   "custom-blocks",
+  "custom-blocks-data-source",
   "media-on-request",
 ] as const;
 
@@ -126,6 +131,7 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   "logic-tags": "/guide/logic-tags",
   "display-conditions": "/guide/display-conditions",
   "custom-blocks": "/guide/custom-blocks",
+  "custom-blocks-data-source": "/guide/custom-blocks#data-sources",
   "media-on-request": "/guide/images#browse-and-pick",
   issues: "/quality/#wire-into-the-editor",
   fonts: "/guide/fonts#restricting-the-built-in-fonts",
@@ -173,7 +179,7 @@ const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
 
 describe("registry", () => {
   it("registers minimum, then configure, personalization, backend, import, examples", () => {
-    expect(SCENES).toHaveLength(43);
+    expect(SCENES).toHaveLength(44);
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
       ...CONFIGURE_IDS,
@@ -499,6 +505,47 @@ describe("Languages scene", () => {
   });
 });
 
+describe("Custom blocks from your data scene", () => {
+  const context = { search: new URLSearchParams() };
+
+  it("opens with an unfetched article and points at its fetch control", () => {
+    const scene = getScene("custom-blocks-data-source")!;
+    expect(scene).toMatchObject({
+      group: "configure",
+      initKey: "customBlocks[].dataSource",
+      docs: "/guide/custom-blocks#data-sources",
+      pointer: {
+        selector: '[data-block-type="custom"] button:not([aria-label])',
+        root: "editor",
+      },
+    });
+    expect(scene.content!(context).blocks).toMatchObject([
+      { type: "custom", customType: "featured-article", dataSourceFetched: false },
+    ]);
+    expect(scene.snippet).toMatch(/dataSource:\s*\{[\s\S]*onFetch:\s*async/);
+  });
+
+  it("fetches article field values through the playground picker", async () => {
+    const definition = getScene("custom-blocks-data-source")!.config(context)
+      .customBlocks?.[0];
+    expect(definition?.dataSource?.label).toBe("Change article");
+    let pickerTitle = "";
+    registerDataSourcePicker((request) => {
+      pickerTitle = request.title;
+      resolveDataSourcePicker(request.items[0]!);
+    });
+    const values = await definition!.dataSource!.onFetch({
+      fieldValues: { category: "engineering" },
+      blockId: "article-block",
+    });
+    expect(pickerTitle).toBe("Select Featured Article");
+    expect(values).toMatchObject({
+      title: "Why Most Design Systems Fail (And How to Fix Yours)",
+      author: "Elena Martinez",
+    });
+  });
+});
+
 describe("sceneNeighbours", () => {
   it("walks the same order the rail lists scenes in", () => {
     const railOrder = RAIL_NAV_GROUPS.flatMap(
@@ -509,7 +556,7 @@ describe("sceneNeighbours", () => {
 
   it("crosses from the last scene of one group to the first of the next", () => {
     const { previous, next } = sceneNeighbours("media-on-request");
-    expect(previous?.id).toBe("custom-blocks");
+    expect(previous?.id).toBe("custom-blocks-data-source");
     expect(next?.id).toBe("merge-tags");
     expect(next?.group).toBe("personalization");
   });

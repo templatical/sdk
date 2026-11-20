@@ -459,7 +459,7 @@ Ein Merge-Tag, dessen Text `"` oder `'` enthält, erreicht die Ausgabe als Entit
 
 **Prüfung:** Setzen Sie ein Textfeld auf `<b>Hello</b>` und rendern Sie es mit <code v-pre>{{ body }}</code>: Der Canvas zeigt den wörtlichen Text `<b>Hello</b>`. Ändern Sie das Template zu <code v-pre>{{ body | raw }}</code>: Der Canvas zeigt **Hello** in Fettschrift.
 
-## Datenquellen
+## Datenquellen {#data-sources}
 
 Benutzerdefinierte Blöcke werden noch leistungsfähiger, wenn sie durch eine API-Datenquelle gestützt werden. Anstatt jedes Feld manuell auszufüllen, ruft eine Datenquelle externe Daten ab und füllt den Block automatisch. Wenn der Block zur Arbeitsfläche hinzugefügt wird (oder wenn der Benutzer eine Aktualisierung auslöst), wird der `onFetch`-Callback aufgerufen und die zurückgegebenen Daten füllen die Feldwerte des Blocks.
 
@@ -474,6 +474,8 @@ interface DataSourceFetchContext {
   blockId: string;
 }
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/custom-blocks-data-source)
 
 Das `label` wird auf der Abrufschaltfläche in der Editor-Oberfläche angezeigt. Der `onFetch`-Callback erhält ein Kontextobjekt mit den aktuellen `fieldValues` und der `blockId` des Blocks. Geben Sie die abgerufenen Daten als Objekt zurück oder `null`, wenn der Abruf übersprungen werden soll.
 
