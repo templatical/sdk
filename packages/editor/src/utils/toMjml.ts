@@ -1,9 +1,10 @@
 import type {
+  CountdownBlock,
   CountdownProvider,
   CustomBlock,
   TemplateContent,
 } from "@templatical/types";
-import { defaultLocaleOf, isCountdown } from "@templatical/types";
+import { defaultLocaleOf } from "@templatical/types";
 import type { RenderFonts } from "./renderProvider";
 
 /**
@@ -126,14 +127,15 @@ export async function toMjmlForInstance(
     ...(provider
       ? {
           blockRenderers: {
-            countdown: (block: TemplateContent["blocks"][number]) =>
-              isCountdown(block)
-                ? renderer.renderCountdownImage(
-                    block,
-                    provider.imageUrl(block),
-                    { locale },
-                  )
-                : "",
+            // The renderer dispatches by block type, so this only receives countdown blocks.
+            countdown: (block: TemplateContent["blocks"][number]) => {
+              const countdown = block as CountdownBlock;
+              return renderer.renderCountdownImage(
+                countdown,
+                provider.imageUrl(countdown),
+                { locale },
+              );
+            },
           },
         }
       : {}),
