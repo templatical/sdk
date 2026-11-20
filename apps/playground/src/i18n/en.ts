@@ -158,6 +158,12 @@ export default {
         "Your Testimonial block sits on the palette and the canvas: select it to edit its fields.",
       note: "your block",
     },
+    "custom-blocks-data-source": {
+      title: "Custom blocks from your data",
+      seeIt:
+        "Click “Change article” on the canvas, then choose an article to fill the block from your data.",
+      note: "Change article",
+    },
     "media-on-request": {
       title: "Media on request",
       seeIt:

@@ -156,6 +156,12 @@ export default {
         "Ihr Block „Testimonial“ steht in der Palette und auf der Arbeitsfläche: Wählen Sie ihn aus, um seine Felder zu bearbeiten.",
       note: "Ihr Block",
     },
+    "custom-blocks-data-source": {
+      title: "Benutzerdefinierte Blöcke aus Ihren Daten",
+      seeIt:
+        "Klicken Sie auf der Arbeitsfläche auf „Change article“ und wählen Sie einen Artikel aus, um den Block mit Ihren Daten zu füllen.",
+      note: "Change article",
+    },
     "media-on-request": {
       title: "Medien auf Anfrage",
       seeIt:
