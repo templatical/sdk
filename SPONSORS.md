@@ -1,6 +1,6 @@
 # Sponsors
 
-Templatical is built and currently maintained by one person, alongside a full-time job — 10+ packages, the docs, the importers, the CI and the release train.
+Templatical is built and currently maintained by one person, alongside a full-time job: the SDK packages, the docs, the importers, the CI and the release train.
 
 Templatical is open source (MIT). Sponsorship keeps the MIT email editor maintained and funds the release cadence and bug turnaround.
 
@@ -13,20 +13,20 @@ Templatical is open source (MIT). Sponsorship keeps the MIT email editor maintai
 | $5/month   | Thanks.                                                      |
 | $10/month  | Name in SPONSORS.md.                                         |
 | $25/month  | Name and link in SPONSORS.md.                                |
-| $50/month  | Company logo in README and docs.                             |
-| $100/month | $50 benefits, plus company logo on templatical.com.          |
+| $50/month  | Company logo under "Sponsored by" in README and docs.        |
+| $100/month | $50 benefits, plus logo on the templatical.com homepage.     |
 | $250/month | $100 benefits, plus priority issue triage.                   |
 | $500/month | $250 benefits, plus a 1-hour monthly call and roadmap input. |
 
 **One-time sponsorship**
 
-| Amount | Benefit                                                         |
-| ------ | --------------------------------------------------------------- |
-| $10    | Thanks.                                                         |
-| $25    | Name in SPONSORS.md.                                            |
-| $100   | Name and link in SPONSORS.md.                                   |
-| $500   | Company logo in README and docs for 12 months.                  |
-| $1,000 | Company logo in README, docs and templatical.com for 12 months. |
+| Amount | Benefit                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------- |
+| $10    | Thanks.                                                                                      |
+| $25    | Name in SPONSORS.md for 12 months.                                                           |
+| $100   | Name and link in SPONSORS.md for 12 months.                                                  |
+| $500   | Logo under "Sponsored by" in README and docs for 12 months.                                  |
+| $1,000 | Logo under "Sponsored by" in README, docs and on the templatical.com homepage for 12 months. |
 
 ## Founding sponsors
 
@@ -39,11 +39,11 @@ The people and companies who backed Templatical before the sponsor tiers carried
   Do NOT add anyone who sponsors privately; see "Being listed" below.
 -->
 
-## Companies
+## Sponsored by
 
 Logo placement — $50/month and up, or $500 one-time (12 months).
 
-Companies can sponsor from their GitHub organization or email <hi@templatical.com> for an invoice.
+Companies can sponsor from their GitHub organization account; GitHub provides the receipts, and invoiced billing for organizations that need it.
 
 > This space is waiting for the first company to claim it. If Templatical is in your
 > product, [put your logo here](https://github.com/sponsors/orkhanahmadov).
@@ -52,13 +52,13 @@ Companies can sponsor from their GitHub organization or email <hi@templatical.co
 
 ## Sponsors
 
-Name and link — $25/month and up, or $100 one-time.
+Name and link — $25/month and up, or $100 one-time (12 months).
 
 <!-- `- [Name](https://url)` -->
 
 ## Supporters
 
-Name — $10/month and up, or $25 one-time.
+Name — $10/month and up, or $25 one-time (12 months).
 
 <!-- `- Name` -->
 
@@ -77,7 +77,7 @@ is a choice, and a tier description does not override it.
 Want to be listed, or listed differently?
 
 - **To be added** — open an [issue](https://github.com/templatical/sdk/issues) or email
-  <hey[at]orkhan[dot]dev> with the name, link and logo you want used.
+  <hi@templatical.com> with the name, link and logo you want used.
 - **To change or remove your entry** — same, and it will be updated in the next push.
   No explanation needed.
 
