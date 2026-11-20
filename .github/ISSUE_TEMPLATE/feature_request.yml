@@ -21,3 +21,7 @@ body:
     attributes:
       label: Alternatives considered
       description: Any alternative solutions or workarounds you've considered.
+  - type: markdown
+    attributes:
+      value: |
+        If Templatical is part of your company's product, [sponsoring](https://github.com/sponsors/orkhanahmadov) keeps fixes like this coming.

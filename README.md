@@ -181,6 +181,10 @@ pnpm run test
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.
 
+## Used by
+
+Using Templatical in production? Tell us in [Who's using Templatical?](https://github.com/templatical/sdk/discussions/1264) to be listed here and on templatical.com.
+
 ## Sponsors
 
 Templatical is open source (MIT). [Sponsor development on GitHub](https://github.com/sponsors/orkhanahmadov) to fund maintenance and releases, or see [sponsorship tiers and supporters](./SPONSORS.md).
