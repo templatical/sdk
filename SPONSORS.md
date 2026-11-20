@@ -13,20 +13,20 @@ Templatical is open source (MIT). Sponsorship keeps the MIT email editor maintai
 | $5/month   | Thanks.                                                      |
 | $10/month  | Name in SPONSORS.md.                                         |
 | $25/month  | Name and link in SPONSORS.md.                                |
-| $50/month  | Company logo in README and docs.                             |
-| $100/month | $50 benefits, plus company logo on templatical.com.          |
+| $50/month  | Company logo under "Sponsored by" in README and docs.        |
+| $100/month | $50 benefits, plus logo on the templatical.com homepage.     |
 | $250/month | $100 benefits, plus priority issue triage.                   |
 | $500/month | $250 benefits, plus a 1-hour monthly call and roadmap input. |
 
 **One-time sponsorship**
 
-| Amount | Benefit                                                         |
-| ------ | --------------------------------------------------------------- |
-| $10    | Thanks.                                                         |
-| $25    | Name in SPONSORS.md.                                            |
-| $100   | Name and link in SPONSORS.md.                                   |
-| $500   | Company logo in README and docs for 12 months.                  |
-| $1,000 | Company logo in README, docs and templatical.com for 12 months. |
+| Amount | Benefit                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------- |
+| $10    | Thanks.                                                                                      |
+| $25    | Name in SPONSORS.md.                                                                         |
+| $100   | Name and link in SPONSORS.md.                                                                |
+| $500   | Logo under "Sponsored by" in README and docs for 12 months.                                  |
+| $1,000 | Logo under "Sponsored by" in README, docs and on the templatical.com homepage for 12 months. |
 
 ## Founding sponsors
 

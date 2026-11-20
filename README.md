@@ -123,24 +123,24 @@ const mjml = await editor.toMjml();
 
 ## Packages
 
-| Package                                                                                    | Description                                                      | License                  |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------ |
-| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor)                 | Visual drag-and-drop editor                                      | [MIT](./LICENSE)         |
-| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core)                     | Framework-agnostic editor logic, state, history                  | [MIT](./LICENSE)         |
-| [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library)   | Media library — composable, components, standalone SDK           | [MIT](./LICENSE)         |
-| [`@templatical/types`](https://www.npmjs.com/package/@templatical/types)                   | Shared TypeScript types and block factories                      | [MIT](./LICENSE)     |
-| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer)             | JSON → MJML renderer (browser + Node)                            | [MIT](./LICENSE)     |
-| [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)               | Template quality linter — accessibility, structure, and link rules (browser + Node) | [MIT](./LICENSE)     |
-| [`@templatical/template-tools`](https://www.npmjs.com/package/@templatical/template-tools) | CLI and library: validate, render (MJML/HTML), edit, import, live-preview templates | [MIT](./LICENSE)     |
-| [`@templatical/ai-kit`](https://www.npmjs.com/package/@templatical/ai-kit) | Bring your own AI backend: the wire, an HTTP provider, a server kit and a conformance suite | [MIT](./LICENSE)     |
-| [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert Beefree templates to Templatical format                  | [MIT](./LICENSE)     |
-| [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format                  | [MIT](./LICENSE)     |
-| [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE)     |
-| [`@templatical/import-mjml`](https://www.npmjs.com/package/@templatical/import-mjml)       | Convert MJML email templates to Templatical format               | [MIT](./LICENSE)     |
-| [`@templatical/import-topol`](https://www.npmjs.com/package/@templatical/import-topol)     | Convert Topol.io email templates to Templatical format           | [MIT](./LICENSE)     |
-| [`@templatical/import-stripo`](https://www.npmjs.com/package/@templatical/import-stripo)   | Convert Stripo email templates to Templatical format             | [MIT](./LICENSE)     |
-| [`@templatical/import-chamaileon`](https://www.npmjs.com/package/@templatical/import-chamaileon) | Convert Chamaileon `getDocument()` JSON to Templatical format | [MIT](./LICENSE)     |
-| [`@templatical/import-easy-email-pro`](https://www.npmjs.com/package/@templatical/import-easy-email-pro) | Convert Easy Email Pro persist JSON to Templatical format | [MIT](./LICENSE)     |
+| Package                                                                                                  | Description                                                                                 | License          |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------- |
+| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor)                               | Visual drag-and-drop editor                                                                 | [MIT](./LICENSE) |
+| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core)                                   | Framework-agnostic editor logic, state, history                                             | [MIT](./LICENSE) |
+| [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library)                 | Media library — composable, components, standalone SDK                                      | [MIT](./LICENSE) |
+| [`@templatical/types`](https://www.npmjs.com/package/@templatical/types)                                 | Shared TypeScript types and block factories                                                 | [MIT](./LICENSE) |
+| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer)                           | JSON → MJML renderer (browser + Node)                                                       | [MIT](./LICENSE) |
+| [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)                             | Template quality linter — accessibility, structure, and link rules (browser + Node)         | [MIT](./LICENSE) |
+| [`@templatical/template-tools`](https://www.npmjs.com/package/@templatical/template-tools)               | CLI and library: validate, render (MJML/HTML), edit, import, live-preview templates         | [MIT](./LICENSE) |
+| [`@templatical/ai-kit`](https://www.npmjs.com/package/@templatical/ai-kit)                               | Bring your own AI backend: the wire, an HTTP provider, a server kit and a conformance suite | [MIT](./LICENSE) |
+| [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree)               | Convert Beefree templates to Templatical format                                             | [MIT](./LICENSE) |
+| [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer)               | Convert Unlayer templates to Templatical format                                             | [MIT](./LICENSE) |
+| [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)                     | Convert HTML email templates (table-based) to Templatical format                            | [MIT](./LICENSE) |
+| [`@templatical/import-mjml`](https://www.npmjs.com/package/@templatical/import-mjml)                     | Convert MJML email templates to Templatical format                                          | [MIT](./LICENSE) |
+| [`@templatical/import-topol`](https://www.npmjs.com/package/@templatical/import-topol)                   | Convert Topol.io email templates to Templatical format                                      | [MIT](./LICENSE) |
+| [`@templatical/import-stripo`](https://www.npmjs.com/package/@templatical/import-stripo)                 | Convert Stripo email templates to Templatical format                                        | [MIT](./LICENSE) |
+| [`@templatical/import-chamaileon`](https://www.npmjs.com/package/@templatical/import-chamaileon)         | Convert Chamaileon `getDocument()` JSON to Templatical format                               | [MIT](./LICENSE) |
+| [`@templatical/import-easy-email-pro`](https://www.npmjs.com/package/@templatical/import-easy-email-pro) | Convert Easy Email Pro persist JSON to Templatical format                                   | [MIT](./LICENSE) |
 
 ## Documentation
 
@@ -183,11 +183,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.
 
 ## Used by
 
-Using Templatical in production? Tell us in [Who's using Templatical?](https://github.com/templatical/sdk/discussions/1264) to be listed here and on templatical.com.
+Using Templatical in production? Tell us in [Who's using Templatical?](https://github.com/templatical/sdk/discussions/1264) to have your company listed here by name.
 
-## Sponsors
+## Sponsored by
 
-Templatical is open source (MIT). [Sponsor development on GitHub](https://github.com/sponsors/orkhanahmadov) to fund maintenance and releases, or see [sponsorship tiers and supporters](./SPONSORS.md).
+Templatical is open source (MIT). Company sponsors get their logo here, in the docs and on templatical.com: [sponsor development on GitHub](https://github.com/sponsors/orkhanahmadov), or see [sponsorship tiers and supporters](./SPONSORS.md).
 
 ## License
 
