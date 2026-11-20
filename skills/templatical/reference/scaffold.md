@@ -1,5 +1,11 @@
 # Scaffolding a new integration
 
+For countdown blocks, decide the `countdown` capability in [integrate.md](integrate.md),
+read [providers.md](providers.md), and fetch `guide/countdown` through
+[docs.md](docs.md). Wire `countdown: { imageUrl }` only when the host has a
+URL-based countdown image service or endpoint; check `editor.toMjml()` for
+the block's `<mj-image src="…">`.
+
 For header customisation, route through [integrate.md](integrate.md)'s `header`
 capability row and fetch `api/editor#header-actions` through [docs.md](docs.md).
 Create a host-owned element for `header.actions` and render the host framework

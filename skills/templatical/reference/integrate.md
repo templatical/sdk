@@ -1,5 +1,10 @@
 # Install and mount
 
+For an animated countdown, use the `countdown` capability row below, read
+[providers.md](providers.md), and fetch `guide/countdown` through
+[docs.md](docs.md). Configure `imageUrl(block)` with a real image URL; check
+that `editor.toMjml()` contains the countdown `<mj-image src="…">`.
+
 For host controls in the editor header, or requests to hide its Preview,
 dark-mode or viewport toggle, use the `header` row in the capability map and
 fetch `api/editor#header-actions` through [docs.md](docs.md). The host owns the
@@ -62,6 +67,7 @@ not only before wiring it; the storage providers' shared rules are in
 | Warn before a client-side route change drops unsaved edits | `onDirtyChange` | `beforeunload` cannot see SPA navigation. Fires on every dirty flip, with or without `templates`. | `backend/templates` |
 | Browse and restore past versions | `versionHistory` | Needs a loaded template. The editor never records a version itself: the host's `templates.save` decides when one is stored. | `backend/version-history` |
 | Sendable HTML from `toHtml()` | `render` | The SDK bundles no MJML compiler, so `toHtml()` rejects without `render.compileMjml` or `render.toHtml`. A local `toMjml()` needs the optional `@templatical/renderer` peer. | `backend/render` |
+| Animated countdown images in email | `countdown` | Supply `imageUrl(block: CountdownBlock): string` from a URL-based countdown image service or your own endpoint. Enables the palette block and local MJML image rendering; an empty URL renders an unrenderable marker. The image service owns expiry. | `guide/countdown` |
 | Self-hosted social icons in exported email | `socialIconsBaseUrl` | Local `toMjml()` / `toHtml()` path only. A `render.toMjml` provider passes the URL to its own `renderToMjml`. | `api/renderer-typescript` |
 | Preview an email as a specific recipient, with real data and evaluated logic | `resolvePreview` | Called with `{ content, recipient?, surface, trigger }`: `surface` is `"preview"` (preview mode) or `"test-email"` (the test-email dialog) on every call; `trigger` is `open` on opening a preview, `refresh` from the Refresh preview pill or the instance method `refreshPreview()`, `recipient` after a test-email recipient change, and `locale` after a template-language switch. `recipient` is the dialog's field value, set only while that field is non-empty and possibly a half-typed address (validate it before a lookup), so key on `surface`, never on a missing `recipient`. No recipient in preview mode? The callback is async: open the host's own picker on `surface: "preview"` with `trigger: "open"` / `"refresh"` and resolve after the user chooses; reuse that choice on every other call, and keep the picker closed in the dialog. Returns `TemplateContent` resolved by the host's backend; with `layout`, `content` is the composed document, so return that shape. A tag previews as plain text once its span is replaced or its `data-merge-tag` / `data-logic-merge-tag` attribute holds the value (rendering the whole string does that); one still holding a token keeps its label and highlight. Display-only: never in `getContent()`, a send or an export. Supersedes `MergeTag.sample`, the no-backend option for value tags. | `guide/preview-rendering` |
 | Authors send themselves a test | `testEmail` | One `send({ recipient, content })`, plus `mjml` with `includeMjml`. `allowedRecipients` and `defaultRecipient` shape the dialog but are not a security boundary: validate the recipient on the server. | `backend/test-email` |

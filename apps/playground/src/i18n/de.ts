@@ -156,6 +156,12 @@ export default {
         "Ihr Block „Testimonial“ steht in der Palette und auf der Arbeitsfläche: Wählen Sie ihn aus, um seine Felder zu bearbeiten.",
       note: "Ihr Block",
     },
+    countdown: {
+      title: "Countdown",
+      seeIt:
+        "Der Countdown-Block zeigt das von `imageUrl` gelieferte Beispiel-GIF.",
+      note: "Beispielbild",
+    },
     "media-on-request": {
       title: "Medien auf Anfrage",
       seeIt:

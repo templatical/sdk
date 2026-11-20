@@ -8,14 +8,14 @@
   `button`, `divider`, `spacer`, `social`, `video`, `menu`, `table`, `html`.
   Prefer native blocks — reach for `html` only when nothing else fits, since raw
   HTML is not visually editable afterward.
-- **Never emit `countdown`, `custom`, `slot`, or `wrapper` blocks** (even though
-  the schema allows them): rendering `countdown` needs a server-side GIF service
-  the SDK doesn't ship — the renderer emits a placeholder, not a GIF —
-  and `custom` blocks are consumer-registered runtime extensions that can't be
-  produced from a prompt. `slot` and `wrapper` are layout markers, not campaign
-  blocks. If the user asks for a countdown, say that and offer a
-  static stand-in — a `title`/`paragraph` with the date/time, or a "X days
-  to go" line (optionally a `{{merge_tag}}`).
+- **Emit `countdown` only when the host configures `countdown`.** Without it,
+  the block renders as an unrenderable marker; the SDK ships no GIF server.
+  Ask for the host's image URL source before emitting the block. If the host
+  has none, offer a static stand-in — a `title`/`paragraph` with the date/time,
+  or an "X days to go" line (optionally a `{{merge_tag}}`).
+- **Never emit `custom`, `slot`, or `wrapper` blocks.** `custom` blocks are
+  consumer-registered runtime extensions that can't be produced from a prompt.
+  `slot` and `wrapper` are layout markers, not campaign blocks.
 - **A shell around the email is `init({ layout })`, not more blocks.**
   View-in-browser, an imprint or legal footer, a company address, an
   unsubscribe line, a mat, or a card around the message are platform chrome.

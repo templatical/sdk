@@ -15,7 +15,7 @@ says what a field is typed as, the notes say what it means. In a generated line
 In the `Settings` list below, a field marked _optional_ may be omitted;
 everything else is required.
 
-**Contents:** [Settings](#settings) · [Common fields](#common-block-fields) · Layout — [section](#section), [spacer](#spacer), [divider](#divider) · Text — [title](#title), [paragraph](#paragraph), [menu](#menu), [table](#table) · Media & actions — [image](#image), [button](#button), [social](#social), [video](#video) · [html](#html) · [Merge tags](#merge-tags). Complete templates that exercise the trickier blocks (wrapper cards, multi-column layouts, tables) live in [`examples/`](./examples/).
+**Contents:** [Settings](#settings) · [Common fields](#common-block-fields) · Layout — [section](#section), [spacer](#spacer), [divider](#divider) · Text — [title](#title), [paragraph](#paragraph), [menu](#menu), [table](#table) · Media & actions — [image](#image), [button](#button), [social](#social), [video](#video), [countdown](#countdown) · [html](#html) · [Merge tags](#merge-tags). Complete templates that exercise the trickier blocks (wrapper cards, multi-column layouts, tables) live in [`examples/`](./examples/).
 
 ## Settings
 
@@ -283,6 +283,26 @@ Renders as a thumbnail with a play button linking to the video.
 - `placeholderUrl` — design-time stand-in for the thumbnail, shown on the editor
   canvas when `url` or `thumbnailUrl` is a merge tag. It never reaches the sent
   email.
+
+### countdown
+
+A hosted image of the time remaining until `targetDate`. Emit this block only
+when the host configures `init({ countdown: { imageUrl } })`; otherwise export
+contains an unrenderable marker. The SDK ships no GIF server. The host's image
+service must keep the image current and handle expiry, including
+`hideOnExpiry`. See [Countdown setup](https://docs.templatical.com/guide/countdown).
+
+<!-- BEGIN GENERATED FIELDS: countdown -->
+**Required** — `targetDate` (string), `timezone` (string), `showDays` (bool), `showHours` (bool), `showMinutes` (bool), `showSeconds` (bool), `separator` (":" | "-" | " "), `digitFontSize` (int), `digitColor` (string), `labelColor` (string), `labelFontSize` (int), `backgroundColor` (string), `labelDays` (string), `labelHours` (string), `labelMinutes` (string), `labelSeconds` (string), `expiredMessage` (string), `expiredImageUrl` (string), `hideOnExpiry` (bool).
+**Optional** — `l10n` (object), `fontFamily` (string).
+<!-- END GENERATED FIELDS: countdown -->
+
+- `targetDate` is an ISO date/time string with an explicit offset.
+- `timezone` is an IANA timezone such as `"Europe/Berlin"`.
+- `separator` is `":"`, `"-"` or `" "` between the displayed units.
+- `showDays`, `showHours`, `showMinutes` and `showSeconds` choose the units.
+- `expiredMessage`, `expiredImageUrl` and `hideOnExpiry` need matching behavior
+  in the image service; static email HTML cannot apply them after sending.
 
 ### html
 

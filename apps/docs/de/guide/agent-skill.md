@@ -153,9 +153,9 @@ Ergänzen Sie Ihren eigenen Kontext, und der Agent verwendet ihn anstelle generi
 
 Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut. Nie `type: "custom"` ausgeben. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
 
-### Nie `countdown` ausgeben
+### `countdown` nur mit Provider ausgeben
 
-Das Rendern von `countdown` braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert. Bei einer Countdown-Anfrage das sagen und einen statischen Ersatz anbieten — Titel oder Absatz mit dem Datum, oder eine Zeile „Noch X Tage“.
+Geben Sie `countdown` nur aus, wenn der Host `countdown: { imageUrl }` konfiguriert. Ohne diese Konfiguration rendert der Block als Marker für einen nicht renderbaren Block. Das SDK liefert keinen GIF-Server mit. Hat der Host keine Bild-URL-Quelle, bieten Sie einen statischen Ersatz an — einen Titel oder Absatz mit dem Datum oder eine Zeile „Noch X Tage“. Siehe [Countdown](/de/guide/countdown).
 
 ### Nie `slot` oder `wrapper` ausgeben
 

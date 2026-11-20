@@ -158,6 +158,11 @@ export default {
         "Your Testimonial block sits on the palette and the canvas: select it to edit its fields.",
       note: "your block",
     },
+    countdown: {
+      title: "Countdown",
+      seeIt: "The Countdown block shows the sample GIF supplied by `imageUrl`.",
+      note: "sample image",
+    },
     "media-on-request": {
       title: "Media on request",
       seeIt:

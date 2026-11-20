@@ -182,7 +182,7 @@ createVideoBlock({
 
 ### Countdown
 
-`createCountdownBlock` erzeugt einen Countdown-Block. Das Rendern braucht einen serverseitigen GIF-Dienst, den das SDK nicht mitliefert. Der Renderer gibt einen Platzhalter aus, sofern `blockRenderers.countdown` kein Bild liefert.
+`createCountdownBlock` erzeugt einen Countdown-Block. Konfigurieren Sie `init({ countdown: { imageUrl } })` für das Rendern im Editor oder verwenden Sie `renderCountdownImage` im Headless-Override `blockRenderers.countdown`. Das SDK liefert keinen GIF-Server mit. Siehe [Countdown](/de/guide/countdown).
 
 ### Section
 
