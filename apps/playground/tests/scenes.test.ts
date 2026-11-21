@@ -96,6 +96,7 @@ const CONFIGURE_IDS = [
   "issues",
   "custom-blocks",
   "custom-blocks-data-source",
+  "countdown",
   "media-on-request",
 ] as const;
 
@@ -132,6 +133,7 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   "display-conditions": "/guide/display-conditions",
   "custom-blocks": "/guide/custom-blocks",
   "custom-blocks-data-source": "/guide/custom-blocks#data-sources",
+  countdown: "/guide/countdown",
   "media-on-request": "/guide/images#browse-and-pick",
   issues: "/quality/#wire-into-the-editor",
   fonts: "/guide/fonts#restricting-the-built-in-fonts",
@@ -179,7 +181,7 @@ const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
 
 describe("registry", () => {
   it("registers minimum, then configure, personalization, backend, import, examples", () => {
-    expect(SCENES).toHaveLength(44);
+    expect(SCENES).toHaveLength(45);
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
       ...CONFIGURE_IDS,
@@ -556,7 +558,7 @@ describe("sceneNeighbours", () => {
 
   it("crosses from the last scene of one group to the first of the next", () => {
     const { previous, next } = sceneNeighbours("media-on-request");
-    expect(previous?.id).toBe("custom-blocks-data-source");
+    expect(previous?.id).toBe("countdown");
     expect(next?.id).toBe("merge-tags");
     expect(next?.group).toBe("personalization");
   });

@@ -1,5 +1,14 @@
 # Diagnosing an existing integration
 
+For a missing countdown palette item, check `init({ countdown: { imageUrl } })`
+before `paletteBlocks`; the provider gates insertion. For an unrenderable
+countdown in MJML, check that `imageUrl` returns a non-empty URL and that the
+local render path is in use. Headless callers need
+`blockRenderers.countdown: (block) => renderCountdownImage(block, imageUrl(block))`.
+Fetch `guide/countdown` through [docs.md](docs.md); check `editor.toMjml()`
+for `<mj-image src="…">`. A canvas image load failure falls back to the CSS
+preview, so inspect the image URL too.
+
 For missing or clipped host header controls, read `header.actions`, the
 element's placement and `data-tpl-compact` CSS, then fetch
 `api/editor#header-actions` through [docs.md](docs.md). The element belongs to

@@ -653,9 +653,10 @@ export interface TableBlock extends BaseBlock {
 }
 
 /**
- * A countdown needs a server-side GIF service, which the SDK does not ship.
- * The renderer emits an unrenderable marker unless `blockRenderers.countdown`
- * or `render.toMjml` supplies the MJML output.
+ * A countdown needs an image URL from `init({ countdown: { imageUrl } })`
+ * or a headless `blockRenderers.countdown` using `renderCountdownImage`.
+ * The SDK ships no GIF server. Without an image URL, rendering emits an
+ * unrenderable marker.
  */
 export interface CountdownBlock extends BaseBlock {
   type: "countdown";

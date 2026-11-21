@@ -5,7 +5,7 @@
 
 Optional config keys, each a plain object of methods: `templates`,
 `versionHistory`, `comments`, `savedBlocks`, `media`, `testEmail`, `render`,
-`collaboration`, `ai`, `translation`. Most keys stand alone; `collaboration` requires `templates`. A feature is absent until its key
+`collaboration`, `ai`, `translation`, `countdown`. Most keys stand alone; `collaboration` requires `templates`. A feature is absent until its key
 is passed, not merely disabled: no half-rendered panel, no dead button.
 
 `header`: Host-owned actions and centre-toggle opt-outs; fetch `api/editor#header-actions` through [docs.md](docs.md).
@@ -60,6 +60,16 @@ already up.
 `onLocaleChange?: (locale: string) => void` receives the language the canvas shows (`getLocale()`) whenever it changes: a selected version, a fallback to the default, or a new default while the default is shown (Make default, its undo or redo, another session's `setDefaultLocale`, or a loaded or restored template whose default differs).
 
 Full contracts: [docs.md](docs.md) → the `backend/` pages.
+
+`countdown: CountdownProvider` supplies `imageUrl(block: CountdownBlock): string`.
+The editor shows that image on the canvas and exports it through
+`renderCountdownImage` as `<mj-image>` when using its local render path. Return
+an absolute URL to a GIF served by the host or a URL-based countdown image
+service; the SDK ships no GIF server. An empty URL, or a countdown block with no
+provider or headless `blockRenderers.countdown`, renders the unrenderable marker.
+The image service owns expiry and `hideOnExpiry`, because sent email HTML is
+static. Fetch `guide/countdown` through [docs.md](docs.md) for the setup,
+headless rendering and check.
 
 Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. The three first-party adapters accept these files; an adapter of your own that doesn't sets `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.
 

@@ -31,11 +31,10 @@ type SchemaNode = {
   properties?: Record<string, SchemaNode>;
 };
 
-// Rendering `countdown` needs a GIF service the SDK doesn't ship, `custom` is registered at runtime, and
-// `slot`/`wrapper` are layout markers — the skill emits none of them and the
-// guide documents none. `countdown` carries an inline `separator` enum, so
-// without this it would be looked up in a section that does not exist.
-const NEVER_EMITTED = new Set(["countdown", "custom", "slot", "wrapper"]);
+// `countdown` is emittable with a host image provider; `custom` is registered
+// at runtime, and `slot`/`wrapper` are layout markers. The guide documents
+// only block types the skill can emit.
+const NEVER_EMITTED = new Set(["custom", "slot", "wrapper"]);
 
 /** Heading text -> that section's body, ending at the next heading. */
 function sections(): Map<string, string> {

@@ -103,10 +103,8 @@ export function renderBlock(block: Block, context: RenderContext): string {
   // Nothing here knows how to render this type. A block the author hid on every
   // viewport is meant to produce nothing, so it still does — every built-in
   // renderer above makes the same call, and warning about a deliberate hide would
-  // be noise. Every other type without a renderer gets a marker. `countdown`
-  // needs a server-side GIF service the SDK does not ship; without
-  // `blockRenderers.countdown` or a host's `render.toMjml`, this path emits the
-  // unrenderable marker.
+  // be noise. Every other type without a renderer gets a marker. Countdown
+  // needs a host image URL and a `blockRenderers.countdown` override.
   if (isHiddenOnAll(block)) {
     return "";
   }

@@ -153,9 +153,9 @@ Layer your own context on top and the agent uses it instead of generic defaults 
 
 Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does. Never emit `type: "custom"`. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
 
-### Never emit `countdown`
+### Emit `countdown` only with a provider
 
-Rendering `countdown` needs a server-side GIF service the SDK does not ship. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
+Emit `countdown` only when the host configures `countdown: { imageUrl }`. Without it, the block renders as an unrenderable marker. The SDK ships no GIF server. If the host has no image URL source, offer a static stand-in — a title or paragraph with the date, or an "X days to go" line. See [Countdown](/guide/countdown).
 
 ### Never emit `slot` or `wrapper`
 

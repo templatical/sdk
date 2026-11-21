@@ -165,9 +165,10 @@ describe("OSS docs house style", () => {
     expect(readDocs("de/index.md")).not.toContain("preview.png");
   });
 
-  it("tells the agent skill never to emit countdown or custom", () => {
+  it("gates countdown on a provider and never emits custom", () => {
     const src = readDocs("guide/agent-skill.md");
-    expect(src).toMatch(/Never emit `countdown`/);
+    expect(src).toMatch(/Emit `countdown` only when the host configures/);
+    expect(src).toMatch(/unrenderable marker/);
     expect(src).toMatch(/Never emit `custom`/);
     expect(readDocs("guide/migration-from-unlayer.md")).not.toMatch(
       /Recreate using Templatical's `CountdownBlock`/,

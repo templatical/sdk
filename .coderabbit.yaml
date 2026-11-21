@@ -154,7 +154,7 @@ reviews:
     - path: "skills/templatical/**"
       instructions: |
         - Every `npx -y @templatical/template-tools@<version>` invocation carries the same pinned version, which `sync-pins` rewrites at release. Don't suggest an unpinned or different version.
-        - Templates the skill produces never contain `countdown`, `custom`, `slot` or `wrapper` blocks. An email shell is `init({ layout })`, never part of the template.
+        - Templates the skill produces never contain `custom`, `slot` or `wrapper` blocks, and contain `countdown` only when the host configures `countdown: { imageUrl }`. An email shell is `init({ layout })`, never part of the template.
 
     - path: "examples/**"
       instructions: |

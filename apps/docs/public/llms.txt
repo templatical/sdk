@@ -35,6 +35,7 @@ Documentation for SDK version 0.62.2. Every page below is also available as raw 
 - [AI Agent Skill](https://docs.templatical.com/guide/agent-skill): One free, open-source Agent Skill that writes, edits, imports and validates Templatical email templates from a prompt, previews them live in the real editor, and installs, scaffolds, diagnoses or upgrades an @templatical/editor integration — no backend or API key.
 - [Block Types](https://docs.templatical.com/guide/blocks): Reference for every built-in block type in Templatical.
 - [Bring your own AI backend](https://docs.templatical.com/guide/bring-your-own-ai): Serve the editor's AI from your own backend and model with @templatical/ai-kit — a Fetch-API server, first-party model adapters for Anthropic, OpenAI and the Vercel AI SDK, and how to check it works.
+- [Countdown](https://docs.templatical.com/guide/countdown): Configure `init({ countdown: { imageUrl } })` to show a countdown image in the editor and export it as MJML.
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks): Define your own block types with custom fields, Liquid templates, and data sources in Templatical.
 - [Block & Template Defaults](https://docs.templatical.com/guide/defaults): Customize default properties for newly created blocks and template settings with blockDefaults and templateDefaults.
 - [Display Conditions](https://docs.templatical.com/guide/display-conditions): Conditional block visibility using display conditions in Templatical email templates.

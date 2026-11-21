@@ -61,6 +61,8 @@ export {
   uniformBorder,
 } from "./blocks";
 export { parsePercentWidth, roundHundredths } from "./percent-width";
+export type { CountdownProvider } from "./countdown";
+export { COUNTDOWN_ALT_LOCALES, countdownAltText } from "./countdown";
 export {
   COLUMN_LAYOUT_PERCENTS,
   columnWidthsIssue,

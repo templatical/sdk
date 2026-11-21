@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "event invite for a one-day conference 'Trailhead 2026' on Sept 19. i want a countdown to the event, a short blurb, and an RSVP button. a teaser video up top would be nice if that's supported.",
-      "expected_output": "Title + blurb, an optional video block (thumbnail linking out), a static stand-in for the countdown — a title or paragraph with the event date and time, or an 'X days to go' line — and an RSVP button. No countdown block: rendering it needs a server-side GIF service the SDK doesn't ship. Valid JSON.",
+      "expected_output": "Title + blurb, an optional video block (thumbnail linking out), a static stand-in for the countdown — a title or paragraph with the event date and time, or an 'X days to go' line — and an RSVP button. No countdown block until the host confirms `countdown: { imageUrl }`; without it the block renders an unrenderable marker. Valid JSON.",
       "files": []
     },
     {
@@ -88,7 +88,7 @@
     {
       "id": 15,
       "prompt": "We're self-hosting the editor. Users should be able to add a countdown-timer block from the sidebar, counting down to our launch. How do I turn that on?",
-      "expected_output": "States that the sidebar palette never offers countdown. Listing it in paletteBlocks logs an unknown-block warning and does not enable the block. Rendering it needs a server-side GIF service the SDK doesn't ship, so @templatical/renderer emits a placeholder marker and a console warning, not a working countdown image. A consumer who generates the images can supply blockRenderers.countdown or render.toMjml. For everyone else, offer a static stand-in: a title or paragraph naming the launch date, or an 'X days to go' line. Must not claim paletteBlocks or any other init() option enables a working countdown block.",
+      "expected_output": "Configures `init({ countdown: { imageUrl: (block) => string } })` with the host's URL-based countdown image service or endpoint; this enables the countdown palette block and local `toMjml()` output via `renderCountdownImage`. Verifies the MJML contains `<mj-image src=...>`. The SDK ships no GIF server; the image service owns expiry and hideOnExpiry because email HTML is static. An empty URL or a missing provider yields the unrenderable marker. `paletteBlocks` alone cannot enable countdown. A headless `renderToMjml` caller uses `blockRenderers.countdown` with `renderCountdownImage`.",
       "files": []
     },
     {

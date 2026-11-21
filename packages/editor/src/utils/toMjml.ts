@@ -1,4 +1,10 @@
-import type { CustomBlock, TemplateContent } from "@templatical/types";
+import type {
+  CountdownBlock,
+  CountdownProvider,
+  CustomBlock,
+  TemplateContent,
+} from "@templatical/types";
+import { defaultLocaleOf } from "@templatical/types";
 import type { RenderFonts } from "./renderProvider";
 
 /**
@@ -39,6 +45,8 @@ export interface ToMjmlSource {
    * today's unshelled MJML. Never written into `getContent()`.
    */
   getLayout?: () => TemplateContent | undefined;
+  /** Host image source for locally rendered countdown blocks. */
+  countdown?: CountdownProvider;
 }
 
 /**
@@ -91,7 +99,10 @@ export async function toMjmlForInstance(
   const stylesheetResolver = instance.getCustomBlockStylesheet;
   const fonts = instance.getFonts?.();
   const layout = instance.getLayout?.();
-  return renderer.renderToMjml(instance.getContent(), {
+  const content = instance.getContent();
+  const locale = options?.locale ?? defaultLocaleOf(content);
+  const provider = instance.countdown;
+  return renderer.renderToMjml(content, {
     ...(options?.locale !== undefined ? { locale: options.locale } : {}),
     renderCustomBlock: instance.renderCustomBlock,
     // Only pass through when the source actually provides a resolver, so a
@@ -113,5 +124,20 @@ export async function toMjmlForInstance(
       ? { socialIconsBaseUrl: instance.socialIconsBaseUrl }
       : {}),
     ...(layout ? { layout } : {}),
+    ...(provider
+      ? {
+          blockRenderers: {
+            // The renderer dispatches by block type, so this only receives countdown blocks.
+            countdown: (block: TemplateContent["blocks"][number]) => {
+              const countdown = block as CountdownBlock;
+              return renderer.renderCountdownImage(
+                countdown,
+                provider.imageUrl(countdown),
+                { locale },
+              );
+            },
+          },
+        }
+      : {}),
   });
 }

@@ -10,6 +10,7 @@ import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
   CAPABILITIES_KEY,
+  COUNTDOWN_PROVIDER_KEY,
 } from '../src/keys';
 
 // The scroll itself needs real layout, so the composable is stubbed here and
@@ -84,7 +85,7 @@ describe('Sidebar', () => {
     const buttons = wrapper.findAll('button[data-palette-type]');
     const types = buttons.map((b) => b.attributes('data-palette-type'));
 
-    // Countdown has no insertable provider.
+    // Countdown has no image URL provider.
     expect(types).toEqual([
       'section',
       'hero',
@@ -364,6 +365,25 @@ describe('Sidebar', () => {
       .findAll('button[data-palette-type]')
       .map((b) => b.attributes('data-palette-type'));
     expect(types).not.toContain('countdown');
+  });
+
+  it('offers countdown with a provider and respects paletteBlocks', () => {
+    const { editor } = makeEditor();
+    const provider = { imageUrl: () => 'https://example.com/count.gif' };
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [COUNTDOWN_PROVIDER_KEY]: provider,
+    });
+    expect(wrapper.find('button[data-palette-type="countdown"]').exists()).toBe(true);
+
+    const limited = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [COUNTDOWN_PROVIDER_KEY]: provider,
+      [PALETTE_BLOCKS_KEY]: ['countdown', 'section'],
+    });
+    expect(limited.findAll('button[data-palette-type]').map((b) =>
+      b.attributes('data-palette-type'),
+    )).toEqual(['countdown', 'section']);
   });
 
   it('clicking a palette item creates+inserts a block and selects it', async () => {
@@ -851,7 +871,7 @@ describe('Sidebar — blocks (palette allowlist + order)', () => {
     warnSpy.mockRestore();
   });
 
-  it('skips and warns countdown when listed without a plan capability', () => {
+  it('skips and warns countdown when listed without an image URL provider', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { editor } = makeEditor();
     const wrapper = mountSidebar({
