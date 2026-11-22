@@ -128,7 +128,7 @@ export const imageUrl = (block: CountdownBlock): string => {
 
 The endpoint then decides what to render:
 
-- **No editor session (a recipient or an image proxy):** ignore the query string, load the stored template, find the block by id and render from its stored fields. Answer 404 when the template or block doesn't exist. Deleting the template revokes the image.
+- **No editor session (a recipient or an image proxy):** ignore the query string, load the stored template, find the block by id and render from its stored fields. Answer 404 when the template or block doesn't exist. Deleting the template stops later requests from resolving; a copy a recipient's client or a cache already fetched stays as it is.
 - **An authenticated editor session:** render from the query string, so unsaved changes show on the canvas. The canvas sends your cookies only when the endpoint is on your app's site.
 - **Sent emails stay as sent** only if the URL names a template version rather than the live template; otherwise editing the countdown later changes emails already delivered.
 
@@ -144,7 +144,7 @@ These apply with either approach:
 
 - Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length.
 - Never fetch `expiredImageUrl` from the server. Redirect to it, or accept only your own asset host; fetching an address from the request turns the endpoint into an open proxy.
-- Cache images rendered from stored blocks per parameter set and minute. Image proxies send many recipients through few IP addresses, so per-IP rate limits can't tell abuse from a large send.
+- Cache images rendered from stored blocks per parameter set, for no longer than the accuracy you need: a countdown that shows seconds and is cached for a minute can open up to 59 seconds behind, and each shorter lifetime costs more renders. Image proxies send many recipients through few IP addresses, so per-IP rate limits can't tell abuse from a large send.
 - Keep editor previews out of shared caches (`Cache-Control: private, no-store`), and key the public cache so it never answers a preview request: a preview and a public request can share a URL but need different images.
 
 ## Limits

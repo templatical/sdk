@@ -128,7 +128,7 @@ export const imageUrl = (block: CountdownBlock): string => {
 
 Der Endpunkt entscheidet dann, was er rendert:
 
-- **Ohne Editor-Sitzung (ein Empfänger oder ein Bild-Proxy):** Ignorieren Sie den Query-String, laden Sie die gespeicherte Vorlage, finden Sie den Block anhand seiner ID und rendern Sie aus seinen gespeicherten Feldern. Antworten Sie mit 404, wenn Vorlage oder Block nicht existieren. Wer die Vorlage löscht, widerruft das Bild.
+- **Ohne Editor-Sitzung (ein Empfänger oder ein Bild-Proxy):** Ignorieren Sie den Query-String, laden Sie die gespeicherte Vorlage, finden Sie den Block anhand seiner ID und rendern Sie aus seinen gespeicherten Feldern. Antworten Sie mit 404, wenn Vorlage oder Block nicht existieren. Wer die Vorlage löscht, verhindert, dass spätere Anfragen aufgelöst werden; eine Kopie, die der Client eines Empfängers oder ein Cache schon geladen hat, bleibt bestehen.
 - **Mit authentifizierter Editor-Sitzung:** Rendern Sie aus dem Query-String, damit ungespeicherte Änderungen auf der Arbeitsfläche erscheinen. Die Arbeitsfläche sendet Ihre Cookies nur, wenn der Endpunkt auf der Site Ihrer App liegt.
 - **Versendete E-Mails bleiben unverändert** nur, wenn die URL eine Vorlagenversion statt der aktuellen Vorlage benennt; sonst ändert eine spätere Bearbeitung des Countdowns bereits zugestellte E-Mails.
 
@@ -144,7 +144,7 @@ Diese Regeln gelten für beide Ansätze:
 
 - Lesen Sie nur die Blockfelder, die das Bild braucht, und begrenzen Sie sie: einen Bereich für das Zieldatum, Grenzen für Schriftgrößen, eine maximale Label-Länge.
 - Rufen Sie `expiredImageUrl` nie vom Server ab. Leiten Sie darauf weiter oder akzeptieren Sie nur Ihren eigenen Asset-Host; eine Adresse aus der Anfrage abzurufen, macht den Endpunkt zu einem offenen Proxy.
-- Cachen Sie aus gespeicherten Blöcken gerenderte Bilder pro Parametersatz und Minute. Bild-Proxys bündeln viele Empfänger hinter wenigen IP-Adressen, daher können Rate-Limits pro IP Missbrauch nicht von einem großen Versand unterscheiden.
+- Cachen Sie aus gespeicherten Blöcken gerenderte Bilder pro Parametersatz, höchstens so lange, wie es die nötige Genauigkeit zulässt: Ein Countdown mit Sekunden, der eine Minute gecacht wird, kann beim Öffnen bis zu 59 Sekunden nachgehen, und jede kürzere Lebensdauer kostet mehr Renderings. Bild-Proxys bündeln viele Empfänger hinter wenigen IP-Adressen, daher können Rate-Limits pro IP Missbrauch nicht von einem großen Versand unterscheiden.
 - Halten Sie Editor-Vorschauen aus geteilten Caches heraus (`Cache-Control: private, no-store`) und wählen Sie den Schlüssel des öffentlichen Caches so, dass er nie eine Vorschau-Anfrage beantwortet: Vorschau und öffentliche Anfrage können dieselbe URL haben, brauchen aber verschiedene Bilder.
 
 ## Grenzen

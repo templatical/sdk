@@ -77,7 +77,9 @@ block's image fields as query parameters: the endpoint renders a request without
 an editor session from the stored block (404 when missing) and trusts the query
 only for an authenticated editor session, whose responses stay out of shared
 caches. Any stored copy works (a `templates` provider or the host's own save of
-`getContent()`). Or sign the URL with an
+`getContent()`). For a sent email, the URL names a template version or is
+signed at render time; one that names the live template returns 404 or a
+changed countdown once the block is deleted or edited. Or sign the URL with an
 HMAC in a backend render (`render.toMjml` or `blockRenderers.countdown`). Never
 fetch `expiredImageUrl` on the server, and clamp every field the endpoint reads.
 
