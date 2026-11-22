@@ -70,6 +70,16 @@ provider or headless `blockRenderers.countdown`, renders the unrenderable marker
 The image service owns expiry and `hideOnExpiry`, because sent email HTML is
 static. Fetch `guide/countdown` through [docs.md](docs.md) for the setup,
 headless rendering and check.
+The image URL is public (it is in every sent email and fetched without cookies),
+and `imageUrl` runs in the browser, so it can't sign. Have it return an
+absolute `https://<app origin>/countdown/{templateId}/{blockId}.gif` with the
+block's image fields as query parameters: the endpoint renders a request without
+an editor session from the stored block (404 when missing) and trusts the query
+only for an authenticated editor session, whose responses stay out of shared
+caches. Any stored copy works (a `templates` provider or the host's own save of
+`getContent()`). Or sign the URL with an
+HMAC in a backend render (`render.toMjml` or `blockRenderers.countdown`). Never
+fetch `expiredImageUrl` on the server, and clamp every field the endpoint reads.
 
 Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. The three first-party adapters accept these files; an adapter of your own that doesn't sets `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.
 
