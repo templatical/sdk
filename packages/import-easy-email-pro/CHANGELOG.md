@@ -1,5 +1,13 @@
 # @templatical/import-easy-email-pro
 
+## 0.63.0
+
+### Patch Changes
+
+- 08a36b4: The import report's note for a `marketing-countdown` no longer calls Templatical's countdown Cloud-only. It now says the vendor GIF is kept as an image and that a Templatical countdown block needs a countdown image provider.
+- Updated dependencies [08a36b4]
+  - @templatical/types@0.63.0
+
 ## 0.62.2
 
 ### Patch Changes
