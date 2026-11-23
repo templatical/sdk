@@ -117,6 +117,7 @@ const da: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Leveret af",
+    linkTitle: "Templatical: open source-e-maileditor, MIT-licenseret",
   },
 
   // Header — template name + save state. Shown only when a templates provider

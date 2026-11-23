@@ -114,6 +114,7 @@ export default {
   // Footer (OSS only)
   footer: {
     poweredBy: "Powered by",
+    linkTitle: "Templatical: open-source email editor, MIT-licensed",
   },
 
   // Header — template name + save state. Shown only when a templates provider

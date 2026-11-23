@@ -122,6 +122,8 @@ const es: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Con la tecnología de",
+    linkTitle:
+      "Templatical: editor de correo electrónico de código abierto, con licencia MIT",
   },
 
   // Header — nombre de la plantilla + estado de guardado. Solo se muestra cuando
