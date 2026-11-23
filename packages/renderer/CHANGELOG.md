@@ -1,5 +1,16 @@
 # @templatical/renderer
 
+## 0.63.0
+
+### Minor Changes
+
+- 08a36b4: Countdown blocks work with `init({ countdown: { imageUrl } })`: the provider makes the block insertable, previews its image on the canvas, and supplies the image URL for local MJML and HTML exports. Headless callers can use `renderCountdownImage` to render the same localized image markup.
+
+### Patch Changes
+
+- Updated dependencies [08a36b4]
+  - @templatical/types@0.63.0
+
 ## 0.62.2
 
 ### Patch Changes

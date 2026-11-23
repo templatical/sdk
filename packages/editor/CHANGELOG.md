@@ -1,5 +1,18 @@
 # @templatical/editor
 
+## 0.63.0
+
+### Minor Changes
+
+- 08a36b4: Countdown blocks work with `init({ countdown: { imageUrl } })`: the provider makes the block insertable, previews its image on the canvas, and supplies the image URL for local MJML and HTML exports. Headless callers can use `renderCountdownImage` to render the same localized image markup.
+
+### Patch Changes
+
+- 5851cd7: The "Powered by Templatical" link in the editor footer now has a tooltip saying Templatical is an open-source email editor, MIT-licensed, translated in every editor locale (`footer.linkTitle`). The visible footer text is unchanged, and `branding: false` still hides the footer.
+- Updated dependencies [08a36b4]
+  - @templatical/renderer@0.63.0
+  - @templatical/quality@0.63.0
+
 ## 0.62.2
 
 ### Patch Changes

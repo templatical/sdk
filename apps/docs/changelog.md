@@ -15,6 +15,26 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.63.0
+
+<time datetime="2026-11-23">2026-11-23</time>
+
+### Features
+
+**Countdown blocks work with `init({ countdown: { imageUrl } })`: the provider makes the block insertable, previews its image on the canvas, and supplies the image URL for local MJML and HTML exports. Headless callers can use `renderCountdownImage` to render the same localized image markup.**
+
+`@templatical/ai-kit` · `@templatical/editor` · `@templatical/renderer` · `@templatical/types`
+
+### Fixes and improvements
+
+**The import report's note for a `marketing-countdown` no longer calls Templatical's countdown Cloud-only. It now says the vendor GIF is kept as an image and that a Templatical countdown block needs a countdown image provider.**
+
+`@templatical/import-easy-email-pro`
+
+**The "Powered by Templatical" link in the editor footer now has a tooltip saying Templatical is an open-source email editor, MIT-licensed, translated in every editor locale (`footer.linkTitle`). The visible footer text is unchanged, and `branding: false` still hides the footer.**
+
+`@templatical/editor`
+
 ## 0.62.2
 
 <time datetime="2026-11-20">2026-11-20</time>
