@@ -61,7 +61,7 @@ declare function countdownWallTime(
 ): string;
 ```
 
-`renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. `countdownTargetTime` returns the target as epoch milliseconds, or `null` for an empty or unreadable date or timezone; `countdownWallTime` returns it as `YYYY-MM-DDTHH:mm` in the block's timezone, or `""`. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
+`renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. `countdownTargetTime` returns the target as epoch milliseconds, or `null` for an empty, unreadable or impossible date, or for an offset-free date with an unknown timezone (a date with `Z` or an offset ignores `timezone`); `countdownWallTime` returns it as `YYYY-MM-DDTHH:mm` in the block's timezone, or `""`. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
 
 ## Headless MJML
 

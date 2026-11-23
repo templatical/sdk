@@ -55,10 +55,10 @@ function supportedLocale(locale: string | undefined): {
 // reads it in the browser's zone, not the block's, so every reader goes
 // through `countdownTargetTime`. A value carrying `Z` or an offset is already
 // an instant and is read as one.
-const WALL_TIME =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?$/;
+// Group 7 is the zone (`Z` or an offset); without it the value is wall time.
+const DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(Z|[+-]\d{2}:?\d{2})?$/i;
 const DAY_MS = 86_400_000;
-const ZONED = /T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:?\d{2})$/i;
 
 function zoneParts(time: number, timezone: string): number[] {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -86,8 +86,9 @@ function zoneOffset(time: number, timezone: string): number {
 /**
  * The instant a countdown runs to, in epoch milliseconds. A wall-clock
  * `targetDate` is read in `timezone`; a value with `Z` or an offset is that
- * instant. Returns `null` for an empty or unreadable date, or a wall-clock
- * date with an unknown timezone. A wall time skipped by a DST change
+ * instant, whatever `timezone` holds. Returns `null` for an empty, unreadable
+ * or impossible date (`02-30`), or a wall-clock date with an unknown
+ * timezone. A wall time skipped by a DST change
  * (`02:30` on the night Berlin springs forward) moves forward by the gap, and
  * one that occurs twice resolves to the later occurrence.
  */
@@ -96,14 +97,8 @@ export function countdownTargetTime(
 ): number | null {
   if (typeof block.targetDate !== "string") return null;
   const value = block.targetDate.trim();
-
-  if (ZONED.test(value)) {
-    const time = new Date(value).getTime();
-    return Number.isFinite(time) ? time : null;
-  }
-
-  const match = WALL_TIME.exec(value);
-  if (!match || typeof block.timezone !== "string") return null;
+  const match = DATE_TIME.exec(value);
+  if (!match) return null;
   const [year, month, day, hour, minute] = match.slice(1, 6).map(Number);
   const second = match[6] === undefined ? 0 : Number(match[6]);
   const wall = Date.UTC(year, month - 1, day, hour, minute, second);
@@ -116,8 +111,16 @@ export function countdownTargetTime(
     check.getUTCMinutes() !== minute ||
     check.getUTCSeconds() !== second
   ) {
+    // `Date` rolls an impossible day over (`02-30` becomes `03-02`); both
+    // forms reject it instead.
     return null;
   }
+
+  if (match[7] !== undefined) {
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : null;
+  }
+  if (typeof block.timezone !== "string") return null;
 
   try {
     // Try the offsets a day either side of the wall time: no zone changes
@@ -148,7 +151,7 @@ export function countdownWallTime(
   const time = countdownTargetTime(block);
   if (time === null) return "";
   const value = block.targetDate.trim();
-  if (!ZONED.test(value)) return value.slice(0, 16);
+  if (DATE_TIME.exec(value)?.[7] === undefined) return value.slice(0, 16);
 
   try {
     const [year, month, day, hour, minute] = zoneParts(time, block.timezone);

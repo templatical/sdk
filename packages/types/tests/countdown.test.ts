@@ -96,7 +96,10 @@ describe("countdownTargetTime", () => {
     }
   });
 
-  it("reads a value with Z or an offset as that instant", () => {
+  it("reads a value with Z or an offset as that instant, ignoring the timezone", () => {
+    expect(at("2026-12-24T18:00Z", "Not/AZone")).toBe(
+      Date.UTC(2026, 11, 24, 18, 0),
+    );
     expect(at("2026-12-24T18:00:00+01:00", "America/New_York")).toBe(
       Date.UTC(2026, 11, 24, 17, 0),
     );
@@ -112,6 +115,9 @@ describe("countdownTargetTime", () => {
     expect(at("2026-02-30T10:00", "UTC")).toBeNull();
     expect(at("2026-12-24T24:30", "UTC")).toBeNull();
     expect(at("2026-12-24T18:00", "Invalid/Zone")).toBeNull();
+    expect(at("2026-02-30T10:00Z", "UTC")).toBeNull();
+    expect(at("2026-02-30T10:00:00+01:00", "UTC")).toBeNull();
+    expect(at("2026-04-31T10:00:00Z", "UTC")).toBeNull();
     expect(
       countdownTargetTime({ targetDate: 42, timezone: "UTC" } as never),
     ).toBeNull();
