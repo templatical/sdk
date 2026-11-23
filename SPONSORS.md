@@ -28,17 +28,6 @@ Templatical is open source (MIT). Sponsorship keeps the MIT email editor maintai
 | $500   | Logo under "Sponsored by" in README and docs for 12 months.                                  |
 | $1,000 | Logo under "Sponsored by" in README, docs and on the templatical.com homepage for 12 months. |
 
-## Founding sponsors
-
-The people and companies who backed Templatical before the sponsor tiers carried any reward at all (August 2026). Listed here permanently, whatever they sponsored.
-
-- 💚 _One private sponsor_
-
-<!--
-  Named founding sponsors go here as `- **Name** — optional one-liner`.
-  Do NOT add anyone who sponsors privately; see "Being listed" below.
--->
-
 ## Sponsored by
 
 Logo placement — $50/month and up, or $500 one-time (12 months).
