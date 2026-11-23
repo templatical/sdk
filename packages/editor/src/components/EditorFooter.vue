@@ -29,6 +29,7 @@ const { t } = useI18n();
       <span>{{ t.footer.poweredBy }}</span>
       <a
         href="https://templatical.com"
+        :title="t.footer.linkTitle"
         target="_blank"
         rel="noopener noreferrer"
         class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:hover:opacity-80 tpl:text-[var(--tpl-text-muted)]"

@@ -4,7 +4,7 @@
   "version": "0.62.2",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
-    "@lucide/vue": "^1.74.0",
+    "@lucide/vue": "^1.77.0",
     "@templatical/types": "workspace:*",
     "@vueuse/core": "^15.0.0",
     "vue-advanced-cropper": "^2.8.9"
@@ -15,8 +15,8 @@
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0",
-    "vue": "^3.5.45",
+    "vitest": "^5.1.1",
+    "vue": "^3.5.46",
     "vue-tsc": "^3.3.14"
   },
   "exports": {

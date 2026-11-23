@@ -121,6 +121,8 @@ const ptBR: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Desenvolvido por",
+    linkTitle:
+      "Templatical: editor de e-mail de código aberto, licenciado sob MIT",
   },
 
   // Header — nome do template + estado de salvamento. Exibido apenas quando um

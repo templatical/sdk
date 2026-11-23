@@ -20,12 +20,12 @@
     "mjml": "^5.4.1"
   },
   "devDependencies": {
-    "@sveltejs/adapter-node": "^6.0.2",
-    "@sveltejs/kit": "^3.2.0",
+    "@sveltejs/adapter-node": "^6.0.5",
+    "@sveltejs/kit": "^3.4.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/mjml": "~5.4.2",
     "@types/node": "^26.6.6",
-    "svelte": "^5.57.3",
+    "svelte": "^5.58.0",
     "svelte-check": "^4.7.8",
     "typescript": "^6.0.3",
     "vite": "^8.3.8"
