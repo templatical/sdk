@@ -122,6 +122,8 @@ const ca: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Amb la tecnologia de",
+    linkTitle:
+      "Templatical: editor de correu electrònic de codi obert, amb llicència MIT",
   },
 
   // Header — nom de la plantilla + estat de desat. Només es mostra quan hi ha un

@@ -118,6 +118,7 @@ const fr: typeof en = {
   },
   footer: {
     poweredBy: "Propulsé par",
+    linkTitle: "Templatical : éditeur d'e-mails open source, sous licence MIT",
   },
 
   header: {

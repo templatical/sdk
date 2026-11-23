@@ -116,6 +116,7 @@ const nl: typeof en = {
   },
   footer: {
     poweredBy: "Mogelijk gemaakt door",
+    linkTitle: "Templatical: opensource-e-maileditor, MIT-gelicentieerd",
   },
 
   header: {
