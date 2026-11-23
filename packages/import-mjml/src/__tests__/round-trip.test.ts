@@ -32,7 +32,7 @@ import { convertMjmlTemplate } from "../converter";
  * borders on a button, an image, a section and a wrapper, and a section
  * background image, a hero section and a wrapper background image.
  *
- * Excluded on purpose (§12): `countdown` (Cloud renders it server-side),
+ * Excluded on purpose (§12): `countdown` (renders as an image or a marker),
  * `custom` (needs a consumer registry), `html` (indistinguishable from
  * paragraph in the output, §10), `video` (indistinguishable from a linked
  * image, §8.4c), any block hidden on all viewports (renders as ""), and any

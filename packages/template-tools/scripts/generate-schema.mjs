@@ -18,8 +18,8 @@
 //
 // The guide's field lists live between `<!-- BEGIN/END GENERATED FIELDS: x -->`
 // markers; everything outside them is hand-written guidance and is preserved
-// verbatim. `countdown` and `custom` carry no markers — the skill never emits
-// them — and `applyGuideRegions` skips any type whose BEGIN marker is absent.
+// verbatim. `custom` carries no markers, because the skill never emits it, and
+// `applyGuideRegions` skips any type whose BEGIN marker is absent.
 //
 // Re-run `pnpm --filter @templatical/template-tools run generate-schema` whenever
 // the block model changes. No committed copy should ever be hand-edited.

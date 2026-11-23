@@ -8,6 +8,7 @@ import type {
   CollaborationProvider,
   CollaborationRemoteChange,
   ColorsConfig,
+  CountdownProvider,
   CommentsProvider,
   CustomBlock,
   CustomBlockDefinition,
@@ -418,12 +419,19 @@ export interface TemplaticalEditorConfig {
    * in hero mode with starter content.
    *
    * Unknown entries — a typo, an unregistered custom block, or `countdown`
-   * which is not insertable from the palette — are logged with a warning and
-   * skipped. Filtering
+   * without a countdown provider (`countdown: { imageUrl }`) — are logged with
+   * a warning and skipped. Filtering
    * the palette never affects rendering: existing content using a hidden
    * block type still renders correctly.
    */
   paletteBlocks?: string[];
+
+  /**
+   * Image URL provider for countdown blocks. Makes countdown insertable in the
+   * palette, previews the image on the canvas, and renders it through the
+   * bundled MJML renderer. The host owns the image endpoint.
+   */
+  countdown?: CountdownProvider;
 
   /**
    * Render each HTML block's raw content as a live preview in the editor
@@ -1525,6 +1533,7 @@ function createEditorInstance({
             instance.getCustomBlockStylesheet(customType),
           getFonts: () => resolveRenderFonts(fontsManager),
           socialIconsBaseUrl: config.socialIconsBaseUrl,
+          countdown: config.countdown,
           getLayout: () => config.layout,
         },
         ...(options ? ([options] as const) : []),

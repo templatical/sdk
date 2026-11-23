@@ -17,8 +17,8 @@ import type { UseBlockRegistryReturn } from "../src/composables/useBlockRegistry
 /**
  * Canvas must render `countdown` blocks via the block registry.
  *
- * `countdown` is the one Cloud-only block, so `useEditorCore` registers it as a
- * lazy `defineAsyncComponent` and Canvas's static `blockComponentMap`
+ * `countdown` stays lazy so templates without one do not load it. `useEditorCore`
+ * registers it as a `defineAsyncComponent` and Canvas's static `blockComponentMap`
  * deliberately has no entry for it. That makes the registry the *only* source —
  * so if Canvas ever stopped consulting it, countdown blocks would silently
  * vanish from the canvas with nothing else to fall back on.

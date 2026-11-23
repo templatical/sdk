@@ -12,12 +12,12 @@ const schema = JSON.parse(
   readFileSync(resolve(REFERENCE_DIR, "schema.json"), "utf8"),
 );
 
-// Rendering `countdown` needs a server-side GIF service the SDK doesn't ship,
+// `countdown` is emittable when the host configures its image provider.
 // `custom` blocks are consumer-registered at runtime, and `slot`/`wrapper`
-// are layout markers — the skill never emits any of them. All four stay
-// valid in schema.json for layout and headless callers.
+// are layout markers — the skill never emits those three.
 const EMITTABLE = [
   "button",
+  "countdown",
   "divider",
   "html",
   "image",
@@ -41,9 +41,8 @@ describe("block-guide.md's generated field lists", () => {
 
   it("carries a matched marker pair for exactly the emittable block types", () => {
     // Written literally rather than derived from the schema, so adding a block
-    // type is a deliberate edit here — rendering `countdown` needs a GIF
-    // service the SDK doesn't ship and `custom` is registered at runtime,
-    // so the skill emits neither.
+    // type is a deliberate edit here — `countdown` is emitted only with a
+    // configured image URL, while `custom` is registered at runtime.
     //
     // Both sides are asserted, not just BEGIN. A BEGIN whose END was deleted
     // leaves the region's regex without a closing anchor, so `applyGuideRegions`

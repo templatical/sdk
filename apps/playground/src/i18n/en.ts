@@ -164,6 +164,11 @@ export default {
         "Click “Change article” on the canvas, then choose an article to fill the block from your data.",
       note: "Change article",
     },
+    countdown: {
+      title: "Countdown",
+      seeIt: "The Countdown block shows the sample GIF supplied by `imageUrl`.",
+      note: "sample image",
+    },
     "media-on-request": {
       title: "Media on request",
       seeIt:

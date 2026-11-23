@@ -1137,7 +1137,7 @@ describe("convertLeaf", () => {
         sourceTag: "marketing-countdown",
         templaticalBlockType: "paragraph",
         status: "approximated",
-        note: "marketing-countdown GIF is the timer; Templatical countdown is Cloud-only",
+        note: "marketing-countdown GIF is the timer, kept as an image; a Templatical countdown block needs a countdown image provider",
       },
     ]);
   });

@@ -162,6 +162,12 @@ export default {
         "Klicken Sie auf der Arbeitsfläche auf „Change article“ und wählen Sie einen Artikel aus, um den Block mit Ihren Daten zu füllen.",
       note: "Change article",
     },
+    countdown: {
+      title: "Countdown",
+      seeIt:
+        "Der Countdown-Block zeigt das von `imageUrl` gelieferte Beispiel-GIF.",
+      note: "Beispielbild",
+    },
     "media-on-request": {
       title: "Medien auf Anfrage",
       seeIt:

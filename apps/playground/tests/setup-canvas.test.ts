@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { lintTemplate } from "@templatical/quality";
 import type { TemplateContent } from "@templatical/types";
 import { getScene } from "../src/scenes/index";
@@ -58,6 +60,22 @@ describe("issuesCanvas", () => {
 });
 
 describe("seeded setup scenes", () => {
+  it("countdown opens with a hosted sample image for its block", () => {
+    const scene = getScene("countdown")!;
+    const block = scene.content!(noQuery).blocks.find(
+      (candidate) => candidate.id === "countdown-demo",
+    );
+    expect(block?.type).toBe("countdown");
+    if (block?.type !== "countdown") throw new Error("missing countdown");
+    const url = scene.config(noQuery).countdown?.imageUrl(block);
+    expect(url).toBe("https://play.templatical.com/countdown-sample.gif");
+    const gif = readFileSync(
+      join(import.meta.dirname, "../public", new URL(url!).pathname.slice(1)),
+    );
+    expect(gif.subarray(0, 6).toString()).toMatch(/^GIF8[79]a$/);
+    expect(gif.length).toBeLessThan(20_000);
+  });
+
   it.each(["fonts", "theming", "layout", "shadow-dom-off"])(
     "%s opens on the base email",
     (id) => {

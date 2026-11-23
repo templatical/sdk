@@ -894,9 +894,9 @@ describe("a resolver owns the display-condition filter", () => {
 
 describe("countdown resolves only through the block registry", () => {
   /**
-   * `countdown` is the one Cloud-only block (its animated GIF is rendered
-   * server-side), so `useEditorCore` registers it as a lazy
-   * `defineAsyncComponent` to keep it out of the OSS payload.
+   * `countdown` is non-insertable unless the host supplies a countdown image
+   * URL, so `useEditorCore` registers it as a lazy `defineAsyncComponent` to
+   * keep it out of the eager payload.
    *
    * Regression this guards: `Canvas.vue` also listed it in its static
    * `blockComponentMap`. That entry was unreachable at runtime — the registry is

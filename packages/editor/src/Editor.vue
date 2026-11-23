@@ -516,6 +516,7 @@ const core = useEditorCore({
     templateDefaults: props.config.templateDefaults,
     customBlocks: props.config.customBlocks,
     paletteBlocks: props.config.paletteBlocks,
+    countdown: props.config.countdown,
     htmlBlockPreview: props.config.htmlBlockPreview,
     layout: props.config.layout,
     sectionWrapper: props.config.sectionWrapper,

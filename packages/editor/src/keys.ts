@@ -13,6 +13,7 @@ import type {
 } from "@templatical/core";
 import type {
   BlockDefaults,
+  CountdownProvider,
   CustomBlockDefinition,
   DisplayCondition,
   DisplayConditionRequestContext,
@@ -66,6 +67,11 @@ export const ANCESTOR_HIDDEN_LOCALES_KEY: InjectionKey<
 > = Symbol("ancestorHiddenLocales");
 
 export const EDITOR_KEY: InjectionKey<BaseEditorReturn> = Symbol("editor");
+
+/** Host image source used by the countdown canvas and palette. */
+export const COUNTDOWN_PROVIDER_KEY: InjectionKey<
+  CountdownProvider | undefined
+> = Symbol("countdownProvider");
 
 /**
  * The AI feature, for chrome deep in the tree (the paragraph toolbar's
