@@ -56,6 +56,8 @@ Name and link — $25/month and up, or $100 one-time (12 months).
 
 <!-- `- [Name](https://url)` -->
 
+- [EmailFig](https://emailfig.com)
+
 ## Supporters
 
 Name — $10/month and up, or $25 one-time (12 months).
