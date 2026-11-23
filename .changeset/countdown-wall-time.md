@@ -1,5 +1,5 @@
 ---
-"@templatical/types": minor
+"@templatical/types": patch
 "@templatical/editor": patch
 "@templatical/template-tools": patch
 "@templatical/ai-kit": patch
