@@ -113,6 +113,8 @@ const translations: typeof en = {
   },
   footer: {
     poweredBy: "提供元:",
+    linkTitle:
+      "Templatical：オープンソースのメールエディター（MIT ライセンス）",
   },
   header: {
     save: "保存",

@@ -119,6 +119,7 @@ const de: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Erstellt mit",
+    linkTitle: "Templatical: Open-Source-E-Mail-Editor, MIT-lizenziert",
   },
 
   // Header — Vorlagenname + Speicherstatus. Nur sichtbar, wenn ein

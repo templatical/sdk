@@ -12,7 +12,10 @@ import { TRANSLATIONS_KEY } from "../src/keys";
 import { mountEditor } from "./helpers/mount";
 
 const TRANSLATIONS = {
-  footer: { poweredBy: "Powered by" },
+  footer: {
+    poweredBy: "Powered by",
+    linkTitle: "Templatical: open-source email editor, MIT-licensed",
+  },
 } as unknown as Translations;
 
 const mountFooter = () =>
@@ -27,6 +30,14 @@ describe("EditorFooter", () => {
     expect(wrapper.findAll("a").map((a) => a.attributes("href"))).toEqual([
       "https://templatical.com",
     ]);
+  });
+
+  it("names the licence in the link's tooltip, not in visible text", () => {
+    const wrapper = mountFooter();
+    expect(wrapper.find("a").attributes("title")).toBe(
+      "Templatical: open-source email editor, MIT-licensed",
+    );
+    expect(wrapper.text()).not.toMatch(/open.source|MIT/i);
   });
 
   it("draws the mark inline instead of fetching it", () => {
@@ -54,8 +65,11 @@ describe("config.branding on the real Editor.vue", () => {
     editor = undefined;
   });
 
-  async function mountRealEditor(config: Record<string, unknown> = {}) {
-    const translations = await loadTranslations("en");
+  async function mountRealEditor(
+    config: Record<string, unknown> = {},
+    locale = "en",
+  ) {
+    const translations = await loadTranslations(locale);
     editor = mount(Editor, {
       props: {
         config: {
@@ -88,6 +102,13 @@ describe("config.branding on the real Editor.vue", () => {
       );
     },
   );
+
+  it("shows the tooltip in the editor's locale", async () => {
+    const wrapper = await mountRealEditor({}, "de");
+    expect(
+      wrapper.find('a[href="https://templatical.com"]').attributes("title"),
+    ).toBe("Templatical: Open-Source-E-Mail-Editor, MIT-lizenziert");
+  });
 
   it("renders no footer for branding: false", async () => {
     const wrapper = await mountRealEditor({ branding: false });
