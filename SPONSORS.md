@@ -28,17 +28,6 @@ Templatical is open source (MIT). Sponsorship keeps the MIT email editor maintai
 | $500   | Logo under "Sponsored by" in README and docs for 12 months.                                  |
 | $1,000 | Logo under "Sponsored by" in README, docs and on the templatical.com homepage for 12 months. |
 
-## Founding sponsors
-
-The people and companies who backed Templatical before the sponsor tiers carried any reward at all (August 2026). Listed here permanently, whatever they sponsored.
-
-- 💚 _One private sponsor_
-
-<!--
-  Named founding sponsors go here as `- **Name** — optional one-liner`.
-  Do NOT add anyone who sponsors privately; see "Being listed" below.
--->
-
 ## Sponsored by
 
 Logo placement — $50/month and up, or $500 one-time (12 months).
@@ -56,6 +45,8 @@ Name and link — $25/month and up, or $100 one-time (12 months).
 
 <!-- `- [Name](https://url)` -->
 
+- [EmailFig](https://emailfig.com)
+
 ## Supporters
 
 Name — $10/month and up, or $25 one-time (12 months).
@@ -70,14 +61,16 @@ People who supported Templatical for a while. The work they paid for is still in
 
 ## Being listed
 
-**Listing is opt-in, and privacy is the default.** If you sponsor privately, you will not
-appear on this page — not even at a tier whose description mentions it. Sponsoring privately
-is a choice, and a tier description does not override it.
+**A public sponsorship is listed where its tier says; a private one never is.** Public sponsors
+are added with the name and link of the sponsoring account. Tiers whose benefit is "Thanks." carry
+no listing. If you sponsor privately, you will not appear on this page at any tier, whatever the
+tier description says.
 
-Want to be listed, or listed differently?
+Want to be listed differently?
 
-- **To be added** — open an [issue](https://github.com/templatical/sdk/issues) or email
-  <hi@templatical.com> with the name, link and logo you want used.
+- **To set the name, link or logo** — open an [issue](https://github.com/templatical/sdk/issues)
+  or email <hi@templatical.com> with the name, link and logo you want used. Logo tiers need a
+  logo file.
 - **To change or remove your entry** — same, and it will be updated in the next push.
   No explanation needed.
 
