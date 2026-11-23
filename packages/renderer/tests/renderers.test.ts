@@ -434,7 +434,7 @@ describe('renderBlock', () => {
   // Both cases below assert the marker rather than `''`: a block that silently
   // disappears reaches recipients as a gap in the email with nothing anywhere
   // explaining why. See `src/unrenderable.ts`.
-  it('emits the unrenderable marker for a countdown block (Cloud renders it server-side)', () => {
+  it('emits the unrenderable marker for a countdown block with no countdown image URL', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const block = createCountdownBlock();
     const result = renderBlock(block, ctx);

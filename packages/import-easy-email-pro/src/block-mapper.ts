@@ -112,7 +112,7 @@ const ENTITIES: Record<string, string> = {
 const TABLE_CELL_TYPES = new Set(["standard-table2-td", "td", "th"]);
 
 const COUNTDOWN_NOTE =
-  "marketing-countdown GIF is the timer; Templatical countdown is Cloud-only";
+  "marketing-countdown GIF is the timer, kept as an image; a Templatical countdown block needs a countdown image provider";
 
 export function isLeafType(type: string | undefined): boolean {
   if (typeof type !== "string") return false;

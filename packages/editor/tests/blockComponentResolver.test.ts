@@ -91,8 +91,8 @@ describe("resolveBlockComponent", () => {
   });
 
   /**
-   * The registry is the ONLY source for `countdown`, on purpose: it's the one
-   * Cloud-only block, so `useEditorCore` registers it as a lazy
+   * The registry is the ONLY source for `countdown`, on purpose: it needs a
+   * host-supplied image URL, so `useEditorCore` registers it as a lazy
    * `defineAsyncComponent` and every fallback map omits it. A static entry in a
    * fallback map would never be reached (registry wins) yet its static import
    * would still drag the module into the eager bundle — which is exactly what
