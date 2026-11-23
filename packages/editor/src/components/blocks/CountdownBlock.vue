@@ -4,7 +4,7 @@ import type {
   CountdownProvider,
   ViewportSize,
 } from "@templatical/types";
-import { countdownAltText } from "@templatical/types";
+import { countdownAltText, countdownTargetTime } from "@templatical/types";
 import { useIntervalFn } from "@vueuse/core";
 import { computed, inject, ref, watch } from "vue";
 import { useI18n } from "../../composables/useI18n";
@@ -46,11 +46,7 @@ useIntervalFn(() => {
   now.value = Date.now();
 }, 1000);
 
-const targetTime = computed(() => {
-  if (!props.block.targetDate) return null;
-  const date = new Date(props.block.targetDate);
-  return isNaN(date.getTime()) ? null : date.getTime();
-});
+const targetTime = computed(() => countdownTargetTime(props.block));
 
 const isExpired = computed(() => {
   if (!targetTime.value) return false;

@@ -7,6 +7,7 @@ import NumberWithSuffix from "./NumberWithSuffix.vue";
 import { useI18n } from "../../composables/useI18n";
 import { inputClass } from "../../constants/styleConstants";
 import type { CountdownBlock } from "@templatical/types";
+import { countdownWallTime } from "@templatical/types";
 import { computed } from "vue";
 import { fontSelectValue } from "../../utils/withCurrentFont";
 
@@ -68,7 +69,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     <input
       type="datetime-local"
       :class="inputClass"
-      :value="block.targetDate"
+      :value="countdownWallTime(block)"
       @input="
         updateField('targetDate', ($event.target as HTMLInputElement).value)
       "

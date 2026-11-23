@@ -70,6 +70,15 @@ describe("CountdownToolbar", () => {
     });
   });
 
+  it("shows a target with an offset as wall time in the block timezone", () => {
+    const wrapper = mountToolbar({
+      targetDate: "2026-12-24T18:00:00+01:00",
+      timezone: "Europe/Berlin",
+    });
+    const date = wrapper.find('input[type="datetime-local"]');
+    expect((date.element as HTMLInputElement).value).toBe("2026-12-24T18:00");
+  });
+
   it("toggles a unit off", async () => {
     const wrapper = mountToolbar({ showDays: true });
     const days = wrapper.findAll('[role="switch"]')[0];

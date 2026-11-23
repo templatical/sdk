@@ -297,7 +297,8 @@ service must keep the image current and handle expiry, including
 **Optional** — `l10n` (object), `fontFamily` (string).
 <!-- END GENERATED FIELDS: countdown -->
 
-- `targetDate` is an ISO date/time string with an explicit offset.
+- `targetDate` is wall-clock time, `"YYYY-MM-DDTHH:mm"`, read in `timezone`;
+  never add `Z` or an offset.
 - `timezone` is an IANA timezone such as `"Europe/Berlin"`.
 - `separator` is `":"`, `"-"` or `" "` between the displayed units.
 - `showDays`, `showHours`, `showMinutes` and `showSeconds` choose the units.

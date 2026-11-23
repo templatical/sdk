@@ -258,7 +258,7 @@ Konfigurieren Sie `init({ countdown: { imageUrl } })`, damit der Block eingefüg
 
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
-| `targetDate` | `string` | ISO-Datum/-Zeit, auf die der Countdown läuft |
+| `targetDate` | `string` | Ortszeit im Format `YYYY-MM-DDTHH:mm`, gelesen in `timezone` |
 | `timezone` | `string` | IANA-Zeitzone, in der das Ziel interpretiert wird |
 | `showDays` / `showHours` / `showMinutes` / `showSeconds` | `boolean` | Welche Einheiten angezeigt werden |
 | `labelDays` / `labelHours` / `labelMinutes` / `labelSeconds` | `string` | Beschriftung unter jeder Einheit |
