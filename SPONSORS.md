@@ -61,14 +61,16 @@ People who supported Templatical for a while. The work they paid for is still in
 
 ## Being listed
 
-**Listing is opt-in, and privacy is the default.** If you sponsor privately, you will not
-appear on this page — not even at a tier whose description mentions it. Sponsoring privately
-is a choice, and a tier description does not override it.
+**A public sponsorship is listed where its tier says; a private one never is.** Public sponsors
+are added with the name and link of the sponsoring account. Tiers whose benefit is "Thanks." carry
+no listing. If you sponsor privately, you will not appear on this page at any tier, whatever the
+tier description says.
 
-Want to be listed, or listed differently?
+Want to be listed differently?
 
-- **To be added** — open an [issue](https://github.com/templatical/sdk/issues) or email
-  <hi@templatical.com> with the name, link and logo you want used.
+- **To set the name, link or logo** — open an [issue](https://github.com/templatical/sdk/issues)
+  or email <hi@templatical.com> with the name, link and logo you want used. Logo tiers need a
+  logo file.
 - **To change or remove your entry** — same, and it will be updated in the next push.
   No explanation needed.
 
