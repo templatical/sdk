@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { lintTemplate } from "@templatical/quality";
+import { countdownTargetTime } from "@templatical/types";
 import type { TemplateContent } from "@templatical/types";
 import { getScene } from "../src/scenes/index";
 import { issuesCanvas, setupBaseCanvas } from "../src/scenes/author/shared";
 import { storageCanvas } from "../src/scenes/storage/canvas";
+import { sampleTargetDate } from "../src/scenes/author/countdown";
 
 const noQuery = { search: new URLSearchParams() };
 /** A page colour visibly off-white, so the blank Defaults email reads as tinted. */
@@ -74,6 +76,24 @@ describe("seeded setup scenes", () => {
     );
     expect(gif.subarray(0, 6).toString()).toMatch(/^GIF8[79]a$/);
     expect(gif.length).toBeLessThan(20_000);
+  });
+
+  it("countdown always opens on a target thirty days ahead", () => {
+    const scene = getScene("countdown")!;
+    const block = scene.content!(noQuery).blocks.find(
+      (candidate) => candidate.id === "countdown-demo",
+    );
+    if (block?.type !== "countdown") throw new Error("missing countdown");
+    const target = countdownTargetTime(block);
+    expect(target).not.toBeNull();
+    const days = (target! - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(29);
+    expect(days).toBeLessThan(31);
+    expect(sampleTargetDate(Date.UTC(2030, 0, 15, 23, 30))).toBe(
+      "2030-02-14T18:00",
+    );
+    expect(scene.snippet).toContain("new Date(Date.now() + 30 * 86_400_000)");
+    expect(scene.snippet).not.toMatch(/targetDate: "\d{4}-/);
   });
 
   it.each(["fonts", "theming", "layout", "shadow-dom-off"])(

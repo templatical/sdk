@@ -4,6 +4,16 @@ import { setupBaseCanvas } from "./shared";
 
 const SAMPLE_GIF = "https://play.templatical.com/countdown-sample.gif";
 
+// The demo counts down to 18:00 Berlin time about thirty days ahead, so the
+// canvas never opens on an expired countdown. The snippet writes the same
+// expression rather than a literal date, which would go stale.
+const DAY_MS = 86_400_000;
+
+export function sampleTargetDate(now = Date.now()): string {
+  const target = new Date(now + 30 * DAY_MS);
+  return `${target.toISOString().slice(0, 10)}T18:00`;
+}
+
 export const countdown: Scene = {
   id: "countdown",
   title: "Countdown",
@@ -26,7 +36,7 @@ export const countdown: Scene = {
       0,
       createCountdownBlock({
         id: "countdown-demo",
-        targetDate: "2026-12-24T18:00:00+01:00",
+        targetDate: sampleTargetDate(),
         timezone: "Europe/Berlin",
       }),
     );
@@ -39,9 +49,12 @@ export const countdown: Scene = {
 import { createCountdownBlock, createDefaultTemplateContent } from "@templatical/types";
 import "@templatical/editor/style.css";
 
+// 18:00 Berlin time, about thirty days ahead.
+const target = new Date(Date.now() + 30 * 86_400_000);
+
 const content = createDefaultTemplateContent();
 content.blocks.push(createCountdownBlock({
-  targetDate: "2026-12-24T18:00:00+01:00",
+  targetDate: \`\${target.toISOString().slice(0, 10)}T18:00\`,
   timezone: "Europe/Berlin",
 }));
 

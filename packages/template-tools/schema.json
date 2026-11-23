@@ -1500,10 +1500,12 @@
           "$ref": "#/definitions/DisplayCondition"
         },
         "targetDate": {
-          "type": "string"
+          "type": "string",
+          "description": "Wall-clock date and time the countdown runs to, `YYYY-MM-DDTHH:mm`, read in `timezone`. `countdownTargetTime` turns it into an instant."
         },
         "timezone": {
-          "type": "string"
+          "type": "string",
+          "description": "IANA timezone `targetDate` is read in, such as `\"Europe/Berlin\"`."
         },
         "showDays": {
           "type": "boolean"

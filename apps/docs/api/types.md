@@ -530,7 +530,7 @@ interface HtmlBlock extends BaseBlock {
 
 ### CountdownBlock
 
-Renders as an animated GIF. That needs a server-side GIF service the SDK does not ship. `@templatical/renderer` emits a `templatical:unrenderable-block` marker instead. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer).
+In the editor, renders as an `<mj-image>` whose `src` is the URL `init({ countdown: { imageUrl } })` returns; the SDK ships no GIF server. A headless `renderToMjml` call needs `blockRenderers.countdown` (with `renderCountdownImage`); without it, or with an empty URL, `@templatical/renderer` emits a `templatical:unrenderable-block` marker. See [Countdown](/guide/countdown) and [Blocks with no renderer](/backend/render#blocks-with-no-renderer).
 
 ```ts
 interface CountdownBlock extends BaseBlock {

@@ -96,6 +96,28 @@ describe('CountdownBlock', () => {
     expect(firstDigit.text()).toBe('02');
   });
 
+  it('reads a wall-clock targetDate in the block timezone, not the process zone', () => {
+    const previous = process.env.TZ;
+    process.env.TZ = 'Pacific/Auckland';
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 11, 24, 12, 0));
+    try {
+      const wrapper = mount({
+        targetDate: '2026-12-24T18:00',
+        timezone: 'Europe/Berlin',
+      });
+      const digits = wrapper
+        .findAll('.tpl\\:gap-2 .tpl\\:text-center > div:first-child')
+        .map((d) => d.text());
+      // 18:00 Berlin is 17:00Z, five hours after the frozen 12:00Z.
+      expect(digits).toEqual(['00', '05', '00', '00']);
+    } finally {
+      vi.useRealTimers();
+      if (previous === undefined) delete process.env.TZ;
+      else process.env.TZ = previous;
+    }
+  });
+
   it('omits disabled units from rendered segments', () => {
     const wrapper = mount({
       targetDate: FUTURE_DATE,

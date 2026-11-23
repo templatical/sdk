@@ -29,7 +29,7 @@ const editor = await init({
 });
 ```
 
-Die Playground-URL liefert ein **statisches Beispiel-GIF**. Sie zeigt die URL-Form und die Darstellung auf der Arbeitsfläche; ihre Abfrageparameter lassen das Bild nicht herunterzählen. Ersetzen Sie die Basis-URL durch Ihren eigenen Endpunkt oder einen URL-basierten Countdown-Bilddienst, der `targetDate` und `timezone` liest und ein Bild liefert, das beim Öffnen der E-Mail aktuell ist. Der Editor bietet den Countdown-Block nur an, wenn `countdown` konfiguriert ist.
+Die Playground-URL liefert ein **festes Beispiel-GIF**: dieselbe 30-Sekunden-Schleife für jede Anfrage. Sie zeigt die URL-Form und die Darstellung auf der Arbeitsfläche; die Abfrageparameter werden ignoriert, und das Bild zählt nicht bis zum Ziel herunter. Ersetzen Sie die Basis-URL durch Ihren eigenen Endpunkt oder einen URL-basierten Countdown-Bilddienst, der `targetDate` und `timezone` liest und ein Bild liefert, das beim Öffnen der E-Mail aktuell ist. Der Editor bietet den Countdown-Block nur an, wenn `countdown` konfiguriert ist.
 
 ## Provider- und Renderer-Vertrag
 
@@ -41,7 +41,7 @@ interface CountdownProvider {
 }
 ```
 
-`imageUrl` läuft synchron und gibt die Bild-URL zurück. `CountdownBlock.targetDate` und `CountdownBlock.timezone` sind Strings; Letzteres ist eine IANA-Zeitzone. Die Bilddatei bestimmt ihre Größe selbst. Für Headless-Rendering und den Alternativtext stehen diese Exporte bereit:
+`imageUrl` läuft synchron und gibt die Bild-URL zurück. `CountdownBlock.targetDate` ist eine Ortszeit im Format `YYYY-MM-DDTHH:mm`, gelesen in `CountdownBlock.timezone`, einer IANA-Zeitzone wie `Europe/Berlin`: der Wert, den das Datumsfeld des Editors schreibt. Ihr Bilddienst liest das Paar genauso. Ein `targetDate` mit `Z` oder einem Offset gilt als dieser Zeitpunkt, und der Editor zeigt ihn als Ortszeit in der Zeitzone des Blocks an. Die Bilddatei bestimmt ihre Größe selbst. Für Headless-Rendering und den Alternativtext stehen diese Exporte bereit:
 
 ```ts
 declare function renderCountdownImage(
@@ -51,9 +51,17 @@ declare function renderCountdownImage(
 ): string;
 
 declare function countdownAltText(block: CountdownBlock, locale: string | undefined): string;
+
+declare function countdownTargetTime(
+  block: Pick<CountdownBlock, "targetDate" | "timezone">,
+): number | null;
+
+declare function countdownWallTime(
+  block: Pick<CountdownBlock, "targetDate" | "timezone">,
+): string;
 ```
 
-`renderCountdownImage` kommt aus `@templatical/renderer`. Die Funktion gibt ein `<mj-image>` mit dem übergebenen `src`, maskierten Attributen und lokalisiertem Alternativtext zurück. `countdownAltText` kommt aus `@templatical/types` und beschreibt das Zieldatum in der Sprache des Templates. Der lokale Renderpfad des Editors verwendet automatisch die Template-Sprache. Ein Host-Override mit `render.toMjml` verantwortet seinen eigenen Renderpfad.
+`renderCountdownImage` kommt aus `@templatical/renderer`. Die Funktion gibt ein `<mj-image>` mit dem übergebenen `src`, maskierten Attributen und lokalisiertem Alternativtext zurück. `countdownAltText` kommt aus `@templatical/types` und beschreibt das Zieldatum in der Sprache des Templates. `countdownTargetTime` gibt das Ziel in Epoch-Millisekunden zurück, oder `null` bei leerem, unlesbarem oder unmöglichem Datum sowie bei einem Datum ohne Offset und unbekannter Zeitzone (ein Datum mit `Z` oder Offset ignoriert `timezone`); `countdownWallTime` gibt es als `YYYY-MM-DDTHH:mm` in der Zeitzone des Blocks zurück, oder `""`. Der lokale Renderpfad des Editors verwendet automatisch die Template-Sprache. Ein Host-Override mit `render.toMjml` verantwortet seinen eigenen Renderpfad.
 
 ## Headless-MJML
 
@@ -73,7 +81,7 @@ const imageUrl = (block: CountdownBlock): string => {
 
 const content = createDefaultTemplateContent();
 content.blocks.push(createCountdownBlock({
-  targetDate: "2026-12-24T18:00:00+01:00",
+  targetDate: "2026-12-24T18:00",
   timezone: "Europe/Berlin",
 }));
 
@@ -160,7 +168,7 @@ import { createCountdownBlock } from "@templatical/types";
 
 const content = editor.getContent();
 content.blocks.push(createCountdownBlock({
-  targetDate: "2026-12-24T18:00:00+01:00",
+  targetDate: "2026-12-24T18:00",
   timezone: "Europe/Berlin",
 }));
 editor.setContent(content);
@@ -172,4 +180,4 @@ if (!mjml.includes('<mj-image\n  src="https://play.templatical.com/countdown-sam
 
 ## Im Playground
 
-Das [Countdown-Setup](https://play.templatical.com/scenes/countdown) verwendet das statische Beispiel-GIF. So können Sie Provider und Arbeitsfläche ohne Bilddienst prüfen.
+Das [Countdown-Setup](https://play.templatical.com/scenes/countdown) verwendet das feste Beispiel-GIF. So können Sie Provider und Arbeitsfläche ohne Bilddienst prüfen.

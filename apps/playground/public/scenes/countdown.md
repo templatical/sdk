@@ -14,9 +14,12 @@ import { init } from "@templatical/editor";
 import { createCountdownBlock, createDefaultTemplateContent } from "@templatical/types";
 import "@templatical/editor/style.css";
 
+// 18:00 Berlin time, about thirty days ahead.
+const target = new Date(Date.now() + 30 * 86_400_000);
+
 const content = createDefaultTemplateContent();
 content.blocks.push(createCountdownBlock({
-  targetDate: "2026-12-24T18:00:00+01:00",
+  targetDate: `${target.toISOString().slice(0, 10)}T18:00`,
   timezone: "Europe/Berlin",
 }));
 

@@ -660,7 +660,12 @@ export interface TableBlock extends BaseBlock {
  */
 export interface CountdownBlock extends BaseBlock {
   type: "countdown";
+  /**
+   * Wall-clock date and time the countdown runs to, `YYYY-MM-DDTHH:mm`, read
+   * in `timezone`. `countdownTargetTime` turns it into an instant.
+   */
   targetDate: string;
+  /** IANA timezone `targetDate` is read in, such as `"Europe/Berlin"`. */
   timezone: string;
   showDays: boolean;
   showHours: boolean;

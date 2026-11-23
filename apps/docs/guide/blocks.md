@@ -258,7 +258,7 @@ Configure `init({ countdown: { imageUrl } })` to make the block insertable and r
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `targetDate` | `string` | ISO date/time the countdown runs to |
+| `targetDate` | `string` | Wall-clock date and time, `YYYY-MM-DDTHH:mm`, read in `timezone` |
 | `timezone` | `string` | IANA timezone the target is interpreted in |
 | `showDays` / `showHours` / `showMinutes` / `showSeconds` | `boolean` | Which units to display |
 | `labelDays` / `labelHours` / `labelMinutes` / `labelSeconds` | `string` | Caption under each unit |

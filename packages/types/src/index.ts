@@ -62,7 +62,12 @@ export {
 } from "./blocks";
 export { parsePercentWidth, roundHundredths } from "./percent-width";
 export type { CountdownProvider } from "./countdown";
-export { COUNTDOWN_ALT_LOCALES, countdownAltText } from "./countdown";
+export {
+  COUNTDOWN_ALT_LOCALES,
+  countdownAltText,
+  countdownTargetTime,
+  countdownWallTime,
+} from "./countdown";
 export {
   COLUMN_LAYOUT_PERCENTS,
   columnWidthsIssue,

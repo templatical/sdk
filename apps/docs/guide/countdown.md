@@ -29,7 +29,7 @@ const editor = await init({
 });
 ```
 
-The playground URL returns a **static sample GIF**. It demonstrates the URL shape and canvas rendering; its query parameters do not make it count down. Replace its base URL with your own endpoint or a URL-based countdown image service that reads `targetDate` and `timezone` and returns an image that remains current when the recipient opens the email. The editor makes the Countdown block insertable only when `countdown` is configured.
+The playground URL returns a **fixed sample GIF**: the same 30-second loop for every request. It demonstrates the URL shape and canvas rendering; it ignores the query parameters and does not count down to the target. Replace its base URL with your own endpoint or a URL-based countdown image service that reads `targetDate` and `timezone` and returns an image that remains current when the recipient opens the email. The editor makes the Countdown block insertable only when `countdown` is configured.
 
 ## Provider and renderer contract
 
@@ -41,7 +41,7 @@ interface CountdownProvider {
 }
 ```
 
-`imageUrl` runs synchronously and returns the image URL. `CountdownBlock.targetDate` and `CountdownBlock.timezone` are strings; the latter is an IANA timezone. The image supplies its own size. The following exports are available for headless rendering and recipient-facing alt text:
+`imageUrl` runs synchronously and returns the image URL. `CountdownBlock.targetDate` is wall-clock time, `YYYY-MM-DDTHH:mm`, read in `CountdownBlock.timezone`, an IANA timezone such as `Europe/Berlin`: the value the editor's date field writes. Your image service reads the pair the same way. A `targetDate` with `Z` or an offset is read as that instant, and the editor shows it as wall time in the block's timezone. The image supplies its own size. The following exports are available for headless rendering and recipient-facing alt text:
 
 ```ts
 declare function renderCountdownImage(
@@ -51,9 +51,17 @@ declare function renderCountdownImage(
 ): string;
 
 declare function countdownAltText(block: CountdownBlock, locale: string | undefined): string;
+
+declare function countdownTargetTime(
+  block: Pick<CountdownBlock, "targetDate" | "timezone">,
+): number | null;
+
+declare function countdownWallTime(
+  block: Pick<CountdownBlock, "targetDate" | "timezone">,
+): string;
 ```
 
-`renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
+`renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. `countdownTargetTime` returns the target as epoch milliseconds, or `null` for an empty, unreadable or impossible date, or for an offset-free date with an unknown timezone (a date with `Z` or an offset ignores `timezone`); `countdownWallTime` returns it as `YYYY-MM-DDTHH:mm` in the block's timezone, or `""`. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
 
 ## Headless MJML
 
@@ -73,7 +81,7 @@ const imageUrl = (block: CountdownBlock): string => {
 
 const content = createDefaultTemplateContent();
 content.blocks.push(createCountdownBlock({
-  targetDate: "2026-12-24T18:00:00+01:00",
+  targetDate: "2026-12-24T18:00",
   timezone: "Europe/Berlin",
 }));
 
@@ -160,7 +168,7 @@ import { createCountdownBlock } from "@templatical/types";
 
 const content = editor.getContent();
 content.blocks.push(createCountdownBlock({
-  targetDate: "2026-12-24T18:00:00+01:00",
+  targetDate: "2026-12-24T18:00",
   timezone: "Europe/Berlin",
 }));
 editor.setContent(content);
@@ -172,4 +180,4 @@ if (!mjml.includes('<mj-image\n  src="https://play.templatical.com/countdown-sam
 
 ## In the playground
 
-The [Countdown setup](https://play.templatical.com/scenes/countdown) uses the static sample GIF so you can inspect the provider and the canvas without an image service.
+The [Countdown setup](https://play.templatical.com/scenes/countdown) uses the fixed sample GIF so you can inspect the provider and the canvas without an image service.
