@@ -29,9 +29,8 @@ import en from "../src/i18n/locales/en";
  * The dialog's three recipient shapes and its two outcome states.
  *
  * The shapes are chosen entirely by the allowlist, with no mode flag:
- * omitted ⇒ free text, one entry ⇒ read-only, several ⇒ a picker. Cloud only
- * ever takes the latter two, so the free-text branch is the one that exists for
- * BYO senders and the one most likely to break unnoticed.
+ * omitted ⇒ free text, one entry ⇒ read-only, several ⇒ a picker. The free-text
+ * branch matters for providers without an allowlist.
  *
  * TestEmailModal wraps TplModal, which teleports into the injected popover root —
  * so the rendered subtree lives outside `wrapper.element` and assertions query

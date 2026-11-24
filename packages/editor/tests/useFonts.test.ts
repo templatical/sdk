@@ -243,10 +243,8 @@ describe('useFonts', () => {
       expect(defaultFont.value).toBe('Georgia');
     });
 
-    // A custom family stays the default on every plan. `setCustomFontsEnabled`
-    // is gone with the `custom_fonts` entitlement: it existed only so Cloud
-    // could withdraw custom faces from an unentitled plan, which made the paid
-    // tier offer fewer fonts than the free editor.
+    // A custom family stays the default when configured. Font availability
+    // follows the consumer's font configuration rather than a separate gate.
     it('keeps a custom family as the default', () => {
       const { defaultFont } = useFonts({
         customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],

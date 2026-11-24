@@ -1052,7 +1052,7 @@ const da: typeof en = {
     reorderAnnouncements: "Meddelelser om flytning af blokke",
   },
 
-  // Design Reference (cloud)
+  // Editor loading and error messages
   errors: {
     editorLoading: "Indlæser editor...",
     editorLoadFailed: "Editoren kunne ikke indlæses.",

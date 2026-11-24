@@ -289,25 +289,15 @@ export interface ThemeOverrides {
 }
 
 /**
- * The `code` any provider sends in a refusal. Cloud and AI codes are named
- * here; collaboration refusal codes flow through `CollaborationConflict`.
- * Any other string reaches `SdkError.code` without an SDK release.
+ * The `code` any provider sends in a refusal. Codes read by the editor and AI
+ * features are named here; collaboration refusal codes flow through
+ * `CollaborationConflict`. Provider-defined strings also reach `SdkError.code`.
  */
 export type SdkErrorCode =
-  | "invalid_credentials"
-  | "token_invalid"
-  | "token_revoked"
-  | "browser_not_allowed"
-  | "token_scope_mismatch"
   | "limit_reached"
   | "feature_unavailable"
   | "not_found"
-  | "user_required"
-  | "not_author"
-  | "mcp_not_allowed"
   | "content_too_large"
-  | "recipient_not_allowed"
-  | "send_failed"
   | "rate_limited"
   | "ai_turn_running"
   | "ai_output_invalid"

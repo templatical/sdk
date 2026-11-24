@@ -13,8 +13,8 @@ import { useVersionHistoryFeature } from "../src/composables/useVersionHistoryFe
  *
  * The case that matters most here is **synchronous scrubbing**: once the preview
  * is open, stepping to another version whose content is already in hand must
- * swap the canvas in the same tick. A provider that hydrates its list (Cloud
- * does) is the common case, and turning that into an async hop would visibly
+ * swap the canvas in the same tick. A provider that hydrates its list can
+ * serve this without an additional request; turning it into an async hop would
  * regress the feature's primary interaction — so it is asserted by observing
  * `setContent` *before* awaiting anything.
  */

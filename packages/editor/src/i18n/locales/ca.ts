@@ -1065,7 +1065,7 @@ const ca: typeof en = {
     reorderAnnouncements: "Avisos de reordenació de blocs",
   },
 
-  // Design Reference (cloud)
+  // Editor loading and error messages
   errors: {
     editorLoading: "Carregant l'editor...",
     editorLoadFailed: "No s'ha pogut carregar l'editor.",

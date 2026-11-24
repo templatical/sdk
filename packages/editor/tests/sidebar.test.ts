@@ -749,8 +749,7 @@ describe('Sidebar', () => {
     expect(btn.text()).not.toContain('7');
   });
 
-  // Guards the dead-button class of bug: Cloud provides the capability before
-  // its plan config resolves, so an unavailable feature must render nothing
+  // Guards the dead-button class of bug: an unavailable capability renders nothing
   // even when the list happens to be non-empty.
   it('does NOT show the saved blocks browser when the feature is unavailable', () => {
     const { editor } = makeEditor();

@@ -15,9 +15,8 @@ import { join } from "node:path";
  * 189px sample/label toggle plus a 40px gap, and Viewport, DarkMode and
  * **Preview** each jumped 114.5px left while the version-history menu jumped
  * 114.6px right. Re-clicking Preview to leave the mode meant hunting for a
- * button that had moved half a toggle's width away. Cloud had it worse: its
- * `CollaboratorBar` sat in the same track, so the button slid out from under
- * the cursor whenever anyone joined or left.
+ * button that had moved half a toggle's width away. Dynamic controls in the
+ * same track could also shift the button when their contents changed.
  *
  * The invariant that fixes the whole class: the centre track's width must
  * stay constant during a session. Its three setup-time opt-outs are plain
@@ -121,8 +120,7 @@ describe("header centre track holds a constant width", () => {
   });
 
   it("offers no slot in the centre column", () => {
-    // `center-extras` was the hole Cloud's `CollaboratorBar` came through.
-    // Retired rather than left empty: a slot nobody fills is an invitation.
+    // The center track has no slot so dynamic controls cannot shift its buttons.
     expect(centerTrack()).not.toContain("<slot");
     expect(headerComponent).not.toContain("center-extras");
     expect(editorSource).not.toContain("center-extras");

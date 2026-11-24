@@ -18,8 +18,7 @@ import { useCommentsFeature } from "../src/composables/useCommentsFeature";
  * change. Disabling instead of hiding would read as a broken UI; a stray enabled
  * button would read as a working one that silently rejects.
  *
- * These cases also pin that the panel is shared rather than cloud-only: it takes
- * the feature as a prop instead of injecting an auth manager, and renders the
+ * These cases pin that the panel takes the feature as a prop and renders the
  * camelCase `Comment` contract rather than any backend's wire shape.
  */
 

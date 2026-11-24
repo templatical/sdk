@@ -557,8 +557,8 @@ export function useEditorCore(
   // Per-field color configs are audited ONCE per definition, here at
   // registration — not in `ColorField.vue`, which remounts on every block
   // selection and renders once per repeater item. Keyed by
-  // `<block type>:<field path>:<kind>` so a re-registration (Cloud defers
-  // registration to `initialize()`) can't repeat a message either — the same
+  // `<block type>:<field path>:<kind>` so re-registering a definition
+  // cannot repeat a message — the same
   // once-guard `Sidebar.vue` uses for unknown `paletteBlocks` entries.
   const warnedColorFieldIssues = new Set<string>();
 
@@ -573,7 +573,7 @@ export function useEditorCore(
     }
   }
 
-  // Register custom blocks provided at init time (Cloud may defer this to initialize())
+  // Register custom blocks provided at init time.
   if (config.customBlocks?.length) {
     registerCustomBlocks(config.customBlocks);
   }
@@ -605,12 +605,9 @@ export function useEditorCore(
     );
   }
 
-  // Cmd+S means "persist now", and there are two ways to mean it. A configured
-  // templates provider owns the phrase outright, so it wins — including in Cloud,
-  // whose save routes through the lint save-gate *inside* that capability rather
-  // than through a second `onSave` hook the shortcut had to know about.
-  // Otherwise the closest honest reading is "send the change notification now":
-  // flushing the debounce is what a consumer persisting from `onChange` needs.
+  // Cmd+S means "persist now". A templates capability owns the shortcut,
+  // including any save guard it applies. Without one, flush the auto-save
+  // debounce so a consumer persisting from `onChange` receives the latest edit.
   // Read off the capability rather than a new option, the same way the pick
   // session is.
   function handleSaveShortcut(): void {
@@ -880,9 +877,8 @@ export function useEditorCore(
     config.displayConditions?.onRequest ?? null,
   );
 
-  // Default empty capabilities for OSS mode. Cloud contributes its entries by
-  // mutating *this* object in the runtime's `ready` hook rather than providing
-  // a second one — injecting components hold this reference, so a replacement
+  // Start with empty capabilities, then add configured feature capabilities
+  // to this object. Injecting components hold this reference, so a replacement
   // would never reach them.
   provide(CAPABILITIES_KEY, options.capabilities ?? {});
 

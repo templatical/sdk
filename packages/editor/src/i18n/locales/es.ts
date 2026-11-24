@@ -1062,7 +1062,7 @@ const es: typeof en = {
     reorderAnnouncements: "Anuncios de reordenación de bloques",
   },
 
-  // Design Reference (cloud)
+  // Editor loading and error messages
   errors: {
     editorLoading: "Cargando el editor...",
     editorLoadFailed: "Error al cargar el editor.",

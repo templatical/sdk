@@ -151,8 +151,7 @@ export function useTemplateLint(
     issues.value = result;
   }
 
-  // Re-run when severity overrides change at runtime (rare, but useful for
-  // cloud plan-config merges).
+  // Re-run when severity overrides change at runtime.
   const stopOptionsWatch = watch(
     () => opts.options,
     () => {

@@ -1058,7 +1058,7 @@ const ptBR: typeof en = {
     reorderAnnouncements: "Anúncios de reordenação de blocos",
   },
 
-  // Design Reference (cloud)
+  // Editor loading and error messages
   errors: {
     editorLoading: "Carregando editor...",
     editorLoadFailed: "Falha ao carregar o editor.",

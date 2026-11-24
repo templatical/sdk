@@ -16,7 +16,7 @@ import { CAPABILITIES_KEY, EDITOR_KEY } from "../src/keys";
  *
  * The whole point of the session being *transient* is that it never touches
  * `EditorState.selectedBlockId` — that's what keeps it out of core state, out of
- * Cloud's single-block selection broadcast, and out of block locking. These
+ * other selection consumers, and out of block locking. These
  * tests pin that: while picking, a block click toggles the pick and selection is
  * left alone; outside a session the click selects as before.
  */

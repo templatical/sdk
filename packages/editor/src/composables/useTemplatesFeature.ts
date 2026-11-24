@@ -42,12 +42,6 @@ export interface UseTemplatesFeatureOptions {
    * `false` to own that guard yourself.
    */
   guardUnsavedChanges?: boolean;
-  /**
-   * Extra gate on top of the provider being present. Read reactively, so a
-   * future adapter can defer to an entitlement that resolves after setup. Omit
-   * for always-available (the OSS case: a configured provider is the whole gate).
-   */
-  isAvailable?: () => boolean;
 }
 
 export interface UseTemplatesFeatureReturn {
@@ -130,7 +124,7 @@ export function useTemplatesFeature(
 
   const canCreate = computed(() => typeof provider.create === "function");
   const canSave = computed(() => typeof provider.save === "function");
-  const isAvailable = computed(() => options.isAvailable?.() ?? true);
+  const isAvailable = computed(() => true);
 
   const name = computed(() => editor.state.template?.name);
   // Prefers `updatedAt`; `createdAt` is the fallback for a store that records

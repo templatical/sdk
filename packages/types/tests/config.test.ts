@@ -22,8 +22,8 @@ describe("SdkError", () => {
     });
 
     it("keeps a code the known list does not name", () => {
-      const error = new SdkError("Later.", 403, "user_required");
-      expect(error.code).toBe("user_required");
+      const error = new SdkError("Later.", 403, "provider_custom_refusal");
+      expect(error.code).toBe("provider_custom_refusal");
     });
 
     it("defaults code to undefined when not provided", () => {

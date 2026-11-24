@@ -1,6 +1,6 @@
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
-import { effectScope, nextTick, reactive, ref } from "vue";
+import { effectScope, nextTick, reactive, shallowReactive } from "vue";
 import type {
   Comment,
   CommentChange,
@@ -19,8 +19,8 @@ import { useCommentsFeature } from "../src/composables/useCommentsFeature";
  *   explicitly empty `allowedRecipients` disable test email.
  * - **`subscribe` feeds the remote-apply paths**, and is genuinely optional: a
  *   provider without it behaves identically minus the push.
- * - **Nothing is fetched until the panel opens.** A review panel nobody opens
- *   should cost no round-trip.
+ * - **Threads load when a template is attached.** The header badge and block
+ *   indicators need the list before the panel opens.
  */
 
 const USER: EditorUser = { id: "u-1", name: "Ada" };
@@ -43,8 +43,6 @@ function setup(
   opts: {
     user?: EditorUser | null;
     templateId?: string | null;
-    isOpen?: ReturnType<typeof ref<boolean>>;
-    isAvailable?: () => boolean;
   } = {},
 ) {
   const provider: CommentsProvider = {
@@ -68,17 +66,16 @@ function setup(
 
   const scope = effectScope();
   let feature!: ReturnType<typeof useCommentsFeature>;
+  const featureOptions = shallowReactive({
+    provider,
+    editor,
+    user: opts.user === undefined ? USER : opts.user,
+  });
   scope.run(() => {
-    feature = useCommentsFeature({
-      provider,
-      editor,
-      user: opts.user === undefined ? USER : opts.user,
-      isOpen: opts.isOpen,
-      isAvailable: opts.isAvailable,
-    });
+    feature = useCommentsFeature(featureOptions);
   });
 
-  return { provider, editor, feature, scope };
+  return { provider, editor, feature, featureOptions, scope };
 }
 
 describe("useCommentsFeature", () => {
@@ -93,29 +90,14 @@ describe("useCommentsFeature", () => {
       expect(feature.isAvailable.value).toBe(false);
     });
 
-    it("stays unavailable without a user even when the extra gate says yes", () => {
-      // The two conditions are ANDed and identity is not negotiable: Cloud's plan
-      // entitlement cannot buy an unattributable comment.
-      const { feature } = setup({}, { user: null, isAvailable: () => true });
-      expect(feature.isAvailable.value).toBe(false);
-    });
-
-    it("defers to the extra gate when one is supplied", () => {
-      const gate = ref(false);
-      const { feature } = setup({}, { isAvailable: () => gate.value });
-
-      expect(feature.isAvailable.value).toBe(false);
-      gate.value = true;
-      expect(feature.isAvailable.value).toBe(true);
-    });
-
-    it("closes an open panel when the feature goes away", async () => {
-      const gate = ref(true);
-      const { feature } = setup({}, { isAvailable: () => gate.value });
+    it("closes an open panel when the user is cleared", async () => {
+      const { feature, featureOptions } = setup();
       feature.toggle();
       expect(feature.isOpen.value).toBe(true);
 
-      gate.value = false;
+      // A consumer can replace the reactive editor user while the panel is open.
+      // The feature should close when it can no longer attribute comments.
+      featureOptions.user = null;
       await nextTick();
 
       expect(feature.isOpen.value).toBe(false);
@@ -228,19 +210,6 @@ describe("useCommentsFeature", () => {
       const { feature } = setup({}, { user: null });
       feature.openForBlock("blk-7");
       expect(feature.filterBlockId.value).toBe(null);
-      expect(feature.isOpen.value).toBe(false);
-    });
-  });
-
-  describe("panel state", () => {
-    it("uses a caller-supplied ref, so Cloud keeps its panels mutually exclusive", () => {
-      const shared = ref(false);
-      const { feature } = setup({}, { isOpen: shared });
-
-      feature.toggle();
-      expect(shared.value).toBe(true);
-
-      shared.value = false;
       expect(feature.isOpen.value).toBe(false);
     });
   });

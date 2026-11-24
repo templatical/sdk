@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent, h, nextTick, reactive, ref } from 'vue';
+import { defineComponent, h, nextTick, reactive } from 'vue';
 import { mount } from '@vue/test-utils';
 import { createSectionBlock, createTitleBlock } from '@templatical/types';
 import type { SavedBlock, SavedBlocksProvider } from '@templatical/types';
@@ -28,7 +28,6 @@ function createMockProvider(
  */
 function withFeature(options: {
   provider?: SavedBlocksProvider;
-  isAvailable?: () => boolean;
   addBlock?: ReturnType<typeof vi.fn>;
   previewMode?: boolean;
 }) {
@@ -43,7 +42,6 @@ function withFeature(options: {
         feature = useSavedBlocksFeature({
           provider,
           editor: { addBlock, state },
-          isAvailable: options.isAvailable,
         });
         return () => h('div');
       },
@@ -296,23 +294,6 @@ describe('useSavedBlocksFeature', () => {
       expect(provider.list).not.toHaveBeenCalled();
     });
 
-    it('fetches nothing when availability flips true', async () => {
-      const provider = createMockProvider();
-      // Cloud's `hasFeature()` reads plan config that resolves asynchronously;
-      // that flip must no longer trigger a load of its own.
-      const allowed = ref(false);
-      const { feature } = withFeature({
-        provider,
-        isAvailable: () => allowed.value,
-      });
-
-      allowed.value = true;
-      await nextTick();
-
-      expect(feature.isAvailable.value).toBe(true);
-      expect(provider.list).not.toHaveBeenCalled();
-    });
-
     it('loads when the browser opens', async () => {
       const provider = createMockProvider();
       const { feature } = withFeature({ provider });
@@ -431,9 +412,9 @@ describe('useSavedBlocksFeature', () => {
     });
 
     it('mirrors availability onto the capability', () => {
-      const { feature } = withFeature({ isAvailable: () => false });
+      const { feature } = withFeature({});
 
-      expect(feature.capability.isAvailable.value).toBe(false);
+      expect(feature.capability.isAvailable.value).toBe(true);
     });
   });
 
