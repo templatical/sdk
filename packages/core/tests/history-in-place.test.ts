@@ -141,46 +141,52 @@ describe("snapshot history applied in place", () => {
     expect(editor.content.value).toEqual(edited);
   });
 
-  it("round-trips seeded sequences of edits in both directions", () => {
-    let inPlaceSeeds = 0;
-    for (let seed = 1; seed <= 50; seed++) {
-      const gen = createGenerator(seed);
-      const content = ref(randomContent(gen));
-      const history = useHistory({
-        content,
-        setContent: (snapshot) => {
-          content.value = snapshot;
-        },
-      });
-      const start = safeClone(content.value);
-      // A restore past eight operations replaces the content (see the bulk
-      // group below), so identity holds only when every step stays under it.
-      let withinCap = true;
-      for (let step = 0; step < 5; step++) {
-        history.record();
-        const before = content.value;
-        content.value = randomEdit(gen, content.value);
-        if (diffModule.diffContent(before, content.value).length > 8) {
-          withinCap = false;
+  // 50 seeds take under a second locally and 7 s on a CI runner under
+  // coverage, past vitest's 5 s default; fewer seeds would cover less.
+  it(
+    "round-trips seeded sequences of edits in both directions",
+    { timeout: 30_000 },
+    () => {
+      let inPlaceSeeds = 0;
+      for (let seed = 1; seed <= 50; seed++) {
+        const gen = createGenerator(seed);
+        const content = ref(randomContent(gen));
+        const history = useHistory({
+          content,
+          setContent: (snapshot) => {
+            content.value = snapshot;
+          },
+        });
+        const start = safeClone(content.value);
+        // A restore past eight operations replaces the content (see the bulk
+        // group below), so identity holds only when every step stays under it.
+        let withinCap = true;
+        for (let step = 0; step < 5; step++) {
+          history.record();
+          const before = content.value;
+          content.value = randomEdit(gen, content.value);
+          if (diffModule.diffContent(before, content.value).length > 8) {
+            withinCap = false;
+          }
         }
+        const live = content.value;
+        const end = safeClone(content.value);
+        for (let step = 0; step < 5; step++) history.undo();
+        if (withinCap) {
+          expect(content.value, `undo identity seed ${seed}`).toBe(live);
+        }
+        expect(content.value, `undo seed ${seed}`).toEqual(start);
+        for (let step = 0; step < 5; step++) history.redo();
+        if (withinCap) {
+          expect(content.value, `redo identity seed ${seed}`).toBe(live);
+          inPlaceSeeds++;
+        }
+        expect(content.value, `redo seed ${seed}`).toEqual(end);
+        history.destroy();
       }
-      const live = content.value;
-      const end = safeClone(content.value);
-      for (let step = 0; step < 5; step++) history.undo();
-      if (withinCap) {
-        expect(content.value, `undo identity seed ${seed}`).toBe(live);
-      }
-      expect(content.value, `undo seed ${seed}`).toEqual(start);
-      for (let step = 0; step < 5; step++) history.redo();
-      if (withinCap) {
-        expect(content.value, `redo identity seed ${seed}`).toBe(live);
-        inPlaceSeeds++;
-      }
-      expect(content.value, `redo seed ${seed}`).toEqual(end);
-      history.destroy();
-    }
-    expect(inPlaceSeeds).toBeGreaterThanOrEqual(35);
-  });
+      expect(inPlaceSeeds).toBeGreaterThanOrEqual(35);
+    },
+  );
 
   it("replaces the full snapshot if an operation fails after an earlier write", () => {
     const content = createDefaultTemplateContent();
