@@ -185,14 +185,6 @@ test.describe("Setup catalog", () => {
     await expect.poll(importColor).toBe("rgb(198, 120, 221)");
   });
 
-  test("does not link to a retired Cloud route", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await expect(page.locator('a[href="#cloud"]')).toHaveCount(0);
-  });
-
   test("has no Shadow DOM toggle on either header", async ({
     chooserPage,
     editorPage,

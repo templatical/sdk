@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { defineComponent, h, reactive, ref } from "vue";
+import { defineComponent, h, reactive } from "vue";
 import { mount } from "@vue/test-utils";
 import type {
   Template,
@@ -77,7 +77,6 @@ function withFeature(options: {
   provider?: TemplatesProvider;
   editor?: MockEditor;
   guardUnsavedChanges?: boolean;
-  isAvailable?: () => boolean;
 }) {
   const provider = options.provider ?? createProvider();
   const editor = options.editor ?? createEditor({ template: { id: "tpl_1" } });
@@ -90,7 +89,6 @@ function withFeature(options: {
           provider,
           editor,
           guardUnsavedChanges: options.guardUnsavedChanges,
-          isAvailable: options.isAvailable,
         });
         return () => h("div");
       },
@@ -204,17 +202,6 @@ describe("useTemplatesFeature", () => {
 
       expect(feature.canSave.value).toBe(false);
       expect(feature.canCreate.value).toBe(true);
-    });
-
-    it("tracks an external availability gate that flips after setup", () => {
-      // Read reactively, not snapshotted: a future adapter resolves its
-      // entitlement after capabilities are already provided.
-      const allowed = ref(false);
-      const { feature } = withFeature({ isAvailable: () => allowed.value });
-
-      expect(feature.isAvailable.value).toBe(false);
-      allowed.value = true;
-      expect(feature.isAvailable.value).toBe(true);
     });
 
     it("mirrors the editor's template identity and saving flag", () => {

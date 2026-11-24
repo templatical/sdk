@@ -417,8 +417,8 @@ describe("createLocalStorageMediaProvider", () => {
     });
   });
 
-  describe("cloud extras", () => {
-    it("disables folders and Cloud-only methods", () => {
+  describe("unsupported optional media operations", () => {
+    it("disables folders and other unsupported operations", () => {
       stubLocalStorage();
       const provider = createLocalStorageMediaProvider();
 

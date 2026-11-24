@@ -8,9 +8,8 @@ export interface UseConditionPreviewReturn {
 }
 
 /**
- * The slice of an editor this needs — deliberately structural, so both the OSS
- * and the Cloud `useEditor` satisfy it without either having to grow toward the
- * other.
+ * The slice of an editor this needs is deliberately structural, so a consumer
+ * can supply the required selection behavior without depending on a full editor.
  */
 export interface ConditionPreviewEditor {
   state: { readonly selectedBlockId: string | null };

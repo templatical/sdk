@@ -231,8 +231,8 @@ describe("useMediaFeature", () => {
   });
 
   it("observes a getter-backed maxFileSize that fills after setup", async () => {
-    // Cloud exposes maxFileSize as a getter over plan config that arrives
-    // after construction. A snapshot at setup would pin the pre-check to
+    // A provider may expose maxFileSize as a getter that fills after
+    // construction. A snapshot at setup would pin the pre-check to
     // "no cap" and let an oversize drop through once the getter fills.
     const backing: { maxFileSize?: number } = {};
     const create = vi.fn().mockResolvedValue(ASSET);

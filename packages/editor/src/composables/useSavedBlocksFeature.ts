@@ -9,7 +9,7 @@ import { cloneBlock } from "@templatical/types";
 import { SAVED_BLOCKS_KEY } from "../keys";
 import type { EditorCapabilities } from "../types/editor-capabilities";
 
-/** Minimal slice of the editor this feature needs — satisfied by OSS and Cloud alike. */
+/** Minimal slice of the editor this feature needs. */
 interface SavedBlocksEditor {
   addBlock: (
     block: Block,
@@ -22,16 +22,10 @@ interface SavedBlocksEditor {
 }
 
 export interface UseSavedBlocksFeatureOptions {
-  /** Storage backend — consumer-supplied in OSS, the Cloud adapter in Cloud. */
+  /** Storage backend supplied by the consumer. */
   provider: SavedBlocksProvider;
   editor: SavedBlocksEditor;
   onError?: (error: Error) => void;
-  /**
-   * Whether the feature may be used. Read reactively, so Cloud can defer to a
-   * plan entitlement that only resolves after its async config fetch. Omit for
-   * always-available (the OSS case: a configured provider is the whole gate).
-   */
-  isAvailable?: () => boolean;
 }
 
 export interface UseSavedBlocksFeatureReturn {
@@ -69,16 +63,14 @@ export interface UseSavedBlocksFeatureReturn {
  * session, the insert operation, and the capability object the shared UI gates
  * on.
  *
- * Both `Editor.vue` (OSS) and `useCloudInitialization` (Cloud) call this with
- * their own provider, so the two entry points run identical logic over
- * different transports. Nothing here is auth- or plan-aware — callers decide
- * whether the feature is available *before* constructing it.
+ * `Editor.vue` constructs this with the configured saved-blocks provider.
+ * The provider is the feature's availability condition; this code does not
+ * manage authentication or plans.
  *
  * **The pick session is deliberately local to this feature.** Choosing which
  * blocks to save happens on the canvas (the user's mental model is spatial),
  * but it does NOT touch `EditorState.selectedBlockId`: keeping it a transient
- * mode avoids a breaking core-state change, leaves Cloud's single-block
- * selection broadcast and block locking untouched, and steers clear of
+ * mode keeps selection and block locking independent, and steers clear of
  * Sortable multi-drag. Promote it to real multi-select only if a second
  * consumer needs it.
  *
@@ -188,7 +180,7 @@ export function useSavedBlocksFeature(
   }
 
   const count = computed(() => headless.savedBlocks.value.length);
-  const isAvailable = computed(() => options.isAvailable?.() ?? true);
+  const isAvailable = computed(() => true);
 
   /**
    * Nothing is fetched at mount — the list loads when the browser or the save

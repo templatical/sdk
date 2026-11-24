@@ -157,7 +157,7 @@ test.describe("Test email", () => {
     // real MJML must arrive — this is the one place the whole optional-peer chain
     // is exercised in a browser.
     expect(payload?.mjml?.startsWith("<mjml")).toBe(true);
-    // The allowlist is echoed back so one `send` stays portable to Cloud.
+    // The allowlist is echoed back so the sender can enforce it server-side.
     expect(payload?.allowedRecipients).toEqual(ALLOWED);
   });
 

@@ -4,7 +4,7 @@ import type { UseCommentsReturn } from "@templatical/core";
 import type { CommentsProvider, EditorUser } from "@templatical/types";
 import type { EditorCapabilities } from "../types/editor-capabilities";
 
-/** Minimal slice of the editor this feature needs — OSS and Cloud alike. */
+/** Minimal slice of the editor this feature needs. */
 interface CommentsEditor {
   state: {
     readonly template?: { id: string } | null;
@@ -12,7 +12,7 @@ interface CommentsEditor {
 }
 
 export interface UseCommentsFeatureOptions {
-  /** Storage backend — consumer-supplied in OSS, the Cloud adapter in Cloud. */
+  /** Storage backend supplied by the consumer. */
   provider: CommentsProvider;
   editor: CommentsEditor;
   /**
@@ -20,20 +20,7 @@ export interface UseCommentsFeatureOptions {
    * itself unavailable** — see {@link isAvailable}.
    */
   user?: EditorUser | null;
-  /**
-   * The panel's open state. Cloud passes its own; otherwise a local ref is
-   * used. The open-source AI feature reads this state to keep comments and
-   * AI panels mutually exclusive in their shared 360px gutter.
-   */
-  isOpen?: Ref<boolean>;
   onError?: (error: Error) => void;
-  /**
-   * Extra gate on top of a provider and a user being present — Cloud adds its
-   * `commenting` plan entitlement and "the template must be saved". Read
-   * reactively, so a Cloud entitlement that resolves after setup still lights the
-   * feature up.
-   */
-  isAvailable?: () => boolean;
 }
 
 export interface UseCommentsFeatureReturn {
@@ -65,13 +52,12 @@ export interface UseCommentsFeatureReturn {
  * Shared glue for comments: the reactive thread list, the panel's open and filter
  * state, and the capability the shared chrome gates on.
  *
- * Both entry points construct this — OSS from `init({ comments })`, Cloud from
- * `createCloudCommentsProvider` — so the two run identical logic over different
- * transports. Nothing here is auth- or plan-aware; callers decide availability.
+ * The editor constructs this from `init({ comments })`. A configured provider
+ * and user determine availability; this feature does not manage authentication.
  *
- * **Nothing is fetched at mount.** The list is read when the panel opens, matching
- * saved blocks: a review panel nobody opens should cost no round-trip, and the
- * unresolved badge is worth less than a request on every editor boot.
+ * Threads load when a template becomes available so the header badge and
+ * per-block indicators reflect the provider. Opening the panel re-reads them
+ * to pick up changes made elsewhere.
  */
 export function useCommentsFeature(
   options: UseCommentsFeatureOptions,
@@ -97,7 +83,7 @@ export function useCommentsFeature(
     getTemplateId: () => editor.state.template?.id ?? null,
   });
 
-  const isOpen = options.isOpen ?? ref(false);
+  const isOpen = ref(false);
   const filterBlockId = ref<string | null>(null);
 
   const hasTemplate = computed(() => !!editor.state.template?.id);
@@ -107,7 +93,7 @@ export function useCommentsFeature(
     // No identity ⇒ unavailable, never anonymous. Every comment carries an author
     // and an unattributable one is worse than no comment feature.
     if (!options.user) return false;
-    return options.isAvailable?.() ?? true;
+    return true;
   });
 
   // Close an open panel when the feature becomes unavailable, for example when

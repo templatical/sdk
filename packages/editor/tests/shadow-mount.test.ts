@@ -65,7 +65,6 @@ describe("editor shadow mount (Phase 1.5)", () => {
     vi.doMock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
     vi.doMock("../src/i18n", () => ({
       loadTranslations: vi.fn(() => Promise.resolve({} as Record<string, unknown>)),
-      loadCloudTranslations: vi.fn(() => Promise.resolve({} as Record<string, unknown>)),
     }));
     vi.doMock("../src/composables", () => ({
       useFonts: vi.fn(() => ({ fonts: { value: [] } })),

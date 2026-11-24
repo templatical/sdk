@@ -1,5 +1,5 @@
-// Minimal OSS-only consumer surface: import the editor and the optional
-// renderer (for `editor.toMjml()`). No cloud, no quality.
+// Minimal consumer surface: import the editor and the optional renderer
+// for `editor.toMjml()`.
 // This mirrors the Aurelia / vanilla-JS consumer in issue #63.
 import { init } from "@templatical/editor";
 import "@templatical/editor/style.css";

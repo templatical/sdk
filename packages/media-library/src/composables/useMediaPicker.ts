@@ -13,8 +13,8 @@ export function useMediaPicker(): UseMediaPickerReturn {
   >("onRequestMedia");
   const isRequesting = ref(false);
 
-  // A configured handler is the whole condition: gating this by entitlement would
-  // charge a consumer for *not* using Cloud's storage, which is backwards.
+  // A configured handler is the whole condition: the host owns the picker
+  // and can use it whenever it supplies the callback.
   const isPluggableMediaEnabled = computed(() => !!onRequestMedia);
 
   async function requestMedia(

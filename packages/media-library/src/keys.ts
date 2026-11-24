@@ -6,7 +6,7 @@ import type { MediaTranslations } from "./i18n";
  * Client pre-check limits plus the host's `accept` filter.
  *
  * `maxFileSize` / `mimeTypes` are {@link MediaOptions} fields and may be
- * getters — Cloud fills them after construction — so every reader must
+ * getters over reactive state that fills after construction — so every reader must
  * access them inside a computed, never by destructuring at setup.
  *
  * **Provided by whichever component roots the tree** — `MediaLibraryModal`

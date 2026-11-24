@@ -7,7 +7,7 @@ import { ScenePage } from "../pages/scene.page";
 /**
  * The Collaboration setup: tabs of one browser context share the playground's
  * SharedWorker backend (`src/host/collaboration/`), so this drives the public
- * `CollaborationProvider` contract end to end, with no Cloud involved. Each
+ * `CollaborationProvider` contract end to end. Each
  * test gets a fresh context, and with it a fresh worker and template.
  */
 

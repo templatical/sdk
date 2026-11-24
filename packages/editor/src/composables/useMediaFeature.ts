@@ -57,8 +57,8 @@ function toError(value: unknown): Error {
  * is a stated floor. `accept` narrows the mime list when the drop named
  * categories (image fields pass `["images"]`).
  *
- * Reads `maxFileSize` / `mimeTypes` off the provider at call time — Cloud
- * implements them as getters over plan config that arrives after setup.
+ * Reads `maxFileSize` / `mimeTypes` off the provider at call time so
+ * getter-backed limits that change after setup are observed.
  */
 function dropFileError(
   provider: MediaProvider,

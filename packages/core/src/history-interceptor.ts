@@ -4,9 +4,9 @@ import type { Block, TemplateSettings } from "@templatical/types";
 import type { UseHistoryReturn } from "./history";
 
 /**
- * The mutable slice of an editor this wraps — structural, so the OSS and Cloud
- * `useEditor` returns both satisfy it without either having to grow toward the
- * other. Not `Readonly`: the whole point is to replace these members in place.
+ * The mutable slice of an editor this wraps. It is structural so callers only
+ * need to supply the methods being intercepted. It is not `Readonly`: these
+ * members are replaced in place.
  */
 export interface HistoryInterceptorEditor {
   addBlock: (

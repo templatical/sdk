@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Mount point for the test-email dialog, shared by the OSS and Cloud editors.
+ * Mount point for the test-email dialog used by the editor.
  *
  * The dialog is `defineAsyncComponent` behind a `v-if` on its open state, so its
  * chunk is fetched only when the user actually opens it — `defineAsyncComponent`

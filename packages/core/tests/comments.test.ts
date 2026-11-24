@@ -410,8 +410,8 @@ describe("useComments", () => {
     });
 
     it("reads the user through a getter, so one arriving late works", async () => {
-      // Cloud fills `user` from the JWT and a consumer may swap it; a snapshot at
-      // setup would pin the answer forever — the `allowedRecipients` lesson.
+      // A consumer may supply the user after setup or swap it; a snapshot at
+      // setup would keep attributing comments to the earlier identity.
       const user = ref<CommentAuthor | null>(null);
       const provider: CommentsProvider = {
         list: vi.fn(async () => []),

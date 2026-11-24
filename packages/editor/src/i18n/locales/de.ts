@@ -1064,7 +1064,7 @@ const de: typeof en = {
     reorderAnnouncements: "Block-Neuanordnungsmeldungen",
   },
 
-  // Design Reference (cloud)
+  // Editor loading and error messages
   errors: {
     editorLoading: "Editor wird geladen...",
     editorLoadFailed: "Editor konnte nicht geladen werden.",

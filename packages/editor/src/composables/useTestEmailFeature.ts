@@ -32,7 +32,7 @@ function toError(value: unknown): Error {
 }
 
 export interface UseTestEmailFeatureOptions {
-  /** Sending backend — consumer-supplied in OSS, the Cloud adapter in Cloud. */
+  /** Sending backend supplied by the consumer. */
   provider: TestEmailProvider;
   /** The template to send. Read at send time, never snapshotted. */
   getContent: () => TemplateContent;
@@ -56,11 +56,6 @@ export interface UseTestEmailFeatureOptions {
    */
   usesLocalRenderer?: () => boolean;
   onError?: (error: Error) => void;
-  /**
-   * Extra gate on top of the provider being present — Cloud adds its plan
-   * entitlement and "template must be saved" here. Read reactively.
-   */
-  isAvailable?: () => boolean;
 }
 
 export interface UseTestEmailFeatureReturn {
@@ -75,9 +70,9 @@ export interface UseTestEmailFeatureReturn {
   /**
    * The provider's allowlist, or `undefined` when unrestricted.
    *
-   * A computed rather than a snapshot: Cloud exposes `allowedRecipients` as a
-   * getter over a value that arrives with its JWT, so reading it once at setup
-   * would freeze it at `[]` forever.
+   * A computed rather than a snapshot: providers may expose
+   * `allowedRecipients` through a reactive getter that fills after setup.
+   * Reading it once would freeze the initial value for the session.
    */
   allowedRecipients: ComputedRef<string[] | undefined>;
   defaultRecipient: ComputedRef<string | undefined>;
@@ -109,10 +104,9 @@ export function useTestEmailFeature(
   // The timer outlives a fast unmount otherwise, and fires into dead refs.
   onScopeDispose(clearDismissTimer);
 
-  // IMPORTANT: read `provider.allowedRecipients` *inside* the computed. Cloud's
-  // adapter implements it as a getter over a reactive source that starts empty
-  // and fills once auth resolves — destructuring it at setup would pin it to
-  // `[]`, which (see `isAvailable`) hides the trigger permanently.
+  // Read `provider.allowedRecipients` inside the computed. A provider may
+  // expose a reactive getter that starts empty and fills later; destructuring
+  // it at setup would pin the initial `[]` and hide the trigger permanently.
   const allowedRecipients = computed(() => provider.allowedRecipients);
 
   const defaultRecipient = computed(() => {
@@ -129,7 +123,7 @@ export function useTestEmailFeature(
     // is unusable and must not advertise itself. Distinct from `undefined`,
     // which means "unrestricted".
     if (allowedRecipients.value?.length === 0) return false;
-    return options.isAvailable?.() ?? true;
+    return true;
   });
 
   function open(): void {

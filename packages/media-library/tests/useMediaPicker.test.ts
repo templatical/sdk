@@ -33,8 +33,8 @@ const mockMediaResult: MediaResult = {
 };
 
 describe("useMediaPicker", () => {
-  // A configured handler is the whole condition: gating this by plan would charge
-  // a consumer for *not* using Cloud's storage, i.e. meter nothing Cloud pays for.
+  // A configured handler is the whole condition: the host owns this picker
+  // and can use it whenever it supplies the callback.
   describe("isPluggableMediaEnabled", () => {
     it("is false when no callback", () => {
       const { isPluggableMediaEnabled } = withProvide(

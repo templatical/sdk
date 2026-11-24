@@ -24,7 +24,7 @@ export class EditorPage {
   }
 
   /**
-   * Dismiss any visible overlays (feature showcase, scene notes, cloud banner).
+   * Dismiss visible feature showcase and scene-note overlays.
    * Idempotent — safe to call multiple times.
    */
   async dismissOverlays(): Promise<void> {

@@ -1047,7 +1047,7 @@ export default {
     reorderAnnouncements: "Block reorder announcements",
   },
 
-  // Design Reference (cloud)
+  // Editor loading and error messages
   errors: {
     editorLoading: "Loading editor...",
     editorLoadFailed: "Failed to load editor.",
