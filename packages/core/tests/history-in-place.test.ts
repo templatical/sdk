@@ -157,7 +157,7 @@ describe("snapshot history applied in place", () => {
             content.value = snapshot;
           },
         });
-        const start = safeClone(content.value);
+        const states = [safeClone(content.value)];
         // A restore past eight operations replaces the content (see the bulk
         // group below), so identity holds only when every step stays under it.
         let withinCap = true;
@@ -168,20 +168,28 @@ describe("snapshot history applied in place", () => {
           if (diffModule.diffContent(before, content.value).length > 8) {
             withinCap = false;
           }
+          states.push(safeClone(content.value));
         }
         const live = content.value;
-        const end = safeClone(content.value);
-        for (let step = 0; step < 5; step++) history.undo();
+        for (let step = 4; step >= 0; step--) {
+          history.undo();
+          expect(content.value, `undo seed ${seed} to ${step}`).toEqual(
+            states[step],
+          );
+        }
         if (withinCap) {
           expect(content.value, `undo identity seed ${seed}`).toBe(live);
         }
-        expect(content.value, `undo seed ${seed}`).toEqual(start);
-        for (let step = 0; step < 5; step++) history.redo();
+        for (let step = 1; step <= 5; step++) {
+          history.redo();
+          expect(content.value, `redo seed ${seed} to ${step}`).toEqual(
+            states[step],
+          );
+        }
         if (withinCap) {
           expect(content.value, `redo identity seed ${seed}`).toBe(live);
           inPlaceSeeds++;
         }
-        expect(content.value, `redo seed ${seed}`).toEqual(end);
         history.destroy();
       }
       expect(inPlaceSeeds).toBeGreaterThanOrEqual(35);
