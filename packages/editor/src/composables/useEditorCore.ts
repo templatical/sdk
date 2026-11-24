@@ -371,6 +371,28 @@ export interface UseEditorCoreReturn {
   destroy: () => void;
 }
 
+/**
+ * Undo navigation and a version preview both pause autosave. A plain boolean
+ * let whichever resumed first release the other's pause, so undo settling
+ * during a preview autosaved the previewed version. Each pauser holds the
+ * pause until it resumes, and autosave runs again only when all have.
+ */
+function withCountedPause(autoSave: UseAutoSaveReturn): UseAutoSaveReturn {
+  let holds = 0;
+  return {
+    ...autoSave,
+    pause() {
+      holds++;
+      autoSave.pause();
+    },
+    resume() {
+      if (holds === 0) return;
+      holds--;
+      if (holds === 0) autoSave.resume();
+    },
+  };
+}
+
 export function useEditorCore(
   options: UseEditorCoreOptions,
 ): UseEditorCoreReturn {
@@ -441,6 +463,7 @@ export function useEditorCore(
       content: editor.content,
       setContent: (content: TemplateContent, markDirty?: boolean) =>
         editor.setContent(content, markDirty),
+      markDirty: () => editor.markDirty(),
     });
   if (options.history) {
     if (editor.contentReplaced)
@@ -463,11 +486,13 @@ export function useEditorCore(
   // --- Auto-save ---
   const autoSave =
     options.autoSaveOptions !== null && options.autoSaveOptions !== undefined
-      ? useAutoSave({
-          content: editor.content,
-          isDirty: () => editor.state.isDirty,
-          ...options.autoSaveOptions,
-        })
+      ? withCountedPause(
+          useAutoSave({
+            content: editor.content,
+            isDirty: () => editor.state.isDirty,
+            ...options.autoSaveOptions,
+          }),
+        )
       : null;
 
   // Pause/resume auto-save during history navigation (undo/redo)

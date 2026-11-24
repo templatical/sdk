@@ -241,6 +241,94 @@ describe("useAutoSave", () => {
       vi.advanceTimersByTime(100);
       expect(onChange).toHaveBeenCalledTimes(1);
     });
+
+    function paused(options: { enabled?: () => boolean; dirty?: boolean }) {
+      const content = ref(makeContent());
+      const onChange = vi.fn();
+      const autoSave = useAutoSave({
+        content,
+        isDirty: () => options.dirty ?? true,
+        onChange,
+        debounce: 100,
+        enabled: options.enabled,
+      });
+      return { content, onChange, ...autoSave };
+    }
+
+    it("reports a change made while paused, a debounce after resuming", () => {
+      const { content, onChange, pause, resume } = paused({});
+      pause();
+      content.value.settings.width = 700;
+      vi.advanceTimersByTime(500);
+      resume();
+      vi.advanceTimersByTime(99);
+      expect(onChange).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onChange).toHaveBeenCalledOnce();
+      expect(onChange.mock.calls[0][0].settings.width).toBe(700);
+    });
+
+    it("reports a save that the pause cancelled", () => {
+      const { content, onChange, pause, resume } = paused({});
+      content.value.settings.width = 700;
+      vi.advanceTimersByTime(50);
+      pause();
+      vi.advanceTimersByTime(500);
+      expect(onChange).not.toHaveBeenCalled();
+      resume();
+      vi.advanceTimersByTime(100);
+      expect(onChange).toHaveBeenCalledOnce();
+    });
+
+    it("schedules nothing on resume when nothing changed", () => {
+      const { onChange, pause, resume } = paused({});
+      pause();
+      resume();
+      vi.advanceTimersByTime(500);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("keeps the enabled and dirty checks for a change made while paused", () => {
+      const disabled = paused({ enabled: () => false });
+      disabled.pause();
+      disabled.content.value.settings.width = 700;
+      disabled.resume();
+      vi.advanceTimersByTime(500);
+      expect(disabled.onChange).not.toHaveBeenCalled();
+
+      const clean = paused({ dirty: false });
+      clean.pause();
+      clean.content.value.settings.width = 700;
+      clean.resume();
+      vi.advanceTimersByTime(500);
+      expect(clean.onChange).not.toHaveBeenCalled();
+    });
+
+    it("drops a paused change that cancel discards, and still saves a later edit", () => {
+      const { content, onChange, pause, resume, cancel } = paused({});
+      pause();
+      content.value.settings.width = 700;
+      cancel();
+      resume();
+      vi.advanceTimersByTime(500);
+      expect(onChange).not.toHaveBeenCalled();
+
+      content.value.settings.width = 640;
+      vi.advanceTimersByTime(100);
+      expect(onChange).toHaveBeenCalledOnce();
+      expect(onChange.mock.calls[0][0].settings.width).toBe(640);
+    });
+
+    it("forgets a paused change once flush reports it", () => {
+      const { content, onChange, pause, resume, flush } = paused({});
+      pause();
+      content.value.settings.width = 700;
+      flush();
+      expect(onChange).toHaveBeenCalledOnce();
+      resume();
+      vi.advanceTimersByTime(500);
+      expect(onChange).toHaveBeenCalledOnce();
+    });
   });
 
   describe("enabled", () => {

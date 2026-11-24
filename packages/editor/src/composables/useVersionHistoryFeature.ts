@@ -215,6 +215,16 @@ export function useVersionHistoryFeature(
     const content = await headless.resolveContent(version);
     if (destroyed) return;
 
+    // A second entry that started before the first resolved lands here with a
+    // preview already open. Treat it as a scrub: entering again would take a
+    // second autosave pause that only one resume releases, and would replace
+    // the pre-preview snapshot with the first preview.
+    if (previewingVersion.value) {
+      previewingVersion.value = version;
+      editor.setContent(content, false);
+      return;
+    }
+
     // Opening a preview records nothing. The editor never authors a version —
     // whoever implements `TemplatesProvider.save` decides that. The unsaved work
     // that a confirmed restore would discard is protected at the confirmation

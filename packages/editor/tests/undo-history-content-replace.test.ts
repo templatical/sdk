@@ -51,6 +51,8 @@ afterEach(() => {
 async function open(config: {
   content?: TemplateContent;
   templates?: TemplatesProvider;
+  onChange?: (content: TemplateContent) => void;
+  changeDebounce?: number;
 }) {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -59,6 +61,8 @@ async function open(config: {
     shadowDom: false,
     content: config.content,
     templates: config.templates,
+    onChange: config.onChange,
+    changeDebounce: config.changeDebounce,
   });
   handles.push(handle);
   return handle;
@@ -75,7 +79,91 @@ function undo(): void {
   );
 }
 
+function redo(): void {
+  document.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key: "z",
+      metaKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+}
+
 describe("public editor history after content replacement", () => {
+  it("reports the restored content after undo navigation settles", async () => {
+    const onChange = vi.fn();
+    const handle = await open({
+      content: content("A1"),
+      onChange,
+      changeDebounce: 10,
+    });
+    vi.useFakeTimers();
+    try {
+      handle.insertBlock(
+        createParagraphBlock({ id: "second", content: "<p>B</p>" }),
+      );
+      await vi.advanceTimersByTimeAsync(10);
+      onChange.mockClear();
+
+      undo();
+      await vi.advanceTimersByTimeAsync(1600);
+      expect(handle.getContent().blocks).toHaveLength(1);
+      expect(onChange).toHaveBeenCalledOnce();
+      expect((onChange.mock.calls[0][0] as TemplateContent).blocks).toEqual(
+        content("A1").blocks,
+      );
+
+      onChange.mockClear();
+      redo();
+      await vi.advanceTimersByTimeAsync(1600);
+      expect(handle.getContent().blocks).toHaveLength(2);
+      expect(onChange).toHaveBeenCalledOnce();
+      expect((onChange.mock.calls[0][0] as TemplateContent).blocks).toEqual(
+        handle.getContent().blocks,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("autosaves the restored content after undo navigation settles", async () => {
+    const storage: TemplatesProvider = {
+      load: vi.fn(async () => template("x", "A1")),
+      create: false,
+      save: vi.fn(async (id, patch) => ({
+        id,
+        name: patch.name ?? id,
+        content: patch.content!,
+      })),
+      autoSave: true,
+    };
+    const handle = await open({ templates: storage, changeDebounce: 10 });
+    await handle.load("x");
+    vi.useFakeTimers();
+    try {
+      handle.insertBlock(
+        createParagraphBlock({ id: "second", content: "<p>B</p>" }),
+      );
+      await vi.advanceTimersByTimeAsync(10);
+      vi.mocked(
+        storage.save as Exclude<TemplatesProvider["save"], false>,
+      ).mockClear();
+
+      undo();
+      await vi.advanceTimersByTimeAsync(1600);
+      expect(storage.save).toHaveBeenCalledOnce();
+      expect(storage.save).toHaveBeenCalledWith(
+        "x",
+        expect.objectContaining({ content: content("A1") }),
+      );
+      expect(handle.getContent()).toEqual(content("A1"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("setContent starts a new undo history instead of restoring an old design", async () => {
     const handle = await open({ content: content("A1") });
     handle.insertBlock(createParagraphBlock({ content: "<p>A2</p>" }));

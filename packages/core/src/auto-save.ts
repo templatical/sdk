@@ -43,25 +43,41 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
 
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let paused = false;
+  // A change that arrived, or whose timer was cancelled, while paused. Resume
+  // schedules it through the normal path, so `enabled`, the debounce and the
+  // dirty check still decide whether `onChange` runs.
+  let pendingWhilePaused = false;
 
   function isEnabled(): boolean {
     return typeof enabled === "function" ? enabled() : enabled;
   }
 
   function pause(): void {
+    if (timeoutId) pendingWhilePaused = true;
     paused = true;
-    cancel();
+    clearTimer();
   }
 
   function resume(): void {
     paused = false;
+    if (pendingWhilePaused) {
+      pendingWhilePaused = false;
+      scheduleOnChange();
+    }
   }
 
-  function cancel(): void {
+  function clearTimer(): void {
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
     }
+  }
+
+  // Public cancel drops a change held over a pause too; `pause()` clears only
+  // the timer so `resume()` can still report it.
+  function cancel(): void {
+    clearTimer();
+    pendingWhilePaused = false;
   }
 
   function flush(): void {
@@ -72,9 +88,13 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
   }
 
   function scheduleOnChange(): void {
-    if (!isEnabled() || paused) return;
+    if (paused) {
+      pendingWhilePaused = true;
+      return;
+    }
+    if (!isEnabled()) return;
 
-    cancel();
+    clearTimer();
     timeoutId = setTimeout(() => {
       timeoutId = null;
       if (isEnabled() && !paused && isDirty()) {
