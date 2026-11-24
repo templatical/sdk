@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Mount point for the version-history chrome that sits outside the header,
- * shared by the OSS and Cloud editors.
+ * used by the editor.
  *
  * Same shape as `SavedBlocksPanels.vue` / `TestEmailPanel.vue`: everything here
  * is `defineAsyncComponent` behind a `v-if` on its own state, and the editors in
@@ -24,7 +24,7 @@ const VersionPreviewBanner = defineAsyncComponent(
   () => import("./VersionPreviewBanner.vue"),
 );
 // Its own chunk, fetched only if a restore is attempted with unsaved work —
-// which for a Cloud session (autosave on) is the uncommon case.
+// Autosave usually leaves no unsaved work to confirm.
 const RestoreVersionDialog = defineAsyncComponent(
   () => import("./RestoreVersionDialog.vue"),
 );

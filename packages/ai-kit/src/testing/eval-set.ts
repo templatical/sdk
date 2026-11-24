@@ -186,7 +186,7 @@ function at(target: unknown, path: string): unknown {
 
 /**
  * Run one case's checks against a turn's outcome; the first failure's reason,
- * or `null` when it passed (S7 Cloud Task 11's `failure()`).
+ * or `null` when it passed.
  */
 export function checkEvalCase(
   testCase: Exclude<AiEvalCase, { kind: "altText" }>,

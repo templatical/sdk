@@ -10,9 +10,8 @@ import RestoreVersionDialog from "../src/components/RestoreVersionDialog.vue";
 import { mountEditor } from "./helpers/mount";
 
 /**
- * The two shared surfaces version history renders. Both are shared rather than
- * cloud-only, and read the `TemplateVersion` contract rather than any backend's
- * wire shape.
+ * The two version-history surfaces read the `TemplateVersion` contract rather
+ * than any backend's wire shape.
  *
  * The arrow logic is the part worth pinning: it steps through the provider's
  * order, and its position is *derived* from what is actually previewed. A local

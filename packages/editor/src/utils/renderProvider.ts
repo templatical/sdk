@@ -146,8 +146,8 @@ export interface RenderMethods {
  * | `toHtml()` | `provider.toHtml` → `toMjml()` + `provider.compileMjml` → throw |
  *
  * `toHtml()` composes through `toMjml()` rather than forcing the local renderer,
- * so a provider whose MJML is authoritative (Cloud's is — it renders block types
- * a browser cannot) is not silently bypassed on the way to HTML. When the provider
+ * so a provider whose MJML is authoritative for custom block types is not
+ * silently bypassed on the way to HTML. When the provider
  * only supplies `compileMjml`, that resolves to local MJML anyway, which is the
  * cheap tier working exactly as intended.
  *

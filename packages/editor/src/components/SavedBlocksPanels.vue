@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Mount point for the saved-blocks UI, shared by the OSS and Cloud editors.
+ * Mount point for the saved-blocks UI used by the editor.
  *
  * Everything here is `defineAsyncComponent` rendered behind `v-if` on its own
  * state, so each chunk is fetched only when actually needed —

@@ -49,7 +49,7 @@ const announcement = ref("");
  * by this dialog once the user drags a row.
  *
  * Ids rather than blocks, deliberately. Resolving late means a block edited
- * while the dialog is open (a collaborator in Cloud) is persisted as it stands
+ * while the dialog is open is persisted as it stands
  * at save time, not as it looked when the dialog opened, and an id that stops
  * resolving drops out on its own instead of leaving a stale snapshot behind.
  */

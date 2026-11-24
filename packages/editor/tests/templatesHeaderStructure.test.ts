@@ -6,8 +6,8 @@ import en from "../src/i18n/locales/en";
 /**
  * Structural assertions on the templates surface in the shared `EditorHeader`.
  *
- * The markup lives in its own component now — one header for both entry points,
- * with Cloud's controls arriving through slots. These are the header decisions
+ * The markup lives in its own component, with host controls arriving through
+ * slots. These are the header decisions
  * from the BYO templates design that a component test can't see, plus the two
  * gates whose failure mode is a control that renders and does nothing:
  *
@@ -60,7 +60,7 @@ describe("EditorHeader templates surface", () => {
 
     it("keeps the identity stack out of the row when nothing in it renders", () => {
       // The stack is a flex child of a `gap-2.5` row, so an empty one would
-      // indent Cloud's left extras by a gap that has nothing before it.
+      // indent any controls to its left by a gap that has nothing before it.
       expect(headerSource()).toContain(
         "(showTemplateName || templates.timestamp.value)",
       );
@@ -434,7 +434,7 @@ describe("EditorHeader templates surface", () => {
     });
 
     it("does not pull the plan-limit readout into the OSS chunk", () => {
-      // `header.templatesUsed` is a Cloud plan concern, not a templates one.
+      // The templates header has no usage-limit readout or translation key.
       expect("templatesUsed" in en.header).toBe(false);
     });
   });

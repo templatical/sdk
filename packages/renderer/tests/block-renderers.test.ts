@@ -90,12 +90,12 @@ describe('blockRenderers overrides', () => {
     const mjml = await renderToMjml(makeContent([countdown]), {
       blockRenderers: {
         countdown: (block) =>
-          `<mj-image src="https://cloud.example/countdown/${block.id}.gif" />`,
+          `<mj-image src="https://renderer.example/countdown/${block.id}.gif" />`,
       },
     });
 
     expect(mjml).toContain(
-      `<mj-image src="https://cloud.example/countdown/${countdown.id}.gif" />`,
+      `<mj-image src="https://renderer.example/countdown/${countdown.id}.gif" />`,
     );
     expect(mjml).not.toContain(UNRENDERABLE_MARKER_PREFIX);
     expect(warn).not.toHaveBeenCalled();

@@ -14,9 +14,8 @@ import { CAPABILITIES_KEY } from "../src/keys";
  * 1. The action rendered on section children. The save flow only ever handles
  *    top-level blocks, and insertion is top-level-only, so a nested block could
  *    be saved but never re-inserted where it came from.
- * 2. The action rendered whenever the capability was merely *present*. Cloud
- *    provides capabilities before its plan config resolves, so on a plan without
- *    the entitlement the button appeared and did nothing.
+ * 2. A capability may be present but unavailable. The action must follow its
+ *    availability signal so it never appears as a button that does nothing.
  * 3. The whole action bar stayed visible during a pick session, which is a
  *    different mode — N bars across the picked blocks would be noise.
  */

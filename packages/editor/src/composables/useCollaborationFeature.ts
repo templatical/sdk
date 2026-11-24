@@ -83,7 +83,7 @@ export type CollaborationNoticeView =
     }
   | {
       id: number;
-      /** An AI changed the template for a user (`actor.type: "ai"`): Cloud, or a BYO backend honouring `origin: "ai"`. */
+      /** An AI changed the template for a user (`actor.type: "ai"`), as reported by a provider honoring `origin: "ai"`. */
       kind: "aiEdited";
       /** The user who asked the AI. */
       name: string;

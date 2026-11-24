@@ -66,9 +66,8 @@ export type {
   UseVersionHistoryReturn,
 } from "./version-history";
 
-// Comments (over a consumer-supplied storage provider). Shared rather than
-// cloud-only: Cloud is one adapter behind the same contract, and
-// `useCommentListener` wires whatever realtime transport that adapter has, if any.
+// Comments use a consumer-supplied storage provider. `useCommentListener`
+// wires the provider's realtime subscription when one is available.
 export { useComments, useCommentListener } from "./comments";
 export type {
   UseCommentsOptions,

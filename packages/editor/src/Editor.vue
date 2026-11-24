@@ -195,9 +195,8 @@ const editor = useEditor({
     structureNotice.value++;
   },
   content: props.config.content!,
-  // Seeds a *new* template's body font when no `content` was supplied. Only the
-  // deleted Cloud core passed this, so `init({ fonts: { defaultFont } })` never
-  // reached a blank template.
+  // Seed a new template's body font when no `content` was supplied, so
+  // `init({ fonts: { defaultFont } })` also applies to blank templates.
   defaultFontFamily: props.config.fonts?.defaultFont,
   // Not `props.config.templateDefaults` raw: the editor's own `locale` seeds
   // the template's content language when the consumer left it unset, so a

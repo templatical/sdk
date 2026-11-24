@@ -68,8 +68,8 @@ const sampleLimits: MediaLimits = {
 
 describe("useMediaCategories", () => {
   /**
-   * Cloud exposes `maxFileSize` as a getter over plan config that arrives
-   * after construction. Reading it once at setup pins the client pre-check
+   * A provider may expose `maxFileSize` through a getter that fills after
+   * construction. Reading it once at setup pins the client pre-check
    * to `undefined` (no cap) for the whole session — the `allowedRecipients`
    * lesson. This case is the proof: a snapshot at setup stays `Infinity`
    * after `backing` fills, so the second expect fails.

@@ -4,22 +4,18 @@ import {
   trackActionBtnClass,
 } from "../constants/styleConstants";
 /**
- * Send-a-test dialog, shared by the OSS and Cloud editors.
+ * Send-a-test dialog for a configured test-email provider.
  *
  * The recipient control has three shapes, driven entirely by whether the
  * provider configured an allowlist:
  *
- * - **no allowlist** — free text, validated for shape only. This branch exists
- *   for BYO senders; Cloud never takes it, because its list comes from a signed
- *   JWT.
- * - **exactly one** — a read-only field. Preserved verbatim from the Cloud-only
- *   version; there is nothing to choose, so offering an editable field would
- *   imply otherwise.
+ * - **no allowlist** — free text, validated for shape only.
+ * - **exactly one** — a read-only field. There is nothing to choose, so an
+ *   editable field would imply a choice that the provider does not permit.
  * - **several** — a picker of exactly those addresses.
  *
  * An empty allowlist never reaches here: the feature reports itself unavailable,
- * so no trigger renders. (The Cloud-only version fell through to `v-else` and
- * rendered a select with no options and a permanently disabled Send.)
+ * so no trigger renders.
  */
 import TplModal from "./TplModal.vue";
 // Statically imported: this modal is already lazy-loaded as a whole, so the

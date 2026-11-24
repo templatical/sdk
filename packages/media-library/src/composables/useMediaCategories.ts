@@ -57,8 +57,8 @@ export function useMediaCategories(
   // limits, so this is constantly true for every successful caller.
   const isMediaLibraryEnabled = computed(() => true);
 
-  // Read `maxFileSize` / `mimeTypes` / `accept` *inside* the computed. Cloud
-  // implements the first two as getters over plan config that arrives after
+  // Read `maxFileSize` / `mimeTypes` / `accept` inside the computed.
+  // Providers may expose getters over reactive state that changes after
   // construction; capturing them at setup pins the client pre-check to
   // `undefined` for the whole session.
   // Omit is no cap (`??`, so an explicit `0` stays a cap of 0). Infinity

@@ -27,9 +27,8 @@ export interface UseAutoSaveReturn {
  * produce dozens of full-content saves. 2000 roughly halves that while still
  * landing well before a user wonders whether their work was kept.
  *
- * **The single default for both entry points.** Cloud imports this constant
- * rather than declaring its own — a second copy for one setting drifts silently,
- * since nothing links the two.
+ * **The single default for editor auto-save.** Both the core composable and
+ * editor initialization use this constant, so their debounce stays aligned.
  */
 export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 2000;
 

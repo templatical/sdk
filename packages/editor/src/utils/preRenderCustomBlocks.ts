@@ -20,8 +20,9 @@ export interface CustomBlockResolver {
  * handed a custom block with neither a resolver nor `renderedHtml` omits it from
  * the output silently, and a backend has no way to resolve one: the HTML comes
  * from the consumer's liquid template plus the block's field values, and the
- * definition is registered in the browser. So this runs before a
- * `RenderProvider` sees the content, and before Cloud persists it.
+ * definition is registered in the browser. So this runs on a copy before a
+ * `RenderProvider` sees the content. A templates provider's `save()` receives
+ * the content without this step.
  *
  * Failures per-block are swallowed (and replaced with a comment placeholder)
  * so one broken block doesn't block the save of the rest.

@@ -4,7 +4,7 @@ import type { TemplateContent } from "@templatical/types";
 /**
  * Build the `LintOptions` object the editor passes to the lint composable.
  *
- * In editor / cloud-editor mode the linter locale is forced to match the
+ * In editor mode the linter locale is forced to match the
  * editor UI locale — `lint.locale` set by the consumer is ignored.
  * Headless callers (`lintAccessibility(...)` / `lintStructure(...)` directly)
  * keep full control.

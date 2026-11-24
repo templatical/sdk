@@ -11,9 +11,8 @@ import { notifyHandler } from "./error-reporting";
 
 export interface UseSavedBlocksOptions {
   /**
-   * Storage backend. Supplied by the consumer via `init({ savedBlocks })`, or
-   * by Cloud's own adapter — this composable is transport-agnostic and never
-   * talks to a network itself.
+   * Storage backend supplied via `init({ savedBlocks })`. This composable is
+   * transport-agnostic and never talks to a network itself.
    */
   provider: SavedBlocksProvider;
   onError?: (error: Error) => void;

@@ -794,9 +794,8 @@ describe('useEditorCore', () => {
 
     /**
      * Cmd+S means "persist now", and there are two ways to mean it. A configured
-     * templates provider owns the phrase outright — including in Cloud, whose
-     * lint save-gate now sits *inside* that capability rather than behind a
-     * second `config.onSave` hook this handler had to know about. Otherwise it
+     * templates provider owns the shortcut, including any save guard inside
+     * its capability rather than a second `config.onSave` hook. Otherwise it
      * flushes the autosave debounce, so a consumer persisting from `onChange`
      * gets the notification at once. Routing is read off the capability, so the
      * editor needs no new option either way.
@@ -1205,8 +1204,8 @@ describe('useEditorCore', () => {
     it('warns once per issue however often a definition is re-registered', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const definition = defWith({ presets: ['nope'] });
-      // Init-time registration + Cloud's deferred re-registration of the same
-      // definitions: the once-guard has to survive both.
+      // Re-registering the same definitions must not repeat a warning;
+      // the once-guard has to survive both calls.
       const { captured } = mountCore({
         config: { customBlocks: [definition] } as any,
       });

@@ -24,9 +24,8 @@ import { computed, inject, nextTick, ref, watch } from "vue";
 /**
  * The review panel, **shared by both entry points**.
  *
- * It takes the shared feature as a prop — the `TestEmailPanel` /
- * `SavedBlocksPanels` shape — so the same panel drives a consumer's own store and
- * Cloud's, and its strings live in the OSS chunk.
+ * It takes the comments feature as a prop, like `TestEmailPanel` and
+ * `SavedBlocksPanels`, so provider state reaches the panel through one contract.
  *
  * Every write action is gated on the provider having supplied that mutation, and
  * **hidden** rather than disabled when it hasn't: a provider that withholds all

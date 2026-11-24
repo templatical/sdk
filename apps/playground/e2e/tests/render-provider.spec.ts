@@ -3,8 +3,8 @@ import { test, expect } from "../fixtures/editor.fixture";
 /**
  * Browser-level coverage for the render provider's **`compileMjml` tier**.
  *
- * The unit suites pin the resolution ladders in isolation (`renderProvider.test.ts`)
- * and the two Cloud adapters against a mocked `ApiClient`. What only a real browser
+ * The unit suites pin the resolution ladders in isolation (`renderProvider.test.ts`).
+ * What only a real browser
  * proves is the tier the whole three-method contract exists for: a consumer with no
  * Node backend wires up **one** function, the SDK still renders the MJML itself, and
  * `editor.toHtml()` starts working.

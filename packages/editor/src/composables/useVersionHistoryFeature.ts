@@ -17,7 +17,7 @@ import type {
 import { safeClone } from "@templatical/types";
 import type { EditorCapabilities } from "../types/editor-capabilities";
 
-/** Minimal slice of the editor this feature needs — OSS and Cloud alike. */
+/** Minimal slice of the editor this feature needs. */
 interface VersionHistoryEditor {
   state: {
     readonly template?: { id: string } | null;
@@ -31,10 +31,8 @@ interface VersionHistoryEditor {
  * How the restore confirmation persists unsaved work instead of only warning
  * about it.
  *
- * Both members are read at confirmation time rather than captured at setup, so
- * a late-bound save (Cloud's, which only exists once its lifecycle composable
- * is constructed) and a save that comes and goes (Cloud's lint gate) are both
- * expressible.
+ * Both members are read at confirmation time rather than captured at setup,
+ * so current save availability and the latest save handler are used.
  */
 export interface SaveBeforeRestore {
   /** Whether persisting is possible *right now*. */
@@ -57,7 +55,7 @@ export interface VersionHistoryCollaboration {
 }
 
 export interface UseVersionHistoryFeatureOptions {
-  /** Storage backend — consumer-supplied in OSS, the Cloud adapter in Cloud. */
+  /** Storage backend supplied by the consumer. */
   provider: VersionHistoryProvider;
   editor: VersionHistoryEditor;
   /**
@@ -74,12 +72,6 @@ export interface UseVersionHistoryFeatureOptions {
   /** Set with a collaboration provider. */
   collaboration?: VersionHistoryCollaboration | null;
   onError?: (error: Error) => void;
-  /**
-   * Whether the feature may be used. Read reactively, so Cloud can defer to a
-   * plan entitlement that resolves after its async config fetch. Omit for
-   * always-available (the OSS case: a configured provider is the whole gate).
-   */
-  isAvailable?: () => boolean;
 }
 
 export interface UseVersionHistoryFeatureReturn {
@@ -142,10 +134,9 @@ export interface UseVersionHistoryFeatureReturn {
  * Shared glue for version history: the reactive list, the preview-before-restore
  * flow, and the capability the shared chrome gates on.
  *
- * Both `Editor.vue` (OSS) and `useCloudInitialization` (Cloud) call this with
- * their own provider, so the two entry points run identical logic over different
- * transports. Nothing here is auth- or plan-aware — callers decide whether the
- * feature is available *before* constructing it.
+ * `Editor.vue` constructs this with the configured version-history provider.
+ * This code does not manage authentication or plans; the configured provider
+ * makes the feature available.
  */
 export function useVersionHistoryFeature(
   options: UseVersionHistoryFeatureOptions,
@@ -178,7 +169,7 @@ export function useVersionHistoryFeature(
   const canCreate = headless.canCreate;
   const canRestore = headless.canRestore;
   const hasTemplate = computed(() => !!editor.state.template?.id);
-  const isAvailable = computed(() => options.isAvailable?.() ?? true);
+  const isAvailable = computed(() => true);
   const isPreviewing = computed(() => previewingVersion.value !== null);
   const canSaveBeforeRestore = computed(
     () => options.saveBeforeRestore?.canSave() === true,
@@ -203,8 +194,8 @@ export function useVersionHistoryFeature(
     isConfirmingRestore.value = false;
 
     // Already previewing: this is a scrub. Take the synchronous path whenever
-    // the content is in hand — a provider that hydrates its list (Cloud does)
-    // never awaits here, and the canvas swaps in the same tick.
+    // the content is in hand. A provider that hydrates its list allows
+    // the canvas to swap in the same tick without awaiting another request.
     if (previewingVersion.value) {
       const known = headless.peekContent(version);
       if (known) {

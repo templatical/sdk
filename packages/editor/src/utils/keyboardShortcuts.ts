@@ -42,7 +42,7 @@ export function isEditingText(e: KeyboardEvent): boolean {
 }
 
 /**
- * Shared keyboard shortcut handler for both OSS and Cloud editors.
+ * Keyboard shortcut handler for the editor.
  *
  * - Cmd/Ctrl+Z: undo (skipped when editing text — TipTap handles its own undo)
  * - Cmd/Ctrl+Shift+Z: redo (skipped when editing text)

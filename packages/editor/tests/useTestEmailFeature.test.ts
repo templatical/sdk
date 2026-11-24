@@ -36,7 +36,6 @@ function withFeature(options: {
   provider?: TestEmailProvider;
   renderMjml?: () => Promise<string>;
   usesLocalRenderer?: () => boolean;
-  isAvailable?: () => boolean;
   onError?: (error: Error) => void;
 }) {
   const provider = options.provider ?? createProvider();
@@ -50,7 +49,6 @@ function withFeature(options: {
           getContent: () => CONTENT,
           renderMjml: options.renderMjml,
           usesLocalRenderer: options.usesLocalRenderer,
-          isAvailable: options.isAvailable,
           onError: options.onError,
         });
         return () => h("div");
@@ -97,7 +95,9 @@ describe("useTestEmailFeature", () => {
     });
 
     it("open() is a no-op while unavailable", () => {
-      const { feature } = withFeature({ isAvailable: () => false });
+      const { feature } = withFeature({
+        provider: createProvider({ allowedRecipients: [] }),
+      });
 
       feature.open();
 
@@ -465,10 +465,9 @@ describe("useTestEmailFeature", () => {
     });
 
     /**
-     * The regression this guards is invisible until a Cloud session shows no
-     * button: Cloud exposes `allowedRecipients` as a getter over a value that
-     * arrives with its JWT, so the feature must read it inside a computed rather
-     * than snapshot it at setup.
+     * A provider may expose `allowedRecipients` through a reactive getter.
+     * The feature must read it inside a computed rather than snapshot it at
+     * setup, or a late-arriving list leaves the trigger hidden.
      */
     it("tracks a getter-backed list that fills after setup", async () => {
       const backing = ref<string[]>([]);
@@ -524,12 +523,16 @@ describe("useTestEmailFeature", () => {
 
   describe("capability", () => {
     it("exposes open + reactive availability for shared UI", () => {
-      const gate = ref(false);
-      const { feature } = withFeature({ isAvailable: () => gate.value });
+      const allowed = ref<string[]>([]);
+      const provider = createProvider();
+      Object.defineProperty(provider, "allowedRecipients", {
+        get: () => allowed.value,
+      });
+      const { feature } = withFeature({ provider });
 
       expect(feature.capability.isAvailable.value).toBe(false);
 
-      gate.value = true;
+      allowed.value = ["me@b.com"];
 
       expect(feature.capability.isAvailable.value).toBe(true);
       feature.capability.open();
