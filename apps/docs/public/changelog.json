@@ -18,8 +18,33 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.63.1",
+  "latest": "0.63.2",
   "versions": [
+    {
+      "version": "0.63.2",
+      "date": "2026-11-24",
+      "changes": [
+        {
+          "hash": "e701225",
+          "level": "patch",
+          "title": "Undo and redo are faster on large templates. A restore that changes a few blocks now updates them in place, so unchanged blocks keep their identity and are not re-rendered. A restore that changes more than eight blocks still replaces the content in one step.",
+          "body": "`onChange` and autosave now receive the restored content once undo or redo settles. Before, the pause during undo/redo dropped that change. `useAutoSave` now reports a change made while paused after `resume()`, through the usual debounce, `enabled` and dirty checks. Undo settling while a version preview is open no longer resumes autosave, so the previewed version is not saved.",
+          "packages": [
+            "@templatical/core",
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "f658642",
+          "level": "patch",
+          "title": "Remove the unused named `SdkErrorCode` members `invalid_credentials`, `token_invalid`, `token_revoked`, `browser_not_allowed`, `token_scope_mismatch`, `user_required`, `not_author`, `mcp_not_allowed`, `recipient_not_allowed`, and `send_failed`. Provider-defined code strings remain accepted through the open string type (`string & {}`), so assigning or comparing one of these strings still typechecks. A type that extracts one from the union, such as `Extract<SdkErrorCode, \"user_required\">`, now resolves to `never`; use the literal type (`\"user_required\"`) instead.",
+          "body": "",
+          "packages": [
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.63.1",
       "date": "2026-11-24",
