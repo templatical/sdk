@@ -18,8 +18,26 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.63.0",
+  "latest": "0.63.1",
   "versions": [
+    {
+      "version": "0.63.1",
+      "date": "2026-11-24",
+      "changes": [
+        {
+          "hash": "5bc6b4a",
+          "level": "patch",
+          "title": "A countdown's `targetDate` is now read as wall-clock time in its `timezone` everywhere. The type documents it as `YYYY-MM-DDTHH:mm` read in `timezone`, which is the value the editor's date field writes. Three places changed:",
+          "body": "- The canvas preview and the alt text read that value in the block's timezone. They used to read it in the browser's timezone, so an author outside that zone saw a shifted countdown and alt text.\n- A `targetDate` that carries `Z` or an offset is read as that instant.\n- The date field shows a `targetDate` with `Z` or an offset as wall time in the block's timezone. Before, the field rendered empty.\n\nTwo new `@templatical/types` exports cover this: `countdownTargetTime(block)` returns the instant in epoch milliseconds, or `null`, and `countdownWallTime(block)` returns the `YYYY-MM-DDTHH:mm` value, or `\"\"`. The docs and the agent skill no longer write `targetDate` with an offset.",
+          "packages": [
+            "@templatical/ai-kit",
+            "@templatical/editor",
+            "@templatical/template-tools",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.63.0",
       "date": "2026-11-23",
