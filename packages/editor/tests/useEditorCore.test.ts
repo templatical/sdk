@@ -250,12 +250,14 @@ describe('useEditorCore', () => {
     });
 
     it('calls useHistory with content and setContent', () => {
-      mountCore();
+      const { editor } = mountCore();
       expect(useHistory).toHaveBeenCalledOnce();
       const arg = vi.mocked(useHistory).mock.calls[0][0];
       expect(arg.content).toBeDefined();
       expect(typeof arg.setContent).toBe('function');
-      expect(Object.keys(arg).sort()).toEqual(['content', 'setContent']);
+      expect(Object.keys(arg).sort()).toEqual(['content', 'markDirty', 'setContent']);
+      arg.markDirty?.();
+      expect(editor.markDirty).toHaveBeenCalledOnce();
     });
 
     it('wires history interceptor after history is created', () => {
@@ -874,6 +876,40 @@ describe('useEditorCore', () => {
 
       expect(() => pressCmdS()).not.toThrow();
       expect(pressCmdS().defaultPrevented).toBe(true);
+    });
+  });
+
+  describe('autosave pause holders', () => {
+    function gated() {
+      const inner = {
+        flush: vi.fn(),
+        pause: vi.fn(),
+        resume: vi.fn(),
+        cancel: vi.fn(),
+        destroy: vi.fn(),
+      };
+      vi.mocked(useAutoSave).mockReturnValue(inner as any);
+      const { captured } = mountCore({ autoSaveOptions: { onChange: vi.fn() } });
+      return { inner, autoSave: captured.core!.autoSave! };
+    }
+
+    it('resumes only once every holder has resumed', () => {
+      const { inner, autoSave } = gated();
+      autoSave.pause();
+      autoSave.pause();
+      autoSave.resume();
+      expect(inner.resume).not.toHaveBeenCalled();
+      autoSave.resume();
+      expect(inner.resume).toHaveBeenCalledOnce();
+      expect(inner.pause).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores a resume with no pause held', () => {
+      const { inner, autoSave } = gated();
+      autoSave.resume();
+      autoSave.pause();
+      autoSave.resume();
+      expect(inner.resume).toHaveBeenCalledOnce();
     });
   });
 
