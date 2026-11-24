@@ -2,6 +2,8 @@ import { createCountdownBlock } from "@templatical/types";
 import type { Scene } from "../types";
 import { setupBaseCanvas } from "./shared";
 
+// A public URL: templatical.com's homepage editor links this file too, so
+// renaming or moving it breaks that demo.
 const SAMPLE_GIF = "https://play.templatical.com/countdown-sample.gif";
 
 // The demo counts down to 18:00 Berlin time about thirty days ahead, so the
