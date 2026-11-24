@@ -227,6 +227,33 @@ describe("useVersionHistoryFeature", () => {
       // The protection does not depend on `create` at all.
       expect(feature.canCreate.value).toBe(false);
     });
+    it("enters once when a second entry resolves after the first", async () => {
+      const resolvers: Record<string, (c: TemplateContent) => void> = {};
+      const { feature, editor, autoSave } = setup({
+        get: vi.fn(
+          (_template: string, id: string) =>
+            new Promise<TemplateContent>((done) => {
+              resolvers[id] = done;
+            }),
+        ) as never,
+      });
+
+      const first = feature.navigate(version("ver-1"));
+      const second = feature.navigate(version("ver-2"));
+      await vi.waitFor(() => expect(Object.keys(resolvers)).toHaveLength(2));
+      resolvers["ver-1"](content("v1"));
+      await first;
+      resolvers["ver-2"](content("v2"));
+      await second;
+
+      expect(autoSave.pause).toHaveBeenCalledOnce();
+      expect(feature.previewingVersion.value?.id).toBe("ver-2");
+      expect(editor.content.value).toEqual(content("v2"));
+
+      feature.cancelPreview();
+      expect(autoSave.resume).toHaveBeenCalledOnce();
+      expect(editor.content.value).toEqual(content("current"));
+    });
   });
 
   describe("scrubbing", () => {

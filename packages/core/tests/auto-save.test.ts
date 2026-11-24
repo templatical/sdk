@@ -304,6 +304,21 @@ describe("useAutoSave", () => {
       expect(clean.onChange).not.toHaveBeenCalled();
     });
 
+    it("drops a paused change that cancel discards, and still saves a later edit", () => {
+      const { content, onChange, pause, resume, cancel } = paused({});
+      pause();
+      content.value.settings.width = 700;
+      cancel();
+      resume();
+      vi.advanceTimersByTime(500);
+      expect(onChange).not.toHaveBeenCalled();
+
+      content.value.settings.width = 640;
+      vi.advanceTimersByTime(100);
+      expect(onChange).toHaveBeenCalledOnce();
+      expect(onChange.mock.calls[0][0].settings.width).toBe(640);
+    });
+
     it("forgets a paused change once flush reports it", () => {
       const { content, onChange, pause, resume, flush } = paused({});
       pause();

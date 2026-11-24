@@ -56,7 +56,7 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
   function pause(): void {
     if (timeoutId) pendingWhilePaused = true;
     paused = true;
-    cancel();
+    clearTimer();
   }
 
   function resume(): void {
@@ -67,16 +67,22 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
     }
   }
 
-  function cancel(): void {
+  function clearTimer(): void {
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
     }
   }
 
+  // Public cancel drops a change held over a pause too; `pause()` clears only
+  // the timer so `resume()` can still report it.
+  function cancel(): void {
+    clearTimer();
+    pendingWhilePaused = false;
+  }
+
   function flush(): void {
     cancel();
-    pendingWhilePaused = false;
     if (isDirty()) {
       onChange(JSON.parse(JSON.stringify(content.value)));
     }
@@ -89,7 +95,7 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
     }
     if (!isEnabled()) return;
 
-    cancel();
+    clearTimer();
     timeoutId = setTimeout(() => {
       timeoutId = null;
       if (isEnabled() && !paused && isDirty()) {
