@@ -5,6 +5,7 @@ export { LineHeight } from "./LineHeight";
 export { LogicMergeTagNode } from "./LogicMergeTagNode";
 export { MergeTagNode } from "./MergeTagNode";
 export { MergeTagSuggestion } from "./MergeTagSuggestion";
+export { SelectAllText } from "./SelectAllText";
 export {
   filterMergeTags,
   handleSuggestionKeyDown,

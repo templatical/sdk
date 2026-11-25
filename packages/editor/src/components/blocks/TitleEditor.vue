@@ -81,7 +81,13 @@ const {
       { Editor: TiptapEditor, EditorContent: EC },
       { default: StarterKit },
       { default: LinkExt },
-      { MergeTagNode, MergeTagSuggestion, LogicMergeTagNode, LineBoundaryKeys },
+      {
+        MergeTagNode,
+        MergeTagSuggestion,
+        LogicMergeTagNode,
+        LineBoundaryKeys,
+        SelectAllText,
+      },
     ] = await Promise.all([
       import("@tiptap/vue-3"),
       import("@tiptap/starter-kit"),
@@ -119,6 +125,7 @@ const {
         MergeTagNode.configure({ mergeTags: () => mergeTags.value, syntax }),
         LogicMergeTagNode.configure({ syntax }),
         LineBoundaryKeys,
+        SelectAllText,
         // Registration is decided here, when the block opens for editing, so a
         // list that goes from empty to populated enables type-ahead for the
         // next block opened rather than this one. Deliberate: registering
