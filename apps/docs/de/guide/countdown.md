@@ -33,7 +33,7 @@ Die Playground-URL liefert ein **festes Beispiel-GIF**: dieselbe 30-Sekunden-Sch
 
 ## Bild auf der Arbeitsfläche
 
-Die Arbeitsfläche zeigt das Countdown-Bild des Hosts, das auch in der E-Mail erscheint. Ohne Bild-URL erscheint ein Platzhalter. Wenn das Bild nicht geladen werden kann, zeigt der Platzhalter die fehlgeschlagene URL. Nach der letzten Änderung wartet der Editor 400 ms, bevor er ein neues Bild anfordert. Während des Ladens bleibt das bisherige Bild abgeblendet und mit „Wird aktualisiert…“ versehen sichtbar, bis das neue Bild geladen ist.
+Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Die E-Mail verwendet dieselbe URL; ein Host, der aus dem gespeicherten Block rendert ([Block-Abruf aus dem Speicher](#block-abruf-aus-dem-speicher)), kann ungespeicherte Änderungen auf der Arbeitsfläche zeigen, bevor sie Empfänger erreichen. Ohne Bild-URL erscheint ein Platzhalter. Wenn das Bild nicht geladen werden kann, zeigt der Platzhalter die fehlgeschlagene URL. Nach der letzten Änderung wartet der Editor 400 ms, bevor er ein neues Bild anfordert. Während des Ladens bleibt das bisherige Bild abgeblendet und mit „Wird aktualisiert…“ versehen sichtbar, bis das neue Bild geladen ist.
 
 ## Provider- und Renderer-Vertrag
 
@@ -65,7 +65,7 @@ declare function countdownWallTime(
 ): string;
 ```
 
-Andere Felder der Werkzeugleiste als `targetDate` und `timezone` wirken sich nur dann auf die versendete E-Mail aus, wenn der Host sie beim Aufbau der Bild-URL aus dem Block liest.
+Andere Felder der Werkzeugleiste als `targetDate` und `timezone` wirken sich nur dann auf die versendete E-Mail aus, wenn der Bilddienst des Hosts sie liest, entweder aus der Bild-URL oder aus dem gespeicherten Block.
 
 `renderCountdownImage` kommt aus `@templatical/renderer`. Die Funktion gibt ein `<mj-image>` mit dem übergebenen `src`, maskierten Attributen und lokalisiertem Alternativtext zurück. `countdownAltText` kommt aus `@templatical/types` und beschreibt das Zieldatum in der Sprache des Templates. `countdownTargetTime` gibt das Ziel in Epoch-Millisekunden zurück, oder `null` bei leerem, unlesbarem oder unmöglichem Datum sowie bei einem Datum ohne Offset und unbekannter Zeitzone (ein Datum mit `Z` oder Offset ignoriert `timezone`); `countdownWallTime` gibt es als `YYYY-MM-DDTHH:mm` in der Zeitzone des Blocks zurück, oder `""`. Der lokale Renderpfad des Editors verwendet automatisch die Template-Sprache. Ein Host-Override mit `render.toMjml` verantwortet seinen eigenen Renderpfad.
 
