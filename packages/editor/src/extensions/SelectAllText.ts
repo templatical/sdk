@@ -24,9 +24,6 @@ export const SelectAllText = Extension.create({
           to = pos + node.nodeSize - 1;
           return false;
         });
-        // A document with no text block has nothing better to offer.
-        if (from < 0) return false;
-
         return editor.commands.setTextSelection({ from, to });
       },
     };
