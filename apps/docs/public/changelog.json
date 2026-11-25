@@ -18,8 +18,23 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.63.2",
+  "latest": "0.63.3",
   "versions": [
+    {
+      "version": "0.63.3",
+      "date": "2026-11-25",
+      "changes": [
+        {
+          "hash": "e3c5c47",
+          "level": "patch",
+          "title": "Mod-a inside a text or title block now selects the block's text instead of the whole document, so typing over it keeps the text's font, size, colour and alignment.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.63.2",
       "date": "2026-11-24",

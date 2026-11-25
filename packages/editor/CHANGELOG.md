@@ -1,5 +1,13 @@
 # @templatical/editor
 
+## 0.63.3
+
+### Patch Changes
+
+- e3c5c47: Mod-a inside a text or title block now selects the block's text instead of the whole document, so typing over it keeps the text's font, size, colour and alignment.
+- @templatical/quality@0.63.3
+  - @templatical/renderer@0.63.3
+
 ## 0.63.2
 
 ### Patch Changes
