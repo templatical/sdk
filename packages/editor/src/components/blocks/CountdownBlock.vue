@@ -6,7 +6,7 @@ import type {
 } from "@templatical/types";
 import { countdownAltText } from "@templatical/types";
 import { refDebounced } from "@vueuse/core";
-import { computed, inject, watch } from "vue";
+import { computed, inject } from "vue";
 import {
   COUNTDOWN_IMAGE_DEBOUNCE_MS,
   useCountdownImage,
@@ -31,13 +31,6 @@ const { shownUrl, isUpdating, failedUrl } = useCountdownImage(
 );
 const alt = computed(() =>
   countdownAltText(props.block, editor?.content.value.settings.locale),
-);
-
-watch(
-  () => props.block,
-  () => {
-    failedUrl.value = "";
-  },
 );
 </script>
 
@@ -85,6 +78,8 @@ watch(
     v-else-if="isUpdating"
     data-testid="countdown-placeholder"
     data-state="loading"
+    role="status"
+    aria-live="polite"
     class="tpl:flex tpl:items-center tpl:justify-center tpl:py-8 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
   >
     {{ t.countdown.updating }}
