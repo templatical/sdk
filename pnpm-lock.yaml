@@ -261,8 +261,8 @@ importers:
         specifier: ^9.1.7
         version: 9.1.7
       lint-staged:
-        specifier: ^17.6.1
-        version: 17.6.1
+        specifier: ^17.6.2
+        version: 17.6.2
       prettier:
         specifier: ^3.10.1
         version: 3.10.1
@@ -379,13 +379,13 @@ importers:
         version: 15.0.0(vue@3.5.46(typescript@6.0.3))
       '@vueuse/integrations':
         specifier: ^15.0.0
-        version: 15.0.0(focus-trap@8.2.5)(vue@3.5.46(typescript@6.0.3))
+        version: 15.0.0(focus-trap@8.2.6)(vue@3.5.46(typescript@6.0.3))
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
       focus-trap:
-        specifier: ^8.2.5
-        version: 8.2.5
+        specifier: ^8.2.6
+        version: 8.2.6
       mjml-browser:
         specifier: ^5.4.1
         version: 5.4.1
@@ -3009,8 +3009,8 @@ packages:
   flatted@3.4.4:
     resolution: {integrity: sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==}
 
-  focus-trap@8.2.5:
-    resolution: {integrity: sha512-VrqfyRXaHZ0EkhXlfyalszmhnSN9yjdYXwlwLSRoJrDJ0/eswY5J5Avj/Hcd/PrOHCMnsMhwx7+7+s1kmv9Asg==}
+  focus-trap@8.2.6:
+    resolution: {integrity: sha512-4V7uTf/7Ax3ynfbey6K3o8NOfIz+go9atKNtFU+KCP5NWhyvn2M/Qk4HY+9kOi8NWujpglRGe0y6G3r/L5M/Pw==}
 
   fs-extra@11.3.6:
     resolution: {integrity: sha512-w8ZNZr2mKIc7qeNaQ9AVPT1+iFaI+Avd4xudVOvdDJ8VytREi1Ft5Ih7hd9jjehod8vAM5GMsfQ/TpPf4EyoEA==}
@@ -3382,8 +3382,8 @@ packages:
   linkifyjs@4.4.0:
     resolution: {integrity: sha512-InTexvtbai+2c+dEVGcc6O6P2DMVIiwD9a/i4zFroazOIYLOS6FSVmAJ7kFeumnCMx6/gQqNAkbUvgMubV4+MA==}
 
-  lint-staged@17.6.1:
-    resolution: {integrity: sha512-3MXgVN7BERDR/6CXZs2fDHGc+r0+hlvGAa9wqMlVbIS6RVRuaPOnb5SnN6wMXulwfEy9DXVkMVUN/8cUlpPDnw==}
+  lint-staged@17.6.2:
+    resolution: {integrity: sha512-c/JaXaXmleubmKUwwp4OAcq55RV9Z3HTUNdqdqPh2srtmP9Of3bcR6o00GoWDUye+9JhMuoYkhYqAVPIOZKcsw==}
     engines: {node: '>=22.22.1'}
     hasBin: true
 
@@ -6075,13 +6075,13 @@ snapshots:
       '@vueuse/shared': 15.0.0(vue@3.5.46(typescript@6.0.3))
       vue: 3.5.46(typescript@6.0.3)
 
-  '@vueuse/integrations@15.0.0(focus-trap@8.2.5)(vue@3.5.46(typescript@6.0.3))':
+  '@vueuse/integrations@15.0.0(focus-trap@8.2.6)(vue@3.5.46(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 15.0.0(vue@3.5.46(typescript@6.0.3))
       '@vueuse/shared': 15.0.0(vue@3.5.46(typescript@6.0.3))
       vue: 3.5.46(typescript@6.0.3)
     optionalDependencies:
-      focus-trap: 8.2.5
+      focus-trap: 8.2.6
 
   '@vueuse/metadata@15.0.0': {}
 
@@ -6761,7 +6761,7 @@ snapshots:
 
   flatted@3.4.4: {}
 
-  focus-trap@8.2.5:
+  focus-trap@8.2.6:
     dependencies:
       tabbable: 6.5.2
 
@@ -7116,7 +7116,7 @@ snapshots:
 
   linkifyjs@4.4.0: {}
 
-  lint-staged@17.6.1:
+  lint-staged@17.6.2:
     dependencies:
       picomatch: 4.0.7
       string-argv: 0.4.0
@@ -8522,8 +8522,8 @@ snapshots:
       '@vue/devtools-api': 8.2.1
       '@vue/shared': 3.5.46
       '@vueuse/core': 15.0.0(vue@3.5.46(typescript@6.0.3))
-      '@vueuse/integrations': 15.0.0(focus-trap@8.2.5)(vue@3.5.46(typescript@6.0.3))
-      focus-trap: 8.2.5
+      '@vueuse/integrations': 15.0.0(focus-trap@8.2.6)(vue@3.5.46(typescript@6.0.3))
+      focus-trap: 8.2.6
       mark.js: 8.11.1
       minisearch: 7.2.0
       shiki: 4.6.0
