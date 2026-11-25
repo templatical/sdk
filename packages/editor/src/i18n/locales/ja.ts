@@ -487,7 +487,10 @@ const translations: typeof en = {
     expiredImageUrl: "終了時の画像URL",
     hideOnExpiry: "終了後は非表示",
     setDate: "設定パネルで目標日時を指定してください",
-    hidden: "非表示 (終了済み)",
+    noImage:
+      "カウントダウン画像がありません。ホストのカウントダウンプロバイダーから画像URLが返されませんでした。",
+    imageFailed: "カウントダウン画像を読み込めませんでした。",
+    updating: "更新中…",
   },
   customBlocks: {
     definitionNotFound: "不明なブロックです。このブロックは登録されていません",

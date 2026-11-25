@@ -5,7 +5,6 @@ import { ref, type Component } from "vue";
 import type { Block, CustomFont } from "@templatical/types";
 import {
   createButtonBlock,
-  createCountdownBlock,
   createMenuBlock,
   createTableBlock,
   createTitleBlock,
@@ -13,12 +12,14 @@ import {
   parseFontFamilies,
 } from "@templatical/types";
 import { useEditor } from "@templatical/core";
-import { createDefaultTemplateContent, createParagraphBlock } from "@templatical/types";
+import {
+  createDefaultTemplateContent,
+  createParagraphBlock,
+} from "@templatical/types";
 import { RenderContext, renderBlock } from "@templatical/renderer";
 import BlockPreviewCanvas from "../src/components/BlockPreviewCanvas.vue";
 import Canvas from "../src/components/Canvas.vue";
 import ButtonBlock from "../src/components/blocks/ButtonBlock.vue";
-import CountdownBlock from "../src/components/blocks/CountdownBlock.vue";
 import MenuBlock from "../src/components/blocks/MenuBlock.vue";
 import TableBlock from "../src/components/blocks/TableBlock.vue";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
@@ -77,15 +78,10 @@ const BLOCKS: [string, Component, (fontFamily: string) => Block][] = [
         fontFamily,
       }),
   ],
-  ["table", TableBlock, (fontFamily) => ({ ...createTableBlock(), fontFamily })],
   [
-    "countdown",
-    CountdownBlock,
-    (fontFamily) =>
-      createCountdownBlock({
-        targetDate: new Date(Date.now() + 86_400_000).toISOString(),
-        fontFamily,
-      }),
+    "table",
+    TableBlock,
+    (fontFamily) => ({ ...createTableBlock(), fontFamily }),
   ],
 ];
 
@@ -178,7 +174,10 @@ describe("canvas template font parity with the renderer", () => {
   const renderer = new RenderContext(600, CUSTOM_FONTS, DEFAULT_FALLBACK, true);
 
   function fontsManager() {
-    return useFonts({ customFonts: CUSTOM_FONTS, defaultFallback: DEFAULT_FALLBACK });
+    return useFonts({
+      customFonts: CUSTOM_FONTS,
+      defaultFallback: DEFAULT_FALLBACK,
+    });
   }
 
   function contentWith(fontFamily: string) {
@@ -188,43 +187,49 @@ describe("canvas template font parity with the renderer", () => {
     return content;
   }
 
-  it.each(FONTS)("the editing canvas applies %s as <mj-all> does", (fontFamily) => {
-    const content = contentWith(fontFamily);
-    const wrapper = mountEditor(Canvas, {
-      props: {
-        viewport: "desktop",
-        content,
-        selectedBlockId: null,
-        darkMode: false,
-        previewMode: false,
-      },
-      provides: {
-        [EDITOR_KEY]: useEditor({ content }),
-        [TRANSLATIONS_KEY]: enTranslations,
-        [FONTS_MANAGER_KEY]: fontsManager(),
-      },
-    });
-    const canvas = wrapper.find(".tpl-canvas").element as HTMLElement;
+  it.each(FONTS)(
+    "the editing canvas applies %s as <mj-all> does",
+    (fontFamily) => {
+      const content = contentWith(fontFamily);
+      const wrapper = mountEditor(Canvas, {
+        props: {
+          viewport: "desktop",
+          content,
+          selectedBlockId: null,
+          darkMode: false,
+          previewMode: false,
+        },
+        provides: {
+          [EDITOR_KEY]: useEditor({ content }),
+          [TRANSLATIONS_KEY]: enTranslations,
+          [FONTS_MANAGER_KEY]: fontsManager(),
+        },
+      });
+      const canvas = wrapper.find(".tpl-canvas").element as HTMLElement;
 
-    expect(familyNames(canvas.style.fontFamily)).toEqual(
-      familyNames(renderer.resolveFontFamily(fontFamily)),
-    );
-  });
+      expect(familyNames(canvas.style.fontFamily)).toEqual(
+        familyNames(renderer.resolveFontFamily(fontFamily)),
+      );
+    },
+  );
 
-  it.each(FONTS)("the block preview applies %s as <mj-all> does", (fontFamily) => {
-    const content = contentWith(fontFamily);
-    const wrapper = mountEditor(BlockPreviewCanvas, {
-      props: { blocks: content.blocks },
-      provides: {
-        [EDITOR_KEY]: { content: ref(content), state: {} },
-        [FONTS_MANAGER_KEY]: fontsManager(),
-      },
-    } as never);
-    const column = wrapper.find('[data-testid="block-preview-canvas"]')
-      .element as HTMLElement;
+  it.each(FONTS)(
+    "the block preview applies %s as <mj-all> does",
+    (fontFamily) => {
+      const content = contentWith(fontFamily);
+      const wrapper = mountEditor(BlockPreviewCanvas, {
+        props: { blocks: content.blocks },
+        provides: {
+          [EDITOR_KEY]: { content: ref(content), state: {} },
+          [FONTS_MANAGER_KEY]: fontsManager(),
+        },
+      } as never);
+      const column = wrapper.find('[data-testid="block-preview-canvas"]')
+        .element as HTMLElement;
 
-    expect(familyNames(column.style.fontFamily)).toEqual(
-      familyNames(renderer.resolveFontFamily(fontFamily)),
-    );
-  });
+      expect(familyNames(column.style.fontFamily)).toEqual(
+        familyNames(renderer.resolveFontFamily(fontFamily)),
+      );
+    },
+  );
 });

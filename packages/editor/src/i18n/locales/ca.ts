@@ -555,7 +555,10 @@ const ca: typeof en = {
     expiredImageUrl: "URL de la imatge caducada",
     hideOnExpiry: "Oculta quan hagi caducat",
     setDate: "Defineix una data límit al panell de configuració",
-    hidden: "Ocult (caducat)",
+    noImage:
+      "No hi ha cap imatge de compte enrere. El proveïdor del host no ha retornat cap URL d’imatge.",
+    imageFailed: "No s’ha pogut carregar la imatge de compte enrere.",
+    updating: "Actualitzant…",
   },
 
   // Custom Blocks

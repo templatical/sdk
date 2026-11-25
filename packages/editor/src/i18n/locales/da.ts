@@ -551,7 +551,10 @@ const da: typeof en = {
     expiredImageUrl: "Billed-URL ved udløb",
     hideOnExpiry: "Skjul ved udløb",
     setDate: "Angiv en slutdato i indstillingerne",
-    hidden: "Skjult (udløbet)",
+    noImage:
+      "Intet nedtællingsbillede. Værtens nedtællingsudbyder returnerede ingen billed-URL.",
+    imageFailed: "Nedtællingsbilledet kunne ikke indlæses.",
+    updating: "Opdaterer…",
   },
 
   // Custom Blocks
