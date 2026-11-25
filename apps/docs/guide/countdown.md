@@ -33,7 +33,7 @@ The playground URL returns a **fixed sample GIF**: the same 30-second loop for e
 
 ## Canvas image
 
-The canvas shows the host's countdown image, the same image the email receives. Without an image URL, it shows a placeholder. If the image fails to load, the placeholder shows the failed URL. The editor waits 400 ms after the last edit before requesting a new image. During loading, the previous image remains visible, dimmed with “Updating…”, until the new image has loaded.
+The canvas shows the image `imageUrl` returns for the block as it stands in the editor. The email uses the same URL; a host that renders from the stored block ([Block lookup from storage](#block-lookup-from-storage)) can draw unsaved edits on the canvas before they reach recipients. Without an image URL, it shows a placeholder. If the image fails to load, the placeholder shows the failed URL. The editor waits 400 ms after the last edit before requesting a new image. During loading, the previous image remains visible, dimmed with “Updating…”, until the new image has loaded.
 
 ## Provider and renderer contract
 
@@ -65,7 +65,7 @@ declare function countdownWallTime(
 ): string;
 ```
 
-Toolbar fields other than `targetDate` and `timezone` affect the sent email only when the host reads them from the block while building the image URL.
+Toolbar fields other than `targetDate` and `timezone` affect the sent email only when the host's image service reads them, either from the image URL or from the stored block.
 
 `renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. `countdownTargetTime` returns the target as epoch milliseconds, or `null` for an empty, unreadable or impossible date, or for an offset-free date with an unknown timezone (a date with `Z` or an offset ignores `timezone`); `countdownWallTime` returns it as `YYYY-MM-DDTHH:mm` in the block's timezone, or `""`. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
 
