@@ -552,7 +552,10 @@ const de: typeof en = {
     expiredImageUrl: "Ablaufbild-URL",
     hideOnExpiry: "Bei Ablauf ausblenden",
     setDate: "Legen Sie ein Zieldatum im Einstellungsbereich fest",
-    hidden: "Ausgeblendet (abgelaufen)",
+    noImage:
+      "Kein Countdown-Bild. Der Countdown-Provider des Hosts hat keine Bild-URL zurückgegeben.",
+    imageFailed: "Das Countdown-Bild konnte nicht geladen werden.",
+    updating: "Wird aktualisiert…",
   },
 
   // Custom Blocks

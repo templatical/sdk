@@ -63,8 +63,9 @@ Full contracts: [docs.md](docs.md) → the `backend/` pages.
 
 `countdown: CountdownProvider` supplies `imageUrl(block: CountdownBlock): string`.
 The editor shows that image on the canvas and exports it through
-`renderCountdownImage` as `<mj-image>` when using its local render path. Return
-an absolute URL to a GIF served by the host or a URL-based countdown image
+`renderCountdownImage` as `<mj-image>` when using its local render path.
+The editor canvas shows the provider's image as-is, with no JavaScript fallback, so a broken URL is visible while editing.
+Return an absolute URL to a GIF served by the host or a URL-based countdown image
 service; the SDK ships no GIF server. An empty URL, or a countdown block with no
 provider or headless `blockRenderers.countdown`, renders the unrenderable marker.
 The image service owns expiry and `hideOnExpiry`, because sent email HTML is

@@ -502,7 +502,10 @@ const fr: typeof en = {
     expiredImageUrl: "URL de l'image d'expiration",
     hideOnExpiry: "Masquer à l'expiration",
     setDate: "Définissez une date cible dans le panneau des paramètres",
-    hidden: "Masqué (expiré)",
+    noImage:
+      "Aucune image de compte à rebours. Le fournisseur du compte à rebours de l’hôte n’a renvoyé aucune URL d’image.",
+    imageFailed: "Le chargement de l’image de compte à rebours a échoué.",
+    updating: "Mise à jour…",
   },
   customBlocks: {
     definitionNotFound: "Type de bloc inconnu — ce bloc n'est pas enregistré",
