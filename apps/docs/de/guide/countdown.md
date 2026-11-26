@@ -87,6 +87,10 @@ Das [eigenständige Node-Beispiel](https://github.com/templatical/sdk/tree/main/
 
 <<< @/../../examples/countdown-image/src/server.ts
 
+`server.ts` importiert die Aufteilung in Einheiten aus `segments.ts`: Jede sichtbare Einheit erhält, was nach den größeren sichtbaren Einheiten übrig bleibt.
+
+<<< @/../../examples/countdown-image/src/segments.ts
+
 Für die Übertragung auf einen anderen Stack:
 
 - `targetDate` in `timezone` lesen, einschließlich der Sommerzeitwechsel, entsprechend `countdownTargetTime`.

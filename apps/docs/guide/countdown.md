@@ -87,6 +87,10 @@ The [standalone Node example](https://github.com/templatical/sdk/tree/main/examp
 
 <<< @/../../examples/countdown-image/src/server.ts
 
+`server.ts` imports the unit breakdown from `segments.ts`: each visible unit takes what is left after the larger visible units.
+
+<<< @/../../examples/countdown-image/src/segments.ts
+
 To port the endpoint to another stack:
 
 - Read `targetDate` in `timezone`, including daylight-saving transitions, through the equivalent of `countdownTargetTime`.
