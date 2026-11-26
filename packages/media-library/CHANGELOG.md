@@ -1,5 +1,11 @@
 # @templatical/media-library
 
+## 0.63.4
+
+### Patch Changes
+
+- @templatical/types@0.63.4
+
 ## 0.63.3
 
 ### Patch Changes
