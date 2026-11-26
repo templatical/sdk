@@ -22,8 +22,31 @@ export function useCountdownImage(
   const isUpdating = ref(false);
   const failedUrl = ref("");
   let preloader: HTMLImageElement | null = null;
+  // A completion that arrived while its URL was not the latest. It applies if
+  // the latest URL returns to it before the debounced target moves; the target
+  // then stays put, so no new request would ever settle the state.
+  let heldResult: { url: string; loaded: boolean } | null = null;
+
+  function settle(url: string, loaded: boolean) {
+    isUpdating.value = false;
+    if (loaded) {
+      shownUrl.value = url;
+      failedUrl.value = "";
+    } else {
+      failedUrl.value = url;
+    }
+  }
+
+  function complete(url: string, loaded: boolean) {
+    if (latest.value !== url) {
+      heldResult = { url, loaded };
+      return;
+    }
+    settle(url, loaded);
+  }
 
   function cancelPreloader() {
+    heldResult = null;
     if (!preloader) return;
     preloader.onload = null;
     preloader.onerror = null;
@@ -49,21 +72,19 @@ export function useCountdownImage(
       isUpdating.value = true;
       const image = new Image();
       preloader = image;
-      image.onload = () => {
-        if (latest.value !== url) return;
-        shownUrl.value = url;
-        isUpdating.value = false;
-        failedUrl.value = "";
-      };
-      image.onerror = () => {
-        if (latest.value !== url) return;
-        isUpdating.value = false;
-        failedUrl.value = url;
-      };
+      image.onload = () => complete(url, true);
+      image.onerror = () => complete(url, false);
       image.src = url;
     },
     { immediate: true },
   );
+
+  watch(latest, (url) => {
+    if (!heldResult || heldResult.url !== url) return;
+    const held = heldResult;
+    heldResult = null;
+    settle(held.url, held.loaded);
+  });
 
   onScopeDispose(cancelPreloader);
   return { shownUrl, isUpdating, failedUrl };

@@ -109,6 +109,48 @@ describe("useCountdownImage", () => {
     scope.stop();
   });
 
+  it.each([
+    ["loads", true],
+    ["fails", false],
+  ])("applies a held completion when the latest URL returns to it (preload %s)", async (_, loaded) => {
+    const target = ref("https://example.com/first.gif");
+    const latest = ref("https://example.com/first.gif");
+    const scope = effectScope();
+    const state = scope.run(() => useCountdownImage(() => target.value, () => latest.value))!;
+    latest.value = "https://example.com/second.gif";
+    await nextTick();
+    if (loaded) FakeImage.instances[0].load();
+    else FakeImage.instances[0].error();
+    await nextTick();
+    expect(state.isUpdating.value).toBe(true);
+    expect(state.shownUrl.value).toBe("");
+    expect(state.failedUrl.value).toBe("");
+    latest.value = "https://example.com/first.gif";
+    await nextTick();
+    expect(state.isUpdating.value).toBe(false);
+    expect(state.shownUrl.value).toBe(loaded ? "https://example.com/first.gif" : "");
+    expect(state.failedUrl.value).toBe(loaded ? "" : "https://example.com/first.gif");
+    expect(FakeImage.instances).toHaveLength(1);
+    scope.stop();
+  });
+
+  it("drops a held completion once the debounced target moves on", async () => {
+    const target = ref("https://example.com/first.gif");
+    const latest = ref("https://example.com/first.gif");
+    const scope = effectScope();
+    const state = scope.run(() => useCountdownImage(() => target.value, () => latest.value))!;
+    latest.value = "https://example.com/second.gif";
+    await nextTick();
+    FakeImage.instances[0].load();
+    target.value = "https://example.com/second.gif";
+    await nextTick();
+    latest.value = "https://example.com/first.gif";
+    await nextTick();
+    expect(state.shownUrl.value).toBe("");
+    expect(state.isUpdating.value).toBe(true);
+    scope.stop();
+  });
+
   it("stops updating without a new request when the target returns to the shown image", async () => {
     const state = setup("https://example.com/first.gif");
     FakeImage.instances[0].load();
