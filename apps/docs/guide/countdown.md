@@ -33,7 +33,7 @@ The playground URL returns a **fixed sample GIF**: the same 30-second loop for e
 
 ## Canvas image
 
-The canvas shows the image `imageUrl` returns for the block as it stands in the editor. Without an image URL it shows a placeholder; if the image fails to load, the placeholder shows the failed URL. A block with no `targetDate` shows a hint to set one until an image has loaded.
+The canvas shows the image `imageUrl` returns for the block as it stands in the editor. Without an image URL it shows a placeholder; if the image fails to load, the placeholder shows the failed URL. If a load fails, the failure placeholder replaces any image shown before. A block with no `targetDate` shows a hint to set one while no image has loaded and no load has failed.
 
 The editor loads the image as follows:
 
