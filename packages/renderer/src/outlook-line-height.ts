@@ -27,6 +27,7 @@ type StyleAttribute = {
 
 type TextSummary = {
   hasText: boolean;
+  hasSizedSpanText: boolean;
   spanSize: number | null;
   uniform: boolean;
 };
@@ -125,6 +126,7 @@ function pxFontSize(value: string | null): number | null {
 }
 
 function addText(summary: TextSummary, size: number | null): void {
+  if (size !== null) summary.hasSizedSpanText = true;
   if (!summary.hasText) {
     summary.hasText = true;
     summary.spanSize = size;
@@ -134,6 +136,7 @@ function addText(summary: TextSummary, size: number | null): void {
 
 function mergeSummary(parent: TextSummary, child: TextSummary): void {
   if (!child.hasText) return;
+  parent.hasSizedSpanText ||= child.hasSizedSpanText;
   if (!parent.hasText) {
     parent.hasText = true;
     parent.spanSize = child.spanSize;
@@ -143,11 +146,16 @@ function mergeSummary(parent: TextSummary, child: TextSummary): void {
   }
 }
 
+function uniformSpanFontSize(frame: Frame): number | null {
+  return frame.summary.hasText && frame.summary.uniform
+    ? frame.summary.spanSize
+    : null;
+}
+
 function contentFontSize(frame: Frame, defaultFontSizePx: number): number {
   return (
-    (frame.summary.hasText && frame.summary.uniform
-      ? frame.summary.spanSize
-      : null) ?? defaultFontSizePx
+    uniformSpanFontSize(frame) ??
+    (frame.summary.hasSizedSpanText ? defaultFontSizePx : frame.cssFontSizePx)
   );
 }
 
@@ -214,17 +222,17 @@ export function addOutlookLineHeightWithFontSize(
             stack.length === 0 &&
             firstParagraphFontSizePx === null
           ) {
-            firstParagraphFontSizePx = contentFontSize(
-              frame,
-              defaults.fontSizePx,
-            );
+            firstParagraphFontSizePx =
+              uniformSpanFontSize(frame) ?? defaults.fontSizePx;
           }
           if (frame.target) {
             const { style, ownLineHeight, edit } = frame.target;
             const effective = frame.effectiveLineHeight;
             const pixels =
               ownLineHeight !== null
-                ? outlookLineHeightPx(ownLineHeight, size)
+                ? ownLineHeight.trim().endsWith("%")
+                  ? (effective?.percentPx ?? null)
+                  : outlookLineHeightPx(ownLineHeight, size)
                 : effective === null
                   ? outlookLineHeightPx(defaults.lineHeight, size)
                   : effective.value.trim().endsWith("%")
@@ -282,7 +290,12 @@ export function addOutlookLineHeightWithFontSize(
                   ? outlookLineHeightPx(ownLineHeight, cssFontSizePx)
                   : null,
               },
-        summary: { hasText: false, spanSize: null, uniform: true },
+        summary: {
+          hasText: false,
+          hasSizedSpanText: false,
+          spanSize: null,
+          uniform: true,
+        },
       };
       if (
         TARGET_TAG.test(tagName) &&

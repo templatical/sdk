@@ -207,6 +207,37 @@ describe("addOutlookLineHeight", () => {
     ).toBe('<p style="line-height:22px">Hi</p>');
   });
 
+  it("uses inherited CSS font size for nested text without a sized span", () => {
+    expect(
+      addOutlookLineHeight(
+        '<li style="font-size:20px;line-height:2"><p>Hi</p></li>',
+        options,
+      ),
+    ).toBe(
+      '<li style="font-size:20px;line-height:2;mso-line-height-alt:40px"><p style="mso-line-height-alt:40px">Hi</p></li>',
+    );
+  });
+
+  it("keeps mixed span sizes on the block default under a sized ancestor", () => {
+    expect(
+      addOutlookLineHeight(
+        '<li style="font-size:20px"><p><span style="font-size:18px">A</span><span style="font-size:22px">B</span></p></li>',
+        options,
+      ),
+    ).toContain('<p style="mso-line-height-alt:21px">');
+  });
+
+  it("resolves an explicit percentage against its declaring element", () => {
+    expect(
+      addOutlookLineHeight(
+        '<p style="line-height:150%"><span style="font-size:40px">Hi</span></p>',
+        options,
+      ),
+    ).toBe(
+      '<p style="line-height:150%;mso-line-height-alt:21px"><span style="font-size:40px">Hi</span></p>',
+    );
+  });
+
   it.each([
     [
       '<ul><li style="line-height:2"><p>Hi</p></li></ul>',

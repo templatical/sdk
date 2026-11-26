@@ -180,24 +180,32 @@ function convertTable(
  * from the links and the prose is discarded. Whitespace-only nodes (newlines
  * between `<a>`/`<span>`) must not.
  */
-function looksLikeMenu(html: string): boolean {
+function looksLikeMenu(html: string, requireRenderedSequence = false): boolean {
   const $inner = parseInner(html);
   const kids = $inner("body").contents().toArray();
   if (kids.length === 0) return false;
 
   let anchors = 0;
+  let expectAnchor = true;
   for (const kid of kids) {
     if (isText(kid)) {
       if (kid.data.trim() !== "") return false;
       continue;
     }
-    if (!isTag(kid)) continue;
+    if (!isTag(kid)) {
+      if (requireRenderedSequence) return false;
+      continue;
+    }
     const tag = kid.tagName.toLowerCase();
+    if (requireRenderedSequence) {
+      if (tag !== (expectAnchor ? "a" : "span")) return false;
+      expectAnchor = !expectAnchor;
+    }
     if (tag === "a") anchors += 1;
     else if (tag !== "span") return false;
   }
 
-  return anchors > 0;
+  return anchors > 0 && (!requireRenderedSequence || !expectAnchor);
 }
 
 function convertMenu(
@@ -487,7 +495,7 @@ export function convertTextElement(
       /^mso-line-height-alt:[\d.]+px$/i.test($div.attr("style") ?? "")
     ) {
       const menuHtml = $div.html()!;
-      if (looksLikeMenu(menuHtml)) {
+      if (looksLikeMenu(menuHtml, true)) {
         return convertMenu(menuHtml, attrs, ctx.cascade);
       }
     }
