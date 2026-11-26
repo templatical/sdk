@@ -10588,11 +10588,25 @@ function renderGif(fields: Fields, target: number, now: number): Uint8Array {
     measuring.font = font;
     return measuring.measureText(text).width;
   };
+  const count = expired ? 1 : Math.min(FRAME_COUNT, firstSeconds + 1);
+  const remainingAt = (frame: number) =>
+    Math.max(0, Math.ceil((target - now - frame * FRAME_DELAY) / 1000));
+  // A segment's digit count can change mid-GIF (minutes with hours hidden
+  // wrap from 00 to 1439 at a day boundary), so each column is sized for the
+  // longest value it shows in any frame.
+  const digitLengths = first.map(() => 1);
+  for (let frame = 0; frame < count; frame++) {
+    const remaining = remainingAt(frame);
+    if (remaining === 0) continue;
+    segments(fields, remaining).forEach(({ digits }, index) => {
+      digitLengths[index] = Math.max(digitLengths[index], digits.length);
+    });
+  }
   const widths = first.map(
-    ({ digits, label }) =>
+    ({ label }, index) =>
       Math.ceil(
         Math.max(
-          measure("8".repeat(digits.length), digitFont),
+          measure("8".repeat(digitLengths[index]), digitFont),
           measure(label, labelFont),
         ),
       ) + GAP,
@@ -10619,15 +10633,11 @@ function renderGif(fields: Fields, target: number, now: number): Uint8Array {
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
   const gif = GIFEncoder();
-  const count = expired ? 1 : Math.min(FRAME_COUNT, firstSeconds + 1);
 
   for (let frame = 0; frame < count; frame++) {
     ctx.fillStyle = fields.backgroundColor;
     ctx.fillRect(0, 0, width, height);
-    const remaining = Math.max(
-      0,
-      Math.ceil((target - now - frame * FRAME_DELAY) / 1000),
-    );
+    const remaining = remainingAt(frame);
     if (remaining === 0) {
       ctx.fillStyle = fields.digitColor;
       ctx.font = digitFont;

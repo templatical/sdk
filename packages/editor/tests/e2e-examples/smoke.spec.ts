@@ -553,7 +553,8 @@ test.describe("image endpoint example", () => {
       new Promise((resolve) => setTimeout(resolve, ms));
     if (msToMinute() < 10_000) await sleep(msToMinute() + 10_000);
     else if (msToMinute() > 50_000) await sleep(msToMinute() - 45_000);
-    const minute = Date.now() + msToMinute();
+    const now = Date.now();
+    const minute = now + 60_000 - (now % 60_000);
     const at = (ms: number) => new Date(ms).toISOString().slice(0, 16);
     const widthFor = async (targetMs: number) => {
       const query = new URLSearchParams({
