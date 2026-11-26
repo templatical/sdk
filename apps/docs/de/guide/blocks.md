@@ -48,6 +48,8 @@ Titel sind fett (Schriftstärke 700): auf der Arbeitsfläche, während Sie sie b
 
 Fließtext, der als HTML gerendert wird. Der Editor verwendet [Tiptap](https://tiptap.dev) für die Inline-Bearbeitung mit Formatierungssteuerungen (fett, kursiv, Links, Ausrichtung, Schriftgröße, Farbe usw.). Jede Formatierung wird inline angewendet -- es gibt keine Formatierungseigenschaften auf Blockebene.
 
+Der Export fügt für klassisches Outlook unter Windows `mso-line-height-alt` zu Absatzelementen hinzu, da es einheitenlose Zeilenhöhen rundet; reiner Text, den Sie außerhalb eines Absatzelements platzieren, wird nicht erfasst.
+
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
 | `content` | `string` | HTML-Inhalt |

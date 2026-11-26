@@ -13,7 +13,7 @@ describe('renderToMjml helpers', () => {
     const result = await renderToMjml(content);
     expect(result).toContain('<mj-section>');
     expect(result).toContain('<mj-column>');
-    expect(result).toContain('<p>Hello</p>');
+    expect(result).toContain('<p style="mso-line-height-alt:21px">Hello</p>');
   });
 
   it('includes preheader text as mj-preview', async () => {

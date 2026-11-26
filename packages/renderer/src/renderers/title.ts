@@ -21,6 +21,10 @@ import {
   resolveParagraphGap,
 } from "../rich-text";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
+import {
+  addOutlookLineHeightWithFontSize,
+  outlookLineHeightPx,
+} from "../outlook-line-height";
 
 /**
  * Render a title block to MJML markup.
@@ -34,15 +38,23 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   // Blank lines between a title's paragraphs are filled as the canvas fills
   // them; a single paragraph is unwrapped into the heading.
-  const content = unwrapParagraph(
-    decodeStyleReferences(
-      fillEmptyParagraphs(convertMergeTagsToValues(block.content ?? "")),
-    ),
+  const decoded = decodeStyleReferences(
+    fillEmptyParagraphs(convertMergeTagsToValues(block.content ?? "")),
   );
   // Clamp out-of-range levels to a defined entry so we never interpolate
   // `undefined` into `font-size="${...}px"` (mjml@5 rejects "undefinedpx").
   const fontSize =
     HEADING_LEVEL_FONT_SIZE[block.level] ?? HEADING_LEVEL_FONT_SIZE[2];
+  const richText = addOutlookLineHeightWithFontSize(decoded, {
+    lineHeight: TITLE_LINE_HEIGHT,
+    fontSizePx: fontSize,
+  });
+  const content = unwrapParagraph(richText.html);
+  const headingFontSize =
+    content === richText.html
+      ? fontSize
+      : (richText.firstParagraphFontSizePx ?? fontSize);
+  const alt = outlookLineHeightPx(TITLE_LINE_HEIGHT, headingFontSize);
   // Emit the color only when the block sets one; otherwise the `mj-text`
   // inherits the document `textColor` default from `<mj-attributes>`.
   const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
@@ -65,7 +77,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   align="${align}"
   line-height="${TITLE_LINE_HEIGHT}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${cssClassAttr}
-><${tag} style="margin:0;font-size:inherit;color:inherit;line-height:inherit;font-weight:${TITLE_FONT_WEIGHT}">${content}</${tag}></mj-text>`;
+><${tag} style="margin:0;font-size:inherit;color:inherit;line-height:inherit;font-weight:${TITLE_FONT_WEIGHT};mso-line-height-alt:${alt}">${content}</${tag}></mj-text>`;
 }
 
 /**

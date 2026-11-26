@@ -123,7 +123,7 @@ describe("renderer — angle-bracket merge tag values reach the output as tokens
 
     const mjml = await renderToMjml(content);
 
-    expect(mjml).toContain("<p>Hi <% $email %>,</p>");
+    expect(mjml).toContain('<p style="mso-line-height-alt:21px">Hi <% $email %>,</p>');
     expect(mjml).not.toContain("data-merge-tag");
     expect(mjml).not.toContain("E-Mail");
   });
