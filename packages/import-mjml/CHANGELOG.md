@@ -1,5 +1,14 @@
 # @templatical/import-mjml
 
+## 0.63.5
+
+### Patch Changes
+
+- a0d6940: Classic Outlook for Windows now shows the intended line spacing in paragraphs, titles, menus, tables and buttons through `mso-line-height-alt` pixel declarations. Browsers keep their existing line-height values.
+- Updated dependencies [eb57dad]
+- Updated dependencies [a0d6940]
+  - @templatical/types@0.63.5
+
 ## 0.63.4
 
 ### Patch Changes
