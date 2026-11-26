@@ -14,6 +14,8 @@ import {
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
+import { PARAGRAPH_LINE_HEIGHT } from "@templatical/types";
+import { outlookLineHeightPx } from "../outlook-line-height";
 
 /**
  * Render a table block to MJML markup.
@@ -43,7 +45,7 @@ export function renderTable(block: TableBlock, context: RenderContext): string {
   return `<mj-text
   font-size="${escapeAttr(String(fontSize))}px"${colorAttr}
   align="${align}"
-  line-height="1.5"
+  line-height="${PARAGRAPH_LINE_HEIGHT}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
 >${tableHtml}</mj-text>`;
 }
@@ -104,6 +106,9 @@ function renderCell(
       );
     }
   }
+
+  const alt = outlookLineHeightPx(PARAGRAPH_LINE_HEIGHT, block.fontSize);
+  if (alt !== null) styles.push(`mso-line-height-alt:${alt}`);
 
   const styleAttr = styles.join("; ");
   // Cells are a plain-text field (the editor stores innerText; TableCellData

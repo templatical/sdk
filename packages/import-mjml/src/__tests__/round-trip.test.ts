@@ -16,6 +16,7 @@ import {
 } from "@templatical/types";
 import type {
   Block,
+  MenuBlock,
   ParagraphBlock,
   SectionBlock,
   TemplateContent,
@@ -378,6 +379,104 @@ function normalize(value: unknown): unknown {
 }
 
 describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
+  it("imports a menu rendered without an Outlook value as a menu", async () => {
+    const original: TemplateContent = {
+      settings: buildFixtureTemplate().settings,
+      blocks: [
+        createSectionBlock({
+          columns: "1",
+          children: [
+            [
+              createMenuBlock({
+                fontSize: 0,
+                items: [
+                  {
+                    id: "home",
+                    text: "Home",
+                    url: "/",
+                    openInNewTab: false,
+                    bold: false,
+                    underline: false,
+                  },
+                ],
+              }),
+            ],
+          ],
+        }),
+      ],
+    };
+    const mjml = await renderToMjml(original);
+    const { content, report } = convertMjmlTemplate(mjml);
+    const section = content.blocks[0] as SectionBlock;
+    const menu = section.children[0][0] as MenuBlock;
+
+    expect(menu.type).toBe("menu");
+    expect(menu.items.map(({ text, url }) => [text, url])).toEqual([
+      ["Home", "/"],
+    ]);
+    expect(
+      report.entries.find(({ sourceTag }) => sourceTag === "mj-text")?.status,
+    ).toBe("converted");
+  });
+
+  it("keeps literal Outlook property text in a paragraph", () => {
+    const source =
+      "<mjml><mj-body><mj-section><mj-column><mj-text><p>mso-line-height-alt:21px is documentation</p></mj-text></mj-column></mj-section></mj-body></mjml>";
+    const { content } = convertMjmlTemplate(source);
+    const section = content.blocks[0] as SectionBlock;
+    expect((section.children[0][0] as ParagraphBlock).content).toBe(
+      "<p>mso-line-height-alt:21px is documentation</p>",
+    );
+  });
+
+  it("keeps an authored alternate line height on an inline span", () => {
+    const source =
+      '<mjml><mj-body><mj-section><mj-column><mj-text><p><span style="mso-line-height-alt:30px">Hello</span></p></mj-text></mj-column></mj-section></mj-body></mjml>';
+    const { content } = convertMjmlTemplate(source);
+    const section = content.blocks[0] as SectionBlock;
+    expect((section.children[0][0] as ParagraphBlock).content).toBe(
+      '<p><span style="mso-line-height-alt:30px">Hello</span></p>',
+    );
+  });
+
+  it.each([
+    ["a:b;mso-line-height-alt:1px;c:d", "a:b;c:d"],
+    ["mso-line-height-alt:1px;c:d", "c:d"],
+    ["a:b;mso-line-height-alt:1px", "a:b"],
+    ["mso-line-height-alt:1px", null],
+  ])(
+    "removes a foreign paragraph alternate at any position: %s",
+    (style, expected) => {
+      const source = `<mjml><mj-body><mj-section><mj-column><mj-text><p style="${style}">Text</p></mj-text></mj-column></mj-section></mj-body></mjml>`;
+      const { content } = convertMjmlTemplate(source);
+      const section = content.blocks[0] as SectionBlock;
+      expect((section.children[0][0] as ParagraphBlock).content).toBe(
+        expected === null ? "<p>Text</p>" : `<p style="${expected}">Text</p>`,
+      );
+    },
+  );
+
+  it("keeps a foreign div of links as paragraph content", () => {
+    const source =
+      '<mjml><mj-body><mj-section><mj-column><mj-text><div><a href="/">Link</a></div></mj-text></mj-column></mj-section></mj-body></mjml>';
+    const { content } = convertMjmlTemplate(source);
+    const section = content.blocks[0] as SectionBlock;
+    expect(section.children[0][0].type).toBe("paragraph");
+    expect((section.children[0][0] as ParagraphBlock).content).toContain(
+      '<div><a href="/">Link</a></div>',
+    );
+  });
+
+  it("keeps a Word-styled div of prose and a link as paragraph content", () => {
+    const source =
+      '<mjml><mj-body><mj-section><mj-column><mj-text><div style="mso-line-height-alt:21px">Prose <a href="/">Link</a></div></mj-text></mj-column></mj-section></mj-body></mjml>';
+    const { content } = convertMjmlTemplate(source);
+    const section = content.blocks[0] as SectionBlock;
+    expect(section.children[0][0].type).toBe("paragraph");
+    expect((section.children[0][0] as ParagraphBlock).content).toContain(
+      'Prose <a href="/">Link</a>',
+    );
+  });
   it("reproduces the template structurally", async () => {
     const original = buildFixtureTemplate();
     const mjml = await renderToMjml(original);
@@ -482,6 +581,30 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(plainButton).toMatchObject({ type: "button", fontSize: 14 });
     expect(plainButton && "lineHeight" in plainButton).toBe(false);
   });
+
+  it.each(["Button", "A < B & C"])(
+    "imports the rendered button label as plain text: %s",
+    async (text) => {
+      const original: TemplateContent = {
+        blocks: [
+          createSectionBlock({
+            columns: "1",
+            children: [[createButtonBlock({ text })]],
+          }),
+        ],
+        settings: { ...buildFixtureTemplate().settings, width: 600 },
+      };
+      const mjml = await renderToMjml(original);
+      const { content, report } = convertMjmlTemplate(mjml);
+      const section = content.blocks[0] as SectionBlock;
+      const button = section.children[0][0];
+      expect(button.type).toBe("button");
+      expect((button as ReturnType<typeof createButtonBlock>).text).toBe(text);
+      expect(
+        report.entries.find((entry) => entry.sourceTag === "mj-button")?.status,
+      ).toBe("converted");
+    },
+  );
 
   it("round-trips a 50 / 33.33 / 16.67 section, stacking and grouped", async () => {
     const settings = { ...buildFixtureTemplate().settings, width: 600 };

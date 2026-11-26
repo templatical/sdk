@@ -11,6 +11,7 @@ import {
 } from "@templatical/types";
 import { bgAttr, borderAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
+import { outlookLineHeightPx } from "../outlook-line-height";
 
 /**
  * Marks the `mj-button` of a button whose `<a>` MJML leaves at
@@ -46,6 +47,8 @@ export function renderButton(
   const fontWeight = renderFontWeight(block.fontWeight);
   const borderRadius = escapeAttr(renderButtonRadius(block.borderRadius));
   const text = escapeHtml(block.text);
+  const alt = outlookLineHeightPx(buttonLineHeight(block), fontSize);
+  const altStyle = alt === null ? "" : ` style="mso-line-height-alt:${alt}"`;
   const targetAttr = block.openInNewTab
     ? ' target="_blank" rel="noopener"'
     : "";
@@ -74,7 +77,7 @@ export function renderButton(
   inner-padding="${buttonPadding}"
   align="${align}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${widthAttr}${cssClassAttr}
->${text}</mj-button>`;
+><span${altStyle}>${text}</span></mj-button>`;
 }
 
 /**

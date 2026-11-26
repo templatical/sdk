@@ -24,6 +24,7 @@ import {
   type AttributeCascade,
 } from "./attribute-resolver";
 import { baseFields, type ConvertContext, type Converted } from "./block-base";
+import { stripOutlookLineHeight } from "./outlook-line-height";
 
 /**
  * Re-parse an `mj-text`'s inner markup into its own document.
@@ -40,6 +41,10 @@ import { baseFields, type ConvertContext, type Converted } from "./block-base";
  */
 function parseInner(html: string) {
   return load(`<body>${html}</body>`);
+}
+
+function rendererRichText(attrs: Attrs): boolean {
+  return (attrs["css-class"] ?? "").split(/\s+/).includes("tpl-rich-text");
 }
 
 function rootElements(html: string): { tag: string; count: number } {
@@ -79,7 +84,7 @@ function convertTitle(
   );
 
   const block = createTitleBlock({
-    content: $heading.html() ?? "",
+    content: stripOutlookLineHeight($heading.html()!, rendererRichText(attrs)),
     level,
     textAlign: parseAlignment(attrs.align, "left"),
     ...(color ? { color } : {}),
@@ -126,7 +131,7 @@ function convertTable(
       .toArray()
       .map((cellEl) => ({
         id: generateId(),
-        content: $inner(cellEl).html() ?? "",
+        content: stripOutlookLineHeight($inner(cellEl).html()!),
       })),
   }));
 
@@ -162,6 +167,17 @@ function convertTable(
   };
 }
 
+function menuLabelNode(node: AnyNode): boolean {
+  if (isText(node)) return true;
+  if (!isTag(node)) return false;
+  if (!["b", "strong", "span"].includes(node.tagName.toLowerCase())) {
+    return false;
+  }
+  return (
+    Object.keys(node.attribs).length === 0 && node.children.every(menuLabelNode)
+  );
+}
+
 /**
  * A menu is top-level anchors with optional `<span>` separators between them —
  * exactly what `renderers/menu.ts` emits, and deliberately not matched when a
@@ -172,24 +188,50 @@ function convertTable(
  * from the links and the prose is discarded. Whitespace-only nodes (newlines
  * between `<a>`/`<span>`) must not.
  */
-function looksLikeMenu(html: string): boolean {
+function looksLikeMenu(html: string, requireRenderedSequence = false): boolean {
   const $inner = parseInner(html);
   const kids = $inner("body").contents().toArray();
   if (kids.length === 0) return false;
 
   let anchors = 0;
+  let expectAnchor = true;
+  let separatorText: string | undefined;
+  let separatorStyle: string | undefined;
   for (const kid of kids) {
     if (isText(kid)) {
       if (kid.data.trim() !== "") return false;
       continue;
     }
-    if (!isTag(kid)) continue;
+    if (!isTag(kid)) {
+      if (requireRenderedSequence) return false;
+      continue;
+    }
     const tag = kid.tagName.toLowerCase();
+    if (tag === "a") {
+      if (!$inner(kid).text().trim() || !kid.children.every(menuLabelNode)) {
+        return false;
+      }
+    } else if (tag === "span") {
+      const text = $inner(kid).text();
+      const style = $inner(kid).attr("style");
+      if (
+        separatorText !== undefined &&
+        (text !== separatorText || style !== separatorStyle)
+      ) {
+        return false;
+      }
+      separatorText = text;
+      separatorStyle = style;
+    }
+    if (requireRenderedSequence) {
+      if (tag !== (expectAnchor ? "a" : "span")) return false;
+      expectAnchor = !expectAnchor;
+    }
     if (tag === "a") anchors += 1;
     else if (tag !== "span") return false;
   }
 
-  return anchors > 0;
+  return anchors > 0 && (!requireRenderedSequence || !expectAnchor);
 }
 
 function convertMenu(
@@ -414,7 +456,9 @@ function convertParagraph(
 
   const block = createParagraphBlock({
     content: styleParagraphs(
-      ensureParagraphWrapped(html),
+      ensureParagraphWrapped(
+        stripOutlookLineHeight(html, rendererRichText(attrs)),
+      ),
       readParagraphStyle(attrs, ctx),
     ),
     ...(paragraphSpacing !== undefined ? { paragraphSpacing } : {}),
@@ -457,6 +501,31 @@ export function convertTextElement(
 
   if (root.count === 1 && root.tag === "table") {
     return convertTable(html, attrs, ctx.cascade);
+  }
+
+  if (root.count === 1 && root.tag === "div") {
+    const $inner = parseInner(html);
+    const $body = $inner("body");
+    const $div = $body.children("div").first();
+    const wrapper = $div.get(0);
+    const onlyWrapperContent = $body
+      .contents()
+      .toArray()
+      .every(
+        (node) =>
+          node === wrapper ||
+          (isText(node) ? node.data.trim() === "" : node.type === "comment"),
+      );
+    if (
+      onlyWrapperContent &&
+      Object.keys(wrapper!.attribs).length === 1 &&
+      /^mso-line-height-alt:[\d.]+px$/i.test(wrapper!.attribs.style)
+    ) {
+      const menuHtml = $div.html()!;
+      if (looksLikeMenu(menuHtml, true)) {
+        return convertMenu(menuHtml, attrs, ctx.cascade);
+      }
+    }
   }
 
   if (looksLikeMenu(html)) {
