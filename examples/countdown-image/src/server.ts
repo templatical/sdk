@@ -20,12 +20,16 @@ if (!GlobalFonts.registerFromPath(fontPath, FONT)) {
 const MAX_QUERY_LENGTH = 2048;
 const MAX_LABEL_LENGTH = 32;
 const MAX_MESSAGE_LENGTH = 100;
+const MAX_CANVAS_WIDTH = 1200;
+const MAX_CANVAS_HEIGHT = 160;
 const FRAME_COUNT = 60;
 const FRAME_DELAY = 1000;
 const PAD = 12;
 const GAP = 8;
 const MAX_TARGET = Date.UTC(2101, 0, 1);
 const MIN_TARGET = Date.UTC(2000, 0, 1);
+
+class ValidationError extends Error {}
 
 type Fields = Pick<
   CountdownBlock,
@@ -58,12 +62,13 @@ function readFields(params: URLSearchParams): {
     params.get(name) ?? fallback;
   const bounded = (name: keyof Fields, fallback: string, max: number) => {
     const text = value(name, fallback);
-    if (text.length > max) throw new Error(`${name} is too long`);
+    if (text.length > max) throw new ValidationError(`${name} is too long`);
     return text;
   };
   const boolean = (name: keyof Fields, fallback: boolean) => {
     const text = value(name, String(fallback));
-    if (text !== "true" && text !== "false") throw new Error(`Invalid ${name}`);
+    if (text !== "true" && text !== "false")
+      throw new ValidationError(`Invalid ${name}`);
     return text === "true";
   };
   const size = (
@@ -73,28 +78,29 @@ function readFields(params: URLSearchParams): {
     max: number,
   ) => {
     const raw = value(name, String(fallback));
-    if (!/^\d+(?:\.\d+)?$/.test(raw)) throw new Error(`Invalid ${name}`);
+    if (!/^\d+(?:\.\d+)?$/.test(raw))
+      throw new ValidationError(`Invalid ${name}`);
     return Math.max(min, Math.min(max, Number(raw)));
   };
   const color = (name: keyof Fields, fallback: string) => {
     const text = value(name, fallback);
     if (!/^#[\da-f]{3}(?:[\da-f]{3})?$/i.test(text))
-      throw new Error(`Invalid ${name}`);
+      throw new ValidationError(`Invalid ${name}`);
     return text;
   };
   const targetDate = bounded("targetDate", defaults.targetDate, 40);
   const timezone = bounded("timezone", defaults.timezone, 64);
   const target = countdownTargetTime({ targetDate, timezone });
   if (target === null || target < MIN_TARGET || target >= MAX_TARGET)
-    throw new Error("Invalid targetDate or timezone");
+    throw new ValidationError("Invalid targetDate or timezone");
   try {
     new Intl.DateTimeFormat("en", { timeZone: timezone });
   } catch {
-    throw new Error("Invalid timezone");
+    throw new ValidationError("Invalid timezone");
   }
   const separator = value("separator", defaults.separator);
   if (separator !== ":" && separator !== "-" && separator !== " ")
-    throw new Error("Invalid separator");
+    throw new ValidationError("Invalid separator");
   return {
     target,
     fields: {
@@ -217,10 +223,12 @@ function renderGif(fields: Fields, target: number, now: number): Uint8Array {
       : fields.digitFontSize + fields.labelFontSize + GAP) +
       PAD * 2,
   );
+  if (width > MAX_CANVAS_WIDTH || height > MAX_CANVAS_HEIGHT)
+    throw new ValidationError("Countdown image is too large");
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
   const gif = GIFEncoder();
-  const count = expired ? 1 : FRAME_COUNT;
+  const count = expired ? 1 : Math.min(FRAME_COUNT, firstSeconds + 1);
 
   for (let frame = 0; frame < count; frame++) {
     ctx.fillStyle = fields.backgroundColor;
@@ -288,18 +296,18 @@ createServer((request, response) => {
     response.end("Countdown image endpoint\n");
     return;
   }
-  if (request.method !== "GET" || !request.url?.startsWith("/countdown.gif")) {
+  if (request.url?.split("?", 1)[0] !== "/countdown.gif") {
     response.writeHead(404).end();
+    return;
+  }
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    response.writeHead(405, { Allow: "GET, HEAD" }).end();
     return;
   }
   try {
     if (request.url.length > MAX_QUERY_LENGTH)
-      throw new Error("Query is too long");
+      throw new ValidationError("Query is too long");
     const url = new URL(request.url, "http://127.0.0.1");
-    if (url.pathname !== "/countdown.gif") {
-      response.writeHead(404).end();
-      return;
-    }
     const { fields, target } = readFields(url.searchParams);
     const bytes = renderGif(fields, target, Date.now());
     response.writeHead(200, {
@@ -307,11 +315,18 @@ createServer((request, response) => {
       // A one-second public lifetime limits how far a newly opened image can lag.
       "Cache-Control": "public, max-age=1",
     });
-    response.end(Buffer.from(bytes));
+    response.end(request.method === "HEAD" ? undefined : Buffer.from(bytes));
   } catch (error) {
-    response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    const validation = error instanceof ValidationError;
+    response.writeHead(validation ? 400 : 500, {
+      "Content-Type": "text/plain; charset=utf-8",
+    });
     response.end(
-      `${error instanceof Error ? error.message : "Invalid countdown"}\n`,
+      request.method === "HEAD"
+        ? undefined
+        : validation
+          ? `${error.message}\n`
+          : "Internal server error\n",
     );
   }
 }).listen(port, "127.0.0.1", () => {

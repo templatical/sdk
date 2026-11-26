@@ -2,6 +2,9 @@
   "name": "templatical-example-countdown-image",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "dev": "node --watch src/server.ts",
     "build": "tsc",
@@ -9,8 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@templatical/types": "^0.63.4",
     "@napi-rs/canvas": "^1.2.1",
+    "@templatical/types": "^0.63.4",
     "gifenc": "^1.0.3"
   },
   "devDependencies": {

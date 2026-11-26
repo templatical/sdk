@@ -10417,7 +10417,7 @@ Toolbar fields other than `targetDate` and `timezone` affect the sent email only
 
 ## Image endpoint example {#image-endpoint-example}
 
-The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP, cut down to the characters of the SDK's default labels; swap it for a font that covers your own labels), and encodes 60 one-second GIF frames without a loop. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
+The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` and `HEAD /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP, cut down to the characters of the SDK's default labels; swap it for a font that covers your own labels), and encodes up to 60 one-second GIF frames without a loop. When expiry occurs within that frame window, the last frame shows `expiredMessage`. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
 
 ```ts
 import { createServer } from "node:http";
@@ -10442,12 +10442,16 @@ if (!GlobalFonts.registerFromPath(fontPath, FONT)) {
 const MAX_QUERY_LENGTH = 2048;
 const MAX_LABEL_LENGTH = 32;
 const MAX_MESSAGE_LENGTH = 100;
+const MAX_CANVAS_WIDTH = 1200;
+const MAX_CANVAS_HEIGHT = 160;
 const FRAME_COUNT = 60;
 const FRAME_DELAY = 1000;
 const PAD = 12;
 const GAP = 8;
 const MAX_TARGET = Date.UTC(2101, 0, 1);
 const MIN_TARGET = Date.UTC(2000, 0, 1);
+
+class ValidationError extends Error {}
 
 type Fields = Pick<
   CountdownBlock,
@@ -10480,12 +10484,13 @@ function readFields(params: URLSearchParams): {
     params.get(name) ?? fallback;
   const bounded = (name: keyof Fields, fallback: string, max: number) => {
     const text = value(name, fallback);
-    if (text.length > max) throw new Error(`${name} is too long`);
+    if (text.length > max) throw new ValidationError(`${name} is too long`);
     return text;
   };
   const boolean = (name: keyof Fields, fallback: boolean) => {
     const text = value(name, String(fallback));
-    if (text !== "true" && text !== "false") throw new Error(`Invalid ${name}`);
+    if (text !== "true" && text !== "false")
+      throw new ValidationError(`Invalid ${name}`);
     return text === "true";
   };
   const size = (
@@ -10495,28 +10500,29 @@ function readFields(params: URLSearchParams): {
     max: number,
   ) => {
     const raw = value(name, String(fallback));
-    if (!/^\d+(?:\.\d+)?$/.test(raw)) throw new Error(`Invalid ${name}`);
+    if (!/^\d+(?:\.\d+)?$/.test(raw))
+      throw new ValidationError(`Invalid ${name}`);
     return Math.max(min, Math.min(max, Number(raw)));
   };
   const color = (name: keyof Fields, fallback: string) => {
     const text = value(name, fallback);
     if (!/^#[\da-f]{3}(?:[\da-f]{3})?$/i.test(text))
-      throw new Error(`Invalid ${name}`);
+      throw new ValidationError(`Invalid ${name}`);
     return text;
   };
   const targetDate = bounded("targetDate", defaults.targetDate, 40);
   const timezone = bounded("timezone", defaults.timezone, 64);
   const target = countdownTargetTime({ targetDate, timezone });
   if (target === null || target < MIN_TARGET || target >= MAX_TARGET)
-    throw new Error("Invalid targetDate or timezone");
+    throw new ValidationError("Invalid targetDate or timezone");
   try {
     new Intl.DateTimeFormat("en", { timeZone: timezone });
   } catch {
-    throw new Error("Invalid timezone");
+    throw new ValidationError("Invalid timezone");
   }
   const separator = value("separator", defaults.separator);
   if (separator !== ":" && separator !== "-" && separator !== " ")
-    throw new Error("Invalid separator");
+    throw new ValidationError("Invalid separator");
   return {
     target,
     fields: {
@@ -10639,10 +10645,12 @@ function renderGif(fields: Fields, target: number, now: number): Uint8Array {
       : fields.digitFontSize + fields.labelFontSize + GAP) +
       PAD * 2,
   );
+  if (width > MAX_CANVAS_WIDTH || height > MAX_CANVAS_HEIGHT)
+    throw new ValidationError("Countdown image is too large");
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
   const gif = GIFEncoder();
-  const count = expired ? 1 : FRAME_COUNT;
+  const count = expired ? 1 : Math.min(FRAME_COUNT, firstSeconds + 1);
 
   for (let frame = 0; frame < count; frame++) {
     ctx.fillStyle = fields.backgroundColor;
@@ -10710,18 +10718,18 @@ createServer((request, response) => {
     response.end("Countdown image endpoint\n");
     return;
   }
-  if (request.method !== "GET" || !request.url?.startsWith("/countdown.gif")) {
+  if (request.url?.split("?", 1)[0] !== "/countdown.gif") {
     response.writeHead(404).end();
+    return;
+  }
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    response.writeHead(405, { Allow: "GET, HEAD" }).end();
     return;
   }
   try {
     if (request.url.length > MAX_QUERY_LENGTH)
-      throw new Error("Query is too long");
+      throw new ValidationError("Query is too long");
     const url = new URL(request.url, "http://127.0.0.1");
-    if (url.pathname !== "/countdown.gif") {
-      response.writeHead(404).end();
-      return;
-    }
     const { fields, target } = readFields(url.searchParams);
     const bytes = renderGif(fields, target, Date.now());
     response.writeHead(200, {
@@ -10729,11 +10737,18 @@ createServer((request, response) => {
       // A one-second public lifetime limits how far a newly opened image can lag.
       "Cache-Control": "public, max-age=1",
     });
-    response.end(Buffer.from(bytes));
+    response.end(request.method === "HEAD" ? undefined : Buffer.from(bytes));
   } catch (error) {
-    response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    const validation = error instanceof ValidationError;
+    response.writeHead(validation ? 400 : 500, {
+      "Content-Type": "text/plain; charset=utf-8",
+    });
     response.end(
-      `${error instanceof Error ? error.message : "Invalid countdown"}\n`,
+      request.method === "HEAD"
+        ? undefined
+        : validation
+          ? `${error.message}\n`
+          : "Internal server error\n",
     );
   }
 }).listen(port, "127.0.0.1", () => {
@@ -10746,7 +10761,7 @@ To port the endpoint to another stack:
 - Read `targetDate` in `timezone`, including daylight-saving transitions, through the equivalent of `countdownTargetTime`.
 - Draw one-second frames from the request time and omit the loop extension; handle expired and hidden states.
 - Set a short public cache lifetime against the accuracy needed. This example uses one second. Keep editor previews private and uncached as described under [Endpoint limits](#endpoint-limits).
-- Limit the query and text lengths, target range, font sizes, and colors before drawing. The [example README](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) lists its bounds.
+- Limit the query and text lengths, target range, font sizes, colors, and measured canvas size before drawing. This example caps the canvas at 1,200 × 160 pixels; the [example README](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) lists its other bounds.
 
 Check it: run `npm install && npm run dev` in `examples/countdown-image`, then open `http://127.0.0.1:21746/countdown.gif?targetDate=2030-12-24T18%3A00&timezone=Europe%2FBerlin`. The [example smoke spec](https://github.com/templatical/sdk/blob/main/packages/editor/tests/e2e-examples/smoke.spec.ts) checks its GIF frames, expiry, transparency, and invalid timezone response.
 
@@ -10837,7 +10852,7 @@ A backend that renders the sent email (a `render.toMjml` provider, or `renderToM
 
 These apply with either approach:
 
-- Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length.
+- Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length, and a measured canvas cap. The example rejects canvases above 1,200 × 160 pixels.
 - Never fetch `expiredImageUrl` from the server. Redirect to it, or accept only your own asset host; fetching an address from the request turns the endpoint into an open proxy.
 - Cache images rendered from stored blocks per parameter set, for no longer than the accuracy you need: a countdown that shows seconds and is cached for a minute can open up to 59 seconds behind, and each shorter lifetime costs more renders. Image proxies send many recipients through few IP addresses, so per-IP rate limits can't tell abuse from a large send.
 - Keep image encoding fast and cache responses by URL for a short time. The image depends on request time.

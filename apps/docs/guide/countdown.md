@@ -83,7 +83,7 @@ Toolbar fields other than `targetDate` and `timezone` affect the sent email only
 
 ## Image endpoint example {#image-endpoint-example}
 
-The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP, cut down to the characters of the SDK's default labels; swap it for a font that covers your own labels), and encodes 60 one-second GIF frames without a loop. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
+The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` and `HEAD /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP, cut down to the characters of the SDK's default labels; swap it for a font that covers your own labels), and encodes up to 60 one-second GIF frames without a loop. When expiry occurs within that frame window, the last frame shows `expiredMessage`. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
 
 <<< @/../../examples/countdown-image/src/server.ts
 
@@ -92,7 +92,7 @@ To port the endpoint to another stack:
 - Read `targetDate` in `timezone`, including daylight-saving transitions, through the equivalent of `countdownTargetTime`.
 - Draw one-second frames from the request time and omit the loop extension; handle expired and hidden states.
 - Set a short public cache lifetime against the accuracy needed. This example uses one second. Keep editor previews private and uncached as described under [Endpoint limits](#endpoint-limits).
-- Limit the query and text lengths, target range, font sizes, and colors before drawing. The [example README](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) lists its bounds.
+- Limit the query and text lengths, target range, font sizes, colors, and measured canvas size before drawing. This example caps the canvas at 1,200 × 160 pixels; the [example README](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) lists its other bounds.
 
 Check it: run `npm install && npm run dev` in `examples/countdown-image`, then open `http://127.0.0.1:21746/countdown.gif?targetDate=2030-12-24T18%3A00&timezone=Europe%2FBerlin`. The [example smoke spec](https://github.com/templatical/sdk/blob/main/packages/editor/tests/e2e-examples/smoke.spec.ts) checks its GIF frames, expiry, transparency, and invalid timezone response.
 
@@ -183,7 +183,7 @@ A backend that renders the sent email (a `render.toMjml` provider, or `renderToM
 
 These apply with either approach:
 
-- Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length.
+- Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length, and a measured canvas cap. The example rejects canvases above 1,200 × 160 pixels.
 - Never fetch `expiredImageUrl` from the server. Redirect to it, or accept only your own asset host; fetching an address from the request turns the endpoint into an open proxy.
 - Cache images rendered from stored blocks per parameter set, for no longer than the accuracy you need: a countdown that shows seconds and is cached for a minute can open up to 59 seconds behind, and each shorter lifetime costs more renders. Image proxies send many recipients through few IP addresses, so per-IP rate limits can't tell abuse from a large send.
 - Keep image encoding fast and cache responses by URL for a short time. The image depends on request time.
