@@ -34,7 +34,7 @@ const CI_PORTS: Record<string, number> = {
 };
 
 describe("ports CI binds", () => {
-  it("covers the playground, the consumer smoke and all five examples", () => {
+  it("covers the playground, the consumer smoke and all six examples", () => {
     expect(Object.keys(CI_PORTS)).toEqual([
       "playground e2e",
       "consumer smoke",
@@ -43,6 +43,7 @@ describe("ports CI binds", () => {
       "examples (sveltekit)",
       "examples (react-router)",
       "examples (react-vite)",
+      "examples (countdown-image)",
     ]);
   });
 
@@ -72,7 +73,7 @@ describe("examples-verify.mjs run as a script", () => {
     );
     expect([result.status, result.stderr.trim()]).toEqual([
       2,
-      "usage: examples-verify.mjs <nextjs|nuxt|sveltekit|react-router|react-vite> [--build] [--keep]",
+      "usage: examples-verify.mjs <nextjs|nuxt|sveltekit|react-router|react-vite|countdown-image> [--build] [--keep]",
     ]);
   });
 });
