@@ -17,6 +17,7 @@ import { bgAttr } from "../utils";
 import {
   RICH_TEXT_CSS_CLASS,
   decodeStyleReferences,
+  resolveInlineFontFamilies,
   richTextGapClass,
   resolveParagraphGap,
 } from "../rich-text";
@@ -39,7 +40,10 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // Blank lines between a title's paragraphs are filled as the canvas fills
   // them; a single paragraph is unwrapped into the heading.
   const decoded = decodeStyleReferences(
-    fillEmptyParagraphs(convertMergeTagsToValues(block.content ?? "")),
+    resolveInlineFontFamilies(
+      fillEmptyParagraphs(convertMergeTagsToValues(block.content ?? "")),
+      (family) => context.resolveFontFamily(family),
+    ),
   );
   // Clamp out-of-range levels to a defined entry so we never interpolate
   // `undefined` into `font-size="${...}px"` (mjml@5 rejects "undefinedpx").

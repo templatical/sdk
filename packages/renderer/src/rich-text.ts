@@ -1,8 +1,10 @@
 import {
   RICH_TEXT_SPACING,
   findOpenTagEnd,
+  formatFontFamilies,
   isSection,
   isWrapper,
+  parseFontFamilies,
 } from "@templatical/types";
 import type { Block, ContentDirection } from "@templatical/types";
 
@@ -179,12 +181,14 @@ function decodeStyleReference(
 }
 
 /**
- * The open tag `tag` (from `<` up to, not including, its `>`) with the
- * references in its first quoted `style` attribute decoded. Attributes are
- * walked in order and quoted values skipped whole, so `style="…"` text inside
- * another attribute's value is never taken for the attribute.
+ * Apply a change to the first quoted style attribute on an opening tag.
+ * Attributes are walked in order and quoted values skipped whole, so
+ * `style="…"` text inside another attribute's value is never mistaken for it.
  */
-function decodeTagStyle(tag: string): string {
+function transformTagStyle(
+  tag: string,
+  transform: (value: string, quote: string) => string,
+): string {
   let i = 1;
   while (i < tag.length && !HTML_SPACE.test(tag[i]) && tag[i] !== "/") i++;
   while (i < tag.length) {
@@ -205,11 +209,7 @@ function decodeTagStyle(tag: string): string {
       const valueEnd = tag.indexOf(quote, i + 1);
       if (valueEnd === -1) return tag;
       if (name === "style") {
-        const value = tag
-          .slice(i + 1, valueEnd)
-          .replace(STYLE_REFERENCE, (reference, decimal, hex, named) =>
-            decodeStyleReference(reference, quote, decimal, hex, named),
-          );
+        const value = transform(tag.slice(i + 1, valueEnd), quote);
         return `${tag.slice(0, i + 1)}${value}${tag.slice(valueEnd)}`;
       }
       i = valueEnd + 1;
@@ -221,27 +221,24 @@ function decodeTagStyle(tag: string): string {
 }
 
 /**
- * Rich-text HTML with the character references in its `style` attributes
- * written as the characters they stand for: `&apos;`, `&quot;`, `&nbsp;` and
- * numeric references (`&#39;`, `&#x27;`). Other named references stay as
- * written, and so do `&amp;`, `<` and `>` in any form; a reference to `&`
- * becomes `&amp;`. Tags are found with the quote-aware `findOpenTagEnd`, so a
- * `>` inside an attribute value doesn't end one, and a tag whose quote never
- * closes is left alone.
- *
- * MJML inlines {@link richTextStylesheet} with juice, which re-parses the
- * style attribute of every element a rule matches and splits it on `;`
- * without decoding references first. The `;` that ends `&apos;`, `&quot;` or
- * `&nbsp;` outside a `url()` therefore cuts a declaration in two, and the
- * compile throws. Imported content carries such references: Beefree's TinyMCE
- * output and import-mjml's serializer write them.
+ * Walk opening tags outside comments, preserving all bytes except a changed
+ * style attribute. The quote-aware tag scan keeps `>` inside attributes.
  */
-export function decodeStyleReferences(html: string): string {
-  if (!html.includes("&")) return html;
+function transformStyleAttributes(
+  html: string,
+  transform: (value: string, quote: string) => string,
+): string {
   let out = "";
   let copied = 0;
   let open = html.indexOf("<");
   while (open !== -1) {
+    // Outlook conditional markup is still a comment in the MJML source.
+    if (html.startsWith("<!--", open)) {
+      const commentEnd = html.indexOf("-->", open + 4);
+      if (commentEnd === -1) break;
+      open = html.indexOf("<", commentEnd + 3);
+      continue;
+    }
     if (!TAG_NAME_START.test(html.charAt(open + 1))) {
       open = html.indexOf("<", open + 1);
       continue;
@@ -249,12 +246,106 @@ export function decodeStyleReferences(html: string): string {
     const end = findOpenTagEnd(html, open + 1);
     if (end === -1) break;
     const tag = html.slice(open, end);
-    const decoded = decodeTagStyle(tag);
-    if (decoded !== tag) {
-      out += html.slice(copied, open) + decoded;
+    const changed = transformTagStyle(tag, transform);
+    if (changed !== tag) {
+      out += html.slice(copied, open) + changed;
       copied = end;
     }
     open = html.indexOf("<", end);
   }
   return out + html.slice(copied);
+}
+
+/**
+ * Decode character references in rich-text style attributes before MJML's
+ * CSS inliner splits declarations on semicolons. Other attributes and text
+ * remain as written; quotes switch to the attribute's opposite delimiter.
+ */
+export function decodeStyleReferences(html: string): string {
+  if (!html.includes("&")) return html;
+  return transformStyleAttributes(html, (value, quote) =>
+    value.replace(STYLE_REFERENCE, (reference, decimal, hex, named) =>
+      decodeStyleReference(reference, quote, decimal, hex, named),
+    ),
+  );
+}
+
+/** Resolve a font declaration without changing its surrounding CSS. */
+function resolveFontDeclaration(
+  declaration: string,
+  quote: string,
+  resolveFontFamily: (family: string) => string,
+): string {
+  const match = /^(\s*font-family\s*:\s*)([\s\S]*?)\s*$/i.exec(declaration);
+  if (!match) return declaration;
+  const value = match[2];
+  const decoded = value.replace(
+    STYLE_REFERENCE,
+    (reference, decimal, hex, named) =>
+      decodeStyleReference(reference, "", decimal, hex, named),
+  );
+  const resolved = resolveFontFamily(decoded);
+  if (resolved === decoded) return declaration;
+
+  // Re-quote any CSS family that uses the HTML attribute's delimiter;
+  // entities would contain semicolons that MJML's CSS inliner treats as
+  // declaration separators.
+  const needsQuoting = quote === "'" || resolved.includes('"');
+  const families = needsQuoting ? parseFontFamilies(resolved) : [];
+  if (needsQuoting && families.length === 0) return declaration;
+  const safe =
+    quote === "'"
+      ? families
+          .map((family) =>
+            family.quoted
+              ? `"${family.name.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/'/g, "\\27 ")}"`
+              : family.name,
+          )
+          .join(", ")
+      : needsQuoting
+        ? formatFontFamilies(families)
+        : resolved;
+  return `${match[1]}${safe}${declaration.slice(match[1].length + value.length)}`;
+}
+
+/** Expand only inline font-family declarations in editor-authored HTML. */
+export function resolveInlineFontFamilies(
+  html: string,
+  resolveFontFamily: (family: string) => string,
+): string {
+  if (!/font-family/i.test(html)) return html;
+  return transformStyleAttributes(html, (style, quote) => {
+    let result = "";
+    let start = 0;
+    let cssQuote = "";
+    let depth = 0;
+    for (let i = 0; i <= style.length; i++) {
+      const char = style[i];
+      if (i === style.length || (char === ";" && !cssQuote && depth === 0)) {
+        result += resolveFontDeclaration(
+          style.slice(start, i),
+          quote,
+          resolveFontFamily,
+        );
+        if (i < style.length) result += ";";
+        start = i + 1;
+      } else if (cssQuote) {
+        if (char === "\\") i++;
+        else if (char === cssQuote) cssQuote = "";
+      } else if (char === "&") {
+        // A reference's own `;` is not a CSS declaration separator.
+        const reference = /^&(?:#\d+|#x[0-9a-f]+|apos|quot|nbsp);/i.exec(
+          style.slice(i),
+        );
+        if (reference) i += reference[0].length - 1;
+      } else if (char === '"' || char === "'") {
+        cssQuote = char;
+      } else if (char === "(") {
+        depth++;
+      } else if (char === ")" && depth > 0) {
+        depth--;
+      }
+    }
+    return result;
+  });
 }

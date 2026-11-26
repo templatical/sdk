@@ -11,6 +11,7 @@ import { bgAttr } from "../utils";
 import {
   RICH_TEXT_CSS_CLASS,
   decodeStyleReferences,
+  resolveInlineFontFamilies,
   richTextGapClass,
   resolveParagraphGap,
 } from "../rich-text";
@@ -45,7 +46,12 @@ export function renderParagraph(
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   // The canvas fills blank lines with the same helper, so the two agree.
   const content = addOutlookLineHeight(
-    decodeStyleReferences(fillEmptyParagraphs(convertMergeTagsToValues(html))),
+    decodeStyleReferences(
+      resolveInlineFontFamilies(
+        fillEmptyParagraphs(convertMergeTagsToValues(html)),
+        (family) => context.resolveFontFamily(family),
+      ),
+    ),
     { lineHeight: PARAGRAPH_LINE_HEIGHT, fontSizePx: DEFAULT_TEXT_FONT_SIZE },
   );
   const cssClassAttr = getCssClassAttr(block, [
