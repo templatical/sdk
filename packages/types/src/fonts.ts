@@ -94,8 +94,27 @@ export function parseFontFamilies(value: unknown): FontFamily[] {
       while (j < text.length) {
         const char = text[j];
         if (char === "\\" && j + 1 < text.length) {
-          name += text[j + 1];
-          j += 2;
+          let end = j + 1;
+          while (
+            end < text.length &&
+            end < j + 7 &&
+            /[0-9a-f]/i.test(text[end])
+          ) {
+            end++;
+          }
+          if (end > j + 1) {
+            const codePoint = Number.parseInt(text.slice(j + 1, end), 16);
+            name +=
+              codePoint > 0 &&
+              codePoint <= 0x10ffff &&
+              !(codePoint >= 0xd800 && codePoint <= 0xdfff)
+                ? String.fromCodePoint(codePoint)
+                : "\ufffd";
+            j = end + Number(isSpace(text[end] ?? ""));
+          } else {
+            name += text[j + 1];
+            j += 2;
+          }
           continue;
         }
         if (char === open) {

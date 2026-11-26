@@ -46,6 +46,30 @@ describe("inline rich-text font fallbacks", () => {
     );
   });
 
+  it.each(["&#59;", "&#x3b;", "&semi;"])(
+    "splits declarations at an encoded %s separator",
+    async (separator) => {
+      const mjml = await render(
+        `<p style="font-family: Montserrat${separator} color: red">Hi</p>`,
+      );
+      expect(mjml).toContain(
+        `<p style="font-family: 'Montserrat', Arial, Helvetica, sans-serif; color: red">Hi</p>`,
+      );
+      const compiled = await mjml2html(mjml);
+      expect(compiled.errors).toEqual([]);
+      expect(compiled.html).toContain("color: red");
+    },
+  );
+
+  it("resolves a hex escape inside a quoted font family", async () => {
+    const mjml = await render(
+      `<p style="font-family: 'M\\6f ntserrat'; color: red">Hi</p>`,
+    );
+    expect(mjml).toContain(
+      `<p style="font-family: 'Montserrat', Arial, Helvetica, sans-serif; color: red">Hi</p>`,
+    );
+  });
+
   it("keeps a double quote in a configured font inside a double-quoted style attribute", async () => {
     const mjml = await render(
       '<p style="font-family: Rock &quot;n&quot; Roll; color: red">Hi</p>',
@@ -291,6 +315,50 @@ describe("inline rich-text font fallbacks", () => {
       "<span style=\"font-family: 'Montserrat', Arial, Helvetica, sans-serif\">A</span>",
     );
     expect(mjml).toContain('<p style="font-family: Georgia, serif">B</p>');
+  });
+
+  it("carries a single title paragraph's font onto the compiled heading", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml(
+      {
+        ...template,
+        blocks: [
+          createTitleBlock({
+            content: '<p style="font-family: Montserrat; color: red">Hi</p>',
+          }),
+        ],
+      },
+      { customFonts },
+    );
+    expect(mjml).toContain(
+      `style="margin:0;font-size:inherit;color:inherit;line-height:inherit;font-weight:700;`,
+    );
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    expect(compiled.html).toMatch(
+      /<h2[^>]*style="[^"]*font-family: 'Montserrat', Arial, Helvetica, sans-serif/,
+    );
+  });
+
+  it("keeps an important title font ahead of a later normal declaration", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml(
+      {
+        ...template,
+        blocks: [
+          createTitleBlock({
+            content:
+              '<p style="font-family: Georgia !important; font-family: Montserrat">Hi</p>',
+          }),
+        ],
+      },
+      { customFonts },
+    );
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    expect(compiled.html).toMatch(
+      /<h2[^>]*font-family: Georgia, serif !important/,
+    );
   });
 
   it("keeps MSO conditional comments untouched", async () => {

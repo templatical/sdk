@@ -54,6 +54,23 @@ const titleStyle = computed(() => {
 });
 
 const headingTag = computed(() => `h${props.block.level}`);
+const headingStyle = computed(() => {
+  const style: Record<string, string> = {
+    color: "inherit",
+    fontWeight: "inherit",
+  };
+  const content = sanitizeHtml(resolvedContent.value);
+  if (unwrapParagraph(content) === content) return style;
+  const fragment = document.createElement("template");
+  fragment.innerHTML = content;
+  const paragraph = fragment.content.querySelector("p");
+  if (paragraph?.style.fontFamily) {
+    style.fontFamily = fontsManager.resolveFontFamily(
+      paragraph.style.fontFamily,
+    );
+  }
+  return style;
+});
 // A wrapper keeps a styled span from becoming DOMPurify's root element. Strip
 // that wrapper if the browser retains it, so it adds no line box to the title.
 const headingHtml = computed(() => {
@@ -86,7 +103,7 @@ const headingHtml = computed(() => {
       v-else
       v-inline-font-fallbacks="fontsManager.resolveFontFamily"
       class="tpl-text-content tpl:m-0 tpl:font-[inherit] tpl:text-[length:inherit] tpl:leading-[inherit] tpl:outline-none"
-      :style="{ color: 'inherit', fontWeight: 'inherit' }"
+      :style="headingStyle"
       v-html="headingHtml"
     />
     <!-- eslint-enable vue/no-v-html, vue/no-v-text-v-html-on-component -->

@@ -76,6 +76,21 @@ describe("inline font fallbacks in edit mode", () => {
 });
 
 describe("inline font fallbacks on the canvas", () => {
+  it("resolves an encoded declaration separator from parsed canvas styles", () => {
+    const wrapper = mount({
+      template: '<div v-inline-font-fallbacks="resolve" v-html="html"></div>',
+      directives: { inlineFontFallbacks: vInlineFontFallbacks },
+      setup: () => ({
+        resolve,
+        html: '<span style="font-family: Inter&#59; color: red">Hi</span>',
+      }),
+    });
+    const span = wrapper.get("span").element as HTMLElement;
+    expect(span.style.fontFamily).toBe("Inter, Helvetica, sans-serif");
+    expect(span.style.color).toBe("red");
+    wrapper.unmount();
+  });
+
   it("keeps an inline !important priority when adding a fallback", () => {
     const wrapper = mount({
       template:

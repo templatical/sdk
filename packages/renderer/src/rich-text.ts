@@ -147,10 +147,11 @@ const NAMED_STYLE_REFERENCES: Record<string, string> = {
   apos: "'",
   quot: '"',
   nbsp: String.fromCharCode(0xa0),
+  semi: ";",
 };
 
-const STYLE_REFERENCE = /&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp));/gi;
-const STYLE_REFERENCE_AT = /^&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp));/i;
+const STYLE_REFERENCE = /&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp|semi));/gi;
+const STYLE_REFERENCE_AT = /^&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp|semi));/i;
 const TAG_NAME_START = /[a-z]/i;
 const HTML_SPACE = /[ \t\n\f\r]/;
 
@@ -334,7 +335,7 @@ function decodeCssEscapes(value: string): string {
 function resolveFontDeclaration(
   declaration: string,
   quote: string,
-  resolveFontFamily: (family: string) => string,
+  resolveFontFamily: (family: string, important: boolean) => string,
 ): string {
   const match = /^(\s*font-family\s*:\s*)([\s\S]*?)\s*$/i.exec(declaration);
   if (!match) return declaration;
@@ -349,10 +350,10 @@ function resolveFontDeclaration(
   const unescaped = /^[\s]*['"]/.test(familyValue)
     ? familyValue
     : decodeCssEscapes(familyValue);
-  const expanded = resolveFontFamily(unescaped);
+  const expanded = resolveFontFamily(unescaped, priority !== "");
   const resolved =
     expanded === unescaped && unescaped !== familyValue
-      ? resolveFontFamily(familyValue)
+      ? resolveFontFamily(familyValue, priority !== "")
       : expanded;
   if (resolved === familyValue) return declaration;
 
@@ -380,7 +381,7 @@ function resolveFontDeclaration(
 /** Expand only inline font-family declarations in editor-authored HTML. */
 export function resolveInlineFontFamilies(
   html: string,
-  resolveFontFamily: (family: string) => string,
+  resolveFontFamily: (family: string, important: boolean) => string,
 ): string {
   if (!/font-family/i.test(html)) return html;
   return transformStyleAttributes(html, (style, quote) => {
@@ -417,14 +418,14 @@ export function resolveInlineFontFamilies(
         escaped = false;
       } else if (char === "\\") {
         escaped = true;
-      } else if (char === ";" && !token.reference && !cssQuote && depth === 0) {
+      } else if (char === ";" && !cssQuote && depth === 0) {
         result += resolveFontDeclaration(
           style.slice(start, i),
           quote,
           resolveFontFamily,
         );
-        result += ";";
-        start = i + 1;
+        result += style.slice(i, token.end);
+        start = token.end;
       } else if (cssQuote) {
         if (char === cssQuote) cssQuote = "";
       } else if (char === '"' || char === "'") {

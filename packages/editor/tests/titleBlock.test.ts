@@ -54,6 +54,15 @@ describe("TitleBlock canvas rendering", () => {
     expect(heading.text()).toBe("Plain title");
   });
 
+  it("carries a single paragraph's font onto the canvas heading", () => {
+    const wrapper = mount({
+      content: '<p style="font-family: Georgia; color: red">Hi</p>',
+    });
+    const heading = wrapper.get("h2").element as HTMLElement;
+    expect(heading.style.fontFamily).toBe("Georgia, serif");
+    expect(heading.querySelector("p")).toBeNull();
+  });
+
   it("renders a quoted > in the wrapper as heading text only", () => {
     const wrapper = mount({ content: '<p title="2 > 1">Hi</p>' });
     const heading = wrapper.find("h2");
