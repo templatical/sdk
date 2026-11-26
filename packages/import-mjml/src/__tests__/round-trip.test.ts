@@ -16,6 +16,7 @@ import {
 } from "@templatical/types";
 import type {
   Block,
+  MenuBlock,
   ParagraphBlock,
   SectionBlock,
   TemplateContent,
@@ -378,6 +379,46 @@ function normalize(value: unknown): unknown {
 }
 
 describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
+  it("imports a menu rendered without an Outlook value as a menu", async () => {
+    const original: TemplateContent = {
+      settings: buildFixtureTemplate().settings,
+      blocks: [
+        createSectionBlock({
+          columns: "1",
+          children: [
+            [
+              createMenuBlock({
+                fontSize: 0,
+                items: [
+                  {
+                    id: "home",
+                    text: "Home",
+                    url: "/",
+                    openInNewTab: false,
+                    bold: false,
+                    underline: false,
+                  },
+                ],
+              }),
+            ],
+          ],
+        }),
+      ],
+    };
+    const mjml = await renderToMjml(original);
+    const { content, report } = convertMjmlTemplate(mjml);
+    const section = content.blocks[0] as SectionBlock;
+    const menu = section.children[0][0] as MenuBlock;
+
+    expect(menu.type).toBe("menu");
+    expect(menu.items.map(({ text, url }) => [text, url])).toEqual([
+      ["Home", "/"],
+    ]);
+    expect(
+      report.entries.find(({ sourceTag }) => sourceTag === "mj-text")?.status,
+    ).toBe("converted");
+  });
+
   it("keeps literal Outlook property text in a paragraph", () => {
     const source =
       "<mjml><mj-body><mj-section><mj-column><mj-text><p>mso-line-height-alt:21px is documentation</p></mj-text></mj-column></mj-section></mj-body></mjml>";

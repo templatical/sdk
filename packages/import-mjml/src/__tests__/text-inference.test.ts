@@ -196,6 +196,50 @@ describe("menu inference", () => {
     ]);
   });
 
+  it("keeps a Word wrapper with an image link as paragraph content", () => {
+    const input =
+      '<div style="mso-line-height-alt:21px"><a href="/"><img src="logo.png" alt="Company"></a></div>';
+    const { result } = convert(input);
+
+    expect(result.block?.type).toBe("paragraph");
+    expect((result.block as ParagraphBlock).content).toBe(input);
+    expect(result.entry.templaticalBlockType).toBe("paragraph");
+  });
+
+  it("keeps a Word wrapper with a block inside a link as paragraph content", () => {
+    const input =
+      '<div style="mso-line-height-alt:21px"><a href="/"><div>Company</div></a></div>';
+    const { result } = convert(input);
+
+    expect(result.block?.type).toBe("paragraph");
+    expect((result.block as ParagraphBlock).content).toBe(input);
+  });
+
+  it("keeps bold inline text inside a menu item", () => {
+    const { result } = convert('<a href="/"><strong>Home</strong></a>');
+
+    expect(result.block?.type).toBe("menu");
+    expect((result.block as MenuBlock).items[0]).toMatchObject({
+      text: "Home",
+      bold: true,
+    });
+  });
+
+  it("reads text inside an unstyled inline span as a menu item", () => {
+    const { result } = convert('<a href="/"><span>Home</span></a>');
+
+    expect(result.block?.type).toBe("menu");
+    expect((result.block as MenuBlock).items[0].text).toBe("Home");
+  });
+
+  it("keeps a styled inline span as paragraph content", () => {
+    const input = '<a href="/"><span style="color:red">Home</span></a>';
+    const { result } = convert(input);
+
+    expect(result.block?.type).toBe("paragraph");
+    expect((result.block as ParagraphBlock).content).toBe(`<p>${input}</p>`);
+  });
+
   it("preserves a Word wrapper with extra separator spans as paragraph content", () => {
     const input =
       '<div style="mso-line-height-alt:21px"><a href="/">Home</a><span>First notice</span><span>Second notice</span></div>';
@@ -228,6 +272,22 @@ describe("menu inference", () => {
     },
   );
 
+  it("reads matching separators across three menu items", () => {
+    const input =
+      '<a href="/">Home</a><span style="color: red;">|</span>' +
+      '<a href="/shop">Shop</a><span style="color: red;">|</span>' +
+      '<a href="/help">Help</a>';
+    const { result } = convert(input);
+
+    expect(result.block?.type).toBe("menu");
+    expect((result.block as MenuBlock).items.map(({ text }) => text)).toEqual([
+      "Home",
+      "Shop",
+      "Help",
+    ]);
+    expect((result.block as MenuBlock).separator).toBe("|");
+  });
+
   it("reads top-level anchors as a menu block", () => {
     const { result } = convert(
       '<a href="/a">Alpha</a><span style="color: #cccccc; padding: 0 12px;">|</span><a href="/b">Beta</a>',
@@ -243,6 +303,23 @@ describe("menu inference", () => {
     expect(block.separatorColor).toBe("#cccccc");
     expect(result.entry.templaticalBlockType).toBe("menu");
   });
+
+  it.each([
+    ["Second notice", "color: red;"],
+    ["First notice", "color: blue;"],
+  ])(
+    "keeps differing separators as paragraph content: %s, %s",
+    (secondText, secondStyle) => {
+      const input =
+        '<a href="/">Home</a><span style="color: red;">First notice</span>' +
+        `<a href="/shop">Shop</a><span style="${secondStyle}">${secondText}</span>` +
+        '<a href="/help">Help</a>';
+      const { result } = convert(input);
+
+      expect(result.block?.type).toBe("paragraph");
+      expect((result.block as ParagraphBlock).content).toBe(`<p>${input}</p>`);
+    },
+  );
 
   it("does not read a paragraph-wrapped anchor as a menu", () => {
     const { result } = convert('<p><a href="/a">Alpha</a></p>');

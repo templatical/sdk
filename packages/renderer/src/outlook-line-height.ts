@@ -27,7 +27,6 @@ type StyleAttribute = {
 
 type TextSummary = {
   hasText: boolean;
-  hasSizedSpanText: boolean;
   spanSize: number | null;
   uniform: boolean;
 };
@@ -126,7 +125,6 @@ function pxFontSize(value: string | null): number | null {
 }
 
 function addText(summary: TextSummary, size: number | null): void {
-  if (size !== null) summary.hasSizedSpanText = true;
   if (!summary.hasText) {
     summary.hasText = true;
     summary.spanSize = size;
@@ -136,7 +134,6 @@ function addText(summary: TextSummary, size: number | null): void {
 
 function mergeSummary(parent: TextSummary, child: TextSummary): void {
   if (!child.hasText) return;
-  parent.hasSizedSpanText ||= child.hasSizedSpanText;
   if (!parent.hasText) {
     parent.hasText = true;
     parent.spanSize = child.spanSize;
@@ -152,15 +149,12 @@ function uniformSpanFontSize(frame: Frame): number | null {
     : null;
 }
 
-function contentFontSize(frame: Frame, defaultFontSizePx: number): number {
-  return (
-    uniformSpanFontSize(frame) ??
-    (frame.summary.hasSizedSpanText ? defaultFontSizePx : frame.cssFontSizePx)
-  );
+function contentFontSize(frame: Frame): number {
+  return uniformSpanFontSize(frame) ?? frame.cssFontSizePx;
 }
 
-function resolvedFontSize(frame: Frame, defaultFontSizePx: number): number {
-  return frame.ownFontSize ?? contentFontSize(frame, defaultFontSizePx);
+function resolvedFontSize(frame: Frame): number {
+  return frame.ownFontSize ?? contentFontSize(frame);
 }
 
 /** Add the alternate line height to rich-text blocks in one forward scan. */
@@ -216,7 +210,7 @@ export function addOutlookLineHeightWithFontSize(
         while (stack.length > matchingIndex) {
           const frame = stack.pop()!;
           openings.get(frame.tag)!.pop();
-          const size = resolvedFontSize(frame, defaults.fontSizePx);
+          const size = resolvedFontSize(frame);
           if (
             frame.tag === "p" &&
             stack.length === 0 &&
@@ -278,7 +272,11 @@ export function addOutlookLineHeightWithFontSize(
       const ownLineHeight = declaration(style?.value ?? "", "line-height");
       const frame: Frame = {
         tag: tagName,
-        effectiveSpanSize: spanSize ?? inheritedSpanSize,
+        effectiveSpanSize:
+          spanSize ??
+          (inheritedSpanSize === null
+            ? null
+            : (ownFontSize ?? inheritedSpanSize)),
         ownFontSize,
         cssFontSizePx,
         effectiveLineHeight:
@@ -292,7 +290,6 @@ export function addOutlookLineHeightWithFontSize(
               },
         summary: {
           hasText: false,
-          hasSizedSpanText: false,
           spanSize: null,
           uniform: true,
         },

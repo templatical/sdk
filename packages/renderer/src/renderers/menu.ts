@@ -37,14 +37,17 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
 
   const content = renderMenuItems(block);
   const alt = outlookLineHeightPx(PARAGRAPH_LINE_HEIGHT, fontSize);
-  const altStyle = alt === null ? "" : ` style="mso-line-height-alt:${alt}"`;
+  const contentWithOutlook =
+    alt === null
+      ? content
+      : `<div style="mso-line-height-alt:${alt}">${content}</div>`;
 
   return `<mj-text
   font-size="${escapeAttr(String(fontSize))}px"${colorAttr}
   align="${align}"
   line-height="${PARAGRAPH_LINE_HEIGHT}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
-><div${altStyle}>${content}</div></mj-text>`;
+>${contentWithOutlook}</mj-text>`;
 }
 
 function renderMenuItems(block: MenuBlock): string {

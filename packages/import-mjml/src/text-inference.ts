@@ -170,6 +170,17 @@ function convertTable(
   };
 }
 
+function menuLabelNode(node: AnyNode): boolean {
+  if (isText(node)) return true;
+  if (!isTag(node)) return false;
+  if (!["b", "strong", "span"].includes(node.tagName.toLowerCase())) {
+    return false;
+  }
+  return (
+    Object.keys(node.attribs).length === 0 && node.children.every(menuLabelNode)
+  );
+}
+
 /**
  * A menu is top-level anchors with optional `<span>` separators between them —
  * exactly what `renderers/menu.ts` emits, and deliberately not matched when a
@@ -187,6 +198,8 @@ function looksLikeMenu(html: string, requireRenderedSequence = false): boolean {
 
   let anchors = 0;
   let expectAnchor = true;
+  let separatorText: string | undefined;
+  let separatorStyle: string | undefined;
   for (const kid of kids) {
     if (isText(kid)) {
       if (kid.data.trim() !== "") return false;
@@ -197,6 +210,22 @@ function looksLikeMenu(html: string, requireRenderedSequence = false): boolean {
       continue;
     }
     const tag = kid.tagName.toLowerCase();
+    if (tag === "a") {
+      if (!$inner(kid).text().trim() || !kid.children.every(menuLabelNode)) {
+        return false;
+      }
+    } else if (tag === "span") {
+      const text = $inner(kid).text();
+      const style = $inner(kid).attr("style");
+      if (
+        separatorText !== undefined &&
+        (text !== separatorText || style !== separatorStyle)
+      ) {
+        return false;
+      }
+      separatorText = text;
+      separatorStyle = style;
+    }
     if (requireRenderedSequence) {
       if (tag !== (expectAnchor ? "a" : "span")) return false;
       expectAnchor = !expectAnchor;

@@ -218,13 +218,40 @@ describe("addOutlookLineHeight", () => {
     );
   });
 
-  it("keeps mixed span sizes on the block default under a sized ancestor", () => {
+  it("uses inherited size when spans have mixed sizes", () => {
     expect(
       addOutlookLineHeight(
         '<li style="font-size:20px"><p><span style="font-size:18px">A</span><span style="font-size:22px">B</span></p></li>',
         options,
       ),
+    ).toContain('<p style="mso-line-height-alt:30px">');
+  });
+
+  it("keeps a uniform span size ahead of inherited size", () => {
+    expect(
+      addOutlookLineHeight(
+        '<li style="font-size:20px"><p><span style="font-size:18px">A</span></p></li>',
+        options,
+      ),
+    ).toContain('<p style="mso-line-height-alt:27px">');
+  });
+
+  it("counts a strong font-size override as a mixed text run", () => {
+    expect(
+      addOutlookLineHeight(
+        '<p><span style="font-size:18px">A<strong style="font-size:24px">B</strong></span></p>',
+        options,
+      ),
     ).toContain('<p style="mso-line-height-alt:21px">');
+  });
+
+  it("keeps inherited span size through a strong without an override", () => {
+    expect(
+      addOutlookLineHeight(
+        '<p><span style="font-size:18px">A<strong>B</strong></span></p>',
+        options,
+      ),
+    ).toContain('<p style="mso-line-height-alt:27px">');
   });
 
   it("resolves an explicit percentage against its declaring element", () => {
@@ -461,7 +488,8 @@ describe("renderer Outlook line height", () => {
       createButtonBlock({ text: "Go", fontSize: 0 }),
       context,
     );
-    expect(menu).toContain('<div>\u003ca href="/"');
+    expect(menu).toContain('><a href="/"');
+    expect(menu).not.toContain("<div");
     expect(menu).not.toContain("mso-line-height-alt");
     expect(button).toContain("<span>Go</span>");
     expect(button).not.toContain("mso-line-height-alt");
