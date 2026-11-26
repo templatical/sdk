@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@templatical/types": "^0.63.3",
+    "@templatical/types": "^0.63.4",
     "@napi-rs/canvas": "^1.2.1",
     "gifenc": "^1.0.3"
   },

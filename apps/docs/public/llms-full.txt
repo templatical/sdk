@@ -10417,7 +10417,7 @@ Toolbar fields other than `targetDate` and `timezone` affect the sent email only
 
 ## Image endpoint example {#image-endpoint-example}
 
-The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP), and encodes 60 one-second GIF frames without a loop. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
+The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP, cut down to the characters of the SDK's default labels; swap it for a font that covers your own labels), and encodes 60 one-second GIF frames without a loop. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
 
 ```ts
 import { createServer } from "node:http";
@@ -10433,7 +10433,7 @@ import gifenc from "gifenc";
 const { GIFEncoder, quantize, applyPalette } = gifenc;
 const FONT = "Countdown Sans";
 const fontPath = fileURLToPath(
-  new URL("../assets/NotoSansJP.ttf", import.meta.url),
+  new URL("../assets/NotoSansJP-subset.ttf", import.meta.url),
 );
 if (!GlobalFonts.registerFromPath(fontPath, FONT)) {
   throw new Error(`Cannot load bundled font: ${fontPath}`);
