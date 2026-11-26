@@ -542,6 +542,42 @@ test.describe("image endpoint example", () => {
     expect(info.lastFrameSolid).toBe(true);
   });
 
+  test("sizes a column for the widest value it shows across frames", async ({
+    request,
+  }) => {
+    // targetDate has minute resolution: aim at the next minute, one day out.
+    // Close to the minute the GIF might not cross the day boundary, so wait
+    // until at least 10 s remain.
+    let msToMinute = 60_000 - (Date.now() % 60_000);
+    if (msToMinute < 10_000) {
+      await new Promise((resolve) => setTimeout(resolve, msToMinute + 500));
+      msToMinute = 60_000 - (Date.now() % 60_000);
+    }
+    const minute = Date.now() + msToMinute;
+    const at = (ms: number) => new Date(ms).toISOString().slice(0, 16);
+    const widthFor = async (targetMs: number) => {
+      const query = new URLSearchParams({
+        targetDate: at(targetMs),
+        timezone: "UTC",
+        showHours: "false",
+        // Short text, so the digit row (not the expired message or a label)
+        // decides the canvas width.
+        expiredMessage: "0",
+        labelDays: "d",
+        labelMinutes: "m",
+        labelSeconds: "s",
+      });
+      const response = await request.get(`/countdown.gif?${query}`);
+      expect(response.status()).toBe(200);
+      return gifInfo(new Uint8Array(await response.body())).width;
+    };
+    // Days 1, minutes 00 at first, then days 0, minutes 1439 once the day turns.
+    const crossing = await widthFor(minute + 86_400_000);
+    // Days 1, minutes 05 or 04 throughout.
+    const steady = await widthFor(minute + 86_400_000 + 300_000);
+    expect(crossing).toBeGreaterThan(steady);
+  });
+
   test("answers HEAD and rejects POST on the image route", async ({
     request,
   }) => {
