@@ -175,7 +175,9 @@ describe("ensurePrivateParent", () => {
           `Refusing to use ${join(open, "p")}: ${realpathSync(open)} can be changed by another user (owned by someone other than you or root, or group or other writable without the sticky bit).`,
         );
         chmodSync(open, 0o1777);
-        expect(ensurePrivateParent(join(open, "p", "app"))).toBe(join(open, "p"));
+        expect(ensurePrivateParent(join(open, "p", "app"))).toBe(
+          join(open, "p"),
+        );
       } finally {
         rmSync(root, { recursive: true, force: true });
       }
@@ -282,23 +284,28 @@ describe("ensurePrivateParent", () => {
     }
   });
 
-  it.skipIf(process.platform === "win32")("refuses a parent that group or other users can reach", () => {
-    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
-    try {
-      const shared = join(root, "shared");
-      mkdirSync(shared);
-      chmodSync(shared, 0o755);
-      expect(() => ensurePrivateParent(join(shared, "app"))).toThrow(
-        refusal(shared),
-      );
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
+  it.skipIf(process.platform === "win32")(
+    "refuses a parent that group or other users can reach",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const shared = join(root, "shared");
+        mkdirSync(shared);
+        chmodSync(shared, 0o755);
+        expect(() => ensurePrivateParent(join(shared, "app"))).toThrow(
+          refusal(shared),
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("skips the permission bits on Windows", () => {
     const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
-    const platform = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+    const platform = vi
+      .spyOn(process, "platform", "get")
+      .mockReturnValue("win32");
     try {
       const shared = join(root, "shared");
       mkdirSync(shared);
@@ -310,42 +317,48 @@ describe("ensurePrivateParent", () => {
     }
   });
 
-  it.skipIf(process.platform === "win32")("refuses a parent that is a symlink, even to a private folder", () => {
-    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
-    try {
-      const target = join(root, "target");
-      mkdirSync(target, { mode: 0o700 });
-      const link = join(root, "link");
-      symlinkSync(target, link);
-      expect(() => ensurePrivateParent(join(link, "app"))).toThrow(
-        refusal(link),
-      );
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
+  it.skipIf(process.platform === "win32")(
+    "refuses a parent that is a symlink, even to a private folder",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const target = join(root, "target");
+        mkdirSync(target, { mode: 0o700 });
+        const link = join(root, "link");
+        symlinkSync(target, link);
+        expect(() => ensurePrivateParent(join(link, "app"))).toThrow(
+          refusal(link),
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
 
-  it.skipIf(process.platform === "win32")("is checked before either materializer packs or copies anything", () => {
-    const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
-    try {
-      const shared = join(root, "shared");
-      mkdirSync(shared);
-      chmodSync(shared, 0o755);
-      const consumerDir = join(shared, "app");
-      const packDir = join(root, "packs");
-      const args = { repoRoot: REPO_ROOT, consumerDir, packDir };
-      expect(() =>
-        materializeConsumer({ ...args, fixtureDir: join(root, "missing") }),
-      ).toThrow(refusal(shared));
-      expect(() =>
-        materializeExample({ ...args, exampleDir: join(root, "missing") }),
-      ).toThrow(refusal(shared));
-      expect(existsSync(consumerDir)).toBe(false);
-      expect(existsSync(packDir)).toBe(false);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
+  it.skipIf(process.platform === "win32")(
+    "is checked before either materializer packs or copies anything",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "tpl-private-"));
+      try {
+        const shared = join(root, "shared");
+        mkdirSync(shared);
+        chmodSync(shared, 0o755);
+        const consumerDir = join(shared, "app");
+        const packDir = join(root, "packs");
+        const args = { repoRoot: REPO_ROOT, consumerDir, packDir };
+        expect(() =>
+          materializeConsumer({ ...args, fixtureDir: join(root, "missing") }),
+        ).toThrow(refusal(shared));
+        expect(() =>
+          materializeExample({ ...args, exampleDir: join(root, "missing") }),
+        ).toThrow(refusal(shared));
+        expect(existsSync(consumerDir)).toBe(false);
+        expect(existsSync(packDir)).toBe(false);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
 });
 
 describe("vanillaConsumerDir", () => {
@@ -784,7 +797,12 @@ describe("the real workspace, fixtures and examples", () => {
     },
   );
 
-  it.each(exampleNames())(
+  const editorExamples = () =>
+    exampleNames().filter(
+      (name) => readExample(name).dependencies?.["@templatical/editor"],
+    );
+
+  it.each(editorExamples())(
     "examples/%s builds every package the editor's build reads, ahead of the editor",
     (name) => {
       const { closure } = resolveWorkspaceClosure(
@@ -794,6 +812,16 @@ describe("the real workspace, fixtures and examples", () => {
       expect(buildOrder(closure, manifests)).toEqual(EDITOR_BUILD);
     },
   );
+
+  it("examples/countdown-image builds only the types it imports", () => {
+    expect(exampleNames()).toContain("countdown-image");
+    expect(editorExamples()).not.toContain("countdown-image");
+    const { closure } = resolveWorkspaceClosure(
+      readExampleRoots(readExample("countdown-image"), manifests),
+      manifests,
+    );
+    expect(buildOrder(closure, manifests)).toEqual(["@templatical/types"]);
+  });
 });
 
 describe("example materialization helpers", () => {

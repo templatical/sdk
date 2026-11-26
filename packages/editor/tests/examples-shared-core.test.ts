@@ -38,6 +38,8 @@ const CORE: Record<string, Record<string, string>> = {
 
 // The one example without a backend, so without the shared core.
 const NO_BACKEND = new Set(["react-vite"]);
+// Examples that don't host the editor carry none of the shared core.
+const NO_EDITOR = new Set(["countdown-image"]);
 
 const read = (example: string, rel: string) =>
   readFileSync(join(EXAMPLES, example, rel), "utf8");
@@ -56,7 +58,7 @@ describe("the full-stack examples' shared core", () => {
       .filter((name) => statSync(join(EXAMPLES, name)).isDirectory())
       .sort();
     const fullStack = Object.keys(CORE["store.ts"]);
-    expect(onDisk).toEqual([...fullStack, ...NO_BACKEND].sort());
+    expect(onDisk).toEqual([...fullStack, ...NO_BACKEND, ...NO_EDITOR].sort());
     for (const paths of Object.values(CORE)) {
       expect(Object.keys(paths)).toEqual(fullStack);
     }
