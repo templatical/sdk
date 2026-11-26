@@ -33,7 +33,19 @@ The playground URL returns a **fixed sample GIF**: the same 30-second loop for e
 
 ## Canvas image
 
-The canvas shows the image `imageUrl` returns for the block as it stands in the editor. The editor's local render path (`toMjml()`, `toHtml()`) writes the same URL into the email; a backend render can send a different one, such as a [signed URL](#signed-urls-at-render-time). A host that renders from the stored block ([Block lookup from storage](#block-lookup-from-storage)) can draw unsaved edits on the canvas before they reach recipients. Without an image URL, it shows a placeholder. If the image fails to load, the placeholder shows the failed URL. The editor requests a new image only when `imageUrl` returns a different URL, 400 ms after the URL last changed. A host that returns the same URL after an edit gets no new request, so put whatever should refresh the image into the URL. During loading, the previous image remains visible, dimmed with “Updating…”, until the new image has loaded.
+The canvas shows the image `imageUrl` returns for the block as it stands in the editor. Without an image URL it shows a placeholder; if the image fails to load, the placeholder shows the failed URL.
+
+The editor loads the image as follows:
+
+- The first image loads as soon as the block appears.
+- After that, the editor requests a new image only when the URL changes, 400 ms after it last changed. A host that returns the same URL after an edit gets no new request, so put whatever should refresh the image into the URL.
+- While the new image loads, the previous one stays visible, dimmed with “Updating…”.
+
+The canvas and the email can show different images:
+
+- With [`resolveImageUrl`](/guide/images#display-only-url-resolution) configured, the canvas shows and debounces the resolved URL, while the email keeps the `imageUrl` result.
+- The editor's local render path (`toMjml()`, `toHtml()`) writes the `imageUrl` result into the email; a backend render can send a different URL, such as a [signed URL](#signed-urls-at-render-time).
+- A host that renders from the stored block ([Block lookup from storage](#block-lookup-from-storage)) can draw unsaved edits on the canvas before they reach recipients.
 
 ## Provider and renderer contract
 

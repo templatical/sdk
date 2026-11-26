@@ -33,7 +33,19 @@ Die Playground-URL liefert ein **festes Beispiel-GIF**: dieselbe 30-Sekunden-Sch
 
 ## Bild auf der Arbeitsfläche
 
-Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Der lokale Render-Pfad des Editors (`toMjml()`, `toHtml()`) schreibt dieselbe URL in die E-Mail; ein Backend-Rendering kann eine andere senden, etwa eine [signierte URL](#signierte-urls-beim-rendern). Ein Host, der aus dem gespeicherten Block rendert ([Block-Abruf aus dem Speicher](#block-abruf-aus-dem-speicher)), kann ungespeicherte Änderungen auf der Arbeitsfläche zeigen, bevor sie Empfänger erreichen. Ohne Bild-URL erscheint ein Platzhalter. Wenn das Bild nicht geladen werden kann, zeigt der Platzhalter die fehlgeschlagene URL. Der Editor fordert nur dann ein neues Bild an, wenn `imageUrl` eine andere URL zurückgibt, und zwar 400 ms nach der letzten Änderung der URL. Gibt ein Host nach einer Änderung dieselbe URL zurück, folgt keine neue Anfrage; nehmen Sie daher alles, was das Bild neu laden soll, in die URL auf. Während des Ladens bleibt das bisherige Bild abgeblendet und mit „Wird aktualisiert…“ versehen sichtbar, bis das neue Bild geladen ist.
+Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Ohne Bild-URL erscheint ein Platzhalter; kann das Bild nicht geladen werden, zeigt der Platzhalter die fehlgeschlagene URL.
+
+Der Editor lädt das Bild so:
+
+- Das erste Bild lädt, sobald der Block erscheint.
+- Danach fordert der Editor nur dann ein neues Bild an, wenn sich die URL ändert, und zwar 400 ms nach ihrer letzten Änderung. Gibt ein Host nach einer Änderung dieselbe URL zurück, folgt keine neue Anfrage; nehmen Sie daher alles, was das Bild neu laden soll, in die URL auf.
+- Während das neue Bild lädt, bleibt das bisherige abgeblendet und mit „Wird aktualisiert…“ versehen sichtbar.
+
+Arbeitsfläche und E-Mail können unterschiedliche Bilder zeigen:
+
+- Ist [`resolveImageUrl`](/de/guide/images#reine-anzeige-aufloesung-von-bild-urls) konfiguriert, zeigt und entprellt die Arbeitsfläche die aufgelöste URL, während die E-Mail das Ergebnis von `imageUrl` behält.
+- Der lokale Render-Pfad des Editors (`toMjml()`, `toHtml()`) schreibt das Ergebnis von `imageUrl` in die E-Mail; ein Backend-Rendering kann eine andere URL senden, etwa eine [signierte URL](#signierte-urls-beim-rendern).
+- Ein Host, der aus dem gespeicherten Block rendert ([Block-Abruf aus dem Speicher](#block-abruf-aus-dem-speicher)), kann ungespeicherte Änderungen auf der Arbeitsfläche zeigen, bevor sie Empfänger erreichen.
 
 ## Provider- und Renderer-Vertrag
 
