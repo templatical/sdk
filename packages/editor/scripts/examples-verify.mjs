@@ -61,6 +61,12 @@ export const EXAMPLES = {
       "127.0.0.1",
     ],
   },
+  "countdown-image": {
+    port: 21746,
+    kind: "image-endpoint",
+    host: "127.0.0.1",
+    startArgs: () => [],
+  },
 };
 
 const TELEMETRY_OFF = {

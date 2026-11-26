@@ -81,6 +81,25 @@ Andere Felder der Werkzeugleiste als `targetDate` und `timezone` wirken sich nur
 
 `renderCountdownImage` kommt aus `@templatical/renderer`. Die Funktion gibt ein `<mj-image>` mit dem übergebenen `src`, maskierten Attributen und lokalisiertem Alternativtext zurück. `countdownAltText` kommt aus `@templatical/types` und beschreibt das Zieldatum in der Sprache des Templates. `countdownTargetTime` gibt das Ziel in Epoch-Millisekunden zurück, oder `null` bei leerem, unlesbarem oder unmöglichem Datum sowie bei einem Datum ohne Offset und unbekannter Zeitzone (ein Datum mit `Z` oder Offset ignoriert `timezone`); `countdownWallTime` gibt es als `YYYY-MM-DDTHH:mm` in der Zeitzone des Blocks zurück, oder `""`. Der lokale Renderpfad des Editors verwendet automatisch die Template-Sprache. Ein Host-Override mit `render.toMjml` verantwortet seinen eigenen Renderpfad.
 
+## Beispiel für einen Bild-Endpunkt {#image-endpoint-example}
+
+Das [eigenständige Node-Beispiel](https://github.com/templatical/sdk/tree/main/examples/countdown-image) liefert `GET /countdown.gif` und `HEAD /countdown.gif` anhand der Blockfelder in der Abfrage. Es liest die Ortszeit mit `countdownTargetTime`, zeichnet Text mit einer gebündelten OFL-Schrift (Noto Sans JP, reduziert auf die Zeichen der Standard-Beschriftungen des SDK; ersetzen Sie sie durch eine Schrift, die Ihre eigenen Beschriftungen abdeckt) und erzeugt bis zu 60 GIF-Bilder im Sekundenabstand ohne Schleife. Wenn der Ablauf innerhalb dieses Bildfensters liegt, zeigt das letzte Bild `expiredMessage`. `fontFamily` des Blocks wird nicht verwendet. Nach Ablauf erscheint ein einzelnes Bild mit `expiredMessage`; `hideOnExpiry=true` liefert ein transparentes 1×1-GIF.
+
+<<< @/../../examples/countdown-image/src/server.ts
+
+`server.ts` importiert die Aufteilung in Einheiten aus `segments.ts`: Jede sichtbare Einheit erhält, was nach den größeren sichtbaren Einheiten übrig bleibt.
+
+<<< @/../../examples/countdown-image/src/segments.ts
+
+Für die Übertragung auf einen anderen Stack:
+
+- `targetDate` in `timezone` lesen, einschließlich der Sommerzeitwechsel, entsprechend `countdownTargetTime`.
+- Bilder im Sekundenabstand ab dem Anfragezeitpunkt zeichnen und keine Schleife setzen; abgelaufene und ausgeblendete Zustände behandeln.
+- Eine kurze öffentliche Cache-Dauer nach der benötigten Genauigkeit wählen. Dieses Beispiel verwendet eine Sekunde. Editor-Vorschauen bleiben privat und ungecacht, wie unter [Grenzen des Endpunkts](#grenzen-des-endpunkts) beschrieben.
+- Länge der Abfrage und Texte, Zielbereich, Schriftgrößen, Farben und gemessene Bildmaße vor dem Zeichnen begrenzen. Dieses Beispiel begrenzt die Bildmaße auf 1.200 × 160 Pixel; die [README des Beispiels](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) nennt die übrigen Grenzen.
+
+Prüfen: In `examples/countdown-image` `npm install && npm run dev` ausführen und `http://127.0.0.1:21746/countdown.gif?targetDate=2030-12-24T18%3A00&timezone=Europe%2FBerlin` öffnen. Der [Smoke-Test des Beispiels](https://github.com/templatical/sdk/blob/main/packages/editor/tests/e2e-examples/smoke.spec.ts) prüft GIF-Bilder, Ablauf, Transparenz und eine ungültige Zeitzone.
+
 ## Headless-MJML
 
 Übergeben Sie dieselbe URL-Funktion über `blockRenderers.countdown` an `renderToMjml`:
@@ -168,7 +187,7 @@ Ein Backend, das die versendete E-Mail rendert (ein `render.toMjml`-Provider ode
 
 Diese Regeln gelten für beide Ansätze:
 
-- Lesen Sie nur die Blockfelder, die das Bild braucht, und begrenzen Sie sie: einen Bereich für das Zieldatum, Grenzen für Schriftgrößen, eine maximale Label-Länge.
+- Lesen Sie nur die Blockfelder, die das Bild braucht, und begrenzen Sie sie: einen Bereich für das Zieldatum, Grenzen für Schriftgrößen, eine maximale Label-Länge und die gemessenen Bildmaße. Das Beispiel lehnt Bilder über 1.200 × 160 Pixel ab.
 - Rufen Sie `expiredImageUrl` nie vom Server ab. Leiten Sie darauf weiter oder akzeptieren Sie nur Ihren eigenen Asset-Host; eine Adresse aus der Anfrage abzurufen, macht den Endpunkt zu einem offenen Proxy.
 - Cachen Sie aus gespeicherten Blöcken gerenderte Bilder pro Parametersatz, höchstens so lange, wie es die nötige Genauigkeit zulässt: Ein Countdown mit Sekunden, der eine Minute gecacht wird, kann beim Öffnen bis zu 59 Sekunden nachgehen, und jede kürzere Lebensdauer kostet mehr Renderings. Bild-Proxys bündeln viele Empfänger hinter wenigen IP-Adressen, daher können Rate-Limits pro IP Missbrauch nicht von einem großen Versand unterscheiden.
 - Halten Sie die Bildkodierung schnell und cachen Sie Antworten anhand der URL nur kurz. Das Bild hängt vom Zeitpunkt der Anfrage ab.
