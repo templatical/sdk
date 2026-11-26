@@ -1,5 +1,12 @@
 # @templatical/types
 
+## 0.63.5
+
+### Patch Changes
+
+- eb57dad: Inline font choices in paragraph and title rich text use their fallback stack in the email and editor canvas. Encoded declaration separators and quoted CSS font escapes preserve the intended styles, and a single title paragraph keeps its font on the heading. Title headings retain font priority and respect later `font` shorthands; unknown escaped apostrophe names keep their decoded family and fallback. The edit surface applies the same stack without changing stored rich text. Existing inline stacks keep their specified fallbacks.
+- a0d6940: Classic Outlook for Windows now shows the intended line spacing in paragraphs, titles, menus, tables and buttons through `mso-line-height-alt` pixel declarations. Browsers keep their existing line-height values.
+
 ## 0.63.4
 
 No changes in this release.

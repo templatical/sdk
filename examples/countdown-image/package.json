@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.2.1",
-    "@templatical/types": "^0.63.4",
+    "@templatical/types": "^0.63.5",
     "gifenc": "^1.0.3"
   },
   "devDependencies": {
