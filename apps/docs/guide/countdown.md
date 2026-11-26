@@ -81,6 +81,25 @@ Toolbar fields other than `targetDate` and `timezone` affect the sent email only
 
 `renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. `countdownTargetTime` returns the target as epoch milliseconds, or `null` for an empty, unreadable or impossible date, or for an offset-free date with an unknown timezone (a date with `Z` or an offset ignores `timezone`); `countdownWallTime` returns it as `YYYY-MM-DDTHH:mm` in the block's timezone, or `""`. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
 
+## Image endpoint example {#image-endpoint-example}
+
+The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` and `HEAD /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP, cut down to the characters of the SDK's default labels; swap it for a font that covers your own labels), and encodes up to 60 one-second GIF frames without a loop. When expiry occurs within that frame window, the last frame shows `expiredMessage`. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
+
+<<< @/../../examples/countdown-image/src/server.ts
+
+`server.ts` imports the unit breakdown from `segments.ts`: each visible unit takes what is left after the larger visible units.
+
+<<< @/../../examples/countdown-image/src/segments.ts
+
+To port the endpoint to another stack:
+
+- Read `targetDate` in `timezone`, including daylight-saving transitions, through the equivalent of `countdownTargetTime`.
+- Draw one-second frames from the request time and omit the loop extension; handle expired and hidden states.
+- Set a short public cache lifetime against the accuracy needed. This example uses one second. Keep editor previews private and uncached as described under [Endpoint limits](#endpoint-limits).
+- Limit the query and text lengths, target range, font sizes, colors, and measured canvas size before drawing. This example caps the canvas at 1,200 × 160 pixels; the [example README](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) lists its other bounds.
+
+Check it: run `npm install && npm run dev` in `examples/countdown-image`, then open `http://127.0.0.1:21746/countdown.gif?targetDate=2030-12-24T18%3A00&timezone=Europe%2FBerlin`. The [example smoke spec](https://github.com/templatical/sdk/blob/main/packages/editor/tests/e2e-examples/smoke.spec.ts) checks its GIF frames, expiry, transparency, and invalid timezone response.
+
 ## Headless MJML
 
 Pass the same URL function to `renderToMjml` through `blockRenderers.countdown`:
@@ -168,7 +187,7 @@ A backend that renders the sent email (a `render.toMjml` provider, or `renderToM
 
 These apply with either approach:
 
-- Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length.
+- Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length, and a measured canvas cap. The example rejects canvases above 1,200 × 160 pixels.
 - Never fetch `expiredImageUrl` from the server. Redirect to it, or accept only your own asset host; fetching an address from the request turns the endpoint into an open proxy.
 - Cache images rendered from stored blocks per parameter set, for no longer than the accuracy you need: a countdown that shows seconds and is cached for a minute can open up to 59 seconds behind, and each shorter lifetime costs more renders. Image proxies send many recipients through few IP addresses, so per-IP rate limits can't tell abuse from a large send.
 - Keep image encoding fast and cache responses by URL for a short time. The image depends on request time.

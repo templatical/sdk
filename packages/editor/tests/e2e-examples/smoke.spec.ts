@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { segments } from "../../../../examples/countdown-image/src/segments.ts";
 
 const KIND = process.env.EXAMPLE_KIND;
 const EXAMPLE = process.env.EXAMPLE ?? "";
@@ -71,7 +72,7 @@ test("runs against a known example kind", () => {
   // Each describe below skips unless its kind matches, so a wrong
   // EXAMPLE_KIND would otherwise pass with nothing run. The same holds for
   // EXAMPLE and the one test that runs against a single example.
-  expect(["fullstack", "minimal"]).toContain(KIND);
+  expect(["fullstack", "minimal", "image-endpoint"]).toContain(KIND);
   expect(EXAMPLE).not.toBe("");
 });
 
@@ -354,5 +355,301 @@ test.describe("minimal example", () => {
     await page.getByTestId("export-mjml").click();
     await expect(page.getByTestId("export-output")).toContainText("<mjml");
     await expect(alert).toHaveCount(0);
+  });
+});
+
+function gifPixels(data: Uint8Array, minimumCodeSize: number): number[] {
+  const clear = 1 << minimumCodeSize;
+  const end = clear + 1;
+  let dictionary: number[][] = [];
+  let codeSize = minimumCodeSize + 1;
+  let bit = 0;
+  let previous: number[] | null = null;
+  const pixels: number[] = [];
+  const reset = () => {
+    dictionary = Array.from({ length: clear }, (_, value) => [value]);
+    dictionary.push([], []);
+    codeSize = minimumCodeSize + 1;
+    previous = null;
+  };
+  reset();
+  while (bit + codeSize <= data.length * 8) {
+    let code = 0;
+    for (let index = 0; index < codeSize; index++) {
+      code |= ((data[bit >> 3] >> (bit & 7)) & 1) << index;
+      bit++;
+    }
+    if (code === clear) {
+      reset();
+      continue;
+    }
+    if (code === end) break;
+    const entry =
+      code < dictionary.length
+        ? dictionary[code]
+        : [...(previous ?? []), previous?.[0] ?? 0];
+    pixels.push(...entry);
+    if (previous) {
+      dictionary.push([...previous, entry[0]]);
+      if (dictionary.length === 1 << codeSize && codeSize < 12) codeSize++;
+    }
+    previous = entry;
+  }
+  return pixels;
+}
+
+/** Read GIF structure rather than counting 0x2c bytes inside compressed data. */
+function gifInfo(bytes: Uint8Array) {
+  const text = (from: number, length: number) =>
+    Buffer.from(bytes.subarray(from, from + length)).toString("ascii");
+  expect(text(0, 6)).toBe("GIF89a");
+  const width = bytes[6] | (bytes[7] << 8);
+  const height = bytes[8] | (bytes[9] << 8);
+  let offset = 13;
+  if (bytes[10] & 0x80) offset += 3 * (1 << ((bytes[10] & 7) + 1));
+  const delays: number[] = [];
+  let transparent = false;
+  let loops = false;
+  let frames = 0;
+  let previousFramePixels: number[] = [];
+  let lastFramePixels: number[] = [];
+  const readBlocks = () => {
+    const data: number[] = [];
+    while (true) {
+      const length = bytes[offset++];
+      if (length === 0) return Uint8Array.from(data);
+      data.push(...bytes.subarray(offset, offset + length));
+      offset += length;
+      expect(offset).toBeLessThanOrEqual(bytes.length);
+    }
+  };
+  const skipBlocks = () => {
+    readBlocks();
+  };
+  while (offset < bytes.length) {
+    const marker = bytes[offset++];
+    if (marker === 0x3b) break;
+    if (marker === 0x21) {
+      const label = bytes[offset++];
+      if (label === 0xf9) {
+        expect(bytes[offset++]).toBe(4);
+        const flags = bytes[offset++];
+        transparent ||= !!(flags & 1);
+        delays.push(bytes[offset] | (bytes[offset + 1] << 8));
+        offset += 3;
+        expect(bytes[offset++]).toBe(0);
+      } else {
+        if (label === 0xff && text(offset + 1, 11) === "NETSCAPE2.0")
+          loops = true;
+        skipBlocks();
+      }
+      continue;
+    }
+    expect(marker).toBe(0x2c);
+    frames++;
+    const flags = bytes[offset + 8];
+    offset += 9;
+    if (flags & 0x80) offset += 3 * (1 << ((flags & 7) + 1));
+    const minimumCodeSize = bytes[offset++];
+    previousFramePixels = lastFramePixels;
+    lastFramePixels = gifPixels(readBlocks(), minimumCodeSize);
+  }
+  expect(bytes[offset - 1]).toBe(0x3b);
+  expect(lastFramePixels).toHaveLength(width * height);
+  return {
+    width,
+    height,
+    frames,
+    delays,
+    loops,
+    transparent,
+    previousFrameSolid: previousFramePixels.every(
+      (pixel) => pixel === previousFramePixels[0],
+    ),
+    lastFrameSolid: lastFramePixels.every(
+      (pixel) => pixel === lastFramePixels[0],
+    ),
+  };
+}
+
+test.describe("image endpoint example", () => {
+  test.skip(KIND !== "image-endpoint", "runs against the image endpoint only");
+
+  test("moves a hidden unit's time into the next visible unit", () => {
+    const labels = {
+      labelDays: "d",
+      labelHours: "h",
+      labelMinutes: "m",
+      labelSeconds: "s",
+    };
+    const digits = (shown: [boolean, boolean, boolean, boolean], s: number) =>
+      segments(
+        {
+          ...labels,
+          showDays: shown[0],
+          showHours: shown[1],
+          showMinutes: shown[2],
+          showSeconds: shown[3],
+        },
+        s,
+      ).map((segment) => `${segment.digits}${segment.label}`);
+    expect(digits([false, true, false, true], 3661)).toEqual(["01h", "61s"]);
+    expect(digits([true, false, true, false], 90061)).toEqual(["1d", "61m"]);
+    expect(digits([true, true, true, true], 90061)).toEqual([
+      "1d",
+      "01h",
+      "01m",
+      "01s",
+    ]);
+    expect(digits([false, false, false, true], 3661)).toEqual(["3661s"]);
+  });
+
+  test("returns 60 one-second GIF frames without a loop", async ({
+    request,
+  }) => {
+    const targetDate = new Date(Date.now() + 3_600_000)
+      .toISOString()
+      .slice(0, 16);
+    const query = new URLSearchParams({ targetDate, timezone: "UTC" });
+    const response = await request.get(`/countdown.gif?${query}`);
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toBe("image/gif");
+    expect(response.headers()["cache-control"]).toBe("public, max-age=1");
+    const info = gifInfo(await response.body());
+    expect(info.frames).toBe(60);
+    expect(info.delays).toEqual(Array(60).fill(100));
+    expect(info.loops).toBe(false);
+    expect(info.width).toBeGreaterThan(1);
+    expect(info.height).toBeGreaterThan(1);
+  });
+
+  test("ends a near-target GIF on the expired frame without looping", async ({
+    request,
+  }) => {
+    const targetDate = new Date(Date.now() + 5_000).toISOString();
+    const query = new URLSearchParams({
+      targetDate,
+      timezone: "UTC",
+      expiredMessage: "",
+    });
+    const response = await request.get(`/countdown.gif?${query}`);
+    expect(response.status()).toBe(200);
+    const info = gifInfo(await response.body());
+    expect(info.frames).toBe(6);
+    expect(info.delays).toEqual(Array(6).fill(100));
+    expect(info.loops).toBe(false);
+    expect(info.previousFrameSolid).toBe(false);
+    expect(info.lastFrameSolid).toBe(true);
+  });
+
+  test("sizes a column for the widest value it shows across frames", async ({
+    request,
+  }) => {
+    // targetDate has minute resolution: aim at the next minute, one day out.
+    // The 60 frames span 59 s, so the day boundary must fall inside them: wait
+    // until the next minute is between about 10 s and 50 s away.
+    const msToMinute = () => 60_000 - (Date.now() % 60_000);
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+    if (msToMinute() < 10_000) await sleep(msToMinute() + 10_000);
+    else if (msToMinute() > 50_000) await sleep(msToMinute() - 45_000);
+    const now = Date.now();
+    const minute = now + 60_000 - (now % 60_000);
+    const at = (ms: number) => new Date(ms).toISOString().slice(0, 16);
+    const widthFor = async (targetMs: number) => {
+      const query = new URLSearchParams({
+        targetDate: at(targetMs),
+        timezone: "UTC",
+        showHours: "false",
+        // Short text, so the digit row (not the expired message or a label)
+        // decides the canvas width.
+        expiredMessage: "0",
+        labelDays: "d",
+        labelMinutes: "m",
+        labelSeconds: "s",
+      });
+      const response = await request.get(`/countdown.gif?${query}`);
+      expect(response.status()).toBe(200);
+      return gifInfo(new Uint8Array(await response.body())).width;
+    };
+    // Days 1, minutes 00 at first, then days 0, minutes 1439 once the day turns.
+    const crossing = await widthFor(minute + 86_400_000);
+    // Days 1, minutes 05 or 04 throughout.
+    const steady = await widthFor(minute + 86_400_000 + 300_000);
+    expect(crossing).toBeGreaterThan(steady);
+  });
+
+  test("answers HEAD and rejects POST on the image route", async ({
+    request,
+  }) => {
+    const query = "targetDate=2000-01-01T00%3A00&timezone=UTC";
+    const head = await request.head(`/countdown.gif?${query}`);
+    expect(head.status()).toBe(200);
+    expect(head.headers()["content-type"]).toBe("image/gif");
+    expect(head.headers()["cache-control"]).toBe("public, max-age=1");
+    expect(await head.body()).toHaveLength(0);
+    const post = await request.post(`/countdown.gif?${query}`);
+    expect(post.status()).toBe(405);
+    expect(post.headers().allow).toBe("GET, HEAD");
+  });
+
+  test("rejects a canvas that exceeds the image size limit", async ({
+    request,
+  }) => {
+    const query = new URLSearchParams({
+      targetDate: "2030-01-01T00:00",
+      timezone: "UTC",
+      digitFontSize: "72",
+      labelFontSize: "32",
+      labelDays: "W".repeat(32),
+      labelHours: "W".repeat(32),
+      labelMinutes: "W".repeat(32),
+      labelSeconds: "W".repeat(32),
+      expiredMessage: "W".repeat(100),
+    });
+    const response = await request.get(`/countdown.gif?${query}`);
+    expect(response.status()).toBe(400);
+  });
+
+  test("renders one expired frame", async ({ request }) => {
+    const response = await request.get(
+      "/countdown.gif?targetDate=2000-01-01T00%3A00&timezone=UTC",
+    );
+    expect(response.status()).toBe(200);
+    expect(gifInfo(await response.body()).frames).toBe(1);
+  });
+
+  test("hides an expired countdown with one transparent pixel", async ({
+    request,
+  }) => {
+    const response = await request.get(
+      "/countdown.gif?targetDate=2000-01-01T00%3A00&timezone=UTC&hideOnExpiry=true",
+    );
+    expect(response.status()).toBe(200);
+    expect(gifInfo(await response.body())).toMatchObject({
+      width: 1,
+      height: 1,
+      frames: 1,
+      transparent: true,
+    });
+  });
+
+  test("rejects an unreadable timezone and a 33-character label", async ({
+    request,
+  }) => {
+    const invalid = await request.get(
+      "/countdown.gif?targetDate=2030-01-01T00%3A00&timezone=Not%2FAZone",
+    );
+    expect(invalid.status()).toBe(400);
+    const query = new URLSearchParams({
+      targetDate: "2030-01-01T00:00",
+      timezone: "UTC",
+      labelDays: "x".repeat(32),
+    });
+    const boundary = await request.get(`/countdown.gif?${query}`);
+    expect(boundary.status()).toBe(200);
+    query.set("labelDays", "x".repeat(33));
+    const long = await request.get(`/countdown.gif?${query}`);
+    expect(long.status()).toBe(400);
   });
 });

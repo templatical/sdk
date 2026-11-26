@@ -24,6 +24,7 @@ const BUILD_OUTPUT: Record<string, string> = {
   sveltekit: "build/",
   "react-router": "build/",
   "react-vite": "dist/",
+  "countdown-image": "dist/",
 };
 
 // The component that mounts the editor in each example. Each one must
@@ -51,9 +52,11 @@ const lockfilesAmong = (files: string[]) =>
   files.filter((file) => LOCKFILES.includes(file.split("/").pop() ?? ""));
 
 describe("examples/", () => {
-  it("names a build output and an editor component for every example on disk", () => {
+  it("names a build output for every example and a component for editor examples", () => {
     expect(examples).toEqual(Object.keys(BUILD_OUTPUT).sort());
-    expect(examples).toEqual(Object.keys(EDITOR_COMPONENTS).sort());
+    expect(examples.filter((name) => name !== "countdown-image")).toEqual(
+      Object.keys(EDITOR_COMPONENTS).sort(),
+    );
   });
 
   it("recognises a lockfile at any depth under examples/", () => {
@@ -155,9 +158,12 @@ describe.each(examples)("examples/%s", (name) => {
     );
   });
 
-  it("unmounts an editor that resolves after its cleanup ran", () => {
-    expect(readFileSync(join(dir, EDITOR_COMPONENTS[name]), "utf8")).toMatch(
-      LATE_UNMOUNT,
-    );
-  });
+  it.skipIf(!(name in EDITOR_COMPONENTS))(
+    "unmounts an editor that resolves after its cleanup ran",
+    () => {
+      expect(readFileSync(join(dir, EDITOR_COMPONENTS[name]), "utf8")).toMatch(
+        LATE_UNMOUNT,
+      );
+    },
+  );
 });

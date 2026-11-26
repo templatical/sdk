@@ -71,6 +71,7 @@ provider or headless `blockRenderers.countdown`, renders the unrenderable marker
 The image service owns expiry and `hideOnExpiry`, because sent email HTML is
 static. Fetch `guide/countdown` through [docs.md](docs.md) for the setup,
 headless rendering and check.
+The runnable [`examples/countdown-image`](https://github.com/templatical/sdk/tree/main/examples/countdown-image) endpoint and the Image endpoint example section in [guide/countdown](https://docs.templatical.com/guide/countdown) show the GIF response and its limits.
 The image URL is public (it is in every sent email and fetched without cookies),
 and `imageUrl` runs in the browser, so it can't sign. Have it return an
 absolute `https://<app origin>/countdown/{templateId}/{blockId}.gif` with the
