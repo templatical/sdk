@@ -1,27 +1,20 @@
-import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { stripOutlookLineHeight } from "../outlook-line-height";
 
 describe("stripOutlookLineHeight", () => {
   it("stops at an unterminated open tag", () => {
     const input = '<p style="mso-line-height-alt:21px';
-    const moduleUrl = pathToFileURL(resolve("src/outlook-line-height.ts")).href;
-    const script = `import { stripOutlookLineHeight } from ${JSON.stringify(moduleUrl)}; process.stdout.write(stripOutlookLineHeight(${JSON.stringify(input)}));`;
-    const result = spawnSync(
-      process.execPath,
-      ["--input-type=module", "-e", script],
-      {
-        cwd: process.cwd(),
-        encoding: "utf8",
-        timeout: 1_000,
-      },
+    expect(stripOutlookLineHeight(input)).toBe(input);
+  });
+
+  it("ignores style text inside another attribute and strips a real style", () => {
+    expect(
+      stripOutlookLineHeight(
+        `<p title="Example style='mso-line-height-alt:21px'" style="color:red;mso-line-height-alt:21px">Text</p>`,
+      ),
+    ).toBe(
+      `<p title="Example style='mso-line-height-alt:21px'" style="color:red">Text</p>`,
     );
-    expect(result.error).toBeUndefined();
-    expect(result.stderr).toBe("");
-    expect(result.status).toBe(0);
-    expect(result.stdout).toBe(input);
   });
 
   it.each([

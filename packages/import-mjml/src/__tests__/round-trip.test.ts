@@ -541,6 +541,30 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(plainButton && "lineHeight" in plainButton).toBe(false);
   });
 
+  it.each(["Button", "A < B & C"])(
+    "imports the rendered button label as plain text: %s",
+    async (text) => {
+      const original: TemplateContent = {
+        blocks: [
+          createSectionBlock({
+            columns: "1",
+            children: [[createButtonBlock({ text })]],
+          }),
+        ],
+        settings: { ...buildFixtureTemplate().settings, width: 600 },
+      };
+      const mjml = await renderToMjml(original);
+      const { content, report } = convertMjmlTemplate(mjml);
+      const section = content.blocks[0] as SectionBlock;
+      const button = section.children[0][0];
+      expect(button.type).toBe("button");
+      expect((button as ReturnType<typeof createButtonBlock>).text).toBe(text);
+      expect(
+        report.entries.find((entry) => entry.sourceTag === "mj-button")?.status,
+      ).toBe("converted");
+    },
+  );
+
   it("round-trips a 50 / 33.33 / 16.67 section, stacking and grouped", async () => {
     const settings = { ...buildFixtureTemplate().settings, width: 600 };
     const section = (stackOnMobile: false | undefined) =>

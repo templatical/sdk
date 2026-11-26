@@ -35,6 +35,8 @@ type Frame = {
   tag: string;
   effectiveSpanSize: number | null;
   ownFontSize: number | null;
+  cssFontSizePx: number;
+  effectiveLineHeight: { value: string; percentPx: string | null } | null;
   summary: TextSummary;
   target?: {
     style: StyleAttribute | null;
@@ -97,14 +99,21 @@ function tagAttributes(
 }
 
 function declaration(style: string, property: string): string | null {
+  let value: string | null = null;
+  let important = false;
   for (const part of style.split(";")) {
     const separator = part.indexOf(":");
     if (separator === -1) continue;
     if (part.slice(0, separator).trim().toLowerCase() === property) {
-      return part.slice(separator + 1).trim();
+      const raw = part.slice(separator + 1).trim();
+      const hasPriority = /!\s*important\s*$/i.test(raw);
+      if (value === null || hasPriority || !important) {
+        value = raw.replace(/!\s*important\s*$/i, "").trim();
+        important = hasPriority;
+      }
     }
   }
-  return null;
+  return value;
 }
 
 function pxFontSize(value: string | null): number | null {
@@ -120,7 +129,7 @@ function addText(summary: TextSummary, size: number | null): void {
     summary.hasText = true;
     summary.spanSize = size;
   }
-  if (size === null) summary.uniform = false;
+  if (size === null || size !== summary.spanSize) summary.uniform = false;
 }
 
 function mergeSummary(parent: TextSummary, child: TextSummary): void {
@@ -212,10 +221,15 @@ export function addOutlookLineHeightWithFontSize(
           }
           if (frame.target) {
             const { style, ownLineHeight, edit } = frame.target;
-            const pixels = outlookLineHeightPx(
-              ownLineHeight ?? defaults.lineHeight,
-              size,
-            );
+            const effective = frame.effectiveLineHeight;
+            const pixels =
+              ownLineHeight !== null
+                ? outlookLineHeightPx(ownLineHeight, size)
+                : effective === null
+                  ? outlookLineHeightPx(defaults.lineHeight, size)
+                  : effective.value.trim().endsWith("%")
+                    ? effective.percentPx
+                    : outlookLineHeightPx(effective.value, size);
             if (pixels !== null) {
               const declaration = `mso-line-height-alt:${pixels}`;
               if (style === null) {
@@ -248,10 +262,26 @@ export function addOutlookLineHeightWithFontSize(
           ? pxFontSize(declaration(style?.value ?? "", "font-size"))
           : null;
       const inheritedSpanSize = stack.at(-1)?.effectiveSpanSize ?? null;
+      const ownFontSize = pxFontSize(
+        declaration(style?.value ?? "", "font-size"),
+      );
+      const cssFontSizePx =
+        ownFontSize ?? stack.at(-1)?.cssFontSizePx ?? defaults.fontSizePx;
+      const ownLineHeight = declaration(style?.value ?? "", "line-height");
       const frame: Frame = {
         tag: tagName,
         effectiveSpanSize: spanSize ?? inheritedSpanSize,
-        ownFontSize: pxFontSize(declaration(style?.value ?? "", "font-size")),
+        ownFontSize,
+        cssFontSizePx,
+        effectiveLineHeight:
+          ownLineHeight === null
+            ? (stack.at(-1)?.effectiveLineHeight ?? null)
+            : {
+                value: ownLineHeight,
+                percentPx: ownLineHeight.trim().endsWith("%")
+                  ? outlookLineHeightPx(ownLineHeight, cssFontSizePx)
+                  : null,
+              },
         summary: { hasText: false, spanSize: null, uniform: true },
       };
       if (
@@ -271,7 +301,7 @@ export function addOutlookLineHeightWithFontSize(
         edits.push(edit);
         frame.target = {
           style,
-          ownLineHeight: declaration(style?.value ?? "", "line-height"),
+          ownLineHeight,
           edit,
         };
       }

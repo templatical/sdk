@@ -55,7 +55,7 @@ describe("addOutlookLineHeight", () => {
     });
   });
   it.each([
-    ["<p>Hello</p>", "<p style=\"mso-line-height-alt:21px\">Hello</p>"],
+    ["<p>Hello</p>", '<p style="mso-line-height-alt:21px">Hello</p>'],
     [
       '<p style="line-height: 1.8;">Hello</p>',
       '<p style="line-height: 1.8;mso-line-height-alt:25.2px">Hello</p>',
@@ -65,12 +65,32 @@ describe("addOutlookLineHeight", () => {
       '<p style="font-size:18px;line-height:1.5;mso-line-height-alt:27px">Hello</p>',
     ],
     [
+      '<p style="line-height:1;line-height:2">Hi</p>',
+      '<p style="line-height:1;line-height:2;mso-line-height-alt:28px">Hi</p>',
+    ],
+    [
+      '<p style="line-height:2!important;line-height:1">Hi</p>',
+      '<p style="line-height:2!important;line-height:1;mso-line-height-alt:28px">Hi</p>',
+    ],
+    [
+      '<p style="line-height:1!important;line-height:2!important">Hi</p>',
+      '<p style="line-height:1!important;line-height:2!important;mso-line-height-alt:28px">Hi</p>',
+    ],
+    [
       '<p><span style="font-size:18px">A</span><span style="font-size:18px">B</span></p>',
       '<p style="mso-line-height-alt:27px"><span style="font-size:18px">A</span><span style="font-size:18px">B</span></p>',
     ],
     [
       '<p><span style="font-size:18px">A</span><span style="font-size:20px">B</span></p>',
       '<p style="mso-line-height-alt:21px"><span style="font-size:18px">A</span><span style="font-size:20px">B</span></p>',
+    ],
+    [
+      '<p><span style="font-size:18px"><span style="font-size:20px">A</span>B</span></p>',
+      '<p style="mso-line-height-alt:21px"><span style="font-size:18px"><span style="font-size:20px">A</span>B</span></p>',
+    ],
+    [
+      '<p><span style="font-size:18px"><span style="font-size:18px">A</span>B</span></p>',
+      '<p style="mso-line-height-alt:27px"><span style="font-size:18px"><span style="font-size:18px">A</span>B</span></p>',
     ],
     [
       '<p>Outside<span style="font-size:18px">Inside</span></p>',
@@ -84,7 +104,10 @@ describe("addOutlookLineHeight", () => {
       '<p title="2 > 1" style="line-height:2">Hello</p>',
       '<p title="2 > 1" style="line-height:2;mso-line-height-alt:28px">Hello</p>',
     ],
-    ["<li>One</li><h2>Two</h2>", '<li style="mso-line-height-alt:21px">One</li><h2 style="mso-line-height-alt:21px">Two</h2>'],
+    [
+      "<li>One</li><h2>Two</h2>",
+      '<li style="mso-line-height-alt:21px">One</li><h2 style="mso-line-height-alt:21px">Two</h2>',
+    ],
     [
       "<li><p>One</p></li>",
       '<li style="mso-line-height-alt:21px"><p style="mso-line-height-alt:21px">One</p></li>',
@@ -100,12 +123,24 @@ describe("addOutlookLineHeight", () => {
       '<p style="mso-line-height-alt:27px"><!-- <span> --><span style="font-size:18px">Hi</span></p>',
     ],
     ["<p >Hi</p>", '<p  style="mso-line-height-alt:21px">Hi</p>'],
-    ["<p disabled>Hi</p>", '<p disabled style="mso-line-height-alt:21px">Hi</p>'],
-    ["<p title=hi>Hi</p>", '<p title=hi style="mso-line-height-alt:21px">Hi</p>'],
-    ["<p style=\"\">Hi</p>", '<p style="mso-line-height-alt:21px">Hi</p>'],
-    ["<p style=\"font-size:0px\">Hi</p>", '<p style="font-size:0px;mso-line-height-alt:21px">Hi</p>'],
-    ["<p style=\"line-height:0\">Hi</p>", '<p style="line-height:0">Hi</p>'],
-    ["<p><span></span>Hi</p>", '<p style="mso-line-height-alt:21px"><span></span>Hi</p>'],
+    [
+      "<p disabled>Hi</p>",
+      '<p disabled style="mso-line-height-alt:21px">Hi</p>',
+    ],
+    [
+      "<p title=hi>Hi</p>",
+      '<p title=hi style="mso-line-height-alt:21px">Hi</p>',
+    ],
+    ['<p style="">Hi</p>', '<p style="mso-line-height-alt:21px">Hi</p>'],
+    [
+      '<p style="font-size:0px">Hi</p>',
+      '<p style="font-size:0px;mso-line-height-alt:21px">Hi</p>',
+    ],
+    ['<p style="line-height:0">Hi</p>', '<p style="line-height:0">Hi</p>'],
+    [
+      "<p><span></span>Hi</p>",
+      '<p style="mso-line-height-alt:21px"><span></span>Hi</p>',
+    ],
     ["<p>Hi<br/>Bye</p>", '<p style="mso-line-height-alt:21px">Hi<br/>Bye</p>'],
     ["</p><p>Hi</p>", '</p><p style="mso-line-height-alt:21px">Hi</p>'],
     ["<p>Hi</div>", "<p>Hi</div>"],
@@ -158,7 +193,7 @@ describe("addOutlookLineHeight", () => {
       '<p style="mso-line-height-alt:27px"><span style="font-size:18px"></span><span style="font-size:18px">Hi</span></p>',
     ],
     [
-      '<p title=\'style="line-height:2"\'>Hi</p>',
+      "<p title='style=\"line-height:2\"'>Hi</p>",
       '<p title=\'style="line-height:2"\' style="mso-line-height-alt:21px">Hi</p>',
     ],
     ["Bare text", "Bare text"],
@@ -167,9 +202,26 @@ describe("addOutlookLineHeight", () => {
   });
 
   it("keeps a pixel line height unchanged", () => {
-    expect(addOutlookLineHeight('<p style="line-height:22px">Hi</p>', options)).toBe(
-      '<p style="line-height:22px">Hi</p>',
-    );
+    expect(
+      addOutlookLineHeight('<p style="line-height:22px">Hi</p>', options),
+    ).toBe('<p style="line-height:22px">Hi</p>');
+  });
+
+  it.each([
+    [
+      '<ul><li style="line-height:2"><p>Hi</p></li></ul>',
+      '<ul><li style="line-height:2;mso-line-height-alt:28px"><p style="mso-line-height-alt:28px">Hi</p></li></ul>',
+    ],
+    [
+      '<ul><li style="line-height:2"><p style="line-height:1.25">Hi</p></li></ul>',
+      '<ul><li style="line-height:2;mso-line-height-alt:28px"><p style="line-height:1.25;mso-line-height-alt:17.5px">Hi</p></li></ul>',
+    ],
+    [
+      '<ul><li style="font-size:20px;line-height:150%"><p style="font-size:10px">Hi</p></li></ul>',
+      '<ul><li style="font-size:20px;line-height:150%;mso-line-height-alt:30px"><p style="font-size:10px;mso-line-height-alt:30px">Hi</p></li></ul>',
+    ],
+  ])("uses the effective ancestor line height for %s", (input, expected) => {
+    expect(addOutlookLineHeight(input, options)).toBe(expected);
   });
 
   it("scales linearly with deeply nested spans", () => {
@@ -200,7 +252,12 @@ describe("addOutlookLineHeight", () => {
       const input = `<p style="color:${"a".repeat(n)};line-height:1.8">Hi</p>`;
       return () => addOutlookLineHeight(input, options);
     }, 15000);
-    expect(addOutlookLineHeight('<p style="color:red;line-height:1.8">Hi</p>', options)).toBe(
+    expect(
+      addOutlookLineHeight(
+        '<p style="color:red;line-height:1.8">Hi</p>',
+        options,
+      ),
+    ).toBe(
       '<p style="color:red;line-height:1.8;mso-line-height-alt:25.2px">Hi</p>',
     );
   }, 30_000);
@@ -213,13 +270,20 @@ describe("renderer Outlook line height", () => {
       context,
     );
     expect(result).toContain('line-height="1.5"');
-    expect(result).toContain('<p style="line-height:1.8;mso-line-height-alt:25.2px">Hi</p>');
+    expect(result).toContain(
+      '<p style="line-height:1.8;mso-line-height-alt:25.2px">Hi</p>',
+    );
   });
 
   it("sets the heading and each retained paragraph", () => {
-    const single = renderBlock(createTitleBlock({ content: "<p>Hi</p>", level: 2 }), context);
+    const single = renderBlock(
+      createTitleBlock({ content: "<p>Hi</p>", level: 2 }),
+      context,
+    );
     expect(single).toContain('line-height="1.3"');
-    expect(single).toContain('font-weight:700;mso-line-height-alt:36.4px">Hi</h2>');
+    expect(single).toContain(
+      'font-weight:700;mso-line-height-alt:36.4px">Hi</h2>',
+    );
     const multi = renderBlock(
       createTitleBlock({ content: "<p>One</p><p>Two</p>", level: 2 }),
       context,
@@ -230,15 +294,21 @@ describe("renderer Outlook line height", () => {
 
   it("ignores an unwrapped paragraph's own font size on the heading", () => {
     const ownOnly = renderBlock(
-      createTitleBlock({ content: '<p style="font-size:10px">a</p>', level: 1 }),
+      createTitleBlock({
+        content: '<p style="font-size:10px">a</p>',
+        level: 1,
+      }),
       context,
     );
     expect(ownOnly).toContain('font-size="36px"');
-    expect(ownOnly).toContain('font-weight:700;mso-line-height-alt:46.8px">a</h1>');
+    expect(ownOnly).toContain(
+      'font-weight:700;mso-line-height-alt:46.8px">a</h1>',
+    );
 
     const result = renderBlock(
       createTitleBlock({
-        content: '<p style="font-size:32px"><span style="font-size:40px">Wide</span></p>',
+        content:
+          '<p style="font-size:32px"><span style="font-size:40px">Wide</span></p>',
         level: 2,
       }),
       context,
@@ -254,17 +324,25 @@ describe("renderer Outlook line height", () => {
       context,
     );
     expect(multi).toContain('font-weight:700;mso-line-height-alt:46.8px">');
-    expect(multi).toContain('<p style="font-size:10px;mso-line-height-alt:13px">a</p>');
+    expect(multi).toContain(
+      '<p style="font-size:10px;mso-line-height-alt:13px">a</p>',
+    );
   });
 
   it("uses a uniform span size for an unwrapped title and keeps multi-paragraph values", () => {
     const single = renderBlock(
-      createTitleBlock({ content: '<p><span style="font-size:40px">Wide</span></p>', level: 2 }),
+      createTitleBlock({
+        content: '<p><span style="font-size:40px">Wide</span></p>',
+        level: 2,
+      }),
       context,
     );
     expect(single).toContain('font-weight:700;mso-line-height-alt:52px">');
     const smallSpan = renderBlock(
-      createTitleBlock({ content: '<p><span style="font-size:10px">a</span></p>', level: 1 }),
+      createTitleBlock({
+        content: '<p><span style="font-size:10px">a</span></p>',
+        level: 1,
+      }),
       context,
     );
     expect(smallSpan).toContain('font-weight:700;mso-line-height-alt:13px">');
@@ -276,7 +354,9 @@ describe("renderer Outlook line height", () => {
       context,
     );
     expect(multi).toContain('font-weight:700;mso-line-height-alt:36.4px">');
-    expect(multi).toContain('<p style="mso-line-height-alt:52px"><span style="font-size:40px">Wide</span></p>');
+    expect(multi).toContain(
+      '<p style="mso-line-height-alt:52px"><span style="font-size:40px">Wide</span></p>',
+    );
     expect(multi).toContain('<p style="mso-line-height-alt:36.4px">Small</p>');
   });
 
@@ -284,12 +364,23 @@ describe("renderer Outlook line height", () => {
     const result = renderBlock(
       createMenuBlock({
         fontSize: 16,
-        items: [{ id: "a", text: "Home", url: "/", openInNewTab: false, bold: false, underline: false }],
+        items: [
+          {
+            id: "a",
+            text: "Home",
+            url: "/",
+            openInNewTab: false,
+            bold: false,
+            underline: false,
+          },
+        ],
       }),
       context,
     );
     expect(result).toContain('line-height="1.5"');
-    expect(result).toContain('<div style="mso-line-height-alt:24px"><a href="/"');
+    expect(result).toContain(
+      '<div style="mso-line-height-alt:24px"><a href="/"',
+    );
   });
 
   it("sets a Word value on each table cell", () => {
@@ -302,7 +393,9 @@ describe("renderer Outlook line height", () => {
       context,
     );
     expect(result).toContain('line-height="1.5"');
-    expect(result).toContain('padding: 8px; mso-line-height-alt:24px">Value</td>');
+    expect(result).toContain(
+      'padding: 8px; mso-line-height-alt:24px">Value</td>',
+    );
   });
 
   it("keeps the button percentage and styles its label span", () => {
@@ -311,19 +404,33 @@ describe("renderer Outlook line height", () => {
       context,
     );
     expect(result).toContain('line-height="180%"');
-    expect(result).toContain('<span style="mso-line-height-alt:25.2px">Go</span>');
+    expect(result).toContain(
+      '<span style="mso-line-height-alt:25.2px">Go</span>',
+    );
   });
 
   it("omits the Word declaration when a menu or button has no usable font size", () => {
     const menu = renderBlock(
       createMenuBlock({
         fontSize: 0,
-        items: [{ id: "a", text: "Home", url: "/", openInNewTab: false, bold: false, underline: false }],
+        items: [
+          {
+            id: "a",
+            text: "Home",
+            url: "/",
+            openInNewTab: false,
+            bold: false,
+            underline: false,
+          },
+        ],
       }),
       context,
     );
-    const button = renderBlock(createButtonBlock({ text: "Go", fontSize: 0 }), context);
-    expect(menu).toContain("<div>\u003ca href=\"/\"");
+    const button = renderBlock(
+      createButtonBlock({ text: "Go", fontSize: 0 }),
+      context,
+    );
+    expect(menu).toContain('<div>\u003ca href="/"');
     expect(menu).not.toContain("mso-line-height-alt");
     expect(button).toContain("<span>Go</span>");
     expect(button).not.toContain("mso-line-height-alt");

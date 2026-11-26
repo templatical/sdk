@@ -185,6 +185,24 @@ describe("table inference", () => {
 });
 
 describe("menu inference", () => {
+  it.each([
+    [
+      'Important<div style="mso-line-height-alt:21px"><a href="/">Home</a></div>',
+      '<p>Important<div style="mso-line-height-alt:21px"><a href="/">Home</a></div></p>',
+    ],
+    [
+      '<div style="mso-line-height-alt:21px"><a href="/">Home</a></div>Important',
+      '<div style="mso-line-height-alt:21px"><a href="/">Home</a></div>Important',
+    ],
+  ])(
+    "keeps significant text outside a Word menu wrapper: %s",
+    (input, expected) => {
+      const { result } = convert(input);
+      expect(result.block?.type).toBe("paragraph");
+      expect((result.block as ParagraphBlock).content).toBe(expected);
+    },
+  );
+
   it("reads top-level anchors as a menu block", () => {
     const { result } = convert(
       '<a href="/a">Alpha</a><span style="color: #cccccc; padding: 0 12px;">|</span><a href="/b">Beta</a>',

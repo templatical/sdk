@@ -471,8 +471,21 @@ export function convertTextElement(
 
   if (root.count === 1 && root.tag === "div") {
     const $inner = parseInner(html);
-    const $div = $inner("body").children("div").first();
-    if (/^mso-line-height-alt:[\d.]+px$/i.test($div.attr("style") ?? "")) {
+    const $body = $inner("body");
+    const $div = $body.children("div").first();
+    const wrapper = $div.get(0);
+    const onlyWrapperContent = $body
+      .contents()
+      .toArray()
+      .every(
+        (node) =>
+          node === wrapper ||
+          (isText(node) ? node.data.trim() === "" : node.type === "comment"),
+      );
+    if (
+      onlyWrapperContent &&
+      /^mso-line-height-alt:[\d.]+px$/i.test($div.attr("style") ?? "")
+    ) {
       const menuHtml = $div.html()!;
       if (looksLikeMenu(menuHtml)) {
         return convertMenu(menuHtml, attrs, ctx.cascade);
