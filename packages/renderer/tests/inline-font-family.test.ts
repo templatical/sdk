@@ -15,14 +15,21 @@ const customFonts = [
   },
 ];
 
+// Outlook's line-height annotation is covered by its own renderer suite.
+function withoutOutlookLineHeight(mjml: string): string {
+  return mjml.replace(/;?mso-line-height-alt:[\d.]+px/g, "");
+}
+
 async function render(
   content: string,
   options: Parameters<typeof renderToMjml>[1] = {},
 ) {
   const template = createDefaultTemplateContent();
-  return renderToMjml(
-    { ...template, blocks: [createParagraphBlock({ content })] },
-    { customFonts, ...options },
+  return withoutOutlookLineHeight(
+    await renderToMjml(
+      { ...template, blocks: [createParagraphBlock({ content })] },
+      { customFonts, ...options },
+    ),
   );
 }
 
@@ -220,6 +227,28 @@ describe("inline rich-text font fallbacks", () => {
     );
   });
 
+  it("decodes an escaped apostrophe in an unknown font before adding a fallback", async () => {
+    const mjml = await render(
+      '<p style="font-family: O\\27 Neil Sans">Hi</p>',
+      {
+        customFonts: [],
+      },
+    );
+    expect(mjml).toContain(
+      "<p style=\"font-family: 'O\\'Neil Sans', Arial, sans-serif\">Hi</p>",
+    );
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    expect(compiled.html).toContain("O\\'Neil Sans");
+  });
+
+  it("keeps an escaped CSS-wide font keyword as a keyword", async () => {
+    const mjml = await render('<p style="font-family: \\69 nherit">Hi</p>', {
+      customFonts: [],
+    });
+    expect(mjml).toContain('<p style="font-family: inherit">Hi</p>');
+  });
+
   it("expands a built-in font on a list item", async () => {
     const mjml = await render(
       '<ul><li style="font-family: Georgia">One</li></ul>',
@@ -299,17 +328,19 @@ describe("inline rich-text font fallbacks", () => {
 
   it("resolves inline fonts in titles, including multiple paragraphs", async () => {
     const template = createDefaultTemplateContent();
-    const mjml = await renderToMjml(
-      {
-        ...template,
-        blocks: [
-          createTitleBlock({
-            content:
-              '<p><span style="font-family: Montserrat">A</span></p><p style="font-family: Georgia">B</p>',
-          }),
-        ],
-      },
-      { customFonts },
+    const mjml = withoutOutlookLineHeight(
+      await renderToMjml(
+        {
+          ...template,
+          blocks: [
+            createTitleBlock({
+              content:
+                '<p><span style="font-family: Montserrat">A</span></p><p style="font-family: Georgia">B</p>',
+            }),
+          ],
+        },
+        { customFonts },
+      ),
     );
     expect(mjml).toContain(
       "<span style=\"font-family: 'Montserrat', Arial, Helvetica, sans-serif\">A</span>",
@@ -359,6 +390,118 @@ describe("inline rich-text font fallbacks", () => {
     expect(compiled.html).toMatch(
       /<h2[^>]*font-family: Georgia, serif !important/,
     );
+  });
+
+  it("uses a later font shorthand on the compiled heading", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml({
+      ...template,
+      blocks: [
+        createTitleBlock({
+          content: '<p style="font-family: Georgia; font: 16px Arial">Hi</p>',
+        }),
+      ],
+    });
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    expect(compiled.html).toMatch(/<h2[^>]*font-family: Arial, sans-serif/);
+  });
+
+  it("keeps a later important family ahead of an earlier shorthand", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml({
+      ...template,
+      blocks: [
+        createTitleBlock({
+          content:
+            '<p style="font-family: Georgia !important; font: 16px Arial">Hi</p>',
+        }),
+      ],
+    });
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    expect(compiled.html).toMatch(
+      /<h2[^>]*font-family: Georgia, serif !important/,
+    );
+  });
+
+  it("keeps an important font shorthand ahead of a later normal family", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml({
+      ...template,
+      blocks: [
+        createTitleBlock({
+          content:
+            '<p style="font: 16px Arial !important; font-family: Georgia">Hi</p>',
+        }),
+      ],
+    });
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    expect(compiled.html).toMatch(
+      /<h2[^>]*font-family: Arial, sans-serif !important/,
+    );
+  });
+
+  it.each([
+    ["font-family: Georgia; font: 1in Arial", "Arial, sans-serif"],
+    ["font-family: Georgia; /* note */ font: 16px Arial", "Arial, sans-serif"],
+    ["font-family: Georgia; font: 16px inherit", "Georgia, serif"],
+    ["font-family: Georgia; font: 1banana Arial", "Georgia, serif"],
+    [
+      "font-family: Georgia; font: inherit !important; font-family: Arial",
+      "inherit !important",
+    ],
+  ])("selects the effective title font from %s", async (style, expected) => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml({
+      ...template,
+      blocks: [createTitleBlock({ content: `<p style="${style}">Hi</p>` })],
+    });
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    const headingStyle = /<h2[^>]*style="([^"]*)"/.exec(compiled.html)?.[1];
+    expect(headingStyle).toContain(`font-family: ${expected}`);
+  });
+
+  it("reads an escaped font name in a title shorthand", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml(
+      {
+        ...template,
+        blocks: [
+          createTitleBlock({
+            content: `<p style="font-family: Georgia; font: 16px 'M\\6f ntserrat'">Hi</p>`,
+          }),
+        ],
+      },
+      { customFonts },
+    );
+    const compiled = await mjml2html(mjml);
+    expect(compiled.errors).toEqual([]);
+    const headingStyle = /<h2[^>]*style="([^"]*)"/.exec(compiled.html)?.[1];
+    expect(headingStyle).toContain(
+      "font-family: 'Montserrat', Arial, Helvetica, sans-serif",
+    );
+  });
+
+  it("keeps an unclosed paragraph as title content", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml({
+      ...template,
+      blocks: [createTitleBlock({ content: "<p>Hi" })],
+    });
+    expect(mjml).toContain("<h2 style=");
+    expect(mjml).toContain(">\u003cp>Hi</h2>");
+  });
+
+  it("keeps a paragraph with an unclosed opening attribute as title content", async () => {
+    const template = createDefaultTemplateContent();
+    const mjml = await renderToMjml({
+      ...template,
+      blocks: [createTitleBlock({ content: '<p title="unclosed>Hi' })],
+    });
+    expect(mjml).toContain('<p title="unclosed>Hi');
   });
 
   it("keeps MSO conditional comments untouched", async () => {

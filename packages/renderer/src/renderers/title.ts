@@ -17,6 +17,7 @@ import { bgAttr } from "../utils";
 import {
   RICH_TEXT_CSS_CLASS,
   decodeStyleReferences,
+  effectiveInlineFontFamily,
   resolveInlineFontFamilies,
   richTextGapClass,
   resolveParagraphGap,
@@ -55,6 +56,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   });
   const { content, fontFamily: paragraphFontFamily } = unwrapParagraph(
     richText.html,
+    (family) => context.resolveFontFamily(family),
   );
   const headingFontSize =
     content === richText.html
@@ -94,7 +96,10 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
  * but the renderer wraps it in `<h${level}>`. `<p>` is invalid inside a
  * heading, so strip a single outer `<p>` wrapper if present.
  */
-function unwrapParagraph(html: string): {
+function unwrapParagraph(
+  html: string,
+  resolveFontFamily: (family: string) => string,
+): {
   content: string;
   fontFamily?: string;
 } {
@@ -109,22 +114,12 @@ function unwrapParagraph(html: string): {
   // Only unwrap when there is exactly one top-level <p> — otherwise the
   // content has multiple paragraphs and we must leave it alone.
   if (/<\/p>\s*<p\b/i.test(content)) return { content: html };
-  let fontFamily: string | undefined;
-  let important = false;
-  resolveInlineFontFamilies(
-    html.slice(0, openingTagEnd + 1),
-    (family, priority) => {
-      if (!important || priority) {
-        fontFamily = family;
-        important = priority;
-      }
-      return family;
-    },
-  );
   return {
     content,
-    fontFamily:
-      fontFamily && important ? `${fontFamily} !important` : fontFamily,
+    fontFamily: effectiveInlineFontFamily(
+      html.slice(0, openingTagEnd + 1),
+      resolveFontFamily,
+    ),
   };
 }
 

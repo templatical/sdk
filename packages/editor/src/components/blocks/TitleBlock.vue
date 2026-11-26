@@ -55,21 +55,22 @@ const titleStyle = computed(() => {
 
 const headingTag = computed(() => `h${props.block.level}`);
 const headingStyle = computed(() => {
-  const style: Record<string, string> = {
-    color: "inherit",
-    fontWeight: "inherit",
-  };
+  const style = document.createElement("span").style;
+  style.setProperty("color", "inherit");
+  style.setProperty("font-weight", "inherit");
   const content = sanitizeHtml(resolvedContent.value);
-  if (unwrapParagraph(content) === content) return style;
+  if (unwrapParagraph(content) === content) return style.cssText;
   const fragment = document.createElement("template");
   fragment.innerHTML = content;
   const paragraph = fragment.content.querySelector("p");
   if (paragraph?.style.fontFamily) {
-    style.fontFamily = fontsManager.resolveFontFamily(
-      paragraph.style.fontFamily,
+    style.setProperty(
+      "font-family",
+      fontsManager.resolveFontFamily(paragraph.style.fontFamily),
+      paragraph.style.getPropertyPriority("font-family"),
     );
   }
-  return style;
+  return style.cssText;
 });
 // A wrapper keeps a styled span from becoming DOMPurify's root element. Strip
 // that wrapper if the browser retains it, so it adds no line box to the title.

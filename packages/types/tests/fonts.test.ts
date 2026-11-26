@@ -46,6 +46,12 @@ describe("parseFontFamilies", () => {
     ]);
   });
 
+  it("replaces an invalid escaped code point in a quoted font name", () => {
+    expect(parseFontFamilies("'Bad\\110000 Font'")).toEqual([
+      { name: "Bad�Font", quoted: true },
+    ]);
+  });
+
   it("ignores a trailing !important", () => {
     expect(parseFontFamilies("Arial ! important")).toEqual([
       { name: "Arial", quoted: false },

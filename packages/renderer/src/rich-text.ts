@@ -5,6 +5,7 @@ import {
   isSection,
   isWrapper,
   parseFontFamilies,
+  quoteFontFamily,
 } from "@templatical/types";
 import type { Block, ContentDirection } from "@templatical/types";
 
@@ -353,7 +354,15 @@ function resolveFontDeclaration(
   const expanded = resolveFontFamily(unescaped, priority !== "");
   const resolved =
     expanded === unescaped && unescaped !== familyValue
-      ? resolveFontFamily(familyValue, priority !== "")
+      ? resolveFontFamily(
+          parseFontFamilies(unescaped).length === 1 ||
+            /^(?:inherit|initial|unset|revert|revert-layer)$/i.test(
+              unescaped.trim(),
+            )
+            ? unescaped
+            : quoteFontFamily(unescaped.trim()),
+          priority !== "",
+        )
       : expanded;
   if (resolved === familyValue) return declaration;
 
@@ -378,70 +387,150 @@ function resolveFontDeclaration(
   return `${match[1]}${safe}${priority}${declaration.slice(match[1].length + value.length)}`;
 }
 
+/** Walk declarations with the same CSS separator rules used for font expansion. */
+function transformStyleDeclarations(
+  style: string,
+  quote: string,
+  transform: (declaration: string, quote: string) => string,
+): string {
+  let result = "";
+  let start = 0;
+  let cssQuote = "";
+  let depth = 0;
+  let escaped = false;
+  for (let i = 0; i < style.length; i++) {
+    const token = styleCharAt(style, i)!;
+    const char = token.char;
+    if (!cssQuote && !escaped && depth === 0 && char === "/") {
+      const opener = styleCharAt(style, token.end);
+      if (opener?.char === "*") {
+        let cursor = opener.end;
+        let previous = "";
+        let closed = false;
+        while (cursor < style.length) {
+          const part = styleCharAt(style, cursor)!;
+          if (previous === "*" && part.char === "/") {
+            cursor = part.end;
+            closed = true;
+            break;
+          }
+          previous = part.char;
+          cursor = part.end;
+        }
+        if (!closed) break;
+        i = cursor - 1;
+        continue;
+      }
+    }
+    if (escaped) {
+      escaped = false;
+    } else if (char === "\\") {
+      escaped = true;
+    } else if (char === ";" && !cssQuote && depth === 0) {
+      result += transform(style.slice(start, i), quote);
+      result += style.slice(i, token.end);
+      start = token.end;
+    } else if (cssQuote) {
+      if (char === cssQuote) cssQuote = "";
+    } else if (char === '"' || char === "'") {
+      cssQuote = char;
+    } else if (char === "(") {
+      depth++;
+    } else if (char === ")" && depth > 0) {
+      depth--;
+    }
+    i = token.end - 1;
+  }
+  result += transform(style.slice(start), quote);
+  return result;
+}
+
 /** Expand only inline font-family declarations in editor-authored HTML. */
 export function resolveInlineFontFamilies(
   html: string,
   resolveFontFamily: (family: string, important: boolean) => string,
 ): string {
   if (!/font-family/i.test(html)) return html;
-  return transformStyleAttributes(html, (style, quote) => {
-    let result = "";
-    let start = 0;
-    let cssQuote = "";
-    let depth = 0;
-    let escaped = false;
-    for (let i = 0; i < style.length; i++) {
-      const token = styleCharAt(style, i)!;
-      const char = token.char;
-      if (!cssQuote && !escaped && depth === 0 && char === "/") {
-        const opener = styleCharAt(style, token.end);
-        if (opener?.char === "*") {
-          let cursor = opener.end;
-          let previous = "";
-          let closed = false;
-          while (cursor < style.length) {
-            const part = styleCharAt(style, cursor)!;
-            if (previous === "*" && part.char === "/") {
-              cursor = part.end;
-              closed = true;
-              break;
-            }
-            previous = part.char;
-            cursor = part.end;
-          }
-          if (!closed) break;
-          i = cursor - 1;
-          continue;
-        }
-      }
-      if (escaped) {
-        escaped = false;
-      } else if (char === "\\") {
-        escaped = true;
-      } else if (char === ";" && !cssQuote && depth === 0) {
-        result += resolveFontDeclaration(
-          style.slice(start, i),
-          quote,
-          resolveFontFamily,
-        );
-        result += style.slice(i, token.end);
-        start = token.end;
-      } else if (cssQuote) {
-        if (char === cssQuote) cssQuote = "";
-      } else if (char === '"' || char === "'") {
-        cssQuote = char;
-      } else if (char === "(") {
-        depth++;
-      } else if (char === ")" && depth > 0) {
-        depth--;
-      }
-      i = token.end - 1;
+  return transformStyleAttributes(html, (style, quote) =>
+    transformStyleDeclarations(style, quote, (declaration, delimiter) =>
+      resolveFontDeclaration(declaration, delimiter, resolveFontFamily),
+    ),
+  );
+}
+
+/** Ignore CSS comments while retaining quoted text for declaration matching. */
+function withoutCssComments(value: string): string {
+  let result = "";
+  let quote = "";
+  let escaped = false;
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    if (!quote && char === "/" && value[i + 1] === "*") {
+      const end = value.indexOf("*/", i + 2);
+      if (end === -1) break;
+      result += " ";
+      i = end + 1;
+      continue;
     }
-    result += resolveFontDeclaration(
-      style.slice(start),
-      quote,
-      resolveFontFamily,
-    );
-    return result;
+    result += char;
+    if (escaped) {
+      escaped = false;
+    } else if (char === "\\") {
+      escaped = true;
+    } else if (quote && char === quote) {
+      quote = "";
+    } else if (!quote && (char === '"' || char === "'")) {
+      quote = char;
+    }
+  }
+  return result;
+}
+
+const FONT_SIZE_UNIT =
+  "(?:px|cm|mm|q|in|pc|pt|em|ex|ch|rem|lh|rlh|cap|ic|(?:s|l|d)?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max)|%)";
+const FONT_SHORTHAND_FAMILY = new RegExp(
+  `(?:^|\\s)(?:\\d*\\.?\\d+${FONT_SIZE_UNIT}|xx-small|x-small|small|medium|large|x-large|xx-large|smaller|larger)(?:\\s*\\/\\s*(?:normal|\\d*\\.?\\d+(?:[a-z]+|%)?))?\\s+(.+)$`,
+  "i",
+);
+
+/** The winning paragraph font, including a `font` shorthand that resets it. */
+export function effectiveInlineFontFamily(
+  openTag: string,
+  resolveFontFamily: (family: string) => string,
+): string | undefined {
+  let family: string | undefined;
+  let important = false;
+  transformStyleAttributes(openTag, (style, quote) => {
+    transformStyleDeclarations(style, quote, (declaration) => {
+      const match = /^\s*(font-family|font)\s*:\s*([\s\S]*?)\s*$/i.exec(
+        withoutCssComments(declaration),
+      );
+      if (!match) return declaration;
+      const priority = /\s*!\s*important\s*$/i.exec(match[2]);
+      const value = priority
+        ? match[2].slice(0, priority.index).trim()
+        : match[2].trim();
+      const isShorthand = match[1].toLowerCase() === "font";
+      const wideValue = /^(?:inherit|initial|unset|revert|revert-layer)$/i.test(
+        value,
+      );
+      const shorthand =
+        isShorthand && !wideValue ? FONT_SHORTHAND_FAMILY.exec(value) : null;
+      const candidate = isShorthand && !wideValue ? shorthand?.[1] : value;
+      if (
+        isShorthand &&
+        !wideValue &&
+        parseFontFamilies(candidate).length === 0
+      ) {
+        return declaration;
+      }
+      if (candidate && (!important || priority)) {
+        family = resolveFontFamily(candidate);
+        important = Boolean(priority);
+      }
+      return declaration;
+    });
+    return style;
   });
+  return family && important ? `${family} !important` : family;
 }
