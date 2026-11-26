@@ -15,11 +15,17 @@ import { expect } from "vitest";
  * rounds, so a garbage-collection pause or a JIT tier-up in one round does not
  * count.
  *
+ * A reading of 0 ms is measured again: a busy runner's thread clock can report
+ * no time for a run that took some, and the cheapest-of-five step would keep
+ * that 0 and turn the ratio into Infinity.
+ *
  * Repetitions always start at one and only double, so each round costs just
  * over the 5 ms floor. A caller-chosen starting count above the floor would make
  * all ten rounds that expensive and push the test past vitest's timeout under CI
  * coverage.
  */
+const ZERO_READING_ATTEMPTS = 5;
+
 export function expectLinear(
   build: (n: number) => () => unknown,
   n: number,
@@ -33,16 +39,25 @@ export function expectLinear(
     const { user, system } = process.threadCpuUsage(started);
     return (user + system) / 1000;
   }
+  function measure(run: () => unknown): number {
+    for (let attempt = 0; attempt < ZERO_READING_ATTEMPTS; attempt++) {
+      const ms = cost(run);
+      if (ms > 0) return ms;
+    }
+    throw new Error(
+      `expectLinear: thread CPU time read 0 ms ${ZERO_READING_ATTEMPTS} times in a row; the run can't be measured`,
+    );
+  }
 
-  let small = cost(runSmall);
+  let small = measure(runSmall);
   while (small < 5 && repetitions < 1_000_000) {
     repetitions *= 2;
-    small = cost(runSmall);
+    small = measure(runSmall);
   }
-  let large = cost(runLarge);
+  let large = measure(runLarge);
   for (let round = 1; round < 5; round++) {
-    small = Math.min(small, cost(runSmall));
-    large = Math.min(large, cost(runLarge));
+    small = Math.min(small, measure(runSmall));
+    large = Math.min(large, measure(runLarge));
   }
   const ratio = large / small;
   if (process.env.LINEAR_SCAN_REPORT) {
