@@ -241,10 +241,10 @@ describe("merge tag chips inherit the text marks", () => {
     const mjml = await renderToMjml(content);
     const liquid = new Liquid();
     expect(await liquid.parseAndRender(mjml, { vip: false })).toContain(
-      '<p><span style="font-size: 20px;">He</span><strong>rld</strong></p>',
+      '<p style="mso-line-height-alt:21px"><span style="font-size: 20px;">He</span><strong>rld</strong></p>',
     );
     expect(await liquid.parseAndRender(mjml, { vip: true })).toContain(
-      '<p><span style="font-size: 20px;">He</span><span style="font-size: 20px;">llo </span><strong>wo</strong><strong>rld</strong></p>',
+      '<p style="mso-line-height-alt:21px"><span style="font-size: 20px;">He</span><span style="font-size: 20px;">llo </span><strong>wo</strong><strong>rld</strong></p>',
     );
   });
 
