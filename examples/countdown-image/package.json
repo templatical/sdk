@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.23.5"
+    "node": ">=26.13.1"
   },
   "scripts": {
     "dev": "node --watch src/server.ts",
@@ -17,7 +17,7 @@
     "gifenc": "^1.0.3"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.6.6",
     "typescript": "^6.0.3"
   }
 }
