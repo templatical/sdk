@@ -546,14 +546,14 @@ test.describe("image endpoint example", () => {
     request,
   }) => {
     // targetDate has minute resolution: aim at the next minute, one day out.
-    // Close to the minute the GIF might not cross the day boundary, so wait
-    // until at least 10 s remain.
-    let msToMinute = 60_000 - (Date.now() % 60_000);
-    if (msToMinute < 10_000) {
-      await new Promise((resolve) => setTimeout(resolve, msToMinute + 500));
-      msToMinute = 60_000 - (Date.now() % 60_000);
-    }
-    const minute = Date.now() + msToMinute;
+    // The 60 frames span 59 s, so the day boundary must fall inside them: wait
+    // until the next minute is between about 10 s and 50 s away.
+    const msToMinute = () => 60_000 - (Date.now() % 60_000);
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+    if (msToMinute() < 10_000) await sleep(msToMinute() + 10_000);
+    else if (msToMinute() > 50_000) await sleep(msToMinute() - 45_000);
+    const minute = Date.now() + msToMinute();
     const at = (ms: number) => new Date(ms).toISOString().slice(0, 16);
     const widthFor = async (targetMs: number) => {
       const query = new URLSearchParams({
