@@ -8,7 +8,11 @@ function resolveCanvasFonts(root: HTMLElement, resolve: FontResolver): void {
     const family = element.dataset.tplInlineFont ?? element.style.fontFamily;
     if (!family) continue;
     element.dataset.tplInlineFont = family;
-    element.style.fontFamily = resolve(family);
+    element.style.setProperty(
+      "font-family",
+      resolve(family),
+      element.style.getPropertyPriority("font-family"),
+    );
   }
 }
 

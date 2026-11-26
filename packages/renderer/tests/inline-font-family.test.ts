@@ -37,6 +37,165 @@ describe("inline rich-text font fallbacks", () => {
     );
   });
 
+  it("keeps !important on a resolved inline font", async () => {
+    const mjml = await render(
+      '<p style="font-family: Montserrat !important; color: red">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"font-family: 'Montserrat', Arial, Helvetica, sans-serif !important; color: red\">Hi</p>",
+    );
+  });
+
+  it("keeps a double quote in a configured font inside a double-quoted style attribute", async () => {
+    const mjml = await render(
+      '<p style="font-family: Rock &quot;n&quot; Roll; color: red">Hi</p>',
+      {
+        customFonts: [
+          {
+            name: 'Rock "n" Roll',
+            url: "https://fonts.example.com/rock.css",
+            fallback: "Arial, sans-serif",
+          },
+        ],
+      },
+    );
+    expect(mjml).toContain(
+      "<p style=\"font-family: 'Rock \\22 n\\22  Roll', Arial, sans-serif; color: red\">Hi</p>",
+    );
+    const result = await mjml2html(mjml);
+    expect(result.errors).toEqual([]);
+    expect(result.html).toContain("Rock \\22 n\\22  Roll");
+    expect(result.html).toContain("color: red");
+  });
+
+  it.each([
+    ["&quot;", "&quot;"],
+    ["&#34;", "&#34;"],
+    ["&#x22;", "&#x22;"],
+    ["&apos;", "&apos;"],
+    ["&#39;", "&#39;"],
+    ["&#x27;", "&#x27;"],
+  ])(
+    "keeps a semicolon inside a family quoted with %s",
+    async (open, close) => {
+      const mjml = await render(
+        `<p style="font-family: ${open}Acme; Display${close}; color: red">Hi</p>`,
+        {
+          customFonts: [
+            {
+              name: "Acme; Display",
+              url: "https://fonts.example.com/acme.css",
+              fallback: "Arial, sans-serif",
+            },
+          ],
+        },
+      );
+      expect(mjml).toContain(
+        "<p style=\"font-family: 'Acme; Display', Arial, sans-serif; color: red\">Hi</p>",
+      );
+    },
+  );
+
+  it("keeps a semicolon inside a CSS function before the font declaration", async () => {
+    const mjml = await render(
+      '<p style="background-image: url(data:image/svg+xml;utf8,%3Csvg%3E%3C/svg%3E); font-family: Montserrat">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"background-image: url(data:image/svg+xml;utf8,%3Csvg%3E%3C/svg%3E); font-family: 'Montserrat', Arial, Helvetica, sans-serif\">Hi</p>",
+    );
+  });
+
+  it("keeps an escaped encoded quote inside a URL from hiding the font declaration", async () => {
+    const mjml = await render(
+      '<p style="background-image: url(icon\\&quot;.svg); font-family: Montserrat">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"background-image: url(icon\\22 .svg); font-family: 'Montserrat', Arial, Helvetica, sans-serif\">Hi</p>",
+    );
+  });
+
+  it("treats an encoded backslash before an encoded quote as a CSS escape", async () => {
+    const mjml = await render(
+      '<p style="background-image: url(icon&#92;&apos;.svg); font-family: Montserrat">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"background-image: url(icon\\'.svg); font-family: 'Montserrat', Arial, Helvetica, sans-serif\">Hi</p>",
+    );
+  });
+
+  it("preserves an encoded escaped apostrophe in a single-quoted style attribute", async () => {
+    const mjml = await render(
+      "<p style='background-image: url(icon&#92;&apos;.svg); font-family: Montserrat'>Hi</p>",
+    );
+    expect(mjml).toContain(
+      "<p style='background-image: url(icon\\27 .svg); font-family: \"Montserrat\", Arial, Helvetica, sans-serif'>Hi</p>",
+    );
+  });
+
+  it("ignores encoded quotes inside CSS comments before a font declaration", async () => {
+    const mjml = await render(
+      '<p style="color: red /* &quot; */; font-family: Montserrat">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"color: red /* ' */; font-family: 'Montserrat', Arial, Helvetica, sans-serif\">Hi</p>",
+    );
+  });
+
+  it("recognizes a CSS comment closed by an encoded slash", async () => {
+    const mjml = await render(
+      '<p style="color: red /* note *&#47;; font-family: Montserrat">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"color: red /* note */; font-family: 'Montserrat', Arial, Helvetica, sans-serif\">Hi</p>",
+    );
+  });
+
+  it("does not read a slash-star sequence inside a URL as a CSS comment", async () => {
+    const mjml = await render(
+      '<p style="background-image: url(https://cdn.example.com/*logo.svg); font-family: Montserrat">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"background-image: url(https://cdn.example.com/*logo.svg); font-family: 'Montserrat', Arial, Helvetica, sans-serif\">Hi</p>",
+    );
+  });
+
+  it("keeps a slash-star sequence inside a URL with an encoded function name", async () => {
+    const mjml = await render(
+      '<p style="background-image: u&#114;l(https://cdn.example.com/*logo.svg); font-family: Montserrat">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"background-image: url(https://cdn.example.com/*logo.svg); font-family: 'Montserrat', Arial, Helvetica, sans-serif\">Hi</p>",
+    );
+  });
+
+  it.each(["Acme\\; Display", "Acme\\3b  Display"])(
+    "matches %s as an escaped custom font name",
+    async (family) => {
+      const mjml = await render(`<p style="font-family: ${family}">Hi</p>`, {
+        customFonts: [
+          {
+            name: "Acme; Display",
+            url: "https://fonts.example.com/acme.css",
+            fallback: "Helvetica, sans-serif",
+          },
+        ],
+        defaultFallbackFont: "Arial, sans-serif",
+      });
+      expect(mjml).toContain(
+        "<p style=\"font-family: 'Acme; Display', Helvetica, sans-serif\">Hi</p>",
+      );
+    },
+  );
+
+  it("uses the CSS replacement character for an out-of-range font escape", async () => {
+    const mjml = await render(
+      '<p style="font-family: Bad\\110000 Font">Hi</p>',
+    );
+    expect(mjml).toContain(
+      "<p style=\"font-family: 'Bad�Font', Arial, sans-serif\">Hi</p>",
+    );
+  });
+
   it("expands a built-in font on a list item", async () => {
     const mjml = await render(
       '<ul><li style="font-family: Georgia">One</li></ul>',

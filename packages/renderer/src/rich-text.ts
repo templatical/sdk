@@ -150,8 +150,31 @@ const NAMED_STYLE_REFERENCES: Record<string, string> = {
 };
 
 const STYLE_REFERENCE = /&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp));/gi;
+const STYLE_REFERENCE_AT = /^&(?:#(\d+)|#x([0-9a-f]+)|(apos|quot|nbsp));/i;
 const TAG_NAME_START = /[a-z]/i;
 const HTML_SPACE = /[ \t\n\f\r]/;
+
+function styleCharAt(
+  style: string,
+  index: number,
+): { char: string; end: number; reference: boolean } | null {
+  if (index >= style.length) return null;
+  const reference =
+    style[index] === "&" ? STYLE_REFERENCE_AT.exec(style.slice(index)) : null;
+  return {
+    char: reference
+      ? decodeStyleReference(
+          reference[0],
+          "",
+          reference[1],
+          reference[2],
+          reference[3],
+        )
+      : style[index],
+    end: index + (reference?.[0].length ?? 1),
+    reference: reference !== null,
+  };
+}
 
 function decodeStyleReference(
   reference: string,
@@ -263,10 +286,47 @@ function transformStyleAttributes(
  */
 export function decodeStyleReferences(html: string): string {
   if (!html.includes("&")) return html;
-  return transformStyleAttributes(html, (value, quote) =>
-    value.replace(STYLE_REFERENCE, (reference, decimal, hex, named) =>
-      decodeStyleReference(reference, quote, decimal, hex, named),
-    ),
+  return transformStyleAttributes(html, (value, quote) => {
+    let out = "";
+    let end = 0;
+    let trailingBackslashes = 0;
+    const append = (part: string): void => {
+      out += part;
+      for (const char of part) {
+        trailingBackslashes = char === "\\" ? trailingBackslashes + 1 : 0;
+      }
+    };
+    for (const match of value.matchAll(STYLE_REFERENCE)) {
+      const [reference, decimal, hex, named] = match;
+      const at = match.index ?? end;
+      append(value.slice(end, at));
+      const decoded = decodeStyleReference(reference, "", decimal, hex, named);
+      append(
+        decoded === quote && trailingBackslashes % 2 === 1
+          ? quote === '"'
+            ? "22 "
+            : "27 "
+          : decodeStyleReference(reference, quote, decimal, hex, named),
+      );
+      end = at + reference.length;
+    }
+    append(value.slice(end));
+    return out;
+  });
+}
+
+function decodeCssEscapes(value: string): string {
+  return value.replace(
+    /\\(?:([0-9a-f]{1,6})[ \t\n\r\f]?|([^\n\r\f]))/gi,
+    (_escape, hex: string | undefined, char: string | undefined) => {
+      if (hex === undefined) return char ?? "";
+      const codePoint = Number.parseInt(hex, 16);
+      return codePoint > 0 &&
+        codePoint <= 0x10ffff &&
+        !(codePoint >= 0xd800 && codePoint <= 0xdfff)
+        ? String.fromCodePoint(codePoint)
+        : "\ufffd";
+    },
   );
 }
 
@@ -284,8 +344,17 @@ function resolveFontDeclaration(
     (reference, decimal, hex, named) =>
       decodeStyleReference(reference, "", decimal, hex, named),
   );
-  const resolved = resolveFontFamily(decoded);
-  if (resolved === decoded) return declaration;
+  const priority = /\s*!\s*important$/i.exec(decoded)?.[0] ?? "";
+  const familyValue = priority ? decoded.slice(0, -priority.length) : decoded;
+  const unescaped = /^[\s]*['"]/.test(familyValue)
+    ? familyValue
+    : decodeCssEscapes(familyValue);
+  const expanded = resolveFontFamily(unescaped);
+  const resolved =
+    expanded === unescaped && unescaped !== familyValue
+      ? resolveFontFamily(familyValue)
+      : expanded;
+  if (resolved === familyValue) return declaration;
 
   // Re-quote any CSS family that uses the HTML attribute's delimiter;
   // entities would contain semicolons that MJML's CSS inliner treats as
@@ -303,9 +372,9 @@ function resolveFontDeclaration(
           )
           .join(", ")
       : needsQuoting
-        ? formatFontFamilies(families)
+        ? formatFontFamilies(families).replace(/"/g, "\\22 ")
         : resolved;
-  return `${match[1]}${safe}${declaration.slice(match[1].length + value.length)}`;
+  return `${match[1]}${safe}${priority}${declaration.slice(match[1].length + value.length)}`;
 }
 
 /** Expand only inline font-family declarations in editor-authored HTML. */
@@ -319,25 +388,45 @@ export function resolveInlineFontFamilies(
     let start = 0;
     let cssQuote = "";
     let depth = 0;
-    for (let i = 0; i <= style.length; i++) {
-      const char = style[i];
-      if (i === style.length || (char === ";" && !cssQuote && depth === 0)) {
+    let escaped = false;
+    for (let i = 0; i < style.length; i++) {
+      const token = styleCharAt(style, i)!;
+      const char = token.char;
+      if (!cssQuote && !escaped && depth === 0 && char === "/") {
+        const opener = styleCharAt(style, token.end);
+        if (opener?.char === "*") {
+          let cursor = opener.end;
+          let previous = "";
+          let closed = false;
+          while (cursor < style.length) {
+            const part = styleCharAt(style, cursor)!;
+            if (previous === "*" && part.char === "/") {
+              cursor = part.end;
+              closed = true;
+              break;
+            }
+            previous = part.char;
+            cursor = part.end;
+          }
+          if (!closed) break;
+          i = cursor - 1;
+          continue;
+        }
+      }
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === ";" && !token.reference && !cssQuote && depth === 0) {
         result += resolveFontDeclaration(
           style.slice(start, i),
           quote,
           resolveFontFamily,
         );
-        if (i < style.length) result += ";";
+        result += ";";
         start = i + 1;
       } else if (cssQuote) {
-        if (char === "\\") i++;
-        else if (char === cssQuote) cssQuote = "";
-      } else if (char === "&") {
-        // A reference's own `;` is not a CSS declaration separator.
-        const reference = /^&(?:#\d+|#x[0-9a-f]+|apos|quot|nbsp);/i.exec(
-          style.slice(i),
-        );
-        if (reference) i += reference[0].length - 1;
+        if (char === cssQuote) cssQuote = "";
       } else if (char === '"' || char === "'") {
         cssQuote = char;
       } else if (char === "(") {
@@ -345,7 +434,13 @@ export function resolveInlineFontFamilies(
       } else if (char === ")" && depth > 0) {
         depth--;
       }
+      i = token.end - 1;
     }
+    result += resolveFontDeclaration(
+      style.slice(start),
+      quote,
+      resolveFontFamily,
+    );
     return result;
   });
 }

@@ -5,8 +5,10 @@ import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle } from "@tiptap/extension-text-style";
 import FontFamily from "@tiptap/extension-font-family";
+import { mount } from "@vue/test-utils";
 import { resolveFontStack } from "@templatical/types";
 import { inlineFontFallbackExtension } from "../src/utils/inlineFontFallbackExtension";
+import { vInlineFontFallbacks } from "../src/utils/inlineFontFallbacks";
 
 const resolve = (family: string) =>
   resolveFontStack(family, {
@@ -70,5 +72,20 @@ describe("inline font fallbacks in edit mode", () => {
     ).toBe(true);
     expect(editor.getHTML()).toContain("font-family: Inter");
     expect(editor.getHTML()).not.toContain("Helvetica, sans-serif");
+  });
+});
+
+describe("inline font fallbacks on the canvas", () => {
+  it("keeps an inline !important priority when adding a fallback", () => {
+    const wrapper = mount({
+      template:
+        '<div v-inline-font-fallbacks="resolve"><span style="font-family: Inter !important">Hi</span></div>',
+      directives: { inlineFontFallbacks: vInlineFontFallbacks },
+      setup: () => ({ resolve }),
+    });
+    const span = wrapper.get("span").element as HTMLElement;
+    expect(span.style.fontFamily).toBe("Inter, Helvetica, sans-serif");
+    expect(span.style.getPropertyPriority("font-family")).toBe("important");
+    wrapper.unmount();
   });
 });
