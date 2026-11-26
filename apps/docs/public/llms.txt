@@ -2,7 +2,7 @@
 
 > Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, your own backend behind every storage feature. Open source, MIT-licensed.
 
-Documentation for SDK version 0.63.3. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
+Documentation for SDK version 0.63.4. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
 
 ## Overview
 
