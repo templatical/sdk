@@ -659,7 +659,7 @@ describe("blank lines between paragraphs", () => {
       content: "<p>First</p><p></p><p>Second</p>",
     } as Parameters<typeof createParagraphBlock>[0]);
     expect(renderBlock(block, ctx)).toContain(
-      "<p>First</p><p>&nbsp;</p><p>Second</p>",
+      '<p style="mso-line-height-alt:21px">First</p><p style="mso-line-height-alt:21px">&nbsp;</p><p style="mso-line-height-alt:21px">Second</p>',
     );
   });
 
@@ -669,7 +669,7 @@ describe("blank lines between paragraphs", () => {
       level: 2,
     });
     expect(renderBlock(block, ctx)).toContain(
-      "<p>First</p><p>&nbsp;</p><p>Second</p></h2>",
+      '<p style="mso-line-height-alt:36.4px">First</p><p style="mso-line-height-alt:36.4px">&nbsp;</p><p style="mso-line-height-alt:36.4px">Second</p></h2>',
     );
   });
 

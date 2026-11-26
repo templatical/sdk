@@ -9,6 +9,8 @@ import {
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
+import { PARAGRAPH_LINE_HEIGHT } from "@templatical/types";
+import { outlookLineHeightPx } from "../outlook-line-height";
 
 /**
  * Render a menu block to MJML markup.
@@ -34,13 +36,15 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
   const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
 
   const content = renderMenuItems(block);
+  const alt = outlookLineHeightPx(PARAGRAPH_LINE_HEIGHT, fontSize);
+  const altStyle = alt === null ? "" : ` style="mso-line-height-alt:${alt}"`;
 
   return `<mj-text
   font-size="${escapeAttr(String(fontSize))}px"${colorAttr}
   align="${align}"
-  line-height="1.5"
+  line-height="${PARAGRAPH_LINE_HEIGHT}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
->${content}</mj-text>`;
+><div${altStyle}>${content}</div></mj-text>`;
 }
 
 function renderMenuItems(block: MenuBlock): string {

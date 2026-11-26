@@ -40,6 +40,9 @@ import {
 import { richTextStylesheet, collectParagraphGaps } from "./rich-text";
 import { BUTTON_FULL_WIDTH_CSS_CLASS } from "./renderers/button";
 import { toPaddingString } from "./padding";
+import { DEFAULT_TEXT_FONT_SIZE } from "./outlook-line-height";
+
+export { DEFAULT_TEXT_FONT_SIZE } from "./outlook-line-height";
 
 export interface RenderOptions {
   /** Template language to render. Defaults to `content.settings.locale`. */
@@ -277,7 +280,7 @@ export async function renderToMjml(
   <mj-head>${previewTag}
     <mj-attributes>
       <mj-all font-family="${escapeFontFamily(fontFamily)}" />
-      <mj-text font-size="14px"${textColorAttr} />
+      <mj-text font-size="${DEFAULT_TEXT_FONT_SIZE}px"${textColorAttr} />
       <mj-section padding="0" />
       <mj-column padding="0" />
     </mj-attributes>${fontDeclarations}

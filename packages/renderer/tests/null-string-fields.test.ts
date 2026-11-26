@@ -97,7 +97,7 @@ const FIELD_CASES: FieldCase<Block>[] = [
     set: (b, v) => { b.url = v; },
     fragment: 'href=""',
   }),
-  fieldCase<ButtonBlock>({ name: 'button text', make: button, set: (b, v) => { b.text = v; }, fragment: '\n></mj-button>' }),
+  fieldCase<ButtonBlock>({ name: 'button text', make: button, set: (b, v) => { b.text = v; }, fragment: '<span style="mso-line-height-alt:18px"></span></mj-button>' }),
   fieldCase<ButtonBlock>({ name: 'button url', make: button, set: (b, v) => { b.url = v; }, fragment: '<mj-button\n  background-color=' }),
   fieldCase<ButtonBlock>({ name: 'button textColor', make: button, set: (b, v) => { b.textColor = v; }, fragment: '\n  color=""' }),
   fieldCase<ButtonBlock>({ name: 'button backgroundColor', make: button, set: (b, v) => { b.backgroundColor = v; }, fragment: 'background-color="transparent"' }),
@@ -120,7 +120,7 @@ const FIELD_CASES: FieldCase<Block>[] = [
   fieldCase<MenuBlock>({ name: 'menu item url', make: menu, set: (b, v) => { b.items[0].url = v; }, fragment: '<a href="" style=' }),
   fieldCase<TableBlock>({ name: 'table borderColor', make: table, set: (b, v) => { b.borderColor = v; }, fragment: 'px solid ; padding:' }),
   fieldCase<TableBlock>({ name: 'table textAlign', make: table, set: (b, v) => { b.textAlign = v as TableBlock['textAlign']; }, fragment: 'align=""' }),
-  fieldCase<TableBlock>({ name: 'table cell content', make: table, set: (b, v) => { b.rows[0].cells[0].content = v; }, fragment: 'px"></td>' }),
+  fieldCase<TableBlock>({ name: 'table cell content', make: table, set: (b, v) => { b.rows[0].cells[0].content = v; }, fragment: 'mso-line-height-alt:22.5px"></td>' }),
 ];
 
 describe('a null or undefined string field renders as ""', () => {

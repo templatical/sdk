@@ -48,6 +48,8 @@ Titles are bold (weight 700) on the canvas, while you edit them, and in the emai
 
 Body text rendered as HTML. The editor uses [Tiptap](https://tiptap.dev) for inline editing with formatting controls (bold, italic, links, alignment, font size, color, etc.). All formatting is applied inline -- there are no block-level formatting properties.
 
+The export adds `mso-line-height-alt` to paragraph elements for classic Outlook for Windows, which rounds unitless line heights; bare text outside a paragraph element is not covered.
+
 | Property | Type | Description |
 |----------|------|-------------|
 | `content` | `string` | HTML content |

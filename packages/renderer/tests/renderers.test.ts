@@ -60,7 +60,7 @@ describe('renderBlock', () => {
     const block = createParagraphBlock({ content: '<p>Hello</p>' });
     const result = renderBlock(block, ctx);
     expect(result).toContain('<mj-text');
-    expect(result).toContain('<p>Hello</p>');
+    expect(result).toContain('<p style="mso-line-height-alt:21px">Hello</p>');
     // Paragraph does not have block-level font-size or color attributes
     expect(result).not.toContain('font-size=');
     expect(result).not.toContain('color=');

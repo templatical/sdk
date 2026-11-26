@@ -1,5 +1,9 @@
 import type { ParagraphBlock } from "@templatical/types";
-import { fillEmptyParagraphs, isBlankRichText } from "@templatical/types";
+import {
+  PARAGRAPH_LINE_HEIGHT,
+  fillEmptyParagraphs,
+  isBlankRichText,
+} from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { convertMergeTagsToValues } from "../escape";
 import { toPaddingString } from "../padding";
@@ -11,6 +15,10 @@ import {
   resolveParagraphGap,
 } from "../rich-text";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
+import {
+  addOutlookLineHeight,
+  DEFAULT_TEXT_FONT_SIZE,
+} from "../outlook-line-height";
 
 /**
  * Render a paragraph block to MJML markup.
@@ -36,8 +44,9 @@ export function renderParagraph(
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   // The canvas fills blank lines with the same helper, so the two agree.
-  const content = decodeStyleReferences(
-    fillEmptyParagraphs(convertMergeTagsToValues(html)),
+  const content = addOutlookLineHeight(
+    decodeStyleReferences(fillEmptyParagraphs(convertMergeTagsToValues(html))),
+    { lineHeight: PARAGRAPH_LINE_HEIGHT, fontSizePx: DEFAULT_TEXT_FONT_SIZE },
   );
   const cssClassAttr = getCssClassAttr(block, [
     RICH_TEXT_CSS_CLASS,
@@ -50,7 +59,7 @@ export function renderParagraph(
     context.contentDirection === "rtl" ? '\n  align="right"' : "";
 
   return `<mj-text
-  line-height="1.5"${alignAttr}
+  line-height="${PARAGRAPH_LINE_HEIGHT}"${alignAttr}
   padding="${padding}"${bgColor}${cssClassAttr}
 >${content}</mj-text>`;
 }

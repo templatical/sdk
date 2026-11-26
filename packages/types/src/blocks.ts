@@ -292,6 +292,9 @@ export const HEADING_LEVEL_FONT_SIZE: Record<HeadingLevel, number> = {
  */
 export const TITLE_LINE_HEIGHT = 1.3;
 
+/** Paragraph, menu and table line height as a multiple of font size. */
+export const PARAGRAPH_LINE_HEIGHT = 1.5;
+
 /**
  * A button label's line box as a ratio of its font size. The renderer emits
  * it and the canvas draws it, matching MJML's `mj-button` default so compiled

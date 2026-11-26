@@ -24,6 +24,7 @@ import {
   type AttributeCascade,
 } from "./attribute-resolver";
 import { baseFields, type ConvertContext, type Converted } from "./block-base";
+import { stripOutlookLineHeight } from "./outlook-line-height";
 
 /**
  * Re-parse an `mj-text`'s inner markup into its own document.
@@ -40,6 +41,10 @@ import { baseFields, type ConvertContext, type Converted } from "./block-base";
  */
 function parseInner(html: string) {
   return load(`<body>${html}</body>`);
+}
+
+function rendererRichText(attrs: Attrs): boolean {
+  return (attrs["css-class"] ?? "").split(/\s+/).includes("tpl-rich-text");
 }
 
 function rootElements(html: string): { tag: string; count: number } {
@@ -79,7 +84,10 @@ function convertTitle(
   );
 
   const block = createTitleBlock({
-    content: $heading.html() ?? "",
+    content: stripOutlookLineHeight(
+      $heading.html() ?? "",
+      rendererRichText(attrs),
+    ),
     level,
     textAlign: parseAlignment(attrs.align, "left"),
     ...(color ? { color } : {}),
@@ -126,7 +134,7 @@ function convertTable(
       .toArray()
       .map((cellEl) => ({
         id: generateId(),
-        content: $inner(cellEl).html() ?? "",
+        content: stripOutlookLineHeight($inner(cellEl).html() ?? ""),
       })),
   }));
 
@@ -414,7 +422,9 @@ function convertParagraph(
 
   const block = createParagraphBlock({
     content: styleParagraphs(
-      ensureParagraphWrapped(html),
+      ensureParagraphWrapped(
+        stripOutlookLineHeight(html, rendererRichText(attrs)),
+      ),
       readParagraphStyle(attrs, ctx),
     ),
     ...(paragraphSpacing !== undefined ? { paragraphSpacing } : {}),
@@ -457,6 +467,17 @@ export function convertTextElement(
 
   if (root.count === 1 && root.tag === "table") {
     return convertTable(html, attrs, ctx.cascade);
+  }
+
+  if (root.count === 1 && root.tag === "div") {
+    const $inner = parseInner(html);
+    const $div = $inner("body").children("div").first();
+    if (/^mso-line-height-alt:[\d.]+px$/i.test($div.attr("style") ?? "")) {
+      const menuHtml = $div.html()!;
+      if (looksLikeMenu(menuHtml)) {
+        return convertMenu(menuHtml, attrs, ctx.cascade);
+      }
+    }
   }
 
   if (looksLikeMenu(html)) {
