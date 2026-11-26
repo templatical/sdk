@@ -518,7 +518,8 @@ export function convertTextElement(
       );
     if (
       onlyWrapperContent &&
-      /^mso-line-height-alt:[\d.]+px$/i.test($div.attr("style") ?? "")
+      Object.keys(wrapper!.attribs).length === 1 &&
+      /^mso-line-height-alt:[\d.]+px$/i.test(wrapper!.attribs.style)
     ) {
       const menuHtml = $div.html()!;
       if (looksLikeMenu(menuHtml, true)) {

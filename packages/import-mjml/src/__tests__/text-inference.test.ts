@@ -185,6 +185,36 @@ describe("table inference", () => {
 });
 
 describe("menu inference", () => {
+  it("keeps a Word menu wrapper with dir as paragraph content", () => {
+    const input =
+      '<div dir="rtl" style="mso-line-height-alt:21px"><a href="/">Home</a></div>';
+    const { result } = convert(input);
+
+    expect(result.block?.type).toBe("paragraph");
+    expect((result.block as ParagraphBlock).content).toBe(input);
+    expect(result.entry).toEqual({
+      sourceTag: "mj-text",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+  });
+
+  it("converts a Word menu wrapper whose only attribute is the generated style", () => {
+    const { result } = convert(
+      '<div style="mso-line-height-alt:25.2px"><a href="/">Home</a></div>',
+    );
+
+    expect(result.block?.type).toBe("menu");
+    expect((result.block as MenuBlock).items).toMatchObject([
+      { text: "Home", url: "/" },
+    ]);
+    expect(result.entry).toEqual({
+      sourceTag: "mj-text",
+      templaticalBlockType: "menu",
+      status: "converted",
+    });
+  });
+
   it("unwraps a Word menu wrapper with one anchor", () => {
     const { result } = convert(
       '<div style="mso-line-height-alt:21px"><a href="/">Home</a></div>',
