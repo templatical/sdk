@@ -1,0 +1,20 @@
+{
+  "name": "templatical-example-countdown-image",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@templatical/types": "^0.63.3",
+    "@napi-rs/canvas": "^1.2.1",
+    "gifenc": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3"
+  }
+}

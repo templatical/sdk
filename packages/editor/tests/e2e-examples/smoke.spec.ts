@@ -71,7 +71,7 @@ test("runs against a known example kind", () => {
   // Each describe below skips unless its kind matches, so a wrong
   // EXAMPLE_KIND would otherwise pass with nothing run. The same holds for
   // EXAMPLE and the one test that runs against a single example.
-  expect(["fullstack", "minimal"]).toContain(KIND);
+  expect(["fullstack", "minimal", "image-endpoint"]).toContain(KIND);
   expect(EXAMPLE).not.toBe("");
 });
 
@@ -354,5 +354,121 @@ test.describe("minimal example", () => {
     await page.getByTestId("export-mjml").click();
     await expect(page.getByTestId("export-output")).toContainText("<mjml");
     await expect(alert).toHaveCount(0);
+  });
+});
+
+/** Read GIF structure rather than counting 0x2c bytes inside compressed data. */
+function gifInfo(bytes: Uint8Array) {
+  const text = (from: number, length: number) =>
+    Buffer.from(bytes.subarray(from, from + length)).toString("ascii");
+  expect(text(0, 6)).toBe("GIF89a");
+  const width = bytes[6] | (bytes[7] << 8);
+  const height = bytes[8] | (bytes[9] << 8);
+  let offset = 13;
+  if (bytes[10] & 0x80) offset += 3 * (1 << ((bytes[10] & 7) + 1));
+  const delays: number[] = [];
+  let transparent = false;
+  let loops = false;
+  let frames = 0;
+  const skipBlocks = () => {
+    while (true) {
+      const length = bytes[offset++];
+      if (length === 0) return;
+      offset += length;
+      expect(offset).toBeLessThanOrEqual(bytes.length);
+    }
+  };
+  while (offset < bytes.length) {
+    const marker = bytes[offset++];
+    if (marker === 0x3b) break;
+    if (marker === 0x21) {
+      const label = bytes[offset++];
+      if (label === 0xf9) {
+        expect(bytes[offset++]).toBe(4);
+        const flags = bytes[offset++];
+        transparent ||= !!(flags & 1);
+        delays.push(bytes[offset] | (bytes[offset + 1] << 8));
+        offset += 3;
+        expect(bytes[offset++]).toBe(0);
+      } else {
+        if (label === 0xff && text(offset + 1, 11) === "NETSCAPE2.0")
+          loops = true;
+        skipBlocks();
+      }
+      continue;
+    }
+    expect(marker).toBe(0x2c);
+    frames++;
+    const flags = bytes[offset + 8];
+    offset += 9;
+    if (flags & 0x80) offset += 3 * (1 << ((flags & 7) + 1));
+    offset++; // LZW minimum code size
+    skipBlocks();
+  }
+  expect(bytes[offset - 1]).toBe(0x3b);
+  return { width, height, frames, delays, loops, transparent };
+}
+
+test.describe("image endpoint example", () => {
+  test.skip(KIND !== "image-endpoint", "runs against the image endpoint only");
+
+  test("returns 60 one-second GIF frames without a loop", async ({
+    request,
+  }) => {
+    const targetDate = new Date(Date.now() + 3_600_000)
+      .toISOString()
+      .slice(0, 16);
+    const query = new URLSearchParams({ targetDate, timezone: "UTC" });
+    const response = await request.get(`/countdown.gif?${query}`);
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toBe("image/gif");
+    expect(response.headers()["cache-control"]).toMatch(
+      /^public, max-age=\d+$/,
+    );
+    const info = gifInfo(await response.body());
+    expect(info.frames).toBe(60);
+    expect(info.delays).toEqual(Array(60).fill(100));
+    expect(info.loops).toBe(false);
+    expect(info.width).toBeGreaterThan(1);
+    expect(info.height).toBeGreaterThan(1);
+  });
+
+  test("renders one expired frame", async ({ request }) => {
+    const response = await request.get(
+      "/countdown.gif?targetDate=2000-01-01T00%3A00&timezone=UTC",
+    );
+    expect(response.status()).toBe(200);
+    expect(gifInfo(await response.body()).frames).toBe(1);
+  });
+
+  test("hides an expired countdown with one transparent pixel", async ({
+    request,
+  }) => {
+    const response = await request.get(
+      "/countdown.gif?targetDate=2000-01-01T00%3A00&timezone=UTC&hideOnExpiry=true",
+    );
+    expect(response.status()).toBe(200);
+    expect(gifInfo(await response.body())).toMatchObject({
+      width: 1,
+      height: 1,
+      frames: 1,
+      transparent: true,
+    });
+  });
+
+  test("rejects an unreadable timezone and overlong label", async ({
+    request,
+  }) => {
+    const invalid = await request.get(
+      "/countdown.gif?targetDate=2030-01-01T00%3A00&timezone=Not%2FAZone",
+    );
+    expect(invalid.status()).toBe(400);
+    const query = new URLSearchParams({
+      targetDate: "2030-01-01T00:00",
+      timezone: "UTC",
+      labelDays: "x".repeat(65),
+    });
+    const long = await request.get(`/countdown.gif?${query}`);
+    expect(long.status()).toBe(400);
   });
 });

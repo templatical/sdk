@@ -81,6 +81,21 @@ Andere Felder der Werkzeugleiste als `targetDate` und `timezone` wirken sich nur
 
 `renderCountdownImage` kommt aus `@templatical/renderer`. Die Funktion gibt ein `<mj-image>` mit dem übergebenen `src`, maskierten Attributen und lokalisiertem Alternativtext zurück. `countdownAltText` kommt aus `@templatical/types` und beschreibt das Zieldatum in der Sprache des Templates. `countdownTargetTime` gibt das Ziel in Epoch-Millisekunden zurück, oder `null` bei leerem, unlesbarem oder unmöglichem Datum sowie bei einem Datum ohne Offset und unbekannter Zeitzone (ein Datum mit `Z` oder Offset ignoriert `timezone`); `countdownWallTime` gibt es als `YYYY-MM-DDTHH:mm` in der Zeitzone des Blocks zurück, oder `""`. Der lokale Renderpfad des Editors verwendet automatisch die Template-Sprache. Ein Host-Override mit `render.toMjml` verantwortet seinen eigenen Renderpfad.
 
+## Beispiel für einen Bild-Endpunkt {#image-endpoint-example}
+
+Das [eigenständige Node-Beispiel](https://github.com/templatical/sdk/tree/main/examples/countdown-image) liefert `GET /countdown.gif` anhand der Blockfelder in der Abfrage. Es liest die Ortszeit mit `countdownTargetTime`, zeichnet Text mit einer gebündelten OFL-Schrift (Noto Sans JP, reduziert auf die Zeichen der Standard-Beschriftungen des SDK; ersetzen Sie sie durch eine Schrift, die Ihre eigenen Beschriftungen abdeckt) und erzeugt 60 GIF-Bilder im Sekundenabstand ohne Schleife. `fontFamily` des Blocks wird nicht verwendet. Nach Ablauf erscheint ein einzelnes Bild mit `expiredMessage`; `hideOnExpiry=true` liefert ein transparentes 1×1-GIF.
+
+<<< @/../../examples/countdown-image/src/server.ts
+
+Für die Übertragung auf einen anderen Stack:
+
+- `targetDate` in `timezone` lesen, einschließlich der Sommerzeitwechsel, entsprechend `countdownTargetTime`.
+- Bilder im Sekundenabstand ab dem Anfragezeitpunkt zeichnen und keine Schleife setzen; abgelaufene und ausgeblendete Zustände behandeln.
+- Eine kurze öffentliche Cache-Dauer nach der benötigten Genauigkeit wählen. Dieses Beispiel verwendet eine Sekunde. Editor-Vorschauen bleiben privat und ungecacht, wie unter [Endpunktgrenzen](#endpunktgrenzen) beschrieben.
+- Länge der Abfrage und Texte, Zielbereich, Schriftgrößen und Farben vor dem Zeichnen begrenzen. Die [README des Beispiels](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) nennt die Grenzen.
+
+Prüfen: In `examples/countdown-image` `npm install && npm run dev` ausführen und `http://127.0.0.1:21746/countdown.gif?targetDate=2030-12-24T18%3A00&timezone=Europe%2FBerlin` öffnen. Der [Smoke-Test des Beispiels](https://github.com/templatical/sdk/blob/main/packages/editor/tests/e2e-examples/smoke.spec.ts) prüft GIF-Bilder, Ablauf, Transparenz und eine ungültige Zeitzone.
+
 ## Headless-MJML
 
 Übergeben Sie dieselbe URL-Funktion über `blockRenderers.countdown` an `renderToMjml`:

@@ -81,6 +81,21 @@ Toolbar fields other than `targetDate` and `timezone` affect the sent email only
 
 `renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. `countdownTargetTime` returns the target as epoch milliseconds, or `null` for an empty, unreadable or impossible date, or for an offset-free date with an unknown timezone (a date with `Z` or an offset ignores `timezone`); `countdownWallTime` returns it as `YYYY-MM-DDTHH:mm` in the block's timezone, or `""`. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
 
+## Image endpoint example {#image-endpoint-example}
+
+The [standalone Node example](https://github.com/templatical/sdk/tree/main/examples/countdown-image) serves `GET /countdown.gif` from the block fields in the query string. It reads wall time with `countdownTargetTime`, draws text with one bundled OFL font (Noto Sans JP, cut down to the characters of the SDK's default labels; swap it for a font that covers your own labels), and encodes 60 one-second GIF frames without a loop. The block's `fontFamily` is not used. An expired target yields one frame with `expiredMessage`; `hideOnExpiry=true` yields a transparent 1×1 GIF.
+
+<<< @/../../examples/countdown-image/src/server.ts
+
+To port the endpoint to another stack:
+
+- Read `targetDate` in `timezone`, including daylight-saving transitions, through the equivalent of `countdownTargetTime`.
+- Draw one-second frames from the request time and omit the loop extension; handle expired and hidden states.
+- Set a short public cache lifetime against the accuracy needed. This example uses one second. Keep editor previews private and uncached as described under [Endpoint limits](#endpoint-limits).
+- Limit the query and text lengths, target range, font sizes, and colors before drawing. The [example README](https://github.com/templatical/sdk/tree/main/examples/countdown-image#readme) lists its bounds.
+
+Check it: run `npm install && npm run dev` in `examples/countdown-image`, then open `http://127.0.0.1:21746/countdown.gif?targetDate=2030-12-24T18%3A00&timezone=Europe%2FBerlin`. The [example smoke spec](https://github.com/templatical/sdk/blob/main/packages/editor/tests/e2e-examples/smoke.spec.ts) checks its GIF frames, expiry, transparency, and invalid timezone response.
+
 ## Headless MJML
 
 Pass the same URL function to `renderToMjml` through `blockRenderers.countdown`:

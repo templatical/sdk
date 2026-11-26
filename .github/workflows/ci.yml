@@ -297,7 +297,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        example: [nextjs, nuxt, sveltekit, react-router, react-vite]
+        example: [nextjs, nuxt, sveltekit, react-router, react-vite, countdown-image]
     env:
       IS_VP: ${{ (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/')) || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
