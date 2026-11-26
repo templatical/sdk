@@ -10367,7 +10367,7 @@ The playground URL returns a **fixed sample GIF**: the same 30-second loop for e
 
 ## Canvas image
 
-The canvas shows the image `imageUrl` returns for the block as it stands in the editor. The email uses the same URL; a host that renders from the stored block ([Block lookup from storage](#block-lookup-from-storage)) can draw unsaved edits on the canvas before they reach recipients. Without an image URL, it shows a placeholder. If the image fails to load, the placeholder shows the failed URL. The editor waits 400 ms after the last edit before requesting a new image. During loading, the previous image remains visible, dimmed with “Updating…”, until the new image has loaded.
+The canvas shows the image `imageUrl` returns for the block as it stands in the editor. The email uses the same URL; a host that renders from the stored block ([Block lookup from storage](#block-lookup-from-storage)) can draw unsaved edits on the canvas before they reach recipients. Without an image URL, it shows a placeholder. If the image fails to load, the placeholder shows the failed URL. The editor requests a new image only when `imageUrl` returns a different URL, 400 ms after the URL last changed. A host that returns the same URL after an edit gets no new request, so put whatever should refresh the image into the URL. During loading, the previous image remains visible, dimmed with “Updating…”, until the new image has loaded.
 
 ## Provider and renderer contract
 

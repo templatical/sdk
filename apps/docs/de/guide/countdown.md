@@ -33,7 +33,7 @@ Die Playground-URL liefert ein **festes Beispiel-GIF**: dieselbe 30-Sekunden-Sch
 
 ## Bild auf der Arbeitsfläche
 
-Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Die E-Mail verwendet dieselbe URL; ein Host, der aus dem gespeicherten Block rendert ([Block-Abruf aus dem Speicher](#block-abruf-aus-dem-speicher)), kann ungespeicherte Änderungen auf der Arbeitsfläche zeigen, bevor sie Empfänger erreichen. Ohne Bild-URL erscheint ein Platzhalter. Wenn das Bild nicht geladen werden kann, zeigt der Platzhalter die fehlgeschlagene URL. Nach der letzten Änderung wartet der Editor 400 ms, bevor er ein neues Bild anfordert. Während des Ladens bleibt das bisherige Bild abgeblendet und mit „Wird aktualisiert…“ versehen sichtbar, bis das neue Bild geladen ist.
+Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Die E-Mail verwendet dieselbe URL; ein Host, der aus dem gespeicherten Block rendert ([Block-Abruf aus dem Speicher](#block-abruf-aus-dem-speicher)), kann ungespeicherte Änderungen auf der Arbeitsfläche zeigen, bevor sie Empfänger erreichen. Ohne Bild-URL erscheint ein Platzhalter. Wenn das Bild nicht geladen werden kann, zeigt der Platzhalter die fehlgeschlagene URL. Der Editor fordert nur dann ein neues Bild an, wenn `imageUrl` eine andere URL zurückgibt, und zwar 400 ms nach der letzten Änderung der URL. Gibt ein Host nach einer Änderung dieselbe URL zurück, folgt keine neue Anfrage; nehmen Sie daher alles, was das Bild neu laden soll, in die URL auf. Während des Ladens bleibt das bisherige Bild abgeblendet und mit „Wird aktualisiert…“ versehen sichtbar, bis das neue Bild geladen ist.
 
 ## Provider- und Renderer-Vertrag
 

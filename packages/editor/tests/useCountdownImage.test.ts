@@ -69,6 +69,62 @@ describe("useCountdownImage", () => {
     state.scope.stop();
   });
 
+  it("ignores a completion whose URL is no longer the latest, before the debounced target moves", async () => {
+    const target = ref("https://example.com/first.gif");
+    const latest = ref("https://example.com/first.gif");
+    const scope = effectScope();
+    const state = scope.run(() => useCountdownImage(() => target.value, () => latest.value))!;
+    FakeImage.instances[0].load();
+    await nextTick();
+    target.value = "https://example.com/second.gif";
+    latest.value = "https://example.com/second.gif";
+    await nextTick();
+    latest.value = "https://example.com/third.gif";
+    FakeImage.instances[1].error();
+    FakeImage.instances[1].load();
+    await nextTick();
+    expect(state.shownUrl.value).toBe("https://example.com/first.gif");
+    expect(state.failedUrl.value).toBe("");
+    expect(state.isUpdating.value).toBe(true);
+    target.value = "https://example.com/third.gif";
+    await nextTick();
+    FakeImage.instances[2].load();
+    await nextTick();
+    expect(state.shownUrl.value).toBe("https://example.com/third.gif");
+    expect(state.isUpdating.value).toBe(false);
+    scope.stop();
+  });
+
+  it("accepts a completion when the latest URL returns to the one in flight", async () => {
+    const target = ref("https://example.com/first.gif");
+    const latest = ref("https://example.com/first.gif");
+    const scope = effectScope();
+    const state = scope.run(() => useCountdownImage(() => target.value, () => latest.value))!;
+    latest.value = "https://example.com/second.gif";
+    await nextTick();
+    latest.value = "https://example.com/first.gif";
+    FakeImage.instances[0].load();
+    await nextTick();
+    expect(state.shownUrl.value).toBe("https://example.com/first.gif");
+    scope.stop();
+  });
+
+  it("stops updating without a new request when the target returns to the shown image", async () => {
+    const state = setup("https://example.com/first.gif");
+    FakeImage.instances[0].load();
+    await nextTick();
+    state.target.value = "https://example.com/second.gif";
+    await nextTick();
+    expect(state.isUpdating.value).toBe(true);
+    state.target.value = "https://example.com/first.gif";
+    await nextTick();
+    expect(state.isUpdating.value).toBe(false);
+    expect(state.shownUrl.value).toBe("https://example.com/first.gif");
+    expect(FakeImage.instances).toHaveLength(2);
+    expect(FakeImage.instances[1].src).toBe("");
+    state.scope.stop();
+  });
+
   it("clears all state when the target becomes empty", async () => {
     const state = setup("https://example.com/first.gif");
     FakeImage.instances[0].load();
@@ -82,6 +138,17 @@ describe("useCountdownImage", () => {
     expect(state.failedUrl.value).toBe("");
     expect(FakeImage.instances[1].src).toBe("");
     state.scope.stop();
+  });
+
+  it("treats an undefined or blank URL as no image and makes no request", () => {
+    const scope = effectScope();
+    const state = scope.run(() => useCountdownImage(() => undefined))!;
+    const blank = scope.run(() => useCountdownImage(() => "   "))!;
+    expect(FakeImage.instances).toHaveLength(0);
+    expect(state.shownUrl.value).toBe("");
+    expect(state.isUpdating.value).toBe(false);
+    expect(blank.isUpdating.value).toBe(false);
+    scope.stop();
   });
 
   it("detaches handlers and cancels the request on scope dispose", () => {

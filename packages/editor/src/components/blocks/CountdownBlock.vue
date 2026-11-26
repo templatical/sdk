@@ -27,7 +27,8 @@ const rawImageUrl = computed(() => provider?.imageUrl(props.block) ?? "");
 const resolvedImageUrl = useResolvedImageSrc(() => rawImageUrl.value);
 const targetUrl = refDebounced(resolvedImageUrl, COUNTDOWN_IMAGE_DEBOUNCE_MS);
 const { shownUrl, isUpdating, failedUrl } = useCountdownImage(
-  () => targetUrl.value ?? "",
+  () => targetUrl.value,
+  () => resolvedImageUrl.value,
 );
 const alt = computed(() =>
   countdownAltText(props.block, editor?.content.value.settings.locale),
