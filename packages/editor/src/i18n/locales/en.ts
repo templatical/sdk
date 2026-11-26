@@ -547,7 +547,10 @@ export default {
     expiredImageUrl: "Expired Image URL",
     hideOnExpiry: "Hide when expired",
     setDate: "Set a target date in the settings panel",
-    hidden: "Hidden (expired)",
+    noImage:
+      "No countdown image. The host's countdown provider returned no image URL.",
+    imageFailed: "Countdown image failed to load.",
+    updating: "Updating…",
   },
 
   // Custom Blocks

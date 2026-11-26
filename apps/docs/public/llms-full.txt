@@ -10365,6 +10365,22 @@ const editor = await init({
 
 The playground URL returns a **fixed sample GIF**: the same 30-second loop for every request. It demonstrates the URL shape and canvas rendering; it ignores the query parameters and does not count down to the target. Replace its base URL with your own endpoint or a URL-based countdown image service that reads `targetDate` and `timezone` and returns an image that remains current when the recipient opens the email. The editor makes the Countdown block insertable only when `countdown` is configured.
 
+## Canvas image
+
+The canvas shows the image `imageUrl` returns for the block as it stands in the editor. Without an image URL it shows a placeholder; if the image fails to load, the placeholder shows the failed URL. A block with no `targetDate` shows a hint to set one until an image has loaded.
+
+The editor loads the image as follows:
+
+- The first image loads as soon as the block appears.
+- After that, the editor requests a new image only when the URL changes, 400 ms after it last changed. A host that returns the same URL after an edit gets no new request, so put whatever should refresh the image into the URL.
+- While the new image loads, the previous one stays visible, dimmed with “Updating…”.
+
+The canvas and the email can show different images:
+
+- With [`resolveImageUrl`](/guide/images#display-only-url-resolution) configured, the canvas shows and debounces the resolved URL, while the email keeps the `imageUrl` result.
+- The editor's local render path (`toMjml()`, `toHtml()`) writes the `imageUrl` result into the email; a backend render can send a different URL, such as a [signed URL](#signed-urls-at-render-time).
+- A host that renders from the stored block ([Block lookup from storage](#block-lookup-from-storage)) can draw unsaved edits on the canvas before they reach recipients.
+
 ## Provider and renderer contract
 
 `CountdownProvider` from `@templatical/types` has exactly this method:
@@ -10394,6 +10410,8 @@ declare function countdownWallTime(
   block: Pick<CountdownBlock, "targetDate" | "timezone">,
 ): string;
 ```
+
+Toolbar fields other than `targetDate` and `timezone` affect the sent email only when the host's image service reads them, either from the image URL or from the stored block.
 
 `renderCountdownImage` is exported by `@templatical/renderer`. It returns an `<mj-image>` with the supplied `src`, escaped attributes and localized alt text. `countdownAltText` is exported by `@templatical/types`; it describes the target date in the template language. `countdownTargetTime` returns the target as epoch milliseconds, or `null` for an empty, unreadable or impossible date, or for an offset-free date with an unknown timezone (a date with `Z` or an offset ignores `timezone`); `countdownWallTime` returns it as `YYYY-MM-DDTHH:mm` in the block's timezone, or `""`. The local editor render path uses the template's locale automatically. A host `render.toMjml` override owns its own render path.
 
@@ -10487,11 +10505,12 @@ These apply with either approach:
 - Read only the block fields the image needs, and clamp them: a target-date range, font-size bounds, a maximum label length.
 - Never fetch `expiredImageUrl` from the server. Redirect to it, or accept only your own asset host; fetching an address from the request turns the endpoint into an open proxy.
 - Cache images rendered from stored blocks per parameter set, for no longer than the accuracy you need: a countdown that shows seconds and is cached for a minute can open up to 59 seconds behind, and each shorter lifetime costs more renders. Image proxies send many recipients through few IP addresses, so per-IP rate limits can't tell abuse from a large send.
+- Keep image encoding fast and cache responses by URL for a short time. The image depends on request time.
 - Keep editor previews out of shared caches (`Cache-Control: private, no-store`), and key the public cache so it never answers a preview request: a preview and a public request can share a URL but need different images.
 
 ## Limits
 
-The SDK ships no GIF server. Your image service generates and serves the countdown image. Email HTML is static after sending, so the image service also handles expiry, `expiredMessage`, `expiredImageUrl` and `hideOnExpiry`; the editor cannot hide a sent block later. When an image URL fails to load on the canvas, the editor falls back to its CSS preview. An empty URL renders the `templatical:unrenderable-block` marker, as does a countdown block rendered headlessly without `blockRenderers.countdown`.
+The SDK ships no GIF server. Your image service generates and serves the countdown image. Email HTML is static after sending, so the image service also handles expiry, `expiredMessage`, `expiredImageUrl` and `hideOnExpiry`; the editor cannot hide a sent block later. The canvas shows a placeholder when the image URL is empty or the image fails to load. An empty URL renders the `templatical:unrenderable-block` marker, as does a countdown block rendered headlessly without `blockRenderers.countdown`.
 
 ## Check it
 

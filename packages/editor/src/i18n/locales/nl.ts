@@ -501,7 +501,10 @@ const nl: typeof en = {
     expiredImageUrl: "URL van de afbeelding na afloop",
     hideOnExpiry: "Verbergen na afloop",
     setDate: "Stel een doeldatum in via het instellingenpaneel",
-    hidden: "Verborgen (verlopen)",
+    noImage:
+      "Geen aftelafbeelding. De aftelprovider van de host heeft geen afbeeldings-URL teruggegeven.",
+    imageFailed: "De aftelafbeelding kon niet worden geladen.",
+    updating: "Bijwerken…",
   },
   customBlocks: {
     definitionNotFound: "Onbekend bloktype — dit blok is niet geregistreerd",
