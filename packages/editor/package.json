@@ -4,7 +4,7 @@
   "version": "0.63.3",
   "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
-    "@lucide/vue": "^1.77.0",
+    "@lucide/vue": "^1.78.0",
     "@templatical/core": "workspace:*",
     "@templatical/media-library": "workspace:*",
     "@templatical/types": "workspace:*",
