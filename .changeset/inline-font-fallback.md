@@ -1,5 +1,6 @@
 ---
 "@templatical/renderer": patch
+"@templatical/editor": patch
 ---
 
-Inline font selections in paragraph and title rich text now include the configured fallback stack in rendered emails. Previously, an inline custom or built-in font stayed as a bare name even when the surrounding block had a fallback, so Gmail and classic Outlook could show that text in their default serif font. Existing inline stacks keep their author-specified fallbacks.
+Inline font choices in paragraph and title rich text use their fallback stack in the email and editor canvas. The edit surface applies the same stack without changing stored rich text. Existing inline stacks keep their specified fallbacks.

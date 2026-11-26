@@ -5,11 +5,14 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { defineAsyncComponent } from "vue";
+import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
+import { vInlineFontFallbacks } from "../../utils/inlineFontFallbacks";
 
 const props = defineProps<{
   block: ParagraphBlockType;
   viewport: ViewportSize;
 }>();
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "ParagraphBlock");
 
 const ParagraphEditor = defineAsyncComponent(
   () => import("./ParagraphEditor.vue"),
@@ -40,6 +43,7 @@ const {
     <!-- eslint-disable vue/no-v-html -->
     <div
       v-else
+      v-inline-font-fallbacks="fontsManager.resolveFontFamily"
       class="tpl-text-content tpl:outline-none"
       v-html="resolvedContent"
     />

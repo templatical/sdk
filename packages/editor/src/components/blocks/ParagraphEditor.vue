@@ -7,11 +7,12 @@ import {
 } from "@templatical/types";
 import { computed, inject } from "vue";
 import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
-import { EDITOR_KEY } from "../../keys";
+import { EDITOR_KEY, FONTS_MANAGER_KEY, requireInject } from "../../keys";
 import ParagraphToolbar from "./ParagraphToolbar.vue";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
 import RichTextEditorContent from "./RichTextEditorContent.vue";
 import { withLinkColor } from "../../utils/linkColorExtension";
+import { inlineFontFallbackExtension } from "../../utils/inlineFontFallbackExtension";
 
 const props = defineProps<{
   block: ParagraphBlockType;
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 
 const popoverRoot = usePopoverRoot();
 const emailEditor = inject(EDITOR_KEY, null);
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "ParagraphEditor");
 const localized = emailEditor?.content
   ? useLocalizedDisplay(emailEditor)
   : null;
@@ -165,6 +167,7 @@ const {
         TextStyle,
         Color,
         FontFamily,
+        inlineFontFallbackExtension(fontsManager.resolveFontFamily),
         Highlight.configure({ multicolor: true }),
         FontSize,
         LineHeight,

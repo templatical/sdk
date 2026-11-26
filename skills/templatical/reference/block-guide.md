@@ -133,6 +133,7 @@ pixel width does not shrink on a phone.
 <!-- END GENERATED FIELDS: title -->
 
 - `content` is the heading text; inline HTML is allowed.
+- A lone inline `font-family` in title or paragraph rich text gets its configured fallback stack in the canvas and exported email. A complete stack stays as written; see [font configuration](https://docs.templatical.com/guide/fonts).
 - `level` is one of `1`, `2`, `3`, `4` — `1` is the largest.
 - `color` inherits `settings.textColor` when unset.
 - A title is always bold (weight 700), so don't wrap the whole `content` in

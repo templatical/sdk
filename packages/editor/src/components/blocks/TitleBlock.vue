@@ -12,6 +12,7 @@ import {
 import { computed, defineAsyncComponent } from "vue";
 import { unwrapParagraph } from "../../utils/unwrapParagraph";
 import { sanitizeHtml } from "../../utils/sanitizeHtml";
+import { vInlineFontFallbacks } from "../../utils/inlineFontFallbacks";
 import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
 
 const props = defineProps<{
@@ -53,9 +54,17 @@ const titleStyle = computed(() => {
 });
 
 const headingTag = computed(() => `h${props.block.level}`);
-const headingHtml = computed(() =>
-  sanitizeHtml(unwrapParagraph(resolvedContent.value)),
-);
+// A wrapper keeps a styled span from becoming DOMPurify's root element. Strip
+// that wrapper if the browser retains it, so it adds no line box to the title.
+const headingHtml = computed(() => {
+  const sanitized = sanitizeHtml(
+    `<div data-tpl-sanitize-root="">${unwrapParagraph(resolvedContent.value)}</div>`,
+  );
+  return sanitized.replace(
+    /^<div data-tpl-sanitize-root="">([\s\S]*)<\/div>$/,
+    "$1",
+  );
+});
 </script>
 
 <template>
@@ -75,6 +84,7 @@ const headingHtml = computed(() =>
     <component
       :is="headingTag"
       v-else
+      v-inline-font-fallbacks="fontsManager.resolveFontFamily"
       class="tpl-text-content tpl:m-0 tpl:font-[inherit] tpl:text-[length:inherit] tpl:leading-[inherit] tpl:outline-none"
       :style="{ color: 'inherit', fontWeight: 'inherit' }"
       v-html="headingHtml"
