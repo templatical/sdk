@@ -12,7 +12,7 @@ function cleanedStyle(
   if (kept.length === declarations.length) return null;
   let style = kept.join(";");
   const removedLast =
-    kept.length > 0 && OUTLOOK_ALT.test(declarations.at(-1) ?? "");
+    kept.length > 0 && OUTLOOK_ALT.test(declarations[declarations.length - 1]);
   if (removedLast && preserveFinalSemicolon && !style.endsWith(";")) {
     style += ";";
   }
@@ -25,7 +25,6 @@ function stripTagStyle(tag: string, preserveFinalSemicolon: boolean): string {
   let i = 1;
   while (i < tag.length && !SPACE.test(tag[i]) && tag[i] !== ">") i++;
   while (i < tag.length) {
-    const whitespaceStart = i;
     while (i < tag.length && SPACE.test(tag[i])) i++;
     if (tag[i] === ">" || tag[i] === "/") break;
     const nameStart = i;
@@ -44,19 +43,18 @@ function stripTagStyle(tag: string, preserveFinalSemicolon: boolean): string {
     while (i < tag.length && SPACE.test(tag[i])) i++;
     const quote = tag[i];
     if (quote !== '"' && quote !== "'") {
-      while (i < tag.length && !SPACE.test(tag[i]) && tag[i] !== ">") i++;
+      while (!SPACE.test(tag[i]) && tag[i] !== ">") i++;
       continue;
     }
     const valueStart = i + 1;
     const valueEnd = tag.indexOf(quote, valueStart);
-    if (valueEnd === -1) break;
     if (name === "style") {
       const style = cleanedStyle(
         tag.slice(valueStart, valueEnd),
         preserveFinalSemicolon,
       );
       if (style !== null) {
-        output += tag.slice(copied, whitespaceStart);
+        output += tag.slice(copied, nameStart).replace(/[ \t\n\f\r]+$/, "");
         if (style !== "") output += " style=" + quote + style + quote;
         copied = valueEnd + 1;
       }

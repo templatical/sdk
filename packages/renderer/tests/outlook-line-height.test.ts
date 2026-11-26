@@ -124,6 +124,14 @@ describe("addOutlookLineHeight", () => {
     ],
     ["<p >Hi</p>", '<p  style="mso-line-height-alt:21px">Hi</p>'],
     [
+      '<p style="color:red" >Hi</p>',
+      '<p style="color:red;mso-line-height-alt:21px" >Hi</p>',
+    ],
+    [
+      '<p style = "color:red">Hi</p>',
+      '<p style = "color:red;mso-line-height-alt:21px">Hi</p>',
+    ],
+    [
       "<p disabled>Hi</p>",
       '<p disabled style="mso-line-height-alt:21px">Hi</p>',
     ],
@@ -322,6 +330,29 @@ describe("addOutlookLineHeight", () => {
 });
 
 describe("renderer Outlook line height", () => {
+  it("uses the title default when an unfinished comment prevents paragraph analysis", () => {
+    const result = renderBlock(
+      createTitleBlock({ content: "<p><!-- unfinished </p>", level: 2 }),
+      context,
+    );
+    expect(result).toContain(
+      'font-weight:700;mso-line-height-alt:36.4px"><!-- unfinished </h2>',
+    );
+  });
+
+  it("omits the table cell alternate for an unusable font size", () => {
+    const result = renderBlock(
+      createTableBlock({
+        fontSize: 0,
+        hasHeaderRow: false,
+        rows: [{ id: "row", cells: [{ id: "cell", content: "Zero" }] }],
+      }),
+      context,
+    );
+    expect(result).toContain(">Zero</td>");
+    expect(result).not.toContain("mso-line-height-alt");
+  });
+
   it("preserves the paragraph's browser value and adds a Word value", () => {
     const result = renderBlock(
       createParagraphBlock({ content: '<p style="line-height:1.8">Hi</p>' }),

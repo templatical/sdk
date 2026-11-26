@@ -84,10 +84,7 @@ function convertTitle(
   );
 
   const block = createTitleBlock({
-    content: stripOutlookLineHeight(
-      $heading.html() ?? "",
-      rendererRichText(attrs),
-    ),
+    content: stripOutlookLineHeight($heading.html()!, rendererRichText(attrs)),
     level,
     textAlign: parseAlignment(attrs.align, "left"),
     ...(color ? { color } : {}),
@@ -134,7 +131,7 @@ function convertTable(
       .toArray()
       .map((cellEl) => ({
         id: generateId(),
-        content: stripOutlookLineHeight($inner(cellEl).html() ?? ""),
+        content: stripOutlookLineHeight($inner(cellEl).html()!),
       })),
   }));
 

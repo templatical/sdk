@@ -196,6 +196,43 @@ describe("menu inference", () => {
     ]);
   });
 
+  it("keeps a comment inside a menu label as paragraph content", () => {
+    const input = '<a href="/">Ho<!-- note -->me</a>';
+    const { result } = convert(input);
+    expect(result.block?.type).toBe("paragraph");
+    expect((result.block as ParagraphBlock).content).toBe(`<p>${input}</p>`);
+  });
+
+  it("keeps a comment inside a Word menu wrapper as paragraph content", () => {
+    const input =
+      '<div style="mso-line-height-alt:21px"><!-- note --><a href="/">Home</a></div>';
+    const { result } = convert(input);
+    expect(result.block?.type).toBe("paragraph");
+    expect((result.block as ParagraphBlock).content).toBe(input);
+  });
+
+  it("reads a top-level menu with an adjacent comment", () => {
+    const { result } = convert('<!-- note --><a href="/">Home</a>');
+    expect(result.block?.type).toBe("menu");
+    expect((result.block as MenuBlock).items[0].text).toBe("Home");
+  });
+
+  it("keeps a Word wrapper with a leading separator as paragraph content", () => {
+    const input =
+      '<div style="mso-line-height-alt:21px"><span>|</span><a href="/">Home</a><span>|</span></div>';
+    const { result } = convert(input);
+    expect(result.block?.type).toBe("paragraph");
+    expect((result.block as ParagraphBlock).content).toBe(input);
+  });
+
+  it("unwraps a Word menu wrapper after a top-level comment", () => {
+    const { result } = convert(
+      '<!-- note --><div style="mso-line-height-alt:21px"><a href="/">Home</a></div>',
+    );
+    expect(result.block?.type).toBe("menu");
+    expect((result.block as MenuBlock).items[0].text).toBe("Home");
+  });
+
   it("keeps a Word wrapper with an image link as paragraph content", () => {
     const input =
       '<div style="mso-line-height-alt:21px"><a href="/"><img src="logo.png" alt="Company"></a></div>';

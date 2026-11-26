@@ -225,7 +225,7 @@ export function addOutlookLineHeightWithFontSize(
             const pixels =
               ownLineHeight !== null
                 ? ownLineHeight.trim().endsWith("%")
-                  ? (effective?.percentPx ?? null)
+                  ? effective!.percentPx
                   : outlookLineHeightPx(ownLineHeight, size)
                 : effective === null
                   ? outlookLineHeightPx(defaults.lineHeight, size)
