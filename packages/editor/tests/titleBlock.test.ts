@@ -54,6 +54,40 @@ describe("TitleBlock canvas rendering", () => {
     expect(heading.text()).toBe("Plain title");
   });
 
+  it("carries a single paragraph's font onto the canvas heading", () => {
+    const wrapper = mount({
+      content: '<p style="font-family: Georgia; color: red">Hi</p>',
+    });
+    const heading = wrapper.get("h2").element as HTMLElement;
+    expect(heading.style.fontFamily).toBe("Georgia, serif");
+    expect(heading.querySelector("p")).toBeNull();
+  });
+
+  it("keeps an important paragraph font on the canvas heading", () => {
+    const wrapper = mount({
+      content: '<p style="font-family: Georgia !important">Hi</p>',
+    });
+    const heading = wrapper.get("h2").element as HTMLElement;
+    expect(heading.style.fontFamily).toBe("Georgia, serif");
+    expect(heading.style.getPropertyPriority("font-family")).toBe("important");
+  });
+
+  it("uses the later font shorthand on the canvas heading", () => {
+    const wrapper = mount({
+      content: '<p style="font-family: Georgia; font: 16px Arial">Hi</p>',
+    });
+    const heading = wrapper.get("h2").element as HTMLElement;
+    expect(heading.style.fontFamily).toBe("Arial, sans-serif");
+  });
+
+  it("adds a fallback to an escaped apostrophe font on the canvas heading", () => {
+    const wrapper = mount({
+      content: '<p style="font-family: O\\27 Neil Sans">Hi</p>',
+    });
+    const heading = wrapper.get("h2").element as HTMLElement;
+    expect(heading.style.fontFamily).toBe('"O\'Neil Sans", Arial, sans-serif');
+  });
+
   it("renders a quoted > in the wrapper as heading text only", () => {
     const wrapper = mount({ content: '<p title="2 > 1">Hi</p>' });
     const heading = wrapper.find("h2");

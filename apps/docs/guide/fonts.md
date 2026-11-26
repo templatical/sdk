@@ -1,16 +1,17 @@
 ---
 title: Custom Fonts
-description: Configure custom fonts for the email editor's font picker.
+description: Configure font choices and fallbacks for the editor canvas and exported email.
 ---
 
 # Custom Fonts
 
-By default, the editor includes a set of common web-safe fonts (Arial, Georgia, Verdana, etc.) in the font picker. You can extend this list with your own fonts — for example, loading custom typefaces from Google Fonts or your own CDN. When a custom font is used, it's automatically included as an `<mj-font>` declaration in the rendered MJML output.
+Configure font choices with `fonts`; a font selected for a block or for text in the paragraph toolbar uses the same fallback stack on the canvas and in the exported email. Custom fonts also produce an `<mj-font>` declaration in the rendered MJML output. The toolbar stores the selected family in the template, so changing its configured fallback affects later renders.
 
 Configure which fonts are available using the `fonts` option:
 
 ```ts
 import type { FontsConfig } from '@templatical/types';
+import { init } from '@templatical/editor';
 
 const fonts: FontsConfig = {
   defaultFont: 'Inter',
@@ -54,19 +55,19 @@ const editor = await init({
 
 Custom fonts are automatically included as `<mj-font>` declarations in the rendered MJML output.
 
+## Inline font fallbacks
+
+The paragraph text toolbar stores a selected font as an inline `font-family` on the selected text. A custom font uses its `fallback`, or `defaultFallback` when it has none; a built-in uses its built-in stack. A complete inline stack keeps its own fallbacks. The editor canvas, edit surface and exported email apply the same resolved stack. For example, selecting `Inter` from the configuration above renders that text with `'Inter', Helvetica, Arial, sans-serif` as its font family. Check it by selecting text in a paragraph, choosing `Inter`, and comparing the canvas with the exported HTML.
+
 ## Restricting the built-in fonts {#restricting-the-built-in-fonts}
 
 By default the picker offers all seven built-in web-safe fonts (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) alongside your `customFonts`. Use `builtIns` to narrow that list — useful when you embed the editor as a white-label / brand-kit tool and want authors to stay on approved typefaces.
 
 ```ts
+import type { FontsConfig } from '@templatical/types';
+
 const fonts: FontsConfig = {
-  // Keep only these built-ins, plus any customFonts:
   builtIns: ['Georgia', 'Arial'],
-  // Or drop the built-ins entirely and offer only your custom fonts:
-  // builtIns: false,
-  customFonts: [
-    /* ... */
-  ],
 };
 ```
 

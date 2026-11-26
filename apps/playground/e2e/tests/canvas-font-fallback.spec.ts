@@ -40,6 +40,16 @@ const CONTENT = {
       content: "<p>Body text</p>",
       styles: PADDING,
     },
+    {
+      id: "escaped-inline",
+      type: "paragraph",
+      content: `<p><span data-test="escaped" style="font-family: 'G\\65 orgia'">Escaped font</span><span data-test="comment" style="font-family: Arial; /*; font-family: 'G\\65 orgia'; */ color: red">Commented font</span><span data-test="shorthand" style="font-family: 'G\\65 orgia'; font: 16px Arial">Shorthand font</span></p>`,
+      styles: PADDING,
+    },
+    {
+      ...title("escaped-title", "Arial"),
+      content: `<p style="font-family: 'G\\65 orgia'">Escaped title</p>`,
+    },
   ],
 };
 
@@ -86,5 +96,43 @@ test.describe("canvas font fallback", () => {
     await expect
       .poll(() => families(page.locator(SELECTORS.canvas).first()))
       .toEqual(["Imaginary Serif", "Arial", "sans-serif"]);
+  });
+
+  test("quoted CSS escapes resolve on inline text and a title heading", async ({
+    openSharedContent,
+    page,
+  }) => {
+    await openSharedContent("canvas-font-fallback", CONTENT);
+
+    await expect
+      .poll(() =>
+        families(
+          page.locator(
+            '[data-block-id="escaped-inline"] [data-test="escaped"]',
+          ),
+        ),
+      )
+      .toEqual(["Georgia", "serif"]);
+    await expect
+      .poll(() =>
+        families(
+          page.locator(
+            '[data-block-id="escaped-inline"] [data-test="comment"]',
+          ),
+        ),
+      )
+      .toEqual(["Arial", "sans-serif"]);
+    await expect
+      .poll(() =>
+        families(
+          page.locator(
+            '[data-block-id="escaped-inline"] [data-test="shorthand"]',
+          ),
+        ),
+      )
+      .toEqual(["Arial", "sans-serif"]);
+    await expect
+      .poll(() => families(page.locator('[data-block-id="escaped-title"] h2')))
+      .toEqual(["Georgia", "serif"]);
   });
 });

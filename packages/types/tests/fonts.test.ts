@@ -39,6 +39,19 @@ describe("parseFontFamilies", () => {
     ]);
   });
 
+  it("decodes CSS hex escapes in quoted names without splitting escaped delimiters", () => {
+    expect(parseFontFamilies(`'M\\6f ntserrat', 'Acme\\2c  Display'`)).toEqual([
+      { name: "Montserrat", quoted: true },
+      { name: "Acme, Display", quoted: true },
+    ]);
+  });
+
+  it("replaces an invalid escaped code point in a quoted font name", () => {
+    expect(parseFontFamilies("'Bad\\110000 Font'")).toEqual([
+      { name: "Bad�Font", quoted: true },
+    ]);
+  });
+
   it("ignores a trailing !important", () => {
     expect(parseFontFamilies("Arial ! important")).toEqual([
       { name: "Arial", quoted: false },
@@ -190,9 +203,7 @@ describe("resolveFontStack", () => {
       customFonts: [inter, { ...inter, name: "Lora", fallback: "serif" }],
       defaultFallback: "Arial, sans-serif",
     };
-    expect(resolveFontStack("Inter", fonts)).toBe(
-      "'Inter', Arial, sans-serif",
-    );
+    expect(resolveFontStack("Inter", fonts)).toBe("'Inter', Arial, sans-serif");
     expect(resolveFontStack("'lora'", fonts)).toBe("'Lora', serif");
   });
 
@@ -220,9 +231,9 @@ describe("resolveFontStack", () => {
   });
 
   it("passes a stack through as written", () => {
-    expect(resolveFontStack("Montserrat, Trebuchet MS, sans-serif", defaults)).toBe(
-      "Montserrat, Trebuchet MS, sans-serif",
-    );
+    expect(
+      resolveFontStack("Montserrat, Trebuchet MS, sans-serif", defaults),
+    ).toBe("Montserrat, Trebuchet MS, sans-serif");
     expect(resolveFontStack('"Helvetica Neue", Arial', defaults)).toBe(
       '"Helvetica Neue", Arial',
     );

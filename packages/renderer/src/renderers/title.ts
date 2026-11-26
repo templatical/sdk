@@ -17,6 +17,8 @@ import { bgAttr } from "../utils";
 import {
   RICH_TEXT_CSS_CLASS,
   decodeStyleReferences,
+  effectiveInlineFontFamily,
+  resolveInlineFontFamilies,
   richTextGapClass,
   resolveParagraphGap,
 } from "../rich-text";
@@ -39,7 +41,10 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // Blank lines between a title's paragraphs are filled as the canvas fills
   // them; a single paragraph is unwrapped into the heading.
   const decoded = decodeStyleReferences(
-    fillEmptyParagraphs(convertMergeTagsToValues(block.content ?? "")),
+    resolveInlineFontFamilies(
+      fillEmptyParagraphs(convertMergeTagsToValues(block.content ?? "")),
+      (family) => context.resolveFontFamily(family),
+    ),
   );
   // Clamp out-of-range levels to a defined entry so we never interpolate
   // `undefined` into `font-size="${...}px"` (mjml@5 rejects "undefinedpx").
@@ -49,7 +54,10 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
     lineHeight: TITLE_LINE_HEIGHT,
     fontSizePx: fontSize,
   });
-  const content = unwrapParagraph(richText.html);
+  const { content, fontFamily: paragraphFontFamily } = unwrapParagraph(
+    richText.html,
+    (family) => context.resolveFontFamily(family),
+  );
   const headingFontSize =
     content === richText.html
       ? fontSize
@@ -71,13 +79,16 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // produces a valid heading element.
   const safeLevel = HEADING_LEVEL_FONT_SIZE[block.level] ? block.level : 2;
   const tag = `h${safeLevel}`;
+  const headingFontFamily = paragraphFontFamily
+    ? `;font-family: ${escapeAttr(paragraphFontFamily)}`
+    : "";
 
   return `<mj-text
   font-size="${fontSize}px"${colorAttr}
   align="${align}"
   line-height="${TITLE_LINE_HEIGHT}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${cssClassAttr}
-><${tag} style="margin:0;font-size:inherit;color:inherit;line-height:inherit;font-weight:${TITLE_FONT_WEIGHT};mso-line-height-alt:${alt}">${content}</${tag}></mj-text>`;
+><${tag} style="margin:0;font-size:inherit;color:inherit;line-height:inherit;font-weight:${TITLE_FONT_WEIGHT};mso-line-height-alt:${alt}${headingFontFamily}">${content}</${tag}></mj-text>`;
 }
 
 /**
@@ -85,18 +96,31 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
  * but the renderer wraps it in `<h${level}>`. `<p>` is invalid inside a
  * heading, so strip a single outer `<p>` wrapper if present.
  */
-function unwrapParagraph(html: string): string {
+function unwrapParagraph(
+  html: string,
+  resolveFontFamily: (family: string) => string,
+): {
+  content: string;
+  fontFamily?: string;
+} {
   const openingTag = /^\s*<p\b/.exec(html);
-  if (!openingTag) return html;
+  if (!openingTag) return { content: html };
   const openingTagEnd = findOpenTagEnd(html, openingTag[0].length);
-  if (openingTagEnd === -1) return html;
+  if (openingTagEnd === -1) return { content: html };
   const closingTag = /<\/p>\s*$/.exec(html);
-  if (!closingTag || closingTag.index <= openingTagEnd) return html;
+  if (!closingTag || closingTag.index <= openingTagEnd)
+    return { content: html };
   const content = html.slice(openingTagEnd + 1, closingTag.index);
   // Only unwrap when there is exactly one top-level <p> — otherwise the
   // content has multiple paragraphs and we must leave it alone.
-  if (/<\/p>\s*<p\b/i.test(content)) return html;
-  return content;
+  if (/<\/p>\s*<p\b/i.test(content)) return { content: html };
+  return {
+    content,
+    fontFamily: effectiveInlineFontFamily(
+      html.slice(0, openingTagEnd + 1),
+      resolveFontFamily,
+    ),
+  };
 }
 
 function renderFontFamilyAttr(

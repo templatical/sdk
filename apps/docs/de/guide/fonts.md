@@ -1,16 +1,17 @@
 ---
 title: Benutzerdefinierte Schriftarten
-description: Konfigurieren Sie benutzerdefinierte Schriftarten für die Schriftauswahl des E-Mail-Editors.
+description: Konfigurieren Sie Schriftauswahl und Ersatzschriften für die Arbeitsfläche und exportierte E-Mails.
 ---
 
 # Benutzerdefinierte Schriftarten
 
-Standardmäßig enthält der Editor eine Reihe gängiger websicherer Schriftarten (Arial, Georgia, Verdana usw.) in der Schriftauswahl. Sie können diese Liste mit Ihren eigenen Schriftarten erweitern — beispielsweise durch das Laden benutzerdefinierter Schriftarten von Google Fonts oder Ihrem eigenen CDN. Wenn eine benutzerdefinierte Schriftart verwendet wird, wird sie automatisch als `<mj-font>`-Deklaration in der gerenderten MJML-Ausgabe aufgenommen.
+Konfigurieren Sie Schriftarten mit `fonts`; eine Schriftart für einen Block oder für Text aus der Absatz-Werkzeugleiste verwendet auf der Arbeitsfläche und in der exportierten E-Mail denselben Fallback-Stack. Benutzerdefinierte Schriftarten erzeugen auch eine `<mj-font>`-Deklaration in der gerenderten MJML-Ausgabe. Die Werkzeugleiste speichert die gewählte Schriftfamilie im Template, sodass eine Änderung ihres konfigurierten Fallbacks spätere Ausgaben beeinflusst.
 
 Konfigurieren Sie, welche Schriftarten verfügbar sind, über die Option `fonts`:
 
 ```ts
 import type { FontsConfig } from '@templatical/types';
+import { init } from '@templatical/editor';
 
 const fonts: FontsConfig = {
   defaultFont: 'Inter',
@@ -54,19 +55,19 @@ const editor = await init({
 
 Benutzerdefinierte Schriftarten werden automatisch als `<mj-font>`-Deklarationen in der gerenderten MJML-Ausgabe eingefügt.
 
+## Fallbacks für Inline-Schriftarten
+
+Die Absatz-Werkzeugleiste speichert eine gewählte Schriftart als Inline-`font-family` am markierten Text. Eine benutzerdefinierte Schriftart verwendet ihren `fallback` oder, falls dieser fehlt, `defaultFallback`; eine integrierte Schriftart verwendet ihren integrierten Stack. Ein vollständiger Inline-Stack behält seine eigenen Fallbacks. Arbeitsfläche, Bearbeitungsansicht und exportierte E-Mail verwenden denselben aufgelösten Stack. Wenn Sie oben `Inter` wählen, erhält der Text beispielsweise `'Inter', Helvetica, Arial, sans-serif` als Schriftfamilie. Prüfen Sie dies, indem Sie Text in einem Absatz markieren, `Inter` wählen und die Arbeitsfläche mit dem exportierten HTML vergleichen.
+
 ## Integrierte Schriftarten einschränken {#restricting-the-built-in-fonts}
 
 Standardmäßig bietet die Auswahl alle sieben integrierten websicheren Schriftarten (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) zusammen mit Ihren `customFonts` an. Verwenden Sie `builtIns`, um diese Liste einzugrenzen — nützlich, wenn Sie den Editor als White-Label- / Brand-Kit-Werkzeug einbetten und möchten, dass Autoren bei genehmigten Schriftarten bleiben.
 
 ```ts
+import type { FontsConfig } from '@templatical/types';
+
 const fonts: FontsConfig = {
-  // Nur diese integrierten Schriftarten behalten, plus alle customFonts:
   builtIns: ['Georgia', 'Arial'],
-  // Oder die integrierten Schriftarten ganz weglassen und nur eigene anbieten:
-  // builtIns: false,
-  customFonts: [
-    /* ... */
-  ],
 };
 ```
 

@@ -21,6 +21,7 @@ import BlockPreviewCanvas from "../src/components/BlockPreviewCanvas.vue";
 import Canvas from "../src/components/Canvas.vue";
 import ButtonBlock from "../src/components/blocks/ButtonBlock.vue";
 import MenuBlock from "../src/components/blocks/MenuBlock.vue";
+import ParagraphBlock from "../src/components/blocks/ParagraphBlock.vue";
 import TableBlock from "../src/components/blocks/TableBlock.vue";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
 import { useFonts } from "../src/composables/useFonts";
@@ -127,6 +128,42 @@ describe("canvas font parity with the renderer", () => {
       }
     });
   });
+});
+
+describe("inline rich-text font parity", () => {
+  const renderer = new RenderContext(600, CUSTOM_FONTS, DEFAULT_FALLBACK, true);
+
+  it.each([
+    ["paragraph", ParagraphBlock, "Inter"],
+    ["paragraph", ParagraphBlock, "Georgia"],
+    ["title", TitleBlock, "Inter"],
+    ["title", TitleBlock, "Georgia"],
+  ] as const)(
+    "resolves %s inline %s on the canvas",
+    (_kind, component, font) => {
+      const content = `<p><span style="font-family: ${font}">Hello</span></p>`;
+      const block =
+        _kind === "paragraph"
+          ? createParagraphBlock({ content })
+          : createTitleBlock({ content });
+      const wrapper = mountEditor(component, {
+        props: { block, viewport: "desktop" as const },
+        provides: {
+          [FONTS_MANAGER_KEY]: useFonts({
+            customFonts: CUSTOM_FONTS,
+            defaultFallback: DEFAULT_FALLBACK,
+          }),
+          [EDITOR_KEY]: { selectBlock: vi.fn(), updateBlock: vi.fn() },
+        },
+      });
+      const span = wrapper.find(".tpl-text-content span")
+        .element as HTMLElement;
+      expect(familyNames(span.style.fontFamily)).toEqual(
+        familyNames(renderer.resolveFontFamily(font)),
+      );
+      expect(block.content).toBe(content);
+    },
+  );
 });
 
 describe("button weight parity with the renderer", () => {
