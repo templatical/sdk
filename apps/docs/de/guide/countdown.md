@@ -31,6 +31,22 @@ const editor = await init({
 
 Die Playground-URL liefert ein **festes Beispiel-GIF**: dieselbe 30-Sekunden-Schleife für jede Anfrage. Sie zeigt die URL-Form und die Darstellung auf der Arbeitsfläche; die Abfrageparameter werden ignoriert, und das Bild zählt nicht bis zum Ziel herunter. Ersetzen Sie die Basis-URL durch Ihren eigenen Endpunkt oder einen URL-basierten Countdown-Bilddienst, der `targetDate` und `timezone` liest und ein Bild liefert, das beim Öffnen der E-Mail aktuell ist. Der Editor bietet den Countdown-Block nur an, wenn `countdown` konfiguriert ist.
 
+## Bild auf der Arbeitsfläche
+
+Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Ohne Bild-URL erscheint ein Platzhalter; kann das Bild nicht geladen werden, zeigt der Platzhalter die fehlgeschlagene URL. Ein Block ohne `targetDate` zeigt einen Hinweis zum Setzen des Datums, bis ein Bild geladen ist.
+
+Der Editor lädt das Bild so:
+
+- Das erste Bild lädt, sobald der Block erscheint.
+- Danach fordert der Editor nur dann ein neues Bild an, wenn sich die URL ändert, und zwar 400 ms nach ihrer letzten Änderung. Gibt ein Host nach einer Änderung dieselbe URL zurück, folgt keine neue Anfrage; nehmen Sie daher alles, was das Bild neu laden soll, in die URL auf.
+- Während das neue Bild lädt, bleibt das bisherige abgeblendet und mit „Wird aktualisiert…“ versehen sichtbar.
+
+Arbeitsfläche und E-Mail können unterschiedliche Bilder zeigen:
+
+- Ist [`resolveImageUrl`](/de/guide/images#reine-anzeige-aufloesung-von-bild-urls) konfiguriert, zeigt und entprellt die Arbeitsfläche die aufgelöste URL, während die E-Mail das Ergebnis von `imageUrl` behält.
+- Der lokale Render-Pfad des Editors (`toMjml()`, `toHtml()`) schreibt das Ergebnis von `imageUrl` in die E-Mail; ein Backend-Rendering kann eine andere URL senden, etwa eine [signierte URL](#signierte-urls-beim-rendern).
+- Ein Host, der aus dem gespeicherten Block rendert ([Block-Abruf aus dem Speicher](#block-abruf-aus-dem-speicher)), kann ungespeicherte Änderungen auf der Arbeitsfläche zeigen, bevor sie Empfänger erreichen.
+
 ## Provider- und Renderer-Vertrag
 
 `CountdownProvider` aus `@templatical/types` hat genau diese Methode:
@@ -60,6 +76,8 @@ declare function countdownWallTime(
   block: Pick<CountdownBlock, "targetDate" | "timezone">,
 ): string;
 ```
+
+Andere Felder der Werkzeugleiste als `targetDate` und `timezone` wirken sich nur dann auf die versendete E-Mail aus, wenn der Bilddienst des Hosts sie liest, entweder aus der Bild-URL oder aus dem gespeicherten Block.
 
 `renderCountdownImage` kommt aus `@templatical/renderer`. Die Funktion gibt ein `<mj-image>` mit dem übergebenen `src`, maskierten Attributen und lokalisiertem Alternativtext zurück. `countdownAltText` kommt aus `@templatical/types` und beschreibt das Zieldatum in der Sprache des Templates. `countdownTargetTime` gibt das Ziel in Epoch-Millisekunden zurück, oder `null` bei leerem, unlesbarem oder unmöglichem Datum sowie bei einem Datum ohne Offset und unbekannter Zeitzone (ein Datum mit `Z` oder Offset ignoriert `timezone`); `countdownWallTime` gibt es als `YYYY-MM-DDTHH:mm` in der Zeitzone des Blocks zurück, oder `""`. Der lokale Renderpfad des Editors verwendet automatisch die Template-Sprache. Ein Host-Override mit `render.toMjml` verantwortet seinen eigenen Renderpfad.
 
@@ -153,11 +171,12 @@ Diese Regeln gelten für beide Ansätze:
 - Lesen Sie nur die Blockfelder, die das Bild braucht, und begrenzen Sie sie: einen Bereich für das Zieldatum, Grenzen für Schriftgrößen, eine maximale Label-Länge.
 - Rufen Sie `expiredImageUrl` nie vom Server ab. Leiten Sie darauf weiter oder akzeptieren Sie nur Ihren eigenen Asset-Host; eine Adresse aus der Anfrage abzurufen, macht den Endpunkt zu einem offenen Proxy.
 - Cachen Sie aus gespeicherten Blöcken gerenderte Bilder pro Parametersatz, höchstens so lange, wie es die nötige Genauigkeit zulässt: Ein Countdown mit Sekunden, der eine Minute gecacht wird, kann beim Öffnen bis zu 59 Sekunden nachgehen, und jede kürzere Lebensdauer kostet mehr Renderings. Bild-Proxys bündeln viele Empfänger hinter wenigen IP-Adressen, daher können Rate-Limits pro IP Missbrauch nicht von einem großen Versand unterscheiden.
+- Halten Sie die Bildkodierung schnell und cachen Sie Antworten anhand der URL nur kurz. Das Bild hängt vom Zeitpunkt der Anfrage ab.
 - Halten Sie Editor-Vorschauen aus geteilten Caches heraus (`Cache-Control: private, no-store`) und wählen Sie den Schlüssel des öffentlichen Caches so, dass er nie eine Vorschau-Anfrage beantwortet: Vorschau und öffentliche Anfrage können dieselbe URL haben, brauchen aber verschiedene Bilder.
 
 ## Grenzen
 
-Das SDK liefert keinen GIF-Server mit. Ihr Bilddienst erzeugt und liefert das Countdown-Bild. E-Mail-HTML ist nach dem Versand statisch. Darum übernimmt der Bilddienst auch den Ablauf sowie `expiredMessage`, `expiredImageUrl` und `hideOnExpiry`; der Editor kann einen versendeten Block später nicht ausblenden. Wenn die Bild-URL auf der Arbeitsfläche nicht geladen werden kann, zeigt der Editor die CSS-Vorschau. Eine leere URL erzeugt den Marker `templatical:unrenderable-block`. Das gilt auch für einen Headless-Countdown ohne `blockRenderers.countdown`.
+Das SDK liefert keinen GIF-Server mit. Ihr Bilddienst erzeugt und liefert das Countdown-Bild. E-Mail-HTML ist nach dem Versand statisch. Darum übernimmt der Bilddienst auch den Ablauf sowie `expiredMessage`, `expiredImageUrl` und `hideOnExpiry`; der Editor kann einen versendeten Block später nicht ausblenden. Bei leerer Bild-URL oder einem Ladefehler zeigt die Arbeitsfläche einen Platzhalter. Eine leere URL erzeugt den Marker `templatical:unrenderable-block`. Das gilt auch für einen Headless-Countdown ohne `blockRenderers.countdown`.
 
 ## Prüfen
 

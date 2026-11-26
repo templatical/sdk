@@ -553,7 +553,10 @@ const ptBR: typeof en = {
     expiredImageUrl: "URL da Imagem de Expiração",
     hideOnExpiry: "Ocultar ao expirar",
     setDate: "Defina uma data alvo no painel de configurações",
-    hidden: "Oculto (expirado)",
+    noImage:
+      "Sem imagem de contagem regressiva. O provedor do host não retornou uma URL de imagem.",
+    imageFailed: "Falha ao carregar a imagem de contagem regressiva.",
+    updating: "Atualizando…",
   },
 
   // Custom Blocks

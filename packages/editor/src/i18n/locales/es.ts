@@ -554,7 +554,10 @@ const es: typeof en = {
     expiredImageUrl: "URL de la imagen caducada",
     hideOnExpiry: "Ocultar al expirar",
     setDate: "Establece una fecha límite en el panel de configuración",
-    hidden: "Oculto (expirado)",
+    noImage:
+      "No hay imagen de cuenta atrás. El proveedor de cuenta atrás del host no devolvió ninguna URL de imagen.",
+    imageFailed: "No se pudo cargar la imagen de cuenta atrás.",
+    updating: "Actualizando…",
   },
 
   // Custom Blocks

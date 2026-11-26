@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import {
   createCountdownBlock,
@@ -14,6 +14,21 @@ import { createRenderMethods } from "../src/utils/renderProvider";
 
 const TARGET = "2026-12-24T17:00:00.000Z";
 const GIF = "https://example.com/countdown.gif";
+
+class FakeImage {
+  static instances: FakeImage[] = [];
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  src = "";
+
+  constructor() {
+    FakeImage.instances.push(this);
+  }
+
+  load() {
+    this.onload?.();
+  }
+}
 
 function content() {
   const result = createDefaultTemplateContent();
@@ -29,7 +44,13 @@ function content() {
 }
 
 describe("countdown provider", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("reaches the canvas through the real Editor.vue config literal", async () => {
+    FakeImage.instances = [];
+    vi.stubGlobal("Image", FakeImage);
     const translations = await loadTranslations("en");
     const imageUrl = () => GIF;
     const wrapper = mount(Editor, {
@@ -48,6 +69,10 @@ describe("countdown provider", () => {
     await flushPromises();
     await flushPromises();
     await new Promise((resolve) => setTimeout(resolve, 250));
+    await flushPromises();
+    const preloaded = FakeImage.instances.find((image) => image.src === GIF);
+    expect(preloaded?.src).toBe(GIF);
+    preloaded?.load();
     await flushPromises();
     expect(wrapper.get(`img[src="${GIF}"]`).attributes("alt")).toBe(
       "Countdown: 24. Dezember 2026 um 18:00 (Europe/Berlin)",
