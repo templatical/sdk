@@ -7,6 +7,7 @@ import {
 } from "@templatical/types";
 import type { CountdownBlock } from "@templatical/types";
 import gifenc from "gifenc";
+import { segments } from "./segments.ts";
 
 const { GIFEncoder, quantize, applyPalette } = gifenc;
 const FONT = "Countdown Sans";
@@ -136,38 +137,6 @@ function readFields(params: URLSearchParams): {
       hideOnExpiry: boolean("hideOnExpiry", defaults.hideOnExpiry),
     },
   };
-}
-
-function segments(fields: Fields, seconds: number) {
-  const result: { digits: string; label: string }[] = [];
-  if (fields.showDays)
-    result.push({
-      digits: String(Math.floor(seconds / 86400)),
-      label: fields.labelDays,
-    });
-  if (fields.showHours)
-    result.push({
-      digits: String(
-        Math.floor(seconds / 3600) % (fields.showDays ? 24 : Infinity),
-      ).padStart(2, "0"),
-      label: fields.labelHours,
-    });
-  if (fields.showMinutes)
-    result.push({
-      digits: String(
-        Math.floor(seconds / 60) % (fields.showHours ? 60 : Infinity),
-      ).padStart(2, "0"),
-      label: fields.labelMinutes,
-    });
-  if (fields.showSeconds)
-    result.push({
-      digits: String(seconds % (fields.showMinutes ? 60 : Infinity)).padStart(
-        2,
-        "0",
-      ),
-      label: fields.labelSeconds,
-    });
-  return result;
 }
 
 function transparentGif(): Uint8Array {

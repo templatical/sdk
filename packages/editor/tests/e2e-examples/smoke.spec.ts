@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { segments } from "../../../../examples/countdown-image/src/segments.ts";
 
 const KIND = process.env.EXAMPLE_KIND;
 const EXAMPLE = process.env.EXAMPLE ?? "";
@@ -473,6 +474,35 @@ function gifInfo(bytes: Uint8Array) {
 
 test.describe("image endpoint example", () => {
   test.skip(KIND !== "image-endpoint", "runs against the image endpoint only");
+
+  test("moves a hidden unit's time into the next visible unit", () => {
+    const labels = {
+      labelDays: "d",
+      labelHours: "h",
+      labelMinutes: "m",
+      labelSeconds: "s",
+    };
+    const digits = (shown: [boolean, boolean, boolean, boolean], s: number) =>
+      segments(
+        {
+          ...labels,
+          showDays: shown[0],
+          showHours: shown[1],
+          showMinutes: shown[2],
+          showSeconds: shown[3],
+        },
+        s,
+      ).map((segment) => `${segment.digits}${segment.label}`);
+    expect(digits([false, true, false, true], 3661)).toEqual(["01h", "61s"]);
+    expect(digits([true, false, true, false], 90061)).toEqual(["1d", "61m"]);
+    expect(digits([true, true, true, true], 90061)).toEqual([
+      "1d",
+      "01h",
+      "01m",
+      "01s",
+    ]);
+    expect(digits([false, false, false, true], 3661)).toEqual(["3661s"]);
+  });
 
   test("returns 60 one-second GIF frames without a loop", async ({
     request,
