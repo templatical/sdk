@@ -15,16 +15,18 @@ import { expect } from "vitest";
  * rounds, so a garbage-collection pause or a JIT tier-up in one round does not
  * count.
  *
- * A reading of 0 ms is measured again: a busy runner's thread clock can report
- * no time for a run that took some, and the cheapest-of-five step would keep
- * that 0 and turn the ratio into Infinity.
+ * A round that reads 0 ms means the run is shorter than the thread clock's
+ * resolution: some runners count CPU time in scheduler ticks, so a short run
+ * usually reads 0 and the warm-up can pass the floor on a lucky tick. Repetitions
+ * then double and all five rounds are measured again, until a full set reads
+ * above zero. Keeping a 0 would make the ratio Infinity.
  *
  * Repetitions always start at one and only double, so each round costs just
  * over the 5 ms floor. A caller-chosen starting count above the floor would make
  * all ten rounds that expensive and push the test past vitest's timeout under CI
  * coverage.
  */
-const ZERO_READING_ATTEMPTS = 5;
+const MAX_REPETITIONS = 1_000_000;
 
 export function expectLinear(
   build: (n: number) => () => unknown,
@@ -39,26 +41,36 @@ export function expectLinear(
     const { user, system } = process.threadCpuUsage(started);
     return (user + system) / 1000;
   }
-  function measure(run: () => unknown): number {
-    for (let attempt = 0; attempt < ZERO_READING_ATTEMPTS; attempt++) {
-      const ms = cost(run);
-      if (ms > 0) return ms;
+  /** The cheapest of five interleaved rounds per size, or null if any read 0 ms. */
+  function rounds(): { small: number; large: number } | null {
+    let small = Infinity;
+    let large = Infinity;
+    for (let round = 0; round < 5; round++) {
+      const smallMs = cost(runSmall);
+      const largeMs = cost(runLarge);
+      if (smallMs <= 0 || largeMs <= 0) return null;
+      small = Math.min(small, smallMs);
+      large = Math.min(large, largeMs);
     }
-    throw new Error(
-      `expectLinear: thread CPU time read 0 ms ${ZERO_READING_ATTEMPTS} times in a row; the run can't be measured`,
-    );
+    return { small, large };
   }
 
-  let small = measure(runSmall);
-  while (small < 5 && repetitions < 1_000_000) {
+  let warmUp = cost(runSmall);
+  while (warmUp < 5 && repetitions < MAX_REPETITIONS) {
     repetitions *= 2;
-    small = measure(runSmall);
+    warmUp = cost(runSmall);
   }
-  let large = measure(runLarge);
-  for (let round = 1; round < 5; round++) {
-    small = Math.min(small, measure(runSmall));
-    large = Math.min(large, measure(runLarge));
+  let measured = rounds();
+  while (!measured && repetitions < MAX_REPETITIONS) {
+    repetitions *= 2;
+    measured = rounds();
   }
+  if (!measured) {
+    throw new Error(
+      `expectLinear: thread CPU time still read 0 ms at ${repetitions} repetitions; the run can't be measured`,
+    );
+  }
+  const { small, large } = measured;
   const ratio = large / small;
   if (process.env.LINEAR_SCAN_REPORT) {
     console.info(

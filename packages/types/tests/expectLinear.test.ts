@@ -24,20 +24,29 @@ afterEach(() => {
 });
 
 describe("expectLinear", () => {
-  it("measures a round again when the thread CPU time reads 0 ms", () => {
-    // Warm-up small (6 ms, no doubling), then large, then four rounds of
-    // small + large. The third small reading is 0 and must be measured again.
+  it("doubles repetitions and measures every round again when a round reads 0 ms", () => {
+    // Warm-up small (6 ms, no doubling). The first set of rounds hits a 0 ms
+    // reading, so repetitions double and five clean rounds follow.
     stubCpuDeltas([
-      6000, 24000, 6000, 24000, 0, 6000, 24000, 6000, 24000, 6000, 24000,
+      6000, 6000, 24000, 0, 24000, 12000, 48000, 12000, 48000, 12000, 48000,
+      12000, 48000, 12000, 48000,
+    ]);
+    const result = expectLinear(() => () => undefined, 10);
+    expect(result).toEqual({ repetitions: 2, ratio: 4 });
+  });
+
+  it("keeps the cheapest round of each size", () => {
+    stubCpuDeltas([
+      6000, 7000, 30000, 6000, 24000, 9000, 26000, 6500, 25000, 8000, 27000,
     ]);
     const result = expectLinear(() => () => undefined, 10);
     expect(result).toEqual({ repetitions: 1, ratio: 4 });
   });
 
-  it("throws a clear error when a run keeps reading 0 ms", () => {
+  it("throws a clear error when the clock keeps reading 0 ms", () => {
     stubCpuDeltas(Array.from({ length: 64 }, () => 0));
     expect(() => expectLinear(() => () => undefined, 10)).toThrow(
-      "expectLinear: thread CPU time read 0 ms 5 times in a row",
+      "expectLinear: thread CPU time still read 0 ms at 1048576 repetitions",
     );
   });
 });
