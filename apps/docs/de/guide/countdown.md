@@ -33,7 +33,7 @@ Die Playground-URL liefert ein **festes Beispiel-GIF**: dieselbe 30-Sekunden-Sch
 
 ## Bild auf der Arbeitsfläche
 
-Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Ohne Bild-URL erscheint ein Platzhalter; kann das Bild nicht geladen werden, zeigt der Platzhalter die fehlgeschlagene URL.
+Die Arbeitsfläche zeigt das Bild, das `imageUrl` für den Block in seinem aktuellen Zustand im Editor zurückgibt. Ohne Bild-URL erscheint ein Platzhalter; kann das Bild nicht geladen werden, zeigt der Platzhalter die fehlgeschlagene URL. Ein Block ohne `targetDate` zeigt einen Hinweis zum Setzen des Datums, bis ein Bild geladen ist.
 
 Der Editor lädt das Bild so:
 
