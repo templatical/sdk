@@ -15,7 +15,7 @@
     "@templatical/quality": "^0.63.5",
     "@templatical/renderer": "^0.63.5",
     "@templatical/types": "^0.63.5",
-    "isbot": "^5.2.3",
+    "isbot": "^5.2.4",
     "mjml": "^5.4.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
