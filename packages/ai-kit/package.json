@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^1.14.0",
-    "@types/node": "^26.6.7",
+    "@types/node": "^26.6.10",
     "ai": "^7.0.181",
     "openai": "^7.64.0",
     "typescript": "^6.0.3",
