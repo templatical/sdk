@@ -438,8 +438,8 @@ importers:
         version: link:../types
     devDependencies:
       '@anthropic-ai/sdk':
-        specifier: ^1.13.0
-        version: 1.13.0(zod@4.6.7)
+        specifier: ^1.14.0
+        version: 1.14.0(zod@4.6.7)
       '@types/node':
         specifier: ^26.6.7
         version: 26.6.7
@@ -930,8 +930,8 @@ packages:
     resolution: {integrity: sha512-jRvAhvW23+TeMGVCME2WGejP/TjzyDg7TplUep3t8HcEYnC2/8zqhCy9RRrjjVs1ljcygABZ8pQ21MbCRdF01w==}
     engines: {node: '>=22'}
 
-  '@anthropic-ai/sdk@1.13.0':
-    resolution: {integrity: sha512-F4Qu3zqRINxTV5xruOvw1gXhEsYH4lOgxffxZx4IworMefc395T458pl5Uj3TZiAlO3+gvhYoHSHU7qDsrchNA==}
+  '@anthropic-ai/sdk@1.14.0':
+    resolution: {integrity: sha512-nADYXUd5fn9Zgw2nHi1iKyt/kb1UUt1cN3RbdxEI6XjTDTxbx4LLG4GnMrxWyS9GgXQllFOyAKSiFM3joDNK9A==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -4711,7 +4711,7 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@anthropic-ai/sdk@1.13.0(zod@4.6.7)':
+  '@anthropic-ai/sdk@1.14.0(zod@4.6.7)':
     dependencies:
       '@opentelemetry/api': 1.10.0
       json-schema-to-ts: 3.1.1
