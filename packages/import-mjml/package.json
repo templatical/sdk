@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "@templatical/renderer": "workspace:*",
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.7",
     "typescript": "^6.0.3",
     "vitest": "^5.1.1"
   },
