@@ -15,7 +15,7 @@
     "liquidjs": "^10.30.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.7",
     "mjml": "^5.4.1",
     "ts-json-schema-generator": "^2.10.0",
     "typescript": "^6.0.3",
